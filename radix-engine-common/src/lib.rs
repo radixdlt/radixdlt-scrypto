@@ -30,7 +30,7 @@ pub use sbor::{Categorize, Decode, Encode, Sbor};
 extern crate radix_engine_derive;
 pub use radix_engine_derive::{
     ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
-    ScryptoDecode, ScryptoEncode, ScryptoSbor,
+    ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
 };
 
 // This is to make derives work within this crate.

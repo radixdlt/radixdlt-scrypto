@@ -26,6 +26,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
+use radix_engine_interface::schema::PackageSchema;
 use transaction::data::to_address;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
@@ -279,7 +280,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let code = processor.get_blob(&code)?;
                     let schema = processor.get_blob(&schema)?;
-                    let schema = scrypto_decode(schema).map_err(|e| {
+                    let schema = scrypto_decode::<PackageSchema>(schema).map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                             TransactionProcessorError::InvalidPackageSchema(e),
                         ))
@@ -293,11 +294,10 @@ impl TransactionProcessorBlueprint {
                         scrypto_encode(&PackagePublishWasmInput {
                             package_address: None,
                             code: code.clone(),
-                            schema,
+                            schema: schema.clone(),
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
-                            event_schema: BTreeMap::new(), // TODO: Fix in Part3 of application events
                         })
                         .unwrap(),
                     )?;

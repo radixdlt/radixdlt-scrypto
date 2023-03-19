@@ -12,6 +12,8 @@ pub mod api;
 pub mod blueprints;
 /// RE constants
 pub mod constants;
+/// RE traits
+pub mod traits;
 
 mod macros;
 pub use macros::*;

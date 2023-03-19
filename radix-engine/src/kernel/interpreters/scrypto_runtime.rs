@@ -219,7 +219,7 @@ where
         self.allocate_buffer(buffer)
     }
 
-    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn assert_access_rule(&mut self, _rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         todo!()
     }
 

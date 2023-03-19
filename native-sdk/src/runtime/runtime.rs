@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
-use sbor::generate_full_schema_from_single_type;
+use radix_engine_interface::traits::ScryptoEvent;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::ToOwned;
 
@@ -15,7 +15,7 @@ pub struct Runtime {}
 
 impl Runtime {
     /// Emits an application event
-    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe, Y, E>(
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
         api: &mut Y,
         event: T,
     ) -> Result<(), E>
@@ -23,17 +23,7 @@ impl Runtime {
         Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        // TODO: Simplify once ScryptoEvent trait is implemented
-        let event_name = {
-            let (local_type_index, schema) =
-                generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            (*schema
-                .resolve_type_metadata(local_type_index)
-                .expect("Cant fail")
-                .type_name)
-                .to_owned()
-        };
-        api.emit_event(event_name, scrypto_encode(&event).unwrap())
+        api.emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>

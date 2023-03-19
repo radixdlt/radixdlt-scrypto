@@ -993,6 +993,7 @@ mod tests {
                         export_name: "Test_f".to_string(),
                     }
                 ),
+                event_schema: [].into(),
             },
         );
 

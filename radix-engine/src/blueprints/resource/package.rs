@@ -2,6 +2,7 @@ use crate::blueprints::resource::vault::VaultBlueprint;
 use crate::blueprints::resource::*;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
+use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
@@ -160,11 +161,21 @@ impl ResourceManagerNativePackage {
                 },
             );
 
+            let event_schema = event_schema! {
+                aggregator,
+                [
+                    VaultCreationEvent,
+                    MintFungibleResourceEvent,
+                    BurnFungibleResourceEvent
+                ]
+            };
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 schema,
                 substates,
                 functions,
+                event_schema,
             }
         };
 
@@ -341,12 +352,21 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let schema = generate_full_schema(aggregator);
+            let event_schema = event_schema! {
+                aggregator,
+                [
+                    VaultCreationEvent,
+                    MintNonFungibleResourceEvent,
+                    BurnNonFungibleResourceEvent
+                ]
+            };
 
+            let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 schema,
                 substates,
                 functions,
+                event_schema,
             }
         };
 
@@ -510,11 +530,22 @@ impl ResourceManagerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                LockFeeEvent,
+                WithdrawResourceEvent,
+                DepositResourceEvent,
+                RecallResourceEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let vault_schema = BlueprintSchema {
             schema,
             substates,
             functions,
+            event_schema,
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -653,6 +684,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: [].into(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -717,6 +749,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: [].into(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -816,6 +849,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: [].into(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -907,6 +941,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: btreemap!(),
         };
 
         PackageSchema {
