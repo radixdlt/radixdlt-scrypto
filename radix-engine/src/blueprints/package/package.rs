@@ -97,7 +97,7 @@ fn globalize_package<Y>(
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
     api: &mut Y,
-) -> Result<IndexedScryptoValue, RuntimeError>
+) -> Result<PackageAddress, RuntimeError>
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
@@ -165,7 +165,7 @@ where
     api.kernel_create_node(node_id, node_init, node_modules)?;
 
     let package_address: PackageAddress = node_id.into();
-    Ok(IndexedScryptoValue::from_typed(&package_address))
+    Ok(package_address)
 }
 
 pub struct PackageNativePackage;
@@ -266,7 +266,24 @@ impl PackageNativePackage {
                     ));
                 }
 
-                Self::publish_native(input, api)
+                let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::publish_native(
+                    input.package_address,
+                    input.native_package_code_id,
+                    input.schema,
+                    input.dependent_resources,
+                    input.dependent_components,
+                    input.metadata,
+                    input.access_rules,
+                    input.package_access_rules,
+                    input.default_package_access_rule,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -276,8 +293,21 @@ impl PackageNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
+                let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
 
-                Self::publish_wasm(input, api)
+                let rtn = Self::publish_wasm(
+                    input.package_address,
+                    input.code,
+                    input.schema,
+                    input.royalty_config,
+                    input.metadata,
+                    input.access_rules,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
             PACKAGE_SET_ROYALTY_CONFIG_IDENT => {
@@ -305,74 +335,79 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_native<Y>(
-        input: IndexedScryptoValue,
+        package_address: Option<[u8; 26]>, // TODO: Clean this up
+        native_package_code_id: u8,
+        schema: PackageSchema,
+        dependent_resources: Vec<ResourceAddress>,
+        dependent_components: Vec<ComponentAddress>,
+        metadata: BTreeMap<String, String>,
+        access_rules: AccessRulesConfig,
+        package_access_rules: BTreeMap<FnKey, AccessRule>,
+        default_package_access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<PackageAddress, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         // Validate schema
-        validate_package_schema(&input.schema)
+        validate_package_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&input.schema)
+        validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: input.schema,
-            dependent_resources: input.dependent_resources.into_iter().collect(),
-            dependent_components: input.dependent_components.into_iter().collect(),
+            schema,
+            dependent_resources: dependent_resources.into_iter().collect(),
+            dependent_components: dependent_components.into_iter().collect(),
         };
         let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
-            code: vec![input.native_package_code_id],
+            code: vec![native_package_code_id],
         };
         let royalty = PackageRoyaltySubstate {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
         let function_access_rules = FunctionAccessRulesSubstate {
-            access_rules: input.package_access_rules,
-            default_auth: input.default_package_access_rule,
+            access_rules: package_access_rules,
+            default_auth: default_package_access_rule,
         };
 
         globalize_package(
-            input.package_address,
+            package_address,
             info,
             code_type,
             code,
             royalty,
             function_access_rules,
-            input.metadata,
-            input.access_rules,
+            metadata,
+            access_rules,
             api,
         )
     }
 
     pub(crate) fn publish_wasm<Y>(
-        input: IndexedScryptoValue,
+        package_address: Option<[u8; 26]>, // TODO: Clean this up
+        code: Vec<u8>,
+        schema: PackageSchema,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+        access_rules: AccessRulesConfig,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<PackageAddress, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         // Validate schema
-        validate_package_schema(&input.schema)
+        validate_package_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&input.schema)
+        validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate WASM
         WasmValidator::default()
-            .validate(&input.code, &input.schema)
+            .validate(&code, &schema)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -381,16 +416,16 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema: input.schema,
+            schema,
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };
 
         let code_type = PackageCodeTypeSubstate::Wasm;
-        let code = PackageCodeSubstate { code: input.code };
+        let code = PackageCodeSubstate { code };
         let royalty = PackageRoyaltySubstate {
             royalty_vault: None,
-            blueprint_royalty_configs: input.royalty_config,
+            blueprint_royalty_configs: royalty_config,
         };
         let function_access_rules = FunctionAccessRulesSubstate {
             access_rules: BTreeMap::new(),
@@ -398,14 +433,14 @@ impl PackageNativePackage {
         };
 
         globalize_package(
-            input.package_address,
+            package_address,
             info,
             code_type,
             code,
             royalty,
             function_access_rules,
-            input.metadata,
-            input.access_rules,
+            metadata,
+            access_rules,
             api,
         )
     }
