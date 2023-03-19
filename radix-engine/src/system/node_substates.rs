@@ -1,6 +1,5 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
-use super::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;
@@ -36,6 +35,7 @@ pub enum PersistedSubstate {
     PackageCodeType(PackageCodeTypeSubstate),
     PackageCode(PackageCodeSubstate),
     PackageRoyalty(PackageRoyaltySubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
     VaultInfo(VaultInfoSubstate),
@@ -49,7 +49,6 @@ pub enum PersistedSubstate {
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
-    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -57,9 +56,6 @@ pub enum PersistedSubstate {
 
     /* KVStore entry */
     KeyValueStoreEntry(Option<ScryptoValue>),
-
-    /* Event Schema */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl PersistedSubstate {
@@ -71,11 +67,27 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_liquid_fungible(&self) -> &LiquidFungibleResource {
+        if let PersistedSubstate::VaultLiquidFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault liquid fungible");
+        }
+    }
+
     pub fn vault_liquid_fungible_mut(&mut self) -> &mut LiquidFungibleResource {
         if let PersistedSubstate::VaultLiquidFungible(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault liquid fungible");
+        }
+    }
+
+    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
+        if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault liquid non-fungible");
         }
     }
 
@@ -83,7 +95,7 @@ impl PersistedSubstate {
         if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault liquid non-fungible");
         }
     }
 
@@ -119,6 +131,14 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn package_code(&self) -> &PackageCodeSubstate {
+        if let PersistedSubstate::PackageCode(code) = self {
+            code
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
+
     pub fn type_info(&self) -> &TypeInfoSubstate {
         if let PersistedSubstate::TypeInfo(info) = self {
             info
@@ -132,14 +152,6 @@ impl PersistedSubstate {
             state
         } else {
             panic!("Not a resource manager substate");
-        }
-    }
-
-    pub fn event_schema(&self) -> &PackageEventSchemaSubstate {
-        if let PersistedSubstate::PackageEventSchema(state) = self {
-            state
-        } else {
-            panic!("Not a PackageEventSchema");
         }
     }
 }
@@ -192,6 +204,9 @@ impl PersistedSubstate {
             PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
             PersistedSubstate::PackageCode(value) => RuntimeSubstate::PackageCode(value),
             PersistedSubstate::PackageRoyalty(value) => RuntimeSubstate::PackageRoyalty(value),
+            PersistedSubstate::FunctionAccessRules(value) => {
+                RuntimeSubstate::FunctionAccessRules(value)
+            }
             PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
             PersistedSubstate::VaultLiquidFungible(value) => {
                 RuntimeSubstate::VaultLiquidFungible(value)
@@ -216,17 +231,11 @@ impl PersistedSubstate {
             PersistedSubstate::MethodAccessRules(value) => {
                 RuntimeSubstate::MethodAccessRules(value)
             }
-            PersistedSubstate::FunctionAccessRules(value) => {
-                RuntimeSubstate::FunctionAccessRules(value)
-            }
             PersistedSubstate::ComponentRoyaltyConfig(value) => {
                 RuntimeSubstate::ComponentRoyaltyConfig(value)
             }
             PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
-            }
-            PersistedSubstate::PackageEventSchema(value) => {
-                RuntimeSubstate::PackageEventSchema(value)
             }
         }
     }
@@ -245,6 +254,7 @@ pub enum RuntimeSubstate {
     PackageInfo(PackageInfoSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
     PackageRoyalty(PackageRoyaltySubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     Account(AccountSubstate),
@@ -273,7 +283,6 @@ pub enum RuntimeSubstate {
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
-    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -281,9 +290,6 @@ pub enum RuntimeSubstate {
 
     /* KVStore entry */
     KeyValueStoreEntry(Option<ScryptoValue>),
-
-    /* Event Schema */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RuntimeSubstate {
@@ -312,6 +318,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyalty(value) => {
                 PersistedSubstate::PackageRoyalty(value.clone())
             }
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                PersistedSubstate::FunctionAccessRules(value.clone())
+            }
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
             }
@@ -332,17 +341,11 @@ impl RuntimeSubstate {
             RuntimeSubstate::MethodAccessRules(value) => {
                 PersistedSubstate::MethodAccessRules(value.clone())
             }
-            RuntimeSubstate::FunctionAccessRules(value) => {
-                PersistedSubstate::FunctionAccessRules(value.clone())
-            }
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value.clone())
             }
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
-            }
-            RuntimeSubstate::PackageEventSchema(value) => {
-                PersistedSubstate::PackageEventSchema(value.clone())
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -379,6 +382,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value),
             RuntimeSubstate::PackageRoyalty(value) => PersistedSubstate::PackageRoyalty(value),
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                PersistedSubstate::FunctionAccessRules(value)
+            }
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
             }
@@ -403,17 +409,11 @@ impl RuntimeSubstate {
             RuntimeSubstate::MethodAccessRules(value) => {
                 PersistedSubstate::MethodAccessRules(value)
             }
-            RuntimeSubstate::FunctionAccessRules(value) => {
-                PersistedSubstate::FunctionAccessRules(value)
-            }
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
             }
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
-            }
-            RuntimeSubstate::PackageEventSchema(value) => {
-                PersistedSubstate::PackageEventSchema(value)
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -518,7 +518,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
-            RuntimeSubstate::PackageEventSchema(value) => SubstateRefMut::PackageEventSchema(value),
         }
     }
 
@@ -578,7 +577,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
-            RuntimeSubstate::PackageEventSchema(value) => SubstateRef::PackageEventSchema(value),
         }
     }
 
@@ -757,12 +755,6 @@ impl Into<RuntimeSubstate> for AccountSubstate {
 impl Into<RuntimeSubstate> for AccessControllerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessController(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for PackageEventSchemaSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::PackageEventSchema(self)
     }
 }
 
@@ -1026,7 +1018,6 @@ pub enum SubstateRef<'a> {
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
-    PackageEventSchema(&'a PackageEventSchemaSubstate),
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1294,15 +1285,6 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a PackageEventSchemaSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::PackageEventSchema(value) => value,
-            _ => panic!("Not an PackageEventSchema"),
-        }
-    }
-}
-
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
@@ -1419,9 +1401,8 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let (_, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
-                    .unwrap()
-                    .unpack();
+                let (_, owns, refs) =
+                    IndexedScryptoValue::from_scrypto_value(substate.0.clone()).unpack();
                 (refs, owns)
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
@@ -1495,7 +1476,6 @@ pub enum SubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
-    PackageEventSchema(&'a mut PackageEventSchemaSubstate),
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {

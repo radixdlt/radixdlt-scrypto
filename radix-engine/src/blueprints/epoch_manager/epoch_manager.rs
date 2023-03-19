@@ -173,7 +173,7 @@ impl EpochManagerBlueprint {
 
         let access_rules = AccessRules::sys_new(access_rules, api)?.0;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             RENodeId::Object(epoch_manager_id),

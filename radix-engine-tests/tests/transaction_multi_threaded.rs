@@ -53,8 +53,7 @@ mod multi_threaded_test {
                         .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
                 )
                 .expect_commit(true)
-                .entity_changes
-                .new_component_addresses[0];
+                .new_component_addresses()[0];
                 account
             })
             .collect::<Vec<ComponentAddress>>();

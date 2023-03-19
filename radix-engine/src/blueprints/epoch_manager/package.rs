@@ -3,7 +3,7 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::types::*;
+use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
-use super::{EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate};
+use super::*;
 
 pub struct EpochManagerNativePackage;
 
@@ -85,11 +85,21 @@ impl EpochManagerNativePackage {
                 export_name: EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
             },
         );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RoundChangeEvent,
+                EpochChangeEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let epoch_manager_schema = BlueprintSchema {
             schema,
             substates,
             functions,
+            event_schema,
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -164,11 +174,24 @@ impl EpochManagerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RegisterValidatorEvent,
+                UnregisterValidatorEvent,
+                StakeEvent,
+                UnstakeEvent,
+                ClaimXrdEvent,
+                UpdateAcceptingStakeDelegationStateEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
             schema,
             substates,
             functions,
+            event_schema,
         };
 
         PackageSchema {

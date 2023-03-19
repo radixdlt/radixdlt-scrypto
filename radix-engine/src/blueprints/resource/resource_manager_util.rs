@@ -229,7 +229,7 @@ where
     let resman_access_rules = AccessRules::sys_new(resman_access_rules, api)?.0;
     let vault_access_rules = AccessRules::sys_new(vault_access_rules, api)?.0;
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
     api.globalize_with_address(
         RENodeId::Object(object_id),

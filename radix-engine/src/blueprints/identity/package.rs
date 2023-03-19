@@ -81,7 +81,8 @@ impl IdentityNativePackage {
                 IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: [].into()
                 }
             ),
         }
@@ -279,7 +280,7 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 

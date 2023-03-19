@@ -1,8 +1,7 @@
-use crate::data::scrypto::*;
-use sbor::rust::format;
-use sbor::rust::vec;
+use super::model::*;
+use super::*;
+use sbor::rust::prelude::*;
 use serde::ser::*;
-use serde::*;
 use utils::{ContextSerializable, ContextualDisplay, ContextualSerialize};
 
 // TODO - Add a deserializer for invertible JSON, and tests that the process is invertible
@@ -258,7 +257,7 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for Array
             let mut bytes_vec = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
             for element in self.elements {
                 let Value::U8 { value: byte } = element else {
-                    return Err(ser::Error::custom("An SBOR array of U8 contained a non-U8 value"));
+                    return Err(Error::custom("An SBOR array of U8 contained a non-U8 value"));
                 };
                 bytes_vec.push(*byte);
             }
@@ -382,7 +381,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomValueKind::Own,
-            &format!("{}", hex::encode(value.to_vec())),
+            &format!("{}", hex::encode(value.id())),
         ),
         ScryptoCustomValue::Decimal(value) => serialize_value(
             // The fact it's a decimal number will be obvious from context, so favour simplicity over verbosity
@@ -406,6 +405,13 @@ pub fn serialize_custom_value<S: Serializer>(
             context,
             ScryptoCustomValueKind::NonFungibleLocalId,
             &format!("{}", value),
+        ),
+        ScryptoCustomValue::InternalRef(InternalRef(object_id)) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomValueKind::Reference,
+            &format!("{}", hex::encode(object_id)),
         ),
     }
 }
@@ -509,10 +515,7 @@ mod tests {
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
 
-    use crate::{
-        constants::RADIX_TOKEN,
-        data::{scrypto_decode, scrypto_encode, ScryptoValue},
-    };
+    use crate::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 
     #[derive(ScryptoSbor)]
     pub struct Sample {
@@ -533,7 +536,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = RADIX_TOKEN;
+        let value = ResourceAddress::Normal([0; ADDRESS_HASH_LENGTH]);
 
         let expected =
             json!("NormalResource[000000000000000000000000000000000000000000000000000000]");
@@ -553,7 +556,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = RADIX_TOKEN;
+        let value = ResourceAddress::Normal([0; ADDRESS_HASH_LENGTH]);
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
@@ -570,10 +573,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
-        use crate::{
-            data::model::*,
-            math::{Decimal, PreciseDecimal},
-        };
+        use crate::math::{Decimal, PreciseDecimal};
 
         let encoder = Bech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
@@ -619,10 +619,12 @@ mod tests {
                 Value::Tuple {
                     fields: vec![
                         Value::Custom {
-                            value: ScryptoCustomValue::Address(Address::Resource(RADIX_TOKEN)),
+                            value: ScryptoCustomValue::Address(Address::Resource(
+                                ResourceAddress::Normal([0; ADDRESS_HASH_LENGTH]),
+                            )),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
+                            value: ScryptoCustomValue::Own(Own::Vault([0; OBJECT_ID_LENGTH])),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -653,6 +655,11 @@ mod tests {
                                 NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd)
                                     .unwrap(),
                             ),
+                        },
+                        Value::Custom {
+                            value: ScryptoCustomValue::InternalRef(InternalRef(
+                                [0; OBJECT_ID_LENGTH],
+                            )),
                         },
                     ],
                 },
@@ -705,7 +712,7 @@ mod tests {
                 "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety",
                 {
                     "type": "Own",
-                    "value": "02000000000000000000000000000000000000000000000000000000000000000000000000"
+                    "value": "00000000000000000000000000000000000000000000000000000000000000"
                 },
                 "1",
                 "0.01",
@@ -725,6 +732,10 @@ mod tests {
                 {
                     "type": "NonFungibleLocalId",
                     "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                },
+                {
+                    "type": "Reference",
+                    "value": "00000000000000000000000000000000000000000000000000000000000000"
                 }
             ]
         ]);
@@ -861,7 +872,7 @@ mod tests {
                         },
                         {
                             "type": "Own",
-                            "value": "02000000000000000000000000000000000000000000000000000000000000000000000000"
+                            "value": "00000000000000000000000000000000000000000000000000000000000000"
                         },
                         {
                             "type": "Decimal",
@@ -890,7 +901,11 @@ mod tests {
                         {
                             "type": "NonFungibleLocalId",
                             "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
-                        }
+                        },
+                        {
+                            "type": "Reference",
+                            "value": "00000000000000000000000000000000000000000000000000000000000000"
+                        },
                     ]
                 }
             ]

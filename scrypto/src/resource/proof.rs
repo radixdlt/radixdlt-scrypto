@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;

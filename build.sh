@@ -4,11 +4,11 @@ set -e
 
 cd "$(dirname "$0")"
 
-echo "Building the workspace packages..."
+echo "Building the workspace packages (with all extended features)..."
 
-(set -x; cargo build)
-(set -x; cargo test --no-run)
-(set -x; cargo bench --no-run)
+(set -x; cargo build --features serde)
+(set -x; cargo test --no-run --features serde)
+(set -x; cargo bench --no-run --features serde)
 
 echo "Building the engine in different configurations..."
 

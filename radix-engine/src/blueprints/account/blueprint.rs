@@ -1,7 +1,7 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -14,6 +14,8 @@ use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
+use radix_engine_interface::schema::KeyValueStoreSchema;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -63,7 +65,7 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             NodeModuleId::AccessRules => access_rules.0,
@@ -165,7 +167,10 @@ impl AccountBlueprint {
             let kv_store_id = {
                 let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
-                api.kernel_create_node(node_id, node, BTreeMap::new())?;
+                api.kernel_create_node(node_id, node, btreemap!(
+                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                            KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                        )))?;
                 node_id
             };
 

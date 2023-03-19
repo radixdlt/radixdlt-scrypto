@@ -168,7 +168,8 @@ jobs:
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
-          -p radix-engine-tests
+          -p radix-engine-tests \
+          --features serde
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
@@ -319,3 +320,22 @@ jobs:
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator
+  fuzzer-check:
+    name: Build fuzzer
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Setup AFL
+      run: bash ./install_afl.sh
+      working-directory: fuzz-tests
+    - name: Build AFL fuzzer
+      run: bash ./fuzz.sh afl build
+      working-directory: fuzz-tests

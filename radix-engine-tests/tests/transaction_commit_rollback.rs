@@ -29,7 +29,6 @@ fn test_state_track_success() {
     );
 
     // Assert
-    receipt.expect_commit_success();
     let state_updates = &receipt.expect_commit(true).state_updates;
     println!("");
     for (o, n) in state_updates.down_substate_offsets() {
@@ -52,7 +51,6 @@ fn test_state_track_success() {
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
         + 2 /* PackageAccessRules */
-        + 1 /* PackageEventSchema */
     );
     assert_eq!(
         state_updates.up_substate_ids().len(),
@@ -68,7 +66,6 @@ fn test_state_track_success() {
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
         + 2 /* PackageAccessRules */
-        + 1 /* PackageEventSchema */
     );
 }
 

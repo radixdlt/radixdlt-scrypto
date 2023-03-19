@@ -2,6 +2,7 @@
 members = [
     "access_rules",
     "arguments",
+    "balance_changes",
     "bucket",
     "component",
     "core",
@@ -38,6 +39,7 @@ members = [
     "transaction_limits",
     "transaction_runtime",
     "events",
+    "events_invalid",
     "logger"
 ]
 

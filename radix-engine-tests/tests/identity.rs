@@ -24,7 +24,7 @@ fn cannot_securify_in_advanced_mode() {
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
+            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -58,7 +58,7 @@ fn can_securify_from_virtual_identity() {
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
+            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -85,7 +85,7 @@ fn cannot_securify_twice() {
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
+            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -104,7 +104,7 @@ fn cannot_securify_twice() {
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
+            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(
@@ -136,7 +136,7 @@ fn can_set_metadata_after_securify() {
         .add_instruction(Instruction::CallMethod {
             component_address: identity_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
+            args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
         .0
         .call_method(

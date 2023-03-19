@@ -213,7 +213,8 @@ impl AccountNativePackage {
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: [].into()
                 }
             ),
         }
