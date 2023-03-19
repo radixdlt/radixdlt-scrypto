@@ -260,6 +260,7 @@ impl Parser {
             TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
                 access_rule: self.parse_value()?,
             },
+            TokenKind::CreateAccount => Instruction::CreateAccount {},
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {
                 access_rule: self.parse_value()?,
                 mutability: self.parse_value()?,

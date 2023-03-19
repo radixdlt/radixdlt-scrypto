@@ -119,6 +119,7 @@ pub enum TokenKind {
     CreateIdentity,
     CreateIdentityAdvanced,
     AssertAccessRule,
+    CreateAccount,
     CreateAccountAdvanced,
 }
 
@@ -457,6 +458,7 @@ impl Lexer {
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
             "CREATE_IDENTITY_ADVANCED" => Ok(TokenKind::CreateIdentityAdvanced),
             "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
+            "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
             "CREATE_ACCOUNT_ADVANCED" => Ok(TokenKind::CreateAccountAdvanced),
             "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 

@@ -770,7 +770,11 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, access_rule: AccessRule, mutability: AccessRule) -> &mut Self {
+    pub fn new_account_advanced(
+        &mut self,
+        access_rule: AccessRule,
+        mutability: AccessRule,
+    ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),

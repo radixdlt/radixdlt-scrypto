@@ -435,8 +435,14 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_advanced(&mut self, withdraw_auth: AccessRule, mutability: AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new().new_account_advanced(withdraw_auth, mutability).build();
+    pub fn new_account_advanced(
+        &mut self,
+        withdraw_auth: AccessRule,
+        mutability: AccessRule,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .new_account_advanced(withdraw_auth, mutability)
+            .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 

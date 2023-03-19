@@ -57,6 +57,16 @@ impl AccountNativePackage {
         );
 
         functions.insert(
+            ACCOUNT_CREATE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AccountCreateInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateOutput>(),
+                export_name: ACCOUNT_CREATE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
             ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
@@ -263,7 +273,24 @@ impl AccountNativePackage {
                 let input: AccountCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_advanced(input.access_rule, input.mutability, api)?;
+                let rtn =
+                    AccountBlueprint::create_advanced(input.access_rule, input.mutability, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_CREATE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                let _input: AccountCreateInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::create(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

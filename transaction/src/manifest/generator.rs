@@ -9,7 +9,8 @@ use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateAdvancedInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT,
+    AccountCreateAdvancedInput, AccountCreateInput, ACCOUNT_BLUEPRINT,
+    ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
@@ -646,23 +647,23 @@ pub fn generate_instruction(
             })
             .unwrap(),
         },
-        ast::Instruction::CreateAccountAdvanced { access_rule, mutability } => Instruction::CallFunction {
+
+        ast::Instruction::CreateAccount {} => Instruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateInput {}).unwrap(),
+        },
+        ast::Instruction::CreateAccountAdvanced {
+            access_rule,
+            mutability,
+        } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&AccountCreateAdvancedInput {
-                access_rule: generate_typed_value(
-                    access_rule,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
-                mutability: generate_typed_value(
-                    mutability,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
+                access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+                mutability: generate_typed_value(mutability, resolver, bech32_decoder, blobs)?,
             })
             .unwrap(),
         },

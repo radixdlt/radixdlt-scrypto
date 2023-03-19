@@ -531,6 +531,7 @@ ASSERT_ACCESS_RULE
 CREATE_ACCOUNT_ADVANCED
     Enum(0u8)
     Enum(0u8);
+CREATE_ACCOUNT;
 "##,
         );
     }

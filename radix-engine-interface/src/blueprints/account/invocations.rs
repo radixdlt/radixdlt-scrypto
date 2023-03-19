@@ -21,7 +21,7 @@ pub struct AccountCreateLocalInput {}
 pub type AccountCreateLocalOutput = Own;
 
 //=============
-// Account Create Global
+// Account Create Advanced
 //=============
 
 pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
@@ -33,6 +33,17 @@ pub struct AccountCreateAdvancedInput {
 }
 
 pub type AccountCreateAdvancedOutput = ComponentAddress;
+
+//=============
+// Account Create
+//=============
+
+pub const ACCOUNT_CREATE_IDENT: &str = "create";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountCreateInput {}
+
+pub type AccountCreateOutput = (ComponentAddress, Bucket);
 
 //=============
 // Account Virtual Lazy Load Functions

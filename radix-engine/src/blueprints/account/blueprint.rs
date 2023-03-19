@@ -111,13 +111,16 @@ impl AccountBlueprint {
         AccountSecurify::securify(receiver, api)
     }
 
-    pub fn create_advanced<Y>(withdraw_rule: AccessRule, mutability: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
+    pub fn create_advanced<Y>(
+        withdraw_rule: AccessRule,
+        mutability: AccessRule,
+        api: &mut Y,
+    ) -> Result<Address, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules =
-            AccountSecurify::create_advanced(withdraw_rule, mutability, api)?;
+        let access_rules = AccountSecurify::create_advanced(withdraw_rule, mutability, api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()
@@ -127,6 +130,23 @@ impl AccountBlueprint {
         let address = api.globalize(RENodeId::Object(account.id()), modules)?;
 
         Ok(address)
+    }
+
+    pub fn create<Y>(api: &mut Y) -> Result<(Address, Bucket), RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let account = Self::create_local(api)?;
+        let (access_rules, bucket) = AccountSecurify::create_securified(api)?;
+        let modules = Self::create_modules(access_rules, api)?;
+        let modules = modules
+            .into_iter()
+            .map(|(id, own)| (id, own.id()))
+            .collect();
+
+        let address = api.globalize(RENodeId::Object(account.id()), modules)?;
+
+        Ok((address, bucket))
     }
 
     pub fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
