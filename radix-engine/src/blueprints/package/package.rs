@@ -54,6 +54,19 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
         // it here again.
 
         for (expected_event_name, local_type_index) in event_schema.iter() {
+            // Checking that the event is either a struct or an enum
+            let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                Ok,
+            )?;
+            match type_kind {
+                // Structs and Enums are allowed
+                TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
+                _ => Err(PackageError::InvalidEventSchema),
+            }?;
+
             // Checking that the event name is indeed what the user claims it to be
             let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
@@ -68,19 +81,6 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
                     actual: actual_event_name.unwrap_or("<BLANK>").to_string(),
                 })?
             }
-
-            // Checking that the event is either a struct or an enum
-            let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
-                Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_index: *local_type_index,
-                }),
-                Ok,
-            )?;
-            match type_kind {
-                // Structs and Enums are allowed
-                TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
-                _ => Err(PackageError::InvalidEventSchema),
-            }?;
         }
     }
 
