@@ -265,8 +265,8 @@ impl IdentityBlueprint {
     }
 
     fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         IdentityOwnerAccessRules::securify(receiver, api)
     }

@@ -105,8 +105,8 @@ impl AccountBlueprint {
     }
 
     pub fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         AccountSecurify::securify(receiver, api)
     }

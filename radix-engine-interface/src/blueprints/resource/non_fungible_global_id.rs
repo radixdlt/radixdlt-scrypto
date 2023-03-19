@@ -1,9 +1,9 @@
-use radix_engine_common::data::scrypto::scrypto_encode;
 use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::data::scrypto::scrypto_encode;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;

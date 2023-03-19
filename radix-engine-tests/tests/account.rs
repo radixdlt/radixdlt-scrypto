@@ -1,6 +1,10 @@
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::account::{ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput};
+use radix_engine_interface::blueprints::account::{
+    AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -8,10 +12,25 @@ use transaction::model::Instruction;
 
 #[test]
 fn can_securify_virtual_account() {
+    securify_account(true, true, true);
+}
+
+#[test]
+fn cannot_securify_virtual_account_without_key() {
+    securify_account(true, false, false);
+}
+
+#[test]
+fn cannot_securify_allocated_account() {
+    securify_account(false, true, false);
+}
+
+fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let (_, _, original_account) = test_runner.new_account(true);
-    let (public_key, _, account) = test_runner.new_account(true);
+    let (key, _, account) = test_runner.new_account(is_virtual);
+
+    let (_, _, storing_account) = test_runner.new_account(true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -22,18 +41,29 @@ fn can_securify_virtual_account() {
             to_manifest_value(&AccountSecurifyInput {}).unwrap(),
         )
         .call_method(
-            original_account,
+            storing_account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+    let initial_proofs = if use_key {
+        vec![NonFungibleGlobalId::from_public_key(&key)]
+    } else {
+        vec![]
+    };
+    let receipt = test_runner.execute_manifest(manifest, initial_proofs);
 
     // Assert
-    receipt.expect_commit_success();
+    if expect_success {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+            )
+        });
+    }
 }
 
 #[test]
@@ -52,8 +82,9 @@ fn can_withdraw_from_my_virtual_account() {
     });
 }
 
-fn can_withdraw_from_my_account_internal<F>(new_account: F) where
-    F: FnOnce(&mut TestRunner) -> (EcdsaSecp256k1PublicKey, ComponentAddress)
+fn can_withdraw_from_my_account_internal<F>(new_account: F)
+where
+    F: FnOnce(&mut TestRunner) -> (EcdsaSecp256k1PublicKey, ComponentAddress),
 {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -93,7 +124,6 @@ fn can_withdraw_from_my_account_internal<F>(new_account: F) where
         transfer_amount,
     );
 }
-
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange

@@ -28,7 +28,6 @@ fn init<Y: ClientApi<RuntimeError>>(
     Ok(access_rules)
 }
 
-
 fn securify_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(
     securify_ident: &str,
     owner_token_address: ResourceAddress,
@@ -54,7 +53,6 @@ fn securify_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(
 
     Ok(bucket)
 }
-
 
 pub trait SecurifiedAccessRules {
     const OWNER_GROUP_NAME: &'static str;
@@ -127,7 +125,6 @@ pub trait SecurifiedAccessRules {
 
         Ok(access_rules)
     }
-
 
     fn securify<Y: ClientApi<RuntimeError>>(
         receiver: RENodeId,

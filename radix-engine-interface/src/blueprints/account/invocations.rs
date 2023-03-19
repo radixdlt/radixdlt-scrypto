@@ -46,8 +46,7 @@ pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT: &str = "create_virtual_ecds
 pub const ACCOUNT_SECURIFY_IDENT: &str = "securify";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountSecurifyInput {
-}
+pub struct AccountSecurifyInput {}
 
 pub type AccountSecurifyOutput = Bucket;
 
