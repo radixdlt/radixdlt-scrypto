@@ -65,7 +65,7 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
-                dependent_resources: vec![],
+                dependent_resources: vec![PACKAGE_TOKEN, PACKAGE_OWNER_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
@@ -204,6 +204,31 @@ pub fn create_genesis(
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
+                access_rules,
+                resource_address,
+            }),
+        });
+    }
+
+    // Package Owner Token
+    {
+        // TODO: Integrate this into package instantiation to remove circular depedendency
+        let mut access_rules = BTreeMap::new();
+        let local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&PACKAGE_PACKAGE).unwrap()).unwrap();
+        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = PACKAGE_OWNER_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type: NonFungibleIdType::UUID,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                metadata: btreemap!(),
                 access_rules,
                 resource_address,
             }),

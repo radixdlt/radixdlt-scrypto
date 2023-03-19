@@ -303,6 +303,16 @@ impl Executor for ScryptoExecutor {
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
             let export_name = self.fn_identifier.ident.to_string(); // TODO: Clean this up
+                                                                    // Make dependent resources/components visible
+            let handle = api.kernel_lock_substate(
+                RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::Info),
+                LockFlags::read_only(),
+            );
+            if let Ok(handle) = handle {
+                api.kernel_drop_lock(handle)?;
+            }
 
             NativeVm::invoke_native_package(
                 PACKAGE_CODE_ID,

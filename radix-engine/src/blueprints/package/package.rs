@@ -1,5 +1,5 @@
-use native_sdk::modules::access_rules::AccessRules;
 use super::PackageCodeTypeSubstate;
+use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -11,6 +11,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
@@ -18,9 +19,10 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey, Bucket};
+use radix_engine_interface::blueprints::resource::{
+    require, AccessRule, AccessRulesConfig, Bucket, FnKey,
+};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
-use crate::blueprints::util::SecurifiedAccessRules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -170,7 +172,10 @@ where
             ))
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.into();
-        node_modules.insert(NodeModuleId::AccessRules, RENodeModuleInit::MethodAccessRules(access_rules));
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::MethodAccessRules(access_rules),
+        );
     } else {
         node_modules.insert(
             NodeModuleId::AccessRules,
@@ -180,13 +185,11 @@ where
         );
     }
 
-
     let node_id = if let Some(address) = package_address {
         RENodeId::GlobalObject(PackageAddress::Normal(address).into())
     } else {
         api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
     };
-
 
     api.kernel_create_node(node_id, node_init, node_modules)?;
 
@@ -216,8 +219,10 @@ impl PackageNativePackage {
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
+                input: aggregator
+                    .add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
                 export_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             },
         );
@@ -449,8 +454,8 @@ impl PackageNativePackage {
         metadata: BTreeMap<String, String>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&schema)

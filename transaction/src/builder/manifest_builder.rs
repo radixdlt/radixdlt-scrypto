@@ -582,6 +582,24 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package with an owner badge.
+    pub fn publish_package(&mut self, code: Vec<u8>, schema: PackageSchema) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let schema = scrypto_encode(&schema).unwrap();
+        let schema_hash = hash(&schema);
+        self.blobs.insert(schema_hash, schema);
+
+        self.add_instruction(Instruction::PublishPackage {
+            code: ManifestBlobRef(code_hash.0),
+            schema: ManifestBlobRef(schema_hash.0),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
+        });
+        self
+    }
+
+    /// Publishes a package with an owner badge.
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
