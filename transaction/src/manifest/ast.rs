@@ -95,7 +95,7 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    PublishPackage {
+    PublishPackageAdvanced {
         code: Value,
         schema: Value,
         royalty_config: Value,

@@ -271,7 +271,7 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                Instruction::PublishPackage {
+                Instruction::PublishPackageAdvanced {
                     code,
                     schema,
                     royalty_config,
@@ -290,8 +290,8 @@ impl TransactionProcessorBlueprint {
                     let result = api.call_function(
                         PACKAGE_PACKAGE,
                         PACKAGE_BLUEPRINT,
-                        PACKAGE_PUBLISH_WASM_IDENT,
-                        scrypto_encode(&PackagePublishWasmInput {
+                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+                        scrypto_encode(&PackagePublishWasmAdvancedInput {
                             package_address: None,
                             code: code.clone(),
                             schema: schema.clone(),

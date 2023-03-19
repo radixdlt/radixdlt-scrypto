@@ -23,7 +23,7 @@ CALL_METHOD
     Address("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "lock_fee"
     Decimal("10");
-PUBLISH_PACKAGE
+PUBLISH_PACKAGE_ADVANCED
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     Map<String, Tuple>()

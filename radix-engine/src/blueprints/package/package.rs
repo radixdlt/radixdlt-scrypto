@@ -204,12 +204,12 @@ impl PackageNativePackage {
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
-                output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
-                export_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<PackagePublishWasmAdvancedInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackagePublishWasmAdvancedOutput>(),
+                export_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -259,7 +259,7 @@ impl PackageNativePackage {
         access_rules.insert(
             FnKey::new(
                 PACKAGE_BLUEPRINT.to_string(),
-                PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+                PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             ),
             rule!(allow_all),
         );
@@ -310,7 +310,7 @@ impl PackageNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            PACKAGE_PUBLISH_WASM_IDENT => {
+            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -318,11 +318,11 @@ impl PackageNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
+                let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
 
-                let rtn = Self::publish_wasm(
+                let rtn = Self::publish_wasm_advanced(
                     input.package_address,
                     input.code,
                     input.schema,
@@ -411,7 +411,7 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn publish_wasm<Y>(
+    pub(crate) fn publish_wasm_advanced<Y>(
         package_address: Option<[u8; 26]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,

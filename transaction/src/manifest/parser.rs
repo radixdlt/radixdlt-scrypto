@@ -162,7 +162,7 @@ impl Parser {
                 },
             },
 
-            TokenKind::PublishPackage => Instruction::PublishPackage {
+            TokenKind::PublishPackageAdvanced => Instruction::PublishPackageAdvanced {
                 code: self.parse_value()?,
                 schema: self.parse_value()?,
                 royalty_config: self.parse_value()?,

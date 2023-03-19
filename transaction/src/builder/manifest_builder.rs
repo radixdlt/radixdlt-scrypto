@@ -571,7 +571,7 @@ impl ManifestBuilder {
         let schema_hash = hash(&schema);
         self.blobs.insert(schema_hash, schema);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
             schema: ManifestBlobRef(schema_hash.0),
             royalty_config,
@@ -595,7 +595,7 @@ impl ManifestBuilder {
         let schema_hash = hash(&schema);
         self.blobs.insert(schema_hash, schema);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
             schema: ManifestBlobRef(schema_hash.0),
             royalty_config: BTreeMap::new(),

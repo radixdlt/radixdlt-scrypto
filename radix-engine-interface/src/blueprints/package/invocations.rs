@@ -9,10 +9,10 @@ use scrypto_schema::PackageSchema;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
-pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
+pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackagePublishWasmInput {
+pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub schema: PackageSchema,
@@ -21,7 +21,7 @@ pub struct PackagePublishWasmInput {
     pub access_rules: AccessRulesConfig,
 }
 
-pub type PackagePublishWasmOutput = PackageAddress;
+pub type PackagePublishWasmAdvancedOutput = PackageAddress;
 
 pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 

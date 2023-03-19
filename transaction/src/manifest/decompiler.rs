@@ -437,14 +437,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::PublishPackage {
+        Instruction::PublishPackageAdvanced {
             code,
             schema,
             royalty_config,
             metadata,
             access_rules,
         } => {
-            f.write_str("PUBLISH_PACKAGE")?;
+            f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
             format_typed_value(f, context, code)?;
             format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;

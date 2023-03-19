@@ -401,13 +401,13 @@ pub fn generate_instruction(
                 args,
             }
         }
-        ast::Instruction::PublishPackage {
+        ast::Instruction::PublishPackageAdvanced {
             code,
             schema,
             royalty_config,
             metadata,
             access_rules,
-        } => Instruction::PublishPackage {
+        } => Instruction::PublishPackageAdvanced {
             code: generate_blob(code, blobs)?,
             schema: generate_blob(schema, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
@@ -1436,8 +1436,8 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
-            Instruction::PublishPackage {
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
+            Instruction::PublishPackageAdvanced {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
                         .unwrap()

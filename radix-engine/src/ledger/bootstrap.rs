@@ -481,8 +481,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmInput {
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),

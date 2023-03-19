@@ -13,7 +13,7 @@ CALL_METHOD
     Decimal("10");
 
 # Publishing a new package and setting some of its royalty and access rules.
-PUBLISH_PACKAGE 
+PUBLISH_PACKAGE_ADVANCED
     Blob("${code_blob_hash}") 
     Blob("${schema_blob_hash}") 
     Map<String, Tuple>()       # Royalty Configuration

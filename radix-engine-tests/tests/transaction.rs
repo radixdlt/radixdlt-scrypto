@@ -119,7 +119,7 @@ fn test_non_existent_blob_hash() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .add_instruction(Instruction::PublishPackage {
+        .add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef([0; 32]),
             schema: ManifestBlobRef([0; 32]),
             royalty_config: BTreeMap::new(),
