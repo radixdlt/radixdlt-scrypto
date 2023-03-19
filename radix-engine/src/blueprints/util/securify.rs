@@ -5,8 +5,6 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
-
-
 pub enum MethodType {
     Public,
     Custom(AccessRuleEntry, AccessRuleEntry),
@@ -30,12 +28,11 @@ pub trait SecurifiedAccessRules {
 
         for (method, method_type) in Self::non_owner_methods() {
             let (access_rule, mutability) = match method_type {
-                MethodType::Public => {
-                    (AccessRuleEntry::AccessRule(AccessRule::AllowAll), AccessRuleEntry::AccessRule(AccessRule::DenyAll))
-                }
-                MethodType::Custom(access_rule, mutability) => {
-                    (access_rule, mutability)
-                }
+                MethodType::Public => (
+                    AccessRuleEntry::AccessRule(AccessRule::AllowAll),
+                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                ),
+                MethodType::Custom(access_rule, mutability) => (access_rule, mutability),
             };
 
             access_rules.set_access_rule_and_mutability(
@@ -43,7 +40,6 @@ pub trait SecurifiedAccessRules {
                 access_rule,
                 mutability,
             );
-
         }
 
         let access_rules = AccessRules::sys_new(access_rules, api)?;
@@ -80,10 +76,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let access_rules = Self::init(api)?;
-        let bucket = Self::securify_access_rules(
-            &access_rules,
-            api,
-        )?;
+        let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok((access_rules, bucket))
     }
 
@@ -149,10 +142,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
         let access_rules = AttachedAccessRules(receiver);
-        let bucket = Self::securify_access_rules(
-            &access_rules,
-            api,
-        )?;
+        let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok(bucket)
     }
 }

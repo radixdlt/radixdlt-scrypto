@@ -93,13 +93,14 @@ impl EpochManagerBlueprint {
 
         for (key, validator_init) in validator_set {
             let stake = validator_init.initial_stake.sys_amount(api)?;
-            let (address, lp_bucket, owner_token_bucket) = ValidatorCreator::create_with_initial_stake(
-                address,
-                key,
-                validator_init.initial_stake,
-                true,
-                api,
-            )?;
+            let (address, lp_bucket, owner_token_bucket) =
+                ValidatorCreator::create_with_initial_stake(
+                    address,
+                    key,
+                    validator_init.initial_stake,
+                    true,
+                    api,
+                )?;
 
             let validator = Validator { key, stake };
             validators.insert(address, validator);
@@ -300,12 +301,8 @@ impl EpochManagerBlueprint {
         let epoch_manager: &EpochManagerSubstate = api.kernel_get_substate_ref(handle)?;
         let manager = epoch_manager.address;
 
-        let owner_resman = ResourceManager(epoch_manager.validator_owner_resource);
-        let (owner_token_bucket, local_id) = owner_resman.mint_non_fungible_single_uuid((), api)?;
-        let global_id = NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
-
-        let validator_address =
-            ValidatorCreator::create(manager, key, rule!(require(global_id)), false, api)?;
+        let (validator_address, owner_token_bucket) =
+            ValidatorCreator::create(manager, key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
     }

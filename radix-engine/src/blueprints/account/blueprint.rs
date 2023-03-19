@@ -52,7 +52,6 @@ impl PresecurifiedAccessRules for SecurifiedAccount {
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
 }
 
-
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {

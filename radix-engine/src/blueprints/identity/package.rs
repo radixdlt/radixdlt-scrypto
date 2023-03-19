@@ -1,4 +1,4 @@
-use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -243,8 +243,7 @@ impl IdentityBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules =
-            SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
+        let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
 
         Self::create_object(access_rules, api)
     }
@@ -260,8 +259,7 @@ impl IdentityBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules =
-            SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
+        let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
 
         Self::create_object(access_rules, api)
     }
