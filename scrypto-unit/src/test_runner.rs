@@ -610,7 +610,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package(code, schema, royalty_config, metadata, access_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, access_rules)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);

@@ -556,7 +556,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(
+    pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,

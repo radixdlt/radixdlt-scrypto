@@ -346,7 +346,7 @@ fn test_publish_large_package() {
     ));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             PackageSchema::default(),
             BTreeMap::new(),

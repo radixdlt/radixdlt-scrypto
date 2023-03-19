@@ -15,7 +15,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),

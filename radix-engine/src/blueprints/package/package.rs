@@ -18,7 +18,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey, Bucket};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use crate::blueprints::util::SecurifiedAccessRules;
 
@@ -204,6 +204,15 @@ impl PackageNativePackage {
 
         let mut functions = BTreeMap::new();
         functions.insert(
+            PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
+                export_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
@@ -310,6 +319,28 @@ impl PackageNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            PACKAGE_PUBLISH_WASM_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::publish_wasm(
+                    input.code,
+                    input.schema,
+                    input.royalty_config,
+                    input.metadata,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
@@ -409,6 +440,66 @@ impl PackageNativePackage {
             None,
             api,
         )
+    }
+
+    pub(crate) fn publish_wasm<Y>(
+        code: Vec<u8>,
+        schema: PackageSchema,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+        api: &mut Y,
+    ) -> Result<(PackageAddress, Bucket), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // Validate schema
+        validate_package_schema(&schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+
+        // Validate WASM
+        WasmValidator::default()
+            .validate(&code, &schema)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidWasm(e),
+                ))
+            })?;
+
+        // Build node init
+        let info = PackageInfoSubstate {
+            schema,
+            dependent_resources: BTreeSet::new(),
+            dependent_components: BTreeSet::new(),
+        };
+
+        let code_type = PackageCodeTypeSubstate::Wasm;
+        let code = PackageCodeSubstate { code };
+        let royalty = PackageRoyaltySubstate {
+            royalty_vault: None,
+            blueprint_royalty_configs: royalty_config,
+        };
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: BTreeMap::new(),
+            default_auth: AccessRule::AllowAll,
+        };
+
+        let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
+
+        let address = globalize_package(
+            package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
+            metadata,
+            Some(access_rules),
+            api,
+        )?;
+
+        Ok((address, bucket))
     }
 
     pub(crate) fn publish_wasm_advanced<Y>(
