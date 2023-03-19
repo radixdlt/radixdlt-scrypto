@@ -529,8 +529,7 @@ ASSERT_ACCESS_RULE
             vec![],
             r##"
 CREATE_ACCOUNT_ADVANCED
-    Enum(0u8)
-    Enum(0u8);
+    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_ACCOUNT;
 "##,
         );
@@ -547,8 +546,7 @@ CREATE_ACCOUNT;
             vec![],
             r##"
 CREATE_IDENTITY_ADVANCED
-    Enum(0u8)
-    Enum(0u8);
+    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_IDENTITY;
 "##,
         );

@@ -37,7 +37,9 @@ pub trait SecurifiedAccessRules {
         }
     }
 
-    fn init_securified_rules<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
+    fn init_securified_rules<Y: ClientApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<AccessRules, RuntimeError> {
         let mut access_rules = AccessRulesConfig::new();
         access_rules = access_rules.default(
             AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
@@ -49,19 +51,9 @@ pub trait SecurifiedAccessRules {
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        access_rule: AccessRule,
-        mutability: AccessRule,
+        mut access_rules_config: AccessRulesConfig,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut access_rules_config = AccessRulesConfig::new().default(
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-        );
-        access_rules_config.set_group_access_rule_and_mutability(
-            Self::OWNER_GROUP_NAME,
-            access_rule,
-            mutability,
-        );
         Self::set_non_owner_rules(&mut access_rules_config);
         let access_rules = AccessRules::sys_new(access_rules_config, api)?;
 

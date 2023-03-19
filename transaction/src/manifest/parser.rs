@@ -254,16 +254,14 @@ impl Parser {
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {},
             TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
-                access_rule: self.parse_value()?,
-                mutability: self.parse_value()?,
+                config: self.parse_value()?,
             },
             TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
                 access_rule: self.parse_value()?,
             },
             TokenKind::CreateAccount => Instruction::CreateAccount {},
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {
-                access_rule: self.parse_value()?,
-                mutability: self.parse_value()?,
+                config: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));

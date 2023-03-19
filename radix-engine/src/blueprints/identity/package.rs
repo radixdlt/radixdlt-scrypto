@@ -110,8 +110,7 @@ impl IdentityNativePackage {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
 
-                let rtn =
-                    IdentityBlueprint::create_advanced(input.access_rule, input.mutability, api)?;
+                let rtn = IdentityBlueprint::create_advanced(input.config, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -200,14 +199,13 @@ pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y>(
-        access_rule: AccessRule,
-        mutability: AccessRule,
+        config: AccessRulesConfig,
         api: &mut Y,
     ) -> Result<Address, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedIdentity::create_advanced(access_rule, mutability, api)?;
+        let access_rules = SecurifiedIdentity::create_advanced(config, api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
         let modules = modules

@@ -375,15 +375,12 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity_advanced(&mut self, access_rule: AccessRule) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateAdvancedInput {
-                access_rule: access_rule.clone(),
-                mutability: access_rule.clone(),
-            }),
+            args: to_manifest_value(&IdentityCreateAdvancedInput { config }),
         });
         self
     }
@@ -776,19 +773,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(
-        &mut self,
-        access_rule: AccessRule,
-        mutability: AccessRule,
-    ) -> &mut Self {
+    pub fn new_account_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput {
-                access_rule,
-                mutability,
-            }),
+            args: to_manifest_value(&AccountCreateAdvancedInput { config }),
         })
         .0
     }

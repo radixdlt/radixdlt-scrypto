@@ -8,7 +8,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Proof};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
@@ -118,15 +118,14 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        withdraw_rule: AccessRule,
-        mutability: AccessRule,
+        config: AccessRulesConfig,
         api: &mut Y,
     ) -> Result<Address, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(withdraw_rule, mutability, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(config, api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()

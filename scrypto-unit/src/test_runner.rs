@@ -436,8 +436,10 @@ impl TestRunner {
         withdraw_auth: AccessRule,
         mutability: AccessRule,
     ) -> ComponentAddress {
+        let access_rules_config = AccessRulesConfig::new().default(withdraw_auth, mutability);
+
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(withdraw_auth, mutability)
+            .new_account_advanced(access_rules_config)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -548,9 +550,11 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
+            let config = AccessRulesConfig::new()
+                .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 10.into())
-                .create_identity_advanced(rule!(require(owner_id)))
+                .create_identity_advanced(config)
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();

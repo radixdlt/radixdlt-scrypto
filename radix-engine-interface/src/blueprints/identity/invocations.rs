@@ -11,8 +11,7 @@ pub const IDENTITY_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct IdentityCreateAdvancedInput {
-    pub access_rule: AccessRule,
-    pub mutability: AccessRule,
+    pub config: AccessRulesConfig,
 }
 
 pub type IdentityCreateAdvancedOutput = ComponentAddress;

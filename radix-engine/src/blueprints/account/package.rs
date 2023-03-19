@@ -274,8 +274,7 @@ impl AccountNativePackage {
                 let input: AccountCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn =
-                    AccountBlueprint::create_advanced(input.access_rule, input.mutability, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.config, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

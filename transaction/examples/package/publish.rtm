@@ -18,7 +18,7 @@ PUBLISH_PACKAGE
     Blob("${schema_blob_hash}") 
     Map<String, Tuple>()       # Royalty Configuration
     Map<String, String>()      # Metadata 
-    Tuple(                     # Access Rules Struct
+    Tuple(                     # Access Rules Config Struct
         Map<Tuple, Enum>(       # Method auth Field
             Tuple(
                 Enum("NodeModuleId::SELF"),

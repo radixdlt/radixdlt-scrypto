@@ -206,10 +206,14 @@ impl AccessRulesConfig {
         mutability: AccessRule,
     ) {
         self.grouped_auth.insert(group_key.to_string(), access_rule);
-        self.grouped_auth_mutability.insert(group_key.to_string(), mutability);
+        self.grouped_auth_mutability
+            .insert(group_key.to_string(), mutability);
     }
 
-    pub fn set_method_access_rule_and_mutability<A: Into<AccessRuleEntry>, M: Into<AccessRuleEntry>>(
+    pub fn set_method_access_rule_and_mutability<
+        A: Into<AccessRuleEntry>,
+        M: Into<AccessRuleEntry>,
+    >(
         &mut self,
         key: MethodKey,
         access_rule: A,

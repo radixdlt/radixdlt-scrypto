@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, FungibleResourceManagerCreateInput,
+    AccessRulesConfig, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -619,22 +619,13 @@ pub fn generate_instruction(
             function_name: IDENTITY_CREATE_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateInput {}),
         },
-        ast::Instruction::CreateIdentityAdvanced {
-            access_rule,
-            mutability,
-        } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentityAdvanced { config } => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateAdvancedInput {
-                access_rule: generate_typed_value::<AccessRule>(
-                    access_rule,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
-                mutability: generate_typed_value::<AccessRule>(
-                    mutability,
+                config: generate_typed_value::<AccessRulesConfig>(
+                    config,
                     resolver,
                     bech32_decoder,
                     blobs,
@@ -648,16 +639,12 @@ pub fn generate_instruction(
             function_name: ACCOUNT_CREATE_IDENT.to_string(),
             args: to_manifest_value(&AccountCreateInput {}),
         },
-        ast::Instruction::CreateAccountAdvanced {
-            access_rule,
-            mutability,
-        } => Instruction::CallFunction {
+        ast::Instruction::CreateAccountAdvanced { config } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&AccountCreateAdvancedInput {
-                access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
-                mutability: generate_typed_value(mutability, resolver, bech32_decoder, blobs)?,
+                config: generate_typed_value(config, resolver, bech32_decoder, blobs)?,
             }),
         },
     })

@@ -204,8 +204,7 @@ pub enum Instruction {
 
     CreateIdentity {},
     CreateIdentityAdvanced {
-        access_rule: Value,
-        mutability: Value,
+        config: Value,
     },
 
     AssertAccessRule {
@@ -214,8 +213,7 @@ pub enum Instruction {
 
     CreateAccount {},
     CreateAccountAdvanced {
-        access_rule: Value,
-        mutability: Value,
+        config: Value,
     },
 }
 
