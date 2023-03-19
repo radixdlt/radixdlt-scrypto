@@ -157,6 +157,7 @@ fn test_basic_package_missing_export() {
                     export_name: "not_exist".to_string(),
                 }
             ),
+            event_schema: [].into(),
         },
     );
     // Act

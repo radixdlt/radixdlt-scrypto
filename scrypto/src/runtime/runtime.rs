@@ -7,12 +7,12 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeExtension};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
+use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::*;
-use sbor::generate_full_schema_from_single_type;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -96,19 +96,9 @@ impl Runtime {
     }
 
     /// Emits an application event
-    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(event: T) {
-        // TODO: Simplify once ScryptoEvent trait is implemented
-        let event_name = {
-            let (local_type_index, schema) =
-                generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            schema
-                .resolve_type_metadata(local_type_index)
-                .expect("Cant fail")
-                .get_name_string()
-                .expect("Event must have name to be emitted")
-        };
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv
-            .emit_event(event_name, scrypto_encode(&event).unwrap())
+            .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
             .unwrap();
     }
 }

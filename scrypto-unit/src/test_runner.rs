@@ -1104,26 +1104,26 @@ impl TestRunner {
     }
 
     pub fn event_schema(
-        &mut self,
+        &self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, blueprint_name, event_name) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+        let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
-                        event_name.clone(),
+                        local_type_index.clone(),
                     ),
                     NodeModuleId::ComponentRoyalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
-                        event_name.clone(),
+                        local_type_index.clone(),
                     ),
                     NodeModuleId::Metadata => (
                         METADATA_PACKAGE,
                         METADATA_BLUEPRINT.into(),
-                        event_name.clone(),
+                        local_type_index.clone(),
                     ),
                     NodeModuleId::SELF => {
                         let type_info = self
@@ -1143,7 +1143,7 @@ impl TestRunner {
                                 package_address,
                                 blueprint_name,
                                 ..
-                            } => (package_address, blueprint_name, event_name.clone()),
+                            } => (package_address, blueprint_name, *local_type_index),
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
@@ -1152,14 +1152,17 @@ impl TestRunner {
                     }
                 }
             }
-            EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), event_name) => {
+            EventTypeIdentifier(
+                Emitter::Function(node_id, _, blueprint_name),
+                local_type_index,
+            ) => {
                 let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
                     panic!("must be a package address")
                 };
                 (
                     *package_address,
                     blueprint_name.to_owned(),
-                    event_name.clone(),
+                    local_type_index.clone(),
                 )
             }
         };
@@ -1167,24 +1170,48 @@ impl TestRunner {
         let substate_id = SubstateId(
             RENodeId::GlobalObject(Address::Package(package_address)),
             NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::EventSchema),
+            SubstateOffset::Package(PackageOffset::Info),
         );
-        self.substate_store()
-            .get_substate(&substate_id)
-            .unwrap()
-            .substate
-            .event_schema()
-            .clone()
-            .0
-            .get(&blueprint_name)
-            .unwrap()
-            .get(&event_name)
-            .unwrap()
-            .clone()
+        (
+            local_type_index,
+            self.substate_store()
+                .get_substate(&substate_id)
+                .unwrap()
+                .substate
+                .package_info()
+                .schema
+                .blueprints
+                .get(&blueprint_name)
+                .unwrap()
+                .schema
+                .clone(),
+        )
     }
 
-    pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
-        event_type_identifier.1.clone()
+    pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
+        let (local_type_index, schema) = self.event_schema(event_type_identifier);
+        schema
+            .resolve_type_metadata(local_type_index)
+            .unwrap()
+            .get_name_string()
+            .unwrap()
+    }
+
+    pub fn is_event_name_equal<T: ScryptoDescribe>(
+        &self,
+        event_type_identifier: &EventTypeIdentifier,
+    ) -> bool {
+        let expected_type_name = {
+            let (local_type_index, schema) =
+                sbor::generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
+            schema
+                .resolve_type_metadata(local_type_index)
+                .unwrap()
+                .get_name_string()
+                .unwrap()
+        };
+        let actual_type_name = self.event_name(event_type_identifier);
+        expected_type_name == actual_type_name
     }
 }
 
@@ -1295,6 +1322,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                     export_name: format!("{}_{}", blueprint_name, function_name),
                 }
             ),
+            event_schema: [].into(),
         },
     );
     package_schema

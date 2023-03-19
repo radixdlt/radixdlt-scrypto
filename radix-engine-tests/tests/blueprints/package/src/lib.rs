@@ -44,6 +44,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         schema: generate_full_schema(aggregator),
         substates,
         functions,
+        event_schema: [].into(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(
@@ -72,6 +73,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         schema: generate_full_schema(aggregator),
         substates,
         functions,
+        event_schema: [].into(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(
@@ -101,6 +103,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         schema: generate_full_schema(aggregator),
         substates,
         functions,
+        event_schema: [].into(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(

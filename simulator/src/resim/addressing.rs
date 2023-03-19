@@ -206,7 +206,7 @@ impl FromStr for SimulatorResourceOrNonFungibleGlobalId {
     type Err = ParseSimulatorResourceOrNonFungibleGlobalIdError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
-        if address.contains(":") {
+        if address.contains(':') {
             SimulatorNonFungibleGlobalId::from_str(address)
                 .map_err(ParseSimulatorResourceOrNonFungibleGlobalIdError::from)
                 .map(Self::NonFungibleGlobalId)

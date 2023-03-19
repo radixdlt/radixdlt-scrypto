@@ -24,6 +24,7 @@ pub mod prelude {
     // And some extra useful additions we use a lot:
     pub use super::borrow::Cow;
     pub use super::collections::*;
+    pub use super::fmt;
     pub use super::fmt::{Debug, Display};
     pub use super::format;
     pub use super::marker::PhantomData;
