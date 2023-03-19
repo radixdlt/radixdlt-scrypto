@@ -77,8 +77,11 @@ impl IdAllocator {
             RENodeType::GlobalValidator => self
                 .new_validator_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalResourceManager => self
-                .new_resource_address()
+            RENodeType::GlobalFungibleResourceManager => self
+                .new_fungible_resource_address()
+                .map(|address| RENodeId::GlobalObject(address.into())),
+            RENodeType::GlobalNonFungibleResourceManager => self
+                .new_non_fungible_resource_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalAccount => self
                 .new_account_address()
@@ -201,12 +204,18 @@ impl IdAllocator {
         ))
     }
 
-    /// Creates a new resource address.
-    pub fn new_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
+    pub fn new_non_fungible_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        let next_id = self.next_entity_id(EntityType::Resource)?;
+        let next_id = self.next_entity_id(EntityType::NonFungibleResource)?;
         data.extend(next_id.to_le_bytes());
-        Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
+        Ok(ResourceAddress::NonFungible(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_fungible_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        let next_id = self.next_entity_id(EntityType::FungibleResource)?;
+        data.extend(next_id.to_le_bytes());
+        Ok(ResourceAddress::Fungible(hash(data).lower_26_bytes()))
     }
 
     pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {

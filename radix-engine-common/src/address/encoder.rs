@@ -100,7 +100,8 @@ impl Bech32Encoder {
         resource_address: &ResourceAddress,
     ) -> Result<(), AddressError> {
         match resource_address {
-            ResourceAddress::Normal(data) => {
+            ResourceAddress::Fungible(data)
+            | ResourceAddress::NonFungible(data) => {
                 self.encode_to_fmt(fmt, EntityType::resource(resource_address), data)
             }
         }
