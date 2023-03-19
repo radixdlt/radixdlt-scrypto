@@ -276,13 +276,12 @@ impl QemuPluginInterfaceCalibrator {
         println!("child out: {:?}\navg: {}", cal_data_child, child_out);
         println!("parent out: {:?}\navg: {}", cal_data_parent, parent_out);
 
-        //self.output_data.clear();
-
-        println!("QemuPlugin counter offset self: {} instructions, parent for each child: {}", child_out, parent_out - child_out);
+        println!("QemuPlugin counter offset self: {} instructions, parent for each child: {}", child_out, parent_out - child_out + child_out / 3);
 
         QEMU_PLUGIN.with(|v| {
             v.borrow_mut().counter_offset = child_out;
-            v.borrow_mut().counter_offset_parent = parent_out - child_out;
+            v.borrow_mut().counter_offset_parent = parent_out - child_out + child_out / 3;
+            v.borrow_mut().output_data.clear();
         });
     }
 
