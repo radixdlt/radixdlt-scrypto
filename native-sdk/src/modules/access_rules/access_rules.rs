@@ -58,7 +58,7 @@ pub trait AccessRulesObject {
         &self,
         key: MethodKey,
         rule: AccessRuleEntry,
-        mutability: AccessRule,
+        mutability: AccessRuleEntry,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();

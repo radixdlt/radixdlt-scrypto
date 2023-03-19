@@ -27,24 +27,24 @@ fn build_access_rules(
         .unwrap_or((DenyAll, rule!(deny_all)));
 
     let mut resman_access_rules = AccessRulesConfig::new();
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
         AllowAll,
         DenyAll,
     );
     resman_access_rules.set_group_access_rule_and_mutability(
-        "mint".to_string(),
+        "mint",
         mint_access_rule,
         mint_mutability,
     );
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
-        "mint".to_string(),
+        "mint",
         DenyAll,
     );
     resman_access_rules.set_group_and_mutability(
@@ -52,7 +52,7 @@ fn build_access_rules(
             NodeModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
         ),
-        "mint".to_string(),
+        "mint",
         DenyAll,
     );
     resman_access_rules.set_group_and_mutability(
@@ -60,21 +60,21 @@ fn build_access_rules(
             NodeModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
         ),
-        "mint".to_string(),
+        "mint",
         DenyAll,
     );
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
-        "mint".to_string(),
+        "mint",
         DenyAll,
     );
 
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
         burn_access_rule,
         burn_mutability,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
@@ -82,27 +82,27 @@ fn build_access_rules(
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_CREATE_BUCKET_IDENT),
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT),
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT),
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_CREATE_VAULT_IDENT),
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
@@ -110,7 +110,7 @@ fn build_access_rules(
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
@@ -131,82 +131,82 @@ fn build_access_rules(
 
     let mut vault_access_rules = AccessRulesConfig::new();
     vault_access_rules.set_group_access_rule_and_mutability(
-        "withdraw".to_string(),
+        "withdraw",
         withdraw_access_rule,
         withdraw_mutability,
     );
     vault_access_rules.set_group_access_rule_and_mutability(
-        "recall".to_string(),
+        "recall",
         recall_access_rule,
         recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT),
-        "withdraw".to_string(),
+        "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_NON_FUNGIBLES_IDENT),
-        "withdraw".to_string(),
+        "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT),
-        "withdraw".to_string(),
+        "withdraw",
         DenyAll,
     );
 
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
         deposit_access_rule,
         deposit_mutability,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_GET_RESOURCE_ADDRESS_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_BY_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_BY_IDS_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_NON_FUNGIBLES_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_UNLOCK_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
-    vault_access_rules.set_access_rule_and_mutability(
+    vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_UNLOCK_NON_FUNGIBLES_IDENT),
         AllowAll,
         DenyAll,

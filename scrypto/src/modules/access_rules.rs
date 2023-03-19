@@ -64,7 +64,7 @@ impl AttachedAccessRules {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     key: MethodKey::new(NodeModuleId::SELF, method_name),
-                    mutability: AccessRule::DenyAll,
+                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
             )

@@ -19,13 +19,7 @@ pub trait SecurifiedAccessRules {
         vec![]
     }
 
-    fn init<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules = access_rules.default(
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-        );
-
+    fn set_non_owner_rules(access_rules_config: &mut AccessRulesConfig) {
         for (method, method_type) in Self::non_owner_methods() {
             let (access_rule, mutability) = match method_type {
                 MethodType::Public => (
@@ -35,13 +29,21 @@ pub trait SecurifiedAccessRules {
                 MethodType::Custom(access_rule, mutability) => (access_rule, mutability),
             };
 
-            access_rules.set_access_rule_and_mutability(
+            access_rules_config.set_method_access_rule_and_mutability(
                 MethodKey::new(NodeModuleId::SELF, method),
                 access_rule,
                 mutability,
             );
         }
+    }
 
+    fn init_securified_rules<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
+        let mut access_rules = AccessRulesConfig::new();
+        access_rules = access_rules.default(
+            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+        );
+        Self::set_non_owner_rules(&mut access_rules);
         let access_rules = AccessRules::sys_new(access_rules, api)?;
         Ok(access_rules)
     }
@@ -51,23 +53,26 @@ pub trait SecurifiedAccessRules {
         mutability: AccessRule,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let access_rules = Self::init(api)?;
+        let mut access_rules_config = AccessRulesConfig::new().default(
+            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+        );
+        access_rules_config.set_group_access_rule_and_mutability(
+            Self::OWNER_GROUP_NAME,
+            access_rule,
+            mutability,
+        );
+        Self::set_non_owner_rules(&mut access_rules_config);
+        let access_rules = AccessRules::sys_new(access_rules_config, api)?;
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
                 MethodKey::new(NodeModuleId::SELF, securify_ident),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                AccessRule::DenyAll,
+                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 api,
             )?;
         }
-
-        access_rules.set_group_access_rule_and_mutability(
-            Self::OWNER_GROUP_NAME,
-            access_rule,
-            mutability,
-            api,
-        )?;
 
         Ok(access_rules)
     }
@@ -75,7 +80,7 @@ pub trait SecurifiedAccessRules {
     fn create_securified<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
-        let access_rules = Self::init(api)?;
+        let access_rules = Self::init_securified_rules(api)?;
         let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok((access_rules, bucket))
     }
@@ -90,7 +95,7 @@ pub trait SecurifiedAccessRules {
             access_rules.set_method_access_rule_and_mutability(
                 MethodKey::new(NodeModuleId::SELF, securify_ident),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                AccessRule::DenyAll,
+                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 api,
             )?;
         }
@@ -113,7 +118,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let access_rules = Self::init(api)?;
+        let access_rules = Self::init_securified_rules(api)?;
 
         let package_id = NonFungibleGlobalId::package_actor(Self::PACKAGE);
         let this_package_rule = rule!(require(package_id));
@@ -123,7 +128,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             access_rules.set_method_access_rule_and_mutability(
                 MethodKey::new(NodeModuleId::SELF, securify_ident),
                 AccessRuleEntry::AccessRule(access_rule.clone()),
-                this_package_rule.clone(),
+                AccessRuleEntry::AccessRule(this_package_rule.clone()),
                 api,
             )?;
         }

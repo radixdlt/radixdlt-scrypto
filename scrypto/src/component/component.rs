@@ -116,17 +116,17 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress {
         let mut access_rules_config =
             AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        access_rules_config.set_access_rule_and_mutability(
+        access_rules_config.set_method_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
             AccessRule::AllowAll,
             rule!(require(owner_badge.clone())),
         );
-        access_rules_config.set_access_rule_and_mutability(
+        access_rules_config.set_method_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules_config.set_access_rule_and_mutability(
+        access_rules_config.set_method_access_rule_and_mutability(
             MethodKey::new(
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
@@ -134,7 +134,7 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules_config.set_access_rule_and_mutability(
+        access_rules_config.set_method_access_rule_and_mutability(
             MethodKey::new(
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,

@@ -201,15 +201,15 @@ impl AccessRulesConfig {
 
     pub fn set_group_access_rule_and_mutability(
         &mut self,
-        group_key: String,
+        group_key: &str,
         access_rule: AccessRule,
         mutability: AccessRule,
     ) {
-        self.grouped_auth.insert(group_key.clone(), access_rule);
-        self.grouped_auth_mutability.insert(group_key, mutability);
+        self.grouped_auth.insert(group_key.to_string(), access_rule);
+        self.grouped_auth_mutability.insert(group_key.to_string(), mutability);
     }
 
-    pub fn set_access_rule_and_mutability<A: Into<AccessRuleEntry>, M: Into<AccessRuleEntry>>(
+    pub fn set_method_access_rule_and_mutability<A: Into<AccessRuleEntry>, M: Into<AccessRuleEntry>>(
         &mut self,
         key: MethodKey,
         access_rule: A,
@@ -222,11 +222,11 @@ impl AccessRulesConfig {
     pub fn set_group_and_mutability<M: Into<AccessRuleEntry>>(
         &mut self,
         key: MethodKey,
-        group: String,
+        group: &str,
         mutability: M,
     ) {
         self.method_auth
-            .insert(key.clone(), AccessRuleEntry::Group(group));
+            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
         self.method_auth_mutability.insert(key, mutability.into());
     }
 
@@ -251,22 +251,22 @@ pub fn package_access_rules_from_owner_badge(
         AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         AccessRule::DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
+    access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_access_rule_and_mutability(
+    access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_access_rule_and_mutability(
+    access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_access_rule_and_mutability(
+    access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, PACKAGE_CLAIM_ROYALTY_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
