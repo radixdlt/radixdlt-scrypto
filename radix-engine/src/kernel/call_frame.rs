@@ -15,26 +15,26 @@ use super::track::{Track, TrackError};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
     pub nodes_to_move: Vec<RENodeId>,
-    pub node_refs_to_copy: HashSet<RENodeId>,
+    pub node_refs_to_copy: BTreeSet<RENodeId>,
 }
 
 impl CallFrameUpdate {
     pub fn empty() -> Self {
         CallFrameUpdate {
             nodes_to_move: Vec::new(),
-            node_refs_to_copy: HashSet::new(),
+            node_refs_to_copy: BTreeSet::new(),
         }
     }
 
     pub fn move_node(node_id: RENodeId) -> Self {
         CallFrameUpdate {
             nodes_to_move: vec![node_id],
-            node_refs_to_copy: HashSet::new(),
+            node_refs_to_copy: BTreeSet::new(),
         }
     }
 
     pub fn copy_ref(node_id: RENodeId) -> Self {
-        let mut node_refs_to_copy = HashSet::new();
+        let mut node_refs_to_copy = BTreeSet::new();
         node_refs_to_copy.insert(node_id);
         CallFrameUpdate {
             nodes_to_move: vec![],
@@ -65,7 +65,7 @@ pub struct SubstateLock {
     pub node_id: RENodeId,
     pub module_id: NodeModuleId,
     pub offset: SubstateOffset,
-    pub temp_references: HashSet<RENodeId>,
+    pub temp_references: BTreeSet<RENodeId>,
     pub substate_owned_nodes: Vec<RENodeId>,
     pub flags: LockFlags,
 }
@@ -96,17 +96,17 @@ pub struct CallFrame {
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
     /// - Global node refs obtained through substate locking.
-    immortal_node_refs: HashMap<RENodeId, RENodeRefData>,
+    immortal_node_refs: BTreeMap<RENodeId, RENodeRefData>,
 
     /// Node refs obtained through substate locking, which will be dropped upon unlocking.
-    temp_node_refs: HashMap<RENodeId, u32>,
+    temp_node_refs: BTreeMap<RENodeId, u32>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
-    owned_root_nodes: HashMap<RENodeId, u32>,
+    owned_root_nodes: BTreeMap<RENodeId, u32>,
 
     next_lock_handle: LockHandle,
-    locks: HashMap<LockHandle, SubstateLock>,
+    locks: BTreeMap<LockHandle, SubstateLock>,
 }
 
 impl CallFrame {
@@ -139,7 +139,7 @@ impl CallFrame {
         let (references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
         // Expand references
-        let mut temp_references = HashSet::new();
+        let mut temp_references = BTreeSet::new();
         for node_id in references {
             // TODO: fix this ugly condition
             if matches!(node_id, RENodeId::GlobalObject(_)) {
@@ -319,11 +319,11 @@ impl CallFrame {
         let mut frame = Self {
             depth: 0,
             actor: None,
-            immortal_node_refs: HashMap::new(),
-            temp_node_refs: HashMap::new(),
-            owned_root_nodes: HashMap::new(),
+            immortal_node_refs: BTreeMap::new(),
+            temp_node_refs: BTreeMap::new(),
+            owned_root_nodes: BTreeMap::new(),
             next_lock_handle: 0u32,
-            locks: HashMap::new(),
+            locks: BTreeMap::new(),
         };
 
         // Add well-known global refs to current frame
@@ -368,8 +368,8 @@ impl CallFrame {
         actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
-        let mut owned_heap_nodes = HashMap::new();
-        let mut next_node_refs = HashMap::new();
+        let mut owned_heap_nodes = BTreeMap::new();
+        let mut next_node_refs = BTreeMap::new();
 
         for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(node_id)?;
@@ -385,10 +385,10 @@ impl CallFrame {
             depth: parent.depth + 1,
             actor: Some(actor),
             immortal_node_refs: next_node_refs,
-            temp_node_refs: HashMap::new(),
+            temp_node_refs: BTreeMap::new(),
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
-            locks: HashMap::new(),
+            locks: BTreeMap::new(),
         };
 
         Ok(frame)

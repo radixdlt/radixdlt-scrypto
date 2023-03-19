@@ -14,7 +14,7 @@ use utils::ContextualDisplay;
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    references: HashSet<RENodeId>,
+    references: BTreeSet<RENodeId>,
     owned_nodes: Vec<RENodeId>,
     scrypto_value: RefCell<Option<ScryptoValue>>,
 }
@@ -27,7 +27,7 @@ impl IndexedScryptoValue {
             Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let mut references = HashSet::<RENodeId>::new();
+        let mut references = BTreeSet::<RENodeId>::new();
         let mut owned_nodes = Vec::<RENodeId>::new();
         loop {
             let event = traverser.next_event();
@@ -128,7 +128,7 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn references(&self) -> &HashSet<RENodeId> {
+    pub fn references(&self) -> &BTreeSet<RENodeId> {
         &self.references
     }
 
@@ -136,7 +136,7 @@ impl IndexedScryptoValue {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, HashSet<RENodeId>) {
+    pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, BTreeSet<RENodeId>) {
         (self.bytes, self.owned_nodes, self.references)
     }
 }
@@ -170,14 +170,14 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
 }
 
 pub struct ScryptoValueVisitor {
-    pub references: HashSet<RENodeId>,
+    pub references: BTreeSet<RENodeId>,
     pub owned_nodes: Vec<RENodeId>,
 }
 
 impl ScryptoValueVisitor {
     pub fn new() -> Self {
         Self {
-            references: HashSet::new(),
+            references: BTreeSet::new(),
             owned_nodes: Vec::new(),
         }
     }

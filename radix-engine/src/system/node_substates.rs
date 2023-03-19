@@ -1308,7 +1308,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (BTreeSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {
                 let nodes = worktop
@@ -1316,39 +1316,39 @@ impl<'a> SubstateRef<'a> {
                     .values()
                     .map(|o| RENodeId::Object(o.bucket_id()))
                     .collect();
-                (HashSet::new(), nodes)
+                (BTreeSet::new(), nodes)
             }
             SubstateRef::VaultInfo(vault) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 references.insert(RENodeId::GlobalObject(vault.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::ProofInfo(proof) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 references.insert(RENodeId::GlobalObject(proof.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::FungibleProof(proof) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 for r in proof.evidence.keys() {
                     references.insert(r.to_re_node_id());
                 }
                 (references, Vec::new())
             }
             SubstateRef::NonFungibleProof(proof) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 for r in proof.evidence.keys() {
                     references.insert(r.to_re_node_id());
                 }
                 (references, Vec::new())
             }
             SubstateRef::BucketInfo(bucket) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 references.insert(RENodeId::GlobalObject(bucket.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 for component_ref in &substate.dependent_components {
                     references.insert(RENodeId::GlobalObject(component_ref.clone().into()));
                 }
@@ -1362,10 +1362,10 @@ impl<'a> SubstateRef<'a> {
                 if let Some(vault) = substate.royalty_vault {
                     owns.push(RENodeId::Object(vault.id()));
                 }
-                (HashSet::new(), owns)
+                (BTreeSet::new(), owns)
             }
             SubstateRef::TypeInfo(substate) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 match substate {
                     TypeInfoSubstate::Object {
                         package_address, ..
@@ -1376,15 +1376,15 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
-            SubstateRef::FungibleResourceManager(..) => (HashSet::new(), Vec::new()),
+            SubstateRef::FungibleResourceManager(..) => (BTreeSet::new(), Vec::new()),
             SubstateRef::NonFungibleResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();
                 owned_nodes.push(RENodeId::KeyValueStore(substate.non_fungible_table));
 
-                (HashSet::new(), owned_nodes)
+                (BTreeSet::new(), owned_nodes)
             }
             SubstateRef::Validator(substate) => {
-                let mut references = HashSet::new();
+                let mut references = BTreeSet::new();
                 let mut owned_nodes = Vec::new();
                 references.insert(RENodeId::GlobalObject(substate.manager.into()));
                 references.insert(RENodeId::GlobalObject(substate.address.into()));
@@ -1401,7 +1401,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = Vec::new();
                 owned_nodes.push(RENodeId::Object(substate.controlled_asset));
-                (HashSet::new(), owned_nodes)
+                (BTreeSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
                 let (_, owns, refs) =
@@ -1413,7 +1413,7 @@ impl<'a> SubstateRef<'a> {
                 if let Some(vault) = substate.royalty_vault {
                     owned_nodes.push(RENodeId::Object(vault.vault_id()));
                 }
-                (HashSet::new(), owned_nodes)
+                (BTreeSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 if let Some(substate) = substate {
@@ -1421,7 +1421,7 @@ impl<'a> SubstateRef<'a> {
                         IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
                     (refs, own)
                 } else {
-                    (HashSet::new(), Vec::new())
+                    (BTreeSet::new(), Vec::new())
                 }
             }
             SubstateRef::Account(substate) => {
@@ -1429,16 +1429,16 @@ impl<'a> SubstateRef<'a> {
                 owned_nodes.push(RENodeId::KeyValueStore(
                     substate.vaults.key_value_store_id(),
                 ));
-                (HashSet::new(), owned_nodes)
+                (BTreeSet::new(), owned_nodes)
             }
             SubstateRef::AuthZoneStack(substate) => {
                 let mut owned_nodes = Vec::new();
                 for p in substate.all_proofs() {
                     owned_nodes.push(RENodeId::Object(p.0));
                 }
-                (HashSet::new(), owned_nodes)
+                (BTreeSet::new(), owned_nodes)
             }
-            _ => (HashSet::new(), Vec::new()),
+            _ => (BTreeSet::new(), Vec::new()),
         }
     }
 }
