@@ -57,3 +57,4 @@ alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
+dump_manifest_to_file = ["transaction/dump_manifest_to_file"]

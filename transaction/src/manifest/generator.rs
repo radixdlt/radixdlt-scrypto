@@ -379,7 +379,7 @@ pub fn generate_instruction(
                 package_address,
                 blueprint_name,
                 function_name,
-                args: to_manifest_value(&args).unwrap(),
+                args: to_manifest_value(&args),
             }
         }
         ast::Instruction::CallMethod {
@@ -500,8 +500,7 @@ pub fn generate_instruction(
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -515,8 +514,7 @@ pub fn generate_instruction(
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateFungibleResourceWithInitialSupply {
             divisibility,
@@ -532,8 +530,7 @@ pub fn generate_instruction(
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
                 initial_supply: generate_decimal(initial_supply)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateNonFungibleResource {
             id_type,
@@ -549,8 +546,7 @@ pub fn generate_instruction(
                 non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateNonFungibleResourceWithInitialSupply {
             id_type,
@@ -586,8 +582,7 @@ pub fn generate_instruction(
                         blobs,
                     )?,
                 },
-            )
-            .unwrap(),
+            ),
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
@@ -627,8 +622,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
@@ -641,8 +635,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
     })
 }
@@ -1478,8 +1471,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1510,14 +1502,13 @@ mod tests {
                         ]),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
-                            (
-                                to_manifest_value(&(String::from("Hello World"), dec!("12")))
-                                    .unwrap(),
-                            ),
+                            (to_manifest_value(&(
+                                String::from("Hello World"),
+                                dec!("12")
+                            )),),
                         )]),
                     }
-                )
-                .unwrap(),
+                ),
             },
         );
     }
@@ -1543,8 +1534,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1573,7 +1563,6 @@ mod tests {
                     ]),
                     initial_supply: "500".parse().unwrap()
                 })
-                .unwrap()
             },
         );
     }
@@ -1600,10 +1589,12 @@ mod tests {
                 args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        (to_manifest_value(&(String::from("Hello World"), dec!("12"))).unwrap(),)
+                        (to_manifest_value(&(
+                            String::from("Hello World"),
+                            dec!("12")
+                        )),)
                     )])
                 })
-                .unwrap()
             },
         );
     }
@@ -1633,10 +1624,8 @@ mod tests {
                     entries: Vec::from([(to_manifest_value(&(
                         String::from("Hello World"),
                         dec!("12")
-                    ))
-                    .unwrap(),),])
-                })
-                .unwrap(),
+                    )),),])
+                }),
             },
         );
     }
@@ -1654,8 +1643,7 @@ mod tests {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),
-                })
-                .unwrap(),
+                }),
             },
         );
     }

@@ -22,15 +22,11 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::api::node_modules::auth::{
-    AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
-};
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataEntry, MetadataValue, METADATA_BLUEPRINT,
-};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
@@ -440,10 +436,7 @@ impl TestRunner {
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 
-        let account_component = receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_component_addresses[0];
+        let account_component = receipt.expect_commit(true).new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
             .call_method(FAUCET_COMPONENT, "free", manifest_args!())
@@ -555,11 +548,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        let address = receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_component_addresses[0];
+        let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
     }
 
@@ -577,11 +566,7 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_package_addresses[0]
+        receipt.expect_commit(true).new_package_addresses()[0]
     }
 
     pub fn publish_package_with_owner(
@@ -596,11 +581,7 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_package_addresses[0]
+        receipt.expect_commit(true).new_package_addresses()[0]
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
@@ -778,11 +759,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn create_restricted_token(
@@ -924,11 +901,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn create_fungible_resource(
@@ -950,11 +923,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn create_mintable_fungible_resource(
@@ -977,11 +946,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn new_component<F>(
@@ -999,14 +964,14 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, initial_proofs);
-        receipt.new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }).unwrap(),
+            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1027,7 +992,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
 
         let blobs = vec![];
@@ -1042,7 +1007,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1056,7 +1021,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1070,14 +1035,14 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1091,7 +1056,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn kernel_invoke_function(
@@ -1141,28 +1106,23 @@ impl TestRunner {
         &mut self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, blueprint_name, event_name) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+        let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
-                        event_name.clone(),
+                        local_type_index.clone(),
                     ),
                     NodeModuleId::ComponentRoyalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
-                        event_name.clone(),
-                    ),
-                    NodeModuleId::FunctionAccessRules => (
-                        ACCESS_RULES_PACKAGE,
-                        FUNCTION_ACCESS_RULES_BLUEPRINT.into(),
-                        event_name.clone(),
+                        local_type_index.clone(),
                     ),
                     NodeModuleId::Metadata => (
                         METADATA_PACKAGE,
                         METADATA_BLUEPRINT.into(),
-                        event_name.clone(),
+                        local_type_index.clone(),
                     ),
                     NodeModuleId::SELF => {
                         let type_info = self
@@ -1182,48 +1142,76 @@ impl TestRunner {
                                 package_address,
                                 blueprint_name,
                                 ..
-                            } => (package_address, blueprint_name, event_name.clone()),
+                            } => (package_address, blueprint_name, *local_type_index),
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
+                    NodeModuleId::TypeInfo => {
                         panic!("No event schema.")
                     }
                 }
             }
-            EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), event_name) => {
+            EventTypeIdentifier(
+                Emitter::Function(node_id, _, blueprint_name),
+                local_type_index,
+            ) => {
                 let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
                     panic!("must be a package address")
                 };
                 (
                     *package_address,
                     blueprint_name.to_owned(),
-                    event_name.clone(),
+                    local_type_index.clone(),
                 )
             }
         };
 
         let substate_id = SubstateId(
             RENodeId::GlobalObject(Address::Package(package_address)),
-            NodeModuleId::PackageEventSchema,
-            SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
         );
-        self.substate_store()
-            .get_substate(&substate_id)
-            .unwrap()
-            .substate
-            .event_schema()
-            .clone()
-            .0
-            .get(&blueprint_name)
-            .unwrap()
-            .get(&event_name)
-            .unwrap()
-            .clone()
+        (
+            local_type_index,
+            self.substate_store()
+                .get_substate(&substate_id)
+                .unwrap()
+                .substate
+                .package_info()
+                .schema
+                .blueprints
+                .get(&blueprint_name)
+                .unwrap()
+                .schema
+                .clone(),
+        )
     }
 
     pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
-        event_type_identifier.1.clone()
+        let (local_type_index, schema) = self.event_schema(event_type_identifier);
+        schema
+            .resolve_type_metadata(local_type_index)
+            .unwrap()
+            .type_name
+            .to_string()
+    }
+
+    pub fn is_event_name_equal<T: ScryptoDescribe>(
+        &mut self,
+        event_type_identifier: &EventTypeIdentifier,
+    ) -> bool {
+        let expected_type_name = {
+            let (local_type_index, schema) =
+                sbor::generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
+            let type_name = schema
+                .resolve_type_metadata(local_type_index)
+                .unwrap()
+                .type_name
+                .to_string();
+            type_name
+        };
+        let actual_type_name = self.event_name(event_type_identifier);
+        expected_type_name == actual_type_name
     }
 }
 
@@ -1334,6 +1322,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                     export_name: format!("{}_{}", blueprint_name, function_name),
                 }
             ),
+            event_schema: [].into(),
         },
     );
     package_schema

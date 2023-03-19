@@ -48,6 +48,8 @@ pub struct BlueprintSchema {
     pub substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
+    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -74,6 +76,7 @@ impl Default for BlueprintSchema {
             },
             substates: Vec::default(),
             functions: BTreeMap::default(),
+            event_schema: Default::default(),
         }
     }
 }

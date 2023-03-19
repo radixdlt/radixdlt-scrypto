@@ -1,6 +1,7 @@
 use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
@@ -261,13 +262,26 @@ impl AccessControllerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                InitiateRecoveryEvent,
+                RuleSetUpdateEvent,
+                CancelRecoveryProposalEvent,
+                LockPrimaryRoleEvent,
+                UnlockPrimaryRoleEvent,
+                StopTimedRecoveryEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
                 ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema
                 }
             ),
         }
@@ -419,7 +433,7 @@ impl AccessControllerNativePackage {
         let access_rules =
             AccessRulesObject::sys_new(access_rules_from_rule_set(input.rule_set), api)?;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(

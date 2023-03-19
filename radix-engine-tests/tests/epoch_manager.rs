@@ -30,7 +30,7 @@ fn get_epoch_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let epoch: u64 = receipt.output(1);
+    let epoch: u64 = receipt.expect_commit(true).output(1);
     assert_eq!(epoch, 1);
 }
 
@@ -85,8 +85,7 @@ fn next_round_with_validator_auth_succeeds() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -99,7 +98,6 @@ fn next_round_with_validator_auth_succeeds() {
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     assert!(result.next_epoch().is_none());
 }
@@ -125,8 +123,7 @@ fn next_epoch_with_validator_auth_succeeds() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -139,7 +136,6 @@ fn next_epoch_with_validator_auth_succeeds() {
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch").1;
     assert_eq!(next_epoch, initial_epoch + 1);
@@ -414,8 +410,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -428,7 +423,6 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
@@ -477,8 +471,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -491,7 +484,6 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
@@ -546,8 +538,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -560,7 +551,6 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
@@ -616,8 +606,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -630,7 +619,6 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
@@ -824,8 +812,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -838,7 +825,6 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     );
 
     // Assert
-    receipt.expect_commit_success();
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);

@@ -29,22 +29,11 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 use super::kernel_modules::costing::CostingReason;
-use super::node_modules::event_schema::PackageEventSchemaSubstate;
-
-impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.kernel_drop_node(node_id)?;
-        Ok(())
-    }
-}
 
 impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -154,59 +143,6 @@ where
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
-    }
-}
-
-impl<'g, 's, W> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: PackageSchema,
-        access_rules: AccessRulesConfig,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    ) -> Result<PackageAddress, RuntimeError> {
-        let result = self.call_function(
-            PACKAGE_PACKAGE,
-            PACKAGE_BLUEPRINT,
-            PACKAGE_PUBLISH_WASM_IDENT,
-            scrypto_encode(&PackagePublishWasmInput {
-                package_address: None,
-                code,
-                schema,
-                access_rules,
-                royalty_config,
-                metadata,
-                event_schema,
-            })
-            .unwrap(),
-        )?;
-
-        let package_address: PackageAddress = scrypto_decode(&result).unwrap();
-        Ok(package_address)
-    }
-
-    fn call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
-                package_address,
-                blueprint_name.to_string(),
-                function_name.to_string(),
-            ),
-            args,
-        };
-
-        self.kernel_invoke(invocation).map(|v| v.into())
     }
 }
 
@@ -364,7 +300,7 @@ where
             )),
             _ => RENodeInit::Object(btreemap!(
                 SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
-                    ComponentStateSubstate::new(scrypto_encode(&parser.decode_next::<ScryptoValue>()).unwrap())
+                    ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
                 )
             )),
         };
@@ -434,23 +370,13 @@ where
             NodeModuleId::AccessRules
         );
         // TODO: remove
-        let package_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules,
-            NodeModuleId::FunctionAccessRules,
-        );
-        // TODO: remove
         let resource_manager_object = btreeset!(
             NodeModuleId::Metadata,
             NodeModuleId::ComponentRoyalty,
             NodeModuleId::AccessRules,
             NodeModuleId::AccessRules1
         );
-        if module_ids != standard_object
-            && module_ids != package_object
-            && module_ids != resource_manager_object
-        {
+        if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
                 node_id, module_ids,
             )));
@@ -491,10 +417,7 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF
-                | NodeModuleId::TypeInfo
-                | NodeModuleId::FunctionAccessRules
-                | NodeModuleId::PackageEventSchema => {
+                NodeModuleId::SELF | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -630,6 +553,25 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
+    fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = FunctionInvocation {
+            fn_identifier: FnIdentifier::new(
+                package_address,
+                blueprint_name.to_string(),
+                function_name.to_string(),
+            ),
+            args,
+        };
+
+        self.kernel_invoke(invocation).map(|v| v.into())
+    }
+
     fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
@@ -683,6 +625,11 @@ where
         ))?;
 
         Ok(node_id.into())
+    }
+
+    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.kernel_drop_node(node_id)?;
+        Ok(())
     }
 }
 
@@ -758,38 +705,86 @@ where
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        // Construct the event type identifier based on the current actor
-        let (event_type_id, package_address, blueprint_name) = match self.kernel_get_current_actor()
-        {
-            Some(Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
-                ..
-            }) => {
-                let event_type_id = EventTypeIdentifier(
-                    Emitter::Method(node_id, node_module_id),
-                    event_name.clone(),
-                );
-                let (package_address, blueprint_name) = match node_module_id {
+        let actor = self.kernel_get_current_actor();
+
+        // Locking the package info substate associated with the emitter's package
+        let (handle, blueprint_schema, local_type_index) = {
+            // Getting the package address and blueprint name associated with the actor
+            let (package_address, blueprint_name) = match actor {
+                Some(Actor {
+                    identifier:
+                        ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                    ..
+                }) => match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                         Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
                     }
                     NodeModuleId::ComponentRoyalty => {
                         Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
                     }
-                    NodeModuleId::FunctionAccessRules => {
-                        Ok((ACCESS_RULES_PACKAGE, FUNCTION_ACCESS_RULES_BLUEPRINT.into()))
-                    }
                     NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
                     NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
-                        Err(RuntimeError::ApplicationError(
-                            ApplicationError::EventError(EventError::NoAssociatedPackage),
-                        ))
-                    }
-                }?;
+                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(EventError::NoAssociatedPackage),
+                    )),
+                },
+                Some(Actor {
+                    identifier:
+                        ActorIdentifier::Function(FnIdentifier {
+                            package_address,
+                            ref blueprint_name,
+                            ..
+                        }),
+                    ..
+                }) => Ok((package_address, blueprint_name.clone())),
+                None => Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(EventError::InvalidActor),
+                )),
+            }?;
 
-                Ok((event_type_id, package_address, blueprint_name.to_owned()))
-            }
+            let handle = self.kernel_lock_substate(
+                RENodeId::GlobalObject(Address::Package(package_address)),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
+            let blueprint_schema = package_info.schema.blueprints.get(&blueprint_name).map_or(
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                        package_address,
+                        blueprint_name: blueprint_name.clone(),
+                        event_name: event_name.clone(),
+                    }),
+                )),
+                Ok,
+            )?;
+
+            // Translating the event name to it's local_type_index which is stored in the blueprint
+            // schema
+            let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                        package_address,
+                        blueprint_name,
+                        event_name,
+                    }),
+                )),
+                Ok,
+            )?;
+
+            (handle, blueprint_schema, local_type_index)
+        };
+
+        // Construct the event type identifier based on the current actor
+        let event_type_identifier = match actor {
+            Some(Actor {
+                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                ..
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id, node_module_id),
+                *local_type_index,
+            )),
             Some(Actor {
                 identifier:
                     ActorIdentifier::Function(FnIdentifier {
@@ -798,63 +793,38 @@ where
                         ..
                     }),
                 ..
-            }) => Ok((
-                EventTypeIdentifier(
-                    Emitter::Function(
-                        RENodeId::GlobalObject(Address::Package(package_address)),
-                        NodeModuleId::SELF,
-                        blueprint_name.clone(),
-                    ),
-                    event_name.clone(),
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Function(
+                    RENodeId::GlobalObject(Address::Package(package_address)),
+                    NodeModuleId::SELF,
+                    blueprint_name,
                 ),
-                package_address,
-                blueprint_name.to_owned(),
+                *local_type_index,
             )),
-            _ => Err(RuntimeError::ApplicationError(
+            None => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(EventError::InvalidActor),
             )),
         }?;
 
-        // Reading the schema to validate the payload against it
-        let (local_type_index, schema) = {
-            let handle = self.kernel_lock_substate(
-                RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::PackageEventSchema,
-                SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
-                LockFlags::read_only(),
-            )?;
-            let package_schema =
-                self.kernel_get_substate_ref::<PackageEventSchemaSubstate>(handle)?;
-            let contained_schema = package_schema
-                .0
-                .get(&blueprint_name)
-                .and_then(|blueprint_schema| blueprint_schema.get(&event_name))
-                .map_or(
-                    Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(EventError::SchemaNotFoundError {
-                            package_address,
-                            blueprint_name,
-                            event_name,
-                        }),
-                    )),
-                    |item| Ok(item.clone()),
-                )?;
-            self.kernel_drop_lock(handle)?;
-            contained_schema
-        };
-
         // Validating the event data against the event schema
-        validate_payload_against_schema(&event_data, &schema, local_type_index).map_err(|err| {
+        validate_payload_against_schema(
+            &event_data,
+            &blueprint_schema.schema,
+            event_type_identifier.1,
+        )
+        .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::EventSchemaNotMatch(err.error_message(&schema)),
+                EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
             ))
         })?;
 
         // Adding the event to the event store
         self.kernel_get_module_state()
             .events
-            .add_event(event_type_id, event_data);
+            .add_event(event_type_identifier, event_data);
 
+        // Dropping the lock on the PackageInfo
+        self.kernel_drop_lock(handle)?;
         Ok(())
     }
 }

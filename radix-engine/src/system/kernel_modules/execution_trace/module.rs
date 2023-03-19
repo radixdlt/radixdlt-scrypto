@@ -652,7 +652,7 @@ impl ExecutionTraceModule {
 
 pub fn calculate_resource_changes(
     vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-    actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
+    fee_payments: &IndexMap<ObjectId, Decimal>,
     is_commit_success: bool,
 ) -> IndexMap<usize, Vec<ResourceChange>> {
     // FIXME: revert non-fee operations if `is_commit_success == false`
@@ -714,10 +714,7 @@ pub fn calculate_resource_changes(
         for (node_id, map) in instruction_resource_changes {
             for (vault_id, (resource_address, delta)) in map {
                 // Amount = put/take amount - fee_amount
-                let fee_amount = actual_fee_payments
-                    .get(&vault_id)
-                    .cloned()
-                    .unwrap_or_default();
+                let fee_amount = fee_payments.get(&vault_id).cloned().unwrap_or_default();
                 let amount = if is_commit_success {
                     delta
                 } else {

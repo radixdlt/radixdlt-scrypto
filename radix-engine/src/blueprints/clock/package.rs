@@ -79,7 +79,8 @@ impl ClockNativePackage {
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: [].into()
                 }
             ),
         }
@@ -181,7 +182,7 @@ impl ClockNativePackage {
         );
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(

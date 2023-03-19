@@ -96,10 +96,9 @@ impl NewSimpleBadge {
                         ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                     ),
                     entries: btreemap!(
-                        NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}).unwrap(),),
+                        NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}) ,),
                     ),
-                })
-                .unwrap(),
+                }),
             })
             .0
             .call_method(
@@ -120,10 +119,7 @@ impl NewSimpleBadge {
         .unwrap();
 
         if let Some(receipt) = receipt {
-            let resource_address = receipt
-                .expect_commit(true)
-                .entity_changes
-                .new_resource_addresses[0];
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
             let bech32_encoder = Bech32Encoder::new(&network_definition);
             writeln!(

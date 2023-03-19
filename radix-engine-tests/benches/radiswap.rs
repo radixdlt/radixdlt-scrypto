@@ -62,8 +62,8 @@ fn bench_radiswap(c: &mut Criterion) {
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
-                                "LP__ETH",
-                                "LP token for /ETH swap",
+                                "LP_BTC_ETH",
+                                "LP token for BTC/ETH swap",
                                 "https://www.radiswap.com",
                                 fee_amount
                             ),
@@ -78,6 +78,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, Own)>(5);
 
     // Transfer `10,000 BTC` from `account2` to `account3`

@@ -31,23 +31,13 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         access_rules: Vec<u8>,
@@ -58,12 +48,12 @@ pub trait WasmRuntime {
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_component_type_info(
+    fn get_type_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn lock_substate(
         &mut self,

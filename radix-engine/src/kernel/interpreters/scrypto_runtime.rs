@@ -7,8 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::AccessRulesConfig;
-use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
@@ -107,43 +106,7 @@ where
         self.allocate_buffer(return_data)
     }
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: Vec<u8>,
-        access_rules: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema =
-            scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
-        let access_rules = scrypto_decode::<AccessRulesConfig>(&access_rules)
-            .map_err(WasmRuntimeError::InvalidAccessRules)?;
-        let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
-            .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
-        let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
-            .map_err(WasmRuntimeError::InvalidMetadata)?;
-        let event_schema = scrypto_decode::<
-            BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-        >(&event_schema)
-        .map_err(WasmRuntimeError::InvalidEventSchema)?;
-
-        let package_address = self.api.new_package(
-            code,
-            schema,
-            access_rules,
-            royalty_config,
-            metadata,
-            event_schema,
-        )?;
-        let package_address_encoded =
-            scrypto_encode(&package_address).expect("Failed to encode package address");
-
-        self.allocate_buffer(package_address_encoded)
-    }
-
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
@@ -160,7 +123,7 @@ where
         self.allocate_buffer(component_id_encoded)
     }
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         modules: Vec<u8>,
@@ -191,11 +154,11 @@ where
         self.allocate_buffer(key_value_store_id_encoded)
     }
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        self.api.sys_drop_node(node_id)?;
+        self.api.drop_object(node_id)?;
 
         Ok(())
     }
@@ -255,10 +218,7 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn get_component_type_info(
-        &mut self,
-        node_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_type_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let type_info = self.api.get_object_type_info(node_id)?;
@@ -360,19 +320,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
@@ -380,7 +328,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         access_rules: Vec<u8>,
@@ -395,7 +343,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -434,7 +382,7 @@ impl WasmRuntime for NopWasmRuntime {
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))
     }
 
-    fn get_component_type_info(
+    fn get_type_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

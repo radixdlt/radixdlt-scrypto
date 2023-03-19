@@ -2,19 +2,18 @@ use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
-use crate::system::kernel_modules::events::EventError;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
-use core::fmt::Debug;
 use native_sdk::resource::{ResourceManager, Vault};
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+};
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
@@ -27,6 +26,10 @@ pub enum PackageError {
 
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
+
+    FailedToResolveLocalSchema { local_type_index: LocalTypeIndex },
+    EventNameMismatch { expected: String, actual: String },
+    InvalidEventSchema,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -40,25 +43,77 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn build_package_node_modules(
-    metadata: BTreeMap<String, String>,
-    access_rules: AccessRulesConfig,
-    function_access_rules: FunctionAccessRulesSubstate,
-    event_schema: BTreeMap<
-        String,
-        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
-    >,
-) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
-    let mut metadata_substates = BTreeMap::new();
-    for (key, value) in metadata {
-        metadata_substates.insert(
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                scrypto_encode(&key).unwrap(),
-            )),
-            RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
-        );
+fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageError> {
+    for BlueprintSchema {
+        schema,
+        event_schema,
+        ..
+    } in schema.blueprints.values()
+    {
+        // Package schema validation happens when the package is published. No need to redo
+        // it here again.
+
+        for (expected_event_name, local_type_index) in event_schema.iter() {
+            // Checking that the event name is indeed what the user claims it to be
+            let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                |metadata| Ok(metadata.type_name.to_string()),
+            )?;
+
+            if *expected_event_name != actual_event_name {
+                Err(PackageError::EventNameMismatch {
+                    expected: expected_event_name.to_string(),
+                    actual: actual_event_name,
+                })?
+            }
+
+            // Checking that the event is either a struct or an enum
+            let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                Ok,
+            )?;
+            match type_kind {
+                // Structs and Enums are allowed
+                TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
+                _ => Err(PackageError::InvalidEventSchema),
+            }?;
+        }
     }
 
+    Ok(())
+}
+
+fn globalize_package<Y>(
+    package_address: Option<[u8; 26]>,
+    info: PackageInfoSubstate,
+    code_type: PackageCodeTypeSubstate,
+    code: PackageCodeSubstate,
+    royalty: PackageRoyaltySubstate,
+    function_access_rules: FunctionAccessRulesSubstate,
+    metadata: BTreeMap<String, String>,
+    access_rules: AccessRulesConfig,
+    api: &mut Y,
+) -> Result<IndexedScryptoValue, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    // Use kernel API to commit substates directly.
+    // Can't use the ClientApi because of chicken-and-egg issue.
+
+    // Prepare node init.
+    let node_init = RENodeInit::GlobalObject(btreemap!(
+        SubstateOffset::Package(PackageOffset::Info) => info.into(),
+        SubstateOffset::Package(PackageOffset::CodeType) => code_type.into(),
+        SubstateOffset::Package(PackageOffset::Code) => code.into(),
+        SubstateOffset::Package(PackageOffset::Royalty) => royalty.into(),
+        SubstateOffset::Package(PackageOffset::FunctionAccessRules) => function_access_rules.into(),
+    ));
+
+    // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
@@ -70,7 +125,19 @@ fn build_package_node_modules(
     );
     node_modules.insert(
         NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(metadata_substates),
+        RENodeModuleInit::Metadata(
+            metadata
+                .into_iter()
+                .map(|(key, value)| {
+                    (
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                            scrypto_encode(&key).unwrap(),
+                        )),
+                        RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
+                    )
+                })
+                .collect(),
+        ),
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
@@ -79,15 +146,26 @@ fn build_package_node_modules(
         }),
     );
     node_modules.insert(
-        NodeModuleId::FunctionAccessRules,
-        RENodeModuleInit::FunctionAccessRules(function_access_rules),
-    );
-    node_modules.insert(
-        NodeModuleId::PackageEventSchema,
-        RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(event_schema)),
+        NodeModuleId::ComponentRoyalty,
+        RENodeModuleInit::ComponentRoyalty(
+            ComponentRoyaltyConfigSubstate {
+                royalty_config: RoyaltyConfig::default(),
+            },
+            ComponentRoyaltyAccumulatorSubstate {
+                royalty_vault: None,
+            },
+        ),
     );
 
-    node_modules
+    let node_id = if let Some(address) = package_address {
+        RENodeId::GlobalObject(PackageAddress::Normal(address).into())
+    } else {
+        api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
+    };
+    api.kernel_create_node(node_id, node_init, node_modules)?;
+
+    let package_address: PackageAddress = node_id.into();
+    Ok(IndexedScryptoValue::from_typed(&package_address))
 }
 
 pub struct PackageNativePackage;
@@ -143,7 +221,8 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: [].into()
                 }
             ),
         }
@@ -239,6 +318,8 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&input.schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
         let info = PackageInfoSubstate {
@@ -254,32 +335,22 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: input.package_access_rules,
+            default_auth: input.default_package_access_rule,
+        };
 
-        // Build node module init
-        let node_modules = build_package_node_modules(
+        globalize_package(
+            input.package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
             input.metadata,
             input.access_rules,
-            FunctionAccessRulesSubstate {
-                access_rules: input.package_access_rules,
-                default_auth: input.default_package_access_rule,
-            },
-            convert_event_schema(input.event_schema).map_err(|error| {
-                RuntimeError::ApplicationError(ApplicationError::EventError(error))
-            })?,
-        );
-
-        // Create package node
-        let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-        api.kernel_create_node(node_id, node_init, node_modules)?;
-
-        // Return
-        let package_address: PackageAddress = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&package_address))
+            api,
+        )
     }
 
     pub(crate) fn publish_wasm<Y>(
@@ -295,6 +366,8 @@ impl PackageNativePackage {
 
         // Validate schema
         validate_package_schema(&input.schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate WASM
@@ -319,30 +392,22 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: input.royalty_config,
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: BTreeMap::new(),
+            default_auth: AccessRule::AllowAll,
+        };
 
-        // Build node module init
-        let node_modules = build_package_node_modules(
+        globalize_package(
+            input.package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
             input.metadata,
             input.access_rules,
-            FunctionAccessRulesSubstate {
-                access_rules: BTreeMap::new(),
-                default_auth: AccessRule::AllowAll,
-            },
-            BTreeMap::new(), // TODO: To rework in Pt3
-        );
-
-        // Create package node
-        let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-        api.kernel_create_node(node_id, node_init, node_modules)?;
-
-        // Return
-        let package_address: PackageAddress = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&package_address))
+            api,
+        )
     }
 
     pub(crate) fn set_royalty_config<Y>(
@@ -396,35 +461,4 @@ impl PackageNativePackage {
         };
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
-}
-
-fn convert_event_schema(
-    event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-) -> Result<
-    BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    EventError,
-> {
-    let mut package_event_schema = BTreeMap::<
-        String,
-        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
-    >::new();
-    for (blueprint_name, event_schemas) in event_schema {
-        let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
-        for (local_type_index, schema) in event_schemas {
-            let event_name = {
-                (*schema
-                    .resolve_type_metadata(local_type_index)
-                    .map_or(Err(EventError::InvalidEventSchema), Ok)?
-                    .type_name)
-                    .to_owned()
-            };
-            // TODO: Add a test once Scrypto events are implemented.
-            if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {
-                Ok(())
-            } else {
-                Err(EventError::DuplicateEventNamesFound)
-            }?
-        }
-    }
-    Ok(package_event_schema)
 }

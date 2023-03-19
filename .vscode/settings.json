@@ -3,6 +3,9 @@
         "Cargo.toml",
         "simulator/Cargo.toml",
     ],
+    "rust-analyzer.cargo.features": [
+        "serde",
+    ],
     "cSpell.words": [
         "bech",
         "bincode",
