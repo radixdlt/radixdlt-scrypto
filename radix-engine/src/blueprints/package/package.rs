@@ -1,3 +1,4 @@
+use native_sdk::modules::access_rules::AccessRules;
 use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -19,6 +20,7 @@ use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use crate::blueprints::util::SecurifiedAccessRules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -87,6 +89,13 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
     Ok(())
 }
 
+struct SecurifiedPackage;
+
+impl SecurifiedAccessRules for SecurifiedPackage {
+    const OWNER_GROUP_NAME: &'static str = "owner";
+    const OWNER_TOKEN: ResourceAddress = PACKAGE_OWNER_TOKEN;
+}
+
 fn globalize_package<Y>(
     package_address: Option<[u8; 26]>,
     info: PackageInfoSubstate,
@@ -95,7 +104,7 @@ fn globalize_package<Y>(
     royalty: PackageRoyaltySubstate,
     function_access_rules: FunctionAccessRulesSubstate,
     metadata: BTreeMap<String, String>,
-    access_rules: AccessRulesConfig,
+    access_rules: Option<AccessRules>,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
@@ -140,12 +149,6 @@ where
         ),
     );
     node_modules.insert(
-        NodeModuleId::AccessRules,
-        RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
-            access_rules: access_rules,
-        }),
-    );
-    node_modules.insert(
         NodeModuleId::ComponentRoyalty,
         RENodeModuleInit::ComponentRoyalty(
             ComponentRoyaltyConfigSubstate {
@@ -157,11 +160,34 @@ where
         ),
     );
 
+    if let Some(access_rules) = access_rules {
+        let mut node = api.kernel_drop_node(RENodeId::Object(access_rules.0.id()))?;
+        let access_rules = node
+            .substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+            ))
+            .unwrap();
+        let access_rules: MethodAccessRulesSubstate = access_rules.into();
+        node_modules.insert(NodeModuleId::AccessRules, RENodeModuleInit::MethodAccessRules(access_rules));
+    } else {
+        node_modules.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
+                access_rules: AccessRulesConfig::new(),
+            }),
+        );
+    }
+
+
     let node_id = if let Some(address) = package_address {
         RENodeId::GlobalObject(PackageAddress::Normal(address).into())
     } else {
         api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
     };
+
+
     api.kernel_create_node(node_id, node_init, node_modules)?;
 
     let package_address: PackageAddress = node_id.into();
@@ -277,7 +303,6 @@ impl PackageNativePackage {
                     input.dependent_resources,
                     input.dependent_components,
                     input.metadata,
-                    input.access_rules,
                     input.package_access_rules,
                     input.default_package_access_rule,
                     api,
@@ -341,7 +366,6 @@ impl PackageNativePackage {
         dependent_resources: Vec<ResourceAddress>,
         dependent_components: Vec<ComponentAddress>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
         package_access_rules: BTreeMap<FnKey, AccessRule>,
         default_package_access_rule: AccessRule,
         api: &mut Y,
@@ -382,7 +406,7 @@ impl PackageNativePackage {
             royalty,
             function_access_rules,
             metadata,
-            access_rules,
+            None,
             api,
         )
     }
@@ -393,7 +417,7 @@ impl PackageNativePackage {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
+        config: AccessRulesConfig,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
@@ -432,6 +456,8 @@ impl PackageNativePackage {
             default_auth: AccessRule::AllowAll,
         };
 
+        let access_rules = SecurifiedPackage::create_advanced(config, api)?;
+
         globalize_package(
             package_address,
             info,
@@ -440,7 +466,7 @@ impl PackageNativePackage {
             royalty,
             function_access_rules,
             metadata,
-            access_rules,
+            Some(access_rules),
             api,
         )
     }

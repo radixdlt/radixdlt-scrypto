@@ -11,7 +11,7 @@ pub enum MethodType {
 }
 
 pub trait SecurifiedAccessRules {
-    const SECURIFY_IDENT: Option<&'static str>;
+    const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_GROUP_NAME: &'static str;
     const OWNER_TOKEN: ResourceAddress;
 

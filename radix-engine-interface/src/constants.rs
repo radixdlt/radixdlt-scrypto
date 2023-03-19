@@ -10,9 +10,10 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress = vanity_address!(EntityType::Res
 /// The system token which allows access to system resources (e.g. setting epoch)
 pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 3);
 pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 4);
-pub const VALIDATOR_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
-pub const IDENTITY_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 6);
-pub const ACCOUNT_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 7);
+pub const PACKAGE_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
+pub const VALIDATOR_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 6);
+pub const IDENTITY_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 7);
+pub const ACCOUNT_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 8);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);
