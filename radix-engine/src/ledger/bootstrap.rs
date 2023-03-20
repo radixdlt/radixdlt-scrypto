@@ -614,7 +614,7 @@ mod tests {
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
     #[test]
-    fn bootstrap_receipt_should_match_constants() {
+    fn test_bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
         let mut initial_validator_set = BTreeMap::new();

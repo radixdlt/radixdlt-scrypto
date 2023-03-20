@@ -357,17 +357,15 @@ impl AuthModule {
     ) -> Result<Vec<AuthZone>, RuntimeError> {
         let mut auth_zones = Vec::<AuthZone>::new();
         for auth_zone_id in auth_zone_ids {
-            loop {
-                let handle = api.kernel_lock_substate(
-                    auth_zone_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-                    LockFlags::read_only(),
-                )?;
-                let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
-                auth_zones.push(auth_zone.clone());
-                api.kernel_drop_lock(handle)?;
-            }
+            let handle = api.kernel_lock_substate(
+                auth_zone_id,
+                NodeModuleId::SELF,
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                LockFlags::read_only(),
+            )?;
+            let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
+            auth_zones.push(auth_zone.clone());
+            api.kernel_drop_lock(handle)?;
         }
         Ok(auth_zones)
     }

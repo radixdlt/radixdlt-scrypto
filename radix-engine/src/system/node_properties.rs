@@ -96,6 +96,7 @@ impl VisibilityProperties {
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
                 SubstateOffset::TypeInfo(_) => read_only,
                 SubstateOffset::AccessRules(_) => read_only,
+                SubstateOffset::AuthZone(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
                 _ => false,
             },

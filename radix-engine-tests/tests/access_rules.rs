@@ -1,5 +1,4 @@
-use radix_engine::blueprints::resource::AuthZoneError;
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
@@ -292,9 +291,7 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
@@ -365,7 +362,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::SystemError(SystemError::AuthZoneError::AssertAccessRuleFailed)
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
