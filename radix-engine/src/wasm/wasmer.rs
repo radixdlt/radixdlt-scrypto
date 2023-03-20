@@ -398,16 +398,14 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             rule_ptr: u32,
             rule_len: u32,
-        ) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
 
             let rule = read_memory(&instance, rule_ptr, rule_len)?;
 
-            let buffer = runtime
+            runtime
                 .assert_access_rule(rule)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
         fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: u32) -> Result<(), RuntimeError> {

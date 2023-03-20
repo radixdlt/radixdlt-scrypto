@@ -252,7 +252,6 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() != success {
-                    println!("Outcome: {:?}", c.outcome);
                     panic!(
                         "Expected {} but was {}",
                         if success { "success" } else { "failure" },
