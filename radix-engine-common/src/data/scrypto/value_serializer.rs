@@ -539,10 +539,10 @@ mod tests {
         let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
 
         let expected =
-            json!("FungibleResource[000000000000000000000000000000000000000000000000000000]");
+            json!("FungibleResource[010000000000000000000000000000000000000000000000000000]");
         let expected_invertible = json!({
             "type": "Address",
-            "value": "FungibleResource[000000000000000000000000000000000000000000000000000000]"
+            "value": "FungibleResource[010000000000000000000000000000000000000000000000000000]"
         });
 
         assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
@@ -560,10 +560,10 @@ mod tests {
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
-            json!("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety");
+            json!("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
         let expected_invertible = json!({
             "type": "Address",
-            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+            "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
         assert_simple_json_matches(&value, &encoder, expected_simple);
@@ -709,7 +709,7 @@ mod tests {
                 ]
             ],
             [
-                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety",
+                "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k",
                 {
                     "type": "Own",
                     "value": "00000000000000000000000000000000000000000000000000000000000000"
