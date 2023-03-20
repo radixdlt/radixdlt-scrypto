@@ -46,7 +46,6 @@ impl FunctionIdentifier {
     }
 }
 
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum FnIdent {
     Application(String),
@@ -96,7 +95,6 @@ pub struct FunctionInvocation {
     pub identifier: FunctionIdentifier,
     pub args: Vec<u8>,
 }
-
 
 impl Invocation for FunctionInvocation {
     type Output = IndexedScryptoValue;

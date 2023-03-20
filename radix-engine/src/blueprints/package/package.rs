@@ -263,7 +263,7 @@ impl PackageNativePackage {
                     schema,
                     substates,
                     functions,
-                    system_functions: btreemap!(),
+                    virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
                 }
             ),
@@ -467,7 +467,7 @@ impl PackageNativePackage {
             royalty_config,
             metadata,
             access_rules,
-            api
+            api,
         )?;
 
         Ok((address, bucket))
@@ -493,7 +493,7 @@ impl PackageNativePackage {
             royalty_config,
             metadata,
             access_rules,
-            api
+            api,
         )?;
 
         Ok(address)
@@ -508,8 +508,8 @@ impl PackageNativePackage {
         access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&schema)
@@ -517,10 +517,14 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            system_functions, ..
-        } in schema.blueprints.values() {
+            virtual_lazy_load_functions: system_functions,
+            ..
+        } in schema.blueprints.values()
+        {
             if !system_functions.is_empty() {
-                return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::InvalidSystemFunction)));
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                ));
             }
         }
 

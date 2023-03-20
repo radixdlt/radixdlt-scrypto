@@ -33,7 +33,7 @@ impl NodeMoveModule {
                             identifier:
                                 ActorIdentifier::Function(FunctionIdentifier(
                                     RESOURCE_MANAGER_PACKAGE,
-                                    ..
+                                    ..,
                                 )),
                             ..
                         }) = actor

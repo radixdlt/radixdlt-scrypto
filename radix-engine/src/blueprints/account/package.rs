@@ -2,17 +2,19 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver, SystemFunctionSchema};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, Receiver, VirtualLazyLoadSchema,
+};
 
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::api::types::ClientCostingReason;
 
-pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
-pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";
+const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
+const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";
 
 pub struct AccountNativePackage;
 
@@ -186,11 +188,11 @@ impl AccountNativePackage {
             },
         );
 
-        let system_functions = btreemap!(
-            0u8 => SystemFunctionSchema {
+        let virtual_lazy_load_functions = btreemap!(
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID => VirtualLazyLoadSchema {
                 export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
             },
-            1u8 => SystemFunctionSchema {
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID => VirtualLazyLoadSchema {
                 export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME.to_string(),
             }
         );
@@ -202,7 +204,7 @@ impl AccountNativePackage {
                     schema,
                     substates,
                     functions,
-                    system_functions,
+                    virtual_lazy_load_functions,
                     event_schema: [].into()
                 }
             ),

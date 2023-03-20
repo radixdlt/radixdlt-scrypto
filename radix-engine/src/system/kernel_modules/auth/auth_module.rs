@@ -62,9 +62,7 @@ impl AuthModule {
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = if identifier.0.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
-            if identifier.1.eq(PACKAGE_BLUEPRINT)
-                && identifier.2.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
-            {
+            if identifier.1.eq(PACKAGE_BLUEPRINT) && identifier.2.eq(PACKAGE_PUBLISH_NATIVE_IDENT) {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
                     HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
@@ -80,10 +78,7 @@ impl AuthModule {
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let function_key = FnKey::new(
-                identifier.1.to_string(),
-                identifier.2.to_string(),
-            );
+            let function_key = FnKey::new(identifier.1.to_string(), identifier.2.to_string());
             let access_rule = package_access_rules
                 .access_rules
                 .get(&function_key)

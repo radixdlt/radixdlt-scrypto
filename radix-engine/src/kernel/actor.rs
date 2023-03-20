@@ -7,6 +7,7 @@ pub enum ActorIdentifier {
     VirtualLazyLoad,
 }
 
+// TODO: This structure along with ActorIdentifier needs to be cleaned up
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Actor {
     pub fn_identifier: FnIdentifier,

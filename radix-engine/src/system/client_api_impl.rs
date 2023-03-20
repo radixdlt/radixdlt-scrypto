@@ -733,7 +733,7 @@ where
                         ActorIdentifier::Function(FunctionIdentifier(
                             package_address,
                             ref blueprint_name,
-                            ..
+                            ..,
                         )),
                     ..
                 }) => Ok((package_address, blueprint_name.clone())),
@@ -787,11 +787,7 @@ where
             )),
             Some(Actor {
                 identifier:
-                    ActorIdentifier::Function(FunctionIdentifier(
-                        package_address,
-                        blueprint_name,
-                        ..
-                    )),
+                    ActorIdentifier::Function(FunctionIdentifier(package_address, blueprint_name, ..)),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(

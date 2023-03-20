@@ -170,7 +170,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     schema: generate_full_schema(aggregator),
                     substates,
                     functions,
-                    system_functions: BTreeMap::new(),
+                    virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema
                 };
 
@@ -754,7 +754,7 @@ mod tests {
                             schema: generate_full_schema(aggregator),
                             substates,
                             functions,
-                            system_functions: BTreeMap::new(),
+                            virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

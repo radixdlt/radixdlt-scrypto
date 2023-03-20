@@ -18,12 +18,12 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 
@@ -228,11 +228,7 @@ impl ExecutableInvocation for FunctionInvocation {
         {
             if self.identifier.0.eq(&PACKAGE_PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
-            } else if self
-                .identifier
-                .0
-                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-            {
+            } else if self.identifier.0.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
                 // Required for bootstrap.
                 // Can be removed once the auto reference copying logic is moved to a kernel module.
                 // Will just disable the module for genesis.
@@ -263,9 +259,7 @@ impl ExecutableInvocation for FunctionInvocation {
             }
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(
-                self.identifier.0.into(),
-            ));
+            node_refs_to_copy.insert(RENodeId::GlobalObject(self.identifier.0.into()));
         }
 
         let resolved = ResolvedInvocation {
@@ -308,9 +302,7 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
                 identifier: ActorIdentifier::VirtualLazyLoad,
             }),
             update: CallFrameUpdate::empty(),
-            args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput {
-                id: self.args
-            }),
+            args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
             executor: ScryptoExecutor {
                 package_address: self.package_address,
                 blueprint_name: self.blueprint_name,
@@ -352,9 +344,13 @@ impl Executor for ScryptoExecutor {
             // in the native package itself.
             let export_name = match self.ident {
                 FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => return Err(RuntimeError::InterpreterError(InterpreterError::InvalidSystemCall)),
+                FnIdent::System(..) => {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidSystemCall,
+                    ))
+                }
             };
-                                                                    // Make dependent resources/components visible
+            // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalObject(self.package_address.into()),
                 NodeModuleId::SELF,
@@ -372,15 +368,16 @@ impl Executor for ScryptoExecutor {
                 args,
                 api,
             )?
-        } else if self
-            .package_address
-            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-        {
+        } else if self.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
             let export_name = match self.ident {
                 FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => return Err(RuntimeError::InterpreterError(InterpreterError::InvalidSystemCall)),
+                FnIdent::System(..) => {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidSystemCall,
+                    ))
+                }
             };
 
             NativeVm::invoke_native_package(
@@ -427,19 +424,18 @@ impl Executor for ScryptoExecutor {
             //  Validate input
             let export_name = match &self.ident {
                 FnIdent::Application(ident) => {
-                    let export_name = validate_input(
-                        &schema,
-                        &ident,
-                        self.receiver.is_some(),
-                        &args,
-                    )?;
+                    let export_name =
+                        validate_input(&schema, &ident, self.receiver.is_some(), &args)?;
                     export_name
-                },
+                }
                 FnIdent::System(system_func_id) => {
-                    if let Some(sys_func) = schema.system_functions.get(&system_func_id) {
+                    if let Some(sys_func) = schema.virtual_lazy_load_functions.get(&system_func_id)
+                    {
                         sys_func.export_name.to_string()
                     } else {
-                        return Err(RuntimeError::InterpreterError(InterpreterError::InvalidSystemCall));
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::InvalidSystemCall,
+                        ));
                     }
                 }
             };
@@ -486,10 +482,8 @@ impl Executor for ScryptoExecutor {
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
-                        let wasm_instance = api.kernel_create_wasm_instance(
-                            self.package_address,
-                            handle,
-                        )?;
+                        let wasm_instance =
+                            api.kernel_create_wasm_instance(self.package_address, handle)?;
                         api.kernel_drop_lock(handle)?;
 
                         wasm_instance
@@ -526,13 +520,13 @@ impl Executor for ScryptoExecutor {
 
             // Validate output
             let output = match self.ident {
-                FnIdent::Application(ident) => {
-                    validate_output(&schema, &ident, output)?
-                },
+                FnIdent::Application(ident) => validate_output(&schema, &ident, output)?,
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema
                     let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
-                        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(e))
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(
+                            e,
+                        ))
                     })?;
                     value
                 }

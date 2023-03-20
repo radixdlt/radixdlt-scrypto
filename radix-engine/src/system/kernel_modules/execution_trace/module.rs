@@ -448,35 +448,32 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Some(Actor {
-                    fn_identifier: FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident,
-                    },
+                    fn_identifier:
+                        FnIdentifier {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                        },
                     identifier: receiver,
-                }) => {
-                    match ident {
-                        FnIdent::Application(ident) => {
-                            match receiver {
-                                ActorIdentifier::Method(..) => {
-                                    Origin::ScryptoMethod(ApplicationFnIdentifier {
-                                        package_address: *package_address,
-                                        blueprint_name: blueprint_name.to_string(),
-                                        ident: ident.to_string(),
-                                    })
-                                },
-                                ActorIdentifier::Function(..) => {
-                                    Origin::ScryptoFunction(ApplicationFnIdentifier {
-                                        package_address: *package_address,
-                                        blueprint_name: blueprint_name.to_string(),
-                                        ident: ident.to_string(),
-                                    })
-                                },
-                                _ => panic!("Should not get here"),
-                            }
+                }) => match ident {
+                    FnIdent::Application(ident) => match receiver {
+                        ActorIdentifier::Method(..) => {
+                            Origin::ScryptoMethod(ApplicationFnIdentifier {
+                                package_address: *package_address,
+                                blueprint_name: blueprint_name.to_string(),
+                                ident: ident.to_string(),
+                            })
                         }
-                        FnIdent::System(..) => return,
-                    }
+                        ActorIdentifier::Function(..) => {
+                            Origin::ScryptoFunction(ApplicationFnIdentifier {
+                                package_address: *package_address,
+                                blueprint_name: blueprint_name.to_string(),
+                                ident: ident.to_string(),
+                            })
+                        }
+                        _ => panic!("Should not get here"),
+                    },
+                    FnIdent::System(..) => return,
                 },
                 None => panic!("Should not get here"),
             };
@@ -551,12 +548,13 @@ impl ExecutionTraceModule {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
             Some(Actor {
-                 fn_identifier: FnIdentifier {
-                     ident: FnIdent::System(..),
-                     ..
-                 },
+                fn_identifier:
+                    FnIdentifier {
+                        ident: FnIdent::System(..),
+                        ..
+                    },
                 ..
-             }) => return,
+            }) => return,
             _ => {}
         }
 

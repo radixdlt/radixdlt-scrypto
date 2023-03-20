@@ -151,7 +151,12 @@ impl KernelModule for CostingModule {
                     FnIdent::System(..) => return Ok(()),
                 };
 
-                (fn_identifier.package_address, &fn_identifier.blueprint_name, ident, maybe_component)
+                (
+                    fn_identifier.package_address,
+                    &fn_identifier.blueprint_name,
+                    ident,
+                    maybe_component,
+                )
             }
             _ => {
                 return Ok(());
@@ -197,10 +202,7 @@ impl KernelModule for CostingModule {
                 LockFlags::read_only(),
             )?;
             let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
-            let royalty_charge = substate
-                .royalty_config
-                .get_rule(ident)
-                .clone();
+            let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
             if royalty_charge > 0 {

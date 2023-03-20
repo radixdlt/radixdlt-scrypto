@@ -41,7 +41,7 @@ impl TransactionProcessorNativePackage {
                     schema,
                     substates,
                     functions,
-                    system_functions: btreemap!(),
+                    virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
                 }
             ),

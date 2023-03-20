@@ -3,8 +3,14 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
+    ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
+};
+use radix_engine_interface::blueprints::identity::{
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
+    IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
+};
 
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;
@@ -24,36 +30,38 @@ impl KernelModule for VirtualizationModule {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(id) => (
                         ACCOUNT_PACKAGE,
                         ACCOUNT_BLUEPRINT,
-                        0u8,
+                        ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
                         id,
                     ),
                     ComponentAddress::EddsaEd25519VirtualAccount(id) => (
                         ACCOUNT_PACKAGE,
                         ACCOUNT_BLUEPRINT,
-                        1u8,
+                        ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
                         id,
                     ),
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(id) => (
                         IDENTITY_PACKAGE,
                         IDENTITY_BLUEPRINT,
-                        0u8,
+                        IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
                         id,
                     ),
                     ComponentAddress::EddsaEd25519VirtualIdentity(id) => (
                         IDENTITY_PACKAGE,
                         IDENTITY_BLUEPRINT,
-                        1u8,
+                        IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
                         id,
                     ),
                     _ => return Ok(false),
                 };
 
-                let rtn: Vec<u8> = api.kernel_invoke(VirtualLazyLoadInvocation {
-                    package_address: package,
-                    blueprint_name: blueprint.to_string(),
-                    virtual_func_id: virtual_func_id,
-                    args: id,
-                })?.into();
+                let rtn: Vec<u8> = api
+                    .kernel_invoke(VirtualLazyLoadInvocation {
+                        package_address: package,
+                        blueprint_name: blueprint.to_string(),
+                        virtual_func_id: virtual_func_id,
+                        args: id,
+                    })?
+                    .into();
 
                 let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
                     scrypto_decode(&rtn).unwrap();

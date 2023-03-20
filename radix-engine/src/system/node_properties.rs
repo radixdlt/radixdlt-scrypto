@@ -114,37 +114,41 @@ impl VisibilityProperties {
                         } if is_native_package(*package_address) => true,
                         // Scrypto
                         _ => match &actor.identifier {
-                            ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => match (node_id, offset) {
-                                // READ package code & abi
-                                (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::EventSchema), // TODO: Remove
-                                ) => read_only,
-                                // READ global substates
-                                (
-                                    RENodeId::Object(_),
-                                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                                ) => read_only,
-                                // READ/WRITE KVStore entry
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                // Otherwise, false
-                                _ => false,
-                            },
+                            ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
+                                match (node_id, offset) {
+                                    // READ package code & abi
+                                    (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::EventSchema), // TODO: Remove
+                                    ) => read_only,
+                                    // READ global substates
+                                    (
+                                        RENodeId::Object(_),
+                                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                                    ) => read_only,
+                                    // READ/WRITE KVStore entry
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    // Otherwise, false
+                                    _ => false,
+                                }
+                            }
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
                                 MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
@@ -226,13 +230,17 @@ impl VisibilityProperties {
 
                         // Scrypto
                         _ => match &actor.identifier {
-                            ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => match (node_id, offset) {
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                _ => false,
-                            },
+                            ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
+                                match (node_id, offset) {
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    _ => false,
+                                }
+                            }
 
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
                                 MethodIdentifier(RENodeId::Object(component_address), ..) => {
