@@ -43,12 +43,12 @@ fn bench_transaction_validation(c: &mut Criterion) {
 
     let account1 = bech32_decoder
         .validate_and_decode_component_address(
-            "account_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq5d2mse",
+            "account_sim1pzmws3yehqas09l02g6420ht0md2pn4zg0q39rp0uums4cp5c0",
         )
         .unwrap();
     let account2 = bech32_decoder
         .validate_and_decode_component_address(
-            "account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7",
+            "account_sim1pqwe5ynx0dd7hnm5cpks962a8ra44ezdtlq0g95ee5qsu0vmhn",
         )
         .unwrap();
     let signer = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

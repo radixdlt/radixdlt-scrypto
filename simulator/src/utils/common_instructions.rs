@@ -562,7 +562,7 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let resource_address = ResourceAddress::Normal([1u8; 26]);
+        let resource_address = ResourceAddress::Fungible([1u8; 26]);
 
         let arg =
             Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
