@@ -65,16 +65,6 @@ impl AuthModule {
         }
     }
 
-    fn is_auth_zone(actor: &Option<Actor>) -> bool {
-        match actor {
-            Some(actor) => {
-                actor.fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
-                    && actor.fn_identifier.blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
-            }
-            _ => false,
-        }
-    }
-
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
         identifier: &FnIdentifier,
         api: &mut Y,
@@ -402,10 +392,6 @@ impl KernelModule for AuthModule {
         _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         let actor = api.kernel_get_current_actor();
-        if Self::is_auth_zone(&actor) {
-            // We do no create auth zone for AuthZone so it can directly manipulates the HEAD auth zone.
-            return Ok(());
-        }
 
         // Add Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
@@ -469,11 +455,6 @@ impl KernelModule for AuthModule {
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let actor = api.kernel_get_current_actor();
-        if Self::is_auth_zone(&actor) {
-            return Ok(());
-        }
-
         let auth_zone = api
             .kernel_get_module_state()
             .auth
