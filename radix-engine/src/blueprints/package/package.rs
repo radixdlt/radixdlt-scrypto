@@ -27,8 +27,13 @@ pub enum PackageError {
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
 
-    FailedToResolveLocalSchema { local_type_index: LocalTypeIndex },
-    EventNameMismatch { expected: String, actual: String },
+    FailedToResolveLocalSchema {
+        local_type_index: LocalTypeIndex,
+    },
+    EventNameMismatch {
+        expected: String,
+        actual: Option<String>,
+    },
     InvalidEventSchema,
 }
 
@@ -72,13 +77,13 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
                 Err(PackageError::FailedToResolveLocalSchema {
                     local_type_index: *local_type_index,
                 }),
-                |metadata| Ok(metadata.get_name()),
+                |metadata| Ok(metadata.get_name_string()),
             )?;
 
-            if Some(expected_event_name.as_str()) != actual_event_name {
+            if Some(expected_event_name) != actual_event_name.as_ref() {
                 Err(PackageError::EventNameMismatch {
                     expected: expected_event_name.to_string(),
-                    actual: actual_event_name.unwrap_or("<BLANK>").to_string(),
+                    actual: actual_event_name,
                 })?
             }
         }

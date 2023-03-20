@@ -89,8 +89,14 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
         }
     }
 
-    /// If this isn't true, and there are no other reasons to use an object, then just use an object!
-    pub fn own_details_are_needed(&self) -> bool {
+    /// SBOR values can either be represented just as a JSON value, or in a contextual JSON object.
+    /// This contextual object allows for adding extra information (eg type names, kind tags, etc).
+    /// As a general rule, Simple uses mostly JSON values, and Invertible uses mostly contextual objects.
+    ///
+    /// This method returns whether a wrapping object is needed.
+    ///
+    /// Note that some types _have to_ be embedded in a wrapper object, so
+    pub fn should_embed_value_in_contextual_json_map(&self) -> bool {
         match (
             self.context.mode,
             self.opt_into_kind_tag_in_simple_mode,
@@ -121,7 +127,7 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
         if let ValueContext::IncludeFieldKey { key } = self.value_context {
             self.fields.push(("key", SerializableType::Str(key)));
         }
-        if self.own_details_are_needed() {
+        if self.should_embed_value_in_contextual_json_map() {
             self.fields
                 .push(("kind", SerializableType::String(value_kind.to_string())));
             type_metadata
@@ -216,7 +222,7 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
                 variants.get(&variant_id).and_then(|variant_metadata| {
                     variant_metadata.get_name().map(|variant_name| {
                         self.fields
-                            .push(("variant", SerializableType::Str(variant_name)))
+                            .push(("variant_name", SerializableType::Str(variant_name)))
                     });
                     variant_metadata.child_names.as_ref()
                 })

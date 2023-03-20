@@ -10,9 +10,83 @@ use TypedTraversalEvent::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SerializationMode {
-    /// This "Simple" encoding is intended to be "nice to read" for a human.
+    /// This "Invertible" encoding is intended to exactly capture the content of the scrypto value,
+    /// in a way which can be inverted back into a scrypto value.
     ///
-    /// It is intended to be the default option for representin SBOR values in a JSON API.
+    /// SBOR values are generally wrapped in an object with a "kind" field. Fields are output as an
+    /// array to faithfully represent the ordering in the SBOR value.
+    ///
+    /// If value/type data is included in the parent (Vecs and Map entries), it is not duplicated
+    /// on the values. This avoids duplication in the output. In these cases, child tuples and
+    /// single values lose their wrapper object, to keep the output concise. Other values keep
+    /// their wrapper object, as there are other fields to convey.
+    ///
+    /// If a schema is available, variant names, type names and field names are added to the output.
+    ///
+    /// Some examples:
+    /// ```jsonc
+    /// // Array
+    /// {
+    ///     "kind": "Array",
+    ///     "element_kind": "U16",
+    ///     "elements": [1, 2, 3]
+    /// }
+    /// // Byte Array
+    /// {
+    ///     "kind": "Array",
+    ///     "element_kind": "U8",
+    ///     "hex": "deadbeef"
+    /// }
+    /// // Map
+    /// {
+    ///     "kind": "Map",
+    ///     "key_kind": "Enum",
+    ///     "key_name": "TestEnum",
+    ///     "value_kind": "Tuple",
+    ///     "value_name": "MyFieldStruct",
+    ///     "entries": [
+    ///         // Each entry is a [key, value] tuple
+    ///         [
+    ///             // Enums always have a wrapper object, but their key_kind and key_name
+    ///             // are not repeated from the parent
+    ///             { "variant_id": 3, "variant_name": "Test", "fields": [] },
+    ///             // The tuple loses its wrapper object
+    ///             [{ "kind": "String", "value": "one" }, { "kind": "U8", "value": 2 }]
+    ///         ]
+    ///     ]
+    /// }
+    /// // Struct / Named tuple with named fields
+    /// {
+    ///     "kind": "Tuple",
+    ///     "name": "MyNamedStruct",
+    ///     "fields": [
+    ///          { "key": "a", "kind": "U8", "value": 1 },
+    ///          { "key": "b", "kind": "U8", "value": 2 }
+    ///     ]
+    /// }
+    /// // Enum Variant
+    /// {
+    ///     "kind": "Enum",
+    ///     "name": "Employee",
+    ///     "variant_id": 1,
+    ///     "variant_name": "Bob",
+    ///     "fields": [
+    ///          { "key": "number", "kind": "U32", "value": 1 }
+    ///     ]
+    /// }
+    /// // Single values
+    /// {
+    ///     "kind": "String",
+    ///     "value": "Hello world!"
+    /// }
+    /// {
+    ///     "kind": "U64",
+    ///     "value": "1234123124" // U64/I64 and larger are encoded as strings for JS compatibility
+    /// }
+    /// ```
+    ///
+    Invertible,
+    /// This "Simple" encoding is intended to be "nice to read" for a human.
     ///
     /// It can be used for values with a schema, or without a schema (equivalently, values with "Any"
     /// schema).
@@ -20,51 +94,13 @@ pub enum SerializationMode {
     /// It is not intended to be invertible - ie the output cannot be mapped back into a ScryptoValue
     /// It should favour simplicity for human comprehension, in particular:
     /// * It uses a JSON object rather than an array where possible, even if this loses field ordering
+    ///   EG for structs, and for maps with string keys.
     /// * If the concept which is being represented (eg number/amount or address) is clear
-    ///   to a human, information about the value kind is dropped
+    ///   to a human, information about the value kind is dropped.
+    ///
+    /// Compared with Invertible, it is more compact, but doesn't include type names.
     Simple,
-    /// This "Invertible" encoding is intended to exactly capture the content of the scrypto value,
-    /// in a way which can be inverted back into a scrypto value.
-    ///
-    /// It includes value kinds, and orderings of fields.
-    ///
-    /// If a schema is available, variant names, type names and field names are added to the output.
-    Invertible,
 }
-
-// SIMPLE
-//-------
-// Array - (Un)typed: [1, 2, 3]
-// Array - (Un)typed bytes: { "hex": "012312ab" }
-// Map - (Un)typed - String key - JSON Map
-// Map - (Un)typed - Other key - [ [1, 2], [3, 4] ]
-// Tuple - Untyped: [1, 2]
-// Tuple - Typed - Field Names: { "a": 1, "b": 2 },
-// Tuple - Typed - No Field Names: [1, 2],
-// Enum Variant - Untyped - { "variant_id": 1, "fields": [1, 2] },
-// Enum Variant - Typed - No Field Names: { "variant_id": 1, "variant": "Bob", "fields": [1, 2] },
-// Enum Variant - Typed - Field Names: { "variant_id": 1, "variant": "Bob", "fields": { "a": 1, "b": 2 } },
-// --
-// Bool - Bool
-// Integers <= 32 bits - Integers
-// Integers >= 64 bits - Strings (Javascript only safely decodes JSON integers up to 2^53, so to be safe, we encode I64s as strings)
-// String - String
-
-// INVERTIBLE:
-// * Also include kind, where the value model would include it (eg not under arrays / maps)
-// * Needs to maintain ordering of fields, so can't use a map
-// * If a schema is available, also includes the type name, field names and variant names
-//-----------
-// Array - (Un)typed: { "kind": "Array", "element_kind": Y, "element_name": Y, "elements": [] }
-// Array - (Un)typed bytes: { "kind": "Array", "element_kind": X, "element_name": Y, "hex": "012312ab" }
-// Map - (Un)typed - Any keys - JSON Map { "kind": "Array", "key_kind": X, "value_kind": Y, "entries": [[1, 2], [3, 4]] }
-// Tuple - Untyped: { "kind": "Tuple", "fields": [] }
-// Tuple - Typed - Field Names: { "kind": "Tuple", "name": "Blah", "fields": [{ "key": "a", "kind": X, "value": 1 }, { "key": "b", "kind": X, "value": 2 }] }
-// Tuple - Typed - No Field Names: { "kind": "Tuple", "name": "Blah", "fields": [{ "kind": X, "value": 1 }, { "kind": X, "value": 2 }] }
-// Enum Variant - Untyped - { "kind": "EnumVariant", "variant_id": 1, "fields": [{ "kind": X, "value": 1 }, { "kind": X, "value": 2 }] }
-// Enum Variant - Typed - No Field Names: { "kind": "EnumVariant", "name": "Blah", "variant_id": 1, "variant": "Bob", "fields": [{ "kind": X, "value": 1 }, { "kind": X, "value": 2 }] },
-// Enum Variant - Typed - Field Names: { "kind": "EnumVariant", "name": "Blah", "variant_id": 1, "variant": "Bob", "fields": [{ "key": "a", "kind": X, "value": 1 }, { "key": "b", "kind": X, "value": 2 }] },
-// Terminal Values - { "kind": X, "value": <as per above> }
 
 pub struct SborPayloadWithSchema<'de, E: SerializableCustomTypeExtension> {
     payload: &'de [u8],
@@ -335,19 +371,34 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomTypeExtension>(
 /// used for (eg) map entry pairs, which don't have a container end event
 pub struct SerializableFields<'t, 'de, 's1, 's2, E: CustomTypeExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
-    child_names: Option<&'s2 ChildNames>,
+    fields_type: FieldsType<'s2>,
     length: usize,
+}
+
+pub enum FieldsType<'s2> {
+    NamedFields(&'s2 [Cow<'static, str>]),
+    UnnamedFields,
+    MapEntry,
+}
+
+impl<'s2> From<Option<&'s2 ChildNames>> for FieldsType<'s2> {
+    fn from(child_names: Option<&'s2 ChildNames>) -> Self {
+        match child_names {
+            Some(ChildNames::NamedFields(names)) => Self::NamedFields(names),
+            _ => Self::UnnamedFields,
+        }
+    }
 }
 
 impl<'t, 'de, 's1, 's2, E: CustomTypeExtension> SerializableFields<'t, 'de, 's1, 's2, E> {
     fn new(
         traverser: &'t mut TypedTraverser<'de, 's1, E>,
-        child_names: Option<&'s2 ChildNames>,
+        fields_type: FieldsType<'s2>,
         length: usize,
     ) -> Self {
         Self {
             traverser: RefCell::new(traverser),
-            child_names,
+            fields_type,
             length,
         }
     }
@@ -366,7 +417,7 @@ impl<'t, 'de, 's1, 's2, 's, 'a, E: SerializableCustomTypeExtension>
             serializer,
             &mut self.traverser.borrow_mut(),
             context,
-            self.child_names,
+            &self.fields_type,
             self.length,
         )
     }
@@ -376,29 +427,31 @@ fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
-    child_names: Option<&ChildNames>,
+    fields_type: &FieldsType<'_>,
     length: usize,
 ) -> Result<S::Ok, S::Error> {
-    match (context.mode, child_names) {
-        (SerializationMode::Simple, Some(ChildNames::NamedFields(child_names))) => {
+    match (context.mode, fields_type) {
+        // In simple mode, we serialize structs as JSON objects
+        (SerializationMode::Simple, FieldsType::NamedFields(field_names)) => {
             let mut serde_map = serializer.serialize_map(Some(length))?;
-            for child_name in child_names.iter() {
+            for field_name in field_names.iter() {
                 serde_map.serialize_entry(
-                    child_name,
+                    field_name,
                     &SerializableValueTree::new(traverser, ValueContext::Default)
                         .serializable(*context),
                 )?;
             }
             serde_map.end()
         }
-        (SerializationMode::Invertible, Some(ChildNames::NamedFields(child_names))) => {
+        // In invertible mode, we serialize structs as a JSON array of field objects to preserve ordering
+        (SerializationMode::Invertible, FieldsType::NamedFields(field_names)) => {
             let mut serde_tuple = serializer.serialize_tuple(length)?;
-            for child_name in child_names.iter() {
+            for field_name in field_names.iter() {
                 serde_tuple.serialize_element(
                     &SerializableValueTree::new(
                         traverser,
                         ValueContext::IncludeFieldKey {
-                            key: child_name.to_string(),
+                            key: field_name.to_string(),
                         },
                     )
                     .serializable(*context),
@@ -406,6 +459,19 @@ fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
             }
             serde_tuple.end()
         }
+        // If we're encoding a map entry tuple, we include ValueContext::VecOrMapChild so the values
+        // aren't serialized with their type information
+        (_, FieldsType::MapEntry) => {
+            let mut serde_tuple = serializer.serialize_tuple(length)?;
+            for _ in 0..length {
+                serde_tuple.serialize_element(
+                    &SerializableValueTree::new(traverser, ValueContext::VecOrMapChild)
+                        .serializable(*context),
+                )?;
+            }
+            serde_tuple.end()
+        }
+        // Otherwise, we're encoding an unnamed tuple, so we just serialize the values normally in a JSON array
         (_, _) => {
             let mut serde_tuple = serializer.serialize_tuple(length)?;
             for _ in 0..length {
@@ -505,7 +571,8 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
                 let mut serde_tuple = serializer.serialize_tuple(self.length)?;
                 for _ in 0..self.length {
                     serde_tuple.serialize_element(
-                        &SerializableFields::new(traverser, None, 2).serializable(*context),
+                        &SerializableFields::new(traverser, FieldsType::MapEntry, 2)
+                            .serializable(*context),
                     )?;
                 }
                 expect_container_end::<S, E>(traverser, context)?;
@@ -527,8 +594,8 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomTypeExtension>(
     let child_names = metadata.and_then(|m| m.child_names.as_ref());
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
 
-    if !map_aggregator.own_details_are_needed() {
-        let result_ok = SerializableFields::new(traverser, child_names, tuple_header.length)
+    if !map_aggregator.should_embed_value_in_contextual_json_map() {
+        let result_ok = SerializableFields::new(traverser, child_names.into(), tuple_header.length)
             .serialize(serializer, *context)?;
         expect_container_end::<S, E>(traverser, context)?;
         return Ok(result_ok);
@@ -538,7 +605,7 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomTypeExtension>(
         "fields",
         SerializableType::SerializableFields(SerializableFields::new(
             traverser,
-            child_names,
+            child_names.into(),
             tuple_header.length,
         )),
     );
@@ -565,7 +632,7 @@ fn serialize_enum_variant<S: Serializer, E: SerializableCustomTypeExtension>(
         "fields",
         SerializableType::SerializableFields(SerializableFields::new(
             traverser,
-            child_names,
+            child_names.into(),
             variant_header.length,
         )),
     );
@@ -583,7 +650,8 @@ fn serialize_array<S: Serializer, E: SerializableCustomTypeExtension>(
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
-    if !map_aggregator.own_details_are_needed() && array_header.element_value_kind != ValueKind::U8
+    if !map_aggregator.should_embed_value_in_contextual_json_map()
+        && array_header.element_value_kind != ValueKind::U8
     {
         // We don't need the wrapper object
         return SerializableArrayElements::new(traverser, array_header.length)
@@ -635,7 +703,7 @@ fn serialize_map<S: Serializer, E: SerializableCustomTypeExtension>(
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
-    if !map_aggregator.own_details_are_needed() {
+    if !map_aggregator.should_embed_value_in_contextual_json_map() {
         // We don't need the wrapper object
         return SerializableMapElements::new(
             traverser,
@@ -699,7 +767,7 @@ fn serialize_terminal_value<S: Serializer, E: SerializableCustomTypeExtension>(
     } else {
         SerdeValueMapAggregator::new(context, value_context)
     };
-    if map_aggregator.own_details_are_needed() {
+    if map_aggregator.should_embed_value_in_contextual_json_map() {
         let metadata = context.schema.resolve_type_metadata(type_index);
         map_aggregator.add_initial_details(value_kind, metadata);
         map_aggregator.add_field("value", serializable_value);
@@ -933,23 +1001,23 @@ mod tests {
             // IndexMap<TestEnum, MyFieldStruct>
             [
                 [
-                    { "variant_id": 0, "variant": "UnitVariant", "fields": [] },
+                    { "variant_id": 0, "variant_name": "UnitVariant", "fields": [] },
                     { "field1": "1", "field2": ["hello"] }
                 ],
                 [
-                    { "variant_id": 1, "variant": "SingleFieldVariant", "fields": { "field": 1 } },
+                    { "variant_id": 1, "variant_name": "SingleFieldVariant", "fields": { "field": 1 } },
                     { "field1": "2", "field2": ["world"] }
                 ],
                 [
-                    { "variant_id": 2, "variant": "DoubleStructVariant", "fields": { "field1": 1, "field2": 2 } },
+                    { "variant_id": 2, "variant_name": "DoubleStructVariant", "fields": { "field1": 1, "field2": 2 } },
                     { "field1": "3", "field2": ["!"] }
                 ]
             ],
             // BTreeMap<String, MyUnitStruct>
             { "hello": [], "world": [] },
-            { "variant_id": 0, "variant": "UnitVariant", "fields": [] },
-            { "variant_id": 1, "variant": "SingleFieldVariant", "fields": { "field": 1 } },
-            { "variant_id": 2, "variant": "DoubleStructVariant", "fields": { "field1": 3, "field2": 5 } },
+            { "variant_id": 0, "variant_name": "UnitVariant", "fields": [] },
+            { "variant_id": 1, "variant_name": "SingleFieldVariant", "fields": { "field": 1 } },
+            { "variant_id": 2, "variant_name": "DoubleStructVariant", "fields": { "field1": 3, "field2": 5 } },
             { "field1": "21", "field2": ["hello","world!"] },
             [[],[]],
             [
@@ -1006,30 +1074,24 @@ mod tests {
                                 "fields": [
 
                                 ],
-                                "kind": "Enum",
-                                "name": "TestEnum",
-                                "variant": "UnitVariant",
+                                "variant_name": "UnitVariant",
                                 "variant_id": 0
                             },
-                            {
-                                "fields": [
-                                    {
-                                        "key": "field1",
-                                        "kind": "U64",
-                                        "value": "1"
-                                    },
-                                    {
-                                        "element_kind": "String",
-                                        "elements": [
-                                            "hello"
-                                        ],
-                                        "key": "field2",
-                                        "kind": "Array"
-                                    }
-                                ],
-                                "kind": "Tuple",
-                                "name": "MyFieldStruct"
-                            }
+                            [
+                                {
+                                    "key": "field1",
+                                    "kind": "U64",
+                                    "value": "1"
+                                },
+                                {
+                                    "element_kind": "String",
+                                    "elements": [
+                                        "hello"
+                                    ],
+                                    "key": "field2",
+                                    "kind": "Array"
+                                }
+                            ]
                         ],
                         [
                             {
@@ -1040,30 +1102,24 @@ mod tests {
                                         "value": 1
                                     }
                                 ],
-                                "kind": "Enum",
-                                "name": "TestEnum",
-                                "variant": "SingleFieldVariant",
+                                "variant_name": "SingleFieldVariant",
                                 "variant_id": 1
                             },
-                            {
-                                "fields": [
-                                    {
-                                        "key": "field1",
-                                        "kind": "U64",
-                                        "value": "2"
-                                    },
-                                    {
-                                        "element_kind": "String",
-                                        "elements": [
-                                            "world"
-                                        ],
-                                        "key": "field2",
-                                        "kind": "Array"
-                                    }
-                                ],
-                                "kind": "Tuple",
-                                "name": "MyFieldStruct"
-                            }
+                            [
+                                {
+                                    "key": "field1",
+                                    "kind": "U64",
+                                    "value": "2"
+                                },
+                                {
+                                    "element_kind": "String",
+                                    "elements": [
+                                        "world"
+                                    ],
+                                    "key": "field2",
+                                    "kind": "Array"
+                                }
+                            ],
                         ],
                         [
                             {
@@ -1079,30 +1135,24 @@ mod tests {
                                         "value": 2
                                     }
                                 ],
-                                "kind": "Enum",
-                                "name": "TestEnum",
-                                "variant": "DoubleStructVariant",
+                                "variant_name": "DoubleStructVariant",
                                 "variant_id": 2
                             },
-                            {
-                                "fields": [
-                                    {
-                                        "key": "field1",
-                                        "kind": "U64",
-                                        "value": "3"
-                                    },
-                                    {
-                                        "element_kind": "String",
-                                        "elements": [
-                                            "!"
-                                        ],
-                                        "key": "field2",
-                                        "kind": "Array"
-                                    }
-                                ],
-                                "kind": "Tuple",
-                                "name": "MyFieldStruct"
-                            }
+                            [
+                                {
+                                    "key": "field1",
+                                    "kind": "U64",
+                                    "value": "3"
+                                },
+                                {
+                                    "element_kind": "String",
+                                    "elements": [
+                                        "!"
+                                    ],
+                                    "key": "field2",
+                                    "kind": "Array"
+                                }
+                            ]
                         ]
                     ],
                     "key_kind": "Enum",
@@ -1114,30 +1164,12 @@ mod tests {
                 {
                     "entries": [
                         [
-                            {
-                                "kind": "String",
-                                "value": "hello"
-                            },
-                            {
-                                "fields": [
-
-                                ],
-                                "kind": "Tuple",
-                                "name": "MyUnitStruct"
-                            }
+                            "hello",
+                            []
                         ],
                         [
-                            {
-                                "kind": "String",
-                                "value": "world"
-                            },
-                            {
-                                "fields": [
-
-                                ],
-                                "kind": "Tuple",
-                                "name": "MyUnitStruct"
-                            }
+                            "world",
+                            []
                         ]
                     ],
                     "key_kind": "String",
@@ -1151,7 +1183,7 @@ mod tests {
                     ],
                     "kind": "Enum",
                     "name": "TestEnum",
-                    "variant": "UnitVariant",
+                    "variant_name": "UnitVariant",
                     "variant_id": 0
                 },
                 {
@@ -1164,7 +1196,7 @@ mod tests {
                     ],
                     "kind": "Enum",
                     "name": "TestEnum",
-                    "variant": "SingleFieldVariant",
+                    "variant_name": "SingleFieldVariant",
                     "variant_id": 1
                 },
                 {
@@ -1182,7 +1214,7 @@ mod tests {
                     ],
                     "kind": "Enum",
                     "name": "TestEnum",
-                    "variant": "DoubleStructVariant",
+                    "variant_name": "DoubleStructVariant",
                     "variant_id": 2
                 },
                 {
