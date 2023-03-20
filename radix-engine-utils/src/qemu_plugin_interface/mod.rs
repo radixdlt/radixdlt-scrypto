@@ -78,7 +78,7 @@ impl<'a> QemuPluginInterface<'a> {
         self.stack_top
     }
 
-    pub fn start_counting(&mut self, key: &'static str) {
+    pub fn start_counting(&mut self, key: &'static str, arg: Option<data_analyzer::OutputParam>) {
         if !self.enabled {
             return;
         }
@@ -95,7 +95,7 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions: 0,
             cpu_instructions_calibrated: 0,
             function_name: key,
-            param: None });
+            param: arg });
 
         self.stack_top += 1;
         self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server(SRV_SOCKET_FN);
@@ -252,12 +252,12 @@ impl QemuPluginInterfaceCalibrator {
     }
 
     fn calibrate_inner() -> u64 {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner") );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", None) );
         QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner", None) ).1
     }
 
     fn calibrate() -> (u64, u64) {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate") );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", None) );
         let ret = QemuPluginInterfaceCalibrator::calibrate_inner();
         (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate", None) ).1, ret)
     }
