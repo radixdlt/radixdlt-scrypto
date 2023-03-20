@@ -179,7 +179,9 @@ impl ExecutableInvocation for MethodInvocation {
         }
 
         let executor = ScryptoExecutor {
-            fn_identifier,
+            package_address: fn_identifier.package_address,
+            blueprint_name: fn_identifier.blueprint_name,
+            ident: fn_identifier.ident,
             receiver: Some(self.identifier),
         };
 
@@ -268,7 +270,9 @@ impl ExecutableInvocation for FunctionInvocation {
             },
             args: value,
             executor: ScryptoExecutor {
-                fn_identifier: self.fn_identifier,
+                package_address: self.fn_identifier.package_address,
+                blueprint_name: self.fn_identifier.blueprint_name,
+                ident: self.fn_identifier.ident,
                 receiver: None,
             },
         };
@@ -282,7 +286,9 @@ impl ExecutableInvocation for FunctionInvocation {
 }
 
 pub struct ScryptoExecutor {
-    pub fn_identifier: FnIdentifier,
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub ident: String,
     pub receiver: Option<MethodIdentifier>,
 }
 
@@ -298,14 +304,14 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.fn_identifier.package_address.eq(&PACKAGE_PACKAGE) {
+        let output = if self.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
-            let export_name = self.fn_identifier.ident.to_string(); // TODO: Clean this up
+            let export_name = self.ident.to_string(); // TODO: Clean this up
                                                                     // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                RENodeId::GlobalObject(self.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -322,14 +328,13 @@ impl Executor for ScryptoExecutor {
                 api,
             )?
         } else if self
-            .fn_identifier
             .package_address
             .eq(&TRANSACTION_PROCESSOR_PACKAGE)
         {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
 
-            let export_name = self.fn_identifier.ident.to_string();
+            let export_name = self.ident.to_string();
 
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
@@ -341,7 +346,7 @@ impl Executor for ScryptoExecutor {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                RENodeId::GlobalObject(self.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -351,7 +356,7 @@ impl Executor for ScryptoExecutor {
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                    RENodeId::GlobalObject(self.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
@@ -360,11 +365,11 @@ impl Executor for ScryptoExecutor {
                 let schema = package_info
                     .schema
                     .blueprints
-                    .get(&self.fn_identifier.blueprint_name)
+                    .get(&self.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
                         InterpreterError::ScryptoBlueprintNotFound(
-                            self.fn_identifier.package_address,
-                            self.fn_identifier.blueprint_name.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
                         ),
                     ))?
                     .clone();
@@ -375,7 +380,7 @@ impl Executor for ScryptoExecutor {
             //  Validate input
             let export_name = validate_input(
                 &schema,
-                &self.fn_identifier.ident,
+                &self.ident,
                 self.receiver.is_some(),
                 &args,
             )?;
@@ -383,7 +388,7 @@ impl Executor for ScryptoExecutor {
             // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                    RENodeId::GlobalObject(self.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -396,7 +401,7 @@ impl Executor for ScryptoExecutor {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                        RENodeId::GlobalObject(self.package_address.into()),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
@@ -417,13 +422,13 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                            RENodeId::GlobalObject(self.package_address.into()),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
                         let wasm_instance = api.kernel_create_wasm_instance(
-                            self.fn_identifier.package_address,
+                            self.package_address,
                             handle,
                         )?;
                         api.kernel_drop_lock(handle)?;
@@ -461,7 +466,7 @@ impl Executor for ScryptoExecutor {
             };
 
             // Validate output
-            validate_output(&schema, &self.fn_identifier.ident, output)?
+            validate_output(&schema, &self.ident, output)?
         };
 
         let update = CallFrameUpdate {
