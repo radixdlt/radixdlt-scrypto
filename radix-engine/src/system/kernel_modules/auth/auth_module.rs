@@ -391,6 +391,7 @@ impl KernelModule for AuthModule {
             match &actor.identifier {
                 ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
                 ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
+                ActorIdentifier::VirtualLazyLoad => MethodAuthorization::AllowAll,
             }
         } else {
             MethodAuthorization::AllowAll

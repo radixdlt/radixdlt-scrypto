@@ -737,7 +737,7 @@ where
                         )),
                     ..
                 }) => Ok((package_address, blueprint_name.clone())),
-                None => Err(RuntimeError::ApplicationError(
+                _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
                 )),
             }?;
@@ -801,7 +801,7 @@ where
                 ),
                 *local_type_index,
             )),
-            None => Err(RuntimeError::ApplicationError(
+            _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(EventError::InvalidActor),
             )),
         }?;

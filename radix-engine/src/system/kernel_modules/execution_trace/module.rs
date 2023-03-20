@@ -451,26 +451,34 @@ impl ExecutionTraceModule {
                     fn_identifier: FnIdentifier {
                         package_address,
                         blueprint_name,
-                        ident: FnIdent::Application(ident),
+                        ident,
                     },
                     identifier: receiver,
-                }) => match receiver {
-                    ActorIdentifier::Method(..) => {
-                        Origin::ScryptoMethod(ApplicationFnIdentifier {
-                            package_address: *package_address,
-                            blueprint_name: blueprint_name.to_string(),
-                            ident: ident.to_string(),
-                        })
-                    },
-                    ActorIdentifier::Function(..) => {
-                        Origin::ScryptoFunction(ApplicationFnIdentifier {
-                            package_address: *package_address,
-                            blueprint_name: blueprint_name.to_string(),
-                            ident: ident.to_string(),
-                        })
-                    },
+                }) => {
+                    match ident {
+                        FnIdent::Application(ident) => {
+                            match receiver {
+                                ActorIdentifier::Method(..) => {
+                                    Origin::ScryptoMethod(ApplicationFnIdentifier {
+                                        package_address: *package_address,
+                                        blueprint_name: blueprint_name.to_string(),
+                                        ident: ident.to_string(),
+                                    })
+                                },
+                                ActorIdentifier::Function(..) => {
+                                    Origin::ScryptoFunction(ApplicationFnIdentifier {
+                                        package_address: *package_address,
+                                        blueprint_name: blueprint_name.to_string(),
+                                        ident: ident.to_string(),
+                                    })
+                                },
+                                _ => panic!("Should not get here"),
+                            }
+                        }
+                        FnIdent::System(..) => return,
+                    }
                 },
-                _ => panic!("Should not get here."),
+                None => panic!("Should not get here"),
             };
 
             let instruction_index = self.instruction_index();
@@ -542,6 +550,13 @@ impl ExecutionTraceModule {
             {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
+            Some(Actor {
+                 fn_identifier: FnIdentifier {
+                     ident: FnIdent::System(..),
+                     ..
+                 },
+                ..
+             }) => return,
             _ => {}
         }
 

@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver, SystemFunctionSchema};
 
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -27,15 +27,6 @@ impl AccountNativePackage {
         let mut functions = BTreeMap::new();
 
         // TODO: Protect virtual functions from being called by client layer
-        functions.insert(
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
-                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
-                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
-            },
-        );
         functions.insert(
             ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT.to_string(),
             FunctionSchema {
@@ -207,6 +198,12 @@ impl AccountNativePackage {
             },
         );
 
+        let system_functions = btreemap!(
+            0u8 => SystemFunctionSchema {
+                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
+            }
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -214,7 +211,7 @@ impl AccountNativePackage {
                     schema,
                     substates,
                     functions,
-                    system_functions: btreemap!(),
+                    system_functions,
                     event_schema: [].into()
                 }
             ),

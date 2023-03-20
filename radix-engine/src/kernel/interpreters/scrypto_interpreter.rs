@@ -8,7 +8,7 @@ use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi};
@@ -23,6 +23,7 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::identity::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 
@@ -298,9 +299,18 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
         _api: &mut D,
     ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let resolved = ResolvedInvocation {
-            resolved_actor: None,
+            resolved_actor: Some(Actor {
+                fn_identifier: FnIdentifier {
+                    package_address: self.package_address,
+                    blueprint_name: self.blueprint_name.to_string(),
+                    ident: FnIdent::System(self.system_func_id),
+                },
+                identifier: ActorIdentifier::VirtualLazyLoad,
+            }),
             update: CallFrameUpdate::empty(),
-            args: IndexedScryptoValue::from_typed(&self.args),
+            args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput {
+                id: self.args
+            }),
             executor: ScryptoExecutor {
                 package_address: self.package_address,
                 blueprint_name: self.blueprint_name,

@@ -54,12 +54,43 @@ impl KernelModule for VirtualizationModule {
                     _ => return Ok(false),
                 };
 
-                let rtn = api.call_function(
-                    package,
-                    blueprint,
-                    func,
-                    scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
-                )?;
+                let rtn = match (package, blueprint, func) {
+                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT) => {
+                        let rtn = api.kernel_invoke(VirtualLazyLoadInvocation {
+                            package_address: package,
+                            blueprint_name: blueprint.to_string(),
+                            system_func_id: 0u8,
+                            args: id,
+                        })?;
+                        rtn.into()
+                    }
+                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT) => {
+                        api.call_function(
+                            package,
+                            blueprint,
+                            func,
+                            scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
+                        )?
+                    }
+                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT) => {
+                        api.call_function(
+                            package,
+                            blueprint,
+                            func,
+                            scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
+                        )?
+                    }
+                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT) => {
+                        api.call_function(
+                            package,
+                            blueprint,
+                            func,
+                            scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
+                        )?
+                    }
+                    _ => panic!("Unexpected"),
+                };
+
                 let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
                     scrypto_decode(&rtn).unwrap();
                 let modules = modules

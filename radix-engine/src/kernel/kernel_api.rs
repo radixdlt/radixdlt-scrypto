@@ -124,6 +124,6 @@ pub trait KernelInternalApi {
 }
 
 pub trait KernelModuleApi<E>:
-    KernelNodeApi + KernelSubstateApi + KernelInternalApi + ClientObjectApi<E>
+    KernelNodeApi + KernelSubstateApi + KernelInternalApi + KernelInvokeApi<VirtualLazyLoadInvocation, E> + ClientObjectApi<E>
 {
 }

@@ -4,6 +4,7 @@ use crate::types::*;
 pub enum ActorIdentifier {
     Method(MethodIdentifier),
     Function(FunctionIdentifier),
+    VirtualLazyLoad,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
