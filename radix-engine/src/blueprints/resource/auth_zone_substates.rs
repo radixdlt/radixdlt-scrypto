@@ -1,13 +1,17 @@
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 
-#[derive(Debug, ScryptoSbor)]
+#[derive(Debug, ScryptoSbor, Default)]
 pub struct AuthZone {
-    pub(super) proofs: Vec<Proof>,
+    pub proofs: Vec<Proof>,
+
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
-    pub(super) virtual_resources: BTreeSet<ResourceAddress>,
-    pub(super) virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-    pub(super) virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
+    pub virtual_resources: BTreeSet<ResourceAddress>,
+    pub virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+    pub virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
+
+    pub is_barrier: bool,
+    pub parent: Option<InternalRef>,
 }
 
 impl Clone for AuthZone {
@@ -17,6 +21,8 @@ impl Clone for AuthZone {
             virtual_resources: self.virtual_resources.clone(),
             virtual_non_fungibles: self.virtual_non_fungibles.clone(),
             virtual_non_fungibles_non_extending: self.virtual_non_fungibles_non_extending.clone(),
+            is_barrier: self.is_barrier.clone(),
+            parent: self.parent.clone(),
         }
     }
 }
@@ -27,12 +33,16 @@ impl AuthZone {
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
+        is_barrier: bool,
+        parent: Option<InternalRef>,
     ) -> Self {
         Self {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
             virtual_non_fungibles_non_extending,
+            is_barrier,
+            parent,
         }
     }
 

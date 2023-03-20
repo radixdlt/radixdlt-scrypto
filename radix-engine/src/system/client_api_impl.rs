@@ -33,7 +33,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::kernel_modules::auth::{convert_contextless, AuthModule, Authentication};
+use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
 
 impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
@@ -679,15 +679,9 @@ where
     fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone = self
-            .kernel_get_module_state()
-            .auth
-            .auth_zone_stack
-            .last()
-            .cloned()
-            .expect("No auth zone found");
+        let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
 
-        Ok(auth_zone.0.into())
+        Ok(auth_zone_id.into())
     }
 
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
@@ -695,14 +689,15 @@ where
 
         let authorization = convert_contextless(&rule);
 
-        let auth_zone_ids = self
-            .kernel_get_module_state()
-            .auth
-            .auth_zones_for_authorization(&None);
+        let barrier_crossings_allowed = 0;
+        let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
 
-        let auth_zones = AuthModule::read_auth_zones(auth_zone_ids, self)?;
-
-        if !Authentication::verify_method_auth(&authorization, &auth_zones, self)? {
+        if !Authentication::verify_method_auth(
+            barrier_crossings_allowed,
+            auth_zone_id,
+            &authorization,
+            self,
+        )? {
             return Err(RuntimeError::SystemError(
                 SystemError::AssertAccessRuleFailed,
             ));

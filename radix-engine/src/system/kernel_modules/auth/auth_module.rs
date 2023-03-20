@@ -30,6 +30,7 @@ use radix_engine_interface::blueprints::package::{
     PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -41,22 +42,39 @@ pub enum AuthError {
 #[derive(Debug, Clone)]
 pub struct AuthModule {
     pub params: AuthZoneParams,
-    /// Stack of auth zones, each represented by RENode ID and barrier flag
-    pub auth_zone_stack: Vec<(RENodeId, bool)>,
+    /// Stack of auth zones
+    pub auth_zone_stack: Vec<RENodeId>,
 }
 
 impl AuthModule {
-    fn is_barrier(actor: &Option<Actor>) -> bool {
+    fn is_actor_barrier(actor: &Actor) -> bool {
         matches!(
             actor,
-            Some(Actor {
+            Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(
                     RENodeId::GlobalObject(Address::Component(..)),
                     ..
                 )),
                 ..
-            })
+            }
         )
+    }
+
+    fn is_barrier(actor: &Option<Actor>) -> bool {
+        match actor {
+            Some(actor) => Self::is_actor_barrier(actor),
+            None => false,
+        }
+    }
+
+    fn is_transaction_processor(actor: &Option<Actor>) -> bool {
+        match actor {
+            Some(actor) => {
+                actor.fn_identifier.package_address == TRANSACTION_PROCESSOR_PACKAGE
+                    && actor.fn_identifier.blueprint_name == TRANSACTION_PROCESSOR_BLUEPRINT
+            }
+            None => false,
+        }
     }
 
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
@@ -332,46 +350,25 @@ impl AuthModule {
         Ok(authorization)
     }
 
-    pub fn auth_zones_for_authorization(&self, callee: &Option<Actor>) -> Vec<RENodeId> {
-        let mut barrier_crossing_allowed = !Self::is_barrier(callee);
-
-        let mut auth_zones = Vec::<RENodeId>::new();
-        for (node_id, is_barrier) in self.auth_zone_stack.iter().cloned().rev() {
-            auth_zones.push(node_id);
-
-            if is_barrier {
-                if barrier_crossing_allowed {
-                    barrier_crossing_allowed = false;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        auth_zones
-    }
-
-    pub fn read_auth_zones<Y: KernelModuleApi<RuntimeError>>(
-        auth_zone_ids: Vec<RENodeId>,
-        api: &mut Y,
-    ) -> Result<Vec<AuthZone>, RuntimeError> {
-        let mut auth_zones = Vec::<AuthZone>::new();
-        for auth_zone_id in auth_zone_ids {
-            let handle = api.kernel_lock_substate(
-                auth_zone_id,
-                NodeModuleId::SELF,
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-                LockFlags::read_only(),
-            )?;
-            let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
-            auth_zones.push(auth_zone.clone());
-            api.kernel_drop_lock(handle)?;
-        }
-        Ok(auth_zones)
+    pub fn last_auth_zone(&self) -> RENodeId {
+        self.auth_zone_stack
+            .last()
+            .cloned()
+            .expect("Missing auth zone")
     }
 }
 
 impl KernelModule for AuthModule {
+    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Create sentinel node
+        Self::on_execution_start(api, &None)
+    }
+
+    fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Destroy sentinel node
+        Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
+    }
+
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
@@ -383,13 +380,19 @@ impl KernelModule for AuthModule {
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
 
-        let auth_zone_ids = api
-            .kernel_get_module_state()
-            .auth
-            .auth_zones_for_authorization(&Some(callee.clone()));
-        let auth_zones = Self::read_auth_zones(auth_zone_ids, api)?;
+        let barrier_crossings_allowed = if Self::is_barrier(&Some(callee.clone())) {
+            0
+        } else {
+            1
+        };
+        let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
 
-        if !Authentication::verify_method_auth(&method_auth, &auth_zones, api)? {
+        if !Authentication::verify_method_auth(
+            barrier_crossings_allowed,
+            auth_zone_id,
+            &method_auth,
+            api,
+        )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                 AuthError::Unauthorized(callee.identifier.clone(), method_auth),
             )));
@@ -416,24 +419,30 @@ impl KernelModule for AuthModule {
 
         // Prepare a new auth zone
         let is_barrier = Self::is_barrier(&actor);
-        let auth_module = &api.kernel_get_module_state().auth;
-        let auth_zone = if auth_module.auth_zone_stack.is_empty() {
-            let virtual_resources = auth_module.params.virtual_resources.clone();
-            let virtual_non_fungibles = auth_module.params.initial_proofs.clone();
-            AuthZone::new(
-                vec![],
-                virtual_resources,
-                virtual_non_fungibles,
-                virtual_non_fungibles_non_extending,
+        let is_transaction_processor = Self::is_transaction_processor(&actor);
+        let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
+            let auth_module = &api.kernel_get_module_state().auth;
+            (
+                auth_module.params.virtual_resources.clone(),
+                auth_module.params.initial_proofs.clone(),
             )
         } else {
-            AuthZone::new(
-                vec![],
-                BTreeSet::new(),
-                BTreeSet::new(),
-                virtual_non_fungibles_non_extending,
-            )
+            (BTreeSet::new(), BTreeSet::new())
         };
+        let parent = api
+            .kernel_get_module_state()
+            .auth
+            .auth_zone_stack
+            .last()
+            .map(|x| InternalRef(x.clone().into()));
+        let auth_zone = AuthZone::new(
+            vec![],
+            virtual_resources,
+            virtual_non_fungibles,
+            virtual_non_fungibles_non_extending,
+            is_barrier,
+            parent,
+        );
 
         // Create node
         let auth_zone_node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
@@ -454,7 +463,7 @@ impl KernelModule for AuthModule {
         api.kernel_get_module_state()
             .auth
             .auth_zone_stack
-            .push((auth_zone_node_id, is_barrier));
+            .push(auth_zone_node_id);
 
         Ok(())
     }
@@ -471,7 +480,7 @@ impl KernelModule for AuthModule {
             .pop()
             .expect("Auth zone stack is broken");
 
-        api.kernel_drop_node(auth_zone.0)?;
+        api.kernel_drop_node(auth_zone)?;
 
         // Proofs in auth zone will be re-owned by the frame and auto dropped.
 
