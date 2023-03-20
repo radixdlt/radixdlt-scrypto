@@ -12,8 +12,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceAddress {
-    NonFungible([u8; ADDRESS_HASH_LENGTH]),
     Fungible([u8; ADDRESS_HASH_LENGTH]),
+    NonFungible([u8; ADDRESS_HASH_LENGTH]),
 }
 
 impl TryFrom<&[u8]> for ResourceAddress {
