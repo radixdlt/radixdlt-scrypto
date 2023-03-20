@@ -82,6 +82,7 @@ impl IdentityNativePackage {
                     schema,
                     substates,
                     functions,
+                    system_functions: btreemap!(),
                     event_schema: [].into()
                 }
             ),

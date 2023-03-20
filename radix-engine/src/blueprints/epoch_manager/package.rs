@@ -99,6 +99,7 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
+            system_functions: btreemap!(),
             event_schema,
         };
 
@@ -191,6 +192,7 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
+            system_functions: btreemap!(),
             event_schema,
         };
 

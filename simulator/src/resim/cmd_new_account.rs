@@ -1,12 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, NonFungibleDataSchema,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
-    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey, NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, AccessRulesConfig};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
@@ -41,9 +36,10 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
+        let config = AccessRulesConfig::new().default(withdraw_auth.clone(), withdraw_auth);
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .new_account_advanced(withdraw_auth.clone(), withdraw_auth)
+            .new_account_advanced(config)
             .build();
 
         let receipt = handle_manifest(

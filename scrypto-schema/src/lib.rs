@@ -48,6 +48,8 @@ pub struct BlueprintSchema {
     pub substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
+    /// For each system function, there is a [`SystemFunctionSchema`]
+    pub system_functions: BTreeMap<u8, SystemFunctionSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
@@ -57,6 +59,11 @@ pub struct FunctionSchema {
     pub receiver: Option<Receiver>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
+    pub export_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct SystemFunctionSchema {
     pub export_name: String,
 }
 
@@ -76,6 +83,7 @@ impl Default for BlueprintSchema {
             },
             substates: Vec::default(),
             functions: BTreeMap::default(),
+            system_functions: BTreeMap::default(),
             event_schema: Default::default(),
         }
     }

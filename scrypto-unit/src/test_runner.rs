@@ -1370,6 +1370,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                     export_name: format!("{}_{}", blueprint_name, function_name),
                 }
             ),
+            system_functions: btreemap!(),
             event_schema: [].into(),
         },
     );

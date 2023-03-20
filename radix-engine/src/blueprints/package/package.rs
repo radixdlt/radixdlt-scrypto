@@ -34,6 +34,7 @@ pub enum PackageError {
     FailedToResolveLocalSchema { local_type_index: LocalTypeIndex },
     EventNameMismatch { expected: String, actual: String },
     InvalidEventSchema,
+    InvalidSystemFunction,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -262,6 +263,7 @@ impl PackageNativePackage {
                     schema,
                     substates,
                     functions,
+                    system_functions: btreemap!(),
                     event_schema: [].into()
                 }
             ),
@@ -457,51 +459,15 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // Validate schema
-        validate_package_schema(&schema)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&schema)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-
-        // Validate WASM
-        WasmValidator::default()
-            .validate(&code, &schema)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidWasm(e),
-                ))
-            })?;
-
-        // Build node init
-        let info = PackageInfoSubstate {
-            schema,
-            dependent_resources: BTreeSet::new(),
-            dependent_components: BTreeSet::new(),
-        };
-
-        let code_type = PackageCodeTypeSubstate::Wasm;
-        let code = PackageCodeSubstate { code };
-        let royalty = PackageRoyaltySubstate {
-            royalty_vault: None,
-            blueprint_royalty_configs: royalty_config,
-        };
-        let function_access_rules = FunctionAccessRulesSubstate {
-            access_rules: BTreeMap::new(),
-            default_auth: AccessRule::AllowAll,
-        };
-
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-
-        let address = globalize_package(
+        let address = Self::publish_wasm_internal(
             None,
-            info,
-            code_type,
             code,
-            royalty,
-            function_access_rules,
+            schema,
+            royalty_config,
             metadata,
-            Some(access_rules),
-            api,
+            access_rules,
+            api
         )?;
 
         Ok((address, bucket))
@@ -519,11 +485,44 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let access_rules = SecurifiedPackage::create_advanced(config, api)?;
+        let address = Self::publish_wasm_internal(
+            package_address,
+            code,
+            schema,
+            royalty_config,
+            metadata,
+            access_rules,
+            api
+        )?;
+
+        Ok(address)
+    }
+
+    fn publish_wasm_internal<Y>(
+        package_address: Option<[u8; 26]>, // TODO: Clean this up
+        code: Vec<u8>,
+        schema: PackageSchema,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+        access_rules: AccessRules,
+        api: &mut Y,
+    ) -> Result<PackageAddress, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
         // Validate schema
         validate_package_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        for BlueprintSchema {
+            system_functions, ..
+        } in schema.blueprints.values() {
+            if !system_functions.is_empty() {
+                return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::InvalidSystemFunction)));
+            }
+        }
 
         // Validate WASM
         WasmValidator::default()
@@ -551,8 +550,6 @@ impl PackageNativePackage {
             access_rules: BTreeMap::new(),
             default_auth: AccessRule::AllowAll,
         };
-
-        let access_rules = SecurifiedPackage::create_advanced(config, api)?;
 
         globalize_package(
             package_address,

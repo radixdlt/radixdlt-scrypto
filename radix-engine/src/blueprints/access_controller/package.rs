@@ -281,6 +281,7 @@ impl AccessControllerNativePackage {
                     schema,
                     substates,
                     functions,
+                    system_functions: btreemap!(),
                     event_schema
                 }
             ),

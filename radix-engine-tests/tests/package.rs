@@ -157,6 +157,7 @@ fn test_basic_package_missing_export() {
                     export_name: "not_exist".to_string(),
                 }
             ),
+            system_functions: btreemap!(),
             event_schema: [].into(),
         },
     );
