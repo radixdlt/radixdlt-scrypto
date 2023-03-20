@@ -10,6 +10,7 @@ use sbor::rust::string::String;
 pub enum InvocationDebugIdentifier {
     Function(FnIdentifier),
     Method(MethodIdentifier),
+    VirtualLazyLoad,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -84,5 +85,21 @@ impl Invocation for MethodInvocation {
 
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
         InvocationDebugIdentifier::Method(self.identifier.clone())
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VirtualLazyLoadInvocation {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub system_func_id: u8,
+    pub args: [u8; 26],
+}
+
+impl Invocation for VirtualLazyLoadInvocation {
+    type Output = IndexedScryptoValue;
+
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::VirtualLazyLoad
     }
 }

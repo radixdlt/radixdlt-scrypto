@@ -285,6 +285,33 @@ impl ExecutableInvocation for FunctionInvocation {
     }
 }
 
+impl ExecutableInvocation for VirtualLazyLoadInvocation {
+    type Exec = ScryptoExecutor;
+
+    fn resolve<D: KernelSubstateApi>(
+        self,
+        _api: &mut D,
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+        let resolved = ResolvedInvocation {
+            resolved_actor: None,
+            update: CallFrameUpdate::empty(),
+            args: IndexedScryptoValue::from_typed(&self.args),
+            executor: ScryptoExecutor {
+                package_address: self.package_address,
+                blueprint_name: self.blueprint_name,
+                ident: BlueprintFnIdent::System(self.system_func_id),
+                receiver: None,
+            },
+        };
+
+        Ok(resolved)
+    }
+
+    fn payload_size(&self) -> usize {
+        0
+    }
+}
+
 pub enum BlueprintFnIdent {
     Application(String),
     System(u8),
