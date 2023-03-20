@@ -101,7 +101,7 @@ impl<'a> QemuPluginInterface<'a> {
         self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server(SRV_SOCKET_FN);
     }
 
-    pub fn stop_counting(&mut self, key: &'static str, arg: Option<data_analyzer::OutputParam<'static>>) -> (usize, u64) {
+    pub fn stop_counting(&mut self, key: &'static str, arg: Option<data_analyzer::OutputParam>) -> (usize, u64) {
         let n = self.communicate_with_server(SRV_SOCKET_FN);
 
         if !self.enabled {
@@ -225,7 +225,7 @@ impl<'a> OutputData<'a> {
     fn write(&self, file: &mut File) {
         let spaces = std::iter::repeat(' ').take(4 * self.stack_depth).collect::<String>();
         let param: String = match self.param {
-            Some(OutputParam::Literal(v)) => v.into(),
+            Some(OutputParam::Literal(v)) => v.to_string(),
             Some(OutputParam::NumberI64(v)) => v.to_string(),
             Some(OutputParam::NumberU64(v)) => v.to_string(),
             _ => String::new()

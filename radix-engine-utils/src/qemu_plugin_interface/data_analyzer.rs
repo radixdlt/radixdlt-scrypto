@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
+use fixedstr::str32;
 
 
 
@@ -9,10 +10,10 @@ pub enum OutputDataEvent {
     FunctionExit
 }
 
-pub enum OutputParam<'a> {
+pub enum OutputParam {
     NumberI64(i64),
     NumberU64(u64),
-    Literal(&'a str)
+    Literal(str32)
 }
 
 pub struct OutputData<'a> {
@@ -21,7 +22,7 @@ pub struct OutputData<'a> {
     pub cpu_instructions: u64,
     pub cpu_instructions_calibrated: u64,
     pub function_name: &'a str, 
-    pub param: Option<OutputParam<'a>>,
+    pub param: Option<OutputParam>,
 }
 
 

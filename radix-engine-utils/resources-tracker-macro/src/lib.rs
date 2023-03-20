@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use proc_macro::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{
@@ -81,7 +83,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                                                             if let Some(p) = tp.path.segments.last() {
                                                                 if p.ident == "str" {
                                                                     println!("ty str: {}", pi.ident);
-                                                                    aarg = quote!{ Some( OutputParam::Literal(#pi)) };
+                                                                    aarg = quote!{ Some( OutputParam::Literal(#pi.into())) };
                                                                     break;
                                                                 } else {
                                                                     panic!("Not supported arg type: {}", p.ident);

@@ -40,9 +40,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-#[cfg(target_family = "unix")]
-#[cfg(feature = "resource_tracker")]
-use radix_engine_utils::*;
 use resources_tracker_macro::trace_resources;
 
 
