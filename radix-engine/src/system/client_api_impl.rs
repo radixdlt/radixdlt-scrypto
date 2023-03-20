@@ -561,7 +561,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
+            identifier: FunctionIdentifier::new(
                 package_address,
                 blueprint_name.to_string(),
                 function_name.to_string(),
@@ -730,11 +730,11 @@ where
                 },
                 Some(Actor {
                     identifier:
-                        ActorIdentifier::Function(FnIdentifier {
+                        ActorIdentifier::Function(FunctionIdentifier(
                             package_address,
                             ref blueprint_name,
                             ..
-                        }),
+                        )),
                     ..
                 }) => Ok((package_address, blueprint_name.clone())),
                 None => Err(RuntimeError::ApplicationError(
@@ -787,11 +787,11 @@ where
             )),
             Some(Actor {
                 identifier:
-                    ActorIdentifier::Function(FnIdentifier {
+                    ActorIdentifier::Function(FunctionIdentifier(
                         package_address,
                         blueprint_name,
                         ..
-                    }),
+                    )),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(

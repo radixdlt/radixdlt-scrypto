@@ -31,10 +31,10 @@ impl NodeMoveModule {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                         if let Some(Actor {
                             identifier:
-                                ActorIdentifier::Function(FnIdentifier {
-                                    package_address: RESOURCE_MANAGER_PACKAGE,
+                                ActorIdentifier::Function(FunctionIdentifier(
+                                    RESOURCE_MANAGER_PACKAGE,
                                     ..
-                                }),
+                                )),
                             ..
                         }) = actor
                         {

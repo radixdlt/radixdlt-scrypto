@@ -216,15 +216,20 @@ impl ExecutableInvocation for FunctionInvocation {
         let nodes_to_move = value.owned_node_ids().clone();
         let mut node_refs_to_copy = value.references().clone();
 
-        let actor = Actor::function(self.fn_identifier.clone());
+        let fn_identifier = FnIdentifier::new(
+            self.identifier.0,
+            self.identifier.1.clone(),
+            self.identifier.2.clone(),
+        );
+        let actor = Actor::function(fn_identifier, self.identifier.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if self.fn_identifier.package_address.eq(&PACKAGE_PACKAGE) {
+            if self.identifier.0.eq(&PACKAGE_PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else if self
-                .fn_identifier
-                .package_address
+                .identifier
+                .0
                 .eq(&TRANSACTION_PROCESSOR_PACKAGE)
             {
                 // Required for bootstrap.
@@ -232,7 +237,7 @@ impl ExecutableInvocation for FunctionInvocation {
                 // Will just disable the module for genesis.
             } else {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                    RENodeId::GlobalObject(self.identifier.0.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -258,7 +263,7 @@ impl ExecutableInvocation for FunctionInvocation {
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
             node_refs_to_copy.insert(RENodeId::GlobalObject(
-                self.fn_identifier.package_address.into(),
+                self.identifier.0.into(),
             ));
         }
 
@@ -270,9 +275,9 @@ impl ExecutableInvocation for FunctionInvocation {
             },
             args: value,
             executor: ScryptoExecutor {
-                package_address: self.fn_identifier.package_address,
-                blueprint_name: self.fn_identifier.blueprint_name,
-                ident: BlueprintFnIdent::Application(self.fn_identifier.ident),
+                package_address: self.identifier.0,
+                blueprint_name: self.identifier.1,
+                ident: BlueprintFnIdent::Application(self.identifier.2),
                 receiver: None,
             },
         };
@@ -281,7 +286,7 @@ impl ExecutableInvocation for FunctionInvocation {
     }
 
     fn payload_size(&self) -> usize {
-        self.args.len() + self.fn_identifier.size()
+        self.args.len() + self.identifier.size()
     }
 }
 

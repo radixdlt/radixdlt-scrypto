@@ -57,13 +57,13 @@ impl AuthModule {
     }
 
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
-        identifier: &FnIdentifier,
+        identifier: &FunctionIdentifier,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = if identifier.package_address.eq(&PACKAGE_PACKAGE) {
+        let auth = if identifier.0.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
-            if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                && identifier.ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
+            if identifier.1.eq(PACKAGE_BLUEPRINT)
+                && identifier.2.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
                     HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
@@ -73,7 +73,7 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(identifier.package_address.into()),
+                RENodeId::GlobalObject(identifier.0.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
@@ -81,8 +81,8 @@ impl AuthModule {
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
             let function_key = FnKey::new(
-                identifier.blueprint_name.to_string(),
-                identifier.ident.to_string(),
+                identifier.1.to_string(),
+                identifier.2.to_string(),
             );
             let access_rule = package_access_rules
                 .access_rules

@@ -8,17 +8,11 @@ use sbor::rust::string::String;
 // TODO: Remove
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum InvocationDebugIdentifier {
-    Function(FnIdentifier),
+    Function(FunctionIdentifier),
     Method(MethodIdentifier),
     VirtualLazyLoad,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct FnIdentifier {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-    pub ident: String,
-}
 
 impl FnIdentifier {
     pub fn fn_key(&self) -> FnKey {
@@ -36,6 +30,34 @@ impl MethodIdentifier {
     pub fn method_key(&self) -> MethodKey {
         MethodKey::new(self.1, self.2.as_str())
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct FunctionIdentifier(pub PackageAddress, pub String, pub String);
+
+impl FunctionIdentifier {
+    pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
+        Self(package_address, blueprint_name, ident)
+    }
+
+    pub fn package_address(&self) -> PackageAddress {
+        self.0
+    }
+
+    pub fn blueprint_name(&self) -> &String {
+        &self.1
+    }
+
+    pub fn size(&self) -> usize {
+        self.1.len() + self.2.len() + self.0.size()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct FnIdentifier {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub ident: String,
 }
 
 impl FnIdentifier {
@@ -62,15 +84,16 @@ impl FnIdentifier {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FunctionInvocation {
-    pub fn_identifier: FnIdentifier,
+    pub identifier: FunctionIdentifier,
     pub args: Vec<u8>,
 }
+
 
 impl Invocation for FunctionInvocation {
     type Output = IndexedScryptoValue;
 
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Function(self.fn_identifier.clone())
+        InvocationDebugIdentifier::Function(self.identifier.clone())
     }
 }
 
