@@ -80,6 +80,10 @@ impl VisibilityProperties {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
+            (ExecutionMode::System, offset) => match offset {
+                SubstateOffset::AuthZone(_) => read_only,
+                _ => false,
+            },
             (ExecutionMode::KernelModule, offset) => match offset {
                 // TODO: refine based on specific module
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {

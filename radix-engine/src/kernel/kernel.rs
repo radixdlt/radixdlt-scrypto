@@ -437,6 +437,7 @@ where
     ) -> Result<(), RuntimeError> {
         match (cur, next) {
             (ExecutionMode::Kernel, ..) => Ok(()),
+            (ExecutionMode::Client, ExecutionMode::System) => Ok(()),
             _ => Err(RuntimeError::KernelError(
                 KernelError::InvalidModeTransition(*cur, *next),
             )),
@@ -589,7 +590,7 @@ where
         Ok(output)
     }
 
-    fn execute_in_mode<X, RTN, E>(
+    pub fn execute_in_mode<X, RTN, E>(
         &mut self,
         execution_mode: ExecutionMode,
         execute: X,

@@ -1,6 +1,6 @@
 use crate::errors::SystemError;
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -687,23 +687,27 @@ where
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
+        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = convert_contextless(&rule);
-
         let barrier_crossings_allowed = 0;
         let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
 
-        if !Authentication::verify_method_auth(
-            barrier_crossings_allowed,
-            auth_zone_id,
-            &authorization,
-            self,
-        )? {
-            return Err(RuntimeError::SystemError(
-                SystemError::AssertAccessRuleFailed,
-            ));
-        }
-
-        Ok(())
+        // Authenticate
+        // TODO: should we just run in `Client` model?
+        // Currently, this is to allow authentication to read auth zone substates directly without invocation.
+        self.execute_in_mode(ExecutionMode::System, |api| {
+            if !Authentication::verify_method_auth(
+                barrier_crossings_allowed,
+                auth_zone_id,
+                &authorization,
+                api,
+            )? {
+                return Err(RuntimeError::SystemError(
+                    SystemError::AssertAccessRuleFailed,
+                ));
+            }
+            Ok(())
+        })
     }
 }
 

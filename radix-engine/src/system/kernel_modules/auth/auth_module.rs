@@ -375,11 +375,11 @@ impl KernelModule for AuthModule {
         _call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let method_auth = match &callee.identifier {
+        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
+        let authorization = match &callee.identifier {
             ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
-
         let barrier_crossings_allowed = if Self::is_barrier(&Some(callee.clone())) {
             0
         } else {
@@ -387,14 +387,15 @@ impl KernelModule for AuthModule {
         };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
 
+        // Authenticate
         if !Authentication::verify_method_auth(
             barrier_crossings_allowed,
             auth_zone_id,
-            &method_auth,
+            &authorization,
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(callee.identifier.clone(), method_auth),
+                AuthError::Unauthorized(callee.identifier.clone(), authorization),
             )));
         }
 
