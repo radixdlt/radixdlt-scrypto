@@ -8,7 +8,7 @@ use crate::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
+    InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, AllocateEntityType, SubstateOffset,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -74,7 +74,7 @@ impl KernelModule for KernelTraceModule {
 
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_type: &RENodeType,
+        node_type: &AllocateEntityType,
     ) -> Result<(), RuntimeError> {
         log!(api, "Allocating node id: type = {:?}", node_type);
         Ok(())

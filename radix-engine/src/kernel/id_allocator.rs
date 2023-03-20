@@ -60,39 +60,39 @@ impl IdAllocator {
         ids.insert(node_id);
     }
 
-    pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+    pub fn allocate_node_id(&mut self, node_type: AllocateEntityType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
-            RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
-            RENodeType::KeyValueStore => {
+            AllocateEntityType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
+            AllocateEntityType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }
-            RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
-            RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
-            RENodeType::GlobalPackage => self
+            AllocateEntityType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
+            AllocateEntityType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
+            AllocateEntityType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalEpochManager => self
+            AllocateEntityType::GlobalEpochManager => self
                 .new_epoch_manager_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalValidator => self
+            AllocateEntityType::GlobalValidator => self
                 .new_validator_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalFungibleResourceManager => self
+            AllocateEntityType::GlobalFungibleResourceManager => self
                 .new_fungible_resource_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalNonFungibleResourceManager => self
+            AllocateEntityType::GlobalNonFungibleResourceManager => self
                 .new_non_fungible_resource_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalAccount => self
+            AllocateEntityType::GlobalAccount => self
                 .new_account_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalIdentity => self
+            AllocateEntityType::GlobalIdentity => self
                 .new_identity_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalComponent => self
+            AllocateEntityType::GlobalComponent => self
                 .new_component_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalAccessController => self
+            AllocateEntityType::GlobalAccessController => self
                 .new_access_controller_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
         }
