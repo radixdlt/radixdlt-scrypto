@@ -1297,6 +1297,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    // TODO: remove this method
     pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {
@@ -1419,6 +1420,17 @@ impl<'a> SubstateRef<'a> {
                     substate.vaults.key_value_store_id(),
                 ));
                 (HashSet::new(), owned_nodes)
+            }
+            SubstateRef::AuthZone(substate) => {
+                let mut references = HashSet::new();
+                let mut owned_nodes = Vec::new();
+                for proof in &substate.proofs {
+                    owned_nodes.push(RENodeId::Object(proof.0));
+                }
+                if let Some(parent) = substate.parent {
+                    references.insert(RENodeId::Object(parent.0));
+                }
+                (references, owned_nodes)
             }
             _ => (HashSet::new(), Vec::new()),
         }

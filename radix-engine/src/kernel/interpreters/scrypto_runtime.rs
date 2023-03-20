@@ -7,6 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::vec::Vec;
 
@@ -219,8 +220,13 @@ where
         self.allocate_buffer(buffer)
     }
 
-    fn assert_access_rule(&mut self, _rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        todo!()
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let rule =
+            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRules)?;
+
+        self.api
+            .assert_access_rule(rule)
+            .map_err(InvokeError::downstream)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {

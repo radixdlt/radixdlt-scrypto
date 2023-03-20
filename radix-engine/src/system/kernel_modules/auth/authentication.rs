@@ -50,6 +50,8 @@ impl Authentication {
         let mut remaining_barrier_crossings_allowed = barrier_crossings_allowed;
         let mut current_auth_zone_id = auth_zone_id;
         let mut rev_index = 0;
+        let mut handles = Vec::new();
+        let mut pass = false;
         loop {
             // Load auth zone
             let handle = api.kernel_lock_substate(
@@ -60,11 +62,12 @@ impl Authentication {
             )?;
             let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
             let auth_zone = auth_zone.clone();
-            api.kernel_drop_lock(handle)?;
+            handles.push(handle);
 
             // Check
             if check(&auth_zone, rev_index, api)? {
-                return Ok(true);
+                pass = true;
+                break;
             }
 
             // Progress
@@ -82,7 +85,11 @@ impl Authentication {
             rev_index += 1;
         }
 
-        Ok(false)
+        for handle in handles {
+            api.kernel_drop_lock(handle)?;
+        }
+
+        Ok(pass)
     }
 
     fn auth_zone_stack_has_amount<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
