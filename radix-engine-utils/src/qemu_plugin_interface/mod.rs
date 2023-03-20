@@ -5,8 +5,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use shared_memory::*;
 
-mod data_analyzer;
-use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent};
+pub mod data_analyzer;
+pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
+
 
 
 const SRV_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-server.socket";
@@ -77,7 +78,7 @@ impl<'a> QemuPluginInterface<'a> {
         self.stack_top
     }
 
-    pub fn start_counting(&mut self, key: &'static str) {
+    pub fn start_counting(&mut self, key: &'static str, arg: Option<data_analyzer::OutputParam>) {
         if !self.enabled {
             return;
         }
@@ -245,12 +246,12 @@ impl QemuPluginInterfaceCalibrator {
     }
 
     fn calibrate_inner() -> u64 {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner") );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", None) );
         QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner") ).1
     }
 
     fn calibrate() -> (u64, u64) {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate") );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", None) );
         let ret = QemuPluginInterfaceCalibrator::calibrate_inner();
         (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate") ).1, ret)
     }

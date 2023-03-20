@@ -9,9 +9,10 @@ pub enum OutputDataEvent {
     FunctionExit
 }
 
-pub enum OutputParam {
-    Number(i64),
-    //Literal(fstr<50>)
+pub enum OutputParam<'a> {
+    NumberI64(i64),
+    NumberU64(u64),
+    Literal(&'a str)
 }
 
 pub struct OutputData<'a> {
@@ -20,7 +21,7 @@ pub struct OutputData<'a> {
     pub cpu_instructions: u64,
     pub cpu_instructions_calibrated: u64,
     pub function_name: &'a str, 
-    pub param: Option<OutputParam>,
+    pub param: Option<OutputParam<'a>>,
 }
 
 
