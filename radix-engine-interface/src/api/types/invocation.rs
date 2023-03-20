@@ -1,5 +1,5 @@
 use crate::api::types::*;
-use crate::blueprints::resource::{FnKey, MethodKey};
+use crate::blueprints::resource::MethodKey;
 use crate::data::scrypto::model::*;
 use crate::*;
 use sbor::rust::prelude::*;
@@ -11,13 +11,6 @@ pub enum InvocationDebugIdentifier {
     Function(FunctionIdentifier),
     Method(MethodIdentifier),
     VirtualLazyLoad,
-}
-
-
-impl FnIdentifier {
-    pub fn fn_key(&self) -> FnKey {
-        FnKey::new(self.blueprint_name.clone(), self.ident.clone())
-    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
@@ -53,11 +46,27 @@ impl FunctionIdentifier {
     }
 }
 
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum FnIdent {
+    Application(String),
+    System(u8),
+}
+
+impl FnIdent {
+    pub fn len(&self) -> usize {
+        match self {
+            FnIdent::System(..) => 1,
+            FnIdent::Application(ident) => ident.len(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-    pub ident: String,
+    pub ident: FnIdent,
 }
 
 impl FnIdentifier {
@@ -65,7 +74,7 @@ impl FnIdentifier {
         Self {
             package_address,
             blueprint_name,
-            ident,
+            ident: FnIdent::Application(ident),
         }
     }
 
