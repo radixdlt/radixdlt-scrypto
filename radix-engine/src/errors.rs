@@ -202,6 +202,7 @@ pub enum SystemError {
         actual_blueprint: String,
     },
     SubstateValidationError(SubstateValidationError),
+    AssertAccessRuleFailed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -12,7 +12,6 @@ use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProo
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
     EmptyAuthZone,
-    AssertAccessRuleFailed,
     ComposeProofError(ComposeProofError),
 }
 

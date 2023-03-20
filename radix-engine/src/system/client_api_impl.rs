@@ -33,6 +33,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+use super::kernel_modules::auth::{convert_contextless, AuthModule, Authentication};
 use super::kernel_modules::costing::CostingReason;
 
 impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
@@ -134,28 +135,6 @@ where
         if info.flags.contains(LockFlags::MUTABLE) {}
 
         self.kernel_drop_lock(lock_handle)
-    }
-}
-
-impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
-    }
-}
-
-impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
-        todo!()
-    }
-
-    fn assert_access_rule(&mut self, _rule: AccessRule) -> Result<(), RuntimeError> {
-        todo!()
     }
 }
 
@@ -679,6 +658,57 @@ where
         self.kernel_get_module_state()
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
+    }
+}
+
+impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
+    }
+}
+
+impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        let auth_zone = self
+            .kernel_get_module_state()
+            .auth
+            .auth_zone_stack
+            .last()
+            .cloned()
+            .expect("No auth zone found");
+
+        Ok(auth_zone.0.into())
+    }
+
+    fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        let authorization = convert_contextless(&rule);
+
+        let auth_zone_ids = self
+            .kernel_get_module_state()
+            .auth
+            .auth_zones_for_authorization(&None);
+
+        let auth_zones = AuthModule::read_auth_zones(auth_zone_ids, self)?;
+
+        if !Authentication::verify_method_auth(&authorization, &auth_zones, self)? {
+            return Err(RuntimeError::SystemError(
+                SystemError::AssertAccessRuleFailed,
+            ));
+        }
+
+        Ok(())
     }
 }
 

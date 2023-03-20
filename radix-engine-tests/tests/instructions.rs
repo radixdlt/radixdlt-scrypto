@@ -89,9 +89,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }

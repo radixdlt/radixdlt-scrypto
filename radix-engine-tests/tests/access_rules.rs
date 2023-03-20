@@ -365,9 +365,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AuthZoneError::AssertAccessRuleFailed)
         )
     })
 }

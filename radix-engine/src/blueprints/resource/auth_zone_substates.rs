@@ -8,7 +8,6 @@ pub struct AuthZone {
     pub(super) virtual_resources: BTreeSet<ResourceAddress>,
     pub(super) virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     pub(super) virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
-    pub(super) barrier: bool,
 }
 
 impl Clone for AuthZone {
@@ -18,7 +17,6 @@ impl Clone for AuthZone {
             virtual_resources: self.virtual_resources.clone(),
             virtual_non_fungibles: self.virtual_non_fungibles.clone(),
             virtual_non_fungibles_non_extending: self.virtual_non_fungibles_non_extending.clone(),
-            barrier: self.barrier.clone(),
         }
     }
 }
@@ -29,14 +27,12 @@ impl AuthZone {
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
-        barrier: bool,
     ) -> Self {
         Self {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
             virtual_non_fungibles_non_extending,
-            barrier,
         }
     }
 
@@ -54,10 +50,6 @@ impl AuthZone {
 
     pub fn virtual_non_fungibles_non_extending(&self) -> &BTreeSet<NonFungibleGlobalId> {
         &self.virtual_non_fungibles_non_extending
-    }
-
-    pub fn is_barrier(&self) -> bool {
-        self.barrier
     }
 
     pub fn push(&mut self, proof: Proof) {
