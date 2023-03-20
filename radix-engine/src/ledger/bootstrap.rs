@@ -671,25 +671,6 @@ mod tests {
             .contains(&PACKAGE_PACKAGE));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
-
-        println!(
-            "{:?}",
-            Bech32Encoder::for_simulator().encode_component_address_to_string(&EPOCH_MANAGER)
-        );
-        println!(
-            "{:?}",
-            Bech32Encoder::for_simulator().encode_component_address_to_string(&CLOCK)
-        );
-        println!(
-            "{:?}",
-            Bech32Encoder::for_simulator()
-                .encode_component_address_to_string(&ComponentAddress::Validator([1u8; 26]))
-        );
-        println!(
-            "{:?}",
-            Bech32Encoder::for_simulator()
-                .encode_component_address_to_string(&ComponentAddress::AccessController([1u8; 26]))
-        );
     }
 
     #[test]
