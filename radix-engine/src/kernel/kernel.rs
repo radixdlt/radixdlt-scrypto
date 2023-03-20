@@ -181,7 +181,7 @@ where
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                 KernelModuleMixer::before_push_frame(
                     api,
-                    &Some(actor.clone()),
+                    &actor,
                     &mut call_frame_update,
                     &args,
                 )
@@ -194,7 +194,7 @@ where
 
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
-                actor.clone(),
+                actor,
                 call_frame_update,
             )?;
             let parent = mem::replace(&mut self.current_frame, frame);

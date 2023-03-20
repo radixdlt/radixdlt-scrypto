@@ -377,7 +377,7 @@ impl CallFrame {
 
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
-        actor: Actor,
+        actor: Option<Actor>,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashMap::new();
@@ -395,7 +395,7 @@ impl CallFrame {
 
         let frame = Self {
             depth: parent.depth + 1,
-            actor: Some(actor),
+            actor,
             immortal_node_refs: next_node_refs,
             temp_node_refs: HashMap::new(),
             owned_root_nodes: owned_heap_nodes,

@@ -37,6 +37,6 @@ pub struct ResolvedInvocation<E: Executor> {
     pub update: CallFrameUpdate,
 
     // TODO: Make these two RENodes / Substates
-    pub resolved_actor: Actor,
+    pub resolved_actor: Option<Actor>,
     pub args: IndexedScryptoValue,
 }

@@ -184,7 +184,7 @@ impl ExecutableInvocation for MethodInvocation {
         };
 
         let resolved = ResolvedInvocation {
-            resolved_actor: actor,
+            resolved_actor: Some(actor),
             update: CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
@@ -261,7 +261,7 @@ impl ExecutableInvocation for FunctionInvocation {
         }
 
         let resolved = ResolvedInvocation {
-            resolved_actor: actor,
+            resolved_actor: Some(actor),
             update: CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
