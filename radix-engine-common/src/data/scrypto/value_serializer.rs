@@ -868,7 +868,7 @@ mod tests {
                     "value": [
                         {
                             "type": "Address",
-                            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+                            "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
                         },
                         {
                             "type": "Own",
