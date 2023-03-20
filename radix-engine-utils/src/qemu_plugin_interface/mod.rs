@@ -78,7 +78,7 @@ impl<'a> QemuPluginInterface<'a> {
         self.stack_top
     }
 
-    pub fn start_counting(&mut self, key: &'static str, arg: Option<data_analyzer::OutputParam>) {
+    pub fn start_counting(&mut self, key: &'static str) {
         if !self.enabled {
             return;
         }
@@ -101,7 +101,7 @@ impl<'a> QemuPluginInterface<'a> {
         self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server(SRV_SOCKET_FN);
     }
 
-    pub fn stop_counting(&mut self, key: &'static str) -> (usize, u64) {
+    pub fn stop_counting(&mut self, key: &'static str, arg: Option<data_analyzer::OutputParam<'static>>) -> (usize, u64) {
         let n = self.communicate_with_server(SRV_SOCKET_FN);
 
         if !self.enabled {
@@ -121,7 +121,7 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions: self.counters_stack[self.stack_top].1,
             cpu_instructions_calibrated: 0,
             function_name: key,
-            param: None });
+            param: arg });
 
         let ret = self.counters_stack[self.stack_top].1;
         (self.stack_top, ret)
@@ -224,11 +224,17 @@ impl<'a> Drop for QemuPluginInterface<'a> {
 impl<'a> OutputData<'a> {
     fn write(&self, file: &mut File) {
         let spaces = std::iter::repeat(' ').take(4 * self.stack_depth).collect::<String>();
+        let param: String = match self.param {
+            Some(OutputParam::Literal(v)) => v.into(),
+            Some(OutputParam::NumberI64(v)) => v.to_string(),
+            Some(OutputParam::NumberU64(v)) => v.to_string(),
+            _ => String::new()
+        };
         match self.event {
             OutputDataEvent::FunctionEnter => 
-                file.write(format!("{}++enter: {} {} {}\n", spaces, self.function_name, self.stack_depth, "").as_bytes()).expect("Unable to write output data"),
+                file.write(format!("{}++enter: {} {} {}\n", spaces, self.function_name, self.stack_depth, param).as_bytes()).expect("Unable to write output data"),
             OutputDataEvent::FunctionExit =>
-                file.write(format!("{}--exit: {} {} {} {} {}\n", spaces, self.function_name, self.stack_depth, self.cpu_instructions, self.cpu_instructions_calibrated, "").as_bytes()).expect("Unable to write output data")
+                file.write(format!("{}--exit: {} {} {} {} {}\n", spaces, self.function_name, self.stack_depth, self.cpu_instructions, self.cpu_instructions_calibrated, param).as_bytes()).expect("Unable to write output data")
         };
     }
 }
@@ -246,14 +252,14 @@ impl QemuPluginInterfaceCalibrator {
     }
 
     fn calibrate_inner() -> u64 {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", None) );
-        QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner") ).1
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner") );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner", None) ).1
     }
 
     fn calibrate() -> (u64, u64) {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", None) );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate") );
         let ret = QemuPluginInterfaceCalibrator::calibrate_inner();
-        (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate") ).1, ret)
+        (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate", None) ).1, ret)
     }
 
 

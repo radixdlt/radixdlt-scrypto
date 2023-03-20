@@ -111,11 +111,11 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         // let spaces = [' '; 40];
                         // //let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
                         // println!("[rtrack]{}++enter: {} {} {}", spaces[], #fn_signature, stack + 1, #arg);
-                        v.borrow_mut().start_counting(#fn_signature, #aarg);
+                        v.borrow_mut().start_counting(#fn_signature);
                     });
                     let ret = #original_block;
                     QEMU_PLUGIN.with(|v| {
-                        let (stack, cnt) = v.borrow_mut().stop_counting(#fn_signature);
+                        let (stack, cnt) = v.borrow_mut().stop_counting(#fn_signature, #aarg);
                         //let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
                         //println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #arg);
                     });
