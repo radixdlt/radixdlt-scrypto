@@ -27,46 +27,43 @@ function usage() {
     echo "      build   - Build fuzz test for given fuzzer."
     echo "                Binaries are built in 'release' format."
     echo "      run     - Run fuzz test for given fuzzer (default command)"
-    echo "                Available command options:"
-    echo "                <run_cmd_arg>  If points to the existing file,"
-    echo "                               then run once with the input from file (useful for crash reproduction),"
-    echo "                               else run for given number of seconds or infinitely if 'inf' specified."
-    echo "                               Set to '$DFLT_RUN_CMD_ARG' by default."
-    echo "                Currently in case of:"
-    echo "                - libfuzzer - fuzzing stops when crash/oom/timeout occurs"
-    echo "                - afl       - fuzzing continues when crash/oom/timeout occurs (reproduction data is saved to file)"
-    echo " Available commands"
+    echo "                It takes arguments that might be supplied to the specified fuzzers."
+    echo "                For more information try:"
+    echo "                  $0 [FUZZER] run -h"
+    echo "Available commands"
     echo "    generate-input - generate fuzzing input data"
     echo "  Subcommands:"
-    echo "       raw         - Do not process generated data"
-    echo "       unique      - Make the input data unique"
-    echo "       minimize    - Minimize the input data"
+    echo "        raw         - Do not process generated data"
+    echo "        unique      - Make the input data unique"
+    echo "        minimize    - Minimize the input data"
     echo "Examples:"
     echo "  - build AFL fuzz tests"
     echo "    $0 afl build"
-    echo "  - run AFL fuzz tests for 1h"
-    echo "    $0 afl run 3600"
+    echo "  - run AFL tests for 1h"
+    echo "    $0 afl run -V 3600"
+    echo "  - run LibFuzzer for 1h"
+    echo "    $0 libfuzzer run -max_total_time=3600"
+    echo "  - run simple-fuzzer for 1h"
+    echo "    $0 simple run --duration 3600"
     echo "  - reproduce some crash discovered by 'libfuzzer'"
     echo "    $0 libfuzzer run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
     echo "  - reproduce some crash discovered by 'libfuzzer' using 'simple-fuzzer'"
-    echo "    $0 simple run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+    echo "    RUST_BACKTRACE=1 $0 simple run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+}
+
+function error() {
+    local msg=$1
+    echo "error - $msg"
+    usage
+    exit 1
 }
 
 function fuzzer_libfuzzer() {
     local cmd=${1:-$DFLT_SUBCOMMAND}
+    shift
     local run_args=""
-    local run_cmd_args=
     if [ "$cmd" = "run" ] ; then
-        run_cmd_arg=${2:-$DFLT_RUN_CMD_ARG}
-        if [ "$run_cmd_arg" != "" -a -s $run_cmd_arg ] ; then
-            run_args+="$run_cmd_arg "
-        else
-            run_args="-- "
-            run_args+="-create_missing_dirs=1 "
-            if [ "$run_cmd_arg" != "inf" ] ; then
-                run_args+="-max_total_time=${run_cmd_arg} "
-            fi
-        fi
+        run_args="$@"
 
     elif [ "$cmd" = "init" ] ; then
         # initial setup:
@@ -99,22 +96,17 @@ function fuzzer_afl() {
     local cmd=${1:-$DFLT_SUBCOMMAND}
     local run_args="-T $target "
     local run_cmd_arg=
-    # run_cmd_arg might be in seconds or 'inf', when fuzzing infinitely
-    if [ $cmd = "run" ] ; then
-        run_cmd_arg=${2:-$DFLT_RUN_CMD_ARG}
-    fi
+    shift
+
     if [ $cmd = "build" ] ; then
         cargo afl build --release \
             --no-default-features --features std,afl \
             --target-dir target-afl
     else
-        if [ "$run_cmd_arg" != "inf" ] ; then
-            run_args+="-V ${run_cmd_arg} "
-        fi
         mkdir -p afl/${target}/out
-        AFL_AUTORESUME=1
+        export AFL_AUTORESUME=1
         set -x
-        cargo afl fuzz -i fuzz_input/${target} -o afl/${target} $run_args target-afl/release/${target}
+        cargo afl fuzz -i fuzz_input/${target} -o afl/${target} $@ -- target-afl/release/${target}
     fi
 }
 
@@ -122,22 +114,13 @@ function fuzzer_simple() {
     local cmd=${1:-$DFLT_SUBCOMMAND}
     local run_args=""
     local run_cmd_arg=
+    shift
 
-    if [ "$cmd" = "run" ] ; then
-        run_cmd_arg=${2:-$DFLT_RUN_CMD_ARG}
-
-        if [ "$run_cmd_arg" != "" -a -s $run_cmd_arg ] ; then
-            export RUST_BACKTRACE=full
-            run_args+="$run_cmd_arg "
-        elif [ "$run_cmd_arg" != "inf" ] ; then
-            run_args="-- --duration ${run_cmd_arg}"
-        fi
-    fi
     set -x
     cargo $cmd --release \
         --no-default-features --features std,simple-fuzzer \
         --bin $target \
-        $run_args
+        -- $@
 }
 
 function generate_input() {
@@ -210,7 +193,7 @@ elif [ $cmd = "generate-input" ] ; then
     generate_input $@
 else
     if [ $cmd != "help" -a $cmd != "h" ] ; then
-        echo "invalid command '$cmd' specified"
+        error "invalid command '$cmd' specified"
     fi
     usage
 fi
