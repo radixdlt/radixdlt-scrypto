@@ -181,7 +181,7 @@ impl ExecutableInvocation for MethodInvocation {
         let executor = ScryptoExecutor {
             package_address: fn_identifier.package_address,
             blueprint_name: fn_identifier.blueprint_name,
-            ident: fn_identifier.ident,
+            ident: BlueprintFnIdent::Application(fn_identifier.ident),
             receiver: Some(self.identifier),
         };
 
@@ -272,7 +272,7 @@ impl ExecutableInvocation for FunctionInvocation {
             executor: ScryptoExecutor {
                 package_address: self.fn_identifier.package_address,
                 blueprint_name: self.fn_identifier.blueprint_name,
-                ident: self.fn_identifier.ident,
+                ident: BlueprintFnIdent::Application(self.fn_identifier.ident),
                 receiver: None,
             },
         };
@@ -285,10 +285,15 @@ impl ExecutableInvocation for FunctionInvocation {
     }
 }
 
+pub enum BlueprintFnIdent {
+    Application(String),
+    System(u8),
+}
+
 pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-    pub ident: String,
+    pub ident: BlueprintFnIdent,
     pub receiver: Option<MethodIdentifier>,
 }
 
@@ -308,7 +313,10 @@ impl Executor for ScryptoExecutor {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
-            let export_name = self.ident.to_string(); // TODO: Clean this up
+            let export_name = match self.ident {
+                BlueprintFnIdent::Application(ident) => ident,
+                BlueprintFnIdent::System(..) => return Err(RuntimeError::InterpreterError(InterpreterError::InvalidSystemCall)),
+            };
                                                                     // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalObject(self.package_address.into()),
@@ -333,8 +341,10 @@ impl Executor for ScryptoExecutor {
         {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
-
-            let export_name = self.ident.to_string();
+            let export_name = match self.ident {
+                BlueprintFnIdent::Application(ident) => ident,
+                BlueprintFnIdent::System(..) => return Err(RuntimeError::InterpreterError(InterpreterError::InvalidSystemCall)),
+            };
 
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
@@ -378,12 +388,24 @@ impl Executor for ScryptoExecutor {
             };
 
             //  Validate input
-            let export_name = validate_input(
-                &schema,
-                &self.ident,
-                self.receiver.is_some(),
-                &args,
-            )?;
+            let export_name = match &self.ident {
+                BlueprintFnIdent::Application(ident) => {
+                    let export_name = validate_input(
+                        &schema,
+                        &ident,
+                        self.receiver.is_some(),
+                        &args,
+                    )?;
+                    export_name
+                },
+                BlueprintFnIdent::System(system_func_id) => {
+                    if let Some(sys_func) = schema.system_functions.get(&system_func_id) {
+                        sys_func.export_name.to_string()
+                    } else {
+                        return Err(RuntimeError::InterpreterError(InterpreterError::InvalidSystemCall));
+                    }
+                }
+            };
 
             // Interpret
             let code_type = {
@@ -466,7 +488,20 @@ impl Executor for ScryptoExecutor {
             };
 
             // Validate output
-            validate_output(&schema, &self.ident, output)?
+            let output = match self.ident {
+                BlueprintFnIdent::Application(ident) => {
+                    validate_output(&schema, &ident, output)?
+                },
+                BlueprintFnIdent::System(..) => {
+                    // TODO: Validate against virtual schema
+                    let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(e))
+                    })?;
+                    value
+                }
+            };
+
+            output
         };
 
         let update = CallFrameUpdate {
