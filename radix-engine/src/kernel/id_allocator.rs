@@ -60,7 +60,10 @@ impl IdAllocator {
         ids.insert(node_id);
     }
 
-    pub fn allocate_node_id(&mut self, node_type: AllocateEntityType) -> Result<RENodeId, RuntimeError> {
+    pub fn allocate_node_id(
+        &mut self,
+        node_type: AllocateEntityType,
+    ) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             AllocateEntityType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
             AllocateEntityType::KeyValueStore => {

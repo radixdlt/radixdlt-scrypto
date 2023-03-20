@@ -236,73 +236,112 @@ where
         let mut parser = SubstateSchemaParser::new(&mut app_states);
         let (node_init, node_type) = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
-                )), AllocateEntityType::Object),
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
-                )), AllocateEntityType::Object),
-                PROOF_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
-                    SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()),
-                    SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
-                )), AllocateEntityType::Object),
-                BUCKET_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()),
-                    SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
-                    SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
-                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
-                    SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
-                )), AllocateEntityType::Object),
-                VAULT_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
-                    SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
-                    SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
-                )), AllocateEntityType::Vault),
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
+                    )),
+                    AllocateEntityType::Object,
+                ),
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
+                    )),
+                    AllocateEntityType::Object,
+                ),
+                PROOF_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
+                        SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()),
+                        SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
+                    )),
+                    AllocateEntityType::Object,
+                ),
+                BUCKET_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()),
+                        SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
+                        SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
+                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
+                        SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
+                    )),
+                    AllocateEntityType::Object,
+                ),
+                VAULT_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
+                    )),
+                    AllocateEntityType::Vault,
+                ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
             METADATA_PACKAGE => (RENodeInit::Object(btreemap!()), AllocateEntityType::Object),
             ROYALTY_PACKAGE => match blueprint_ident {
-                COMPONENT_ROYALTY_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
-                )), AllocateEntityType::Object),
+                COMPONENT_ROYALTY_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
+                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
+                    )),
+                    AllocateEntityType::Object,
+                ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
-            ACCESS_RULES_PACKAGE => (RENodeInit::Object(btreemap!(
-                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next())
-            )), AllocateEntityType::Object),
+            ACCESS_RULES_PACKAGE => (
+                RENodeInit::Object(btreemap!(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next())
+                )),
+                AllocateEntityType::Object,
+            ),
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
-                VALIDATOR_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next())
-                )), AllocateEntityType::Object),
-                EPOCH_MANAGER_BLUEPRINT => (RENodeInit::Object(btreemap!(
-                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(parser.decode_next()),
-                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()),
-                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next())
-                )), AllocateEntityType::Object),
+                VALIDATOR_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next())
+                    )),
+                    AllocateEntityType::Object,
+                ),
+                EPOCH_MANAGER_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(parser.decode_next()),
+                        SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()),
+                        SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next())
+                    )),
+                    AllocateEntityType::Object,
+                ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
-            ACCESS_CONTROLLER_PACKAGE => (RENodeInit::Object(btreemap!(
-                SubstateOffset::AccessController(AccessControllerOffset::AccessController)
-                    => RuntimeSubstate::AccessController(parser.decode_next())
-            )), AllocateEntityType::Object),
+            ACCESS_CONTROLLER_PACKAGE => (
+                RENodeInit::Object(btreemap!(
+                    SubstateOffset::AccessController(AccessControllerOffset::AccessController)
+                        => RuntimeSubstate::AccessController(parser.decode_next())
+                )),
+                AllocateEntityType::Object,
+            ),
             IDENTITY_PACKAGE => (RENodeInit::Object(btreemap!()), AllocateEntityType::Object),
-            ACCOUNT_PACKAGE => (RENodeInit::Object(btreemap!(
-                SubstateOffset::Account(AccountOffset::Account)
-                    => RuntimeSubstate::Account(parser.decode_next())
-            )), AllocateEntityType::Object),
-            CLOCK_PACKAGE => (RENodeInit::Object(btreemap!(
-                SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
-                    => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
-            )), AllocateEntityType::Object),
-            _ => (RENodeInit::Object(btreemap!(
-                SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
-                    ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
-                )
-            )), AllocateEntityType::Object),
+            ACCOUNT_PACKAGE => (
+                RENodeInit::Object(btreemap!(
+                    SubstateOffset::Account(AccountOffset::Account)
+                        => RuntimeSubstate::Account(parser.decode_next())
+                )),
+                AllocateEntityType::Object,
+            ),
+            CLOCK_PACKAGE => (
+                RENodeInit::Object(btreemap!(
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
+                        => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
+                )),
+                AllocateEntityType::Object,
+            ),
+            _ => (
+                RENodeInit::Object(btreemap!(
+                    SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
+                        ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
+                    )
+                )),
+                AllocateEntityType::Object,
+            ),
         };
         parser.end();
 
@@ -346,7 +385,9 @@ where
                     (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                         AllocateEntityType::GlobalAccessController
                     }
-                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => AllocateEntityType::GlobalValidator,
+                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => {
+                        AllocateEntityType::GlobalValidator
+                    }
                     _ => AllocateEntityType::GlobalComponent,
                 }
             }

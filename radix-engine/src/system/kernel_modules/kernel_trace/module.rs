@@ -8,7 +8,8 @@ use crate::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, AllocateEntityType, SubstateOffset,
+    AllocateEntityType, InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId,
+    SubstateOffset,
 };
 use sbor::rust::collections::BTreeMap;
 
