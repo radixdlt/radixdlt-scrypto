@@ -303,7 +303,7 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
                 fn_identifier: FnIdentifier {
                     package_address: self.package_address,
                     blueprint_name: self.blueprint_name.to_string(),
-                    ident: FnIdent::System(self.system_func_id),
+                    ident: FnIdent::System(self.virtual_func_id),
                 },
                 identifier: ActorIdentifier::VirtualLazyLoad,
             }),
@@ -314,7 +314,7 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
             executor: ScryptoExecutor {
                 package_address: self.package_address,
                 blueprint_name: self.blueprint_name,
-                ident: FnIdent::System(self.system_func_id),
+                ident: FnIdent::System(self.virtual_func_id),
                 receiver: None,
             },
         };

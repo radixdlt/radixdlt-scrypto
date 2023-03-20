@@ -124,7 +124,7 @@ impl Invocation for MethodInvocation {
 pub struct VirtualLazyLoadInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-    pub system_func_id: u8,
+    pub virtual_func_id: u8,
     pub args: [u8; 26],
 }
 

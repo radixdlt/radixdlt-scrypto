@@ -30,8 +30,6 @@ pub struct IdentitySecurifyToSingleBadgeInput {}
 
 pub type IdentitySecurifyToSingleBadgeOutput = Bucket;
 
-pub const IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT: &str = "create_virtual_ecdsa_256k1";
-pub const IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT: &str = "create_virtual_eddsa_25519";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VirtualLazyLoadInput {

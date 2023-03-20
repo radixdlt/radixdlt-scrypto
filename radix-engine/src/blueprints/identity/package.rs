@@ -10,11 +10,12 @@ use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::{FunctionSchema, SystemFunctionSchema};
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 
-pub const OWNER_GROUP_NAME: &str = "owner";
+pub const IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
+pub const IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME: &str = "create_virtual_eddsa_25519";
 
 pub struct IdentityNativePackage;
 
@@ -55,24 +56,14 @@ impl IdentityNativePackage {
             },
         );
 
-        // TODO: Make these not visible to client (should only be called by virtualization)
-        functions.insert(
-            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
-                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
-                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
+        let system_functions = btreemap!(
+            0u8 => SystemFunctionSchema {
+                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
             },
-        );
-        functions.insert(
-            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
-                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
-                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT.to_string(),
-            },
+            1u8 => SystemFunctionSchema {
+
+                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME.to_string(),
+            }
         );
 
         let schema = generate_full_schema(aggregator);
@@ -82,7 +73,7 @@ impl IdentityNativePackage {
                     schema,
                     substates,
                     functions,
-                    system_functions: btreemap!(),
+                    system_functions,
                     event_schema: [].into()
                 }
             ),
@@ -145,7 +136,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT => {
+            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -161,7 +152,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT => {
+            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {

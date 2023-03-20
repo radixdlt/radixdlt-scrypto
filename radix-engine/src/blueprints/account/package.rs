@@ -9,11 +9,10 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::api::types::ClientCostingReason;
-use radix_engine_interface::blueprints::identity::{VirtualLazyLoadInput, VirtualLazyLoadOutput};
+use radix_engine_interface::blueprints::identity::VirtualLazyLoadInput;
 
-//================
-// Account Create
-//================
+pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
+pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";
 
 pub struct AccountNativePackage;
 
@@ -25,17 +24,6 @@ impl AccountNativePackage {
         substates.push(aggregator.add_child_type_and_descendents::<AccountSubstate>());
 
         let mut functions = BTreeMap::new();
-
-        // TODO: Protect virtual functions from being called by client layer
-        functions.insert(
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
-                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
-                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT.to_string(),
-            },
-        );
 
         functions.insert(
             ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
@@ -200,7 +188,10 @@ impl AccountNativePackage {
 
         let system_functions = btreemap!(
             0u8 => SystemFunctionSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
+                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
+            },
+            1u8 => SystemFunctionSchema {
+                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -228,7 +219,7 @@ impl AccountNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT => {
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -244,7 +235,7 @@ impl AccountNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT => {
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {

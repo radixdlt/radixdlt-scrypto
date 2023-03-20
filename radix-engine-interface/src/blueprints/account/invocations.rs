@@ -44,12 +44,6 @@ pub struct AccountCreateInput {}
 
 pub type AccountCreateOutput = (ComponentAddress, Bucket);
 
-//=============
-// Account Virtual Lazy Load Functions
-//=============
-pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT: &str = "create_virtual_ecdsa_256k1";
-pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT: &str = "create_virtual_ecdsa_25519";
-
 //==================
 // Account Securify
 //==================

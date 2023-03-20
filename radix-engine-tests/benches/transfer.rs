@@ -28,13 +28,19 @@ fn bench_transfer(c: &mut Criterion) {
     let public_key = private_key.public_key();
 
     // Create two accounts
+    let config = AccessRulesConfig::new().default(
+        rule!(require(NonFungibleGlobalId::from_public_key(
+                    &public_key
+                ))),
+        rule!(require(NonFungibleGlobalId::from_public_key(
+                    &public_key
+                )))
+    );
     let accounts = (0..2)
         .map(|_| {
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
-                .new_account_advanced(rule!(require(NonFungibleGlobalId::from_public_key(
-                    &public_key
-                ))))
+                .new_account_advanced(config)
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_store,
