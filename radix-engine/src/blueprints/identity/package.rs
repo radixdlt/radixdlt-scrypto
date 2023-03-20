@@ -8,6 +8,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{FunctionSchema, SystemFunctionSchema};

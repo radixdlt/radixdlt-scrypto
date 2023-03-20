@@ -1,8 +1,6 @@
-use crate::api::types::NodeModuleId;
 use crate::blueprints::resource::*;
 use crate::*;
-use radix_engine_common::data::scrypto::model::{ComponentAddress, Own};
-use sbor::rust::collections::BTreeMap;
+use radix_engine_common::data::scrypto::model::ComponentAddress;
 use sbor::rust::fmt::Debug;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
@@ -29,11 +27,3 @@ pub const IDENTITY_SECURIFY_IDENT: &str = "securify";
 pub struct IdentitySecurifyToSingleBadgeInput {}
 
 pub type IdentitySecurifyToSingleBadgeOutput = Bucket;
-
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct VirtualLazyLoadInput {
-    pub id: [u8; 26],
-}
-
-pub type VirtualLazyLoadOutput = (Own, BTreeMap<NodeModuleId, Own>);

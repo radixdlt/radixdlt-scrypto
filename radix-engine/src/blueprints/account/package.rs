@@ -3,13 +3,13 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver, SystemFunctionSchema};
 
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::api::types::ClientCostingReason;
-use radix_engine_interface::blueprints::identity::VirtualLazyLoadInput;
 
 pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
 pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";

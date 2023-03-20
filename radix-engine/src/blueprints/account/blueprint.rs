@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Pr
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
-use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

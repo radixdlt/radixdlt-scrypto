@@ -23,7 +23,7 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::identity::VirtualLazyLoadInput;
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 
