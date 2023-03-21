@@ -1411,6 +1411,7 @@ dependencies = [
  "ed25519-dalek",
  "hex",
  "lazy_static",
+ "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
