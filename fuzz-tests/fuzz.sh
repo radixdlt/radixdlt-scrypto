@@ -20,16 +20,21 @@ function usage() {
     echo "    afl        - 'cargo afl' wrapper"
     echo "    simple     - simple fuzzer (default)"
     echo "  Subcommands:"
-    echo "      init    - Take sample input ('./fuzz_input/<target>') for given test,"
-    echo "                minimize the test corpus and put the result into 'corpus/<target>',"
-    echo "                which is used by 'libfuzzer' as initial input."
-    echo "                Applicable only for 'libfuzzer'."
-    echo "      build   - Build fuzz test for given fuzzer."
-    echo "                Binaries are built in 'release' format."
-    echo "      run     - Run fuzz test for given fuzzer (default command)"
-    echo "                It takes arguments that might be supplied to the specified fuzzers."
-    echo "                For more information try:"
-    echo "                  $0 [FUZZER] run -h"
+    echo "      init        - Take sample input ('./fuzz_input/<target>') for given test,"
+    echo "                    minimize the test corpus and put the result into 'corpus/<target>',"
+    echo "                    which is used by 'libfuzzer' as initial input."
+    echo "                    Applicable only for 'libfuzzer'."
+    echo "      build       - Build fuzz test for given fuzzer."
+    echo "                    Binaries are built in 'release' format."
+    echo "      run         - Run fuzz test for given fuzzer (default command)"
+    echo "                    It takes arguments that might be supplied to the specified fuzzers."
+    echo "                    For more information try:"
+    echo "                      $0 [FUZZER] run -h"
+    echo "     machine-init - Initialize the OS accordingly"
+    echo "                    In case of Linux:"
+    echo "                    - disable external utils handling coredumps"
+    echo "                    - disable CPU frequency scaling"
+    echo "                    Applcable only for 'afl'"
     echo "Available commands"
     echo "    generate-input - generate fuzzing input data"
     echo "  Subcommands:"
@@ -102,11 +107,26 @@ function fuzzer_afl() {
         cargo afl build --release \
             --no-default-features --features std,afl \
             --target-dir target-afl
-    else
+    elif [ $cmd = "run" ] ; then
         mkdir -p afl/${target}/out
         export AFL_AUTORESUME=1
         set -x
         cargo afl fuzz -i fuzz_input/${target} -o afl/${target} $@ -- target-afl/release/${target}
+    elif [ $cmd = "machine-init" ] ; then
+        uname="$(uname -s)"
+        if [ $uname = "Linux" ] ; then
+            set -x
+            # disable external utilities handling coredumps
+            sudo bash -c "echo core > /proc/sys/kernel/core_pattern"
+            # disable CPU frequency scaling
+            find /sys/devices/system/cpu -name scaling_governor | \
+                xargs -I {} sudo bash -c "echo performance > {}"
+        elif [ $uname = "Darwin" ] ; then
+            echo "If you see an error message like 'shmget() failed' above, try running the following command:"
+            echo "  sudo /Users/<username>/.local/share/afl.rs/rustc-<version>/afl.rs-<version>/afl/bin/afl-system-config"
+        else
+            error "OS '$uname' not supported"
+        fi
     fi
 }
 
