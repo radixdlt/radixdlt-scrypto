@@ -46,6 +46,7 @@ pub trait ExecutionFeeReserve {
     fn consume_royalty(
         &mut self,
         cost_units: u32,
+        recipient: RoyaltyRecipient,
         recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError>;
 
@@ -107,6 +108,12 @@ pub enum CostingReason {
     RunSystem,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+pub enum RoyaltyRecipient {
+    Package(PackageAddress),
+    Component(ComponentAddress),
+}
+
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
@@ -138,7 +145,7 @@ pub struct SystemLoanFeeReserve {
     execution_deferred: [u32; CostingReason::COUNT],
 
     /// Royalty costs
-    royalty_committed: HashMap<ObjectId, u128>,
+    royalty_committed: HashMap<RoyaltyRecipient, (ObjectId, u128)>,
 
     /// Payments made during the execution of a transaction.
     payments: Vec<(ObjectId, LiquidFungibleResource, bool)>,
@@ -237,6 +244,7 @@ impl SystemLoanFeeReserve {
     fn consume_royalty_internal(
         &mut self,
         cost_units: u32,
+        recipient: RoyaltyRecipient,
         recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError> {
         let amount = self.effective_royalty_price * cost_units as u128;
@@ -244,8 +252,9 @@ impl SystemLoanFeeReserve {
             return Err(FeeReserveError::InsufficientBalance);
         } else {
             self.royalty_committed
-                .entry(recipient_vault_id)
-                .or_default()
+                .entry(recipient)
+                .or_insert((recipient_vault_id, 0))
+                .1
                 .add_assign(amount);
             Ok(())
         }
@@ -277,12 +286,16 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn revert_royalty(&mut self) {
-        self.xrd_balance += self.royalty_committed.values().sum::<u128>();
+        self.xrd_balance += self.royalty_committed.values().map(|x| x.1).sum::<u128>();
         self.royalty_committed.clear();
     }
 
-    pub fn royalty_cost(&self) -> &HashMap<ObjectId, u128> {
-        &self.royalty_committed
+    pub fn royalty_cost(&self) -> HashMap<RoyaltyRecipient, (ObjectId, Decimal)> {
+        self.royalty_committed
+            .clone()
+            .into_iter()
+            .map(|(k, v)| (k, (v.0, u128_to_decimal(v.1))))
+            .collect()
     }
 
     pub fn execution_cost(&self) -> BTreeMap<CostingReason, u32> {
@@ -323,13 +336,14 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_royalty(
         &mut self,
         cost_units: u32,
+        recipient: RoyaltyRecipient,
         recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError> {
         if cost_units == 0 {
             return Ok(());
         }
 
-        self.consume_royalty_internal(cost_units, recipient_vault_id)?;
+        self.consume_royalty_internal(cost_units, recipient, recipient_vault_id)?;
 
         if !self.fully_repaid() && self.execution_committed_sum >= self.system_loan {
             self.repay_all()?;
@@ -394,6 +408,8 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeSummary {
         let execution_cost_breakdown = self.execution_cost();
+        let royalty_cost_breakdown = self.royalty_cost();
+        let total_royalty_cost_xrd = royalty_cost_breakdown.values().map(|x| x.1).sum();
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
@@ -401,11 +417,12 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_execution_cost_xrd: u128_to_decimal(
                 self.effective_execution_price * self.execution_committed_sum as u128,
             ),
-            total_royalty_cost_xrd: u128_to_decimal(self.royalty_cost().values().sum::<u128>()),
+            total_royalty_cost_xrd,
             total_bad_debt_xrd: u128_to_decimal(self.xrd_owed),
             locked_fees: self.payments,
             execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
+            royalty_cost_breakdown,
         }
     }
 }
@@ -526,7 +543,9 @@ mod tests {
         fee_reserve
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
-        fee_reserve.consume_royalty(2, TEST_VAULT_ID).unwrap();
+        fee_reserve
+            .consume_royalty(2, RoyaltyRecipient::Package(PACKAGE_PACKAGE), TEST_VAULT_ID)
+            .unwrap();
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
