@@ -87,12 +87,13 @@ impl CostingModule {
 fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     api: &mut Y,
     cost_units: u32,
+    recipient: RoyaltyRecipient,
     recipient_vault_id: ObjectId,
 ) -> Result<(), RuntimeError> {
     api.kernel_get_module_state()
         .costing
         .fee_reserve
-        .consume_royalty(cost_units, recipient_vault_id)
+        .consume_royalty(cost_units, recipient, recipient_vault_id)
         .map_err(|e| {
             RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
         })
@@ -187,16 +188,21 @@ impl KernelModule for CostingModule {
                 substate.royalty_vault = Some(new_vault);
                 new_vault.id()
             };
-            apply_royalty_cost(api, royalty_charge, vault_id)?;
+            apply_royalty_cost(
+                api,
+                royalty_charge,
+                RoyaltyRecipient::Package(package_address),
+                vault_id,
+            )?;
         }
         api.kernel_drop_lock(handle)?;
 
         //===========================
         // Apply component royalty
         //===========================
-        if let Some(component_node_id) = optional_component {
+        if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(component_node_id.clone().into()),
+                RENodeId::GlobalObject(component_address.clone().into()),
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
@@ -207,7 +213,7 @@ impl KernelModule for CostingModule {
 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(component_node_id.clone().into()),
+                    RENodeId::GlobalObject(component_address.clone().into()),
                     NodeModuleId::ComponentRoyalty,
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     LockFlags::MUTABLE,
@@ -222,7 +228,12 @@ impl KernelModule for CostingModule {
                     substate.royalty_vault = Some(new_vault);
                     new_vault.id()
                 };
-                apply_royalty_cost(api, royalty_charge, vault_id)?;
+                apply_royalty_cost(
+                    api,
+                    royalty_charge,
+                    RoyaltyRecipient::Component(component_address.clone()),
+                    vault_id,
+                )?;
                 api.kernel_drop_lock(handle)?;
             }
         }
