@@ -27,8 +27,13 @@ pub enum PackageError {
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
 
-    FailedToResolveLocalSchema { local_type_index: LocalTypeIndex },
-    EventNameMismatch { expected: String, actual: String },
+    FailedToResolveLocalSchema {
+        local_type_index: LocalTypeIndex,
+    },
+    EventNameMismatch {
+        expected: String,
+        actual: Option<String>,
+    },
     InvalidEventSchema,
 }
 
@@ -54,21 +59,6 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
         // it here again.
 
         for (expected_event_name, local_type_index) in event_schema.iter() {
-            // Checking that the event name is indeed what the user claims it to be
-            let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
-                Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_index: *local_type_index,
-                }),
-                |metadata| Ok(metadata.type_name.to_string()),
-            )?;
-
-            if *expected_event_name != actual_event_name {
-                Err(PackageError::EventNameMismatch {
-                    expected: expected_event_name.to_string(),
-                    actual: actual_event_name,
-                })?
-            }
-
             // Checking that the event is either a struct or an enum
             let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
@@ -81,6 +71,21 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
                 TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
                 _ => Err(PackageError::InvalidEventSchema),
             }?;
+
+            // Checking that the event name is indeed what the user claims it to be
+            let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                |metadata| Ok(metadata.get_name_string()),
+            )?;
+
+            if Some(expected_event_name) != actual_event_name.as_ref() {
+                Err(PackageError::EventNameMismatch {
+                    expected: expected_event_name.to_string(),
+                    actual: actual_event_name,
+                })?
+            }
         }
     }
 
