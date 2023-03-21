@@ -145,7 +145,7 @@ pub struct SystemLoanFeeReserve {
     execution_deferred: [u32; CostingReason::COUNT],
 
     /// Royalty costs
-    royalty_committed: HashMap<RoyaltyRecipient, (ObjectId, u128)>,
+    royalty_committed: BTreeMap<RoyaltyRecipient, (ObjectId, u128)>,
 
     /// Payments made during the execution of a transaction.
     payments: Vec<(ObjectId, LiquidFungibleResource, bool)>,
@@ -211,7 +211,7 @@ impl SystemLoanFeeReserve {
             execution_committed: [0u32; CostingReason::COUNT],
             execution_committed_sum: 0,
             execution_deferred: [0u32; CostingReason::COUNT],
-            royalty_committed: HashMap::new(),
+            royalty_committed: BTreeMap::new(),
 
             payments: Vec::new(),
         }
@@ -290,7 +290,7 @@ impl SystemLoanFeeReserve {
         self.royalty_committed.clear();
     }
 
-    pub fn royalty_cost(&self) -> HashMap<RoyaltyRecipient, (ObjectId, Decimal)> {
+    pub fn royalty_cost(&self) -> BTreeMap<RoyaltyRecipient, (ObjectId, Decimal)> {
         self.royalty_committed
             .clone()
             .into_iter()
@@ -302,7 +302,13 @@ impl SystemLoanFeeReserve {
         self.execution_committed
             .into_iter()
             .enumerate()
-            .map(|(i, sum)| (CostingReason::from_repr(i).unwrap(), sum))
+            .filter_map(|(i, sum)| {
+                if sum == 0 {
+                    None
+                } else {
+                    Some((CostingReason::from_repr(i).unwrap(), sum))
+                }
+            })
             .collect()
     }
 
@@ -552,10 +558,22 @@ mod tests {
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.execution_cost_sum, 2);
         assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("10"));
         assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
         assert_eq!(summary.locked_fees, vec![(TEST_VAULT_ID, xrd(100), false)]);
+        assert_eq!(
+            summary.execution_cost_breakdown,
+            btreemap!(
+                CostingReason::Invoke => 2
+            )
+        );
+        assert_eq!(summary.execution_cost_sum, 2);
+        assert_eq!(
+            summary.royalty_cost_breakdown,
+            btreemap!(
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("10"))
+            )
+        );
     }
 }
