@@ -161,7 +161,7 @@ function generate_input() {
 
         pushd ..
         # Collect input data
-        cargo nextest run -p radix-engine-tests --features dump_manifest_to_file can_withdraw_from_my_allocated_account
+        cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
         popd
         if [ $mode = "raw" ] ; then
             mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
