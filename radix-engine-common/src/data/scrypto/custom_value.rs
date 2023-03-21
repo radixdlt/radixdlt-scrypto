@@ -90,7 +90,7 @@ mod tests {
         let values = (
             Address::Package(PackageAddress::Normal([1u8; 26])),
             Address::Component(ComponentAddress::Normal([2u8; 26])),
-            Address::Resource(ResourceAddress::Normal([3u8; 26])),
+            Address::Resource(ResourceAddress::Fungible([3u8; 26])),
             Address::Component(ComponentAddress::EpochManager([4u8; 26])),
         );
         let bytes = scrypto_encode(&values).unwrap();
@@ -100,13 +100,13 @@ mod tests {
                 92, // prefix
                 33, // tuple
                 4,  // length
-                128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                128, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, // address
-                128, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                128, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                 2, // address
-                128, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                128, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
                 3, // address
-                128, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                128, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
                 4 // address
             ]
         );
@@ -126,7 +126,7 @@ mod tests {
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Address(Address::Resource(
-                            ResourceAddress::Normal([3u8; 26])
+                            ResourceAddress::Fungible([3u8; 26])
                         )),
                     },
                     ScryptoValue::Custom {
