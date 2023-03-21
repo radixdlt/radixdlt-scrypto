@@ -140,7 +140,7 @@ impl<
 impl<
         X: CustomValueKind,
         E: Encoder<X>,
-        K: Encode<X, E> + Categorize<X> + Ord + Hash,
+        K: Encode<X, E> + Categorize<X> + Hash + Eq + PartialEq,
         V: Encode<X, E> + Categorize<X>,
     > Encode<X, E> for IndexMap<K, V>
 {
@@ -154,11 +154,9 @@ impl<
         encoder.write_value_kind(K::value_kind())?;
         encoder.write_value_kind(V::value_kind())?;
         encoder.write_size(self.len())?;
-        let mut keys: Vec<&K> = self.keys().collect();
-        keys.sort();
-        for key in keys {
+        for (key, value) in self.iter() {
             encoder.encode_deeper_body(key)?;
-            encoder.encode_deeper_body(self.get(key).unwrap())?;
+            encoder.encode_deeper_body(value)?;
         }
         Ok(())
     }
@@ -335,7 +333,7 @@ mod schema {
                 TypeKind::Array {
                     element_type: T::TYPE_ID,
                 },
-                TypeMetadata::no_child_names("Set"),
+                TypeMetadata::unnamed(),
             ))
         }
 
@@ -358,7 +356,7 @@ mod schema {
                     key_type: K::TYPE_ID,
                     value_type: V::TYPE_ID,
                 },
-                TypeMetadata::no_child_names("Map"),
+                TypeMetadata::unnamed(),
             ))
         }
 

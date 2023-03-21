@@ -89,7 +89,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_type: &RENodeType,
+        _node_type: &AllocateEntityType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

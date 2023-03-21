@@ -13,7 +13,7 @@ export account=`$resim new-account | awk '/Account component address:/ {print $N
 export owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NonFungibleGlobalId:/ {print $NF}'`
 export package=`$resim publish ../examples/hello-world --owner-badge $owner_badge | awk '/Package:/ {print $NF}'`
 
-export xrd=resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety
+export xrd=resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k
 
 output=`$resim run ./tests/m1.rtm | awk '/Component:|Resource:/ {print $NF}'`
 export component=`echo $output | cut -d " " -f1`

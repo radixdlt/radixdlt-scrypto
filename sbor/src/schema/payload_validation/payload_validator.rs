@@ -406,10 +406,7 @@ mod tests {
             kind: BasicTypeKind::Array {
                 element_type: LocalTypeIndex::SchemaLocalIndex(1),
             },
-            metadata: TypeMetadata {
-                type_name: "Vec".into(),
-                child_names: None,
-            },
+            metadata: TypeMetadata::unnamed(),
             validation: TypeValidation::Array(LengthValidation {
                 min: 0.into(),
                 max: 1.into(),
@@ -417,10 +414,7 @@ mod tests {
         };
         let t1 = BasicTypeData {
             kind: BasicTypeKind::U8,
-            metadata: TypeMetadata {
-                type_name: "U8".into(),
-                child_names: None,
-            },
+            metadata: TypeMetadata::unnamed(),
             validation: TypeValidation::U8(NumericValidation {
                 min: 5.into(),
                 max: 6.into(),

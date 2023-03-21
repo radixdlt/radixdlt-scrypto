@@ -107,7 +107,7 @@ mod schema {
                     TypeKind::Array {
                         element_type: T::TYPE_ID,
                     },
-                    TypeMetadata::no_child_names("Array"),
+                    TypeMetadata::unnamed(),
                 )),
             }
         }
@@ -128,16 +128,18 @@ mod schema {
             let size = N
                 .try_into()
                 .expect("The array length is too large for a u32 for the SBOR schema");
-            let type_name = match T::TYPE_ID {
-                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => "Bytes",
-                _ => "Array",
+            let type_metadata = match T::TYPE_ID {
+                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
+                    TypeMetadata::no_child_names("Bytes")
+                }
+                _ => TypeMetadata::unnamed(),
             };
             Some(
                 TypeData::new(
                     TypeKind::Array {
                         element_type: T::TYPE_ID,
                     },
-                    TypeMetadata::no_child_names(type_name),
+                    type_metadata,
                 )
                 .with_validation(TypeValidation::Array(LengthValidation {
                     min: Some(size),

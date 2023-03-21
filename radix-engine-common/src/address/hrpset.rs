@@ -21,7 +21,8 @@ pub struct HrpSet {
 impl HrpSet {
     pub fn get_entity_hrp(&self, entity: &EntityType) -> &str {
         match entity {
-            EntityType::Resource => &self.resource,
+            EntityType::FungibleResource => &self.resource,
+            EntityType::NonFungibleResource => &self.resource,
             EntityType::Package => &self.package,
 
             EntityType::NormalComponent => &self.normal_component,

@@ -111,3 +111,9 @@ pub enum LocalTypeIndex {
     SchemaLocalIndex(usize),
 }
 impl SchemaTypeLink for LocalTypeIndex {}
+
+impl LocalTypeIndex {
+    pub fn any() -> Self {
+        Self::WellKnown(basic_well_known_types::ANY_ID)
+    }
+}

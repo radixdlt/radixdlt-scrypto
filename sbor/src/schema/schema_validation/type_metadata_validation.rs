@@ -42,7 +42,9 @@ pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
 pub fn validate_childless_metadata(
     type_metadata: &TypeMetadata,
 ) -> Result<(), SchemaValidationError> {
-    validate_type_name(type_metadata.type_name.as_ref())?;
+    if let Some(type_name) = &type_metadata.type_name {
+        validate_type_name(type_name.as_ref())?;
+    }
 
     if !matches!(type_metadata.child_names, None) {
         return Err(SchemaValidationError::TypeMetadataContainedUnexpectedChildNames);
@@ -54,7 +56,9 @@ pub fn validate_tuple_metadata(
     type_metadata: &TypeMetadata,
     field_count: usize,
 ) -> Result<(), SchemaValidationError> {
-    validate_type_name(type_metadata.type_name.as_ref())?;
+    if let Some(type_name) = &type_metadata.type_name {
+        validate_type_name(type_name.as_ref())?;
+    }
     validate_field_names(&type_metadata.child_names, field_count)?;
     Ok(())
 }
@@ -71,8 +75,13 @@ pub fn validate_field_names(
                     SchemaValidationError::TypeMetadataFieldNameCountDoesNotMatchFieldCount,
                 );
             }
+            let mut unique_field_names = index_set::new();
             for field_name in field_names.iter() {
                 validate_field_name(field_name)?;
+                let is_not_duplicate = unique_field_names.insert(field_name.as_ref());
+                if !is_not_duplicate {
+                    return Err(SchemaValidationError::TypeMetadataContainedDuplicateFieldNames);
+                }
             }
             Ok(())
         }
@@ -90,7 +99,11 @@ pub fn validate_enum_metadata(
         type_name,
         child_names,
     } = type_metadata;
-    validate_type_name(type_name.as_ref())?;
+    if let Some(type_name) = type_name {
+        validate_type_name(type_name.as_ref())?;
+    } else {
+        return Err(SchemaValidationError::TypeMetadataEnumNameIsRequired);
+    }
 
     match child_names {
         Some(ChildNames::NamedFields(_)) | None => {
@@ -106,14 +119,19 @@ pub fn validate_enum_metadata(
                     return Err(SchemaValidationError::TypeMetadataHasMismatchingEnumDiscriminator)
                 };
 
-                let variant_name = variant_metadata.type_name.as_ref();
-                validate_enum_variant_name(variant_name)?;
-                unique_variant_names.insert(variant_name);
+                if let Some(variant_name) = &variant_metadata.type_name {
+                    validate_enum_variant_name(variant_name.as_ref())?;
+                    let is_not_duplicate = unique_variant_names.insert(variant_name.as_ref());
+                    if !is_not_duplicate {
+                        return Err(
+                            SchemaValidationError::TypeMetadataContainedDuplicateEnumVariantNames,
+                        );
+                    }
+                } else {
+                    return Err(SchemaValidationError::TypeMetadataEnumVariantNameIsRequired);
+                }
 
                 validate_field_names(&variant_metadata.child_names, child_types.len())?;
-            }
-            if unique_variant_names.len() != variants.len() {
-                return Err(SchemaValidationError::TypeMetadataContainedDuplicateEnumVariantNames);
             }
             Ok(())
         }

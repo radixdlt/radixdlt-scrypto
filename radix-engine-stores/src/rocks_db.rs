@@ -106,13 +106,13 @@ impl RadixEngineDB {
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(ResourceAddress::Normal([0; 26]).into()),
+            RENodeId::GlobalObject(ResourceAddress::Fungible([0; 26]).into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(ResourceAddress::Normal([255; 26]).into()),
+            RENodeId::GlobalObject(ResourceAddress::NonFungible([255; 26]).into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
