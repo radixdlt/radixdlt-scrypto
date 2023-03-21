@@ -96,7 +96,7 @@ impl ScryptoBucket for Bucket {
             .call_method(
                 &RENodeId::Object(self.0),
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&BucketCreateProofInput {}).unwrap(),
+                scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
