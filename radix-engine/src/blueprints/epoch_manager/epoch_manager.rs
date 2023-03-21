@@ -49,7 +49,7 @@ pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
     pub(crate) fn create<Y>(
-        olympia_validator_token_address: [u8; 26], // TODO: Clean this up
+        validator_token_address: [u8; 26], // TODO: Clean this up
         component_address: [u8; 26],               // TODO: Clean this up
         validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
         initial_epoch: u64,
@@ -82,7 +82,7 @@ impl EpochManagerBlueprint {
                     NonFungibleIdType::UUID,
                     metadata,
                     access_rules,
-                    olympia_validator_token_address,
+                    validator_token_address,
                     api,
                 )?;
 

@@ -9,7 +9,7 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 1);
 pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 2);
 pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 3);
-pub const VALIDATOR_TOKEN: ResourceAddress =
+pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 4);
 
 /// The address of the faucet package.
