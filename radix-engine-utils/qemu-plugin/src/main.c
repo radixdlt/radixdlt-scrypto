@@ -23,7 +23,7 @@ static guint64* shared_mem_ptr = NULL;
 
 void* create_shared_memory(size_t size) 
 {
-    int fd = shm_open( SHARED_MEM_ID, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+    int fd = shm_open( SHARED_MEM_ID, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1)
     {
         g_print("Error calling shm_open()\n");
@@ -41,7 +41,9 @@ void* create_shared_memory(size_t size)
 
 void vcpu_udata_cb(unsigned int vcpu_index,void *userdata)
 {
+    //g_mutex_lock(&data_lock);
     instructions_count++;
+    //g_mutex_unlock(&data_lock);
     *shared_mem_ptr = instructions_count;
 }
 

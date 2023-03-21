@@ -36,6 +36,11 @@ impl Display for OutputParam {
         Ok(())
     }
 }
+impl Default for OutputParam {
+    fn default() -> Self {
+        OutputParam::Literal(str32::new())
+    }
+}
 
 pub struct OutputData<'a> {
     pub event: OutputDataEvent,
@@ -112,7 +117,7 @@ impl DataAnalyzer {
                     v.stack_depth, 
                     v.cpu_instructions, 
                     v.cpu_instructions_calibrated, 
-                    v.param.as_ref().unwrap())
+                    v.param.clone().unwrap_or_default())
                 ).expect(&format!("Unable write to {} file.", file_name));
             }
             file.flush().expect(&format!("Unable to flush {} file.", file_name))
