@@ -132,3 +132,24 @@ mod resource_test {
         }
     }
 }
+
+#[blueprint]
+mod auth_resource {
+    struct AuthResource;
+
+    impl AuthResource {
+        pub fn create() -> ComponentAddress {
+            Self {}.instantiate().globalize()
+        }
+
+        pub fn mint(&self, resource: ResourceAddress) -> Bucket {
+            let resource_manager = borrow_resource_manager!(resource);
+            let bucket = resource_manager.mint(1);
+            bucket
+        }
+
+        pub fn burn(&self, bucket: Bucket) {
+            bucket.burn();
+        }
+    }
+}
