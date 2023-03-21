@@ -26,7 +26,7 @@ env:
 jobs:
   transaction:
     name: Fuzz transaction (AFL)
-    runs-on: ubuntu-latest
+    runs-on: k8s-linux-runner
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
