@@ -868,7 +868,7 @@ where
     W: WasmEngine,
 {
 
-    #[trace_resources]
+    #[trace_resources(offset)]
     fn kernel_lock_substate(
         &mut self,
         node_id: RENodeId,

@@ -1,19 +1,40 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::fs::File;
 use std::io::Write;
+use std::fmt::Formatter;
 use fixedstr::str32;
-
 
 
 pub enum OutputDataEvent {
     FunctionEnter,
     FunctionExit
 }
+impl Display for OutputDataEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OutputDataEvent::FunctionEnter => f.write_fmt(format_args!("enter")).unwrap(),
+            OutputDataEvent::FunctionExit => f.write_fmt(format_args!("exit")).unwrap()
+        };
+        Ok(())
+    }
+}
 
+#[derive(Clone)]
 pub enum OutputParam {
     NumberI64(i64),
     NumberU64(u64),
     Literal(str32)
+}
+impl Display for OutputParam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OutputParam::NumberI64(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
+            OutputParam::NumberU64(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
+            OutputParam::Literal(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
+        };
+        Ok(())
+    }
 }
 
 pub struct OutputData<'a> {
@@ -74,6 +95,25 @@ impl DataAnalyzer {
                 for w in v.1 {
                     file.write_fmt(format_args!("{};{};{}\n", v.0, w.0, w.1)).expect(&format!("Unable write to {} file.", file_name));
                 }
+            }
+            file.flush().expect(&format!("Unable to flush {} file.", file_name))
+        } else {
+            panic!("Unable to create {} file.", file_name)
+        }
+    }
+
+    pub fn save_csv<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
+        if let Ok(mut file) = File::create(file_name) {
+            file.write_fmt(format_args!("event;function_name;stack_depth;instructions_count;instructions_count_calibrated;macro_arg\n")).expect(&format!("Unable write to {} file.", file_name));
+            for v in data {
+                file.write_fmt(format_args!("{};{};{};{};{};{}\n", 
+                    v.event, 
+                    v.function_name, 
+                    v.stack_depth, 
+                    v.cpu_instructions, 
+                    v.cpu_instructions_calibrated, 
+                    v.param.as_ref().unwrap())
+                ).expect(&format!("Unable write to {} file.", file_name));
             }
             file.flush().expect(&format!("Unable to flush {} file.", file_name))
         } else {

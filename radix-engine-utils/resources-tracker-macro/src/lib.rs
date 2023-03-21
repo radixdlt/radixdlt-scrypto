@@ -71,7 +71,9 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                                                             aarg = quote!{ Some(OutputParam::NumberI64( #pi as i64 )) };
                                                             break;
                                                         } else {
-                                                            panic!("Not supported arg type: {}", p.ident);
+                                                            aarg = quote!{ Some( OutputParam::Literal(format!("{:?}", #pi).into())) };
+                                                            break;
+                                                            //panic!("Not supported arg type: {}", p.ident);
                                                         }
                                                     }
                                                 }

@@ -5,6 +5,7 @@ use radix_engine_constants::{
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use strum::EnumCount;
+use resources_tracker_macro::trace_resources;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
@@ -353,6 +354,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         )
     }
 
+    #[trace_resources(cost_units_to_consume)]
     fn consume_execution(
         &mut self,
         cost_units_to_consume: u32,
