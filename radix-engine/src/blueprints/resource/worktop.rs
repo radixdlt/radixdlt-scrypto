@@ -34,7 +34,7 @@ pub struct WorktopBlueprint;
 
 impl WorktopBlueprint {
     pub(crate) fn drop<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -63,7 +63,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn put<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -100,7 +100,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn take<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -156,7 +156,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn take_non_fungibles<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -212,7 +212,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn take_all<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -241,7 +241,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn assert_contains<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -273,7 +273,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn assert_contains_amount<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -305,7 +305,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn assert_contains_non_fungibles<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -338,7 +338,7 @@ impl WorktopBlueprint {
 
     pub(crate) fn drain<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

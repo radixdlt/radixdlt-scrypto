@@ -210,7 +210,7 @@ impl AccountNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -332,7 +332,7 @@ impl AccountNativePackage {
     }
 
     fn create_global<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -388,7 +388,7 @@ impl AccountNativePackage {
     }
 
     fn create_local<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -486,7 +486,7 @@ impl AccountNativePackage {
 
     fn lock_fee<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -503,7 +503,7 @@ impl AccountNativePackage {
 
     fn lock_contingent_fee<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -520,7 +520,7 @@ impl AccountNativePackage {
 
     fn deposit<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -584,7 +584,7 @@ impl AccountNativePackage {
 
     fn deposit_batch<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -706,7 +706,7 @@ impl AccountNativePackage {
 
     fn withdraw<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -728,7 +728,7 @@ impl AccountNativePackage {
 
     fn withdraw_non_fungibles<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -750,7 +750,7 @@ impl AccountNativePackage {
 
     fn lock_fee_and_withdraw<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -774,7 +774,7 @@ impl AccountNativePackage {
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -798,7 +798,7 @@ impl AccountNativePackage {
 
     fn create_proof<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -820,7 +820,7 @@ impl AccountNativePackage {
 
     fn create_proof_by_amount<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -842,7 +842,7 @@ impl AccountNativePackage {
 
     fn create_proof_by_ids<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

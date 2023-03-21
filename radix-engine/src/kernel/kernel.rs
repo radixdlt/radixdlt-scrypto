@@ -349,19 +349,17 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        resolved: ResolvedInvocation<X>,
+        mut resolved: Box<ResolvedInvocation<X>>,
     ) -> Result<X::Output, RuntimeError> {
-        let executor = resolved.executor;
-        let actor = resolved.resolved_actor;
-        let args = resolved.args;
-        let mut call_frame_update = resolved.update;
-
-        let caller = self.current_frame.actor.clone();
+        let executor = &resolved.executor;
+        let actor = &resolved.resolved_actor;
+        let args = &resolved.args;
+        let call_frame_update = &mut resolved.update;
 
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, &actor, &mut call_frame_update, &args)
+                KernelModuleMixer::before_push_frame(api, &actor, call_frame_update, &args)
             })?;
         }
 
@@ -372,7 +370,7 @@ where
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
                 actor.clone(),
-                call_frame_update,
+                call_frame_update.clone(),
             )?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
@@ -381,9 +379,12 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_execution_start(api, &caller)
-            })?;
+            {
+                let caller = self.current_frame.actor.clone();
+                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                    KernelModuleMixer::on_execution_start(api, &caller)
+                })?;
+            }
 
             // Auto drop locks
             self.current_frame
@@ -394,9 +395,12 @@ where
                 self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
 
             // Handle execution finish
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
-            })?;
+            {
+                let caller = self.current_frame.actor.clone();
+                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                    KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
+                })?;
+            }
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -446,7 +450,7 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        resolved: ResolvedInvocation<X>,
+        resolved: Box<ResolvedInvocation<X>>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer

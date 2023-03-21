@@ -53,7 +53,7 @@ impl IdentityNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -77,7 +77,7 @@ impl IdentityNativePackage {
     }
 
     fn create<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

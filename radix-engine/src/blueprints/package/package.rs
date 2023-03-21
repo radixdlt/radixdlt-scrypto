@@ -250,7 +250,7 @@ impl PackageNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -305,7 +305,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_native<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -354,7 +354,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_wasm<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -412,7 +412,7 @@ impl PackageNativePackage {
 
     pub(crate) fn set_royalty_config<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -438,7 +438,7 @@ impl PackageNativePackage {
 
     pub(crate) fn claim_royalty<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

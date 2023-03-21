@@ -198,7 +198,7 @@ pub struct ProofBlueprint;
 impl ProofBlueprint {
     pub(crate) fn clone<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -259,7 +259,7 @@ impl ProofBlueprint {
 
     pub(crate) fn get_amount<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -296,7 +296,7 @@ impl ProofBlueprint {
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -326,7 +326,7 @@ impl ProofBlueprint {
 
     pub(crate) fn get_resource_address<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -343,7 +343,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn drop<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

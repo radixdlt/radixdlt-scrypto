@@ -20,7 +20,7 @@ pub struct AuthZoneBlueprint;
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -48,7 +48,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn push<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -73,7 +73,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn create_proof<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -114,7 +114,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn create_proof_by_amount<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -155,7 +155,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn create_proof_by_ids<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -196,7 +196,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn clear<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -225,7 +225,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn clear_signature_proofs<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -249,7 +249,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn drain<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

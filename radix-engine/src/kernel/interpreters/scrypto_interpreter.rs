@@ -96,7 +96,7 @@ impl ExecutableInvocation for MethodInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -193,7 +193,7 @@ impl ExecutableInvocation for MethodInvocation {
             args: value,
         };
 
-        Ok(resolved)
+        Ok(Box::new(resolved))
     }
 
     fn payload_size(&self) -> usize {
@@ -207,7 +207,7 @@ impl ExecutableInvocation for FunctionInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -273,7 +273,7 @@ impl ExecutableInvocation for FunctionInvocation {
             },
         };
 
-        Ok(resolved)
+        Ok(Box::new(resolved))
     }
 
     fn payload_size(&self) -> usize {
@@ -290,8 +290,8 @@ impl Executor for ScryptoExecutor {
     type Output = IndexedScryptoValue;
 
     fn execute<Y, W>(
-        self,
-        args: IndexedScryptoValue,
+        &self,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
@@ -359,7 +359,7 @@ impl Executor for ScryptoExecutor {
                     ))?
                     .clone();
                 api.kernel_drop_lock(handle)?;
-                schema
+                Box::new(schema)
             };
 
             //  Validate input
@@ -437,7 +437,7 @@ impl Executor for ScryptoExecutor {
                         }
                         input.push(
                             runtime
-                                .allocate_buffer(args.into())
+                                .allocate_buffer(args.as_slice().to_vec())
                                 .expect("Failed to allocate buffer"),
                         );
 
@@ -470,7 +470,7 @@ impl NativeVm {
         native_package_code_id: u8,
         receiver: &Option<MethodIdentifier>,
         export_name: &str,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

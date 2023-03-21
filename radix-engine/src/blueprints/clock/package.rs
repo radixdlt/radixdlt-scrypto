@@ -98,7 +98,7 @@ impl ClockNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -146,7 +146,7 @@ impl ClockNativePackage {
     }
 
     fn create<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -200,7 +200,7 @@ impl ClockNativePackage {
 
     fn set_current_time<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -229,7 +229,7 @@ impl ClockNativePackage {
 
     fn get_current_time<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -257,7 +257,7 @@ impl ClockNativePackage {
 
     fn compare_current_time<Y>(
         receiver: &RENodeId,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

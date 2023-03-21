@@ -56,7 +56,7 @@ pub struct TransactionProcessorBlueprint;
 
 impl TransactionProcessorBlueprint {
     pub(crate) fn run<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
