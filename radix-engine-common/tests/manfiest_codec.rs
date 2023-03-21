@@ -19,9 +19,9 @@ struct TestStruct {
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress::Resource([0u8; 27]),
-        b: ManifestAddress::Package([1u8; 27]),
-        c: ManifestAddress::Component([2u8; 27]),
+        a: ManifestAddress::Package([0u8; 27]),
+        b: ManifestAddress::Resource([1u8; 27]),
+        c: ManifestAddress::Component([3u8; 27]),
         d: ManifestBucket(4),
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,
@@ -42,8 +42,8 @@ fn test_encode_and_decode() {
             0, // address
             128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
             1, // address
-            128, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-            2, // address
+            128, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            3, // address
             129, 4, 0, 0, 0, // bucket
             130, 5, 0, 0, 0, // proof
             131, 1, // expression

@@ -249,8 +249,11 @@ macro_rules! manifest_args {
 /// Constructs an address.
 #[macro_export]
 macro_rules! construct_address {
-    (EntityType::Resource, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ResourceAddress::Normal([$($bytes),*])
+    (EntityType::FungibleResource, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ResourceAddress::Fungible([$($bytes),*])
+    };
+    (EntityType::NonFungibleResource, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ResourceAddress::NonFungible([$($bytes),*])
     };
     (EntityType::Package, $($bytes:expr),*) => {
         $crate::data::scrypto::model::PackageAddress::Normal([$($bytes),*])

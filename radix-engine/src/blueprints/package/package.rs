@@ -189,7 +189,7 @@ where
     let node_id = if let Some(address) = package_address {
         RENodeId::GlobalObject(PackageAddress::Normal(address).into())
     } else {
-        api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
+        api.kernel_allocate_node_id(AllocateEntityType::GlobalPackage)?
     };
 
     api.kernel_create_node(node_id, node_init, node_modules)?;

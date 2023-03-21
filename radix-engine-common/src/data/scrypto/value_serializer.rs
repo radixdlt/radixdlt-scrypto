@@ -536,13 +536,13 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = ResourceAddress::Normal([0; ADDRESS_HASH_LENGTH]);
+        let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
 
         let expected =
-            json!("NormalResource[000000000000000000000000000000000000000000000000000000]");
+            json!("FungibleResource[010000000000000000000000000000000000000000000000000000]");
         let expected_invertible = json!({
             "type": "Address",
-            "value": "NormalResource[000000000000000000000000000000000000000000000000000000]"
+            "value": "FungibleResource[010000000000000000000000000000000000000000000000000000]"
         });
 
         assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
@@ -556,14 +556,14 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = ResourceAddress::Normal([0; ADDRESS_HASH_LENGTH]);
+        let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
-            json!("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety");
+            json!("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
         let expected_invertible = json!({
             "type": "Address",
-            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+            "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
         assert_simple_json_matches(&value, &encoder, expected_simple);
@@ -620,7 +620,7 @@ mod tests {
                     fields: vec![
                         Value::Custom {
                             value: ScryptoCustomValue::Address(Address::Resource(
-                                ResourceAddress::Normal([0; ADDRESS_HASH_LENGTH]),
+                                ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]),
                             )),
                         },
                         Value::Custom {
@@ -709,7 +709,7 @@ mod tests {
                 ]
             ],
             [
-                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety",
+                "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k",
                 {
                     "type": "Own",
                     "value": "00000000000000000000000000000000000000000000000000000000000000"
@@ -868,7 +868,7 @@ mod tests {
                     "value": [
                         {
                             "type": "Address",
-                            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+                            "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
                         },
                         {
                             "type": "Own",

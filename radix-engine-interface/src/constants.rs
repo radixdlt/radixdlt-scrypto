@@ -1,19 +1,22 @@
 use crate::data::scrypto::model::*;
 use crate::*;
 
-/// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 0);
-/// The ECDSA virtual resource address.
-pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 1);
-/// The ED25519 virtual resource address.
-pub const EDDSA_ED25519_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 2);
-/// The system token which allows access to system resources (e.g. setting epoch)
-pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 3);
-pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 4);
-pub const PACKAGE_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
-pub const VALIDATOR_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 6);
-pub const IDENTITY_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 7);
-pub const ACCOUNT_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 8);
+pub const RADIX_TOKEN: ResourceAddress = vanity_address!(EntityType::FungibleResource, 0);
+
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 0);
+pub const EDDSA_ED25519_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 1);
+pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 2);
+pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 3);
+pub const PACKAGE_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 4);
+pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 5);
+pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 6);
+pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 7);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);

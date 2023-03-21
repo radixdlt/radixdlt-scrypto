@@ -616,7 +616,7 @@ impl ValidatorCreator {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
+        let global_node_id = api.kernel_allocate_node_id(AllocateEntityType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let initial_liquidity_amount = initial_stake.sys_amount(api)?;
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -667,7 +667,7 @@ impl ValidatorCreator {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
+        let global_node_id = api.kernel_allocate_node_id(AllocateEntityType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;

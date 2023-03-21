@@ -49,10 +49,10 @@ impl TryFrom<&[u8]> for ManifestAddress {
         }
         // FIXME: move HRP constants to `radix-engine-constants`, and remove hard-coded range here
         if slice[0] == 0x00 {
-            Ok(Self::Resource(copy_u8_array(slice)))
-        } else if slice[0] == 0x01 {
             Ok(Self::Package(copy_u8_array(slice)))
-        } else if slice[0] <= 0x0c {
+        } else if slice[0] <= 0x02 {
+            Ok(Self::Resource(copy_u8_array(slice)))
+        } else if slice[0] <= 0x0d {
             Ok(Self::Component(copy_u8_array(slice)))
         } else {
             Err(Self::Error::InvalidEntityTypeId)

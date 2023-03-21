@@ -341,7 +341,7 @@ impl AuthModule {
 impl KernelModule for AuthModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let auth_zone = AuthZoneStackSubstate::new();
-        let node_id = api.kernel_allocate_node_id(RENodeType::AuthZoneStack)?;
+        let node_id = api.kernel_allocate_node_id(AllocateEntityType::AuthZoneStack)?;
         api.kernel_create_node(
             node_id,
             RENodeInit::AuthZoneStack(auth_zone),
