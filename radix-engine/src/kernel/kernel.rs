@@ -351,6 +351,8 @@ where
         &mut self,
         mut resolved: Box<ResolvedInvocation<X>>,
     ) -> Result<X::Output, RuntimeError> {
+        let caller = Box::new(self.current_frame.actor.clone());
+
         let executor = &resolved.executor;
         let actor = &resolved.resolved_actor;
         let args = &resolved.args;
@@ -380,7 +382,6 @@ where
         let (output, update) = {
             // Handle execution start
             {
-                let caller = self.current_frame.actor.clone();
                 self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                     KernelModuleMixer::on_execution_start(api, &caller)
                 })?;
@@ -396,7 +397,6 @@ where
 
             // Handle execution finish
             {
-                let caller = self.current_frame.actor.clone();
                 self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                     KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
                 })?;

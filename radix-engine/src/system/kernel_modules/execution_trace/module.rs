@@ -46,9 +46,9 @@ impl ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
-    pub resource_address: ResourceAddress,
     pub node_id: RENodeId,
     pub vault_id: ObjectId,
+    pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
@@ -646,16 +646,19 @@ impl ExecutionTraceModule {
 }
 
 pub fn calculate_resource_changes(
-    vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+    mut vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
     fee_payments: &IndexMap<ObjectId, Decimal>,
     is_commit_success: bool,
 ) -> IndexMap<usize, Vec<ResourceChange>> {
-    // FIXME: revert non-fee operations if `is_commit_success == false`
+    // Retain lock fee only if the transaction fails.
+    if !is_commit_success {
+        vault_ops.retain(|x| matches!(x.2, VaultOp::LockFee));
+    }
 
+    // Calculate per instruction index, actor, vault resource changes.
     let mut vault_changes =
         index_map_new::<usize, IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>(
         );
-    let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Actor(Actor {
             identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
@@ -692,32 +695,19 @@ pub fn calculate_resource_changes(
                         .or_default()
                         .entry(vault_id)
                         .or_insert((RADIX_TOKEN, Decimal::zero()))
-                        .1 -= 0;
-
-                    // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
-                    // polluting the `vault_locked_by` index.
-                    if !vault_locked_by.contains_key(&vault_id) {
-                        vault_locked_by.insert(vault_id, node_id);
-                    }
+                        .1 -= fee_payments.get(&vault_id).cloned().unwrap_or_default();
                 }
             }
         }
     }
 
+    // Convert into a vec for ease of consumption.
     let mut resource_changes = index_map_new::<usize, Vec<ResourceChange>>();
     for (instruction_index, instruction_resource_changes) in vault_changes {
         for (node_id, map) in instruction_resource_changes {
             for (vault_id, (resource_address, delta)) in map {
-                // Amount = put/take amount - fee_amount
-                let fee_amount = fee_payments.get(&vault_id).cloned().unwrap_or_default();
-                let amount = if is_commit_success {
-                    delta
-                } else {
-                    Decimal::zero()
-                } - fee_amount;
-
                 // Add a resource change log if non-zero
-                if !amount.is_zero() {
+                if !delta.is_zero() {
                     resource_changes
                         .entry(instruction_index)
                         .or_default()
@@ -725,7 +715,7 @@ pub fn calculate_resource_changes(
                             resource_address,
                             node_id,
                             vault_id,
-                            amount,
+                            amount: delta,
                         });
                 }
             }

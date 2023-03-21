@@ -149,11 +149,30 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    let result = receipt.expect_commit_success();
+
+    let vault_id = test_runner
+        .get_component_vaults(account, RADIX_TOKEN)
+        .first()
+        .cloned()
+        .unwrap();
     assert_eq!(
-        1,
-        aggregate_resource_changes(receipt.execution_trace.resource_changes.clone()).len()
-    ); // Just the lock fee
+        receipt.execution_trace.resource_changes,
+        indexmap!(
+            0 => vec![ResourceChange {
+                node_id: RENodeId::GlobalObject(account.into()),
+                vault_id,
+                resource_address: RADIX_TOKEN,
+                amount: - result.fee_summary.total_execution_cost_xrd - dec!("1")
+            }],
+            2 => vec![ResourceChange {
+                node_id: RENodeId::GlobalObject(account.into()),
+                vault_id,
+                resource_address: RADIX_TOKEN,
+                amount: dec!("1")
+            }],
+        )
+    );
 }
 
 #[test]
@@ -180,35 +199,4 @@ fn assert_resource_changes_for_transfer(
         .any(|r| r.resource_address == resource_address
             && r.node_id == RENodeId::GlobalObject(target_account.into())
             && r.amount == Decimal::from(transfer_amount)));
-}
-
-fn aggregate_resource_changes(
-    resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-) -> Vec<ResourceChange> {
-    let mut aggregate = index_map_new::<(RENodeId, ObjectId, ResourceAddress), Decimal>();
-    for ResourceChange {
-        node_id,
-        vault_id,
-        amount,
-        resource_address,
-    } in resource_changes
-        .into_iter()
-        .flat_map(|(_, rc)| rc)
-        .into_iter()
-    {
-        *aggregate
-            .entry((node_id, vault_id, resource_address))
-            .or_default() += amount;
-    }
-    aggregate
-        .into_iter()
-        .map(
-            |((node_id, vault_id, resource_address), amount)| ResourceChange {
-                node_id,
-                vault_id,
-                resource_address,
-                amount,
-            },
-        )
-        .collect()
 }
