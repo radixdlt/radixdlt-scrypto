@@ -192,14 +192,10 @@ fn can_mint_with_proof_in_root() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(
-            package_address,
-            "AuthResource",
-            "create",
-            manifest_args!(),
-        )
+        .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act
@@ -222,7 +218,6 @@ fn can_mint_with_proof_in_root() {
     receipt.expect_commit_success();
 }
 
-
 #[test]
 fn cannot_mint_in_component_with_proof_in_root() {
     // Arrange
@@ -231,12 +226,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(
-            package_address,
-            "AuthResource",
-            "create",
-            manifest_args!(),
-        )
+        .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component = receipt.expect_commit(true).new_component_addresses()[0];
@@ -246,11 +236,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, admin_token)
-        .call_method(
-            component,
-            "mint",
-            manifest_args!(resource)
-        )
+        .call_method(component, "mint", manifest_args!(resource))
         .call_method(
             account,
             "deposit_batch",
@@ -263,5 +249,77 @@ fn cannot_mint_in_component_with_proof_in_root() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+        )
+    });
+}
+
+#[test]
+fn can_burn_with_proof_in_root() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(package_address, "AuthResource", "create", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, admin_token)
+        .mint_fungible(resource, 1.into())
+        .burn_all_from_worktop(resource)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn cannot_burn_in_component_with_proof_in_root() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(package_address, "AuthResource", "create", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, admin_token)
+        .mint_fungible(resource, 1.into())
+        .take_from_worktop(resource, |builder, bucket| {
+            builder.call_method(component, "burn", manifest_args!(bucket))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
+        )
+    });
 }

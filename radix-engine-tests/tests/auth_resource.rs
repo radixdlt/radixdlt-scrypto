@@ -78,7 +78,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         Action::Burn => builder
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account(account, token_address, dec!("1.0"))
-            .burn(dec!("1.0"), token_address)
+            .burn_from_worktop(dec!("1.0"), token_address)
             .call_method(
                 account,
                 "deposit_batch",

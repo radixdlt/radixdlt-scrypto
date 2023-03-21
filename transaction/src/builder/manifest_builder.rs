@@ -685,8 +685,20 @@ impl ManifestBuilder {
         self.create_fungible_resource(0, metadata, access_rules, Some(initial_supply))
     }
 
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn_from_worktop(
+        &mut self,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+            builder
+                .add_instruction(Instruction::BurnResource { bucket_id })
+                .0
+        })
+    }
+
+    pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
+        self.take_from_worktop(resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
