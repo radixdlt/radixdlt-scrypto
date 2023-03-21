@@ -2,7 +2,6 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
-use crate::system::kernel_modules::costing::u128_to_decimal;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
@@ -391,8 +390,8 @@ impl<'s> Track<'s> {
 
                 // Commit/rollback royalty
                 if is_success {
-                    for (recipient_vault_id, amount) in fee_reserve.royalty_cost() {
-                        let node_id = RENodeId::Object(*recipient_vault_id);
+                    for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
+                        let node_id = RENodeId::Object(recipient_vault_id);
                         let module_id = NodeModuleId::SELF;
                         let offset = SubstateOffset::Vault(VaultOffset::LiquidFungible);
                         self.acquire_lock(
@@ -402,9 +401,7 @@ impl<'s> Track<'s> {
                         .unwrap();
                         let substate: &mut LiquidFungibleResource =
                             self.get_substate_mut(node_id, module_id, &offset).into();
-                        substate
-                            .put(LiquidFungibleResource::new(u128_to_decimal(*amount)))
-                            .unwrap();
+                        substate.put(LiquidFungibleResource::new(amount)).unwrap();
                         self.release_lock(SubstateId(node_id, module_id, offset.clone()), false)
                             .unwrap();
                     }

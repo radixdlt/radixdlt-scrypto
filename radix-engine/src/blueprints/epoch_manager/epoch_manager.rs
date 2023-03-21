@@ -50,7 +50,7 @@ pub struct EpochManagerBlueprint;
 impl EpochManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address: [u8; 26], // TODO: Clean this up
-        component_address: [u8; 26],               // TODO: Clean this up
+        component_address: [u8; 26],       // TODO: Clean this up
         validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
         initial_epoch: u64,
         rounds_per_epoch: u64,
