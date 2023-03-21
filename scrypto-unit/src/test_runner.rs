@@ -1151,7 +1151,7 @@ impl TestRunner {
     }
 
     pub fn event_schema(
-        &mut self,
+        &self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
@@ -1235,28 +1235,27 @@ impl TestRunner {
         )
     }
 
-    pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
+    pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
         let (local_type_index, schema) = self.event_schema(event_type_identifier);
         schema
             .resolve_type_metadata(local_type_index)
             .unwrap()
-            .type_name
-            .to_string()
+            .get_name_string()
+            .unwrap()
     }
 
     pub fn is_event_name_equal<T: ScryptoDescribe>(
-        &mut self,
+        &self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> bool {
         let expected_type_name = {
             let (local_type_index, schema) =
                 sbor::generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            let type_name = schema
+            schema
                 .resolve_type_metadata(local_type_index)
                 .unwrap()
-                .type_name
-                .to_string();
-            type_name
+                .get_name_string()
+                .unwrap()
         };
         let actual_type_name = self.event_name(event_type_identifier);
         expected_type_name == actual_type_name

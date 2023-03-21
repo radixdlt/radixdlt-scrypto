@@ -4,7 +4,7 @@ use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 use utils::ContextualDisplay;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct ScryptoValueDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
 }

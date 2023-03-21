@@ -32,6 +32,14 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         }
     }
 
+    pub fn unnamed(kind: TypeKind<C::CustomValueKind, C, L>) -> Self {
+        Self {
+            kind,
+            metadata: TypeMetadata::unnamed(),
+            validation: TypeValidation::None,
+        }
+    }
+
     pub fn no_child_names(kind: TypeKind<C::CustomValueKind, C, L>, name: &'static str) -> Self {
         Self {
             kind,

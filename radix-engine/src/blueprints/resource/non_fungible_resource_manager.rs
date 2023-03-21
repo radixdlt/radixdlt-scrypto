@@ -72,7 +72,7 @@ where
     // Optional value
     {
         let metadata = TypeMetadata {
-            type_name: Cow::Borrowed("Option"),
+            type_name: Some(Cow::Borrowed("Option")),
             child_names: Some(ChildNames::EnumVariants(btreemap!(
                 OPTION_VARIANT_NONE => TypeMetadata::no_child_names("None"),
                 OPTION_VARIANT_SOME => TypeMetadata::no_child_names("Some"),

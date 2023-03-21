@@ -6,8 +6,7 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use radix_engine_interface::traits::ScryptoEvent;
-use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::ToOwned;
+use sbor::rust::prelude::*;
 
 #[derive(Debug)]
 pub struct Runtime {}
@@ -22,7 +21,7 @@ impl Runtime {
         Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
+        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
