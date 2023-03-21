@@ -18,12 +18,10 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::{
-    btreemap, Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder,
-    GlobalTypeId, ValueKind,
+    Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
+    ValueKind,
 };
 use scrypto::modules::Metadata;
 

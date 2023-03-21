@@ -60,35 +60,41 @@ impl IdAllocator {
         ids.insert(node_id);
     }
 
-    pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+    pub fn allocate_node_id(
+        &mut self,
+        node_type: AllocateEntityType,
+    ) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
-            RENodeType::KeyValueStore => {
+            AllocateEntityType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }
-            RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
-            RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
-            RENodeType::GlobalPackage => self
+            AllocateEntityType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
+            AllocateEntityType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
+            AllocateEntityType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalEpochManager => self
+            AllocateEntityType::GlobalEpochManager => self
                 .new_epoch_manager_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalValidator => self
+            AllocateEntityType::GlobalValidator => self
                 .new_validator_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalResourceManager => self
-                .new_resource_address()
+            AllocateEntityType::GlobalFungibleResourceManager => self
+                .new_fungible_resource_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalAccount => self
+            AllocateEntityType::GlobalNonFungibleResourceManager => self
+                .new_non_fungible_resource_address()
+                .map(|address| RENodeId::GlobalObject(address.into())),
+            AllocateEntityType::GlobalAccount => self
                 .new_account_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalIdentity => self
+            AllocateEntityType::GlobalIdentity => self
                 .new_identity_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalComponent => self
+            AllocateEntityType::GlobalComponent => self
                 .new_component_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
-            RENodeType::GlobalAccessController => self
+            AllocateEntityType::GlobalAccessController => self
                 .new_access_controller_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
         }
@@ -200,12 +206,20 @@ impl IdAllocator {
         ))
     }
 
-    /// Creates a new resource address.
-    pub fn new_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
+    pub fn new_non_fungible_resource_address(
+        &mut self,
+    ) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
-        let next_id = self.next_entity_id(EntityType::Resource)?;
+        let next_id = self.next_entity_id(EntityType::NonFungibleResource)?;
         data.extend(next_id.to_le_bytes());
-        Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
+        Ok(ResourceAddress::NonFungible(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_fungible_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        let next_id = self.next_entity_id(EntityType::FungibleResource)?;
+        data.extend(next_id.to_le_bytes());
+        Ok(ResourceAddress::Fungible(hash(data).lower_26_bytes()))
     }
 
     pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {

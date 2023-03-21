@@ -136,89 +136,107 @@ pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
     )
 }
 
-pub use schema::*;
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum NoCustomTypeKind {}
 
-mod schema {
+impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
+    type CustomValueKind = NoCustomValueKind;
+
+    type CustomTypeExtension = NoCustomTypeExtension;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum NoCustomTypeValidation {}
+
+impl CustomTypeValidation for NoCustomTypeValidation {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum NoCustomTypeExtension {}
+
+create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
+
+impl CustomTypeExtension for NoCustomTypeExtension {
+    const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
+    const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
+    type CustomValueKind = NoCustomValueKind;
+    type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
+    type CustomTypeValidation = NoCustomTypeValidation;
+    type CustomTraversal = NoCustomTraversal;
+
+    fn linearize_type_kind(
+        _: Self::CustomTypeKind<GlobalTypeId>,
+        _: &IndexSet<TypeHash>,
+    ) -> Self::CustomTypeKind<LocalTypeIndex> {
+        unreachable!("No custom type kinds exist")
+    }
+
+    fn resolve_well_known_type(
+        well_known_index: u8,
+    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+        // We know that WELL_KNOWN_LOOKUP has 256 elements, so can use `get_unchecked` for fast look-ups
+        unsafe {
+            WELL_KNOWN_LOOKUP
+                .get_unchecked(well_known_index as usize)
+                .as_ref()
+        }
+    }
+
+    fn validate_type_kind(
+        _: &TypeValidationContext,
+        _: &SchemaCustomTypeKind<Self>,
+    ) -> Result<(), SchemaValidationError> {
+        unreachable!("No custom type kinds exist")
+    }
+
+    fn validate_type_metadata_with_type_kind(
+        _: &TypeValidationContext,
+        _: &SchemaCustomTypeKind<Self>,
+        _: &TypeMetadata,
+    ) -> Result<(), SchemaValidationError> {
+        unreachable!("No custom type kinds exist")
+    }
+
+    fn validate_type_validation_with_type_kind(
+        _: &TypeValidationContext,
+        _: &SchemaCustomTypeKind<Self>,
+        _: &SchemaCustomTypeValidation<Self>,
+    ) -> Result<(), SchemaValidationError> {
+        unreachable!("No custom type kinds exist")
+    }
+
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
+        _: &Self::CustomTypeKind<L>,
+        _: ValueKind<Self::CustomValueKind>,
+    ) -> bool {
+        unreachable!("No custom value kinds exist")
+    }
+}
+
+pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
+pub type BasicSchema = Schema<NoCustomTypeExtension>;
+pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
+
+#[cfg(feature = "serde")]
+pub use self::serde_serialization::*;
+
+#[cfg(feature = "serde")]
+mod serde_serialization {
     use super::*;
+    use crate::serde_serialization::*;
 
-    #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-    pub enum NoCustomTypeKind {}
-
-    impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
-        type CustomValueKind = NoCustomValueKind;
-
+    impl<'a> CustomSerializationContext<'a> for () {
         type CustomTypeExtension = NoCustomTypeExtension;
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-    pub enum NoCustomTypeValidation {}
+    impl SerializableCustomTypeExtension for NoCustomTypeExtension {
+        type CustomSerializationContext<'a> = ();
 
-    impl CustomTypeValidation for NoCustomTypeValidation {}
-
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub enum NoCustomTypeExtension {}
-
-    create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
-
-    impl CustomTypeExtension for NoCustomTypeExtension {
-        const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
-        const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
-        type CustomValueKind = NoCustomValueKind;
-        type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
-        type CustomTypeValidation = NoCustomTypeValidation;
-        type CustomTraversal = NoCustomTraversal;
-
-        fn linearize_type_kind(
-            _: Self::CustomTypeKind<GlobalTypeId>,
-            _: &IndexSet<TypeHash>,
-        ) -> Self::CustomTypeKind<LocalTypeIndex> {
-            unreachable!("No custom type kinds exist")
-        }
-
-        fn resolve_well_known_type(
-            well_known_index: u8,
-        ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>
-        {
-            // We know that WELL_KNOWN_LOOKUP has 256 elements, so can use `get_unchecked` for fast look-ups
-            unsafe {
-                WELL_KNOWN_LOOKUP
-                    .get_unchecked(well_known_index as usize)
-                    .as_ref()
-            }
-        }
-
-        fn validate_type_kind(
-            _: &TypeValidationContext,
-            _: &SchemaCustomTypeKind<Self>,
-        ) -> Result<(), SchemaValidationError> {
-            unreachable!("No custom type kinds exist")
-        }
-
-        fn validate_type_metadata_with_type_kind(
-            _: &TypeValidationContext,
-            _: &SchemaCustomTypeKind<Self>,
-            _: &TypeMetadata,
-        ) -> Result<(), SchemaValidationError> {
-            unreachable!("No custom type kinds exist")
-        }
-
-        fn validate_type_validation_with_type_kind(
-            _: &TypeValidationContext,
-            _: &SchemaCustomTypeKind<Self>,
-            _: &SchemaCustomTypeValidation<Self>,
-        ) -> Result<(), SchemaValidationError> {
-            unreachable!("No custom type kinds exist")
-        }
-
-        fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
-            _: &Self::CustomTypeKind<L>,
-            _: ValueKind<Self::CustomValueKind>,
-        ) -> bool {
-            unreachable!("No custom value kinds exist")
+        fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
+            _: &SerializationContext<'s, 'a, Self>,
+            _: LocalTypeIndex,
+            _: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+        ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
+            unreachable!("No custom values exist")
         }
     }
-
-    pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
-    pub type BasicSchema = Schema<NoCustomTypeExtension>;
-    pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 }

@@ -421,7 +421,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_type: &RENodeType,
+        node_type: &AllocateEntityType,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {

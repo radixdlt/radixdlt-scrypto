@@ -35,6 +35,9 @@ pub mod value;
 /// SBOR value kinds - ie the types of value that are supported.
 pub mod value_kind;
 
+#[cfg(feature = "serde")]
+pub mod serde_serialization;
+
 pub use basic::*;
 pub use categorize::Categorize;
 pub(crate) use categorize::{categorize_generic, categorize_simple};

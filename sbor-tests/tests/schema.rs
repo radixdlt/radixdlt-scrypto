@@ -64,7 +64,7 @@ fn create_unit_struct_schema_works_correctly() {
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));
     assert_eq!(schema.type_kinds.len(), 1);
     assert_eq!(schema.type_metadata.len(), 1);
-    assert_eq!(schema.type_metadata[0].type_name, "UnitStruct");
+    assert_eq!(schema.type_metadata[0].get_name().unwrap(), "UnitStruct");
     assert!(matches!(&schema.type_metadata[0].child_names, None));
     assert!(schema.validate().is_ok());
 }
@@ -88,7 +88,7 @@ fn create_basic_sample_schema_works_correctly() {
     let metadata = schema
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
-    assert_eq!(&metadata.type_name, "BasicSample");
+    assert_eq!(metadata.get_name().unwrap(), "BasicSample");
     assert!(
         matches!(&metadata.child_names, Some(ChildNames::NamedFields(field_names)) if matches!(field_names[..], [
             Cow::Borrowed("a") ,
@@ -109,7 +109,7 @@ fn create_basic_sample_schema_works_correctly() {
     let metadata = schema
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(1))
         .unwrap();
-    assert_eq!(metadata.type_name, "UnitStruct");
+    assert_eq!(metadata.get_name().unwrap(), "UnitStruct");
     assert!(matches!(metadata.child_names, None));
     assert!(matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [])));
     assert!(schema.validate().is_ok());
@@ -132,7 +132,7 @@ fn create_advanced_sample_schema_works_correctly() {
     let metadata = schema
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
-    assert_eq!(metadata.type_name, "AdvancedSample");
+    assert_eq!(metadata.get_name().unwrap(), "AdvancedSample");
     assert!(
         matches!(&metadata.child_names, Some(ChildNames::NamedFields(field_names)) if matches!(field_names[..], [
             Cow::Borrowed("a"),
@@ -221,6 +221,6 @@ fn create_recursive_schema_works_correctly() {
     let metadata = schema
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
-    assert_eq!(metadata.type_name, "IndirectRecursive1");
+    assert_eq!(metadata.get_name().unwrap(), "IndirectRecursive1");
     assert!(schema.validate().is_ok());
 }

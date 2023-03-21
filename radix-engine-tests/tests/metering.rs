@@ -64,7 +64,7 @@ fn test_basic_transfer() {
     // Assert
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
+    // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
         40000 /* CreateNode */
         + 76000 /* DropLock */
@@ -199,7 +199,7 @@ fn test_radiswap() {
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test --test metering -- test_radiswap)
+    // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         92500 /* CreateNode */
         + 198000 /* DropLock */
@@ -309,7 +309,7 @@ fn test_flash_loan() {
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test --test metering -- test_flash_loan)
+    // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         147500 /* CreateNode */
         + 308500 /* DropLock */

@@ -10,10 +10,11 @@ pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
-pub enum RENodeType {
+pub enum AllocateEntityType {
     GlobalAccount,
     GlobalComponent,
-    GlobalResourceManager,
+    GlobalFungibleResourceManager,
+    GlobalNonFungibleResourceManager,
     GlobalPackage,
     GlobalEpochManager,
     GlobalValidator,

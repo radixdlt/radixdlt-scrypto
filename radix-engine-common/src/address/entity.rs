@@ -2,50 +2,51 @@ use crate::data::scrypto::model::ComponentAddress;
 use crate::data::scrypto::model::PackageAddress;
 use crate::data::scrypto::model::ResourceAddress;
 
-/// A unique identifier used in the addressing of Resource Addresses.
-pub const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;
-
 /// A unique identifier used in the addressing of Package Addresses.
-pub const PACKAGE_ADDRESS_ENTITY_ID: u8 = 0x01;
+pub const PACKAGE_ADDRESS_ENTITY_ID: u8 = 0x00;
+
+pub const FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x01;
+pub const NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x02;
 
 /// A unique identifier used in the addressing of Generic Component Addresses.
-pub const NORMAL_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x02;
+pub const NORMAL_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 
 /// A unique identifier used in the addressing of Account Component Addresses.
-pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
+pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
 
 /// A unique identifier used in the addressing of Epoch Manager System Addresses.
-pub const EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
+pub const EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x05;
 
 /// A unique identifier used in the addressing of Validator System Addresses.
-pub const VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x05;
+pub const VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x06;
 
 /// A unique identifier used in the addressing of Clock System Addresses.
-pub const CLOCK_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x06;
+pub const CLOCK_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x07;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x07;
+pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
+pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x09;
 
 /// A unique identifier used in the addressing of identity components.
-pub const IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x09;
+pub const IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0a;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0a;
+pub const ECDSA_SECP_256K1_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0b;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
-pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0b;
+pub const EDDSA_ED_25519_VIRTUAL_IDENTITY_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0c;
 
 /// A unique identifier used in the addressing of Account Controller Component Addresses.
-pub const ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0c;
+pub const ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0d;
 
 /// An enum which represents the different addressable entities.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
-    Resource,
     Package,
+    NonFungibleResource,
+    FungibleResource,
     NormalComponent,
     AccountComponent,
     IdentityComponent,
@@ -63,8 +64,11 @@ impl EntityType {
     pub fn package(_address: &PackageAddress) -> Self {
         Self::Package
     }
-    pub fn resource(_address: &ResourceAddress) -> Self {
-        Self::Resource
+    pub fn resource(address: &ResourceAddress) -> Self {
+        match address {
+            ResourceAddress::NonFungible(_) => Self::NonFungibleResource,
+            ResourceAddress::Fungible(_) => Self::FungibleResource,
+        }
     }
     pub fn component(address: &ComponentAddress) -> Self {
         match address {
@@ -92,7 +96,8 @@ impl EntityType {
 
     pub fn id(&self) -> u8 {
         match self {
-            Self::Resource => RESOURCE_ADDRESS_ENTITY_ID,
+            Self::FungibleResource => FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID,
+            Self::NonFungibleResource => NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID,
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
@@ -122,7 +127,8 @@ impl TryFrom<u8> for EntityType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            RESOURCE_ADDRESS_ENTITY_ID => Ok(Self::Resource),
+            FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID => Ok(Self::FungibleResource),
+            NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID => Ok(Self::NonFungibleResource),
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
