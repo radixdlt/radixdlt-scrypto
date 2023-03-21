@@ -50,7 +50,7 @@ impl NodeMoveModule {
                             ..
                         } = callee
                         {
-                            let type_info = TypeInfoBlueprint::get_type(node_id.clone(), api)?;
+                            let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
                             if let TypeInfoSubstate::Object {
                                 package_address,
                                 blueprint_name,

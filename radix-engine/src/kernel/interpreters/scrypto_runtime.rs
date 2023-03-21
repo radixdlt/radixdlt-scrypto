@@ -81,7 +81,7 @@ where
 
         let return_data =
             self.api
-                .call_module_method(receiver, node_module_id, ident.as_str(), args)?;
+                .call_module_method(&receiver, node_module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }

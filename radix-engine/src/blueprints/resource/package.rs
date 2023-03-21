@@ -959,7 +959,7 @@ impl ResourceManagerNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
+        receiver: Option<&RENodeId>,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

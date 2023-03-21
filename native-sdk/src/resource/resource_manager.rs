@@ -112,7 +112,7 @@ impl ResourceManager {
         entries.insert(local_id, (value,));
 
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             scrypto_encode(&NonFungibleResourceManagerMintInput { entries }).unwrap(),
         )?;
@@ -135,7 +135,7 @@ impl ResourceManager {
         entries.push((value,));
 
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
             scrypto_encode(&NonFungibleResourceManagerMintUuidInput { entries }).unwrap(),
         )?;
@@ -153,7 +153,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
         )?;
@@ -170,7 +170,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerGetNonFungibleInput { id }).unwrap(),
         )?;
@@ -184,7 +184,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
             scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
         )?;
@@ -201,7 +201,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput { bucket }).unwrap(),
         )?;
@@ -213,7 +213,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
         )?;
@@ -225,7 +225,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -237,7 +237,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;

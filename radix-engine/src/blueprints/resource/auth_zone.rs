@@ -19,7 +19,7 @@ pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -31,7 +31,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;
@@ -47,7 +47,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn push<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -59,7 +59,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;
@@ -72,7 +72,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -84,7 +84,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;
@@ -113,7 +113,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -125,7 +125,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::read_only(),
         )?;
@@ -154,7 +154,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -166,7 +166,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;
@@ -195,7 +195,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -207,7 +207,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;
@@ -224,7 +224,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear_signature_proofs<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -236,7 +236,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;
@@ -248,7 +248,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -260,7 +260,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
             LockFlags::MUTABLE,
         )?;

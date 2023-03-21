@@ -109,7 +109,7 @@ impl EpochManagerBlueprint {
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
             api.call_method(
-                RENodeId::GlobalObject(validator_init.validator_account_address.into()),
+                &RENodeId::GlobalObject(validator_init.validator_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput {
                     bucket: owner_token_bucket,
@@ -130,7 +130,7 @@ impl EpochManagerBlueprint {
             validator_set.insert(address, validator);
 
             api.call_method(
-                RENodeId::GlobalObject(validator_init.stake_account_address.into()),
+                &RENodeId::GlobalObject(validator_init.stake_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
             )?;
@@ -221,7 +221,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn get_current_epoch<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -233,7 +233,7 @@ impl EpochManagerBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
@@ -244,7 +244,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn next_round<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -256,7 +256,7 @@ impl EpochManagerBlueprint {
         })?;
 
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
+        let mgr_handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
         let epoch_manager: &mut EpochManagerSubstate =
             api.kernel_get_substate_ref_mut(mgr_handle)?;
 
@@ -271,7 +271,7 @@ impl EpochManagerBlueprint {
 
         if input.round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
+            let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
             let preparing_validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
             let prepared_epoch = preparing_validator_set.epoch;
@@ -284,7 +284,7 @@ impl EpochManagerBlueprint {
             epoch_manager.round = 0;
 
             let handle = api.sys_lock_substate(
-                receiver,
+                receiver.clone(),
                 SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
                 LockFlags::MUTABLE,
             )?;
@@ -310,7 +310,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn set_epoch<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -322,7 +322,7 @@ impl EpochManagerBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::MUTABLE,
         )?;
@@ -334,7 +334,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -346,7 +346,7 @@ impl EpochManagerBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
@@ -359,7 +359,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -371,7 +371,7 @@ impl EpochManagerBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
             LockFlags::MUTABLE,
         )?;

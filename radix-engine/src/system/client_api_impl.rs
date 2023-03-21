@@ -85,7 +85,7 @@ where
         } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&NodeModuleId::SELF) {
-            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+            let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
@@ -322,7 +322,7 @@ where
 
         let node_type = match node_id {
             RENodeId::Object(..) => {
-                let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+                let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let (package_address, blueprint) = match type_info {
                     TypeInfoSubstate::Object {
                         package_address,
@@ -523,7 +523,7 @@ where
 
     fn call_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -532,13 +532,17 @@ where
 
     fn call_module_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         node_module_id: NodeModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = MethodInvocation {
-            identifier: MethodIdentifier(receiver, node_module_id, method_name.to_string()),
+            identifier: Box::new(MethodIdentifier(
+                receiver.clone(),
+                node_module_id,
+                method_name.to_string(),
+            )),
             args,
         };
 
@@ -553,11 +557,11 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
+            fn_identifier: Box::new(FnIdentifier::new(
                 package_address,
                 blueprint_name.to_string(),
                 function_name.to_string(),
-            ),
+            )),
             args,
         };
 
@@ -568,7 +572,7 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object {
                 package_address,
@@ -587,7 +591,7 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))

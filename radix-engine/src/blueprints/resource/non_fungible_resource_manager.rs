@@ -324,7 +324,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_non_fungible<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -333,7 +333,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -440,7 +440,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -448,7 +448,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -517,7 +517,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         id: NonFungibleLocalId,
         field_name: String,
         data: ScryptoValue,
@@ -527,7 +527,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -590,7 +590,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn non_fungible_exists<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         id: NonFungibleLocalId,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
@@ -598,7 +598,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
@@ -620,7 +620,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_non_fungible<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         id: NonFungibleLocalId,
         api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
@@ -628,7 +628,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
@@ -657,12 +657,12 @@ impl NonFungibleResourceManagerBlueprint {
         }
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_bucket<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -690,7 +690,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         bucket: Bucket,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -698,7 +698,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -764,12 +764,12 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_vault<Y>(receiver: RENodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_vault<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -804,14 +804,14 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_resource_type<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         api: &mut Y,
     ) -> Result<ResourceType, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
@@ -826,14 +826,14 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_total_supply<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         api: &mut Y,
     ) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;

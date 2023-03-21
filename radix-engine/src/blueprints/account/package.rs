@@ -209,7 +209,7 @@ impl AccountNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
+        receiver: Option<&RENodeId>,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -429,7 +429,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_internal<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -441,7 +441,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -485,7 +485,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -502,7 +502,7 @@ impl AccountNativePackage {
     }
 
     fn lock_contingent_fee<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -519,7 +519,7 @@ impl AccountNativePackage {
     }
 
     fn deposit<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -534,7 +534,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?;
@@ -583,7 +583,7 @@ impl AccountNativePackage {
     }
 
     fn deposit_batch<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -595,7 +595,7 @@ impl AccountNativePackage {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -653,7 +653,7 @@ impl AccountNativePackage {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -665,7 +665,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -705,7 +705,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -727,7 +727,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw_non_fungibles<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -749,7 +749,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -773,7 +773,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -797,7 +797,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -819,7 +819,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_amount<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -841,7 +841,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_ids<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

@@ -103,7 +103,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
@@ -112,12 +112,12 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_module_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         node_module_id: NodeModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        let receiver = scrypto_encode(&receiver).unwrap();
+        let receiver = scrypto_encode(receiver).unwrap();
 
         let return_data = copy_buffer(unsafe {
             call_method(

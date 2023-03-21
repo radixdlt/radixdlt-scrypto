@@ -267,7 +267,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             if let Some(quota) = per_container.remove(container_id) {
                 let amount = Decimal::min(remaining, quota);
                 api.call_method(
-                    container_id.to_re_node_id(),
+                    &container_id.to_re_node_id(),
                     match container_id {
                         LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
                         LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
@@ -350,7 +350,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             if let Some(quota) = per_container.remove(container_id) {
                 let ids = remaining.intersection(&quota).cloned().collect();
                 api.call_method(
-                    container_id.to_re_node_id(),
+                    &container_id.to_re_node_id(),
                     match container_id {
                         LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                         LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,

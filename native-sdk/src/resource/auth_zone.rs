@@ -21,7 +21,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_DRAIN_IDENT,
             scrypto_encode(&AuthZoneDrainInput {}).unwrap(),
         )?;
@@ -34,7 +34,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_CLEAR_IDENT,
             scrypto_encode(&AuthZoneClearInput {}).unwrap(),
         )?;
@@ -49,7 +49,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT,
             scrypto_encode(&AuthZoneClearVirtualProofsInput {}).unwrap(),
         )?;
@@ -62,7 +62,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_POP_IDENT,
             scrypto_encode(&AuthZonePopInput {}).unwrap(),
         )?;
@@ -79,7 +79,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_CREATE_PROOF_IDENT,
             scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
         )?;
@@ -97,7 +97,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
             scrypto_encode(&AuthZoneCreateProofByAmountInput {
                 resource_address,
@@ -119,7 +119,7 @@ impl ComponentAuthZone {
     {
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
             scrypto_encode(&AuthZoneCreateProofByIdsInput {
                 resource_address,
@@ -142,7 +142,7 @@ impl ComponentAuthZone {
 
         let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let _rtn = api.call_method(
-            auth_zone,
+            &auth_zone,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )?;

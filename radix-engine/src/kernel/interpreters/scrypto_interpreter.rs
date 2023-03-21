@@ -108,7 +108,7 @@ impl ExecutableInvocation for MethodInvocation {
 
         let (package_address, blueprint_name) = match self.identifier.1 {
             NodeModuleId::SELF => {
-                let type_info = TypeInfoBlueprint::get_type(self.identifier.0, api)?;
+                let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
                     TypeInfoSubstate::Object {
                         package_address,
@@ -142,7 +142,7 @@ impl ExecutableInvocation for MethodInvocation {
             blueprint_name.clone(),
             self.identifier.2.clone(),
         );
-        let actor = Actor::method(fn_identifier.clone(), self.identifier.clone());
+        let actor = Actor::method(fn_identifier.clone(), self.identifier.as_ref().clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
@@ -179,8 +179,8 @@ impl ExecutableInvocation for MethodInvocation {
         }
 
         let executor = ScryptoExecutor {
-            fn_identifier,
-            receiver: Some(self.identifier),
+            fn_identifier: Box::new(fn_identifier),
+            receiver: Some(self.identifier.as_ref().clone()),
         };
 
         let resolved = ResolvedInvocation {
@@ -214,7 +214,7 @@ impl ExecutableInvocation for FunctionInvocation {
         let nodes_to_move = value.owned_node_ids().clone();
         let mut node_refs_to_copy = value.references().clone();
 
-        let actor = Actor::function(self.fn_identifier.clone());
+        let actor = Actor::function(self.fn_identifier.as_ref().clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
@@ -282,7 +282,7 @@ impl ExecutableInvocation for FunctionInvocation {
 }
 
 pub struct ScryptoExecutor {
-    pub fn_identifier: FnIdentifier,
+    pub fn_identifier: Box<FnIdentifier>,
     pub receiver: Option<MethodIdentifier>,
 }
 
@@ -306,7 +306,7 @@ impl Executor for ScryptoExecutor {
 
             NativeVm::invoke_native_package(
                 PACKAGE_CODE_ID,
-                self.receiver,
+                &self.receiver,
                 &export_name,
                 args,
                 api,
@@ -323,7 +323,7 @@ impl Executor for ScryptoExecutor {
 
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
-                self.receiver,
+                &self.receiver,
                 &export_name,
                 args,
                 api,
@@ -397,7 +397,7 @@ impl Executor for ScryptoExecutor {
 
                     NativeVm::invoke_native_package(
                         native_package_code_id,
-                        self.receiver,
+                        &self.receiver,
                         &export_name,
                         args,
                         api,
@@ -468,7 +468,7 @@ struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
-        receiver: Option<MethodIdentifier>,
+        receiver: &Option<MethodIdentifier>,
         export_name: &str,
         input: IndexedScryptoValue,
         api: &mut Y,
@@ -476,7 +476,7 @@ impl NativeVm {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let receiver = receiver.map(|r| r.0);
+        let receiver = receiver.as_ref().map(|x| &x.0);
 
         match native_package_code_id {
             PACKAGE_CODE_ID => {

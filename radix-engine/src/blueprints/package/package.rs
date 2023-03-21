@@ -249,7 +249,7 @@ impl PackageNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
+        receiver: Option<&RENodeId>,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -411,7 +411,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn set_royalty_config<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -425,7 +425,7 @@ impl PackageNativePackage {
         // FIXME: double check if auth is set up for any package
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
         )?;
@@ -437,7 +437,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn claim_royalty<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -449,7 +449,7 @@ impl PackageNativePackage {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
         )?;

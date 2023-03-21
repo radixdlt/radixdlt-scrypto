@@ -130,22 +130,22 @@ impl AuthModule {
                 match ident.as_str() {
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
                         AccessRulesNativePackage::set_method_access_rule_authorization(
-                            *node_id, *module_id, args, api,
+                            node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
                         AccessRulesNativePackage::set_method_mutability_authorization(
-                            *node_id, *module_id, args, api,
+                            node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
                         AccessRulesNativePackage::set_group_access_rule_authorization(
-                            *node_id, *module_id, args, api,
+                            node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
                         AccessRulesNativePackage::set_group_mutability_authorization(
-                            *node_id, *module_id, args, api,
+                            node_id, *module_id, args, api,
                         )?
                     }
                     _ => MethodAuthorization::AllowAll,
@@ -179,7 +179,7 @@ impl AuthModule {
                         let method_key = identifier.method_key();
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
-                                RENodeId::GlobalObject(resource_address.into()),
+                                &RENodeId::GlobalObject(resource_address.into()),
                                 NodeModuleId::AccessRules1,
                                 method_key,
                                 api,
@@ -232,14 +232,14 @@ impl AuthModule {
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
                     Self::method_authorization_stateful(
-                        *node_id,
+                        node_id,
                         NodeModuleId::AccessRules,
                         method_key,
                         api,
                     )?
                 } else {
                     Self::method_authorization_stateless(
-                        *node_id,
+                        node_id,
                         NodeModuleId::AccessRules,
                         method_key,
                         api,
@@ -254,7 +254,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         module_id: NodeModuleId,
         key: MethodKey,
         api: &mut Y,
@@ -299,7 +299,7 @@ impl AuthModule {
         let state = {
             let offset = SubstateOffset::Component(ComponentOffset::State0);
             let handle = api.kernel_lock_substate(
-                receiver,
+                receiver.clone(),
                 NodeModuleId::SELF,
                 offset,
                 LockFlags::read_only(),
@@ -311,7 +311,7 @@ impl AuthModule {
         };
 
         let handle = api.kernel_lock_substate(
-            receiver,
+            receiver.clone(),
             module_id,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
@@ -327,13 +327,13 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         module_id: NodeModuleId,
         key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
-            receiver,
+            receiver.clone(),
             module_id,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),

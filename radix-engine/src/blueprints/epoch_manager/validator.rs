@@ -56,7 +56,7 @@ pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
     pub fn register<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -68,7 +68,7 @@ impl ValidatorBlueprint {
         })?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
+        let handle = api.sys_lock_substate(receiver.clone(), offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
@@ -92,7 +92,7 @@ impl ValidatorBlueprint {
                 let validator_address = validator.address;
                 let manager = validator.manager;
                 api.call_method(
-                    RENodeId::GlobalObject(manager.into()),
+                    &RENodeId::GlobalObject(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateValidator::Register(key, stake_amount),
@@ -109,7 +109,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unregister<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -121,7 +121,7 @@ impl ValidatorBlueprint {
         })?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
+        let handle = api.sys_lock_substate(receiver.clone(), offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
@@ -138,7 +138,7 @@ impl ValidatorBlueprint {
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
-                RENodeId::GlobalObject(manager.into()),
+                &RENodeId::GlobalObject(manager.into()),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     validator_address,
@@ -154,7 +154,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn stake<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -172,7 +172,7 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
@@ -209,7 +209,7 @@ impl ValidatorBlueprint {
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
                 api.call_method(
-                    RENodeId::GlobalObject(receiver.into()),
+                    &RENodeId::GlobalObject(receiver.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -226,7 +226,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unstake<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -246,7 +246,7 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
@@ -310,7 +310,7 @@ impl ValidatorBlueprint {
                 };
 
                 api.call_method(
-                    RENodeId::GlobalObject(manager.into()),
+                    &RENodeId::GlobalObject(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -327,7 +327,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn claim_xrd<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -339,7 +339,7 @@ impl ValidatorBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
@@ -396,7 +396,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_key<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -408,7 +408,7 @@ impl ValidatorBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::MUTABLE,
         )?;
@@ -426,7 +426,7 @@ impl ValidatorBlueprint {
                 if !stake_amount.is_zero() {
                     let update = UpdateValidator::Register(key, stake_amount);
                     api.call_method(
-                        RENodeId::GlobalObject(manager.into()),
+                        &RENodeId::GlobalObject(manager.into()),
                         EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                         scrypto_encode(&EpochManagerUpdateValidatorInput {
                             validator_address,
@@ -442,7 +442,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_accept_delegated_stake<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -460,7 +460,7 @@ impl ValidatorBlueprint {
         };
 
         api.call_module_method(
-            receiver.into(),
+            receiver,
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
