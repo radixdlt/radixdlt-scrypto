@@ -1,6 +1,5 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
@@ -347,28 +346,6 @@ pub fn create_genesis(
         });
     }
 
-    // AuthZone Package
-    {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(AUTH_ZONE_PACKAGE.into()));
-        let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                schema: AuthZoneNativePackage::schema(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
-                native_package_code_id: AUTH_ZONE_CODE_ID,
-                dependent_resources: vec![],
-                dependent_components: vec![],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::DenyAll,
-            }),
-        });
-    }
-
     // ECDSA
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -618,7 +595,7 @@ where
             scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
-            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = transaction_receipt.expect_commit(true);
@@ -637,7 +614,7 @@ mod tests {
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
     #[test]
-    fn bootstrap_receipt_should_match_constants() {
+    fn test_bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
         let mut initial_validator_set = BTreeMap::new();
@@ -655,7 +632,7 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis().with_trace(true),
-            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
@@ -692,7 +669,7 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
-            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = transaction_receipt.expect_commit(true);

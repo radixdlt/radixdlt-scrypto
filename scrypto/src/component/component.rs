@@ -156,7 +156,7 @@ pub struct OwnedComponent(pub ObjectId);
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(RENodeId::Object(self.0), method, args)
+            .call_method(&RENodeId::Object(self.0), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
@@ -222,7 +222,7 @@ impl GlobalComponentRef {
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(RENodeId::GlobalObject(self.0.into()), method, args)
+            .call_method(&RENodeId::GlobalObject(self.0.into()), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }

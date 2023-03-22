@@ -97,6 +97,7 @@ impl KernelModuleMixer {
             node_move: NodeMoveModule {},
             auth: AuthModule {
                 params: auth_zone_params.clone(),
+                auth_zone_stack: Vec::new(),
             },
             logger: LoggerModule::default(),
             transaction_runtime: TransactionRuntimeModule {
@@ -245,37 +246,37 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<Actor>,
+        callee: &Actor,
         update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_push_frame(api, actor, update, args)?;
+            KernelTraceModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_push_frame(api, actor, update, args)?;
+            CostingModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_push_frame(api, actor, update, args)?;
+            NodeMoveModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_push_frame(api, actor, update, args)?;
+            AuthModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_push_frame(api, actor, update, args)?;
+            LoggerModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_push_frame(api, actor, update, args)?;
+            TransactionRuntimeModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_push_frame(api, actor, update, args)?;
+            ExecutionTraceModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_push_frame(api, actor, update, args)?;
+            TransactionLimitsModule::before_push_frame(api, callee, update, args)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_push_frame(api, actor, update, args)?;
+            EventsModule::before_push_frame(api, callee, update, args)?;
         }
         Ok(())
     }

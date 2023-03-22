@@ -11,7 +11,6 @@ pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum AllocateEntityType {
-    AuthZoneStack,
     GlobalAccount,
     GlobalComponent,
     GlobalFungibleResourceManager,
@@ -28,7 +27,6 @@ pub enum AllocateEntityType {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
-    AuthZoneStack,
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     // This is only used for owned objects (global objects have addresses)
@@ -39,13 +37,12 @@ pub enum RENodeId {
 impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
                 .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::GlobalObject(address) => f.debug_tuple("Global").field(&address).finish(),
+            Self::GlobalObject(address) => f.debug_tuple("GlobalObject").field(&address).finish(),
         }
     }
 }
@@ -55,7 +52,6 @@ impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
         match value {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", value),
         }
     }
@@ -67,7 +63,6 @@ impl From<RENodeId> for Vec<u8> {
         match value {
             RENodeId::KeyValueStore(id) => id.to_vec(),
             RENodeId::Object(id) => id.to_vec(),
-            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::GlobalObject(address) => address.to_vec(),
         }
     }
@@ -148,11 +143,6 @@ impl NodeModuleId {
             NodeModuleId::ComponentRoyalty => 5u32,
         }
     }
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AuthZoneStackOffset {
-    AuthZoneStack,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -253,10 +243,14 @@ pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AuthZoneOffset {
+    AuthZone,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
-    AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
@@ -270,6 +264,7 @@ pub enum SubstateOffset {
     Clock(ClockOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+    AuthZone(AuthZoneOffset),
 
     // Node modules
     // TODO: align with module ID allocation?

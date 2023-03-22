@@ -77,6 +77,10 @@ pub trait WasmRuntime {
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn update_wasm_memory_usage(

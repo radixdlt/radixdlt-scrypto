@@ -88,7 +88,7 @@ impl ShowLedger {
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
         let blobs = vec![];
-        let initial_proofs = vec![];
+        let initial_proofs = btreeset![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
         Ok(receipt.expect_commit(true).output(0))
@@ -104,7 +104,7 @@ impl ShowLedger {
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
-        let initial_proofs = vec![];
+        let initial_proofs = btreeset![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
         Ok(receipt.expect_commit(true).output(0))

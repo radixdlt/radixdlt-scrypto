@@ -51,13 +51,13 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test --features serde
+      run: RUST_MIN_STACK=4194304 cargo test --features serde
       working-directory: sbor
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
+      run: RUST_MIN_STACK=4194304 cargo test --no-default-features --features alloc
       working-directory: sbor
     - name: Run derive tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: sbor-derive-common
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -71,10 +71,10 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: sbor-tests
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
+      run: RUST_MIN_STACK=4194304 cargo test --no-default-features --features alloc
       working-directory: sbor-tests
     - name: Run bench
       run: cargo bench
@@ -91,16 +91,16 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: scrypto
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
+      run: RUST_MIN_STACK=4194304 cargo test --no-default-features --features alloc
       working-directory: scrypto
     - name: Run abi tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: scrypto-schema
     - name: Run derive tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: scrypto-derive
   scrypto-integration-tests:
     name: Run Scrypto integration tests
@@ -114,10 +114,10 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: scrypto-tests
     - name: Run tests with no_std
-      run: cargo test --no-default-features --features alloc
+      run: RUST_MIN_STACK=4194304 cargo test --no-default-features --features alloc
       working-directory: scrypto-tests
   scrypto-examples:
     name: Run Scrypto examples
@@ -144,7 +144,7 @@ jobs:
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no-std
     - name: Build and test hello-world
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && RUST_MIN_STACK=4194304 cargo test --release
       working-directory: examples/hello-world
   radix-engine:
     name: Run Radix Engine tests
@@ -163,7 +163,7 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
       run: |
-        cargo nextest run \
+        RUST_MIN_STACK=4194304 cargo nextest run \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
@@ -187,7 +187,7 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
       run: |
-        cargo nextest run \
+        RUST_MIN_STACK=4194304 cargo nextest run \
           --no-default-features --features alloc \
           -p radix-engine \
           -p radix-engine-tests
@@ -208,7 +208,7 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
       run: |
-        cargo nextest run \
+        RUST_MIN_STACK=4194304 cargo nextest run \
           --features wasmer \
           -p radix-engine \
           -p radix-engine-tests
@@ -256,7 +256,7 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: transaction
   cli-resim-rtmc:
     name: Run CLI tests (resim & rtmc)
@@ -284,7 +284,7 @@ jobs:
       if: runner.os == 'Windows'
       run: choco install llvm -y
     - name: Run Unit tests
-      run: cargo test
+      run: RUST_MIN_STACK=4194304 cargo test
       working-directory: simulator
     - name: Run tests
       run: bash ./tests/resim.sh

@@ -153,7 +153,7 @@ pub fn run() -> Result<(), Error> {
 pub fn handle_system_transaction<O: std::io::Write>(
     instructions: Vec<Instruction>,
     blobs: Vec<Vec<u8>>,
-    initial_proofs: Vec<NonFungibleGlobalId>,
+    initial_proofs: BTreeSet<NonFungibleGlobalId>,
     trace: bool,
     print_receipt: bool,
     out: &mut O,
@@ -226,7 +226,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let initial_proofs = sks
                 .into_iter()
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
-                .collect::<Vec<NonFungibleGlobalId>>();
+                .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 

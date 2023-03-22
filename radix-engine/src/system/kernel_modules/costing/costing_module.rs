@@ -129,29 +129,25 @@ impl KernelModule for CostingModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (fn_identifier, optional_component) = match &callee {
-            Some(Actor {
+        let (fn_identifier, optional_component) = {
+            let Actor {
                 identifier,
                 fn_identifier,
-            }) => {
-                let maybe_component = match &identifier {
-                    ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
-                        RENodeId::GlobalObject(Address::Component(address)) => Some(address),
-                        _ => None,
-                    },
+            } = callee;
+            let maybe_component = match &identifier {
+                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
+                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
                     _ => None,
-                };
+                },
+                _ => None,
+            };
 
-                (fn_identifier, maybe_component)
-            }
-            _ => {
-                return Ok(());
-            }
+            (fn_identifier, maybe_component)
         };
 
         //===========================
@@ -159,7 +155,7 @@ impl KernelModule for CostingModule {
         //===========================
         let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
-            RENodeId::GlobalObject(package_address.into()),
+            &RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
@@ -193,7 +189,7 @@ impl KernelModule for CostingModule {
         //===========================
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(component_address.clone().into()),
+                &RENodeId::GlobalObject(component_address.clone().into()),
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
@@ -207,7 +203,7 @@ impl KernelModule for CostingModule {
 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(component_address.clone().into()),
+                    &RENodeId::GlobalObject(component_address.clone().into()),
                     NodeModuleId::ComponentRoyalty,
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     LockFlags::MUTABLE,

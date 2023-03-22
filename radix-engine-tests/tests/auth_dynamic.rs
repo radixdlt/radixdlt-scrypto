@@ -25,7 +25,7 @@ fn test_dynamic_auth(
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let initial_proofs: Vec<NonFungibleGlobalId> = signer_public_keys
+    let initial_proofs: BTreeSet<NonFungibleGlobalId> = signer_public_keys
         .iter()
         .map(|index| {
             NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0)
@@ -65,7 +65,7 @@ fn test_dynamic_auth(
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component, "get_secret", manifest_args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs.to_vec());
+    let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs);
 
     // Assert
     if should_succeed {
@@ -93,7 +93,7 @@ fn test_dynamic_authlist(
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let initial_proofs: Vec<NonFungibleGlobalId> = signer_public_keys
+    let initial_proofs: BTreeSet<NonFungibleGlobalId> = signer_public_keys
         .iter()
         .map(|index| {
             NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0)

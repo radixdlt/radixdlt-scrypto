@@ -31,7 +31,7 @@ impl SetCurrentTime {
         }];
 
         let blobs = vec![];
-        let initial_proofs = vec![
+        let initial_proofs = btreeset![
             AuthAddresses::system_role(),
             AuthAddresses::validator_role(),
         ];

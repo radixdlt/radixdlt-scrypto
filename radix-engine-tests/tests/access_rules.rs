@@ -1,5 +1,4 @@
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::AuthZoneError;
+use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
@@ -285,16 +284,14 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
@@ -313,7 +310,7 @@ fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -339,7 +336,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)],
         );
         receipt.expect_commit_success();
 
@@ -358,16 +355,14 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
@@ -391,7 +386,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)],
         );
         receipt.expect_commit_success();
 
@@ -417,7 +412,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -427,7 +422,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     component_address: ComponentAddress,
-    initial_proofs: Vec<NonFungibleGlobalId>,
+    initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
 impl MutableAccessRulesTestRunner {
@@ -451,12 +446,12 @@ impl MutableAccessRulesTestRunner {
         Self {
             test_runner,
             component_address,
-            initial_proofs: Vec::new(),
+            initial_proofs: BTreeSet::new(),
         }
     }
 
     pub fn add_initial_proof(&mut self, initial_proof: NonFungibleGlobalId) {
-        self.initial_proofs.push(initial_proof);
+        self.initial_proofs.insert(initial_proof);
     }
 
     pub fn set_method_auth(

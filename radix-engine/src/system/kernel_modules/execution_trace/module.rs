@@ -46,9 +46,9 @@ impl ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
-    pub resource_address: ResourceAddress,
     pub node_id: RENodeId,
     pub vault_id: ObjectId,
+    pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
@@ -328,7 +328,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         update: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -435,21 +435,16 @@ impl ExecutionTraceModule {
     fn handle_before_push_frame(
         &mut self,
         current_actor: Option<Actor>,
-        callee: &Option<Actor>,
+        callee: &Actor,
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match &callee {
-                Some(Actor {
-                    fn_identifier: identifier,
-                    identifier: receiver,
-                }) => match receiver {
-                    ActorIdentifier::Method(..) => Origin::ScryptoMethod(identifier.clone()),
-                    ActorIdentifier::Function(..) => Origin::ScryptoFunction(identifier.clone()),
-                },
-                _ => panic!("Should not get here."),
+            let origin = match callee.identifier {
+                ActorIdentifier::Method(..) => Origin::ScryptoMethod(callee.fn_identifier.clone()),
+                ActorIdentifier::Function(..) => {
+                    Origin::ScryptoFunction(callee.fn_identifier.clone())
+                }
             };
-
             let instruction_index = self.instruction_index();
 
             self.traced_kernel_call_inputs_stack.push((
@@ -462,7 +457,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            Some(Actor {
+            Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -471,13 +466,13 @@ impl ExecutionTraceModule {
                     },
                 identifier:
                     ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
-            Some(Actor {
+            Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -486,7 +481,7 @@ impl ExecutionTraceModule {
                     },
                 identifier:
                     ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
             {
@@ -651,16 +646,19 @@ impl ExecutionTraceModule {
 }
 
 pub fn calculate_resource_changes(
-    vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+    mut vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
     fee_payments: &IndexMap<ObjectId, Decimal>,
     is_commit_success: bool,
 ) -> IndexMap<usize, Vec<ResourceChange>> {
-    // FIXME: revert non-fee operations if `is_commit_success == false`
+    // Retain lock fee only if the transaction fails.
+    if !is_commit_success {
+        vault_ops.retain(|x| matches!(x.2, VaultOp::LockFee));
+    }
 
+    // Calculate per instruction index, actor, vault resource changes.
     let mut vault_changes =
         index_map_new::<usize, IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>(
         );
-    let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Actor(Actor {
             identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
@@ -697,32 +695,19 @@ pub fn calculate_resource_changes(
                         .or_default()
                         .entry(vault_id)
                         .or_insert((RADIX_TOKEN, Decimal::zero()))
-                        .1 -= 0;
-
-                    // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
-                    // polluting the `vault_locked_by` index.
-                    if !vault_locked_by.contains_key(&vault_id) {
-                        vault_locked_by.insert(vault_id, node_id);
-                    }
+                        .1 -= fee_payments.get(&vault_id).cloned().unwrap_or_default();
                 }
             }
         }
     }
 
+    // Convert into a vec for ease of consumption.
     let mut resource_changes = index_map_new::<usize, Vec<ResourceChange>>();
     for (instruction_index, instruction_resource_changes) in vault_changes {
         for (node_id, map) in instruction_resource_changes {
             for (vault_id, (resource_address, delta)) in map {
-                // Amount = put/take amount - fee_amount
-                let fee_amount = fee_payments.get(&vault_id).cloned().unwrap_or_default();
-                let amount = if is_commit_success {
-                    delta
-                } else {
-                    Decimal::zero()
-                } - fee_amount;
-
                 // Add a resource change log if non-zero
-                if !amount.is_zero() {
+                if !delta.is_zero() {
                     resource_changes
                         .entry(instruction_index)
                         .or_default()
@@ -730,7 +715,7 @@ pub fn calculate_resource_changes(
                             resource_address,
                             node_id,
                             vault_id,
-                            amount,
+                            amount: delta,
                         });
                 }
             }

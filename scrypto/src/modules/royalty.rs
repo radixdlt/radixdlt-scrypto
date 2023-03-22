@@ -54,7 +54,7 @@ pub trait RoyaltyObject {
 
         ScryptoEnv
             .call_module_method(
-                node_id,
+                &node_id,
                 module_id,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
@@ -67,7 +67,7 @@ pub trait RoyaltyObject {
 
         let rtn = ScryptoEnv
             .call_module_method(
-                node_id,
+                &node_id,
                 module_id,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),

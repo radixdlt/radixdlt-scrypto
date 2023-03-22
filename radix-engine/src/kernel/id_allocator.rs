@@ -65,7 +65,6 @@ impl IdAllocator {
         node_type: AllocateEntityType,
     ) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
-            AllocateEntityType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
             AllocateEntityType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }

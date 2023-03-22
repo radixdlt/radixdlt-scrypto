@@ -49,7 +49,7 @@ impl VisibilityProperties {
     pub fn check_substate_access(
         mode: ExecutionMode,
         actor: &Actor,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> bool {
@@ -76,14 +76,16 @@ impl VisibilityProperties {
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Info) => true,
                 SubstateOffset::Proof(ProofOffset::Info) => true,
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Proof(..) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
+            (ExecutionMode::System, offset) => match offset {
+                SubstateOffset::AuthZone(_) => read_only,
+                _ => false,
+            },
             (ExecutionMode::KernelModule, offset) => match offset {
                 // TODO: refine based on specific module
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
@@ -98,6 +100,7 @@ impl VisibilityProperties {
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
                 SubstateOffset::TypeInfo(_) => read_only,
                 SubstateOffset::AccessRules(_) => read_only,
+                SubstateOffset::AuthZone(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
@@ -273,7 +276,6 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
-            SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRules(..) => true,
@@ -286,6 +288,7 @@ impl SubstateProperties {
             SubstateOffset::Bucket(..) => false,
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
+            SubstateOffset::AuthZone(..) => false,
             SubstateOffset::Clock(..) => true,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
@@ -308,7 +311,7 @@ impl SubstateProperties {
                 ))),
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     package_address,

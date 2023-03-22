@@ -52,7 +52,7 @@ fn can_create_clone_and_drop_vault_proof() {
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
@@ -92,7 +92,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 3.into())
@@ -131,7 +131,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 3.into())
@@ -215,7 +215,7 @@ fn can_use_vault_for_authorization() {
         test_runner.create_restricted_burn_token(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, auth_resource_address, 1.into())
@@ -365,7 +365,7 @@ fn can_compose_bucket_and_vault_proof() {
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
@@ -410,7 +410,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
@@ -454,7 +454,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
@@ -518,7 +518,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 3.into())

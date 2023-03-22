@@ -56,7 +56,7 @@ pub struct TransactionProcessorBlueprint;
 
 impl TransactionProcessorBlueprint {
     pub(crate) fn run<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -261,7 +261,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(component_address.into()),
+                        &RENodeId::GlobalObject(component_address.into()),
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -331,7 +331,7 @@ impl TransactionProcessorBlueprint {
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(resource_address.into()),
+                        &RENodeId::GlobalObject(resource_address.into()),
                         FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
                     )?;
@@ -355,7 +355,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(resource_address.into()),
+                        &RENodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -377,7 +377,7 @@ impl TransactionProcessorBlueprint {
                     let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(resource_address.into()),
+                        &RENodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -390,7 +390,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
-                        RENodeId::Object(vault_id),
+                        &RENodeId::Object(vault_id),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -409,7 +409,7 @@ impl TransactionProcessorBlueprint {
                     let address = to_address(entity_address);
                     let receiver = address.into();
                     let result = api.call_module_method(
-                        receiver,
+                        &receiver,
                         NodeModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
@@ -435,7 +435,7 @@ impl TransactionProcessorBlueprint {
                     let address = to_address(entity_address);
                     let receiver = address.into();
                     let result = api.call_module_method(
-                        receiver,
+                        &receiver,
                         NodeModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
@@ -455,7 +455,7 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(package_address.into()),
+                        &RENodeId::GlobalObject(package_address.into()),
                         NodeModuleId::SELF,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -478,7 +478,7 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(component_address.into()),
+                        &RENodeId::GlobalObject(component_address.into()),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -498,7 +498,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(package_address.into()),
+                        &RENodeId::GlobalObject(package_address.into()),
                         NodeModuleId::SELF,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -515,7 +515,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(component_address.into()),
+                        &RENodeId::GlobalObject(component_address.into()),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -538,7 +538,7 @@ impl TransactionProcessorBlueprint {
                     let address = to_address(entity_address);
                     let receiver = address.into();
                     let result = api.call_module_method(
-                        receiver,
+                        &receiver,
                         NodeModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -558,7 +558,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::AssertAccessRule { access_rule } => {
-                    let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule, api)?;
+                    let rtn = Runtime::assert_access_rule(access_rule, api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(

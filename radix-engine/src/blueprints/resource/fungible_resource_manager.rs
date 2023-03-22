@@ -189,7 +189,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -197,7 +197,7 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -253,7 +253,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         bucket: Bucket,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -261,14 +261,14 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
         // FIXME: check if the bucket is locked!!!
         let dropped_bucket: DroppedBucket =
-            api.kernel_drop_node(RENodeId::Object(bucket.0))?.into();
+            api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
 
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {
@@ -311,12 +311,12 @@ impl FungibleResourceManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_bucket<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -343,12 +343,12 @@ impl FungibleResourceManagerBlueprint {
         Ok(Bucket(bucket_id))
     }
 
-    pub(crate) fn create_vault<Y>(receiver: RENodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_vault<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
@@ -383,14 +383,14 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_resource_type<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         api: &mut Y,
     ) -> Result<ResourceType, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
@@ -405,14 +405,14 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_total_supply<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         api: &mut Y,
     ) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;

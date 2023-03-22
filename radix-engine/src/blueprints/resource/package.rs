@@ -865,6 +865,98 @@ impl ResourceManagerNativePackage {
             event_schema: [].into(),
         };
 
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AuthZone>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            AUTH_ZONE_POP_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
+                export_name: AUTH_ZONE_POP_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_PUSH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
+                export_name: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CLEAR_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                export_name: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
+                export_name: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_DRAIN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
+                export_name: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        let auth_zone_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+            event_schema: btreemap!(),
+        };
+
         PackageSchema {
             blueprints: btreemap!(
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
@@ -872,15 +964,16 @@ impl ResourceManagerNativePackage {
                 VAULT_BLUEPRINT.to_string() => vault_schema,
                 BUCKET_BLUEPRINT.to_string() => bucket_schema,
                 PROOF_BLUEPRINT.to_string() => proof_schema,
-                WORKTOP_BLUEPRINT.to_string() =>worktop_schema
+                WORKTOP_BLUEPRINT.to_string() => worktop_schema,
+                AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
             ),
         }
     }
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
-        input: IndexedScryptoValue,
+        receiver: Option<&RENodeId>,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1632,6 +1725,70 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::drain(receiver, input, api)
+            }
+            AUTH_ZONE_POP_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::pop(receiver, input, api)
+            }
+            AUTH_ZONE_PUSH_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::push(receiver, input, api)
+            }
+            AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::create_proof(receiver, input, api)
+            }
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
+            }
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
+            }
+            AUTH_ZONE_CLEAR_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::clear(receiver, input, api)
+            }
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::clear_signature_proofs(receiver, input, api)
+            }
+            AUTH_ZONE_DRAIN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::drain(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
