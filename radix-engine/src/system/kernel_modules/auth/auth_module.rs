@@ -52,7 +52,7 @@ impl AuthModule {
             actor,
             Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(
-                    RENodeId::GlobalObject(Address::Component(..)),
+                    RENodeId::GlobalObject(..),
                     ..
                 )),
                 ..
