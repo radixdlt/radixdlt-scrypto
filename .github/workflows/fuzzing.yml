@@ -1,0 +1,91 @@
+name: Fuzzing
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Fuzzing duration [s]'
+        required: true
+        default: 3600
+      timeout:
+        description: 'AFL timeout [ms]'
+        required: true
+        default: 1000
+      fuzz_input_mode:
+        type: choice
+        description: 'Fuzz input data generation mode'
+        required: true
+        options:
+          - raw
+          - unique
+          - minimize
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  transaction:
+    name: Fuzz transaction (AFL)
+    runs-on: k8s-linux-runner
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+
+    - name: Add wasm target (nightly)
+      run: rustup +nightly target add wasm32-unknown-unknown
+
+    - name: Setup AFL
+      working-directory: fuzz-tests
+      run: |
+        ./install_afl.sh
+        ./fuzz.sh afl machine-init
+
+    - name: Build AFL
+      working-directory: fuzz-tests
+      run: |
+        ./fuzz.sh afl build
+
+    - name: Generate input for AFL
+      working-directory: fuzz-tests
+      run: |
+        ./fuzz.sh generate-input ${{ github.event.inputs.fuzz_input_mode }}
+
+    - name: Start AFL
+      working-directory: fuzz-tests
+      run: |
+        ./afl.sh run ${{ github.event.inputs.duration }} all ${{ github.event.inputs.timeout }}
+
+    - name: Watch AFL
+      working-directory: fuzz-tests
+      run: |
+        ./afl.sh watch 60
+
+    - name: Generate summary
+      working-directory: fuzz-tests
+      run: |
+        COMMIT=$(git rev-parse --short HEAD)
+        echo -e \
+        "## Repo:\n \
+        revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
+        ## Status:\n \
+        \n\`\`\`\n \
+         $(cargo afl whatsup -d afl/transaction) \
+        \n\`\`\`\n" > afl/summary
+        cat afl/summary >> $GITHUB_STEP_SUMMARY
+        find afl -type f ! -path "*/queue/*" | tee list
+        tar -cvzf fuzz_transaction.tgz -T list
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: fuzz_transaction.tgz
+        path: |
+          fuzz-tests/fuzz_transaction.tgz

@@ -174,7 +174,6 @@ pub enum PackageOffset {
     Code,
     Royalty,
     FunctionAccessRules,
-    EventSchema,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]

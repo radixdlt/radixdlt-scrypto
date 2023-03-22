@@ -32,8 +32,8 @@ pub struct ValidatorSubstate {
 
     pub unstake_nft: ResourceAddress,
     pub liquidity_token: ResourceAddress,
-    pub stake_xrd_vault_id: ObjectId,
-    pub pending_xrd_withdraw_vault_id: ObjectId,
+    pub stake_xrd_vault_id: Own,
+    pub pending_xrd_withdraw_vault_id: Own,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -84,7 +84,7 @@ impl ValidatorBlueprint {
         // Update EpochManager
         {
             let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            let stake_vault = Vault(validator.stake_xrd_vault_id.id());
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
                 let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
@@ -181,7 +181,7 @@ impl ValidatorBlueprint {
         let lp_token_bucket = {
             let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
-            let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
+            let mut xrd_vault = Vault(validator.stake_xrd_vault_id.id());
 
             let total_lp_supply = lp_token_resman.total_supply(api)?;
             let active_stake_amount = xrd_vault.sys_amount(api)?;
@@ -205,7 +205,7 @@ impl ValidatorBlueprint {
                 let receiver = validator.manager;
                 let key = validator.key;
                 let validator_address = validator.address;
-                let xrd_vault = Vault(validator.stake_xrd_vault_id);
+                let xrd_vault = Vault(validator.stake_xrd_vault_id.id());
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
                 api.call_method(
@@ -252,13 +252,13 @@ impl ValidatorBlueprint {
         )?;
 
         // Unstake
-        let unstake_bucket = {
+        let (unstake_bucket, _) = {
             let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
 
             let manager = validator.manager;
-            let mut stake_vault = Vault(validator.stake_xrd_vault_id);
-            let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
-            let mut nft_resman = ResourceManager(validator.unstake_nft);
+            let mut stake_vault = Vault(validator.stake_xrd_vault_id.id());
+            let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id.id());
+            let nft_resman = ResourceManager(validator.unstake_nft);
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
 
             let active_stake_amount = stake_vault.sys_amount(api)?;
@@ -291,13 +291,13 @@ impl ValidatorBlueprint {
 
             let bucket = stake_vault.sys_take(xrd_amount, api)?;
             unstake_vault.sys_put(bucket, api)?;
-            nft_resman.mint_non_fungible_uuid(data, api)?
+            nft_resman.mint_non_fungible_single_uuid(data, api)?
         };
 
         // Update Epoch Manager
         {
             let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            let stake_vault = Vault(validator.stake_xrd_vault_id.id());
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
@@ -347,7 +347,7 @@ impl ValidatorBlueprint {
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
         let manager = validator.manager;
-        let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
+        let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id.id());
 
         // TODO: Move this check into a more appropriate place
         let bucket = input.bucket;
@@ -420,7 +420,7 @@ impl ValidatorBlueprint {
 
         // Update Epoch Manager
         {
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            let stake_vault = Vault(validator.stake_xrd_vault_id.id());
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 if !stake_amount.is_zero() {
@@ -667,8 +667,8 @@ impl ValidatorCreator {
             address,
             liquidity_token,
             unstake_nft,
-            stake_xrd_vault_id: stake_vault.0,
-            pending_xrd_withdraw_vault_id: unstake_vault.0,
+            stake_xrd_vault_id: Own::Vault(stake_vault.0),
+            pending_xrd_withdraw_vault_id: Own::Vault(unstake_vault.0),
             is_registered,
         };
 
@@ -717,8 +717,8 @@ impl ValidatorCreator {
             address,
             liquidity_token,
             unstake_nft,
-            stake_xrd_vault_id: stake_vault.0,
-            pending_xrd_withdraw_vault_id: unstake_vault.0,
+            stake_xrd_vault_id: Own::Vault(stake_vault.0),
+            pending_xrd_withdraw_vault_id: Own::Vault(unstake_vault.0),
             is_registered,
         };
 

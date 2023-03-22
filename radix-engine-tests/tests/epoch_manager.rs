@@ -165,7 +165,7 @@ fn register_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -242,7 +242,7 @@ fn unregister_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -317,7 +317,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
         .call_method(
             validator_address,
             "update_accept_delegated_stake",
@@ -335,7 +335,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     builder.lock_fee(FAUCET_COMPONENT, 10.into());
 
     if owner {
-        builder.create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN);
+        builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN);
     }
 
     let manifest = builder
@@ -391,9 +391,11 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let (pub_key, validator_address) = test_runner.new_validator();
+    let (pub_key, _, account_address) = test_runner.new_account(false);
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account_address, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -442,9 +444,10 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, rule!(allow_all));
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account_address, VALIDATOR_OWNER_TOKEN)
         .withdraw_from_account(account_address, RADIX_TOKEN, Decimal::one())
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -519,7 +522,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -584,7 +587,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .public_key();
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(validator_account_address, OLYMPIA_VALIDATOR_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
         .call_method(
             validator_address,
             "update_key",
@@ -842,14 +845,14 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
-    pre_allocated_ids.insert(RENodeId::GlobalObject(OLYMPIA_VALIDATOR_TOKEN.into()));
+    pre_allocated_ids.insert(RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
     let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ManifestValidatorInit> = BTreeMap::new();
     let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id(),
+            VALIDATOR_OWNER_TOKEN.to_array_without_entity_id(),
             EPOCH_MANAGER.to_array_without_entity_id(),
             validator_set,
             1u64,
@@ -882,7 +885,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
-    pre_allocated_ids.insert(RENodeId::GlobalObject(OLYMPIA_VALIDATOR_TOKEN.into()));
+    pre_allocated_ids.insert(RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
 
     let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ManifestValidatorInit> = BTreeMap::new();
     let instructions = vec![Instruction::CallFunction {
@@ -890,7 +893,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: "create".to_string(),
         args: manifest_args!(
-            OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id(),
+            VALIDATOR_OWNER_TOKEN.to_array_without_entity_id(),
             EPOCH_MANAGER.to_array_without_entity_id(),
             validator_set,
             1u64,

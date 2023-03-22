@@ -61,6 +61,14 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+        ),
+        "mint".to_string(),
+        DenyAll,
+    );
+    resman_access_rules.set_group_and_mutability(
+        MethodKey::new(
+            NodeModuleId::SELF,
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
         ),
         "mint".to_string(),
