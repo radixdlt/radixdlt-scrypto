@@ -61,7 +61,7 @@ impl FnIdentifier {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FunctionInvocation {
-    pub fn_identifier: Box<FnIdentifier>,
+    pub fn_identifier: FnIdentifier,
     pub args: Vec<u8>,
 }
 
@@ -69,13 +69,13 @@ impl Invocation for FunctionInvocation {
     type Output = IndexedScryptoValue;
 
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Function(self.fn_identifier.as_ref().clone())
+        InvocationDebugIdentifier::Function(self.fn_identifier.clone())
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodInvocation {
-    pub identifier: Box<MethodIdentifier>,
+    pub identifier: MethodIdentifier,
     pub args: Vec<u8>,
 }
 
@@ -83,6 +83,6 @@ impl Invocation for MethodInvocation {
     type Output = IndexedScryptoValue;
 
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Method(self.identifier.as_ref().clone())
+        InvocationDebugIdentifier::Method(self.identifier.clone())
     }
 }

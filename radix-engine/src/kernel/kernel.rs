@@ -594,6 +594,7 @@ where
         Ok(output)
     }
 
+    #[inline(always)]
     pub fn execute_in_mode<X, RTN, E>(
         &mut self,
         execution_mode: ExecutionMode,
@@ -1066,7 +1067,10 @@ where
     W: WasmEngine,
     N: ExecutableInvocation,
 {
-    fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+    fn kernel_invoke(
+        &mut self,
+        invocation: Box<N>,
+    ) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
             &invocation.debug_identifier(),

@@ -142,7 +142,7 @@ impl ExecutableInvocation for MethodInvocation {
             blueprint_name.clone(),
             self.identifier.2.clone(),
         );
-        let actor = Actor::method(fn_identifier.clone(), self.identifier.as_ref().clone());
+        let actor = Actor::method(fn_identifier.clone(), self.identifier.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
@@ -179,8 +179,8 @@ impl ExecutableInvocation for MethodInvocation {
         }
 
         let executor = ScryptoExecutor {
-            fn_identifier: Box::new(fn_identifier),
-            receiver: Some(self.identifier.as_ref().clone()),
+            fn_identifier: fn_identifier,
+            receiver: Some(self.identifier.clone()),
         };
 
         let resolved = ResolvedInvocation {
@@ -214,7 +214,7 @@ impl ExecutableInvocation for FunctionInvocation {
         let nodes_to_move = value.owned_node_ids().clone();
         let mut node_refs_to_copy = value.references().clone();
 
-        let actor = Actor::function(self.fn_identifier.as_ref().clone());
+        let actor = Actor::function(self.fn_identifier.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
@@ -282,7 +282,7 @@ impl ExecutableInvocation for FunctionInvocation {
 }
 
 pub struct ScryptoExecutor {
-    pub fn_identifier: Box<FnIdentifier>,
+    pub fn_identifier: FnIdentifier,
     pub receiver: Option<MethodIdentifier>,
 }
 

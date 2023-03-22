@@ -578,14 +578,10 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = MethodInvocation {
-            identifier: Box::new(MethodIdentifier(
-                receiver.clone(),
-                node_module_id,
-                method_name.to_string(),
-            )),
+        let invocation = Box::new(MethodInvocation {
+            identifier: MethodIdentifier(receiver.clone(), node_module_id, method_name.to_string()),
             args,
-        };
+        });
 
         self.kernel_invoke(invocation).map(|v| v.into())
     }
@@ -597,14 +593,14 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = FunctionInvocation {
-            fn_identifier: Box::new(FnIdentifier::new(
+        let invocation = Box::new(FunctionInvocation {
+            fn_identifier: FnIdentifier::new(
                 package_address,
                 blueprint_name.to_string(),
                 function_name.to_string(),
-            )),
+            ),
             args,
-        };
+        });
 
         self.kernel_invoke(invocation).map(|v| v.into())
     }

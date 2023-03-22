@@ -90,7 +90,7 @@ pub trait KernelWasmApi<W: WasmEngine> {
 }
 
 pub trait KernelInvokeApi<I: Invocation, E> {
-    fn kernel_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
+    fn kernel_invoke(&mut self, invocation: Box<I>) -> Result<I::Output, E>;
 }
 
 /// Interface of the Kernel, for Kernel modules.
