@@ -1,5 +1,4 @@
 use crate::types::*;
-use utils::copy_u8_array;
 
 /// The unique identifier of a (stored) node.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
@@ -9,7 +8,7 @@ pub struct NodeId([u8; 31]);
 impl NodeId {
     pub const LENGTH: usize = 31;
 
-    pub fn new(entity_byte: u8, random_bytes: &[u8; 26], index: u32) -> Self {
+    pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 5], index: u32) -> Self {
         let mut buf = [0u8; Self::LENGTH];
         buf[0] = entity_byte;
         buf[1..random_bytes.len() + 1].copy_from_slice(random_bytes);
@@ -18,10 +17,22 @@ impl NodeId {
     }
 }
 
+impl AsRef<[u8]> for NodeId {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Into<[u8; NodeId::LENGTH]> for NodeId {
+    fn into(self) -> [u8; NodeId::LENGTH] {
+        self.0
+    }
+}
+
 /// The unique identifier of a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
-pub struct ModuleId(u8);
+pub struct ModuleId(pub u8);
 
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
@@ -37,11 +48,11 @@ pub struct DynamicSubstateKey(Vec<u8>);
 impl DynamicSubstateKey {
     pub const MAX_LENGTH: usize = 128;
 
-    fn from_slice(slice: &[u8]) -> Option<Self> {
+    pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Self::from_bytes(slice.to_vec())
     }
 
-    fn from_bytes(bytes: Vec<u8>) -> Option<Self> {
+    pub fn from_bytes(bytes: Vec<u8>) -> Option<Self> {
         // TODO: do we want to enforce more constraints on the bytes?
         if bytes.len() > Self::MAX_LENGTH {
             None
@@ -85,15 +96,22 @@ pub fn encode_substate_id(
 }
 
 pub fn decode_substate_id(slice: &[u8]) -> (NodeId, ModuleId, SubstateKey) {
-    let node_id = NodeId(copy_u8_array(&slice[0..NodeId::LENGTH]));
+    // Decode node id
+    let mut node_id = [0u8; NodeId::LENGTH];
+    node_id.copy_from_slice(&slice[0..NodeId::LENGTH]);
+    let node_id = NodeId(node_id);
+
+    // Decode module id
     let module_id = ModuleId(slice[NodeId::LENGTH]);
+
+    // Decode substate key
     let substate_key = match slice[NodeId::LENGTH + 1] {
         0 => SubstateKey::Static(slice[NodeId::LENGTH + 2]),
         1 => SubstateKey::Dynamic(
             DynamicSubstateKey::from_slice(&slice[NodeId::LENGTH + 2..])
                 .expect("Invalid dynamic substate key"),
         ),
-        i => panic!("Unexpected substate key type: {}", i),
+        i => panic!("Invalid substate key type: {}", i),
     };
 
     (node_id, module_id, substate_key)
