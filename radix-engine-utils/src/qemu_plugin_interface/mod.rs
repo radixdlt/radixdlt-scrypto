@@ -218,6 +218,7 @@ impl<'a> Drop for QemuPluginInterface<'a> {
         self.save_output_to_file("/tmp/out.txt");
 
         DataAnalyzer::save_csv(&self.output_data, "/tmp/out.csv");
+        DataAnalyzer::save_xml(&self.output_data, "/tmp/out.xml");
         DataAnalyzer::generate_and_save_buckets(&self.output_data, "/tmp/buckets.csv");
     }
 }

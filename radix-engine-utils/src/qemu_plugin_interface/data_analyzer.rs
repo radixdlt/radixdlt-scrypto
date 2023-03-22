@@ -126,4 +126,61 @@ impl DataAnalyzer {
         }
     }
 
+    pub fn save_xml<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
+        if let Ok(mut file) = File::create(file_name) {
+
+            let mut prev_stack_depth = 0;
+            file.write_fmt(format_args!("<root>\n")).unwrap();
+
+            for (i, v) in data.iter().enumerate() {
+                let mut cpu_ins_cal = v.cpu_instructions_calibrated;
+
+                // set cpu instructions from exit event to enter event
+                if matches!(v.event, OutputDataEvent::FunctionEnter) {
+                    for w in data[i..].into_iter() {
+                        if v.stack_depth == w.stack_depth && 
+                           v.function_name == w.function_name &&
+                           matches!(w.event, OutputDataEvent::FunctionExit) {
+                                cpu_ins_cal = w.cpu_instructions_calibrated;
+                                break;
+                           }
+                    }
+                }
+
+                if v.stack_depth > prev_stack_depth {
+                    file.write_fmt(format_args!(">\n")).unwrap();
+                } else if v.stack_depth < prev_stack_depth {
+                    let spaces = std::iter::repeat(' ').take(1 * v.stack_depth).collect::<String>();
+                    file.write_fmt(format_args!("{}</data>\n", spaces)).unwrap();
+                } else if i > 0 && matches!(v.event, OutputDataEvent::FunctionExit) {
+                    file.write_fmt(format_args!("/>\n")).unwrap();
+                }
+
+                if !matches!(v.event, OutputDataEvent::FunctionExit) {
+                    let spaces = std::iter::repeat(' ').take(1 * v.stack_depth).collect::<String>();
+
+                    file.write_fmt(format_args!("{}<data fcn=\"{}\" ins=\"{}\"",
+                            spaces, 
+                            v.function_name, 
+                            cpu_ins_cal)
+                        ).expect(&format!("Unable write to {} file.", file_name));
+
+                    if v.param.is_some() {
+                        file.write_fmt(format_args!(" arg=\"{}\"",
+                                v.param.clone().unwrap_or_default().to_string().replace('\"', "&quot;"))
+                            ).expect(&format!("Unable write to {} file.", file_name));
+                    }
+                }
+
+                prev_stack_depth = v.stack_depth;
+            }
+            file.write_fmt(format_args!("/>\n</root>")).unwrap();
+
+            file.flush().expect(&format!("Unable to flush {} file.", file_name))
+        } else {
+            panic!("Unable to create {} file.", file_name)
+        }
+    }
+
+
 }

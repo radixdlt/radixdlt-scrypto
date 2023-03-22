@@ -39,7 +39,6 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-
 use resources_tracker_macro::trace_resources;
 
 
@@ -681,7 +680,7 @@ where
         Ok(node_id)
     }
 
-    #[trace_resources]
+    #[trace_resources(node_id)]
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
@@ -868,7 +867,7 @@ where
     W: WasmEngine,
 {
 
-    #[trace_resources(offset)]
+    #[trace_resources]
     fn kernel_lock_substate(
         &mut self,
         node_id: RENodeId,

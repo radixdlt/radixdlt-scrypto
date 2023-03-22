@@ -16,6 +16,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
+use resources_tracker_macro::trace_resources;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -32,6 +33,7 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
+    #[trace_resources]
     pub fn get_substate(
         &mut self,
         node_id: RENodeId,
@@ -104,10 +106,12 @@ impl Heap {
         }
     }
 
+    #[trace_resources]
     pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
         self.nodes.insert(node_id, node);
     }
 
+    #[trace_resources(nodes)]
     pub fn move_nodes_to_store(
         &mut self,
         track: &mut Track,
@@ -120,6 +124,7 @@ impl Heap {
         Ok(())
     }
 
+    #[trace_resources]
     pub fn move_node_to_store(
         &mut self,
         track: &mut Track,

@@ -27,6 +27,7 @@ use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 
 use super::event::TrackedEvent;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -276,6 +277,7 @@ impl<'s> Track<'s> {
         runtime_substate.to_ref_mut()
     }
 
+    #[trace_resources]
     pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
         assert!(!self.loaded_substates.contains_key(&substate_id));
 

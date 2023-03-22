@@ -13,6 +13,7 @@ use radix_engine_interface::api::types::{
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;
 use super::track::{Track, TrackError};
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
@@ -450,6 +451,7 @@ impl CallFrame {
         }
     }
 
+    #[trace_resources]
     pub fn create_node<'f, 's>(
         &mut self,
         node_id: RENodeId,
