@@ -47,7 +47,7 @@ pub struct AuthModule {
 }
 
 impl AuthModule {
-    fn is_actor_barrier(actor: &Actor) -> bool {
+    fn is_global_object_barrier(actor: &Actor) -> bool {
         matches!(
             actor,
             Actor {
@@ -60,11 +60,16 @@ impl AuthModule {
         )
     }
 
-    fn is_barrier(actor: &Option<Actor>) -> bool {
-        match actor {
-            Some(actor) => Self::is_actor_barrier(actor),
-            None => false,
-        }
+    fn global_object_barrier(actor: &Option<Actor>) -> Option<Address> {
+        actor.as_ref().and_then(|actor| {
+            match &actor.identifier {
+                ActorIdentifier::Method(MethodIdentifier(
+                                            RENodeId::GlobalObject(address),
+                                            ..
+                                        )) => Some(address.clone()),
+                _ => None,
+            }
+        })
     }
 
     fn is_transaction_processor(actor: &Option<Actor>) -> bool {
@@ -380,7 +385,7 @@ impl KernelModule for AuthModule {
             ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
-        let barrier_crossings_allowed = if Self::is_barrier(&Some(callee.clone())) {
+        let barrier_crossings_allowed = if Self::is_global_object_barrier(callee) {
             0
         } else {
             1
@@ -419,7 +424,8 @@ impl KernelModule for AuthModule {
         }
 
         // Prepare a new auth zone
-        let is_barrier = Self::is_barrier(&actor);
+
+        let global_object_barrier = Self::global_object_barrier(&actor);
         let is_transaction_processor = Self::is_transaction_processor(&actor);
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_module_state().auth;
@@ -441,7 +447,7 @@ impl KernelModule for AuthModule {
             virtual_resources,
             virtual_non_fungibles,
             virtual_non_fungibles_non_extending,
-            is_barrier,
+            global_object_barrier,
             parent,
         );
 
