@@ -926,16 +926,41 @@ impl TestRunner {
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
-    pub fn create_mintable_fungible_resource(
+    pub fn create_mintable_burnable_fungible_resource(
+        &mut self,
+        account: ComponentAddress,
+    ) -> (ResourceAddress, ResourceAddress) {
+        let admin_auth = self.create_non_fungible_resource(account);
+
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Mint, (rule!(require(admin_auth)), LOCKED));
+        access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
+            .call_method(
+                account,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+        (admin_auth, resource_address)
+    }
+
+    pub fn create_freely_mintable_fungible_resource(
         &mut self,
         amount: Decimal,
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))

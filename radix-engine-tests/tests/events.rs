@@ -470,7 +470,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .mint_fungible(resource_address, 10.into())
-        .burn(10.into(), resource_address)
+        .burn_from_worktop(10.into(), resource_address)
         .build();
 
     // Act
@@ -552,7 +552,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .mint_non_fungible(resource_address, [(id.clone(), EmptyStruct {})])
-        .burn(1.into(), resource_address)
+        .burn_from_worktop(1.into(), resource_address)
         .build();
 
     // Act
