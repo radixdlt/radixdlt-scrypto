@@ -195,7 +195,6 @@ pub enum Instruction {
 
     CreateValidator {
         key: Value,
-        owner_access_rule: Value,
     },
     CreateAccessController {
         controlled_asset: Value,

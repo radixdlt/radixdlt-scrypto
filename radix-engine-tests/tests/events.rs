@@ -721,19 +721,24 @@ fn validator_registration_emits_correct_event() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let (account_pk, _, account) = test_runner.new_account(false);
 
     // Act
-    let validator_address = create_validator(&mut test_runner, pub_key, rule!(allow_all));
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+    );
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
+        assert_eq!(events.len(), 4); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
@@ -743,7 +748,7 @@ fn validator_registration_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(1) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
@@ -771,26 +776,35 @@ fn validator_unregistration_emits_correct_event() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let (account_pk, _, account) = test_runner.new_account(false);
 
-    let validator_address = create_validator(&mut test_runner, pub_key, rule!(allow_all));
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+    );
     receipt.expect_commit_success();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .unregister_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+    );
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
+        assert_eq!(events.len(), 4); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
@@ -800,7 +814,7 @@ fn validator_unregistration_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(1) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
@@ -830,17 +844,22 @@ fn validator_staking_emits_correct_event() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
-    let validator_address = create_validator(&mut test_runner, pub_key, rule!(allow_all));
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+    );
     receipt.expect_commit_success();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.stake_validator(validator_address, bucket)
@@ -859,7 +878,7 @@ fn validator_staking_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 7); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
+        assert_eq!(events.len(), 9); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
@@ -869,7 +888,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(1) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
@@ -878,7 +897,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
@@ -887,7 +906,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(3) {
+        assert!(match events.get(4) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
@@ -896,7 +915,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(4) {
+        assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
@@ -910,7 +929,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(5) {
+        assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
@@ -923,7 +942,7 @@ fn validator_staking_emits_correct_event() {
             )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(6) {
+        assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
@@ -1242,9 +1261,6 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
-        .unwrap()
-        .public_key();
     let genesis = create_genesis(
         BTreeMap::new(),
         BTreeMap::new(),
@@ -1253,18 +1269,24 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let (pub_key, _, account) = test_runner.new_account(false);
 
-    let validator_address = create_validator(&mut test_runner, pub_key, rule!(allow_all));
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
     receipt.expect_commit_success();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
@@ -1273,18 +1295,23 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             }),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         /*
-        Two Events:
+        5 Events:
         1. Vault lock fee event
-        2. AccessRule set rule
-        3. Validator update delegation state
+        2. Withdraw event
+        3. AccessRule set rule
+        4. Validator update delegation state
+        5. Deposit event
          */
-        assert_eq!(events.len(), 3);
+        assert_eq!(events.len(), 5);
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
@@ -1294,7 +1321,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(1) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_, NodeModuleId::AccessRules),
@@ -1304,7 +1331,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             )) if test_runner.is_event_name_equal::<SetRuleEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
@@ -1389,21 +1416,6 @@ struct RegisteredEvent {
 
 fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -> bool {
     scrypto_decode::<T>(&actual).unwrap() == *expected
-}
-
-fn create_validator(
-    test_runner: &mut TestRunner,
-    pk: EcdsaSecp256k1PublicKey,
-    owner_access_rule: AccessRule,
-) -> ComponentAddress {
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_validator(pk, owner_access_rule)
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
-
-    component_address
 }
 
 fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress {

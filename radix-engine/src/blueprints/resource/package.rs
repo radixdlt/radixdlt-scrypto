@@ -293,6 +293,19 @@ impl ResourceManagerNativePackage {
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
                 },
             );
+            functions.insert(
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>(
+                        ),
+                    output: aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidOutput>(
+                        ),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
+                },
+            );
 
             functions.insert(
                 RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
@@ -1129,6 +1142,23 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(
                     receiver,
                     input.entries,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: NonFungibleResourceManagerMintSingleUuidInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleResourceManagerBlueprint::mint_single_uuid_non_fungible(
+                    receiver,
+                    input.entry,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

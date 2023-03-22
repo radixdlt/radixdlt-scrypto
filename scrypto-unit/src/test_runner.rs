@@ -27,6 +27,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
@@ -532,21 +533,19 @@ impl TestRunner {
         }
     }
 
-    pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
-        let (pub_key, _) = self.new_key_pair();
-        let non_fungible_id = NonFungibleGlobalId::from_public_key(&pub_key);
-        let address = self.new_validator_with_pub_key(pub_key, rule!(require(non_fungible_id)));
-        (pub_key, address)
-    }
-
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
+        account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
-            .create_validator(pub_key, owner_access_rule)
+            .create_validator(pub_key)
+            .call_method(
+                account,
+                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
