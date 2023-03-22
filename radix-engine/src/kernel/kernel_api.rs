@@ -26,7 +26,7 @@ pub struct LockInfo {
 
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError>;
 
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(
@@ -47,7 +47,7 @@ pub trait KernelSubstateApi {
     /// Locks a visible substate
     fn kernel_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,

@@ -295,11 +295,11 @@ where
         }
     }
 
-    fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
             RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                node_id,
+                node_id.clone(),
             ))),
         })
     }
@@ -558,7 +558,7 @@ where
 
                             let substate_ref =
                                 self.track
-                                    .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
+                                    .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                             let type_substate: &TypeInfoSubstate = substate_ref.into();
                             if !matches!(type_substate,
                                 TypeInfoSubstate::Object {
@@ -622,7 +622,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -631,7 +631,7 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let (package_address, blueprint_name) = self.get_object_type_info(node_id)?;
+            let (package_address, blueprint_name) = self.get_object_type_info(node_id.clone())?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
@@ -642,7 +642,7 @@ where
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
-                        node_id,
+                        node_id: node_id.clone(),
                         package_address,
                         blueprint_name,
                     },
@@ -741,7 +741,7 @@ where
 
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Object(bucket_id),
+            &RENodeId::Object(bucket_id),
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
@@ -753,7 +753,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(bucket_id),
+                            &RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
@@ -770,7 +770,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(bucket_id),
+                            &RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
@@ -791,7 +791,7 @@ where
 
     fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Object(proof_id),
+            &RENodeId::Object(proof_id),
             NodeModuleId::SELF,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
@@ -803,7 +803,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(proof_id),
+                            &RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
@@ -821,7 +821,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(proof_id),
+                            &RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )
@@ -848,7 +848,7 @@ where
 {
     fn kernel_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -874,7 +874,7 @@ where
                     KernelError::InvalidSubstateAccess {
                         mode: current_mode,
                         actor: actor.clone(),
-                        node_id,
+                        node_id: node_id.clone(),
                         offset,
                         flags,
                     },
@@ -900,7 +900,7 @@ where
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,
-                        node_id,
+                        &node_id,
                         module_id,
                         offset.clone(),
                         flags,
@@ -932,7 +932,7 @@ where
                         self.current_frame.acquire_lock(
                             &mut self.heap,
                             &mut self.track,
-                            node_id,
+                            &node_id,
                             module_id,
                             offset.clone(),
                             flags,

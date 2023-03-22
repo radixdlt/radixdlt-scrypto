@@ -65,7 +65,7 @@ where
             NodeModuleId::SELF
         };
 
-        self.kernel_lock_substate(node_id, module_id, offset, flags)
+        self.kernel_lock_substate(&node_id, module_id, offset, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -154,7 +154,7 @@ where
             .package_address();
 
         let handle = self.kernel_lock_substate(
-            RENodeId::GlobalObject(package_address.into()),
+            &RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
@@ -415,7 +415,7 @@ where
             )));
         }
 
-        let node = self.kernel_drop_node(node_id)?;
+        let node = self.kernel_drop_node(&node_id)?;
 
         let mut module_substates = BTreeMap::new();
         let mut component_substates = BTreeMap::new();
@@ -468,7 +468,7 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(RENodeId::Object(object_id))?;
+                    let mut node = self.kernel_drop_node(&RENodeId::Object(object_id))?;
 
                     let access_rules = node
                         .substates
@@ -497,7 +497,7 @@ where
                         }));
                     }
 
-                    let node = self.kernel_drop_node(node_id)?;
+                    let node = self.kernel_drop_node(&node_id)?;
 
                     let mut substates = BTreeMap::new();
                     for ((module_id, offset), substate) in node.substates {
@@ -526,7 +526,7 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(node_id)?;
+                    let mut node = self.kernel_drop_node(&node_id)?;
 
                     let config = node
                         .substates
@@ -665,7 +665,7 @@ where
     }
 
     fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.kernel_drop_node(node_id)?;
+        self.kernel_drop_node(&node_id)?;
         Ok(())
     }
 }
@@ -830,7 +830,7 @@ where
             }?;
 
             let handle = self.kernel_lock_substate(
-                RENodeId::GlobalObject(Address::Package(package_address)),
+                &RENodeId::GlobalObject(Address::Package(package_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),

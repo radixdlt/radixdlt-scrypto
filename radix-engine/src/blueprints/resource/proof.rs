@@ -354,7 +354,7 @@ impl ProofBlueprint {
         })?;
         let proof = input.proof;
 
-        let mut heap_node = api.kernel_drop_node(RENodeId::Object(proof.0))?;
+        let mut heap_node = api.kernel_drop_node(&RENodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
             .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))

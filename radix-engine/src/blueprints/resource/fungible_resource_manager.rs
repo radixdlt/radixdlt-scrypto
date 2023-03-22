@@ -268,7 +268,7 @@ impl FungibleResourceManagerBlueprint {
 
         // FIXME: check if the bucket is locked!!!
         let dropped_bucket: DroppedBucket =
-            api.kernel_drop_node(RENodeId::Object(bucket.0))?.into();
+            api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
 
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {

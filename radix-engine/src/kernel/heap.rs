@@ -30,14 +30,14 @@ impl Heap {
 
     pub fn get_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, CallFrameError> {
         let node = self
             .nodes
             .get_mut(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
 
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, module_id, offset) {
@@ -52,20 +52,20 @@ impl Heap {
                 .substates
                 .get(&(module_id, offset.clone()))
                 .map(|s| s.to_ref())
-                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+                .ok_or_else(|| CallFrameError::OffsetDoesNotExist(node_id.clone(), offset.clone())),
         }
     }
 
     pub fn get_substate_mut(
         &mut self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRefMut, CallFrameError> {
         let node = self
             .nodes
             .get_mut(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
 
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
@@ -80,7 +80,7 @@ impl Heap {
                 .substates
                 .get_mut(&(module_id, offset.clone()))
                 .map(|s| s.to_ref_mut())
-                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+                .ok_or_else(|| CallFrameError::OffsetDoesNotExist(node_id.clone(), offset.clone())),
         }
     }
 
@@ -108,7 +108,7 @@ impl Heap {
         let node = self
             .nodes
             .remove(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id))?;
         for ((module_id, offset), substate) in node.substates {
             let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
             self.move_nodes_to_store(track, owned_nodes)?;
@@ -120,10 +120,10 @@ impl Heap {
         Ok(())
     }
 
-    pub fn remove_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, CallFrameError> {
+    pub fn remove_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, CallFrameError> {
         self.nodes
-            .remove(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))
+            .remove(node_id)
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))
     }
 }
 

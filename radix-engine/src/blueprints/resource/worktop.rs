@@ -44,7 +44,7 @@ impl WorktopBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let mut node = api.kernel_drop_node(RENodeId::Object(input.worktop.id()))?;
+        let mut node = api.kernel_drop_node(&RENodeId::Object(input.worktop.id()))?;
         let substate = node
             .substates
             .remove(&(

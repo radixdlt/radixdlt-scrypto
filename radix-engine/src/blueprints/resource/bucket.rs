@@ -497,7 +497,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         if bucket.sys_amount(api)?.is_zero() {
-            api.kernel_drop_node(RENodeId::Object(bucket.0))?;
+            api.kernel_drop_node(&RENodeId::Object(bucket.0))?;
         } else {
             let resource_address = bucket.sys_resource_address(api)?;
             native_sdk::resource::ResourceManager(resource_address).burn(bucket, api)?;
@@ -519,7 +519,7 @@ impl BucketBlueprint {
 
         let amount = input.bucket.sys_amount(api)?;
         if amount.is_zero() {
-            api.kernel_drop_node(RENodeId::Object(input.bucket.0))?;
+            api.kernel_drop_node(&RENodeId::Object(input.bucket.0))?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             Err(RuntimeError::ApplicationError(
@@ -640,7 +640,7 @@ impl BucketBlueprint {
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
-            .kernel_drop_node(RENodeId::Object(input.bucket.0))?
+            .kernel_drop_node(&RENodeId::Object(input.bucket.0))?
             .into();
 
         // Check resource address

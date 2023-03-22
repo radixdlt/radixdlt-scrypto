@@ -634,7 +634,7 @@ impl VaultBlueprint {
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
-            .kernel_drop_node(RENodeId::Object(input.bucket.0))?
+            .kernel_drop_node(&RENodeId::Object(input.bucket.0))?
             .into();
 
         // Check resource address

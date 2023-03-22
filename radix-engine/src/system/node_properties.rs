@@ -49,7 +49,7 @@ impl VisibilityProperties {
     pub fn check_substate_access(
         mode: ExecutionMode,
         actor: &Actor,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> bool {

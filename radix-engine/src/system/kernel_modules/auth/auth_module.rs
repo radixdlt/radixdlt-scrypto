@@ -94,7 +94,7 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(identifier.package_address.into()),
+                &RENodeId::GlobalObject(identifier.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
@@ -163,7 +163,7 @@ impl AuthModule {
 
                         let resource_address = {
                             let handle = api.kernel_lock_substate(
-                                node_id,
+                                &node_id,
                                 NodeModuleId::SELF,
                                 SubstateOffset::Vault(VaultOffset::Info),
                                 LockFlags::read_only(),
@@ -186,7 +186,7 @@ impl AuthModule {
                             )?,
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
-                                    RENodeId::GlobalObject(resource_address.into()),
+                                    &RENodeId::GlobalObject(resource_address.into()),
                                     NodeModuleId::AccessRules1,
                                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                     LockFlags::read_only(),
@@ -273,7 +273,7 @@ impl AuthModule {
             };
 
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(package_address.into()),
+                &RENodeId::GlobalObject(package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -299,7 +299,7 @@ impl AuthModule {
         let state = {
             let offset = SubstateOffset::Component(ComponentOffset::State0);
             let handle = api.kernel_lock_substate(
-                receiver.clone(),
+                receiver,
                 NodeModuleId::SELF,
                 offset,
                 LockFlags::read_only(),
@@ -311,7 +311,7 @@ impl AuthModule {
         };
 
         let handle = api.kernel_lock_substate(
-            receiver.clone(),
+            receiver,
             module_id,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
@@ -333,7 +333,7 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
-            receiver.clone(),
+            receiver,
             module_id,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
@@ -481,7 +481,7 @@ impl KernelModule for AuthModule {
             .pop()
             .expect("Auth zone stack is broken");
 
-        api.kernel_drop_node(auth_zone)?;
+        api.kernel_drop_node(&auth_zone)?;
 
         // Proofs in auth zone will be re-owned by the frame and auto dropped.
 
