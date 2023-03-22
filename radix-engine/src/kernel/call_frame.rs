@@ -179,7 +179,7 @@ impl CallFrame {
         );
         self.next_lock_handle = self.next_lock_handle + 1;
 
-        if let Some(counter) = self.owned_root_nodes.get_mut(&node_id) {
+        if let Some(counter) = self.owned_root_nodes.get_mut(node_id) {
             *counter += 1;
         }
 
@@ -440,7 +440,7 @@ impl CallFrame {
     }
 
     fn take_node_internal(&mut self, node_id: &RENodeId) -> Result<(), CallFrameError> {
-        match self.owned_root_nodes.remove(&node_id) {
+        match self.owned_root_nodes.remove(node_id) {
             None => {
                 return Err(CallFrameError::RENodeNotOwned(node_id.clone()));
             }

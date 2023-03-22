@@ -36,7 +36,7 @@ impl Heap {
     ) -> Result<SubstateRef, CallFrameError> {
         let node = self
             .nodes
-            .get_mut(&node_id)
+            .get_mut(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
 
         // TODO: Will clean this up when virtual substates is cleaned up
@@ -64,7 +64,7 @@ impl Heap {
     ) -> Result<SubstateRefMut, CallFrameError> {
         let node = self
             .nodes
-            .get_mut(&node_id)
+            .get_mut(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
 
         // TODO: Will clean this up when virtual substates is cleaned up
