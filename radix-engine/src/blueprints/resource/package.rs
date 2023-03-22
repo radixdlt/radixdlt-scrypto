@@ -877,7 +877,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
-                export_name: AUTH_ZONE_POP_IDENT.to_string(),
+                export_name: AUTH_ZONE_POP_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -886,7 +886,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
-                export_name: AUTH_ZONE_PUSH_IDENT.to_string(),
+                export_name: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -895,7 +895,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+                export_name: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -906,7 +906,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofByAmountOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -916,7 +916,7 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -925,7 +925,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
-                export_name: AUTH_ZONE_CLEAR_IDENT.to_string(),
+                export_name: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -936,7 +936,7 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
-                export_name: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
+                export_name: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -945,7 +945,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
-                export_name: AUTH_ZONE_DRAIN_IDENT.to_string(),
+                export_name: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
             },
         );
 
@@ -1726,7 +1726,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 WorktopBlueprint::drain(receiver, input, api)
             }
-            AUTH_ZONE_POP_IDENT => {
+            AUTH_ZONE_POP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1734,7 +1734,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::pop(receiver, input, api)
             }
-            AUTH_ZONE_PUSH_IDENT => {
+            AUTH_ZONE_PUSH_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1742,7 +1742,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::push(receiver, input, api)
             }
-            AUTH_ZONE_CREATE_PROOF_IDENT => {
+            AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1750,7 +1750,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::create_proof(receiver, input, api)
             }
-            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => {
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1758,7 +1758,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
             }
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => {
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1766,7 +1766,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
             }
-            AUTH_ZONE_CLEAR_IDENT => {
+            AUTH_ZONE_CLEAR_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1774,7 +1774,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::clear(receiver, input, api)
             }
-            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT => {
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1782,7 +1782,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 AuthZoneBlueprint::clear_signature_proofs(receiver, input, api)
             }
-            AUTH_ZONE_DRAIN_IDENT => {
+            AUTH_ZONE_DRAIN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
