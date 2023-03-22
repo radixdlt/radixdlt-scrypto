@@ -3,16 +3,15 @@ use crate::types::*;
 /// The unique identifier of a (stored) node.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
-pub struct NodeId([u8; 31]);
+pub struct NodeId([u8; 27]);
 
 impl NodeId {
-    pub const LENGTH: usize = 31;
+    pub const LENGTH: usize = 27;
 
-    pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 5], index: u32) -> Self {
+    pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 1]) -> Self {
         let mut buf = [0u8; Self::LENGTH];
         buf[0] = entity_byte;
         buf[1..random_bytes.len() + 1].copy_from_slice(random_bytes);
-        buf[random_bytes.len() + 2..].copy_from_slice(&index.to_be_bytes());
         Self(buf)
     }
 }
@@ -138,8 +137,8 @@ mod tests {
         assert_eq!(
             substate_id,
             vec![
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, // node id
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, // node id
                 2, // module id
                 1, 3, // substate key
             ]
