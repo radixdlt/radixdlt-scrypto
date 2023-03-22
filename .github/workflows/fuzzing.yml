@@ -1,0 +1,14 @@
+# This is a stub for Fuzzing workflow in main branch to make it appear in Github actions.
+# Real workflow is defined in 'develop' branch and it will replace this stub once
+# develop is merged to main
+name: Fuzzing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  transaction:
+    name: Fuzz transaction (AFL)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
