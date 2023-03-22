@@ -1208,13 +1208,14 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::api::types::NonFungibleData;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRulesConfig, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::{dec, pdec};
+    use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1482,6 +1483,42 @@ mod tests {
                     ]),
                 }),
             },
+        );
+    }
+
+    #[derive(ScryptoSbor)]
+    struct MyNonFungibleData {
+        name: String,
+        description: String,
+        stored_number: Decimal,
+    }
+
+    // Because we can't import the derive trait
+    impl NonFungibleData for MyNonFungibleData {
+        const MUTABLE_FIELDS: &'static [&'static str] = &["description", "stored_number"];
+    }
+
+    #[test]
+    fn test_generate_non_fungible_instruction_with_specific_data() {
+        // This test is mostly to assist with generating manifest instructions for the testing harness
+        println!(
+            "{}",
+            crate::manifest::decompile(
+                &[Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
+                        ),
+                        metadata: BTreeMap::new(),
+                        access_rules: BTreeMap::new(),
+                    }),
+                }],
+                &NetworkDefinition::simulator()
+            )
+            .unwrap()
         );
     }
 
