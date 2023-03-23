@@ -28,7 +28,7 @@ impl Into<[u8; NodeId::LENGTH]> for NodeId {
 }
 
 /// The unique identifier of a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleId(pub u8);
 
 /// The unique identifier of a substate within node module.
@@ -82,7 +82,7 @@ impl Into<Vec<u8>> for StateIdentifier {
 
 pub fn encode_substate_id(
     node_id: &NodeId,
-    module_id: &ModuleId,
+    module_id: ModuleId,
     substate_key: &SubstateKey,
 ) -> Vec<u8> {
     let mut buffer = Vec::new();
@@ -141,7 +141,7 @@ mod tests {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
         let substate_key = SubstateKey::State(StateIdentifier::from_bytes(vec![3]).unwrap());
-        let substate_id = encode_substate_id(&node_id, &module_id, &substate_key);
+        let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,
             vec![
