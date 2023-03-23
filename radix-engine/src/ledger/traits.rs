@@ -1,18 +1,31 @@
-use crate::{system::node_substates::PersistedSubstate, types::*};
+use super::*;
+use crate::types::*;
 
 pub trait QueryableSubstateStore {
-    fn get_kv_store_entries(
+    fn list_substates(
         &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate>;
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> HashMap<SubstateKey, OutputValue>;
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
+    fn get_substate(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<OutputValue>;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
+    fn put_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        substate_value: OutputValue,
+    );
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}
