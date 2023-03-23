@@ -109,23 +109,10 @@ impl DataAnalyzer {
 
     pub fn save_csv<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
         if let Ok(mut file) = File::create(file_name) {
-            file.write_fmt(format_args!("row_id;parent_row_id;event;function_name;stack_depth;instructions_count;instructions_count_calibrated;macro_arg\n")).expect(&format!("Unable write to {} file.", file_name));
+            file.write_fmt(format_args!("event;function_name;stack_depth;instructions_count;instructions_count_calibrated;macro_arg\n")).expect(&format!("Unable write to {} file.", file_name));
 
-            file.write_fmt(format_args!("0;0;;root;0;;;")).unwrap();
-            let mut parent_row_id_stack: Vec<usize> = vec![0];
-            let mut parent_row_id = 0;
-            let mut parent_stack_depth = 0;
-
-            for (i, v) in data.iter().enumerate() {
-                if v.stack_depth > parent_stack_depth {
-                    parent_stack_depth = v.stack_depth;
-                    parent_row_id = *parent_row_id_stack.last().unwrap();
-                    parent_row_id_stack.push(i);
-                }
-
-                file.write_fmt(format_args!("{};{};{};{};{};{};{};{}\n", 
-                    i,
-                    parent_row_id,
+            for v in data {
+                file.write_fmt(format_args!("{};{};{};{};{};{}\n", 
                     v.event, 
                     v.function_name, 
                     v.stack_depth, 
