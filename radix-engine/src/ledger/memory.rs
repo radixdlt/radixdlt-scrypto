@@ -5,12 +5,14 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use sbor::rust::ops::Bound::Included;
 
+/// A very basic in-memory substate store which is built on opt of `BTreeMap` and does not store
+/// substate version.
 #[derive(Debug, PartialEq, Eq)]
-pub struct TypedInMemorySubstateStore {
+pub struct BasicInMemorySubstateStore {
     substates: BTreeMap<Vec<u8>, IndexedScryptoValue>,
 }
 
-impl TypedInMemorySubstateStore {
+impl BasicInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             substates: BTreeMap::new(),
@@ -23,11 +25,11 @@ impl TypedInMemorySubstateStore {
         substate_store
     }
 
-    pub fn assert_eq(&self, other: &TypedInMemorySubstateStore) {
+    pub fn assert_eq(&self, other: &BasicInMemorySubstateStore) {
         for (id, val) in &self.substates {
             let maybe_val = other.substates.get(id);
             match maybe_val {
-                None => panic!("Right missing substate: {:?}", id),
+                None => panic!("Right missing substate: {}", hex::encode(id)),
                 Some(right_val) => {
                     if !val.eq(right_val) {
                         panic!(
@@ -42,20 +44,20 @@ impl TypedInMemorySubstateStore {
         for (id, _) in &other.substates {
             let maybe_val = self.substates.get(id);
             match maybe_val {
-                None => panic!("Left missing substate: {:?}", id),
+                None => panic!("Left missing substate: {}", hex::encode(id)),
                 Some(..) => {}
             }
         }
     }
 }
 
-impl Default for TypedInMemorySubstateStore {
+impl Default for BasicInMemorySubstateStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ReadableSubstateStore for TypedInMemorySubstateStore {
+impl ReadableSubstateStore for BasicInMemorySubstateStore {
     fn get_substate(
         &self,
         node_id: &NodeId,
@@ -67,7 +69,7 @@ impl ReadableSubstateStore for TypedInMemorySubstateStore {
     }
 }
 
-impl WriteableSubstateStore for TypedInMemorySubstateStore {
+impl WriteableSubstateStore for BasicInMemorySubstateStore {
     fn put_substate(
         &mut self,
         node_id: &NodeId,
@@ -80,7 +82,7 @@ impl WriteableSubstateStore for TypedInMemorySubstateStore {
     }
 }
 
-impl QueryableSubstateStore for TypedInMemorySubstateStore {
+impl QueryableSubstateStore for BasicInMemorySubstateStore {
     fn list_substates(
         &self,
         node_id: &NodeId,
