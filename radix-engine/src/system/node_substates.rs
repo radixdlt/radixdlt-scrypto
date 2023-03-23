@@ -1422,7 +1422,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    #[trace_resources(ret.len())]
+    #[trace_resources]
     pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {

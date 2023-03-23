@@ -110,7 +110,7 @@ pub enum RENodeInit {
 }
 
 impl RENodeInit {
-    #[trace_resources(ret.len())]
+    #[trace_resources("RENodeInit")]
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
