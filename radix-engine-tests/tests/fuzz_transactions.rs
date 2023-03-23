@@ -1,5 +1,5 @@
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::BasicInMemorySubstateStore;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
@@ -30,7 +30,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut store = BasicInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+    let mut store = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
     let execution_config = ExecutionConfig::default();
     let fee_reserve_config = FeeReserveConfig::default();
 

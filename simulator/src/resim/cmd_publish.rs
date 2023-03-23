@@ -63,7 +63,7 @@ impl Publish {
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
             let mut substate_store =
-                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+                RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let substate_id = SubstateId(
                 RENodeId::GlobalObject(package_address.0.into()),

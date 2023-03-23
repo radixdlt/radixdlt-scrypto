@@ -20,6 +20,7 @@
         "persistable",
         "radiswap",
         "repr",
+        "Rocksdb",
         "Sbor",
         "Scrypto",
         "Secp",

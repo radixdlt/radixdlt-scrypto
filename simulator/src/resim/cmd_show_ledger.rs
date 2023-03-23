@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
-use radix_engine_stores::rocks_db::RadixEngineDB;
+use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use transaction::model::Instruction;
 use utils::ContextualDisplay;
 
@@ -19,7 +19,7 @@ pub struct ShowLedger {}
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+        let substate_store = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;

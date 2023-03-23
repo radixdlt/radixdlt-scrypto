@@ -1,72 +1,99 @@
-use radix_engine::ledger::{
-    OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
-};
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
+use crate::kernel::interpreters::ScryptoInterpreter;
+use crate::ledger::WriteableSubstateStore;
+use crate::ledger::*;
+use crate::types::*;
+use crate::wasm::WasmEngine;
+use sbor::rust::ops::Bound::Included;
 
-/// A substate store that stores all typed substates in host memory.
+/// A very basic in-memory substate store which is built on opt of `BTreeMap` and does not store
+/// substate version.
 #[derive(Debug, PartialEq, Eq)]
-pub struct SerializedInMemorySubstateStore {
-    substates: HashMap<Vec<u8>, Vec<u8>>,
+pub struct InMemorySubstateStore {
+    substates: BTreeMap<Vec<u8>, IndexedScryptoValue>,
 }
 
-impl SerializedInMemorySubstateStore {
+impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            substates: HashMap::new(),
+            substates: BTreeMap::new(),
+        }
+    }
+
+    pub fn with_bootstrap<W: WasmEngine>(scrypto_interpreter: &ScryptoInterpreter<W>) -> Self {
+        let mut substate_store = Self::new();
+        bootstrap(&mut substate_store, scrypto_interpreter);
+        substate_store
+    }
+
+    pub fn assert_eq(&self, other: &InMemorySubstateStore) {
+        for (id, val) in &self.substates {
+            let maybe_val = other.substates.get(id);
+            match maybe_val {
+                None => panic!("Right missing substate: {}", hex::encode(id)),
+                Some(right_val) => {
+                    if !val.eq(right_val) {
+                        panic!(
+                            "Substates not equal.\nLeft: {:?}\nRight: {:?}",
+                            val, right_val
+                        );
+                    }
+                }
+            }
+        }
+
+        for (id, _) in &other.substates {
+            let maybe_val = self.substates.get(id);
+            match maybe_val {
+                None => panic!("Left missing substate: {}", hex::encode(id)),
+                Some(..) => {}
+            }
         }
     }
 }
 
-impl Default for SerializedInMemorySubstateStore {
+impl Default for InMemorySubstateStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ReadableSubstateStore for SerializedInMemorySubstateStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.substates
-            .get(&scrypto_encode(substate_id).expect("Could not encode substate id"))
-            .map(|b| scrypto_decode(&b).unwrap())
-    }
-}
-
-impl WriteableSubstateStore for SerializedInMemorySubstateStore {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.substates.insert(
-            scrypto_encode(&substate_id).expect("Could not encode substate id"),
-            scrypto_encode(&substate).expect("Could not encode substate"),
-        );
-    }
-}
-
-impl QueryableSubstateStore for SerializedInMemorySubstateStore {
-    fn get_kv_store_entries(
+impl ReadableSubstateStore for InMemorySubstateStore {
+    fn get_substate(
         &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        let substate_id = encode_substate_id(node_id, module_id, substate_key);
+        self.substates.get(&substate_id).cloned()
+    }
+}
+
+impl WriteableSubstateStore for InMemorySubstateStore {
+    fn put_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        substate_value: IndexedScryptoValue,
+    ) {
+        let substate_id = encode_substate_id(node_id, module_id, substate_key);
+        self.substates.insert(substate_id, substate_value);
+    }
+}
+
+impl QueryableSubstateStore for InMemorySubstateStore {
+    fn list_substates(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> BTreeMap<SubstateKey, IndexedScryptoValue> {
+        let min = encode_substate_id(node_id, module_id, &SubstateKey::State(StateKey::MIN));
+        let max = encode_substate_id(node_id, module_id, &SubstateKey::State(StateKey::MAX));
         self.substates
-            .iter()
-            .filter_map(|(key, value)| {
-                let substate_id: SubstateId = scrypto_decode(key).unwrap();
-                if let SubstateId(
-                    RENodeId::KeyValueStore(id),
-                    NodeModuleId::SELF,
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
-                ) = substate_id
-                {
-                    let output_value: OutputValue = scrypto_decode(value).unwrap();
-                    if id == *kv_store_id {
-                        Some((entry_id.clone(), output_value.substate))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
+            .range::<Vec<u8>, _>((Included(&min), Included(&max)))
+            .into_iter()
+            .map(|(k, v)| (decode_substate_id(k).2, v.clone()))
             .collect()
     }
 }

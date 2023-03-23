@@ -149,7 +149,7 @@ impl TestRunnerBuilder {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
             },
-            substate_store: BasicInMemorySubstateStore::new(),
+            substate_store: InMemorySubstateStore::new(),
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
@@ -173,7 +173,7 @@ impl TestRunnerBuilder {
 
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
-    substate_store: BasicInMemorySubstateStore,
+    substate_store: InMemorySubstateStore,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -190,11 +190,11 @@ impl TestRunner {
         }
     }
 
-    pub fn substate_store(&self) -> &BasicInMemorySubstateStore {
+    pub fn substate_store(&self) -> &InMemorySubstateStore {
         &self.substate_store
     }
 
-    pub fn substate_store_mut(&mut self) -> &mut BasicInMemorySubstateStore {
+    pub fn substate_store_mut(&mut self) -> &mut InMemorySubstateStore {
         &mut self.substate_store
     }
 
@@ -1100,7 +1100,7 @@ impl TestRunner {
         args: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
-        let substate_store = BasicInMemorySubstateStore::new();
+        let substate_store = InMemorySubstateStore::new();
         let mut track = Track::new(&substate_store);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());

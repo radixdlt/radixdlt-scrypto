@@ -9,11 +9,11 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
-pub struct RadixEngineDB {
+pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
 }
 
-impl RadixEngineDB {
+impl RocksdbSubstateStore {
     pub fn new(root: PathBuf) -> Self {
         let db = DB::open_default(root.as_path()).unwrap();
         Self { db }
@@ -167,7 +167,7 @@ impl RadixEngineDB {
     }
 }
 
-impl QueryableSubstateStore for RadixEngineDB {
+impl QueryableSubstateStore for RocksdbSubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
@@ -193,14 +193,14 @@ impl QueryableSubstateStore for RadixEngineDB {
     }
 }
 
-impl ReadableSubstateStore for RadixEngineDB {
+impl ReadableSubstateStore for RocksdbSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.read(substate_id)
             .map(|b| scrypto_decode(&b).expect("Could not decode persisted substate"))
     }
 }
 
-impl WriteableSubstateStore for RadixEngineDB {
+impl WriteableSubstateStore for RocksdbSubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.write(
             substate_id,
