@@ -58,10 +58,10 @@ impl StateKey {
     pub const MAX: Self = Self(vec![u8::MAX; StateKey::MAX_LENGTH]);
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        Self::from_bytes(slice.to_vec())
+        Self::from_vec(slice.to_vec())
     }
 
-    pub fn from_bytes(bytes: Vec<u8>) -> Option<Self> {
+    pub fn from_vec(bytes: Vec<u8>) -> Option<Self> {
         if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
             None
         } else {
@@ -142,7 +142,7 @@ mod tests {
     fn test_encode_decode_substate_id() {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
-        let substate_key = SubstateKey::State(StateKey::from_bytes(vec![3]).unwrap());
+        let substate_key = SubstateKey::State(StateKey::from_vec(vec![3]).unwrap());
         let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,
