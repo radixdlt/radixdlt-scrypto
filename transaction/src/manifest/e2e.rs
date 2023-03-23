@@ -4,9 +4,7 @@ mod tests {
     use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
     use crate::manifest::*;
     use crate::model::{TransactionHeader, TransactionIntent};
-    use radix_engine_common::data::scrypto::model::{
-        IntegerNonFungibleLocalId, NonFungibleIdType, NonFungibleLocalId,
-    };
+    use radix_engine_common::data::scrypto::model::{NonFungibleIdType, NonFungibleLocalId};
     use radix_engine_common::{ManifestSbor, ScryptoSbor};
     use radix_engine_interface::blueprints::resource::AccessRule;
     use radix_engine_interface::network::NetworkDefinition;
