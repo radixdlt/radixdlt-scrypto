@@ -1,8 +1,7 @@
 use crate::types::*;
 
 /// The unique identifier of a (stored) node.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-#[sbor(transparent)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NodeId([u8; 27]);
 
 impl NodeId {
@@ -29,19 +28,27 @@ impl Into<[u8; NodeId::LENGTH]> for NodeId {
 }
 
 /// The unique identifier of a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-#[sbor(transparent)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleId(pub u8);
 
-/// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+/// The unique identifier of a substate within node module.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateKey {
     Config,
     State(StateIdentifier),
 }
 
+/// The configuration of a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-#[sbor(transparent)]
+pub struct ModuleConfig {
+    /// When activated, the store will check the substate key for all operations (e.g. PUT/GET/LIST)
+    sbor_key_enabled: bool,
+    /// When activated, the store will allow LIST over the substates within the module.
+    sorting_enabled: bool,
+}
+
+/// The unique identifier of a state within node module.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct StateIdentifier(Vec<u8>);
 
 impl StateIdentifier {
@@ -53,7 +60,6 @@ impl StateIdentifier {
     }
 
     pub fn from_bytes(bytes: Vec<u8>) -> Option<Self> {
-        // TODO: do we want to enforce more constraints on the bytes?
         if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
             None
         } else {
