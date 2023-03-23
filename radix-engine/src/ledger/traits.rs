@@ -6,7 +6,7 @@ pub trait QueryableSubstateStore {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> HashMap<SubstateKey, IndexedScryptoValue>;
+    ) -> BTreeMap<SubstateKey, IndexedScryptoValue>;
 }
 
 pub trait ReadableSubstateStore {

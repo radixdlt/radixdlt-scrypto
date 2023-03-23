@@ -54,6 +54,8 @@ pub struct StateIdentifier(Vec<u8>);
 impl StateIdentifier {
     pub const MIN_LENGTH: usize = 1;
     pub const MAX_LENGTH: usize = 128;
+    pub const MIN: Self = Self(vec![u8::MIN; StateIdentifier::MIN_LENGTH]);
+    pub const MAX: Self = Self(vec![u8::MAX; StateIdentifier::MAX_LENGTH]);
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Self::from_bytes(slice.to_vec())

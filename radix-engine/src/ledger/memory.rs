@@ -1,23 +1,19 @@
 use crate::kernel::interpreters::ScryptoInterpreter;
+use crate::ledger::WriteableSubstateStore;
 use crate::ledger::*;
-use crate::ledger::{OutputValue, WriteableSubstateStore};
-use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::types::{
-    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
-};
+use sbor::rust::ops::Bound::Included;
 
-/// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemorySubstateStore {
-    substates: HashMap<SubstateId, OutputValue>,
+    substates: BTreeMap<Vec<u8>, IndexedScryptoValue>,
 }
 
 impl TypedInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            substates: HashMap::new(),
+            substates: BTreeMap::new(),
         }
     }
 
@@ -60,40 +56,50 @@ impl Default for TypedInMemorySubstateStore {
 }
 
 impl ReadableSubstateStore for TypedInMemorySubstateStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.substates.get(substate_id).cloned()
+    fn get_substate(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        let substate_id = encode_substate_id(node_id, module_id, substate_key);
+        self.substates.get(&substate_id).cloned()
     }
 }
 
 impl WriteableSubstateStore for TypedInMemorySubstateStore {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.substates.insert(substate_id, substate);
+    fn put_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        substate_value: IndexedScryptoValue,
+    ) {
+        let substate_id = encode_substate_id(node_id, module_id, substate_key);
+        self.substates.insert(substate_id, substate_value);
     }
 }
 
 impl QueryableSubstateStore for TypedInMemorySubstateStore {
-    fn get_kv_store_entries(
+    fn list_substates(
         &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> BTreeMap<SubstateKey, IndexedScryptoValue> {
+        let min = encode_substate_id(
+            node_id,
+            module_id,
+            &SubstateKey::State(StateIdentifier::MIN),
+        );
+        let max = encode_substate_id(
+            node_id,
+            module_id,
+            &SubstateKey::State(StateIdentifier::MAX),
+        );
         self.substates
-            .iter()
-            .filter_map(|(substate_id, substate_value)| {
-                if let SubstateId(
-                    RENodeId::KeyValueStore(id),
-                    NodeModuleId::SELF,
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
-                ) = substate_id
-                {
-                    if id == kv_store_id {
-                        Some((entry_id.clone(), substate_value.substate.clone()))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
+            .range::<Vec<u8>, _>((Included(&min), Included(&max)))
+            .into_iter()
+            .map(|(k, v)| (decode_substate_id(k).2, v.clone()))
             .collect()
     }
 }
