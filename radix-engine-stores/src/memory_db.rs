@@ -3,6 +3,7 @@ use crate::ledger::WriteableSubstateStore;
 use crate::ledger::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine::state_manager::StateDiff;
 use sbor::rust::ops::Bound::Included;
 
 /// A very basic in-memory substate store which is built on opt of `BTreeMap` and does not store
@@ -23,6 +24,32 @@ impl InMemorySubstateStore {
         let mut substate_store = Self::new();
         bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
+    }
+
+    pub fn commit(&mut self, state_diff: &StateDiff) -> CommitReceipt {
+        let mut receipt = CommitReceipt::new();
+
+        for output_id in &self.down_substates {
+            receipt.down(output_id.clone());
+        }
+        for (substate_id, output_value) in &self.up_substates {
+            let output_id = OutputId {
+                substate_id: substate_id.clone(),
+                substate_hash: hash(
+                    scrypto_encode(&output_value.substate).unwrap_or_else(|err| {
+                        panic!(
+                            "Could not encode newly-committed substate: {:?}. Substate: {:?}",
+                            err, &output_value.substate
+                        )
+                    }),
+                ),
+                version: output_value.version,
+            };
+            receipt.up(output_id);
+            store.put_substate(substate_id.clone(), output_value.clone());
+        }
+
+        receipt
     }
 
     pub fn assert_eq(&self, other: &InMemorySubstateStore) {
