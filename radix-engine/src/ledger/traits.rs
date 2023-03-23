@@ -6,7 +6,7 @@ pub trait QueryableSubstateStore {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> HashMap<SubstateKey, OutputValue>;
+    ) -> HashMap<SubstateKey, IndexedScryptoValue>;
 }
 
 pub trait ReadableSubstateStore {
@@ -15,7 +15,7 @@ pub trait ReadableSubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<OutputValue>;
+    ) -> Option<IndexedScryptoValue>;
 }
 
 pub trait WriteableSubstateStore {
@@ -24,7 +24,7 @@ pub trait WriteableSubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-        substate_value: OutputValue,
+        substate_value: IndexedScryptoValue,
     );
 }
 
