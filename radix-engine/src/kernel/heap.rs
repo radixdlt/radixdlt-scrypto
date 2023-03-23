@@ -33,7 +33,7 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
-    #[trace_resources]
+    #[trace_resources("Heap")]
     pub fn get_substate(
         &mut self,
         node_id: RENodeId,
@@ -106,12 +106,12 @@ impl Heap {
         }
     }
 
-    #[trace_resources]
+    #[trace_resources("Heap")]
     pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
         self.nodes.insert(node_id, node);
     }
 
-    #[trace_resources(nodes)]
+    #[trace_resources]
     pub fn move_nodes_to_store(
         &mut self,
         track: &mut Track,

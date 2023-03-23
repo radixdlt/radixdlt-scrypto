@@ -25,20 +25,28 @@ pub fn trace_resources(_attr: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
 
-    let arg_name = if let Ok(ast) = syn::parse(attr.clone()) 
-    {
-        let a: syn::Ident = ast;
-        Some(a)
+    let arg_name = if let Ok(ast) = syn::parse::<syn::Ident>(attr.clone()) {
+        Some(ast)
     } else {
-        //println!("args: no specified");
         None
     };
-
-    // let arg = if let Ok(attrs) = syn::Ident::parse.parse(attr) {
-    //     quote!{ Some(OutputParam::Literal( #attrs )) }
-    // } else {
-    //     quote!{ None }
-    // };
+    let arg_name_lit = if let Ok(ast) = syn::parse::<syn::LitStr>(attr.clone()) {
+        Some(ast)
+    } else {
+        None
+    };
+    let arg_expr_block = if let Ok(ast) = syn::parse::<syn::ExprBlock>(attr.clone()) {
+        println!("Expression block");
+        Some(ast)
+    } else {
+        None
+    };
+    let arg_expr_mc = if let Ok(ast) = syn::parse::<syn::ExprMethodCall>(attr.clone()) {
+        println!("Expression method call");
+        Some(ast)
+    } else {
+        None
+    };
 
     let output = if let Ok(mut item) = syn::Item::parse.parse(input.clone()) {
         match item {
@@ -46,6 +54,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                 let original_block = &mut item_fn.block;
                 let fn_signature = item_fn.sig.ident.to_string();
 
+                let mut aarg_before = quote!{};
                 let mut aarg = quote!{ None };
                 if arg_name.is_some() {
                     for fn_arg in item_fn.sig.inputs.iter() {
@@ -69,6 +78,9 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                                                             break;
                                                         } else if p.ident == "i8" || p.ident == "i16" || p.ident == "i32" || p.ident == "i64" {
                                                             aarg = quote!{ Some(OutputParam::NumberI64( #pi as i64 )) };
+                                                            break;
+                                                        } else if p.ident == "bool" {
+                                                            aarg = quote!{ Some(OutputParam::NumberU64( #pi as u64 )) };
                                                             break;
                                                         } else {
                                                             aarg = quote!{ Some( OutputParam::Literal(format!("{:?}", #pi).into())) };
@@ -105,11 +117,20 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                             _ => ()
                         }
                     }
-                };
+                } else if arg_name_lit.is_some() {
+                    aarg = quote!{ Some( OutputParam::Literal(format!(#arg_name_lit).into())) };
+                } else if arg_expr_block.is_some() {
+                    aarg_before = quote!{ let tmp1 = #arg_expr_block; };
+                    aarg = quote!{ Some( OutputParam::Literal(format!("{}", tmp1).into())) };
+                } else if arg_expr_mc.is_some() {
+                    aarg_before = quote!{ let tmp1 = #arg_expr_mc; };
+                    aarg = quote!{  Some( OutputParam::Literal(format!("{}", tmp1).into())) };
+                } 
 
 
                 item_fn.block = Box::new( parse_quote! {{ 
                     use radix_engine_utils::{QEMU_PLUGIN, OutputParam};
+                    #aarg_before
                     QEMU_PLUGIN.with(|v| {
                         // let stack = v.borrow().get_current_stack();
                         // let spaces = [' '; 40];

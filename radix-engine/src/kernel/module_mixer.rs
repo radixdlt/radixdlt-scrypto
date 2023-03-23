@@ -28,6 +28,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
+use resources_tracker_macro::trace_resources;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -447,6 +448,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
+    #[trace_resources]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
@@ -489,6 +491,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
+    #[trace_resources]
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,

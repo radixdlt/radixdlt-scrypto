@@ -11,6 +11,7 @@ use radix_engine_interface::api::types::{
     InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
 use sbor::rust::collections::BTreeMap;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone)]
 pub struct KernelDebugModule {}
@@ -80,6 +81,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
+    #[trace_resources("KernelDebugModule")]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,

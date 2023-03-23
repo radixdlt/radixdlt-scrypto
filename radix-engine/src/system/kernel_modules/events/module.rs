@@ -5,6 +5,7 @@ use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
+use resources_tracker_macro::trace_resources;
 
 use super::EventError;
 
@@ -22,6 +23,7 @@ impl EventsModule {
 }
 
 impl KernelModule for EventsModule {
+    #[trace_resources("EventsModule")]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,

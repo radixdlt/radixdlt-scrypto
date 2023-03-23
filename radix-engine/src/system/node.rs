@@ -9,6 +9,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{AuthZoneStackOffset, PackageOffset, SubstateOffset};
 
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -37,6 +38,7 @@ pub enum RENodeModuleInit {
 }
 
 impl RENodeModuleInit {
+    #[trace_resources("RENodeModuleInit")]
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {

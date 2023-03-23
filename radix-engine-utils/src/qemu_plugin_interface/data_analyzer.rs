@@ -109,9 +109,23 @@ impl DataAnalyzer {
 
     pub fn save_csv<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
         if let Ok(mut file) = File::create(file_name) {
-            file.write_fmt(format_args!("event;function_name;stack_depth;instructions_count;instructions_count_calibrated;macro_arg\n")).expect(&format!("Unable write to {} file.", file_name));
-            for v in data {
-                file.write_fmt(format_args!("{};{};{};{};{};{}\n", 
+            file.write_fmt(format_args!("row_id;parent_row_id;event;function_name;stack_depth;instructions_count;instructions_count_calibrated;macro_arg\n")).expect(&format!("Unable write to {} file.", file_name));
+
+            file.write_fmt(format_args!("0;0;;root;0;;;")).unwrap();
+            let mut parent_row_id_stack: Vec<usize> = vec![0];
+            let mut parent_row_id = 0;
+            let mut parent_stack_depth = 0;
+
+            for (i, v) in data.iter().enumerate() {
+                if v.stack_depth > parent_stack_depth {
+                    parent_stack_depth = v.stack_depth;
+                    parent_row_id = *parent_row_id_stack.last().unwrap();
+                    parent_row_id_stack.push(i);
+                }
+
+                file.write_fmt(format_args!("{};{};{};{};{};{};{};{}\n", 
+                    i,
+                    parent_row_id,
                     v.event, 
                     v.function_name, 
                     v.stack_depth, 
@@ -126,9 +140,44 @@ impl DataAnalyzer {
         }
     }
 
+
+    pub fn save_json<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
+        if let Ok(mut file) = File::create(file_name) {
+
+            let mut prev_stack_depth = 0;
+
+            for (_i, v) in data.iter().enumerate() {
+                if v.stack_depth > prev_stack_depth {
+                    file.write_fmt(format_args!("[")).unwrap();
+                } else if v.stack_depth < prev_stack_depth {
+                    file.write_fmt(format_args!("]")).unwrap();
+                } else {
+                    file.write_fmt(format_args!(",")).unwrap();
+                }
+                let spaces = std::iter::repeat(' ').take(1 * v.stack_depth).collect::<String>();
+
+                file.write_fmt(format_args!("{}{{\"e\":\"{}\",\"f\":\"{}\",\"s\":{},\"i\":{},\"c\":{},\"p\":\"{}\"}}\n",
+                    spaces, 
+                    v.event, 
+                    v.function_name, 
+                    v.stack_depth, 
+                    v.cpu_instructions, 
+                    v.cpu_instructions_calibrated, 
+                    v.param.clone().unwrap_or_default())
+                ).expect(&format!("Unable write to {} file.", file_name));
+
+                prev_stack_depth = v.stack_depth;
+            }
+            file.flush().expect(&format!("Unable to flush {} file.", file_name))
+        } else {
+            panic!("Unable to create {} file.", file_name)
+        }
+    }
+
     pub fn save_xml<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
         if let Ok(mut file) = File::create(file_name) {
 
+            let mut stack_fcn: Vec<&'a str> = vec!["root"];
             let mut prev_stack_depth = 0;
             file.write_fmt(format_args!("<root>\n")).unwrap();
 
@@ -150,16 +199,18 @@ impl DataAnalyzer {
                 if v.stack_depth > prev_stack_depth {
                     file.write_fmt(format_args!(">\n")).unwrap();
                 } else if v.stack_depth < prev_stack_depth {
-                    let spaces = std::iter::repeat(' ').take(1 * v.stack_depth).collect::<String>();
-                    file.write_fmt(format_args!("{}</data>\n", spaces)).unwrap();
+                    let spaces = std::iter::repeat(' ').take(v.stack_depth).collect::<String>();
+                    file.write_fmt(format_args!("{}</{}>\n", spaces, stack_fcn.pop().unwrap())).unwrap();
                 } else if i > 0 && matches!(v.event, OutputDataEvent::FunctionExit) {
                     file.write_fmt(format_args!("/>\n")).unwrap();
+                    stack_fcn.pop();
                 }
 
                 if !matches!(v.event, OutputDataEvent::FunctionExit) {
-                    let spaces = std::iter::repeat(' ').take(1 * v.stack_depth).collect::<String>();
+                    let spaces = std::iter::repeat(' ').take(v.stack_depth).collect::<String>();
+                    stack_fcn.push(v.function_name);
 
-                    file.write_fmt(format_args!("{}<data fcn=\"{}\" ins=\"{}\"",
+                    file.write_fmt(format_args!("{}<{} ins=\"{}\"",
                             spaces, 
                             v.function_name, 
                             cpu_ins_cal)
@@ -174,7 +225,7 @@ impl DataAnalyzer {
 
                 prev_stack_depth = v.stack_depth;
             }
-            file.write_fmt(format_args!("/>\n</root>")).unwrap();
+            file.write_fmt(format_args!("</root>")).unwrap();
 
             file.flush().expect(&format!("Unable to flush {} file.", file_name))
         } else {

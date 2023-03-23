@@ -451,7 +451,7 @@ impl CallFrame {
         }
     }
 
-    #[trace_resources]
+    #[trace_resources("CallFrame")]
     pub fn create_node<'f, 's>(
         &mut self,
         node_id: RENodeId,
