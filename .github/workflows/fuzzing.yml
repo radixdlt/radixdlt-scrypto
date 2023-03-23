@@ -40,6 +40,10 @@ jobs:
       with:
         toolchain: stable
 
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install parallel screen -y
+
     - name: Install nextest
       uses: taiki-e/install-action@nextest
 
