@@ -35,7 +35,7 @@ pub struct ModuleId(pub u8);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateKey {
     Config,
-    State(StateIdentifier),
+    State(StateKey),
 }
 
 /// The configuration of a node module.
@@ -49,13 +49,13 @@ pub struct ModuleConfig {
 
 /// The unique identifier of a state within node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct StateIdentifier(Vec<u8>);
+pub struct StateKey(Vec<u8>);
 
-impl StateIdentifier {
+impl StateKey {
     pub const MIN_LENGTH: usize = 1;
     pub const MAX_LENGTH: usize = 128;
-    pub const MIN: Self = Self(vec![u8::MIN; StateIdentifier::MIN_LENGTH]);
-    pub const MAX: Self = Self(vec![u8::MAX; StateIdentifier::MAX_LENGTH]);
+    pub const MIN: Self = Self(vec![u8::MIN; StateKey::MIN_LENGTH]);
+    pub const MAX: Self = Self(vec![u8::MAX; StateKey::MAX_LENGTH]);
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Self::from_bytes(slice.to_vec())
@@ -70,13 +70,13 @@ impl StateIdentifier {
     }
 }
 
-impl AsRef<[u8]> for StateIdentifier {
+impl AsRef<[u8]> for StateKey {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl Into<Vec<u8>> for StateIdentifier {
+impl Into<Vec<u8>> for StateKey {
     fn into(self) -> Vec<u8> {
         self.0
     }
@@ -116,7 +116,7 @@ pub fn decode_substate_id(slice: &[u8]) -> (NodeId, ModuleId, SubstateKey) {
         let kind = slice[NodeId::LENGTH + 1];
         if kind == 0 && slice.len() == NodeId::LENGTH + 2 {
             return (node_id, module_id, SubstateKey::Config);
-        } else if let Some(id) = StateIdentifier::from_slice(&slice[NodeId::LENGTH + 2..]) {
+        } else if let Some(id) = StateKey::from_slice(&slice[NodeId::LENGTH + 2..]) {
             return (node_id, module_id, SubstateKey::State(id));
         }
     }
@@ -142,7 +142,7 @@ mod tests {
     fn test_encode_decode_substate_id() {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
-        let substate_key = SubstateKey::State(StateIdentifier::from_bytes(vec![3]).unwrap());
+        let substate_key = SubstateKey::State(StateKey::from_bytes(vec![3]).unwrap());
         let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,

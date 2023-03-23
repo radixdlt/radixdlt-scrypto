@@ -86,16 +86,8 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> BTreeMap<SubstateKey, IndexedScryptoValue> {
-        let min = encode_substate_id(
-            node_id,
-            module_id,
-            &SubstateKey::State(StateIdentifier::MIN),
-        );
-        let max = encode_substate_id(
-            node_id,
-            module_id,
-            &SubstateKey::State(StateIdentifier::MAX),
-        );
+        let min = encode_substate_id(node_id, module_id, &SubstateKey::State(StateKey::MIN));
+        let max = encode_substate_id(node_id, module_id, &SubstateKey::State(StateKey::MAX));
         self.substates
             .range::<Vec<u8>, _>((Included(&min), Included(&max)))
             .into_iter()
