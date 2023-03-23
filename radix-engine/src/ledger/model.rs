@@ -132,6 +132,19 @@ pub fn decode_substate_value(slice: &[u8]) -> IndexedScryptoValue {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
+pub struct OutputId {
+    pub substate_id: Vec<u8>,
+    pub substate_hash: Hash,
+    pub version: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct OutputValue {
+    pub substate_value: Vec<u8>,
+    pub version: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
