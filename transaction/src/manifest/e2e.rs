@@ -1,10 +1,17 @@
 #[cfg(test)]
 mod tests {
+    use crate::builder::ManifestBuilder;
     use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
     use crate::manifest::*;
     use crate::model::{TransactionHeader, TransactionIntent};
+    use radix_engine_common::data::scrypto::model::{
+        IntegerNonFungibleLocalId, NonFungibleIdType, NonFungibleLocalId,
+    };
+    use radix_engine_common::{ManifestSbor, ScryptoSbor};
+    use radix_engine_interface::blueprints::resource::AccessRule;
     use radix_engine_interface::network::NetworkDefinition;
     use sbor::rust::collections::*;
+    use scrypto_derive::NonFungibleData;
 
     #[test]
     fn test_publish_package() {
@@ -689,4 +696,30 @@ CREATE_ACCESS_CONTROLLER
         }
         manifest
     }
+
+    #[test]
+    pub fn decompilation_of_create_non_fungible_resource_with_initial_supply_is_invertible() {
+        // Arrange
+        let manifest = ManifestBuilder::new()
+            .create_non_fungible_resource(
+                NonFungibleIdType::Integer,
+                BTreeMap::new(),
+                BTreeMap::<_, (_, AccessRule)>::new(),
+                Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
+            )
+            .build();
+
+        // Act
+        let inverted_manifest = {
+            let network = NetworkDefinition::simulator();
+            let decompiled = decompile(&manifest.instructions, &network).unwrap();
+            compile(&decompiled, &network, vec![]).unwrap()
+        };
+
+        // Assert
+        assert_eq!(manifest, inverted_manifest);
+    }
+
+    #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
+    struct EmptyStruct {}
 }
