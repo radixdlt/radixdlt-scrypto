@@ -436,6 +436,7 @@ impl CallFrame {
         Ok(())
     }
 
+    #[trace_resources]
     fn take_node_internal(&mut self, node_id: RENodeId) -> Result<(), CallFrameError> {
         match self.owned_root_nodes.remove(&node_id) {
             None => {

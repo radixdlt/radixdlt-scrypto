@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::resource::{
     BUCKET_BLUEPRINT, PROOF_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::constants::*;
+use resources_tracker_macro::trace_resources;
 
 pub struct VisibilityProperties;
 
@@ -330,6 +331,7 @@ impl SubstateProperties {
         }
     }
 
+    #[trace_resources(blueprint_name)]
     pub fn verify_can_own(
         offset: &SubstateOffset,
         package_address: PackageAddress,

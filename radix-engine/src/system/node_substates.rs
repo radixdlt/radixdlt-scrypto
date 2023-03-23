@@ -30,6 +30,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
@@ -1421,6 +1422,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    #[trace_resources(ret.len())]
     pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {

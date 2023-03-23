@@ -55,6 +55,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                 let fn_signature = item_fn.sig.ident.to_string();
 
                 let mut aarg_before = quote!{};
+                let mut aarg_after = quote!{};
                 let mut aarg = quote!{ None };
                 if arg_name.is_some() {
                     for fn_arg in item_fn.sig.inputs.iter() {
@@ -123,7 +124,8 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                     aarg_before = quote!{ let tmp1 = #arg_expr_block; };
                     aarg = quote!{ Some( OutputParam::Literal(format!("{}", tmp1).into())) };
                 } else if arg_expr_mc.is_some() {
-                    aarg_before = quote!{ let tmp1 = #arg_expr_mc; };
+                    aarg_before = quote!{ let tmp1 = ""; };
+                    aarg_after = quote!{ let tmp1 = #arg_expr_mc; };
                     aarg = quote!{  Some( OutputParam::Literal(format!("{}", tmp1).into())) };
                 } 
 
@@ -139,6 +141,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         v.borrow_mut().start_counting(#fn_signature, #aarg);
                     });
                     let ret = #original_block;
+                    #aarg_after
                     QEMU_PLUGIN.with(|v| {
                         let (stack, cnt) = v.borrow_mut().stop_counting(#fn_signature, #aarg);
                         //let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();

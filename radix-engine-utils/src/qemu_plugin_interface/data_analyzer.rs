@@ -170,6 +170,7 @@ impl DataAnalyzer {
 
             for (i, v) in data.iter().enumerate() {
                 let mut cpu_ins_cal = v.cpu_instructions_calibrated;
+                let mut param: Option<OutputParam> = None;
 
                 // set cpu instructions from exit event to enter event
                 if matches!(v.event, OutputDataEvent::FunctionEnter) {
@@ -178,6 +179,7 @@ impl DataAnalyzer {
                            v.function_name == w.function_name &&
                            matches!(w.event, OutputDataEvent::FunctionExit) {
                                 cpu_ins_cal = w.cpu_instructions_calibrated;
+                                param = w.param.clone();
                                 break;
                            }
                     }
@@ -203,11 +205,15 @@ impl DataAnalyzer {
                             cpu_ins_cal)
                         ).expect(&format!("Unable write to {} file.", file_name));
 
-                    if v.param.is_some() {
+                    if param.is_some() { // use param from exit event if a
+                        file.write_fmt(format_args!(" arg=\"{}\"",
+                                param.unwrap_or_default().to_string().replace('\"', "&quot;"))
+                            ).expect(&format!("Unable write to {} file.", file_name));
+                    } else if v.param.is_some() {
                         file.write_fmt(format_args!(" arg=\"{}\"",
                                 v.param.clone().unwrap_or_default().to_string().replace('\"', "&quot;"))
                             ).expect(&format!("Unable write to {} file.", file_name));
-                    }
+                    } 
                 }
 
                 prev_stack_depth = v.stack_depth;
