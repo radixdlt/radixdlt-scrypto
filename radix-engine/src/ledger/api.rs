@@ -106,20 +106,56 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
     return None;
 }
 
+pub struct Changes {}
+
 /// Represents the interface between Radix Engine and Tracker.
 pub trait SubstateStore {
+    // TODO: add acquire_lock and release_lock
+    fn acquire_lock(&mut self);
+    fn release_lock(&mut self);
+
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
     ///
     /// # Panics
     /// - If the module ID is invalid
+    /// - If the substate is not read/write locked
     fn get_substate(
-        &self,
+        &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue>;
+    ) -> Option<&IndexedScryptoValue>;
+
+    /// Reads a substate of the given node module.
+    ///
+    /// [`Option::None`] is returned if missing.
+    ///
+    /// # Panics
+    /// - If the module ID is invalid
+    /// - If the substate is not write locked
+    fn put_substate(
+        &mut self,
+        node_id: NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        substate_value: IndexedScryptoValue,
+    );
+
+    /// Inserts a substate into the substate store.
+    ///
+    /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
+    ///
+    /// # Panics
+    /// - If the module ID is invalid
+    fn insert_substate(
+        &mut self,
+        node_id: NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        substate_value: IndexedScryptoValue,
+    );
 
     /// Returns an iterator over substates within the given substate module.
     ///
@@ -129,10 +165,39 @@ pub trait SubstateStore {
     /// - If iteration is not enabled for the module
     /// - If the module ID is invalid
     fn list_substates(
-        &self,
+        &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
+
+    /// Closes the store and returns the state changes and dependencies.
+    ///
+    /// If `is_success` is false, non force write changes will be reverted.
+    ///
+    /// Note that dependencies are never reverted.
+    fn finalize(self, is_success: bool) -> (StateChanges, StateDependencies);
+}
+
+pub struct StateChanges {
+    pub substate_changes: BTreeMap<(NodeId, ModuleId, SubstateKey), StateChange>,
+}
+
+pub enum StateChange {
+    /// Creates or updates a substate.
+    Upsert(IndexedScryptoValue),
+    /*
+    /// Deletes a substate.
+    Delete,
+    /// Edits an element specified by SBOR path.
+    Edit,
+    */
+}
+
+pub struct StateDependencies {
+    /// The substates that were read.
+    pub substate_reads: BTreeMap<(NodeId, ModuleId, SubstateKey), Option<IndexedScryptoValue>>,
+    /// The modules which have been iterated.
+    pub module_reads: BTreeMap<(NodeId, ModuleId), Option<Hash>>,
 }
 
 /// The configuration of a node module.
@@ -165,11 +230,18 @@ pub enum GetSubstateError {
     UnknownModuleId,
 }
 
+/// Error when reading substates.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommitError {
+    /// The module ID is unknown.
+    UnknownModuleId,
+}
+
 /// Represents the interface between Tracker and a database vendor.
 pub trait SubstateDatabase {
     /// Initializes the database with the given config.
     ///
-    /// If the database is already initialized, implementation of this method will check if 
+    /// If the database is already initialized, implementation of this method will check if
     /// the set configuration matches the expected configuration and return error in
     /// case of inconsistency.
     fn init(config: BTreeMap<ModuleId, ModuleConfig>) -> Result<(), InitError>;
@@ -186,7 +258,7 @@ pub trait SubstateDatabase {
         substate_key: &SubstateKey,
     ) -> Result<Option<(Vec<u8>, u32)>, GetSubstateError>;
 
-    /// Returns an iterator over substates within the given substate module.
+    /// Returns an iterator over substates within the given substate module, and the module's root hash.
     ///
     /// In case the module does not exist, an empty iterator is returned.
     ///
@@ -196,6 +268,11 @@ pub trait SubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Result<(Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+
+    /// Commits state changes to the database.
+    ///
+    /// An error is thrown in case of invalid module ID.
+    fn commit(&mut self, state_changes: StateChanges) -> Result<(), CommitError>;
 }
 
 #[cfg(test)]
