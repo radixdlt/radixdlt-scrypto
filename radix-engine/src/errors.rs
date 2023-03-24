@@ -158,9 +158,9 @@ pub enum KernelError {
     },
     InvalidSubstateAccess {
         mode: ExecutionMode,
-        actor: Actor,
-        node_id: RENodeId,
-        offset: SubstateOffset,
+        actor: Box<Actor>,
+        node_id: Box<RENodeId>,
+        offset: Box<SubstateOffset>,
         flags: LockFlags,
     },
 }

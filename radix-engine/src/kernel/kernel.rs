@@ -876,9 +876,9 @@ where
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidSubstateAccess {
                         mode: current_mode,
-                        actor: actor.clone(),
-                        node_id,
-                        offset,
+                        actor: Box::new(actor.clone()),
+                        node_id: Box::new(node_id.clone()),
+                        offset: Box::new(offset),
                         flags,
                     },
                 ));
