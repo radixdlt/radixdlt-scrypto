@@ -331,7 +331,7 @@ impl SubstateProperties {
         }
     }
 
-    #[trace_resources(blueprint_name)]
+    #[trace_resources(log=blueprint_name)]
     pub fn verify_can_own(
         offset: &SubstateOffset,
         package_address: PackageAddress,

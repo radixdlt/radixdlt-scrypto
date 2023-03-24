@@ -354,7 +354,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         )
     }
 
-    #[trace_resources(cost_units_to_consume)]
+    #[trace_resources(log=cost_units_to_consume)]
     fn consume_execution(
         &mut self,
         cost_units_to_consume: u32,

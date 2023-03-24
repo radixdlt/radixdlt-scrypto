@@ -23,7 +23,7 @@ impl EventsModule {
 }
 
 impl KernelModule for EventsModule {
-    #[trace_resources("EventsModule")]
+    #[trace_resources(info="EventsModule")]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,

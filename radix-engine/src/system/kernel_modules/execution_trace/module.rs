@@ -378,7 +378,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    #[trace_resources("ExecutionTraceModule")]
+    #[trace_resources(info="ExecutionTraceModule")]
     fn handle_before_create_node(&mut self) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();

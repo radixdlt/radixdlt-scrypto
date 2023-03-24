@@ -38,7 +38,7 @@ pub enum RENodeModuleInit {
 }
 
 impl RENodeModuleInit {
-    #[trace_resources("RENodeModuleInit")]
+    #[trace_resources(info="RENodeModuleInit")]
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
@@ -110,7 +110,7 @@ pub enum RENodeInit {
 }
 
 impl RENodeInit {
-    #[trace_resources("RENodeInit")]
+    #[trace_resources(info="RENodeInit")]
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {

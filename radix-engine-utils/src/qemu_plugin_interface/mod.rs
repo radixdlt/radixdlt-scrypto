@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-
-use std::os::unix::net::UnixDatagram;
 use std::fs::File;
 use std::io::prelude::*;
 use shared_memory::*;
@@ -10,9 +7,7 @@ pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
 
 
 
-const SRV_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-server.socket";
-const CLI_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-client.socket";
-const SHARED_MEM_ID: &str = "/shm-radix";
+const SHARED_MEM_ID: &str = "/shm-scrypto";
 const OUTPUT_DATA_COUNT: usize = 500000;
 
 std::thread_local! {
@@ -22,29 +17,20 @@ std::thread_local! {
 
 
 
-
 pub struct QemuPluginInterface<'a> {
     enabled: bool,
     counters_stack: Vec<(&'a str,u64)>,
     stack_top: usize,
-    socket: UnixDatagram,
     output_data: Vec<OutputData<'a>>,
     counter_offset: u64,
     counter_offset_parent: u64,
-    shmem: Shmem,
-    calibrated: bool
+    shmem: Shmem
 }
 
 
 impl<'a> QemuPluginInterface<'a> {
     pub fn new(enabled: bool) -> Self {
 
-        std::fs::remove_file(CLI_SOCKET_FN).unwrap_or_default();
-
-        let socket = UnixDatagram::bind(CLI_SOCKET_FN).unwrap();
-        socket.set_read_timeout(None).unwrap();
-
-        //shared_memory::Shmem::
         let shmem_conf = ShmemConf::new().os_id(SHARED_MEM_ID);
         let shmem = match shmem_conf.open() {
             Ok(v) => v,
@@ -55,16 +41,14 @@ impl<'a> QemuPluginInterface<'a> {
             enabled,
             counters_stack: Vec::with_capacity(100),
             stack_top: 0,
-            socket,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
             counter_offset_parent: 0,
-            shmem,
-            calibrated: false
+            shmem
         };
 
-        // test connection
-        ret.communicate_with_server(SRV_SOCKET_FN);
+        // test connection with qemu plugin
+        ret.communicate_with_server();
 
         for _ in 0..ret.counters_stack.capacity() {
             ret.counters_stack.push(("",0));
@@ -72,7 +56,6 @@ impl<'a> QemuPluginInterface<'a> {
 
         ret
     }
-
 
     pub fn get_current_stack(&self) -> usize {
         self.stack_top
@@ -98,11 +81,11 @@ impl<'a> QemuPluginInterface<'a> {
             param: arg.to_vec() });
 
         self.stack_top += 1;
-        self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server(SRV_SOCKET_FN);
+        self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server();
     }
 
     pub fn stop_counting(&mut self, key: &'static str, arg: &[data_analyzer::OutputParam]) -> (usize, u64) {
-        let n = self.communicate_with_server(SRV_SOCKET_FN);
+        let n = self.communicate_with_server();
 
         if !self.enabled {
             return (0,0);
@@ -127,28 +110,13 @@ impl<'a> QemuPluginInterface<'a> {
         (self.stack_top, ret)
     }
 
-    fn communicate_with_server(&mut self, _addr: &str) -> u64 {
-
+    fn communicate_with_server(&mut self) -> u64 {
         let raw_ptr = self.shmem.as_ptr() as *const u64;
         let ret = unsafe {
             std::ptr::read_volatile(raw_ptr)
         };
 
-        return ret;
-
-/*        self.socket.send_to(b"", _addr).unwrap();
-        //let mut buf = Vec::with_capacity(64);
-        let mut buf = [0; 100];
-        //self.socket.recv(&mut buf)
-        let (_count, _address) = self.socket.recv_from(&mut buf).unwrap();
-
-        let ret = u64::from_be_bytes(buf[..8].try_into().unwrap());
-
-        //println!("socket {:?} sent {:?} -> {}", address, &buf[..count], ret);
-        //let s = [0..ret].map(|_| " ").collect::<String>();
-        //let s = String::from_utf8(vec![b' '; ret as usize]).unwrap();
-        ret*/
-
+        ret
     }
 
     fn prepare_output_data(&mut self) {
@@ -217,9 +185,7 @@ impl<'a> Drop for QemuPluginInterface<'a> {
         self.prepare_output_data();
         self.save_output_to_file("/tmp/out.txt");
 
-        DataAnalyzer::save_csv(&self.output_data, "/tmp/out.csv");
         DataAnalyzer::save_xml(&self.output_data, "/tmp/out.xml");
-        DataAnalyzer::generate_and_save_buckets(&self.output_data, "/tmp/buckets.csv");
     }
 }
 
@@ -240,7 +206,7 @@ impl<'a> OutputData<'a> {
             ).expect(&format!("Unable write data."));
         }
 
-        file.write_fmt(format_args!("\n"));
+        file.write_fmt(format_args!("\n")).expect(&format!("Unable write data."));
     }
 }
 
@@ -269,7 +235,7 @@ impl QemuPluginInterfaceCalibrator {
 
 
     fn calibrate_counters(&mut self) {
-        let loop_max = 40;
+        let loop_max = 10;
 
         let mut cal_data_parent: Vec<u64> = Vec::new();
         let mut cal_data_child: Vec<u64> = Vec::new();
@@ -277,7 +243,6 @@ impl QemuPluginInterfaceCalibrator {
             let (parent, child) = QemuPluginInterfaceCalibrator::calibrate();
             cal_data_parent.push(parent);
             cal_data_child.push(child);
-            println!("child/parent: {} {}", child, parent);
         }
 
         DataAnalyzer::discard_spikes(&mut cal_data_child, 2);

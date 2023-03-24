@@ -131,42 +131,8 @@ impl DataAnalyzer {
                     v.stack_depth, 
                     v.cpu_instructions, 
                     v.cpu_instructions_calibrated,
-                    "")//v.param.clone().unwrap_or_default())
+                    "") //todo: handle v.param ?
                 ).expect(&format!("Unable write to {} file.", file_name));
-            }
-            file.flush().expect(&format!("Unable to flush {} file.", file_name))
-        } else {
-            panic!("Unable to create {} file.", file_name)
-        }
-    }
-
-
-    pub fn save_json<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
-        if let Ok(mut file) = File::create(file_name) {
-
-            let mut prev_stack_depth = 0;
-
-            for (_i, v) in data.iter().enumerate() {
-                if v.stack_depth > prev_stack_depth {
-                    file.write_fmt(format_args!("[")).unwrap();
-                } else if v.stack_depth < prev_stack_depth {
-                    file.write_fmt(format_args!("]")).unwrap();
-                } else {
-                    file.write_fmt(format_args!(",")).unwrap();
-                }
-                let spaces = std::iter::repeat(' ').take(1 * v.stack_depth).collect::<String>();
-
-                file.write_fmt(format_args!("{}{{\"e\":\"{}\",\"f\":\"{}\",\"s\":{},\"i\":{},\"c\":{},\"p\":\"{}\"}}\n",
-                    spaces, 
-                    v.event, 
-                    v.function_name, 
-                    v.stack_depth, 
-                    v.cpu_instructions, 
-                    v.cpu_instructions_calibrated, 
-                    "") //v.param.clone().unwrap_or_default())
-                ).expect(&format!("Unable write to {} file.", file_name));
-
-                prev_stack_depth = v.stack_depth;
             }
             file.flush().expect(&format!("Unable to flush {} file.", file_name))
         } else {

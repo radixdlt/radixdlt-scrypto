@@ -81,7 +81,7 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
-    #[trace_resources("KernelDebugModule")]
+    #[trace_resources(info="KernelDebugModule")]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,

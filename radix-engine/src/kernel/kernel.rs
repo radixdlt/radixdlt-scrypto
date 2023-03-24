@@ -680,7 +680,7 @@ where
         Ok(node_id)
     }
 
-    #[trace_resources(node_id)]
+    #[trace_resources(log=node_id)]
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
@@ -742,17 +742,17 @@ where
         Some(visibility)
     }
 
-    //#[trace_resources]
+    #[trace_resources]
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
 
-    //#[trace_resources]
+    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
-    //#[trace_resources]
+    #[trace_resources]
     fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.current_frame.actor.clone()
     }

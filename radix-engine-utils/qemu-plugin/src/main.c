@@ -10,7 +10,7 @@
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
 const gchar* SERVER_SOCKET_ADDR = "/tmp/scrypto-qemu-plugin-server.socket";
-const gchar* SHARED_MEM_ID = "/shm-radix";
+const gchar* SHARED_MEM_ID = "/shm-scrypto";
 
 static guint64 instructions_count;
 static GThread* thr;
