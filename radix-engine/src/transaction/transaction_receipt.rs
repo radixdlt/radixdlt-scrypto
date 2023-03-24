@@ -359,7 +359,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
     ) -> Result<(), Self::Error> {
         let result = &self.result;
         let bech32_encoder = context.encoder;
-        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
+        let scrypto_value_display_context =
+            ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
+        let address_display_context = AddressDisplayContext {
+            encoder: bech32_encoder,
+        };
 
         write!(
             f,
@@ -426,11 +430,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
                 write!(
                     f,
-                    "\n{} Emitter: {:?}, Local Type Index: {:?}, Data: {}",
+                    "\n{} Emitter: {}, Local Type Index: {:?}, Data: {}",
                     prefix!(i, c.application_events),
-                    event_type_identifier.0,
+                    event_type_identifier.0.display(address_display_context),
                     event_type_identifier.1,
-                    event_data_value.display(context)
+                    event_data_value.display(scrypto_value_display_context)
                 )?;
             }
 
@@ -444,7 +448,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         match output {
                             InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
                                 .expect("Impossible case! Instruction output can't be decoded")
-                                .to_string(context),
+                                .to_string(scrypto_value_display_context),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
