@@ -416,27 +416,18 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 write!(f, "\n{} [{:5}] {}", prefix!(i, c.application_logs), l, m)?;
             }
 
-            // TODO: Pretty print the events. Perhaps with Contextual display when the event schema
-            // can be looked up.
             write!(
                 f,
                 "\n{} {}",
                 "Events:".bold().green(),
                 c.application_events.len()
             )?;
-            for (i, (event_type_identifier, event_data)) in c.application_events.iter().enumerate()
-            {
-                let event_data_value =
-                    IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
-                write!(
-                    f,
-                    "\n{} Emitter: {}, Local Type Index: {:?}, Data: {}",
-                    prefix!(i, c.application_events),
-                    event_type_identifier.0.display(address_display_context),
-                    event_type_identifier.1,
-                    event_data_value.display(scrypto_value_display_context)
-                )?;
-            }
+            display_events_with_network_context(
+                f,
+                &c.application_events,
+                scrypto_value_display_context,
+                address_display_context,
+            )?;
 
             if let TransactionOutcome::Success(outputs) = &c.outcome {
                 write!(f, "\n{} {}", "Outputs:".bold().green(), outputs.len())?;
@@ -547,4 +538,25 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
 
         Ok(())
     }
+}
+
+fn display_events_with_network_context<'a, F: fmt::Write>(
+    f: &mut F,
+    events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
+    scrypto_value_display_context: ScryptoValueDisplayContext<'a>,
+    address_display_context: AddressDisplayContext<'a>,
+) -> Result<(), fmt::Error> {
+    for (i, (event_type_identifier, event_data)) in events.iter().enumerate() {
+        let event_data_value =
+            IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
+        write!(
+            f,
+            "\n{} Emitter: {}, Local Type Index: {:?}, Data: {}",
+            prefix!(i, events),
+            event_type_identifier.0.display(address_display_context),
+            event_type_identifier.1,
+            event_data_value.display(scrypto_value_display_context)
+        )?;
+    }
+    Ok(())
 }

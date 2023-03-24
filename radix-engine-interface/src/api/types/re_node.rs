@@ -39,7 +39,7 @@ pub enum RENodeId {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for RENodeId {
-    type Error = std::fmt::Error;
+    type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
@@ -52,7 +52,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for RENodeId {
             Self::Object(id) => write!(f, "Object({})", hex::encode(id)),
             Self::GlobalObject(address) => address
                 .contextual_format(f, context)
-                .map_err(|_| std::fmt::Error),
+                .map_err(|_| fmt::Error),
         }
     }
 }

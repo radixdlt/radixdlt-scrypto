@@ -26,7 +26,7 @@ pub enum Emitter {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
-    type Error = std::fmt::Error;
+    type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
