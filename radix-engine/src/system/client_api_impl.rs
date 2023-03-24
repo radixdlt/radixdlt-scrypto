@@ -174,30 +174,30 @@ where
                 .blueprints
                 .get(blueprint_ident)
                 .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(
+                    SystemError::SubstateValidationError(Box::new(
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
-                    ),
+                    )),
                 ))?;
         if schema.substates.len() != app_states.len() {
             return Err(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(
+                SystemError::SubstateValidationError(Box::new(
                     SubstateValidationError::WrongNumberOfSubstates(
                         blueprint_ident.to_string(),
                         app_states.len(),
                         schema.substates.len(),
                     ),
-                ),
+                )),
             ));
         }
         for i in 0..app_states.len() {
             validate_payload_against_schema(&app_states[i], &schema.schema, schema.substates[i])
                 .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::SubstateValidationError(
+                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
                         SubstateValidationError::SchemaValidationError(
                             blueprint_ident.to_string(),
                             err.error_message(&schema.schema),
                         ),
-                    ))
+                    )))
                 })?;
         }
         self.kernel_drop_lock(handle)?;

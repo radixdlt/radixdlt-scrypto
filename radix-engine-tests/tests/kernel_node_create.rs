@@ -22,12 +22,14 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::SubstateValidationError(
-                SubstateValidationError::BlueprintNotFound(_)
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::SubstateValidationError(err)) => {
+            if let SubstateValidationError::BlueprintNotFound(_) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }

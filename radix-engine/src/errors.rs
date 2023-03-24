@@ -200,7 +200,7 @@ pub enum SystemError {
         actual_package: Box<PackageAddress>,
         actual_blueprint: Box<String>,
     },
-    SubstateValidationError(SubstateValidationError),
+    SubstateValidationError(Box<SubstateValidationError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
