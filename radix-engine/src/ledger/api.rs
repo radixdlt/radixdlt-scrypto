@@ -31,33 +31,15 @@ impl Into<[u8; NodeId::LENGTH]> for NodeId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleId(pub u8);
 
-/// The unique identifier of a substate within node module.
+/// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SubstateKey {
-    /// The configuration of node module.
-    Config,
-    /// Refers to a state of node module.
-    State(StateKey),
-}
+pub struct SubstateKey(Vec<u8>);
 
-/// The configuration of a node module.
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-pub struct ModuleConfig {
-    /// When activated, the store will check the substate key for all operations (e.g. PUT/GET/LIST)
-    sbor_key_enabled: bool,
-    /// When activated, the store will allow LIST over the substates within the module.
-    sorting_enabled: bool,
-}
-
-/// The unique identifier of a state within node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct StateKey(Vec<u8>);
-
-impl StateKey {
+impl SubstateKey {
     pub const MIN_LENGTH: usize = 1;
     pub const MAX_LENGTH: usize = 128;
-    pub const MIN: Self = Self(vec![u8::MIN; StateKey::MIN_LENGTH]);
-    pub const MAX: Self = Self(vec![u8::MAX; StateKey::MAX_LENGTH]);
+    pub const MIN: Self = Self(vec![u8::MIN; Self::MIN_LENGTH]);
+    pub const MAX: Self = Self(vec![u8::MAX; Self::MAX_LENGTH]);
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Self::from_vec(slice.to_vec())
@@ -72,18 +54,19 @@ impl StateKey {
     }
 }
 
-impl AsRef<[u8]> for StateKey {
+impl AsRef<[u8]> for Self {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl Into<Vec<u8>> for StateKey {
+impl Into<Vec<u8>> for Self {
     fn into(self) -> Vec<u8> {
         self.0
     }
 }
 
+/// Utility function for converting a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
 pub fn encode_substate_id(
     node_id: &NodeId,
     module_id: ModuleId,
@@ -104,8 +87,9 @@ pub fn encode_substate_id(
     buffer
 }
 
-pub fn decode_substate_id(slice: &[u8]) -> (NodeId, ModuleId, SubstateKey) {
-    if slice.len() >= NodeId::LENGTH + 1 + 1 {
+/// Utility function for decoding a substate ID `(NodeId, ModuleId, SubstateKey)` from a `Vec<u8>`,
+pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey)> {
+    if slice.len() >= NodeId::LENGTH + 1 {
         // Decode node id
         let mut node_id = [0u8; NodeId::LENGTH];
         node_id.copy_from_slice(&slice[0..NodeId::LENGTH]);
@@ -115,69 +99,82 @@ pub fn decode_substate_id(slice: &[u8]) -> (NodeId, ModuleId, SubstateKey) {
         let module_id = ModuleId(slice[NodeId::LENGTH]);
 
         // Decode substate key
-        let kind = slice[NodeId::LENGTH + 1];
-        if kind == 0 && slice.len() == NodeId::LENGTH + 2 {
-            return (node_id, module_id, SubstateKey::Config);
-        } else if let Some(id) = StateKey::from_slice(&slice[NodeId::LENGTH + 2..]) {
-            return (node_id, module_id, SubstateKey::State(id));
+        if let Some(id) = SubstateKey::from_slice(&slice[NodeId::LENGTH + 1..]) {
+            return Some((node_id, module_id, SubstateKey::State(id)));
         }
     }
-    panic!("Invalid substate id: {}", hex::encode(slice));
+    return None;
 }
 
-pub fn encode_substate_value(value: &IndexedScryptoValue) -> Vec<u8> {
-    value.as_slice().to_vec()
-}
-
-pub fn decode_substate_value(slice: &[u8]) -> IndexedScryptoValue {
-    match IndexedScryptoValue::from_slice(slice) {
-        Ok(value) => value,
-        Err(_) => panic!("Invalid substate value: {}", hex::encode(slice)),
-    }
-}
-
-use super::*;
-use crate::types::*;
-
+/// Represents the interface between Radix Engine and Tracker.
 pub trait SubstateStore {
-    fn list_substates(
-        &self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-    ) -> Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
-
+    /// Reads a substate of the given node module.
+    ///
+    /// [`Option::None`] is returned if missing.
+    ///
+    /// # Panics
+    /// - If the module ID is invalid
     fn get_substate(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue>;
-}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ListSubstatesError {
-    InvalidModuleId,
-    IterationNotAllowed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GetSubstateError {
-    InvalidModuleId,
-}
-
-pub trait SubstateDatabase {
-    /// Returns an iterator of substates within the given in substate module.
+    /// Returns an iterator over substates within the given substate module.
     ///
-    /// In case of missing entries, an empty iterator is returned.
+    /// In case the module does not exist, an empty iterator is returned.
     ///
-    /// If iteration is not enabled for the module ID or the module ID is invalid, an error is thrown.
+    /// # Panics
+    /// - If iteration is not enabled for the module
+    /// - If the module ID is invalid
     fn list_substates(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+    ) -> Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
+}
 
-    /// Reads an substate under the given node module.
+/// The configuration of a node module.
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+pub struct ModuleConfig {
+    /// When activated, the store will allow LIST over the substates within the module.
+    iteration_enabled: bool,
+}
+
+/// Error when initializing a database.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InitError {
+    /// The database is already initialized with a different configuration.
+    AlreadyInitializedWithDifferentConfig,
+}
+
+/// Error when listing substates.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ListSubstatesError {
+    /// The module ID is unknown.
+    UnknownModuleId,
+    /// Iteration is not enabled for the module.
+    IterationNotAllowed,
+}
+
+/// Error when reading substates.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GetSubstateError {
+    /// The module ID is unknown.
+    UnknownModuleId,
+}
+
+/// Represents the interface between Tracker and a database vendor.
+pub trait SubstateDatabase {
+    /// Initializes the database with the given config.
+    ///
+    /// If the database is already initialized, implementation of this method will check if 
+    /// the set configuration matches the expected configuration and return error in
+    /// case of inconsistency.
+    fn init(config: BTreeMap<ModuleId, ModuleConfig>) -> Result<(), InitError>;
+
+    /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
     ///
@@ -188,6 +185,17 @@ pub trait SubstateDatabase {
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<(Vec<u8>, u32)>, GetSubstateError>;
+
+    /// Returns an iterator over substates within the given substate module.
+    ///
+    /// In case the module does not exist, an empty iterator is returned.
+    ///
+    /// If iteration is not enabled for the module ID or the module ID is invalid, an error is thrown.
+    fn list_substates(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> Result<(Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
 }
 
 #[cfg(test)]
@@ -198,7 +206,7 @@ mod tests {
     fn test_encode_decode_substate_id() {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
-        let substate_key = SubstateKey::State(StateKey::from_vec(vec![3]).unwrap());
+        let substate_key = SubstateKey::State(SubstateKey::from_vec(vec![3]).unwrap());
         let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,
@@ -211,23 +219,7 @@ mod tests {
         );
         assert_eq!(
             decode_substate_id(&substate_id),
-            (node_id, module_id, substate_key)
+            Some((node_id, module_id, substate_key))
         )
-    }
-
-    #[test]
-    fn test_encode_decode_substate_value() {
-        let value = IndexedScryptoValue::from_typed("Hello");
-        let substate_value = encode_substate_value(&value);
-        assert_eq!(
-            substate_value,
-            vec![
-                92, // prefix
-                12, // string
-                5,  // length
-                72, 101, 108, 108, 111 // "Hello"
-            ]
-        );
-        assert_eq!(decode_substate_value(&substate_value), value)
     }
 }
