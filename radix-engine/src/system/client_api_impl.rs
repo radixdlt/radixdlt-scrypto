@@ -419,7 +419,8 @@ where
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                node_id, module_ids,
+                Box::new(node_id),
+                Box::new(module_ids),
             )));
         }
 
