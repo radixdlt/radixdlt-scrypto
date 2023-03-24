@@ -21,26 +21,39 @@ impl Display for OutputDataEvent {
 }
 
 #[derive(Clone)]
-pub enum OutputParam {
+pub enum OutputParamValue {
     NumberI64(i64),
     NumberU64(u64),
     Literal(str32)
 }
-impl Display for OutputParam {
+impl Display for OutputParamValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            OutputParam::NumberI64(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
-            OutputParam::NumberU64(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
-            OutputParam::Literal(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
+            OutputParamValue::NumberI64(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
+            OutputParamValue::NumberU64(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
+            OutputParamValue::Literal(v) => f.write_fmt(format_args!("{}",v)).unwrap(),
         };
         Ok(())
     }
 }
-impl Default for OutputParam {
+impl Default for OutputParamValue {
     fn default() -> Self {
-        OutputParam::Literal(str32::new())
+        OutputParamValue::Literal(str32::new())
     }
 }
+
+#[derive(Clone)]
+pub struct OutputParam {
+    pub name: str32,
+    pub value: OutputParamValue
+}
+impl OutputParam {
+    pub fn new(name: &str, value: OutputParamValue) -> Self {
+        Self { name: name.into(), value }
+    }
+}
+
+
 
 pub struct OutputData<'a> {
     pub event: OutputDataEvent,
@@ -48,7 +61,7 @@ pub struct OutputData<'a> {
     pub cpu_instructions: u64,
     pub cpu_instructions_calibrated: u64,
     pub function_name: &'a str, 
-    pub param: Option<OutputParam>,
+    pub param: Vec<OutputParam>,
 }
 
 
@@ -117,8 +130,8 @@ impl DataAnalyzer {
                     v.function_name, 
                     v.stack_depth, 
                     v.cpu_instructions, 
-                    v.cpu_instructions_calibrated, 
-                    v.param.clone().unwrap_or_default())
+                    v.cpu_instructions_calibrated,
+                    "")//v.param.clone().unwrap_or_default())
                 ).expect(&format!("Unable write to {} file.", file_name));
             }
             file.flush().expect(&format!("Unable to flush {} file.", file_name))
@@ -150,7 +163,7 @@ impl DataAnalyzer {
                     v.stack_depth, 
                     v.cpu_instructions, 
                     v.cpu_instructions_calibrated, 
-                    v.param.clone().unwrap_or_default())
+                    "") //v.param.clone().unwrap_or_default())
                 ).expect(&format!("Unable write to {} file.", file_name));
 
                 prev_stack_depth = v.stack_depth;
@@ -170,16 +183,16 @@ impl DataAnalyzer {
 
             for (i, v) in data.iter().enumerate() {
                 let mut cpu_ins_cal = v.cpu_instructions_calibrated;
-                let mut param: Option<OutputParam> = None;
+                let mut param: &Vec<OutputParam> = &Vec::new();
 
-                // set cpu instructions from exit event to enter event
+                // set cpu instructions and param from exit event to enter event
                 if matches!(v.event, OutputDataEvent::FunctionEnter) {
                     for w in data[i..].into_iter() {
                         if v.stack_depth == w.stack_depth && 
                            v.function_name == w.function_name &&
                            matches!(w.event, OutputDataEvent::FunctionExit) {
                                 cpu_ins_cal = w.cpu_instructions_calibrated;
-                                param = w.param.clone();
+                                param = &w.param;
                                 break;
                            }
                     }
@@ -205,14 +218,18 @@ impl DataAnalyzer {
                             cpu_ins_cal)
                         ).expect(&format!("Unable write to {} file.", file_name));
 
-                    if param.is_some() { // use param from exit event if a
-                        file.write_fmt(format_args!(" arg=\"{}\"",
-                                param.unwrap_or_default().to_string().replace('\"', "&quot;"))
+                    if !param.is_empty() { // use param from exit event if available
+                        for p in param {
+                            file.write_fmt(format_args!(" {}=\"{}\"",
+                                p.name, p.value.to_string().replace('\"', "&quot;"))
                             ).expect(&format!("Unable write to {} file.", file_name));
-                    } else if v.param.is_some() {
-                        file.write_fmt(format_args!(" arg=\"{}\"",
-                                v.param.clone().unwrap_or_default().to_string().replace('\"', "&quot;"))
+                        }
+                    } else if !v.param.is_empty() {
+                        for p in &v.param {
+                            file.write_fmt(format_args!(" {}=\"{}\"",
+                                p.name, p.value.to_string().replace('\"', "&quot;"))
                             ).expect(&format!("Unable write to {} file.", file_name));
+                        }
                     } 
                 }
 
