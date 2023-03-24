@@ -136,6 +136,60 @@ pub fn decode_substate_value(slice: &[u8]) -> IndexedScryptoValue {
     }
 }
 
+use super::*;
+use crate::types::*;
+
+pub trait SubstateStore {
+    fn list_substates(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
+
+    fn get_substate(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ListSubstatesError {
+    InvalidModuleId,
+    IterationNotAllowed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GetSubstateError {
+    InvalidModuleId,
+}
+
+pub trait SubstateDatabase {
+    /// Returns an iterator of substates within the given in substate module.
+    ///
+    /// In case of missing entries, an empty iterator is returned.
+    ///
+    /// If iteration is not enabled for the module ID or the module ID is invalid, an error is thrown.
+    fn list_substates(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> Result<(Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+
+    /// Reads an substate under the given node module.
+    ///
+    /// [`Option::None`] is returned if missing.
+    ///
+    /// An error is thrown in case of invalid module ID.
+    fn get_substate(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<(Vec<u8>, u32)>, GetSubstateError>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
