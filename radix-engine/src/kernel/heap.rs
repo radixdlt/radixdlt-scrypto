@@ -12,6 +12,7 @@ use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -116,7 +117,7 @@ impl Heap {
             self.move_nodes_to_store(track, owned_nodes)?;
             track
                 .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(e))?;
+                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
         }
 
         Ok(())
