@@ -643,9 +643,9 @@ where
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
-                        actor: actor.clone(),
-                        node_id,
-                        package_address,
+                        actor: Box::new(actor.clone()),
+                        node_id: Box::new(node_id.clone()),
+                        package_address: Box::new(package_address),
                         blueprint_name,
                     },
                 ));

@@ -151,9 +151,9 @@ pub enum KernelError {
     // Actor Constraints
     InvalidDropNodeAccess {
         mode: ExecutionMode,
-        actor: Actor,
-        node_id: RENodeId,
-        package_address: PackageAddress,
+        actor: Box<Actor>,
+        node_id: Box<RENodeId>,
+        package_address: Box<PackageAddress>,
         blueprint_name: String,
     },
     InvalidSubstateAccess {
