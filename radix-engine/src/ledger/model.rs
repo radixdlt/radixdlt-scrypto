@@ -31,14 +31,6 @@ impl Into<[u8; NodeId::LENGTH]> for NodeId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleId(pub u8);
 
-impl ModuleId {
-    pub const TYPE_INFO: Self = Self(0x00);
-    pub const SELF: Self = Self(0x01);
-    pub const METADATA: Self = Self(0x02);
-    pub const ROYALTY: Self = Self(0x03);
-    pub const ACCESS_RULES: Self = Self(0x04);
-}
-
 /// The unique identifier of a substate within node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateKey {
