@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
+use utils::ContextualDisplay;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {
@@ -79,7 +80,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -103,7 +104,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -131,7 +132,7 @@ fn test_non_existent_blob_hash() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -166,7 +167,7 @@ fn test_entire_auth_zone() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -193,7 +194,7 @@ fn test_faucet_drain_attempt_should_fail() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_failure();

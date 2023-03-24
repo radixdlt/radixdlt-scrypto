@@ -6,6 +6,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use utils::ContextualDisplay;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -37,7 +38,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -76,7 +77,7 @@ fn can_create_clone_and_drop_vault_proof() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -116,7 +117,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
