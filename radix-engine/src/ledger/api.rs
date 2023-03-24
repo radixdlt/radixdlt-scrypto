@@ -1,3 +1,19 @@
+/*
+    High-level Abstraction
+
+    +-------------------------+
+    |       Radix Engine      |
+    |                         |
+    |----< SubstateStore >----|
+    |                         |
+    |          Track          |
+    |                         |
+    |---< SubstateDatabase >--|
+    |                         |
+    |         Database        |
+    +-------------------------+
+*/
+
 use crate::types::*;
 
 /// The unique identifier of a (stored) node.
@@ -106,7 +122,7 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
     return None;
 }
 
-/// Represents the interface between Radix Engine and Tracker.
+/// Represents the interface between Radix Engine and Track.
 pub trait SubstateStore {
     // TODO: add acquire_lock and release_lock
     fn acquire_lock(&mut self);
@@ -235,7 +251,7 @@ pub enum CommitError {
     UnknownModuleId,
 }
 
-/// Represents the interface between Tracker and a database vendor.
+/// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
     /// Initializes the database with the given config.
     ///
