@@ -176,7 +176,7 @@ impl CanBeAbortion for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
-    OffsetDoesNotExist(RENodeId, SubstateOffset),
+    OffsetDoesNotExist(Box<RENodeId>, Box<SubstateOffset>),
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),

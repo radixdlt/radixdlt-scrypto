@@ -55,7 +55,12 @@ impl Heap {
                 .substates
                 .get(&(module_id, offset.clone()))
                 .map(|s| s.to_ref())
-                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+                .ok_or(|| {
+                    CallFrameError::OffsetDoesNotExist(
+                        Box::new(node_id.clone()),
+                        Box::new(offset.clone()),
+                    )
+                }),
         }
     }
 
@@ -83,7 +88,12 @@ impl Heap {
                 .substates
                 .get_mut(&(module_id, offset.clone()))
                 .map(|s| s.to_ref_mut())
-                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+                .ok_or(|| {
+                    CallFrameError::OffsetDoesNotExist(
+                        Box::new(node_id.clone()),
+                        Box::new(offset.clone()),
+                    )
+                }),
         }
     }
 
