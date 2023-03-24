@@ -144,9 +144,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue>;
 
-    /// Reads a substate of the given node module.
-    ///
-    /// [`Option::None`] is returned if missing.
+    /// Updates a substate.
     ///
     /// # Panics
     /// - If the module ID is invalid
