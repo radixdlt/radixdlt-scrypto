@@ -124,6 +124,7 @@ impl<'a> QemuPluginInterface<'a> {
             return;
         }
 
+        let overflow_range = 1;
         let mut ov_cnt = 0;
         for i in (0..=self.output_data.len()-1).rev() {
             if ! matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
@@ -133,9 +134,11 @@ impl<'a> QemuPluginInterface<'a> {
             self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions.checked_sub(self.counter_offset) {
                 Some(v) => v,
                 None => {
-                    println!("subtraction overflow: {}  {}  {}", self.output_data[i].cpu_instructions, self.output_data[i].function_name, self.output_data[i].stack_depth);
-                    ov_cnt += 1;
-                    self.output_data[i].cpu_instructions_calibrated
+                    if self.counter_offset - self.output_data[i].cpu_instructions > overflow_range {
+                        println!("subtraction overflow: {}  {}  {}", self.output_data[i].cpu_instructions, self.output_data[i].function_name, self.output_data[i].stack_depth);
+                        ov_cnt += 1;
+                    }
+                    0
                 }
             };
 
@@ -152,9 +155,11 @@ impl<'a> QemuPluginInterface<'a> {
                         self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions_calibrated.checked_sub(self.counter_offset_parent) {
                             Some(v) => v,
                             None => {
-                                println!("Subtraction overflow 2: {}  {}  {}", self.output_data[i].cpu_instructions, self.output_data[i].function_name, self.output_data[i].stack_depth);
-                                ov_cnt += 1;
-                                self.output_data[i].cpu_instructions_calibrated
+                                if self.counter_offset - self.output_data[i].cpu_instructions > overflow_range {
+                                    println!("Subtraction overflow 2: {}  {}  {}", self.output_data[i].cpu_instructions, self.output_data[i].function_name, self.output_data[i].stack_depth);
+                                    ov_cnt += 1;
+                                }
+                                0
                             }
                         };
                     } else {
@@ -223,14 +228,14 @@ impl QemuPluginInterfaceCalibrator {
     }
 
     fn calibrate_inner() -> u64 {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", Vec::new().as_slice()) );
-        QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner", Vec::new().as_slice()) ).1
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", &[]) );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner", &[]) ).1
     }
 
     fn calibrate() -> (u64, u64) {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", Vec::new().as_slice()) );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", &[]) );
         let ret = QemuPluginInterfaceCalibrator::calibrate_inner();
-        (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate", Vec::new().as_slice()) ).1, ret)
+        (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate", &[]) ).1, ret)
     }
 
 
