@@ -37,7 +37,7 @@ wasmi = {  git = "https://github.com/radixdlt/wasmi.git", branch = "v0.23.0_stor
 wasmer = { version = "2.2.1", optional = true }
 wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 
-serde_json = { version = "1.0.94", optional = true, default-features = false }
+serde_json = { version = "1.0.81", optional = true, default-features = false }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }

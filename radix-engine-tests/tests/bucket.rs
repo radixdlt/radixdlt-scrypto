@@ -224,7 +224,7 @@ fn create_empty_bucket() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!("{:?}", receipt);
 
     // Assert
     receipt.expect_commit_success();
