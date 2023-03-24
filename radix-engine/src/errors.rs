@@ -346,7 +346,7 @@ pub enum ApplicationError {
 
     AccessControllerError(AccessControllerError),
 
-    EventError(EventError),
+    EventError(Box<EventError>),
 
     MetadataError(MetadataPanicError),
 }

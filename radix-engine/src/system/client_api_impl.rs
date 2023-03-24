@@ -767,7 +767,7 @@ where
                     NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
                     NodeModuleId::SELF => self.get_object_type_info(node_id),
                     NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(EventError::NoAssociatedPackage),
+                        ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
                 Some(Actor {
@@ -780,7 +780,7 @@ where
                     ..
                 }) => Ok((package_address, blueprint_name.clone())),
                 None => Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(EventError::InvalidActor),
+                    ApplicationError::EventError(Box::new(EventError::InvalidActor)),
                 )),
             }?;
 
@@ -793,11 +793,11 @@ where
             let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
             let blueprint_schema = package_info.schema.blueprints.get(&blueprint_name).map_or(
                 Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
                         package_address,
                         blueprint_name: blueprint_name.clone(),
                         event_name: event_name.clone(),
-                    }),
+                    })),
                 )),
                 Ok,
             )?;
@@ -806,11 +806,11 @@ where
             // schema
             let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
                 Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
                         package_address,
                         blueprint_name,
                         event_name,
-                    }),
+                    })),
                 )),
                 Ok,
             )?;
@@ -844,7 +844,7 @@ where
                 *local_type_index,
             )),
             None => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(EventError::InvalidActor),
+                ApplicationError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
 
@@ -855,9 +855,9 @@ where
             event_type_identifier.1,
         )
         .map_err(|err| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(
+            RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
                 EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
-            ))
+            )))
         })?;
 
         // Adding the event to the event store
