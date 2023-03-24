@@ -145,7 +145,7 @@ pub enum KernelError {
 
     // Substate Constraints
     InvalidOffset(SubstateOffset),
-    InvalidOwnership(SubstateOffset, PackageAddress, String),
+    InvalidOwnership(Box<SubstateOffset>, Box<PackageAddress>, Box<String>),
     InvalidId(RENodeId),
 
     // Actor Constraints

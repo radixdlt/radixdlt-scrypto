@@ -22,15 +22,21 @@ fn stored_bucket_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
-                RESOURCE_MANAGER_PACKAGE,
-                ..
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::InvalidOwnership(
+            substate_offset,
+            package_address,
+            ..,
+        )) => {
+            if let (SubstateOffset::Component(ComponentOffset::State0), RESOURCE_MANAGER_PACKAGE) =
+                (*substate_offset.clone(), **package_address)
+            {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 
@@ -53,14 +59,20 @@ fn stored_bucket_in_owned_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
-                RESOURCE_MANAGER_PACKAGE,
-                ..
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::InvalidOwnership(
+            substate_offset,
+            package_address,
+            ..,
+        )) => {
+            if let (SubstateOffset::Component(ComponentOffset::State0), RESOURCE_MANAGER_PACKAGE) =
+                (*substate_offset.clone(), **package_address)
+            {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
