@@ -1,16 +1,18 @@
 /*
-    High-level Abstraction
+       High-level Abstraction
 
     +-------------------------+
+    |                         |
     |       Radix Engine      |
     |                         |
-    |----< SubstateStore >----|
+    |----> SubstateStore <----|
     |                         |
     |          Track          |
     |                         |
-    |---< SubstateDatabase >--|
+    |---> SubstateDatabase <--|
     |                         |
     |         Database        |
+    |                         |
     +-------------------------+
 */
 
@@ -209,7 +211,7 @@ pub enum StateChange {
 
 pub struct StateDependencies {
     /// The substates that were read.
-    pub substate_reads: BTreeMap<(NodeId, ModuleId, SubstateKey), Option<IndexedScryptoValue>>,
+    pub substate_reads: BTreeMap<(NodeId, ModuleId, SubstateKey), Option<u32>>,
     /// The modules which have been iterated.
     pub module_reads: BTreeMap<(NodeId, ModuleId), Option<Hash>>,
 }
