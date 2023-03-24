@@ -7,7 +7,7 @@ use crate::system::kernel_modules::execution_trace::{
 };
 use crate::types::*;
 use colored::*;
-use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
+use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
@@ -190,7 +190,7 @@ impl TransactionOutcome {
         }
     }
 
-    pub fn success_or_else<E, F: FnOnce(&RuntimeError) -> E>(
+    pub fn success_or_else<E, F: Fn(&RuntimeError) -> E>(
         &self,
         f: F,
     ) -> Result<&Vec<InstructionOutput>, E> {
@@ -295,7 +295,7 @@ impl TransactionReceipt {
 
     pub fn expect_specific_rejection<F>(&self, f: F)
     where
-        F: FnOnce(&RejectionError) -> bool,
+        F: Fn(&RejectionError) -> bool,
     {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
@@ -313,7 +313,7 @@ impl TransactionReceipt {
 
     pub fn expect_specific_failure<F>(&self, f: F)
     where
-        F: FnOnce(&RuntimeError) -> bool,
+        F: Fn(&RuntimeError) -> bool,
     {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
@@ -345,25 +345,85 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.display(NO_NETWORK))
+        write!(
+            f,
+            "{}",
+            self.display(TransactionReceiptDisplayContext::default())
+        )
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
+#[derive(Default)]
+pub struct TransactionReceiptDisplayContext<'a> {
+    pub encoder: Option<&'a Bech32Encoder>,
+    pub schema_lookup_callback:
+        Option<Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a>>,
+}
+
+impl<'a> TransactionReceiptDisplayContext<'a> {
+    pub fn scrypto_value_display_context(&self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_optional_bench32(self.encoder)
+    }
+
+    pub fn address_display_context(&self) -> AddressDisplayContext<'a> {
+        AddressDisplayContext {
+            encoder: self.encoder,
+        }
+    }
+
+    pub fn lookup_schema(
+        &self,
+        event_type_identifier: &EventTypeIdentifier,
+    ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+        match self.schema_lookup_callback {
+            Some(ref callback) => {
+                let callback = callback.as_ref();
+                callback(event_type_identifier)
+            }
+            None => None,
+        }
+    }
+}
+
+pub struct TransactionReceiptDisplayContextBuilder<'a>(TransactionReceiptDisplayContext<'a>);
+
+impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
+    pub fn new() -> Self {
+        Self(TransactionReceiptDisplayContext {
+            encoder: None,
+            schema_lookup_callback: None,
+        })
+    }
+
+    pub fn encoder(mut self, encoder: &'a Bech32Encoder) -> Self {
+        self.0.encoder = Some(encoder);
+        self
+    }
+
+    pub fn schema_lookup_callback<F>(mut self, callback: F) -> Self
+    where
+        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a,
+    {
+        self.0.schema_lookup_callback = Some(Box::new(callback));
+        self
+    }
+
+    pub fn build(self) -> TransactionReceiptDisplayContext<'a> {
+        self.0
+    }
+}
+
+impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for TransactionReceipt {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &AddressDisplayContext<'a>,
+        context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let result = &self.result;
-        let bech32_encoder = context.encoder;
-        let scrypto_value_display_context =
-            ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
-        let address_display_context = AddressDisplayContext {
-            encoder: bech32_encoder,
-        };
+        let scrypto_value_display_context = context.scrypto_value_display_context();
+        let address_display_context = context.address_display_context();
 
         write!(
             f,
@@ -422,6 +482,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 "Events:".bold().green(),
                 c.application_events.len()
             )?;
+            // #[cfg(not(feature = "serde"))]
             display_events_with_network_context(
                 f,
                 &c.application_events,
@@ -463,8 +524,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Entity: {}, Address: {}, Delta: {}",
                     prefix!(i, balance_changes),
-                    address.display(bech32_encoder),
-                    resource.display(bech32_encoder),
+                    address.display(address_display_context),
+                    resource.display(address_display_context),
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),
                         BalanceChange::NonFungible { added, removed } => {
@@ -492,7 +553,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     "\n{} Vault: {}, Address: {}, Delta: {}",
                     prefix!(i, direct_vault_updates),
                     hex::encode(object_id),
-                    resource.display(bech32_encoder),
+                    resource.display(address_display_context),
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),
                         BalanceChange::NonFungible { added, removed } => {
@@ -515,7 +576,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Package: {}",
                     prefix!(i, c.new_package_addresses()),
-                    package_address.display(bech32_encoder)
+                    package_address.display(address_display_context)
                 )?;
             }
             for (i, component_address) in c.new_component_addresses().iter().enumerate() {
@@ -523,7 +584,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Component: {}",
                     prefix!(i, c.new_component_addresses()),
-                    component_address.display(bech32_encoder)
+                    component_address.display(address_display_context)
                 )?;
             }
             for (i, resource_address) in c.new_resource_addresses().iter().enumerate() {
@@ -531,7 +592,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Resource: {}",
                     prefix!(i, c.new_resource_addresses()),
-                    resource_address.display(bech32_encoder)
+                    resource_address.display(address_display_context)
                 )?;
             }
         }
