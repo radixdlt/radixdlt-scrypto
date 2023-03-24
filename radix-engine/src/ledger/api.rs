@@ -2,7 +2,7 @@ use crate::types::*;
 
 /// The unique identifier of a (stored) node.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct NodeId([u8; 27]);
+pub struct NodeId([u8; Self::LENGTH]);
 
 impl NodeId {
     pub const LENGTH: usize = 27;
@@ -66,7 +66,7 @@ impl Into<Vec<u8>> for Self {
     }
 }
 
-/// Utility function for converting a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
+/// Utility function for encoding a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
 pub fn encode_substate_id(
     node_id: &NodeId,
     module_id: ModuleId,
@@ -240,8 +240,8 @@ pub trait SubstateDatabase {
     /// Initializes the database with the given config.
     ///
     /// If the database is already initialized, implementation of this method will check if
-    /// the set configuration matches the expected configuration and return error in
-    /// case of inconsistency.
+    /// the set configuration matches the expected configuration and return an error if they do
+    /// not match.
     fn init(config: BTreeMap<ModuleId, ModuleConfig>) -> Result<(), InitError>;
 
     /// Reads a substate of the given node module.
