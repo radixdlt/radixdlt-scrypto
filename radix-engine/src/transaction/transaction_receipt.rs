@@ -482,13 +482,35 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                 "Events:".bold().green(),
                 c.application_events.len()
             )?;
-            // #[cfg(not(feature = "serde"))]
-            display_events_with_network_context(
-                f,
-                &c.application_events,
-                scrypto_value_display_context,
-                address_display_context,
-            )?;
+            for (i, (event_type_identifier, event_data)) in c.application_events.iter().enumerate()
+            {
+                #[cfg(not(feature = "serde"))]
+                display_event_with_network_context(
+                    f,
+                    prefix!(i, c.application_events),
+                    event_type_identifier,
+                    event_data,
+                    context,
+                )?;
+                #[cfg(feature = "serde")]
+                if context.schema_lookup_callback.is_some() {
+                    display_event_with_network_and_schema_context(
+                        f,
+                        prefix!(i, c.application_events),
+                        event_type_identifier,
+                        event_data,
+                        context,
+                    )?;
+                } else {
+                    display_event_with_network_context(
+                        f,
+                        prefix!(i, c.application_events),
+                        event_type_identifier,
+                        event_data,
+                        context,
+                    )?;
+                }
+            }
 
             if let TransactionOutcome::Success(outputs) = &c.outcome {
                 write!(f, "\n{} {}", "Outputs:".bold().green(), outputs.len())?;
@@ -601,23 +623,67 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
     }
 }
 
-fn display_events_with_network_context<'a, F: fmt::Write>(
+fn display_event_with_network_context<'a, F: fmt::Write>(
     f: &mut F,
-    events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
-    scrypto_value_display_context: ScryptoValueDisplayContext<'a>,
-    address_display_context: AddressDisplayContext<'a>,
+    prefix: &str,
+    event_type_identifier: &EventTypeIdentifier,
+    event_data: &Vec<u8>,
+    receipt_context: &TransactionReceiptDisplayContext<'a>,
 ) -> Result<(), fmt::Error> {
-    for (i, (event_type_identifier, event_data)) in events.iter().enumerate() {
-        let event_data_value =
-            IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
-        write!(
-            f,
-            "\n{} Emitter: {}, Local Type Index: {:?}, Data: {}",
-            prefix!(i, events),
-            event_type_identifier.0.display(address_display_context),
-            event_type_identifier.1,
-            event_data_value.display(scrypto_value_display_context)
-        )?;
-    }
+    let event_data_value =
+        IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
+    write!(
+        f,
+        "\n{} Emitter: {}, Local Type Index: {:?}, Data: {}",
+        prefix,
+        event_type_identifier
+            .0
+            .display(receipt_context.address_display_context()),
+        event_type_identifier.1,
+        event_data_value.display(receipt_context.scrypto_value_display_context())
+    )?;
+    Ok(())
+}
+
+#[cfg(feature = "serde")]
+fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
+    f: &mut F,
+    prefix: &str,
+    event_type_identifier: &EventTypeIdentifier,
+    event_data: &Vec<u8>,
+    receipt_context: &TransactionReceiptDisplayContext<'a>,
+) -> Result<(), fmt::Error> {
+    // Given the event type identifier, get the local type index and schema associated with it.
+
+    use sbor::serde_serialization::{
+        SborPayloadWithSchema, SerializationContext, SerializationMode,
+    };
+    use utils::ContextualSerialize;
+    let (local_type_index, schema) = receipt_context
+        .lookup_schema(event_type_identifier)
+        .map_or(Err(fmt::Error), Ok)?;
+
+    // Based on the event data and schema, get an invertible json string representation.
+    let event = {
+        let payload =
+            SborPayloadWithSchema::<ScryptoCustomTypeExtension>::new(&event_data, local_type_index);
+        let serializable = payload.serializable(SerializationContext {
+            mode: SerializationMode::Invertible,
+            schema: &schema,
+            custom_context: receipt_context.scrypto_value_display_context(),
+        });
+        serde_json::to_string(&serializable).map_err(|_| fmt::Error)
+    }?;
+
+    // Print the event information
+    write!(
+        f,
+        "\n{} Emitter: {}, Event: {}",
+        prefix,
+        event_type_identifier
+            .0
+            .display(receipt_context.address_display_context()),
+        event
+    )?;
     Ok(())
 }
