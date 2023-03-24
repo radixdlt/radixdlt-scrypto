@@ -34,12 +34,14 @@ pub struct ModuleId(pub u8);
 /// The unique identifier of a substate within node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateKey {
+    /// The configuration of node module.
     Config,
+    /// Refers to a state of node module.
     State(StateKey),
 }
 
 /// The configuration of a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub struct ModuleConfig {
     /// When activated, the store will check the substate key for all operations (e.g. PUT/GET/LIST)
     sbor_key_enabled: bool,
