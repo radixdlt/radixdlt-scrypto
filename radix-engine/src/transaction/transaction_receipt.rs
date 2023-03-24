@@ -13,6 +13,11 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
 use utils::ContextualDisplay;
 
+#[cfg(feature = "serde")]
+use sbor::serde_serialization::{SborPayloadWithSchema, SerializationContext, SerializationMode};
+#[cfg(feature = "serde")]
+use utils::ContextualSerialize;
+
 #[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
@@ -654,11 +659,6 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
     receipt_context: &TransactionReceiptDisplayContext<'a>,
 ) -> Result<(), fmt::Error> {
     // Given the event type identifier, get the local type index and schema associated with it.
-
-    use sbor::serde_serialization::{
-        SborPayloadWithSchema, SerializationContext, SerializationMode,
-    };
-    use utils::ContextualSerialize;
     let (local_type_index, schema) = receipt_context
         .lookup_schema(event_type_identifier)
         .map_or(Err(fmt::Error), Ok)?;
