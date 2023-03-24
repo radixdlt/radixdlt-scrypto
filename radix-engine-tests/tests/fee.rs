@@ -146,13 +146,18 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             )
             .build()
     });
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnNewSubstate(..))
-            ))
-        )
+
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            KernelError::TrackError(err),
+        )) => {
+            if let TrackError::LockUnmodifiedBaseOnNewSubstate(..) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 
@@ -183,13 +188,17 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
             .build()
     });
 
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..))
-            ))
-        )
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            KernelError::TrackError(err),
+        )) => {
+            if let TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 

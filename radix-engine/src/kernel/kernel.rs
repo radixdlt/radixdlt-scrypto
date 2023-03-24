@@ -894,22 +894,28 @@ where
             flags,
         );
 
-        let lock_handle = match maybe_lock_handle {
-            Ok(lock_handle) => lock_handle,
-            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(node_id, module_id, ref offset),
-            )))) => {
-                if self.try_virtualize(node_id, module_id, &offset)? {
-                    self.current_frame.acquire_lock(
-                        &mut self.heap,
-                        &mut self.track,
-                        node_id,
-                        module_id,
-                        offset.clone(),
-                        flags,
-                    )?
+        let lock_handle = match &maybe_lock_handle {
+            Ok(lock_handle) => *lock_handle,
+            Err(RuntimeError::KernelError(KernelError::TrackError(track_err))) => {
+                if let TrackError::NotFound(SubstateId(node_id, module_id, ref offset)) =
+                    **track_err
+                {
+                    if self.try_virtualize(node_id, module_id, &offset)? {
+                        self.current_frame.acquire_lock(
+                            &mut self.heap,
+                            &mut self.track,
+                            node_id,
+                            module_id,
+                            offset.clone(),
+                            flags,
+                        )?
+                    } else {
+                        return maybe_lock_handle;
+                    }
                 } else {
-                    return maybe_lock_handle;
+                    return Err(RuntimeError::KernelError(KernelError::TrackError(
+                        track_err.clone(),
+                    )));
                 }
             }
             Err(err) => {
@@ -927,21 +933,27 @@ where
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
-                        self.track
+                        match self
+                            .track
                             .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
-                            .map_err(|_| err)?;
-                        self.current_frame
-                            .add_ref(node_id, RENodeVisibilityOrigin::Normal);
-                        self.current_frame.acquire_lock(
-                            &mut self.heap,
-                            &mut self.track,
-                            node_id,
-                            module_id,
-                            offset.clone(),
-                            flags,
-                        )?
+                            .map_err(|_| err)
+                        {
+                            Ok(_) => {
+                                self.current_frame
+                                    .add_ref(node_id, RENodeVisibilityOrigin::Normal);
+                                self.current_frame.acquire_lock(
+                                    &mut self.heap,
+                                    &mut self.track,
+                                    node_id,
+                                    module_id,
+                                    offset.clone(),
+                                    flags,
+                                )?
+                            }
+                            Err(err) => return Err(err.clone()),
+                        }
                     }
-                    _ => return Err(err),
+                    _ => return Err(err.clone()),
                 }
             }
         };

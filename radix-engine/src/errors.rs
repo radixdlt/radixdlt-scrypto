@@ -137,7 +137,7 @@ pub enum KernelError {
     ContainsDuplicatedOwns,
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
-    TrackError(TrackError),
+    TrackError(Box<TrackError>),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     BlobNotFound(Hash),
