@@ -106,8 +106,6 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
     return None;
 }
 
-pub struct Changes {}
-
 /// Represents the interface between Radix Engine and Tracker.
 pub trait SubstateStore {
     // TODO: add acquire_lock and release_lock
@@ -188,7 +186,7 @@ pub enum StateChange {
     /*
     /// Deletes a substate.
     Delete,
-    /// Edits an element specified by SBOR path.
+    /// Edits an element of a substate, specified by SBOR path.
     Edit,
     */
 }
