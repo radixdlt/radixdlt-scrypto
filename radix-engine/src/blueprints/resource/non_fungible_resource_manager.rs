@@ -19,8 +19,8 @@ use sbor::rust::borrow::Cow;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NonFungibleResourceManagerError {
-    NonFungibleAlreadyExists(NonFungibleGlobalId),
-    NonFungibleNotFound(NonFungibleGlobalId),
+    NonFungibleAlreadyExists(Box<NonFungibleGlobalId>),
+    NonFungibleNotFound(Box<NonFungibleGlobalId>),
     InvalidField(String),
     FieldNotMutable(String),
     MismatchingBucketResource,
@@ -419,9 +419,9 @@ impl NonFungibleResourceManagerBlueprint {
                 if let Some(..) = cur_non_fungible {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::NonFungibleResourceManagerError(
-                            NonFungibleResourceManagerError::NonFungibleAlreadyExists(
+                            NonFungibleResourceManagerError::NonFungibleAlreadyExists(Box::new(
                                 NonFungibleGlobalId::new(resource_address, id),
-                            ),
+                            )),
                         ),
                     ));
                 }
@@ -582,7 +582,9 @@ impl NonFungibleResourceManagerBlueprint {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::NonFungibleNotFound(non_fungible_global_id),
+                    NonFungibleResourceManagerError::NonFungibleNotFound(Box::new(
+                        non_fungible_global_id,
+                    )),
                 ),
             ));
         }
@@ -654,7 +656,9 @@ impl NonFungibleResourceManagerBlueprint {
         } else {
             Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::NonFungibleNotFound(non_fungible_global_id),
+                    NonFungibleResourceManagerError::NonFungibleNotFound(Box::new(
+                        non_fungible_global_id,
+                    )),
                 ),
             ))
         }
