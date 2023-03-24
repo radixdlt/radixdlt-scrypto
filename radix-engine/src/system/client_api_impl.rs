@@ -469,10 +469,10 @@ where
                         (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
                     ) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: ACCESS_RULES_PACKAGE,
-                            expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
-                            actual_package: package_address,
-                            actual_blueprint: blueprint,
+                            expected_package: Box::new(ACCESS_RULES_PACKAGE),
+                            expected_blueprint: Box::new(ACCOUNT_BLUEPRINT.to_string()),
+                            actual_package: Box::new(package_address),
+                            actual_blueprint: Box::new(blueprint),
                         }));
                     }
 
@@ -498,10 +498,10 @@ where
                         (METADATA_PACKAGE, METADATA_BLUEPRINT)
                     ) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: METADATA_PACKAGE,
-                            expected_blueprint: METADATA_BLUEPRINT.to_string(),
-                            actual_package: package_address,
-                            actual_blueprint: blueprint,
+                            expected_package: Box::new(METADATA_PACKAGE),
+                            expected_blueprint: Box::new(METADATA_BLUEPRINT.to_string()),
+                            actual_package: Box::new(package_address),
+                            actual_blueprint: Box::new(blueprint),
                         }));
                     }
 
@@ -527,10 +527,10 @@ where
                         (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
                     ) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: ROYALTY_PACKAGE,
-                            expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
-                            actual_package: package_address,
-                            actual_blueprint: blueprint,
+                            expected_package: Box::new(ROYALTY_PACKAGE),
+                            expected_blueprint: Box::new(COMPONENT_ROYALTY_BLUEPRINT.to_string()),
+                            actual_package: Box::new(package_address),
+                            actual_blueprint: Box::new(blueprint),
                         }));
                     }
 

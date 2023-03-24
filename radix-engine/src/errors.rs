@@ -195,10 +195,10 @@ pub enum SystemError {
     InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
     InvalidModule,
     InvalidModuleType {
-        expected_package: PackageAddress,
-        expected_blueprint: String,
-        actual_package: PackageAddress,
-        actual_blueprint: String,
+        expected_package: Box<PackageAddress>,
+        expected_blueprint: Box<String>,
+        actual_package: Box<PackageAddress>,
+        actual_blueprint: Box<String>,
     },
     SubstateValidationError(SubstateValidationError),
 }
