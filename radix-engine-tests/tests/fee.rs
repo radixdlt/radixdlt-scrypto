@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
+use utils::ContextualDisplay;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
 where
@@ -63,7 +64,7 @@ fn should_be_aborted_when_loan_repaid() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
     receipt.expect_commit_failure();
 }
 

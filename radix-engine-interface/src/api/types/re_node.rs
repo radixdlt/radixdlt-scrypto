@@ -1,8 +1,10 @@
 use super::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::address::AddressDisplayContext;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
+use utils::ContextualDisplay;
 
 pub const INTERNAL_OBJECT_NORMAL_COMPONENT_ID: u8 = 0x0d;
 pub const INTERNAL_OBJECT_VAULT_ID: u8 = 0x0e;
@@ -34,6 +36,25 @@ pub enum RENodeId {
     // This is only used for owned objects (global objects have addresses)
     // TODO: Rename to OwnedObject when it won't cause so many merge conflicts!
     Object(ObjectId),
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for RENodeId {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        match self {
+            Self::AuthZoneStack => write!(f, "AuthZoneStack"),
+            Self::KeyValueStore(id) => write!(f, "KeyValueStore({})", hex::encode(id)),
+            Self::Object(id) => write!(f, "Object({})", hex::encode(id)),
+            Self::GlobalObject(address) => address
+                .contextual_format(f, context)
+                .map_err(|_| fmt::Error),
+        }
+    }
 }
 
 impl fmt::Debug for RENodeId {
