@@ -458,6 +458,35 @@ impl Describe<ScryptoCustomTypeKind> for NonFungibleLocalId {
 // text
 //======
 
+/// We wish to be stricter than `from_str_radix` in order to ensure a canonical format, and in particular:
+/// * Not allow + at the start
+/// * Not allow leading 0s
+/// * Not allow an empty string
+fn is_canonically_formatted_integer(digits: &str) -> bool {
+    if digits == "0" {
+        return true;
+    }
+    let mut chars = digits.chars();
+    // A non-zero integer must start with a digit between 1 and 9
+    let first_char = chars.next();
+    match first_char {
+        None => {
+            return false;
+        }
+        Some('1'..='9') => {}
+        _ => {
+            return false;
+        }
+    }
+    // The remaining chars must be digits
+    for char in chars {
+        if !matches!(char, '0'..='9') {
+            return false;
+        }
+    }
+    return true;
+}
+
 impl FromStr for NonFungibleLocalId {
     type Err = ParseNonFungibleLocalIdError;
 
@@ -466,6 +495,10 @@ impl FromStr for NonFungibleLocalId {
             Self::string(s[1..s.len() - 1].to_string())
                 .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
         } else if s.starts_with("#") && s.ends_with("#") {
+            let digits = &s[1..s.len() - 1];
+            if !is_canonically_formatted_integer(digits) {
+                return Err(ParseNonFungibleLocalIdError::InvalidInteger);
+            }
             NonFungibleLocalId::integer(
                 u64::from_str_radix(&s[1..s.len() - 1], 10)
                     .map_err(|_| ParseNonFungibleLocalIdError::InvalidInteger)?,
@@ -629,6 +662,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
+        // Integers and invalid integers:
         assert_eq!(
             NonFungibleLocalId::from_str("#1#").unwrap(),
             NonFungibleLocalId::integer(1)
@@ -636,6 +670,35 @@ mod tests {
         assert_eq!(
             NonFungibleLocalId::from_str("#10#").unwrap(),
             NonFungibleLocalId::integer(10)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("#0#").unwrap(),
+            NonFungibleLocalId::integer(0)
+        );
+        // Non-canonical, invalid integers
+        assert_eq!(
+            NonFungibleLocalId::from_str("##"),
+            Err(ParseNonFungibleLocalIdError::InvalidInteger)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("#+10#"),
+            Err(ParseNonFungibleLocalIdError::InvalidInteger)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("#010#"),
+            Err(ParseNonFungibleLocalIdError::InvalidInteger)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("# 10#"),
+            Err(ParseNonFungibleLocalIdError::InvalidInteger)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("#000#"),
+            Err(ParseNonFungibleLocalIdError::InvalidInteger)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("#-10#"),
+            Err(ParseNonFungibleLocalIdError::InvalidInteger)
         );
         assert_eq!(
             NonFungibleLocalId::from_str("{b36f5b3f-835b-406c-980f-7788d8f13c1b}").unwrap(),
@@ -653,6 +716,7 @@ mod tests {
 
     #[test]
     fn test_to_string() {
+        assert_eq!(NonFungibleLocalId::integer(0).to_string(), "#0#",);
         assert_eq!(NonFungibleLocalId::integer(1).to_string(), "#1#",);
         assert_eq!(NonFungibleLocalId::integer(10).to_string(), "#10#",);
         assert_eq!(
