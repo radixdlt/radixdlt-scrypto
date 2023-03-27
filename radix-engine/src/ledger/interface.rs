@@ -271,7 +271,7 @@ pub trait SubstateDatabase {
     /// If the database is already initialized, implementation of this method will check if
     /// the set configuration matches the expected configuration and return an error if they do
     /// not match.
-    fn init(config: BTreeMap<ModuleId, ModuleConfig>) -> Result<(), InitError>;
+    fn init(&self, config: BTreeMap<ModuleId, ModuleConfig>) -> Result<(), InitError>;
 
     /// Reads a substate of the given node module.
     ///
@@ -295,7 +295,10 @@ pub trait SubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Result<(Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+}
 
+/// Interface for committing changes into a substate database.
+pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
     ///
     /// An error is thrown in case of invalid module ID.
