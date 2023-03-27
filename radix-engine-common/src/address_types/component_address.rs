@@ -10,7 +10,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
-/// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ComponentAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 

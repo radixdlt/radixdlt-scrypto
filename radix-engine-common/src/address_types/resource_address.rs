@@ -8,7 +8,6 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use utils::{copy_u8_array, ContextualDisplay};
 
-/// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ResourceAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 

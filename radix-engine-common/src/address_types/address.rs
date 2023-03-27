@@ -1,5 +1,4 @@
-use crate::address::EncodeBech32AddressError;
-use crate::address::{AddressDisplayContext, EntityType, NO_NETWORK};
+use crate::address::{AddressDisplayContext, EncodeBech32AddressError, EntityType, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
@@ -10,10 +9,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
+/// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct PackageAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
+pub struct Address([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 
-impl PackageAddress {
+impl Address {
     pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
         Self(raw)
     }
@@ -23,32 +23,28 @@ impl PackageAddress {
     }
 }
 
-impl AsRef<[u8]> for PackageAddress {
+impl AsRef<[u8]> for Address {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl TryFrom<[u8; NODE_ID_LENGTH]> for PackageAddress {
-    type Error = ParsePackageAddressError;
+impl TryFrom<[u8; NODE_ID_LENGTH]> for Address {
+    type Error = ParseAddressError;
 
     fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
-        match EntityType::from_repr(value[0])
-            .ok_or(ParsePackageAddressError::InvalidEntityTypeId(value[0]))?
-        {
-            EntityType::GlobalPackage => Ok(Self(value)),
-            _ => Err(ParsePackageAddressError::InvalidEntityTypeId(value[0])),
-        }
+        EntityType::from_repr(value[0]).ok_or(ParseAddressError::InvalidEntityTypeId(value[0]))?;
+        Ok(Self(value))
     }
 }
 
-impl TryFrom<&[u8]> for PackageAddress {
-    type Error = ParsePackageAddressError;
+impl TryFrom<&[u8]> for Address {
+    type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => PackageAddress::try_from(copy_u8_array(slice)),
-            _ => Err(ParsePackageAddressError::InvalidLength(slice.len())),
+            NODE_ID_LENGTH => Address::try_from(copy_u8_array(slice)),
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -58,16 +54,16 @@ impl TryFrom<&[u8]> for PackageAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParsePackageAddressError {
+pub enum ParseAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParsePackageAddressError {}
+impl std::error::Error for ParseAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParsePackageAddressError {
+impl fmt::Display for ParseAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -78,30 +74,26 @@ impl fmt::Display for ParsePackageAddressError {
 //========
 
 well_known_scrypto_custom_type!(
-    PackageAddress,
+    Address,
     ScryptoCustomValueKind::Reference,
-    Type::PackageAddress,
+    Type::Address,
     NODE_ID_LENGTH,
-    PACKAGE_ADDRESS_ID
+    COMPONENT_ADDRESS_ID
 );
 
-manifest_type!(
-    PackageAddress,
-    ManifestCustomValueKind::Address,
-    NODE_ID_LENGTH
-);
+manifest_type!(Address, ManifestCustomValueKind::Address, NODE_ID_LENGTH);
 
-//========
+//======
 // text
-//========
+//======
 
-impl fmt::Debug for PackageAddress {
+impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Address {
     type Error = EncodeBech32AddressError;
 
     fn contextual_format<F: fmt::Write>(
@@ -114,7 +106,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "PackageAddress({})", hex::encode(&self.0))
-            .map_err(|err| EncodeBech32AddressError::FormatError(err))
+        write!(f, "Address({})", hex::encode(&self.0))
+            .map_err(EncodeBech32AddressError::FormatError)
     }
 }
