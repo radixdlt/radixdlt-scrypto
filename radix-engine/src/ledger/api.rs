@@ -1,22 +1,19 @@
 /*
-       High-level Abstraction
 
-    +-------------------------+
-    |                         |
-    |       Radix Engine      |
-    |                         |
-    |----> SubstateStore <----|
-    |                         |
-    |          Track          |
-    |                         |
-    |---> SubstateDatabase <--|
-    |                         |
-    |         Database        |
-    |                         |
-    +-------------------------+
+High-level Abstraction
+
++-------------------------+
+|       Radix Engine      |
+|----> SubstateStore <----|
+|          Track          |
+|---> SubstateDatabase <--|
+|         Database        |
++-------------------------+
+
 */
 
 use crate::types::*;
+use radix_engine_interface::api::LockFlags;
 
 /// The unique identifier of a (stored) node.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -124,38 +121,46 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
     return None;
 }
 
+/// Error when acquiring a lock.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AcquireLockError {
+    NotFound(NodeId, ModuleId, SubstateKey),
+    SubstateLocked(NodeId, ModuleId, SubstateKey),
+    LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleId, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
+}
+
 /// Represents the interface between Radix Engine and Track.
 pub trait SubstateStore {
-    // TODO: add acquire_lock and release_lock
-    fn acquire_lock(&mut self);
-    fn release_lock(&mut self);
-
-    /// Reads a substate of the given node module.
-    ///
-    /// [`Option::None`] is returned if missing.
+    /// Acquires a lock over a substate.
     ///
     /// # Panics
     /// - If the module ID is invalid
-    /// - If the substate is not read/write locked
-    fn get_substate(
+    fn acquire_lock(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<&IndexedScryptoValue>;
+        flags: LockFlags,
+    ) -> Result<u32, AcquireLockError>;
+
+    /// Releases a lock.
+    ///
+    /// # Panics
+    /// - If the lock handle is invalid.
+    fn release_lock(&mut self, handle: u32);
+
+    /// Reads a substate of the given node module.
+    ///
+    /// # Panics
+    /// - If lock handle is invalid
+    fn get_substate(&self, handle: u32) -> &IndexedScryptoValue;
 
     /// Updates a substate.
     ///
     /// # Panics
-    /// - If the module ID is invalid
-    /// - If the substate is not write locked
-    fn put_substate(
-        &mut self,
-        node_id: NodeId,
-        module_id: ModuleId,
-        substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
-    );
+    /// - If lock handle is invalid or not associated with WRITE permission
+    fn put_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Inserts a substate into the substate store.
     ///
