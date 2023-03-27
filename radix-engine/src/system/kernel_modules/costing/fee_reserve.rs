@@ -251,6 +251,7 @@ impl SystemLoanFeeReserve {
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance);
         } else {
+            self.xrd_balance -= amount;
             self.royalty_committed
                 .entry(recipient)
                 .or_insert((recipient_vault_id, 0))
