@@ -116,7 +116,7 @@ pub trait KernelInternalApi {
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Remove
-    fn kernel_get_current_actor(&self) -> Option<Actor>;
+    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot>;

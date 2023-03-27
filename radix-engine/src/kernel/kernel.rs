@@ -39,6 +39,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::mem;
+use crate::kernel::actor::ActorIdentifier;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -736,8 +737,19 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> Option<Actor> {
-        self.current_frame.actor.clone()
+    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
+        let actor = self.current_frame.actor.clone();
+        if let Some(actor) = &actor {
+            match actor.identifier {
+                ActorIdentifier::Method(Some(address), ..) => {
+                    self.current_frame.add_ref(RENodeId::GlobalObject(address), RENodeVisibilityOrigin::Normal);
+                }
+                _ => {
+                }
+            }
+        }
+
+        actor
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {

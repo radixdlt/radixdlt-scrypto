@@ -9,7 +9,7 @@ fn get_global_address_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Address", "create", manifest_args!())
+        .call_function(package_address, "MyComponent", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
