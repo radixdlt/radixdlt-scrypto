@@ -56,7 +56,7 @@ where
             }
         }
 
-        let module_id = if let ActorIdentifier::Method(method) =
+        let module_id = if let ActorIdentifier::Method(_, method) =
             self.kernel_get_current_actor().unwrap().identifier
         {
             method.1
@@ -706,6 +706,17 @@ impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    fn get_global_address(&mut self) -> Result<Address, RuntimeError> {
+        self.kernel_get_current_actor().and_then(|e| {
+            match e.identifier {
+                ActorIdentifier::Method(Some(address), ..) => {
+                    Some(address)
+                }
+                _ => None
+            }
+        }).ok_or(RuntimeError::SystemError(SystemError::NotAnObject))
+    }
+
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -796,7 +807,7 @@ where
             let (package_address, blueprint_name) = match actor {
                 Some(Actor {
                     identifier:
-                        ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                        ActorIdentifier::Method(_, MethodIdentifier(node_id, node_module_id, ..)),
                     ..
                 }) => match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -862,7 +873,7 @@ where
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
             Some(Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                identifier: ActorIdentifier::Method(_, MethodIdentifier(node_id, node_module_id, ..)),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, node_module_id),

@@ -465,7 +465,7 @@ impl ExecutionTraceModule {
                         ident,
                     },
                 identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                    ActorIdentifier::Method(_, MethodIdentifier(RENodeId::Object(vault_id), ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -480,7 +480,7 @@ impl ExecutionTraceModule {
                         ident,
                     },
                 identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                    ActorIdentifier::Method(_, MethodIdentifier(RENodeId::Object(vault_id), ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -507,7 +507,7 @@ impl ExecutionTraceModule {
                         ident,
                     },
                 identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                    ActorIdentifier::Method(_, MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -661,7 +661,7 @@ pub fn calculate_resource_changes(
         );
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Actor(Actor {
-            identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
+            identifier: ActorIdentifier::Method(_, MethodIdentifier(node_id, ..)),
             ..
         }) = actor
         {

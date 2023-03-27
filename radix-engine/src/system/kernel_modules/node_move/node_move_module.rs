@@ -46,7 +46,7 @@ impl NodeMoveModule {
                         // TODO: align with barrier design?
                         let mut changed_to_restricted = true;
                         if let Actor {
-                            identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
+                            identifier: ActorIdentifier::Method(_, MethodIdentifier(node_id, ..)),
                             ..
                         } = callee
                         {

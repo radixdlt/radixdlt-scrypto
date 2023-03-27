@@ -51,7 +51,7 @@ impl AuthModule {
         matches!(
             actor,
             Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(
+                identifier: ActorIdentifier::Method(_, MethodIdentifier(
                     RENodeId::GlobalObject(..),
                     ..
                 )),
@@ -63,7 +63,7 @@ impl AuthModule {
     fn global_object_barrier(actor: &Option<Actor>) -> Option<Address> {
         actor.as_ref().and_then(|actor| {
             match &actor.identifier {
-                ActorIdentifier::Method(MethodIdentifier(
+                ActorIdentifier::Method(_, MethodIdentifier(
                                             RENodeId::GlobalObject(address),
                                             ..
                                         )) => Some(address.clone()),
@@ -382,7 +382,7 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = match &callee.identifier {
-            ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
+            ActorIdentifier::Method(_, method) => Self::method_auth(method, &args, api)?,
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
         let barrier_crossings_allowed = if Self::is_global_object_barrier(callee) {

@@ -140,7 +140,7 @@ impl KernelModule for CostingModule {
                 fn_identifier,
             } = callee;
             let maybe_component = match &identifier {
-                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
+                ActorIdentifier::Method(_, MethodIdentifier(node_id, ..)) => match node_id {
                     RENodeId::GlobalObject(Address::Component(address)) => Some(address),
                     _ => None,
                 },

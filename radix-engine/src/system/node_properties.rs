@@ -144,7 +144,7 @@ impl VisibilityProperties {
                                 // Otherwise, false
                                 _ => false,
                             },
-                            ActorIdentifier::Method(method_identifier) => match method_identifier {
+                            ActorIdentifier::Method(_, method_identifier) => match method_identifier {
                                 MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
                                         // READ package code & abi
@@ -229,7 +229,7 @@ impl VisibilityProperties {
                                 _ => false,
                             },
 
-                            ActorIdentifier::Method(method_identifier) => match method_identifier {
+                            ActorIdentifier::Method(_, method_identifier) => match method_identifier {
                                 MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
                                         (

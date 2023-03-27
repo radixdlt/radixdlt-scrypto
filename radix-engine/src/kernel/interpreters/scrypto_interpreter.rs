@@ -8,10 +8,10 @@ use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi};
+use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -93,7 +93,7 @@ fn validate_output(
 impl ExecutableInvocation for MethodInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: KernelSubstateApi>(
+    fn resolve<D: KernelSubstateApi + KernelInternalApi>(
         self,
         api: &mut D,
     ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
@@ -142,7 +142,17 @@ impl ExecutableInvocation for MethodInvocation {
             blueprint_name.clone(),
             self.identifier.2.clone(),
         );
-        let actor = Actor::method(fn_identifier.clone(), self.identifier.clone());
+        let global_address = api.kernel_get_current_actor().and_then(|a| match a.identifier {
+            ActorIdentifier::Method(global, ..) => global,
+            _ => {
+                if let RENodeId::GlobalObject(address) = self.identifier.0 {
+                    Some(address)
+                } else {
+                    None
+                }
+            },
+        });
+        let actor = Actor::method(global_address, fn_identifier.clone(), self.identifier.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {

@@ -7,11 +7,12 @@ use crate::errors::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
+use crate::kernel::kernel_api::KernelInternalApi;
 
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: KernelSubstateApi>(
+    fn resolve<Y: KernelSubstateApi + KernelInternalApi>(
         self,
         api: &mut Y,
     ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError>;
