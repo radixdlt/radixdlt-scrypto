@@ -1,5 +1,6 @@
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
+use crate::ledger::StateUpdates;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
 use crate::system::kernel_modules::execution_trace::{
@@ -56,7 +57,7 @@ impl TransactionResult {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
-    pub state_updates: StateDiff,
+    pub state_updates: StateUpdates,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,

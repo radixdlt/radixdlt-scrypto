@@ -194,10 +194,10 @@ pub trait SubstateStore {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    fn finalize(self) -> (StateChanges, StateDependencies);
+    fn finalize(self) -> (StateUpdates, StateDependencies);
 }
 
-pub struct StateChanges {
+pub struct StateUpdates {
     pub substate_changes: BTreeMap<(NodeId, ModuleId, SubstateKey), StateChange>,
 }
 
@@ -294,7 +294,7 @@ pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
     ///
     /// An error is thrown in case of invalid module ID.
-    fn commit(&mut self, state_changes: StateChanges) -> Result<(), CommitError>;
+    fn commit(&mut self, state_changes: StateUpdates) -> Result<(), CommitError>;
 }
 
 /// Interface for listing nodes within a substate database.

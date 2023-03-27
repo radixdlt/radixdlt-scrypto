@@ -124,7 +124,7 @@ impl<'s> SubstateStore for Track<'s> {
         todo!()
     }
 
-    fn finalize(self) -> (StateChanges, StateDependencies) {
+    fn finalize(self) -> (StateUpdates, StateDependencies) {
         todo!()
     }
 }
