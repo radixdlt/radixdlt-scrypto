@@ -461,6 +461,7 @@ mod tests {
     use super::*;
 
     const TEST_VAULT_ID: ObjectId = [0u8; OBJECT_ID_LENGTH];
+    const TEST_VAULT_ID_2: ObjectId = [1u8; OBJECT_ID_LENGTH];
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
         LiquidFungibleResource::new(amount.into())
@@ -583,6 +584,30 @@ mod tests {
             btreemap!(
                 RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("10"))
             )
+        );
+    }
+
+    #[test]
+    fn test_royalty_limit() {
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 0, 1000, 50, false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
+        fee_reserve
+            .consume_royalty(
+                90,
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE),
+                TEST_VAULT_ID,
+            )
+            .unwrap();
+        assert_eq!(
+            fee_reserve.consume_royalty(
+                80,
+                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                TEST_VAULT_ID_2
+            ),
+            Err(FeeReserveError::InsufficientBalance)
         );
     }
 }
