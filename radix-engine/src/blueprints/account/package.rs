@@ -351,7 +351,7 @@ impl AccountNativePackage {
                 node_id,
                 node,
                 btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                    TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
                         KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
                     )
                 ),
@@ -378,9 +378,9 @@ impl AccountNativePackage {
         let address = api.globalize(
             RENodeId::Object(account_id),
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
         )?;
 
@@ -407,7 +407,7 @@ impl AccountNativePackage {
                 node_id,
                 node,
                 btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                    TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
                         KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
                     )
                 ),
@@ -870,12 +870,18 @@ impl AccountNativePackage {
 fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            ACCOUNT_DEPOSIT_IDENT.to_string(),
+        ),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+        ),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );

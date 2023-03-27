@@ -79,7 +79,7 @@ impl TransactionProcessorBlueprint {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                     global: false,
@@ -410,7 +410,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        NodeModuleId::Metadata,
+                        TypedModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
@@ -436,7 +436,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        NodeModuleId::Metadata,
+                        TypedModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
@@ -456,7 +456,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         &RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -479,7 +479,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         &RENodeId::GlobalObject(component_address.into()),
-                        NodeModuleId::ComponentRoyalty,
+                        TypedModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -499,7 +499,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         &RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -516,7 +516,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
                         &RENodeId::GlobalObject(component_address.into()),
-                        NodeModuleId::ComponentRoyalty,
+                        TypedModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -539,7 +539,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        NodeModuleId::AccessRules,
+                        TypedModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                             key: key.clone(),

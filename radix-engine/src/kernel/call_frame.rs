@@ -63,7 +63,7 @@ pub enum RENodeVisibilityOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub node_id: RENodeId,
-    pub module_id: NodeModuleId,
+    pub module_id: TypedModuleId,
     pub offset: SubstateOffset,
     pub temp_references: HashSet<RENodeId>,
     pub substate_owned_nodes: Vec<RENodeId>,
@@ -115,7 +115,7 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s>,
         node_id: &RENodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -241,7 +241,7 @@ impl CallFrame {
                 // TODO: Move this check into system layer
                 if let Ok(info) = heap.get_substate(
                     child_id,
-                    NodeModuleId::TypeInfo,
+                    TypedModuleId::TypeInfo,
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
@@ -458,7 +458,7 @@ impl CallFrame {
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
-        node_modules: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_modules: BTreeMap<TypedModuleId, RENodeModuleInit>,
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
@@ -466,7 +466,7 @@ impl CallFrame {
         let mut substates = BTreeMap::new();
         let self_substates = re_node.to_substates();
         for (offset, substate) in self_substates {
-            substates.insert((NodeModuleId::SELF, offset), substate);
+            substates.insert((TypedModuleId::ObjectState, offset), substate);
         }
         for (node_module_id, module_init) in node_modules {
             for (offset, substate) in module_init.to_substates() {
@@ -483,7 +483,7 @@ impl CallFrame {
                 // TODO: Move this logic into system layer
                 if let Ok(info) = heap.get_substate(
                     &child_id,
-                    NodeModuleId::TypeInfo,
+                    TypedModuleId::TypeInfo,
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
@@ -570,7 +570,7 @@ impl CallFrame {
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
         node_id: &RENodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = if heap.contains_node(&node_id) {

@@ -32,7 +32,7 @@ impl BorrowedPackage {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
             )
@@ -43,7 +43,7 @@ impl BorrowedPackage {
         let rtn = ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 PACKAGE_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
             )

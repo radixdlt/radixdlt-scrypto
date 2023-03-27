@@ -56,7 +56,7 @@ impl Authentication {
             // Load auth zone
             let handle = api.kernel_lock_substate(
                 &current_auth_zone_id,
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
                 LockFlags::read_only(),
             )?;

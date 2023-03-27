@@ -193,7 +193,7 @@ pub enum SystemError {
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
-    InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
+    InvalidModuleSet(RENodeId, BTreeSet<TypedModuleId>),
     InvalidModule,
     InvalidModuleType {
         expected_package: PackageAddress,

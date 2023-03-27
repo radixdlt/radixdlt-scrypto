@@ -255,7 +255,7 @@ impl TestRunner {
             .substate_db
             .get_substate(&SubstateId(
                 address.into(),
-                NodeModuleId::Metadata,
+                TypedModuleId::Metadata,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(key).unwrap(),
                 )),
@@ -281,7 +281,7 @@ impl TestRunner {
     ) -> Option<Decimal> {
         if let Some(output) = self.substate_db.get_substate(&SubstateId(
             RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::ComponentRoyalty,
+            TypedModuleId::Royalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
             output
@@ -292,7 +292,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(&SubstateId(
                             RENodeId::Object(vault.vault_id()),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
                         .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
@@ -305,7 +305,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_db.get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Royalty),
         )) {
             output
@@ -316,7 +316,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(&SubstateId(
                             RENodeId::Object(vault.vault_id()),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
                         .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
@@ -365,7 +365,7 @@ impl TestRunner {
     pub fn inspect_vault_balance(&mut self, vault_id: ObjectId) -> Option<Decimal> {
         if let Some(output) = self.substate_db().get_substate(&SubstateId(
             RENodeId::Object(vault_id),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::Vault(VaultOffset::Info),
         )) {
             if output.substate.vault_info().resource_type.is_fungible() {
@@ -383,7 +383,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(&SubstateId(
                 RENodeId::Object(vault_id),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Vault(VaultOffset::LiquidFungible),
             ))
             .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
@@ -396,7 +396,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(&SubstateId(
                 RENodeId::Object(vault_id),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             ))
             .map(|mut output| {
@@ -470,7 +470,7 @@ impl TestRunner {
     pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
         let substate_id = SubstateId(
             RENodeId::GlobalObject(system_address.into()),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
         let substate: ValidatorSubstate = self
@@ -486,7 +486,7 @@ impl TestRunner {
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate_id = SubstateId(
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
         let substate: ValidatorSetSubstate = self
@@ -1143,27 +1143,27 @@ impl TestRunner {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                    TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    NodeModuleId::ComponentRoyalty => (
+                    TypedModuleId::Royalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    NodeModuleId::Metadata => (
+                    TypedModuleId::Metadata => (
                         METADATA_PACKAGE,
                         METADATA_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    NodeModuleId::SELF => {
+                    TypedModuleId::ObjectState => {
                         let type_info = self
                             .substate_db()
                             .get_substate(&SubstateId(
                                 *node_id,
-                                NodeModuleId::TypeInfo,
+                                TypedModuleId::TypeInfo,
                                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                             ))
                             .unwrap()
@@ -1180,7 +1180,7 @@ impl TestRunner {
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
-                    NodeModuleId::TypeInfo => {
+                    TypedModuleId::TypeInfo => {
                         panic!("No event schema.")
                     }
                 }
@@ -1202,7 +1202,7 @@ impl TestRunner {
 
         let substate_id = SubstateId(
             RENodeId::GlobalObject(Address::Package(package_address)),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Info),
         );
         (

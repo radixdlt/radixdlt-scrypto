@@ -357,14 +357,17 @@ impl ProofBlueprint {
         let mut heap_node = api.kernel_drop_node(&RENodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
-            .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
+            .remove(&(
+                TypedModuleId::ObjectState,
+                SubstateOffset::Proof(ProofOffset::Info),
+            ))
             .unwrap()
             .into();
         if proof_info.resource_type.is_fungible() {
             let proof: FungibleProof = heap_node
                 .substates
                 .remove(&(
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Proof(ProofOffset::Fungible),
                 ))
                 .unwrap()
@@ -374,7 +377,7 @@ impl ProofBlueprint {
             let proof: NonFungibleProof = heap_node
                 .substates
                 .remove(&(
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Proof(ProofOffset::NonFungible),
                 ))
                 .unwrap()

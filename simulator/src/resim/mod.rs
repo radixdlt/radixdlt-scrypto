@@ -298,7 +298,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let output = substate_db
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Info),
         ))
         .ok_or(Error::PackageNotFound(package_address))?;
@@ -331,7 +331,7 @@ pub fn get_blueprint(
     let output = substate_db
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::TypeInfo,
+            TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .ok_or(Error::ComponentNotFound(component_address))?;

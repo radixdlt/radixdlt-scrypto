@@ -62,7 +62,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, ObjectId>,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
@@ -81,7 +81,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
@@ -107,13 +107,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
+        self.call_module_method(receiver, TypedModuleId::ObjectState, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &RENodeId,
-        node_module_id: NodeModuleId,
+        node_module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {

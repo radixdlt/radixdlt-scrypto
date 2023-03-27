@@ -1,6 +1,7 @@
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::ledger::StateUpdates;
+use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
 use crate::system::kernel_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
@@ -114,12 +115,12 @@ impl CommitResult {
             if let EventTypeIdentifier(
                 Emitter::Function(
                     RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     ..,
                 )
                 | Emitter::Method(
                     RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                 ),
                 ..,
             ) = event_type_id

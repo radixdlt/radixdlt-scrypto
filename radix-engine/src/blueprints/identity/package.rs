@@ -95,9 +95,9 @@ impl IdentityNativePackage {
         let address = api.globalize(
             node_id,
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
         )?;
         Ok(IndexedScryptoValue::from_typed(&address))
@@ -116,12 +116,12 @@ impl IdentityBlueprint {
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
         );
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+            MethodKey::new(TypedModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );
@@ -140,12 +140,12 @@ impl IdentityBlueprint {
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
         );
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+            MethodKey::new(TypedModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );
@@ -155,7 +155,7 @@ impl IdentityBlueprint {
             node_id,
             RENodeInit::Object(btreemap!()),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: IDENTITY_PACKAGE,
                     blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                     global: false,

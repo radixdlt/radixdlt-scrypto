@@ -8,7 +8,7 @@ use itertools::Itertools;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::PackageAddress;
 use radix_engine_interface::api::types::{
-    KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
+    KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset, TypedModuleId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -19,12 +19,12 @@ fn hash_of_next_version_differs_when_value_changed() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, NodeModuleId::SELF, 2, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 2, Some(30))],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, NodeModuleId::SELF, 2, Some(70))],
+        vec![change(1, TypedModuleId::ObjectState, 2, Some(70))],
     );
     assert_ne!(hash_v1, hash_v2);
 }
@@ -36,14 +36,14 @@ fn hash_of_next_version_same_when_write_repeated() {
         &mut store,
         None,
         vec![
-            change(4, NodeModuleId::SELF, 6, Some(30)),
-            change(3, NodeModuleId::SELF, 9, Some(40)),
+            change(4, TypedModuleId::ObjectState, 6, Some(30)),
+            change(3, TypedModuleId::ObjectState, 9, Some(40)),
         ],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(4, NodeModuleId::SELF, 6, Some(30))],
+        vec![change(4, TypedModuleId::ObjectState, 6, Some(30))],
     );
     assert_eq!(hash_v1, hash_v2);
 }
@@ -55,8 +55,8 @@ fn hash_of_next_version_same_when_write_empty() {
         &mut store,
         None,
         vec![
-            change(1, NodeModuleId::SELF, 2, Some(30)),
-            change(3, NodeModuleId::SELF, 1, Some(40)),
+            change(1, TypedModuleId::ObjectState, 2, Some(30)),
+            change(3, TypedModuleId::ObjectState, 1, Some(40)),
         ],
     );
     let hash_v2 = put_at_next_version(&mut store, Some(1), vec![]);
@@ -69,12 +69,12 @@ fn hash_of_next_version_differs_when_substate_added() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, NodeModuleId::SELF, 2, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 2, Some(30))],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, NodeModuleId::SELF, 8, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 8, Some(30))],
     );
     assert_ne!(hash_v1, hash_v2);
 }
@@ -86,14 +86,14 @@ fn hash_of_next_version_differs_when_substate_removed() {
         &mut store,
         None,
         vec![
-            change(1, NodeModuleId::SELF, 2, Some(30)),
-            change(4, NodeModuleId::SELF, 3, Some(20)),
+            change(1, TypedModuleId::ObjectState, 2, Some(30)),
+            change(4, TypedModuleId::ObjectState, 3, Some(20)),
         ],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, NodeModuleId::SELF, 2, None)],
+        vec![change(1, TypedModuleId::ObjectState, 2, None)],
     );
     assert_ne!(hash_v1, hash_v2);
 }
@@ -105,26 +105,26 @@ fn hash_returns_to_same_when_previous_state_restored() {
         &mut store,
         None,
         vec![
-            change(1, NodeModuleId::SELF, 2, Some(30)),
-            change(3, NodeModuleId::SELF, 1, Some(40)),
+            change(1, TypedModuleId::ObjectState, 2, Some(30)),
+            change(3, TypedModuleId::ObjectState, 1, Some(40)),
         ],
     );
     put_at_next_version(
         &mut store,
         Some(1),
         vec![
-            change(1, NodeModuleId::SELF, 2, Some(90)),
-            change(3, NodeModuleId::SELF, 1, None),
-            change(1, NodeModuleId::SELF, 5, Some(10)),
+            change(1, TypedModuleId::ObjectState, 2, Some(90)),
+            change(3, TypedModuleId::ObjectState, 1, None),
+            change(1, TypedModuleId::ObjectState, 5, Some(10)),
         ],
     );
     let hash_v3 = put_at_next_version(
         &mut store,
         Some(1),
         vec![
-            change(1, NodeModuleId::SELF, 2, Some(30)),
-            change(3, NodeModuleId::SELF, 1, Some(40)),
-            change(1, NodeModuleId::SELF, 5, None),
+            change(1, TypedModuleId::ObjectState, 2, Some(30)),
+            change(3, TypedModuleId::ObjectState, 1, Some(40)),
+            change(1, TypedModuleId::ObjectState, 5, None),
         ],
     );
     assert_eq!(hash_v1, hash_v3);
@@ -136,13 +136,13 @@ fn hash_differs_when_states_only_differ_by_re_node_id() {
     let hash_1 = put_at_next_version(
         &mut store_1,
         None,
-        vec![change(1, NodeModuleId::SELF, 3, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 3, Some(30))],
     );
     let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(2, NodeModuleId::SELF, 3, Some(30))],
+        vec![change(2, TypedModuleId::ObjectState, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -153,13 +153,13 @@ fn hash_differs_when_states_only_differ_by_node_module_id() {
     let hash_1 = put_at_next_version(
         &mut store_1,
         None,
-        vec![change(1, NodeModuleId::Metadata, 3, Some(30))],
+        vec![change(1, TypedModuleId::Metadata, 3, Some(30))],
     );
     let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(1, NodeModuleId::AccessRules, 3, Some(30))],
+        vec![change(1, TypedModuleId::AccessRules, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -170,13 +170,13 @@ fn hash_differs_when_states_only_differ_by_offset() {
     let hash_1 = put_at_next_version(
         &mut store_1,
         None,
-        vec![change(1, NodeModuleId::SELF, 2, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 2, Some(30))],
     );
     let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(1, NodeModuleId::SELF, 3, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -188,10 +188,10 @@ fn hash_of_different_re_node_nested_trees_is_same_when_contained_substates_are_s
         &mut store,
         None,
         vec![
-            change(1, NodeModuleId::Metadata, 2, Some(30)),
-            change(1, NodeModuleId::Metadata, 9, Some(40)),
-            change(7, NodeModuleId::AccessRules, 2, Some(30)),
-            change(7, NodeModuleId::AccessRules, 9, Some(40)),
+            change(1, TypedModuleId::Metadata, 2, Some(30)),
+            change(1, TypedModuleId::Metadata, 9, Some(40)),
+            change(7, TypedModuleId::AccessRules, 2, Some(30)),
+            change(7, TypedModuleId::AccessRules, 9, Some(40)),
         ],
     );
 
@@ -223,9 +223,9 @@ fn deletes_re_node_layer_leaf_when_all_its_substates_deleted() {
         &mut store,
         None,
         vec![
-            change(1, NodeModuleId::Metadata, 2, Some(30)),
-            change(1, NodeModuleId::Metadata, 9, Some(40)),
-            change(1, NodeModuleId::AccessRules, 3, Some(30)),
+            change(1, TypedModuleId::Metadata, 2, Some(30)),
+            change(1, TypedModuleId::Metadata, 9, Some(40)),
+            change(1, TypedModuleId::AccessRules, 3, Some(30)),
         ],
     );
     assert_eq!(count_current_re_node_leafs(&store), 2);
@@ -233,15 +233,15 @@ fn deletes_re_node_layer_leaf_when_all_its_substates_deleted() {
         &mut store,
         Some(1),
         vec![
-            change(1, NodeModuleId::Metadata, 2, None),
-            change(1, NodeModuleId::Metadata, 9, None),
+            change(1, TypedModuleId::Metadata, 2, None),
+            change(1, TypedModuleId::Metadata, 9, None),
         ],
     );
     assert_eq!(count_current_re_node_leafs(&store), 1);
     put_at_next_version(
         &mut store,
         Some(2),
-        vec![change(1, NodeModuleId::AccessRules, 3, None)],
+        vec![change(1, TypedModuleId::AccessRules, 3, None)],
     );
     assert_eq!(count_current_re_node_leafs(&store), 0);
 }
@@ -254,13 +254,13 @@ fn supports_empty_state() {
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, NodeModuleId::SELF, 2, Some(30))],
+        vec![change(1, TypedModuleId::ObjectState, 2, Some(30))],
     );
     assert_ne!(hash_v2, SPARSE_MERKLE_PLACEHOLDER_HASH);
     let hash_v3 = put_at_next_version(
         &mut store,
         Some(2),
-        vec![change(1, NodeModuleId::SELF, 2, None)],
+        vec![change(1, TypedModuleId::ObjectState, 2, None)],
     );
     assert_eq!(hash_v3, SPARSE_MERKLE_PLACEHOLDER_HASH);
 }
@@ -271,17 +271,17 @@ fn records_stale_tree_node_keys() {
     put_at_next_version(
         &mut store,
         None,
-        vec![change(4, NodeModuleId::SELF, 6, Some(30))],
+        vec![change(4, TypedModuleId::ObjectState, 6, Some(30))],
     );
     put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(3, NodeModuleId::SELF, 9, Some(70))],
+        vec![change(3, TypedModuleId::ObjectState, 9, Some(70))],
     );
     put_at_next_version(
         &mut store,
         Some(2),
-        vec![change(3, NodeModuleId::SELF, 9, Some(80))],
+        vec![change(3, TypedModuleId::ObjectState, 9, Some(80))],
     );
     let stale_versions = store
         .stale_key_buffer
@@ -299,7 +299,7 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let direct_bytes = nibbles.bytes().to_vec();
     let node = TreeNode::Leaf(TreeLeafNode {
         key_suffix: nibbles,
-        payload: substate_id(13, NodeModuleId::ComponentRoyalty, 37),
+        payload: substate_id(13, TypedModuleId::Royalty, 37),
         value_hash: Hash([7; 32]),
     });
     let encoded = scrypto_encode(&node).unwrap();
@@ -330,7 +330,7 @@ fn sbor_decodes_what_was_encoded() {
         }),
         TreeNode::Leaf(TreeLeafNode {
             key_suffix: nibbles("abc"),
-            payload: substate_id(13, NodeModuleId::SELF, 37),
+            payload: substate_id(13, TypedModuleId::ObjectState, 37),
             value_hash: Hash([7; 32]),
         }),
         TreeNode::Null,
@@ -346,13 +346,13 @@ fn serialized_keys_are_strictly_increasing() {
     put_at_next_version(
         &mut store,
         None,
-        vec![change(3, NodeModuleId::SELF, 4, Some(90))],
+        vec![change(3, TypedModuleId::ObjectState, 4, Some(90))],
     );
     let previous_key = store.memory.keys().collect_vec()[0].clone();
     put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, NodeModuleId::SELF, 2, Some(80))],
+        vec![change(1, TypedModuleId::ObjectState, 2, Some(80))],
     );
     let next_key = store
         .memory
@@ -365,7 +365,7 @@ fn serialized_keys_are_strictly_increasing() {
 
 fn change(
     re_node_id_seed: u8,
-    node_module_id: NodeModuleId,
+    node_module_id: TypedModuleId,
     substate_offset_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
@@ -377,7 +377,7 @@ fn change(
 
 fn substate_id(
     re_node_id_seed: u8,
-    node_module_id: NodeModuleId,
+    node_module_id: TypedModuleId,
     substate_offset_seed: u8,
 ) -> SubstateId {
     let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);

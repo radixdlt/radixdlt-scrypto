@@ -95,7 +95,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 &RENodeId::GlobalObject(identifier.package_address.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
@@ -124,7 +124,7 @@ impl AuthModule {
             MethodIdentifier(node_id, module_id, ident)
                 if matches!(
                     module_id,
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1
+                    TypedModuleId::AccessRules | TypedModuleId::AccessRules1
                 ) =>
             {
                 match ident.as_str() {
@@ -164,7 +164,7 @@ impl AuthModule {
                         let resource_address = {
                             let handle = api.kernel_lock_substate(
                                 &node_id,
-                                NodeModuleId::SELF,
+                                TypedModuleId::ObjectState,
                                 SubstateOffset::Vault(VaultOffset::Info),
                                 LockFlags::read_only(),
                             )?;
@@ -180,14 +180,14 @@ impl AuthModule {
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
                                 &RENodeId::GlobalObject(resource_address.into()),
-                                NodeModuleId::AccessRules1,
+                                TypedModuleId::AccessRules1,
                                 method_key,
                                 api,
                             )?,
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
                                     &RENodeId::GlobalObject(resource_address.into()),
-                                    NodeModuleId::AccessRules1,
+                                    TypedModuleId::AccessRules1,
                                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                     LockFlags::read_only(),
                                 )?;
@@ -197,7 +197,9 @@ impl AuthModule {
 
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
-                                let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF)
+                                let auth = if method_key
+                                    .node_module_id
+                                    .eq(&TypedModuleId::ObjectState)
                                     && (method_key.ident.eq(VAULT_RECALL_IDENT)
                                         || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                                 {
@@ -229,18 +231,18 @@ impl AuthModule {
                 let auth = if matches!(
                     node_id,
                     RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
-                ) && module_id.eq(&NodeModuleId::SELF)
+                ) && module_id.eq(&TypedModuleId::ObjectState)
                 {
                     Self::method_authorization_stateful(
                         node_id,
-                        NodeModuleId::AccessRules,
+                        TypedModuleId::AccessRules,
                         method_key,
                         api,
                     )?
                 } else {
                     Self::method_authorization_stateless(
                         node_id,
-                        NodeModuleId::AccessRules,
+                        TypedModuleId::AccessRules,
                         method_key,
                         api,
                     )?
@@ -255,7 +257,7 @@ impl AuthModule {
 
     fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
         receiver: &RENodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
@@ -274,7 +276,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 &RENodeId::GlobalObject(package_address.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -300,7 +302,7 @@ impl AuthModule {
             let offset = SubstateOffset::Component(ComponentOffset::State0);
             let handle = api.kernel_lock_substate(
                 receiver,
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 offset,
                 LockFlags::read_only(),
             )?;
@@ -328,7 +330,7 @@ impl AuthModule {
 
     fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
         receiver: &RENodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
@@ -453,7 +455,7 @@ impl KernelModule for AuthModule {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => RuntimeSubstate::AuthZone(auth_zone)
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: AUTH_ZONE_BLUEPRINT.to_owned(),
                     global: false

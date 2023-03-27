@@ -1,5 +1,5 @@
 use crate::api::node_modules::metadata::*;
-use crate::api::types::NodeModuleId;
+use crate::api::types::TypedModuleId;
 use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
 use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use crate::blueprints::resource::*;
@@ -26,12 +26,12 @@ impl FnKey {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
-    pub node_module_id: NodeModuleId,
+    pub node_module_id: TypedModuleId,
     pub ident: String,
 }
 
 impl MethodKey {
-    pub fn new(node_module_id: NodeModuleId, method_ident: String) -> Self {
+    pub fn new(node_module_id: TypedModuleId, method_ident: String) -> Self {
         Self {
             node_module_id,
             ident: method_ident,
@@ -87,7 +87,7 @@ impl AccessRulesConfig {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = MethodKey::new(NodeModuleId::SELF, method_name.to_string());
+        let key = MethodKey::new(TypedModuleId::ObjectState, method_name.to_string());
         let mutability = mutability.into();
 
         self.method_auth
@@ -231,25 +231,28 @@ pub fn package_access_rules_from_owner_badge(
     let mut access_rules =
         AccessRulesConfig::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+        MethodKey::new(TypedModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+        MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
         ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, PACKAGE_CLAIM_ROYALTY_IDENT.to_string()),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+        ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

@@ -145,7 +145,7 @@ where
                     node_id,
                     node,
                     btreemap!(
-                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                        TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
                             KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
                         )
                     ),
@@ -155,7 +155,7 @@ where
 
             let node_id = {
                 let node_modules = btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                    TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         global: false
@@ -179,12 +179,18 @@ where
         let access_rules = {
             let mut access_rules = AccessRulesConfig::new();
             access_rules.set_access_rule_and_mutability(
-                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+                MethodKey::new(
+                    TypedModuleId::ObjectState,
+                    ACCOUNT_DEPOSIT_IDENT.to_string(),
+                ),
                 AccessRule::AllowAll,
                 AccessRule::DenyAll,
             );
             access_rules.set_access_rule_and_mutability(
-                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+                MethodKey::new(
+                    TypedModuleId::ObjectState,
+                    ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+                ),
                 AccessRule::AllowAll,
                 AccessRule::DenyAll,
             );
@@ -198,9 +204,9 @@ where
         self.globalize_with_address(
             component_id,
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
             global_node_id.into(),
         )?;
@@ -233,9 +239,9 @@ where
         self.globalize_with_address(
             local_id,
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
             global_node_id.into(),
         )?;
@@ -246,7 +252,7 @@ where
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
-        _module_id: NodeModuleId,
+        _module_id: TypedModuleId,
         _offset: &SubstateOffset,
     ) -> Result<bool, RuntimeError> {
         match node_id {
@@ -462,13 +468,13 @@ where
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                                    SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                    SubstateId(*node_id, TypedModuleId::TypeInfo, offset),
                                     false,
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -490,7 +496,7 @@ where
                                         .acquire_lock(
                                             SubstateId(
                                                 *node_id,
-                                                NodeModuleId::TypeInfo,
+                                                TypedModuleId::TypeInfo,
                                                 offset.clone(),
                                             ),
                                             LockFlags::read_only(),
@@ -498,7 +504,7 @@ where
                                         .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                                     self.track
                                         .release_lock(
-                                            SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                            SubstateId(*node_id, TypedModuleId::TypeInfo, offset),
                                             false,
                                         )
                                         .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -532,13 +538,13 @@ where
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                                    SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                    SubstateId(*node_id, TypedModuleId::TypeInfo, offset),
                                     false,
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -551,14 +557,14 @@ where
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                                    SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             let substate_ref =
                                 self.track
-                                    .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
+                                    .get_substate(node_id, TypedModuleId::TypeInfo, &offset);
                             let type_substate: &TypeInfoSubstate = substate_ref.into();
                             if !matches!(type_substate,
                                 TypeInfoSubstate::Object {
@@ -575,7 +581,7 @@ where
 
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                    SubstateId(*node_id, TypedModuleId::TypeInfo, offset),
                                     false,
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -675,7 +681,7 @@ where
         &mut self,
         node_id: RENodeId,
         init: RENodeInit,
-        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        module_init: BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         KernelModuleMixer::before_create_node(self, &node_id, &init, &module_init)?;
 
@@ -743,7 +749,7 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &RENodeId::Object(bucket_id),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
             let info: &BucketInfoSubstate = substate.into();
@@ -755,7 +761,7 @@ where
                         .heap
                         .get_substate(
                             &RENodeId::Object(bucket_id),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
                         .unwrap();
@@ -772,7 +778,7 @@ where
                         .heap
                         .get_substate(
                             &RENodeId::Object(bucket_id),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
                         .unwrap();
@@ -793,7 +799,7 @@ where
     fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &RENodeId::Object(proof_id),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
             let info: &ProofInfoSubstate = substate.into();
@@ -805,7 +811,7 @@ where
                         .heap
                         .get_substate(
                             &RENodeId::Object(proof_id),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
                         .unwrap();
@@ -823,7 +829,7 @@ where
                         .heap
                         .get_substate(
                             &RENodeId::Object(proof_id),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )
                         .unwrap();
@@ -850,7 +856,7 @@ where
     fn kernel_lock_substate(
         &mut self,
         node_id: &RENodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -918,7 +924,7 @@ where
                         RENodeId::GlobalObject(package_address),
                     )) => {
                         let node_id = RENodeId::GlobalObject(*package_address);
-                        let module_id = NodeModuleId::SELF;
+                        let module_id = TypedModuleId::ObjectState;
                         self.track
                             .acquire_lock(
                                 SubstateId(node_id, module_id, offset.clone()),

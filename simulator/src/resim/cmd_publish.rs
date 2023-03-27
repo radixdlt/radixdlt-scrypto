@@ -67,7 +67,7 @@ impl Publish {
 
             let substate_id = SubstateId(
                 RENodeId::GlobalObject(package_address.0.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Code),
             );
 
@@ -86,7 +86,7 @@ impl Publish {
             substate_db.put_substate(
                 SubstateId(
                     RENodeId::GlobalObject(package_address.0.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::Code),
                 ),
                 output_value,
@@ -106,7 +106,7 @@ impl Publish {
             substate_db.put_substate(
                 SubstateId(
                     RENodeId::GlobalObject(package_address.0.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),
                 output_value,

@@ -458,7 +458,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &RENodeId,
         node_init: &RENodeInit,
-        node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -601,7 +601,7 @@ impl KernelModule for KernelModuleMixer {
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,
-        module_id: &NodeModuleId,
+        module_id: &TypedModuleId,
         offset: &SubstateOffset,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

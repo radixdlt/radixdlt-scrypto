@@ -110,63 +110,51 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
+//===============
+// ModuleId
+//===============
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
-pub enum NodeModuleId {
-    SELF,
+pub enum TypedModuleId {
     TypeInfo,
+    ObjectState,
+    KeyValueStore,
     Metadata,
+    Royalty,
     AccessRules,
     AccessRules1, // TODO: remove
-    ComponentRoyalty,
 }
 
-impl NodeModuleId {
-    pub fn from_u32(i: u32) -> Option<NodeModuleId> {
-        match i {
-            0u32 => Some(NodeModuleId::SELF),
-            1u32 => Some(NodeModuleId::TypeInfo),
-            2u32 => Some(NodeModuleId::Metadata),
-            3u32 => Some(NodeModuleId::AccessRules),
-            4u32 => Some(NodeModuleId::AccessRules1),
-            5u32 => Some(NodeModuleId::ComponentRoyalty),
-            _ => None,
-        }
-    }
+//===============
+// SubstateKey
+//===============
 
-    pub fn id(&self) -> u32 {
-        match self {
-            NodeModuleId::SELF => 0u32,
-            NodeModuleId::TypeInfo => 1u32,
-            NodeModuleId::Metadata => 2u32,
-            NodeModuleId::AccessRules => 3u32,
-            NodeModuleId::AccessRules1 => 4u32,
-            NodeModuleId::ComponentRoyalty => 5u32,
-        }
-    }
-}
-
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessRulesOffset {
     AccessRules,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TypeInfoOffset {
     TypeInfo,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
-    /// Component application state at offset `0x00`.
     State0,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     Info,
@@ -176,16 +164,13 @@ pub enum PackageOffset {
     FunctionAccessRules,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum KeyValueStoreOffset {
-    Entry(Vec<u8>),
-}
-
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
     Info,
@@ -195,6 +180,7 @@ pub enum VaultOffset {
     LockedNonFungible,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
     EpochManager,
@@ -202,11 +188,13 @@ pub enum EpochManagerOffset {
     PreparingValidatorSet,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ValidatorOffset {
     Validator,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Info,
@@ -216,6 +204,7 @@ pub enum BucketOffset {
     LockedNonFungible,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
     Info,
@@ -223,56 +212,32 @@ pub enum ProofOffset {
     NonFungible,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WorktopOffset {
     Worktop,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneOffset {
     AuthZone,
 }
-
-/// Specifies a specific Substate into a given RENode
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub enum SubstateOffset {
-    Component(ComponentOffset),
-    Package(PackageOffset),
-    ResourceManager(ResourceManagerOffset),
-    KeyValueStore(KeyValueStoreOffset),
-    Vault(VaultOffset),
-    EpochManager(EpochManagerOffset),
-    Validator(ValidatorOffset),
-    Bucket(BucketOffset),
-    Proof(ProofOffset),
-    Worktop(WorktopOffset),
-    Clock(ClockOffset),
-    Account(AccountOffset),
-    AccessController(AccessControllerOffset),
-    AuthZone(AuthZoneOffset),
-
-    // Node modules
-    // TODO: align with module ID allocation?
-    TypeInfo(TypeInfoOffset),
-    AccessRules(AccessRulesOffset),
-    Royalty(RoyaltyOffset),
-}
-
-/// TODO: separate space addresses?
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub struct SubstateId(pub RENodeId, pub NodeModuleId, pub SubstateOffset);

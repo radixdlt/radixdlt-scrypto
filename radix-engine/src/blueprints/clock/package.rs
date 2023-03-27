@@ -166,16 +166,22 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT.to_string()),
+            MethodKey::new(
+                TypedModuleId::ObjectState,
+                CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+            ),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT.to_string()),
+            MethodKey::new(
+                TypedModuleId::ObjectState,
+                CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
+            ),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
             MethodKey::new(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
             ),
             rule!(allow_all),
@@ -188,9 +194,9 @@ impl ClockNativePackage {
         api.globalize_with_address(
             RENodeId::Object(clock_id),
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
             address.into(),
         )?;

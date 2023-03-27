@@ -155,21 +155,21 @@ impl EpochManagerBlueprint {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
             MethodKey::new(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
             ),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
             MethodKey::new(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             ),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
             MethodKey::new(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             ),
             rule!(allow_all),
@@ -179,14 +179,14 @@ impl EpochManagerBlueprint {
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             MethodKey::new(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
             ),
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
             MethodKey::new(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             ),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
@@ -199,9 +199,9 @@ impl EpochManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Object(epoch_manager_id),
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
             address.into(),
         )?;

@@ -62,7 +62,7 @@ where
             method.1
         } else {
             // TODO: Remove this
-            NodeModuleId::SELF
+            TypedModuleId::ObjectState
         };
 
         self.kernel_lock_substate(&node_id, module_id, offset, flags)
@@ -84,7 +84,7 @@ where
             ..
         } = self.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&NodeModuleId::SELF) {
+        if module_id.eq(&TypedModuleId::ObjectState) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -155,7 +155,7 @@ where
 
         let handle = self.kernel_lock_substate(
             &RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
+            TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -343,7 +343,7 @@ where
             node_id,
             node_init,
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
                 ),
             ),
@@ -355,7 +355,7 @@ where
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, ObjectId>,
     ) -> Result<Address, RuntimeError> {
         // FIXME check completeness of modules
 
@@ -393,21 +393,21 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, RuntimeError> {
-        let module_ids = modules.keys().cloned().collect::<BTreeSet<NodeModuleId>>();
+        let module_ids = modules.keys().cloned().collect::<BTreeSet<TypedModuleId>>();
         let standard_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules
+            TypedModuleId::Metadata,
+            TypedModuleId::Royalty,
+            TypedModuleId::AccessRules
         );
         // TODO: remove
         let resource_manager_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules,
-            NodeModuleId::AccessRules1
+            TypedModuleId::Metadata,
+            TypedModuleId::Royalty,
+            TypedModuleId::AccessRules,
+            TypedModuleId::AccessRules1
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
@@ -421,7 +421,7 @@ where
         let mut component_substates = BTreeMap::new();
         for ((node_module_id, offset), substate) in node.substates {
             match node_module_id {
-                NodeModuleId::SELF => component_substates.insert(offset, substate),
+                TypedModuleId::ObjectState => component_substates.insert(offset, substate),
                 _ => module_substates.insert((node_module_id, offset), substate),
             };
         }
@@ -430,7 +430,7 @@ where
 
         let type_info = module_substates
             .remove(&(
-                NodeModuleId::TypeInfo,
+                TypedModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ))
             .unwrap();
@@ -442,7 +442,7 @@ where
         };
 
         module_init.insert(
-            NodeModuleId::TypeInfo,
+            TypedModuleId::TypeInfo,
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
@@ -450,10 +450,10 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF | NodeModuleId::TypeInfo => {
+                TypedModuleId::ObjectState | TypedModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
                     let node_id = RENodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
@@ -473,7 +473,7 @@ where
                     let access_rules = node
                         .substates
                         .remove(&(
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                         ))
                         .unwrap();
@@ -482,7 +482,7 @@ where
                     module_init
                         .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
                 }
-                NodeModuleId::Metadata => {
+                TypedModuleId::Metadata => {
                     let node_id = RENodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
@@ -501,17 +501,17 @@ where
 
                     let mut substates = BTreeMap::new();
                     for ((module_id, offset), substate) in node.substates {
-                        if let NodeModuleId::SELF = module_id {
+                        if let TypedModuleId::ObjectState = module_id {
                             substates.insert(offset, substate);
                         }
                     }
 
                     module_init.insert(
-                        NodeModuleId::Metadata,
+                        TypedModuleId::Metadata,
                         RENodeModuleInit::Metadata(substates),
                     );
                 }
-                NodeModuleId::ComponentRoyalty => {
+                TypedModuleId::Royalty => {
                     let node_id = RENodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
@@ -531,7 +531,7 @@ where
                     let config = node
                         .substates
                         .remove(&(
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                         ))
                         .unwrap();
@@ -539,14 +539,14 @@ where
                     let accumulator = node
                         .substates
                         .remove(&(
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                         ))
                         .unwrap();
                     let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
 
                     module_init.insert(
-                        NodeModuleId::ComponentRoyalty,
+                        TypedModuleId::Royalty,
                         RENodeModuleInit::ComponentRoyalty(config, accumulator),
                     );
                 }
@@ -568,13 +568,13 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
+        self.call_module_method(receiver, TypedModuleId::ObjectState, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &RENodeId,
-        node_module_id: NodeModuleId,
+        node_module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -654,7 +654,7 @@ where
             node_id,
             RENodeInit::KeyValueStore,
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
+                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
         ))?;
 
         Ok(node_id.into())
@@ -799,15 +799,15 @@ where
                         ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
                     ..
                 }) => match node_module_id {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                    TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
                         Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
                     }
-                    NodeModuleId::ComponentRoyalty => {
+                    TypedModuleId::Royalty => {
                         Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
                     }
-                    NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
-                    NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                    TypedModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
+                    TypedModuleId::ObjectState => self.get_object_type_info(node_id),
+                    TypedModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(EventError::NoAssociatedPackage),
                     )),
                 },
@@ -827,7 +827,7 @@ where
 
             let handle = self.kernel_lock_substate(
                 &RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -879,7 +879,7 @@ where
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     RENodeId::GlobalObject(Address::Package(package_address)),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     blueprint_name,
                 ),
                 *local_type_index,

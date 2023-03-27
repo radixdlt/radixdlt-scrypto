@@ -99,7 +99,7 @@ pub trait KernelModule {
         _api: &mut Y,
         _node_id: &RENodeId,
         _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -133,7 +133,7 @@ pub trait KernelModule {
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
-        _module_id: &NodeModuleId,
+        _module_id: &TypedModuleId,
         _offset: &SubstateOffset,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

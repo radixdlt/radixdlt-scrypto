@@ -21,7 +21,7 @@ PUBLISH_PACKAGE
     Tuple(                     # Access Rules Struct
         Map<Tuple, Enum>(       # Method auth Field
             Tuple(
-                Enum("NodeModuleId::SELF"),
+                Enum("TypedModuleId::ObjectState"),
                 "set_royalty_config"
             ),
             Enum(
@@ -41,7 +41,7 @@ PUBLISH_PACKAGE
                 )
             ),
             Tuple(
-                Enum("NodeModuleId::SELF"),
+                Enum("TypedModuleId::ObjectState"),
                 "claim_royalty"
             ),
             Enum(
@@ -61,7 +61,7 @@ PUBLISH_PACKAGE
                 )
             ),
             Tuple(
-                Enum("NodeModuleId::Metadata"),
+                Enum("TypedModuleId::Metadata"),
                 "set"
             ),
             Enum(
@@ -81,7 +81,7 @@ PUBLISH_PACKAGE
                 )
             ),
             Tuple(
-                Enum("NodeModuleId::Metadata"),
+                Enum("TypedModuleId::Metadata"),
                 "get"
             ),
             Enum(
@@ -93,7 +93,7 @@ PUBLISH_PACKAGE
         Enum("AccessRule::DenyAll"),         # Default Auth Field
         Map<Tuple, Enum>(         # Method Auth Mutability Field
             Tuple(
-                Enum("NodeModuleId::SELF"),
+                Enum("TypedModuleId::ObjectState"),
                 "set_royalty_config"
             ),
             Enum(
@@ -110,7 +110,7 @@ PUBLISH_PACKAGE
                 )
             ),
             Tuple(
-                Enum("NodeModuleId::SELF"),
+                Enum("TypedModuleId::ObjectState"),
                 "claim_royalty"
             ),
             Enum(
@@ -127,7 +127,7 @@ PUBLISH_PACKAGE
                 )
             ),
             Tuple(
-                Enum("NodeModuleId::Metadata"),
+                Enum("TypedModuleId::Metadata"),
                 "set"
             ), 
             Enum(
@@ -144,7 +144,7 @@ PUBLISH_PACKAGE
                 )
             ),
             Tuple(
-                Enum("NodeModuleId::Metadata"),
+                Enum("TypedModuleId::Metadata"),
                 "get"
             ),
             Enum(

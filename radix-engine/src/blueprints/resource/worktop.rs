@@ -48,7 +48,7 @@ impl WorktopBlueprint {
         let substate = node
             .substates
             .remove(&(
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Worktop(WorktopOffset::Worktop),
             ))
             .unwrap();

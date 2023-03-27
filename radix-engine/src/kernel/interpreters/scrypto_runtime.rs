@@ -76,7 +76,7 @@ where
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
-        let node_module_id = NodeModuleId::from_u32(module_id)
+        let node_module_id = TypedModuleId::from_u32(module_id)
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =
@@ -131,7 +131,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let component_id =
             scrypto_decode::<RENodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let modules = scrypto_decode::<BTreeMap<NodeModuleId, ObjectId>>(&modules)
+        let modules = scrypto_decode::<BTreeMap<TypedModuleId, ObjectId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;

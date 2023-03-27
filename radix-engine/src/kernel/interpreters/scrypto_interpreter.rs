@@ -107,7 +107,7 @@ impl ExecutableInvocation for MethodInvocation {
         node_refs_to_copy.insert(self.identifier.0);
 
         let (package_address, blueprint_name) = match self.identifier.1 {
-            NodeModuleId::SELF => {
+            TypedModuleId::ObjectState => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
                     TypeInfoSubstate::Object {
@@ -123,15 +123,15 @@ impl ExecutableInvocation for MethodInvocation {
                     }
                 }
             }
-            NodeModuleId::Metadata => {
+            TypedModuleId::Metadata => {
                 // TODO: Check if type has metadata
                 (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string())
             }
-            NodeModuleId::ComponentRoyalty => {
+            TypedModuleId::Royalty => {
                 // TODO: Check if type has royalty
                 (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
             }
-            NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+            TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
                 // TODO: Check if type has access rules
                 (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
             }
@@ -151,7 +151,7 @@ impl ExecutableInvocation for MethodInvocation {
             } else {
                 let handle = api.kernel_lock_substate(
                     &RENodeId::GlobalObject(fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
@@ -231,7 +231,7 @@ impl ExecutableInvocation for FunctionInvocation {
             } else {
                 let handle = api.kernel_lock_substate(
                     &RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
@@ -332,7 +332,7 @@ impl Executor for ScryptoExecutor {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 &RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -342,7 +342,7 @@ impl Executor for ScryptoExecutor {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     &RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
@@ -374,7 +374,7 @@ impl Executor for ScryptoExecutor {
             let code_type = {
                 let handle = api.kernel_lock_substate(
                     &RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
@@ -387,7 +387,7 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
                         &RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
                     )?;
@@ -408,7 +408,7 @@ impl Executor for ScryptoExecutor {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
                             &RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;

@@ -577,7 +577,7 @@ where
     if substate_db
         .get_substate(
             &RENodeId::GlobalObject(RADIX_TOKEN.into()),
-            NodeModuleId::TypeInfo,
+            TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         )
         .is_none()

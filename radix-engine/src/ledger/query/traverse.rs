@@ -74,7 +74,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 for (entry_id, substate) in map.iter() {
                     let substate_id = SubstateId(
                         RENodeId::KeyValueStore(kv_store_id),
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id.clone())),
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
@@ -96,7 +96,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             RENodeId::Object(..) => {
                 let substate_id = SubstateId(
                     node_id,
-                    NodeModuleId::TypeInfo,
+                    TypedModuleId::TypeInfo,
                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 );
                 let output_value = self
@@ -116,7 +116,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     {
                         if let Some(output_value) = self.substate_db.get_substate(&SubstateId(
                             node_id,
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Vault(VaultOffset::Info),
                         )) {
                             let info: VaultInfoSubstate = output_value.substate.into();
@@ -126,7 +126,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                         .substate_db
                                         .get_substate(&SubstateId(
                                             node_id,
-                                            NodeModuleId::SELF,
+                                            TypedModuleId::ObjectState,
                                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                                         ))
                                         .unwrap()
@@ -144,7 +144,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                         .substate_db
                                         .get_substate(&SubstateId(
                                             node_id,
-                                            NodeModuleId::SELF,
+                                            TypedModuleId::ObjectState,
                                             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                                         ))
                                         .unwrap()
@@ -165,7 +165,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     _ => {
                         let substate_id = SubstateId(
                             node_id,
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Component(ComponentOffset::State0),
                         );
                         let output_value = self
@@ -191,7 +191,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             )) => {
                 let substate_id = SubstateId(
                     node_id,
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Account(AccountOffset::Account),
                 );
                 let output_value = self
@@ -209,7 +209,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             RENodeId::GlobalObject(Address::Component(_)) => {
                 let substate_id = SubstateId(
                     node_id,
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Component(ComponentOffset::State0),
                 );
                 let output_value = self

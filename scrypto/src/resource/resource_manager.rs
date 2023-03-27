@@ -5,7 +5,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::NonFungibleData;
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
+use radix_engine_interface::api::types::{RENodeId, TypedModuleId};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
@@ -33,7 +33,7 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     name: "mint".to_string(),
@@ -48,11 +48,11 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     key: MethodKey::new(
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         RESOURCE_MANAGER_BURN_IDENT.to_string(),
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
@@ -66,7 +66,7 @@ impl ResourceManager {
         let _rtn = ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules1,
+                TypedModuleId::AccessRules1,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     name: "withdraw".to_string(),
@@ -81,10 +81,10 @@ impl ResourceManager {
         let _rtn = ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules1,
+                TypedModuleId::AccessRules1,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                    key: MethodKey::new(TypedModuleId::ObjectState, VAULT_PUT_IDENT.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -96,7 +96,7 @@ impl ResourceManager {
         let _rtn = ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules1,
+                TypedModuleId::AccessRules1,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     name: "recall".to_string(),
@@ -111,10 +111,10 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+                    key: MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -126,11 +126,11 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     key: MethodKey::new(
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
@@ -144,7 +144,7 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                     name: "mint".to_string(),
@@ -159,11 +159,11 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     key: MethodKey::new(
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         RESOURCE_MANAGER_BURN_IDENT.to_string(),
                     ),
                     mutability: AccessRule::DenyAll,
@@ -177,10 +177,10 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+                    key: MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -192,11 +192,11 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 &RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::AccessRules,
+                TypedModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     key: MethodKey::new(
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                     ),
                     mutability: AccessRule::DenyAll,
@@ -209,7 +209,7 @@ impl ResourceManager {
     pub fn lock_withdrawable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             &RENodeId::GlobalObject(self.0.into()),
-            NodeModuleId::AccessRules1,
+            TypedModuleId::AccessRules1,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                 name: "withdraw".to_string(),
@@ -222,10 +222,10 @@ impl ResourceManager {
     pub fn lock_depositable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             &RENodeId::GlobalObject(self.0.into()),
-            NodeModuleId::AccessRules1,
+            TypedModuleId::AccessRules1,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                key: MethodKey::new(TypedModuleId::ObjectState, VAULT_PUT_IDENT.to_string()),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -235,7 +235,7 @@ impl ResourceManager {
     pub fn lock_recallable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             &RENodeId::GlobalObject(self.0.into()),
-            NodeModuleId::AccessRules1,
+            TypedModuleId::AccessRules1,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                 name: "recall".to_string(),

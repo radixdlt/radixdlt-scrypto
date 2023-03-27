@@ -1,4 +1,4 @@
-use crate::api::types::{NodeModuleId, RENodeId};
+use crate::api::types::{RENodeId, TypedModuleId};
 use crate::ScryptoSbor;
 use sbor::rust::string::String;
 use sbor::LocalTypeIndex;
@@ -17,7 +17,7 @@ pub struct EventTypeIdentifier(pub Emitter, pub LocalTypeIndex);
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Emitter {
     // (Node id, module id, blueprint name)
-    Function(RENodeId, NodeModuleId, String),
+    Function(RENodeId, TypedModuleId, String),
     // (Node id, module id)
-    Method(RENodeId, NodeModuleId),
+    Method(RENodeId, TypedModuleId),
 }

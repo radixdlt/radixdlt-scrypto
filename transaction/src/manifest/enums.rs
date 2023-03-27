@@ -81,7 +81,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum NodeModuleId {
+            enum TypedModuleId {
                 SELF = 0;
                 TypeInfo = 1;
                 Metadata = 2;

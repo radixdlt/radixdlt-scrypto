@@ -1,7 +1,7 @@
 // Re-exports
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{RENodeId, SubstateOffset, TypedModuleId};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
 use radix_engine_interface::*;
@@ -61,7 +61,7 @@ pub struct ReNodeModulePayload {
     /// ReNode ID.
     pub re_node_id: RENodeId,
     /// Module ID.
-    pub node_mode_id: NodeModuleId,
+    pub node_mode_id: TypedModuleId,
     /// An embedded root of the descendant Substate layer tree.
     pub substates_root: TreeNode<SubstateOffset>,
 }

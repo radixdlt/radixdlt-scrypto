@@ -121,7 +121,7 @@ where
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        NodeModuleId::TypeInfo,
+        TypedModuleId::TypeInfo,
         RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -129,7 +129,7 @@ where
         }),
     );
     node_modules.insert(
-        NodeModuleId::Metadata,
+        TypedModuleId::Metadata,
         RENodeModuleInit::Metadata(
             metadata
                 .into_iter()
@@ -145,13 +145,13 @@ where
         ),
     );
     node_modules.insert(
-        NodeModuleId::AccessRules,
+        TypedModuleId::AccessRules,
         RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
             access_rules: access_rules,
         }),
     );
     node_modules.insert(
-        NodeModuleId::ComponentRoyalty,
+        TypedModuleId::Royalty,
         RENodeModuleInit::ComponentRoyalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),

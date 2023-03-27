@@ -16,7 +16,7 @@ use radix_engine_interface::api::*;
 
 pub struct LockInfo {
     pub node_id: RENodeId,
-    pub module_id: NodeModuleId,
+    pub module_id: TypedModuleId,
     pub offset: SubstateOffset,
     pub flags: LockFlags,
 }
@@ -39,7 +39,7 @@ pub trait KernelNodeApi {
         &mut self,
         node_id: RENodeId,
         init: RENodeInit,
-        node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_module_init: BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError>;
 }
 
@@ -48,7 +48,7 @@ pub trait KernelSubstateApi {
     fn kernel_lock_substate(
         &mut self,
         node_id: &RENodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;

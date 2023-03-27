@@ -1,5 +1,5 @@
 use jellyfish::JellyfishMerkleTree;
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateId, SubstateOffset};
+use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, TypedModuleId};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::*;
@@ -49,7 +49,7 @@ pub type SubstateHashChange = IdChange<SubstateId, Hash>;
 /// In a traditional JMT, this inserts a new leaf node for each given "change", together with an
 /// entire new "parent chain" leading from that leaf to a new root node (common for all of them).
 /// In our instantiation of the JMT, we first update all nested per-`ReNodeModule` trees (i.e. of
-/// each {`RENodeId`, `NodeModuleId`} pair encountered in the `changes`), and then we update the
+/// each {`RENodeId`, `TypedModuleId`} pair encountered in the `changes`), and then we update the
 /// single upper-layer tree (representing all `ReNodeModule`).
 /// All nodes that became stale precisely due to this (i.e. not any previous) operation will be
 /// reported before the function returns (see `WriteableTreeStore::record_stale_node`).
@@ -79,11 +79,11 @@ pub fn put_at_next_version<S: TreeStore<ReNodeModulePayload> + TreeStore<Substat
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 struct ReNodeModule {
     re_node_id: RENodeId,
-    node_module_id: NodeModuleId,
+    node_module_id: TypedModuleId,
 }
 
 impl ReNodeModule {
-    fn new(re_node_id: RENodeId, node_module_id: NodeModuleId) -> Self {
+    fn new(re_node_id: RENodeId, node_module_id: TypedModuleId) -> Self {
         Self {
             re_node_id,
             node_module_id,

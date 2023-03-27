@@ -22,13 +22,13 @@ pub trait ClientObjectApi<E> {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, ObjectId>,
     ) -> Result<Address, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, E>;
 
@@ -42,7 +42,7 @@ pub trait ClientObjectApi<E> {
     fn call_module_method(
         &mut self,
         receiver: &RENodeId,
-        node_module_id: NodeModuleId,
+        node_module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
