@@ -35,13 +35,6 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn package_token() -> NonFungibleGlobalId {
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
-                .unwrap();
-        NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
-    }
-
     pub fn get_global_address() -> Address {
         ScryptoEnv.get_global_address().unwrap()
     }
@@ -54,6 +47,13 @@ impl Runtime {
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
         Self::actor().package_address
+    }
+
+    pub fn package_token() -> NonFungibleGlobalId {
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
+                .unwrap();
+        NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Invokes a function on a blueprint.

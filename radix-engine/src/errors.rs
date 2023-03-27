@@ -186,6 +186,7 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    GlobalAddressDoesNotExist,
     NotAnObject,
     NotAKeyValueStore,
     InvalidSubstateWrite,

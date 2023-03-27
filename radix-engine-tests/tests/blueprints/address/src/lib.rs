@@ -34,7 +34,21 @@ mod my_component {
             }.instantiate().globalize()
         }
 
-        pub fn get_address(&self) -> ComponentAddress {
+        pub fn get_address_in_local() -> ComponentAddress {
+            let child = ChildComponent::create();
+            let address = child.get_address();
+            Self {
+                child,
+            }.instantiate().globalize();
+            address.into()
+        }
+
+        pub fn get_address_in_parent(&self) -> ComponentAddress {
+            let address = Runtime::get_global_address();
+            address.into()
+        }
+
+        pub fn get_address_in_child(&self) -> ComponentAddress {
             let address = self.child.get_address();
             address.into()
         }

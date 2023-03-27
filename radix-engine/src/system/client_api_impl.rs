@@ -714,7 +714,7 @@ where
                 }
                 _ => None
             }
-        }).ok_or(RuntimeError::SystemError(SystemError::NotAnObject))
+        }).ok_or(RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist))
     }
 
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
