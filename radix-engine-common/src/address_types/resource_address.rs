@@ -80,7 +80,7 @@ impl fmt::Display for ParseResourceAddressError {
 
 well_known_scrypto_custom_type!(
     ResourceAddress,
-    ScryptoCustomValueKind::Address,
+    ScryptoCustomValueKind::Reference,
     Type::ResourceAddress,
     NODE_ID_LENGTH,
     RESOURCE_ADDRESS_ID

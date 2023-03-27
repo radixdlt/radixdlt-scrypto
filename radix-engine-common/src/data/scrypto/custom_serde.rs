@@ -17,10 +17,8 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
-            ScryptoCustomValue::Address(value) => {
-                (SerializableType::String(hex::encode(&value.0)), true)
-            }
-            ScryptoCustomValue::InternalRef(value) => {
+            ScryptoCustomValue::Reference(value) => {
+                // FIXME add bech32 support
                 (SerializableType::String(hex::encode(&value.0)), true)
             }
             ScryptoCustomValue::Own(value) => {
@@ -76,13 +74,13 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = Address([0; 27]);
+        let value = Reference([0; 27]);
 
         let expected =
             json!("FungibleResource[010000000000000000000000000000000000000000000000000000]");
         let expected_invertible = json!({
-            "kind": "Address",
-            "value": "FungibleResource[010000000000000000000000000000000000000000000000000000]"
+            "kind": "Reference",
+            "value": "000000000000000000000000000000000000000000000000000000"
         });
 
         assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
@@ -96,13 +94,13 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = Address([0; 27]);
+        let value = Reference([0; 27]);
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
             json!("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
         let expected_invertible = json!({
-            "kind": "Address",
+            "kind": "Reference",
             "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
@@ -121,7 +119,7 @@ mod tests {
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Address(Address([0; 27])),
+                    value: ScryptoCustomValue::Reference(Reference([0; 27])),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Own(Own([0; NODE_ID_LENGTH])),
@@ -152,9 +150,6 @@ mod tests {
                     value: ScryptoCustomValue::NonFungibleLocalId(
                         NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd).unwrap(),
                     ),
-                },
-                Value::Custom {
-                    value: ScryptoCustomValue::InternalRef(InternalRef([0; NODE_ID_LENGTH])),
                 },
             ],
         };

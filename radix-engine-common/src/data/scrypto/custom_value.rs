@@ -6,23 +6,21 @@ use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
-    Address(Address),
+    Reference(Reference),
     Own(Own),
     Decimal(Decimal),
     PreciseDecimal(PreciseDecimal),
     NonFungibleLocalId(NonFungibleLocalId),
-    InternalRef(InternalRef),
 }
 
 impl ScryptoCustomValue {
     pub fn get_custom_value_kind(&self) -> ScryptoCustomValueKind {
         match self {
-            ScryptoCustomValue::Address(_) => ScryptoCustomValueKind::Address,
+            ScryptoCustomValue::Reference(_) => ScryptoCustomValueKind::Reference,
             ScryptoCustomValue::Own(_) => ScryptoCustomValueKind::Own,
             ScryptoCustomValue::Decimal(_) => ScryptoCustomValueKind::Decimal,
             ScryptoCustomValue::PreciseDecimal(_) => ScryptoCustomValueKind::PreciseDecimal,
             ScryptoCustomValue::NonFungibleLocalId(_) => ScryptoCustomValueKind::NonFungibleLocalId,
-            ScryptoCustomValue::InternalRef(_) => ScryptoCustomValueKind::Reference,
         }
     }
 }
@@ -35,12 +33,11 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             // TODO: vector free
-            ScryptoCustomValue::Address(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Reference(v) => v.encode_body(encoder),
             ScryptoCustomValue::Own(v) => v.encode_body(encoder),
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
-            ScryptoCustomValue::InternalRef(v) => v.encode_body(encoder),
         }
     }
 }
@@ -52,8 +49,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
     ) -> Result<Self, DecodeError> {
         match value_kind {
             ValueKind::Custom(cti) => match cti {
-                ScryptoCustomValueKind::Address => {
-                    Address::decode_body_with_value_kind(decoder, value_kind).map(Self::Address)
+                ScryptoCustomValueKind::Reference => {
+                    Reference::decode_body_with_value_kind(decoder, value_kind).map(Self::Reference)
                 }
                 ScryptoCustomValueKind::Own => {
                     Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
@@ -68,10 +65,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                 ScryptoCustomValueKind::NonFungibleLocalId => {
                     NonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
-                }
-                ScryptoCustomValueKind::Reference => {
-                    InternalRef::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::InternalRef)
                 }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {
@@ -89,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_custom_types_group1() {
-        let values = (Address([1u8; 27]),);
+        let values = (Reference([1u8; 27]),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
@@ -97,15 +90,15 @@ mod tests {
                 92, // prefix
                 33, // tuple
                 1,  // length
-                128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, // address
+                128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, // reference
             ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
                 fields: vec![ScryptoValue::Custom {
-                    value: ScryptoCustomValue::Address(Address([1u8; 27])),
+                    value: ScryptoCustomValue::Reference(Reference([1u8; 27])),
                 },]
             }
         );
@@ -120,9 +113,9 @@ mod tests {
             vec![
                 92, // prefix
                 33, // tuple
-                5,  // length
+                1,  // length
                 144, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, // own
+                1, // own
             ]
         );
         assert_eq!(

@@ -159,12 +159,11 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
         ValueKind::Tuple => f.write_str("Tuple"),
         ValueKind::Map => f.write_str("Map"),
         ValueKind::Custom(value_kind) => match value_kind {
-            ScryptoCustomValueKind::Address => f.write_str("Address"),
+            ScryptoCustomValueKind::Reference => f.write_str("Reference"),
             ScryptoCustomValueKind::Own => f.write_str("Own"),
             ScryptoCustomValueKind::Decimal => f.write_str("Decimal"),
             ScryptoCustomValueKind::PreciseDecimal => f.write_str("PreciseDecimal"),
             ScryptoCustomValueKind::NonFungibleLocalId => f.write_str("NonFungibleLocalId"),
-            ScryptoCustomValueKind::Reference => f.write_str("Reference"),
         },
     }
 }
@@ -229,11 +228,9 @@ pub fn format_custom_value<F: fmt::Write>(
     _context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     match value {
-        ScryptoCustomValue::Address(value) => {
-            write!(f, "Address(\"{}\")", hex::encode(value.to_vec()))?;
-        }
-        ScryptoCustomValue::InternalRef(value) => {
-            write!(f, "Address(\"{}\")", hex::encode(value.to_vec()))?;
+        ScryptoCustomValue::Reference(value) => {
+            // FIXME add bech32 support
+            write!(f, "Reference(\"{}\")", hex::encode(value.to_vec()))?;
         }
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;

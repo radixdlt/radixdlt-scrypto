@@ -80,7 +80,7 @@ impl fmt::Display for ParsePackageAddressError {
 
 well_known_scrypto_custom_type!(
     PackageAddress,
-    ScryptoCustomValueKind::Address,
+    ScryptoCustomValueKind::Reference,
     Type::PackageAddress,
     NODE_ID_LENGTH,
     PACKAGE_ADDRESS_ID

@@ -131,7 +131,7 @@ impl fmt::Display for ParseComponentAddressError {
 
 well_known_scrypto_custom_type!(
     ComponentAddress,
-    ScryptoCustomValueKind::Address,
+    ScryptoCustomValueKind::Reference,
     Type::ComponentAddress,
     NODE_ID_LENGTH,
     COMPONENT_ADDRESS_ID
