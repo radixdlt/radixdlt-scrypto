@@ -1,7 +1,7 @@
-mod api;
 mod bootstrap;
+mod interface;
 mod query;
 
-pub use api::*;
 pub use bootstrap::*;
+pub use interface::*;
 pub use query::*;
