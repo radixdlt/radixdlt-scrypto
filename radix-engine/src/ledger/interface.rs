@@ -69,13 +69,13 @@ impl SubstateKey {
     }
 }
 
-impl AsRef<[u8]> for Self {
+impl AsRef<[u8]> for SubstateKey {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl Into<Vec<u8>> for Self {
+impl Into<Vec<u8>> for SubstateKey {
     fn into(self) -> Vec<u8> {
         self.0
     }
@@ -192,7 +192,7 @@ pub trait SubstateStore {
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
+    ) -> dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
 
     /// Reverts all non force write changes.
     ///
@@ -294,7 +294,7 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+    ) -> Result<(dyn Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
 }
 
 /// Interface for committing changes into a substate database.
