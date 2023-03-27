@@ -16,7 +16,8 @@ use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 
 /// The unique identifier of a (stored) node.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[sbor(transparent)]
 pub struct NodeId([u8; Self::LENGTH]);
 
 impl NodeId {
@@ -43,11 +44,13 @@ impl Into<[u8; NodeId::LENGTH]> for NodeId {
 }
 
 /// The unique identifier of a node module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[sbor(transparent)]
 pub struct ModuleId(pub u8);
 
 /// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[sbor(transparent)]
 pub struct SubstateKey(Vec<u8>);
 
 impl SubstateKey {
@@ -197,13 +200,15 @@ pub trait SubstateStore {
     fn finalize(self) -> (StateUpdates, StateDependencies);
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct StateUpdates {
-    pub substate_changes: BTreeMap<(NodeId, ModuleId, SubstateKey), StateChange>,
+    pub substate_changes: BTreeMap<(NodeId, ModuleId, SubstateKey), StateUpdate>,
 }
 
-pub enum StateChange {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum StateUpdate {
     /// Creates or updates a substate.
-    Upsert(IndexedScryptoValue),
+    Upsert(Vec<u8>),
     /*
     /// Deletes a substate.
     Delete,
@@ -212,6 +217,7 @@ pub enum StateChange {
     */
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct StateDependencies {
     /// The substates that were read.
     pub substate_reads: BTreeMap<(NodeId, ModuleId, SubstateKey), Option<u32>>,
@@ -220,7 +226,7 @@ pub struct StateDependencies {
 }
 
 /// The configuration of a node module.
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct ModuleConfig {
     /// When activated, the store will allow LIST over the substates within the module.
     iteration_enabled: bool,
@@ -294,7 +300,7 @@ pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
     ///
     /// An error is thrown in case of invalid module ID.
-    fn commit(&mut self, state_changes: StateUpdates) -> Result<(), CommitError>;
+    fn commit(&mut self, state_changes: &StateUpdates) -> Result<(), CommitError>;
 }
 
 /// Interface for listing nodes within a substate database.
