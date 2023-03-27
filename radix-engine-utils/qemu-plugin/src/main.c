@@ -8,13 +8,16 @@
 
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
+// Name of the shared memory resource
 const gchar* SHARED_MEM_ID = "/shm-scrypto";
 
+// Emulated instructions count
 static guint64 instructions_count;
-static gboolean count_instructions = true;
-static guint64* shared_mem_ptr = NULL;
+// Shared memory pointer
+static guint64* shared_mem_ptr;
 
 
+// Creates shared memory pointer.
 void* create_shared_memory(size_t size) 
 {
     int fd = shm_open( SHARED_MEM_ID, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
@@ -33,16 +36,16 @@ void* create_shared_memory(size_t size)
     return mmap(NULL, sizeof(guint64), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 }
 
+// Emulated instruction executed callback - increasing counter and updating shared memory value.
 void vcpu_udata_cb(unsigned int vcpu_index,void *userdata)
 {
     instructions_count++;
     *shared_mem_ptr = instructions_count;
 }
 
+// Emulated instructions block transated callback - registering for each instruction execution callback.
 static void vcpu_tb_trans_callback(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
 {
-    if( !count_instructions ) return;
-
     gsize n = qemu_plugin_tb_n_insns(tb);
 
     for ( gsize i = 0; i < n; ++i) 
@@ -53,15 +56,18 @@ static void vcpu_tb_trans_callback(qemu_plugin_id_t id, struct qemu_plugin_tb *t
     }
 }
 
+// Plugin cleanup
 static void plugin_exit(qemu_plugin_id_t id, void *p)
 {
     shm_unlink(SHARED_MEM_ID);
 }
 
+// Plugin entry function
 QEMU_PLUGIN_EXPORT int qemu_plugin_install(qemu_plugin_id_t id,
                                            const qemu_info_t *info,
                                            int argc, char **argv)
 {
+    // Setup shared memory pointer
     shared_mem_ptr = (guint64*)create_shared_memory(sizeof(guint64));
     if(shared_mem_ptr)
     {
@@ -76,9 +82,10 @@ QEMU_PLUGIN_EXPORT int qemu_plugin_install(qemu_plugin_id_t id,
         return -1;
     }
 
+    // Register qemu callbacks
     qemu_plugin_register_vcpu_tb_trans_cb(id, vcpu_tb_trans_callback);
     qemu_plugin_register_atexit_cb(id, plugin_exit, NULL);
 
-    qemu_plugin_outs("[QEMU-scrypto-plugin] started\n");
+    qemu_plugin_outs("[QEMU-scrypto-plugin] Started\n");
     return 0;
 }
