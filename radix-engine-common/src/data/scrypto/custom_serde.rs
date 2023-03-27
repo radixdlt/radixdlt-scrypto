@@ -50,6 +50,7 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
 mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
+    use crate::address_types::*;
     use crate::data::scrypto::model::*;
     use sbor::rust::vec;
     use serde::Serialize;

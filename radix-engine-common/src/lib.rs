@@ -8,6 +8,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// RE bech32 address library.
 pub mod address;
+/// RE bech32 address types.
+pub mod address_types;
 /// RE crypto library
 pub mod crypto;
 /// RE scrypto data model.

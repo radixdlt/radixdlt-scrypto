@@ -1,5 +1,4 @@
 use crate::data::manifest::ManifestCustomValueKind;
-use crate::data::scrypto::model::*;
 use crate::data::scrypto::*;
 use crate::*;
 use radix_engine_constants::NODE_ID_LENGTH;
@@ -8,7 +7,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Address(pub [u8; NODE_ID_LENGTH]);
 
 impl Address {
