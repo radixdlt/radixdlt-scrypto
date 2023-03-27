@@ -78,7 +78,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NODE_ID_LENGTH,
-    COMPONENT_ADDRESS_ID
+    ADDRESS_ID
 );
 
 manifest_type!(Address, ManifestCustomValueKind::Address, NODE_ID_LENGTH);
