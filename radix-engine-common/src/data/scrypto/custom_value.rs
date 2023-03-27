@@ -76,13 +76,13 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_constants::NODE_ID_LENGTH;
-
     use super::*;
+    use crate::types::NodeId;
+    use radix_engine_constants::NODE_ID_LENGTH;
 
     #[test]
     fn test_custom_types_group1() {
-        let values = (Reference([1u8; 27]),);
+        let values = (Reference(NodeId([1u8; 27])),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
@@ -98,7 +98,7 @@ mod tests {
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
                 fields: vec![ScryptoValue::Custom {
-                    value: ScryptoCustomValue::Reference(Reference([1u8; 27])),
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([1u8; 27]))),
                 },]
             }
         );
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_custom_types_group2() {
-        let values = (Own([1u8; NODE_ID_LENGTH]),);
+        let values = (Own(NodeId([1u8; NODE_ID_LENGTH])),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
@@ -122,7 +122,7 @@ mod tests {
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
                 fields: vec![ScryptoValue::Custom {
-                    value: ScryptoCustomValue::Own(Own([1u8; NODE_ID_LENGTH])),
+                    value: ScryptoCustomValue::Own(Own(NodeId([1u8; NODE_ID_LENGTH]))),
                 },]
             }
         );

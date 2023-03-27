@@ -1,4 +1,5 @@
 use crate::data::scrypto::ScryptoCustomValueKind;
+use crate::types::NodeId;
 use crate::*;
 use radix_engine_constants::NODE_ID_LENGTH;
 #[cfg(not(feature = "alloc"))]
@@ -8,7 +9,7 @@ use sbor::*;
 use utils::copy_u8_array;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Own(pub [u8; NODE_ID_LENGTH]);
+pub struct Own(pub NodeId);
 
 impl Own {
     pub fn to_vec(&self) -> Vec<u8> {
@@ -21,7 +22,7 @@ impl TryFrom<&[u8]> for Own {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => Ok(Self(copy_u8_array(slice))),
+            NODE_ID_LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
             _ => Err(ParseOwnError::InvalidLength(slice.len())),
         }
     }

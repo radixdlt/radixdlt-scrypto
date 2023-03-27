@@ -48,12 +48,11 @@ mod tests {
     use crate::address::Bech32Encoder;
     use crate::address_types::*;
     use crate::data::scrypto::model::*;
+    use crate::data::scrypto::{scrypto_encode, ScryptoValue};
     use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
     use utils::ContextualSerialize;
-
-    use crate::data::scrypto::{scrypto_encode, ScryptoValue};
 
     #[derive(ScryptoSbor)]
     pub struct Sample {
@@ -74,7 +73,8 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = Reference([0; 27]);
+        use crate::types::NodeId;
+        let value = Reference(NodeId([0; 27]));
 
         let expected =
             json!("FungibleResource[010000000000000000000000000000000000000000000000000000]");
@@ -94,7 +94,9 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = Reference([0; 27]);
+        use crate::types::NodeId;
+
+        let value = Reference(NodeId([0; 27]));
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
@@ -111,18 +113,18 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
-        use radix_engine_constants::NODE_ID_LENGTH;
-
         use crate::math::{Decimal, PreciseDecimal};
+        use crate::types::NodeId;
+        use radix_engine_constants::NODE_ID_LENGTH;
 
         let encoder = Bech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Reference(Reference([0; 27])),
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([0; NODE_ID_LENGTH]))),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Own(Own([0; NODE_ID_LENGTH])),
+                    value: ScryptoCustomValue::Own(Own(NodeId([0; NODE_ID_LENGTH]))),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),

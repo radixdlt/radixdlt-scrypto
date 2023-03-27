@@ -2,6 +2,7 @@ use crate::address::{AddressDisplayContext, EncodeBech32AddressError, EntityType
 use crate::crypto::{hash, PublicKey};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
+use crate::types::NodeId;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 use radix_engine_constants::NODE_ID_LENGTH;
@@ -11,11 +12,11 @@ use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ComponentAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
+pub struct ComponentAddress(NodeId); // private to ensure entity type check
 
 impl ComponentAddress {
     pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
-        Self(raw)
+        Self(NodeId(raw))
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -29,12 +30,12 @@ impl ComponentAddress {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let mut temp = hash(public_key.to_vec()).lower_27_bytes();
                 temp[0] = EntityType::GlobalVirtualEcdsaAccount as u8;
-                Self(temp)
+                Self(NodeId(temp))
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let mut temp = hash(public_key.to_vec()).lower_27_bytes();
                 temp[0] = EntityType::GlobalVirtualEddsaAccount as u8;
-                Self(temp)
+                Self(NodeId(temp))
             }
         }
     }
@@ -46,20 +47,26 @@ impl ComponentAddress {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let mut temp = hash(public_key.to_vec()).lower_27_bytes();
                 temp[0] = EntityType::GlobalVirtualEcdsaIdentity as u8;
-                Self(temp)
+                Self(NodeId(temp))
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let mut temp = hash(public_key.to_vec()).lower_27_bytes();
                 temp[0] = EntityType::GlobalVirtualEddsaIdentity as u8;
-                Self(temp)
+                Self(NodeId(temp))
             }
         }
     }
 }
 
+impl AsRef<NodeId> for ComponentAddress {
+    fn as_ref(&self) -> &NodeId {
+        &self.0
+    }
+}
+
 impl AsRef<[u8]> for ComponentAddress {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        self.0.as_ref()
     }
 }
 
@@ -83,7 +90,7 @@ impl TryFrom<[u8; NODE_ID_LENGTH]> for ComponentAddress {
                 EntityType::GlobalVirtualEcdsaAccount |
                 EntityType::GlobalVirtualEddsaAccount |
                 EntityType::GlobalVirtualEcdsaIdentity |
-                EntityType::GlobalVirtualEddsaIdentity => Ok(Self(value)),
+                EntityType::GlobalVirtualEddsaIdentity => Ok(Self(NodeId(value))),
                 EntityType::InternalVault |
                 EntityType::InternalAccessController |
                 EntityType::InternalAccount |
@@ -106,7 +113,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
 
 impl Into<[u8; NODE_ID_LENGTH]> for ComponentAddress {
     fn into(self) -> [u8; NODE_ID_LENGTH] {
-        self.0
+        self.0.into()
     }
 }
 
@@ -167,7 +174,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
-            return encoder.encode_to_fmt(f, &self.0);
+            return encoder.encode_to_fmt(f, self.0.as_ref());
         }
 
         // This could be made more performant by streaming the hex into the formatter

@@ -2,6 +2,7 @@ use crate::address::EncodeBech32AddressError;
 use crate::address::{AddressDisplayContext, EntityType, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
+use crate::types::NodeId;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 use radix_engine_constants::NODE_ID_LENGTH;
@@ -11,11 +12,11 @@ use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct PackageAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
+pub struct PackageAddress(NodeId); // private to ensure entity type check
 
 impl PackageAddress {
     pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
-        Self(raw)
+        Self(NodeId(raw))
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -23,9 +24,15 @@ impl PackageAddress {
     }
 }
 
+impl AsRef<NodeId> for PackageAddress {
+    fn as_ref(&self) -> &NodeId {
+        &self.0
+    }
+}
+
 impl AsRef<[u8]> for PackageAddress {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        self.0.as_ref()
     }
 }
 
@@ -36,7 +43,7 @@ impl TryFrom<[u8; NODE_ID_LENGTH]> for PackageAddress {
         match EntityType::from_repr(value[0])
             .ok_or(ParsePackageAddressError::InvalidEntityTypeId(value[0]))?
         {
-            EntityType::GlobalPackage => Ok(Self(value)),
+            EntityType::GlobalPackage => Ok(Self(NodeId(value))),
             _ => Err(ParsePackageAddressError::InvalidEntityTypeId(value[0])),
         }
     }
@@ -55,7 +62,7 @@ impl TryFrom<&[u8]> for PackageAddress {
 
 impl Into<[u8; NODE_ID_LENGTH]> for PackageAddress {
     fn into(self) -> [u8; NODE_ID_LENGTH] {
-        self.0
+        self.0.into()
     }
 }
 
@@ -116,7 +123,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
-            return encoder.encode_to_fmt(f, &self.0);
+            return encoder.encode_to_fmt(f, self.0.as_ref());
         }
 
         // This could be made more performant by streaming the hex into the formatter
