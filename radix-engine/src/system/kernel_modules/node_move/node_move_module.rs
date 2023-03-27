@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, AdditionalActorInfo};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -31,8 +31,8 @@ impl NodeMoveModule {
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                         if let Actor {
-                            identifier:
-                                ActorIdentifier::Function(FnIdentifier {
+                            info:
+                                AdditionalActorInfo::Function(FnIdentifier {
                                     package_address: RESOURCE_MANAGER_PACKAGE,
                                     ..
                                 }),
@@ -46,7 +46,7 @@ impl NodeMoveModule {
                         // TODO: align with barrier design?
                         let mut changed_to_restricted = true;
                         if let Actor {
-                            identifier: ActorIdentifier::Method(_, MethodIdentifier(node_id, ..)),
+                            info: AdditionalActorInfo::Method(_, node_id, ..),
                             ..
                         } = callee
                         {

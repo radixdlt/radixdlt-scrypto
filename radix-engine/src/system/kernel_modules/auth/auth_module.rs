@@ -7,7 +7,7 @@ use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, AdditionalActorInfo};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -36,7 +36,7 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized(ActorIdentifier, MethodAuthorization),
+    Unauthorized(AdditionalActorInfo, MethodAuthorization),
 }
 
 #[derive(Debug, Clone)]
@@ -51,9 +51,10 @@ impl AuthModule {
         matches!(
             actor,
             Actor {
-                identifier: ActorIdentifier::Method(
+                info: AdditionalActorInfo::Method(
                     _,
-                    MethodIdentifier(RENodeId::GlobalObject(..), ..)
+                    RENodeId::GlobalObject(..),
+                    ..
                 ),
                 ..
             }
@@ -61,8 +62,8 @@ impl AuthModule {
     }
 
     fn global_object_barrier(actor: &Option<Actor>) -> Option<Address> {
-        actor.as_ref().and_then(|actor| match &actor.identifier {
-            ActorIdentifier::Method(_, MethodIdentifier(RENodeId::GlobalObject(address), ..)) => {
+        actor.as_ref().and_then(|actor| match &actor.info {
+            AdditionalActorInfo::Method(_, RENodeId::GlobalObject(address), ..) => {
                 Some(address.clone())
             }
             _ => None,
@@ -118,18 +119,20 @@ impl AuthModule {
     }
 
     fn method_auth<Y: KernelModuleApi<RuntimeError>>(
-        identifier: &MethodIdentifier,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        ident: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = match identifier {
-            MethodIdentifier(node_id, module_id, ident)
+        let auth = match (node_id, module_id, ident) {
+            (node_id, module_id, ident)
                 if matches!(
                     module_id,
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1
                 ) =>
             {
-                match ident.as_str() {
+                match ident {
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
                         AccessRulesNativePackage::set_method_access_rule_authorization(
                             node_id, *module_id, args, api,
@@ -154,7 +157,7 @@ impl AuthModule {
                 }
             }
 
-            MethodIdentifier(RENodeId::Object(object_id), ..) => {
+            (RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
                 let (package_address, blueprint) = api.get_object_type_info(node_id)?;
                 match (package_address, blueprint.as_str()) {
@@ -178,7 +181,7 @@ impl AuthModule {
                         };
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
-                        let method_key = identifier.method_key();
+                        let method_key = MethodKey::new(*module_id, ident.to_string());
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
                                 &RENodeId::GlobalObject(resource_address.into()),
@@ -224,8 +227,8 @@ impl AuthModule {
                 }
             }
 
-            MethodIdentifier(node_id, module_id, ..) => {
-                let method_key = identifier.method_key();
+            (node_id, module_id, ..) => {
+                let method_key = MethodKey::new(*module_id, ident.to_string());
 
                 // TODO: Clean this up
                 let auth = if matches!(
@@ -234,14 +237,14 @@ impl AuthModule {
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
                     Self::method_authorization_stateful(
-                        node_id,
+                        &node_id,
                         NodeModuleId::AccessRules,
                         method_key,
                         api,
                     )?
                 } else {
                     Self::method_authorization_stateless(
-                        node_id,
+                        &node_id,
                         NodeModuleId::AccessRules,
                         method_key,
                         api,
@@ -378,9 +381,9 @@ impl KernelModule for AuthModule {
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorization = match &callee.identifier {
-            ActorIdentifier::Method(_, method) => Self::method_auth(method, &args, api)?,
-            ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
+        let authorization = match &callee.info {
+            AdditionalActorInfo::Method(_, node_id, module_id) => Self::method_auth(node_id, module_id, callee.ident(), &args, api)?,
+            AdditionalActorInfo::Function(function) => Self::function_auth(function, api)?,
         };
         let barrier_crossings_allowed = if Self::is_global_object_barrier(callee) {
             0
@@ -397,7 +400,7 @@ impl KernelModule for AuthModule {
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(callee.identifier.clone(), authorization),
+                AuthError::Unauthorized(callee.info.clone(), authorization),
             )));
         }
 

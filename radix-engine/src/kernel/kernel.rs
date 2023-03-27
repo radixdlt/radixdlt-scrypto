@@ -16,7 +16,7 @@ use crate::blueprints::identity::IdentityBlueprint;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::ActorIdentifier;
+use crate::kernel::actor::AdditionalActorInfo;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -740,8 +740,8 @@ where
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
-            match actor.identifier {
-                ActorIdentifier::Method(Some(address), ..) => {
+            match actor.info {
+                AdditionalActorInfo::Method(Some(address), ..) => {
                     self.current_frame.add_ref(
                         RENodeId::GlobalObject(address),
                         RENodeVisibilityOrigin::Normal,

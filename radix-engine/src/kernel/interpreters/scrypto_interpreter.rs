@@ -8,7 +8,7 @@ use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, AdditionalActorInfo};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{
@@ -146,8 +146,8 @@ impl ExecutableInvocation for MethodInvocation {
         );
         let global_address = api
             .kernel_get_current_actor()
-            .and_then(|a| match a.identifier {
-                ActorIdentifier::Method(global, ..) => global,
+            .and_then(|a| match a.info {
+                AdditionalActorInfo::Method(global, ..) => global,
                 _ => {
                     if let RENodeId::GlobalObject(address) = self.identifier.0 {
                         Some(address)

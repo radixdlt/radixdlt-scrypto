@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, AdditionalActorInfo};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -136,11 +136,11 @@ impl KernelModule for CostingModule {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = {
             let Actor {
-                identifier,
+                info: identifier,
                 fn_identifier,
             } = callee;
             let maybe_component = match &identifier {
-                ActorIdentifier::Method(_, MethodIdentifier(node_id, ..)) => match node_id {
+                AdditionalActorInfo::Method(_, node_id, ..) => match node_id {
                     RENodeId::GlobalObject(Address::Component(address)) => Some(address),
                     _ => None,
                 },

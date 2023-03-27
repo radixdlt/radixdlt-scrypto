@@ -1,5 +1,5 @@
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
+use crate::kernel::actor::{Actor, AdditionalActorInfo, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
@@ -116,8 +116,8 @@ impl VisibilityProperties {
                             package_address, ..
                         } if is_native_package(*package_address) => true,
                         // Scrypto
-                        _ => match &actor.identifier {
-                            ActorIdentifier::Function(..) => match (node_id, offset) {
+                        _ => match &actor.info {
+                            AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
                                     RENodeId::GlobalObject(_),
@@ -144,9 +144,9 @@ impl VisibilityProperties {
                                 // Otherwise, false
                                 _ => false,
                             },
-                            ActorIdentifier::Method(_, method_identifier) => {
-                                match method_identifier {
-                                    MethodIdentifier(RENodeId::Object(component_address), ..) => {
+                            AdditionalActorInfo::Method(_, actor_node_id, ..) => {
+                                match actor_node_id {
+                                    RENodeId::Object(component_address) => {
                                         match (node_id, offset) {
                                             // READ package code & abi
                                             (
@@ -177,12 +177,9 @@ impl VisibilityProperties {
                                             _ => false,
                                         }
                                     }
-                                    MethodIdentifier(
-                                        RENodeId::GlobalObject(Address::Component(
-                                            component_address,
-                                        )),
-                                        ..,
-                                    ) => match (node_id, offset) {
+                                    RENodeId::GlobalObject(Address::Component(
+                                        component_address,
+                                    )) => match (node_id, offset) {
                                         // READ package code & abi
                                         (
                                             RENodeId::GlobalObject(_),
@@ -224,8 +221,8 @@ impl VisibilityProperties {
                         } if is_native_package(*package_address) => true,
 
                         // Scrypto
-                        _ => match &actor.identifier {
-                            ActorIdentifier::Function(..) => match (node_id, offset) {
+                        _ => match &actor.info {
+                            AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -233,9 +230,9 @@ impl VisibilityProperties {
                                 _ => false,
                             },
 
-                            ActorIdentifier::Method(_, method_identifier) => {
-                                match method_identifier {
-                                    MethodIdentifier(RENodeId::Object(component_address), ..) => {
+                            AdditionalActorInfo::Method(_, actor_node_id, ..) => {
+                                match actor_node_id {
+                                    RENodeId::Object(component_address) => {
                                         match (node_id, offset) {
                                             (
                                                 RENodeId::KeyValueStore(_),
@@ -250,12 +247,10 @@ impl VisibilityProperties {
                                             _ => false,
                                         }
                                     }
-                                    MethodIdentifier(
-                                        RENodeId::GlobalObject(Address::Component(
-                                            component_address,
-                                        )),
-                                        ..,
-                                    ) => match (node_id, offset) {
+                                    RENodeId::GlobalObject(Address::Component(
+                                        component_address,
+                                    ))
+                                    => match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),
                                             SubstateOffset::KeyValueStore(

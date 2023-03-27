@@ -1,18 +1,22 @@
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ActorIdentifier {
-    Method(Option<Address>, MethodIdentifier),
+pub enum AdditionalActorInfo {
+    Method(Option<Address>, RENodeId, NodeModuleId),
     Function(FnIdentifier),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Actor {
     pub fn_identifier: FnIdentifier,
-    pub identifier: ActorIdentifier,
+    pub info: AdditionalActorInfo,
 }
 
 impl Actor {
+    pub fn ident(&self) -> &str {
+        self.fn_identifier.ident.as_str()
+    }
+
     pub fn method<I: Into<FnIdentifier>>(
         global_address: Option<Address>,
         identifier: I,
@@ -20,7 +24,7 @@ impl Actor {
     ) -> Self {
         Self {
             fn_identifier: identifier.into(),
-            identifier: ActorIdentifier::Method(global_address, method),
+            info: AdditionalActorInfo::Method(global_address, method.0, method.1),
         }
     }
 
@@ -28,7 +32,7 @@ impl Actor {
         let fn_identifier = identifier.into();
         Self {
             fn_identifier: fn_identifier.clone(),
-            identifier: ActorIdentifier::Function(fn_identifier),
+            info: AdditionalActorInfo::Function(fn_identifier),
         }
     }
 }

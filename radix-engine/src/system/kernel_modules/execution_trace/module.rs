@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, AdditionalActorInfo};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -439,9 +439,9 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match callee.identifier {
-                ActorIdentifier::Method(..) => Origin::ScryptoMethod(callee.fn_identifier.clone()),
-                ActorIdentifier::Function(..) => {
+            let origin = match callee.info {
+                AdditionalActorInfo::Method(..) => Origin::ScryptoMethod(callee.fn_identifier.clone()),
+                AdditionalActorInfo::Function(..) => {
                     Origin::ScryptoFunction(callee.fn_identifier.clone())
                 }
             };
@@ -464,8 +464,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier:
-                    ActorIdentifier::Method(_, MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                info:
+                    AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), ..),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -479,8 +479,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier:
-                    ActorIdentifier::Method(_, MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                info:
+                    AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), ..),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -506,8 +506,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier:
-                    ActorIdentifier::Method(_, MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                info:
+                    AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), ..),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -661,7 +661,7 @@ pub fn calculate_resource_changes(
         );
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Actor(Actor {
-            identifier: ActorIdentifier::Method(_, MethodIdentifier(node_id, ..)),
+            info: AdditionalActorInfo::Method(_, node_id, ..),
             ..
         }) = actor
         {
