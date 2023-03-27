@@ -377,9 +377,7 @@ where
                     (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                         EntityType::GlobalAccessController
                     }
-                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => {
-                        EntityType::GlobalValidator
-                    }
+                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
                     _ => EntityType::GlobalComponent,
                 }
             }

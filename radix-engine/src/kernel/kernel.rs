@@ -667,10 +667,7 @@ where
         Ok(node)
     }
 
-    fn kernel_allocate_node_id(
-        &mut self,
-        node_type: EntityType,
-    ) -> Result<RENodeId, RuntimeError> {
+    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 

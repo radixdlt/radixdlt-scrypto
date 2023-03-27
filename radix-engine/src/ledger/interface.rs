@@ -15,75 +15,6 @@ High-level Abstraction
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 
-/// The unique identifier of a (stored) node.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct NodeId([u8; Self::LENGTH]);
-
-impl NodeId {
-    pub const LENGTH: usize = 27;
-
-    pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 1]) -> Self {
-        let mut buf = [0u8; Self::LENGTH];
-        buf[0] = entity_byte;
-        buf[1..random_bytes.len() + 1].copy_from_slice(random_bytes);
-        Self(buf)
-    }
-}
-
-impl AsRef<[u8]> for NodeId {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Into<[u8; NodeId::LENGTH]> for NodeId {
-    fn into(self) -> [u8; NodeId::LENGTH] {
-        self.0
-    }
-}
-
-/// The unique identifier of a node module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct ModuleId(pub u8);
-
-/// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct SubstateKey(Vec<u8>);
-
-impl SubstateKey {
-    pub const MIN_LENGTH: usize = 1;
-    pub const MAX_LENGTH: usize = 128;
-    pub const MIN: Self = Self(vec![u8::MIN; Self::MIN_LENGTH]);
-    pub const MAX: Self = Self(vec![u8::MAX; Self::MAX_LENGTH]);
-
-    pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        Self::from_vec(slice.to_vec())
-    }
-
-    pub fn from_vec(bytes: Vec<u8>) -> Option<Self> {
-        if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
-            None
-        } else {
-            Some(Self(bytes))
-        }
-    }
-}
-
-impl AsRef<[u8]> for SubstateKey {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Into<Vec<u8>> for SubstateKey {
-    fn into(self) -> Vec<u8> {
-        self.0
-    }
-}
-
 /// Utility function for encoding a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
 pub fn encode_substate_id(
     node_id: &NodeId,
@@ -91,7 +22,7 @@ pub fn encode_substate_id(
     substate_key: &SubstateKey,
 ) -> Vec<u8> {
     let mut buffer = Vec::new();
-    buffer.extend(&node_id.0);
+    buffer.extend(&node_id.as_ref());
     buffer.push(module_id.0);
     buffer.extend(substate_key.as_ref()); // Length is marked by EOF
     buffer

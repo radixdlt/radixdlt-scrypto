@@ -6,7 +6,7 @@ pub trait ClientCostingApi<E> {
 
     fn credit_cost_units(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, E>;
