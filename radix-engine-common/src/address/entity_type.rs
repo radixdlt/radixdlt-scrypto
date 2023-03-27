@@ -1,6 +1,8 @@
+use strum::FromRepr;
+
 /// An enum which represents the different addressable entities.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, FromRepr)]
 pub enum EntityType {
     GlobalPackage,
     GlobalFungibleResourceManager,

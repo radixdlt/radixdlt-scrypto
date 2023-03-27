@@ -16,19 +16,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct PackageAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 
 impl PackageAddress {
-    pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
-        match self {
-            Self::Normal(v) => v.clone(),
-        }
-    }
-
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.push(EntityType::package(self).id());
-        match self {
-            Self::Normal(v) => buf.extend(v),
-        }
-        buf
+        self.0.to_vec()
     }
 
     pub fn to_hex(&self) -> String {
@@ -46,8 +35,14 @@ impl PackageAddress {
     }
 }
 
+impl AsRef<[u8]> for PackageAddress {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 impl TryFrom<&[u8]> for PackageAddress {
-    type Error = AddressError;
+    type Error = ParsePackageAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
@@ -67,16 +62,16 @@ impl TryFrom<&[u8]> for PackageAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PackageAddressError {
+pub enum ParsePackageAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for PackageAddressError {}
+impl std::error::Error for ParsePackageAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for PackageAddressError {
+impl fmt::Display for ParsePackageAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

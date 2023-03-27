@@ -1,16 +1,10 @@
+use super::entity_type::EntityType;
+use super::hrpset::HrpSet;
+use crate::address::errors::EncodeBech32AddressError;
+use crate::network::NetworkDefinition;
 use bech32::{self, ToBase32, Variant, WriteBase32};
 use sbor::rust::borrow::Cow;
 use sbor::rust::fmt;
-use sbor::rust::string::String;
-use utils::combine;
-
-use super::entity_type::EntityType;
-use super::errors::AddressError;
-use super::hrpset::HrpSet;
-use crate::data::scrypto::model::ComponentAddress;
-use crate::data::scrypto::model::PackageAddress;
-use crate::data::scrypto::model::ResourceAddress;
-use crate::network::NetworkDefinition;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
 #[derive(Debug)]
@@ -30,98 +24,29 @@ impl Bech32Encoder {
         }
     }
 
-    /// Encodes a package address in Bech32 and returns a String or panics on failure.
-    pub fn encode_package_address_to_string(&self, package_address: &PackageAddress) -> String {
-        let mut buf = String::new();
-        self.encode_package_address_to_fmt(&mut buf, package_address)
-            .expect("Failed to encode package address as Bech32");
-        buf
-    }
-
-    /// Encodes a package address in Bech32 to the given fmt, or returns an `AddressError` on failure.
-    pub fn encode_package_address_to_fmt<F: fmt::Write>(
-        &self,
-        fmt: &mut F,
-        package_address: &PackageAddress,
-    ) -> Result<(), AddressError> {
-        match package_address {
-            PackageAddress::Normal(data) => {
-                self.encode_to_fmt(fmt, EntityType::package(package_address), data)
-            }
-        }
-    }
-
-    /// Encodes a component address in Bech32 and returns a String or panics on failure.
-    pub fn encode_component_address_to_string(
-        &self,
-        component_address: &ComponentAddress,
-    ) -> String {
-        let mut buf = String::new();
-        self.encode_component_address_to_fmt(&mut buf, component_address)
-            .expect("Failed to encode component address as Bech32");
-        buf
-    }
-
-    /// Encodes a component address in Bech32 to the given fmt, or returns an `AddressError` on failure.
-    pub fn encode_component_address_to_fmt<F: fmt::Write>(
-        &self,
-        fmt: &mut F,
-        component_address: &ComponentAddress,
-    ) -> Result<(), AddressError> {
-        match component_address {
-            ComponentAddress::Normal(data)
-            | ComponentAddress::Account(data)
-            | ComponentAddress::Identity(data)
-            | ComponentAddress::Clock(data)
-            | ComponentAddress::EpochManager(data)
-            | ComponentAddress::Validator(data)
-            | ComponentAddress::EcdsaSecp256k1VirtualAccount(data)
-            | ComponentAddress::EddsaEd25519VirtualAccount(data)
-            | ComponentAddress::AccessController(data)
-            | ComponentAddress::EcdsaSecp256k1VirtualIdentity(data)
-            | ComponentAddress::EddsaEd25519VirtualIdentity(data) => {
-                self.encode_to_fmt(fmt, EntityType::component(component_address), data)
-            }
-        }
-    }
-
-    /// Encodes a resource address in Bech32 and returns a String or panics on failure
-    pub fn encode_resource_address_to_string(&self, resource_address: &ResourceAddress) -> String {
-        let mut buf = String::new();
-        self.encode_resource_address_to_fmt(&mut buf, resource_address)
-            .expect("Failed to encode resource address as Bech32");
-        buf
-    }
-
-    /// Encodes a resource address in Bech32 to the given fmt, or returns an `AddressError` on failure.
-    pub fn encode_resource_address_to_fmt<F: fmt::Write>(
-        &self,
-        fmt: &mut F,
-        resource_address: &ResourceAddress,
-    ) -> Result<(), AddressError> {
-        match resource_address {
-            ResourceAddress::Fungible(data) | ResourceAddress::NonFungible(data) => {
-                self.encode_to_fmt(fmt, EntityType::resource(resource_address), data)
-            }
-        }
-    }
-
     /// Low level method which performs the Bech32 encoding of the data.
-    fn encode_to_fmt<F: fmt::Write>(
+    pub fn encode_to_fmt<F: fmt::Write>(
         &self,
         fmt: &mut F,
-        entity_type: EntityType,
-        other_data: &[u8],
-    ) -> Result<(), AddressError> {
+        full_data: &[u8],
+    ) -> Result<(), EncodeBech32AddressError> {
+        // Decode the entity type
+        let entity_type = EntityType::from_repr(
+            *full_data
+                .get(0)
+                .ok_or(EncodeBech32AddressError::MissingEntityTypeByte)?,
+        )
+        .ok_or_else(|| EncodeBech32AddressError::InvalidEntityTypeId(full_data[0]))?;
+
         // Obtain the HRP corresponding to this entity type
         let hrp = self.hrp_set.get_entity_hrp(&entity_type);
 
-        let full_data = combine(entity_type.id(), other_data);
-
         match bech32_encode_to_fmt(fmt, hrp, full_data.to_base32(), Variant::Bech32m) {
             Ok(Ok(())) => Ok(()),
-            Ok(Err(format_error)) => Err(AddressError::FormatError(format_error)),
-            Err(encoding_error) => Err(AddressError::Bech32mEncodingError(encoding_error)),
+            Ok(Err(format_error)) => Err(EncodeBech32AddressError::FormatError(format_error)),
+            Err(encoding_error) => Err(EncodeBech32AddressError::Bech32mEncodingError(
+                encoding_error,
+            )),
         }
     }
 }

@@ -62,13 +62,19 @@ impl ComponentAddress {
     }
 }
 
+impl AsRef<[u8]> for ComponentAddress {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = ComponentAddressError;
+    type Error = ParseComponentAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             NODE_ID_LENGTH => match EntityType::try_from(slice[0])
-                .map_err(|_| ComponentAddressError::InvalidEntityTypeId(slice[0]))?
+                .map_err(|_| ParseComponentAddressError::InvalidEntityTypeId(slice[0]))?
             {
                 EntityType::NormalComponent
                 | EntityType::AccountComponent
@@ -83,9 +89,11 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 | EntityType::AccessControllerComponent
                 | EntityType::FungibleResource
                 | EntityType::NonFungibleResource
-                | EntityType::Package => Err(ComponentAddressError::InvalidEntityTypeId(slice[0])),
+                | EntityType::Package => {
+                    Err(ParseComponentAddressError::InvalidEntityTypeId(slice[0]))
+                }
             },
-            _ => Err(ComponentAddressError::InvalidLength(slice.len())),
+            _ => Err(ParseComponentAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -95,16 +103,16 @@ impl TryFrom<&[u8]> for ComponentAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ComponentAddressError {
+pub enum ParseComponentAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ComponentAddressError {}
+impl std::error::Error for ParseComponentAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ComponentAddressError {
+impl fmt::Display for ParseComponentAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

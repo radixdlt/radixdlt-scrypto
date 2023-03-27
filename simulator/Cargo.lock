@@ -882,6 +882,7 @@ dependencies = [
  "radix-engine-constants",
  "radix-engine-derive",
  "sbor",
+ "strum",
  "utils",
 ]
 

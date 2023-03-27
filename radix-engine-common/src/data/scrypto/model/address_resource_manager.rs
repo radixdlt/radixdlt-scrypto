@@ -41,20 +41,26 @@ impl ResourceAddress {
     }
 }
 
+impl AsRef<[u8]> for ResourceAddress {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = ResourceAddressError;
+    type Error = ParseResourceAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             ADDRESS_LENGTH => match EntityType::try_from(slice[0])
-                .map_err(|_| ResourceAddressError::InvalidEntityTypeId(slice[0]))?
+                .map_err(|_| ParseResourceAddressError::InvalidEntityTypeId(slice[0]))?
             {
                 EntityType::NonFungibleResource | EntityType::FungibleResource => {
                     Ok(Self(copy_u8_array(&slice[1..])))
                 }
-                _ => Err(ResourceAddressError::InvalidEntityTypeId(slice[0])),
+                _ => Err(ParseResourceAddressError::InvalidEntityTypeId(slice[0])),
             },
-            _ => Err(ResourceAddressError::InvalidLength(slice.len())),
+            _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -64,16 +70,16 @@ impl TryFrom<&[u8]> for ResourceAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ResourceAddressError {
+pub enum ParseResourceAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ResourceAddressError {}
+impl std::error::Error for ParseResourceAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ResourceAddressError {
+impl fmt::Display for ParseResourceAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
