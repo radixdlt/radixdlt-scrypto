@@ -575,11 +575,11 @@ where
     W: WasmEngine,
 {
     if substate_store
-        .get_substate(&SubstateId(
-            RENodeId::GlobalObject(RADIX_TOKEN.into()),
+        .get_substate(
+            &RENodeId::GlobalObject(RADIX_TOKEN.into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
+        )
         .is_none()
     {
         let genesis_transaction = create_genesis(

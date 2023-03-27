@@ -1,5 +1,5 @@
 use crate::blueprints::resource::VaultInfoSubstate;
-use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use crate::ledger::{*};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
@@ -17,7 +17,7 @@ pub enum StateTreeTraverserError {
 pub struct StateTreeTraverser<
     's,
     'v,
-    S: SubstateDatabase + QueryableSubstateStore,
+    S: SubstateDatabase,
     V: StateTreeVisitor,
 > {
     substate_store: &'s S,
@@ -46,7 +46,7 @@ pub trait StateTreeVisitor {
     }
 }
 
-impl<'s, 'v, S: SubstateDatabase + QueryableSubstateStore, V: StateTreeVisitor>
+impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
     StateTreeTraverser<'s, 'v, S, V>
 {
     pub fn new(substate_store: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {

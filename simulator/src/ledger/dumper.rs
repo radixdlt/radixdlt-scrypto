@@ -69,7 +69,7 @@ struct ComponentStateDump {
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
+pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     substate_store: &T,
     output: &mut O,
@@ -323,7 +323,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     Ok(())
 }
 
-fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
+fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     kv_store_id: &KeyValueStoreId,
     substate_store: &T,
