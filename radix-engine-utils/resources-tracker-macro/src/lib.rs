@@ -146,13 +146,13 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                     #arg_evaluate;
                     #args_quote_array;
                     QEMU_PLUGIN.with(|v| {
-                        v.borrow_mut().start_counting(#fn_signature, args.as_slice());
+                        v.borrow_mut().start_counting(#fn_signature, qemu_call_args.as_slice());
                     });
                     let ret = #original_block;
                     #arg_evaluate_after;
                     #args_after_quote_array;
                     QEMU_PLUGIN.with(|v| {
-                        v.borrow_mut().stop_counting(#fn_signature, args.as_slice());
+                        v.borrow_mut().stop_counting(#fn_signature, qemu_call_args.as_slice());
                     });
                     ret
                 }} );
@@ -262,9 +262,9 @@ fn create_params( ident: &Vec<syn::Ident>, fn_sig: syn::ItemFn, additional_items
     }
 
     if args_quote_len > 0 {
-        args_quote_array = quote!{ let args: [OutputParam; #args_quote_len] = [#args_quote_array] };
+        args_quote_array = quote!{ let qemu_call_args: [OutputParam; #args_quote_len] = [#args_quote_array] };
     } else {
-        args_quote_array = quote!{ let args: [OutputParam; 0] = []; };
+        args_quote_array = quote!{ let qemu_call_args: [OutputParam; 0] = []; };
     }
 
     args_quote_array

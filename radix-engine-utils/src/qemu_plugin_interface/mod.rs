@@ -160,6 +160,7 @@ impl<'a> QemuPluginInterface<'a> {
         println!("Subtraction overflow count {}", ov_cnt );
     }
 
+    #[allow(dead_code)]
     fn save_output_to_file(&self, file_name: &str) {
         if let Ok(mut file) = File::create(file_name) {
             for v in &self.output_data {

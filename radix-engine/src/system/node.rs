@@ -4,7 +4,6 @@ use crate::system::node_substates::*;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::SubstateOffset;
-use resources_tracker_macro::trace_resources;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -25,7 +24,6 @@ pub enum RENodeModuleInit {
 }
 
 impl RENodeModuleInit {
-    #[trace_resources(info="RENodeModuleInit")]
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
@@ -68,7 +66,6 @@ pub enum RENodeInit {
 }
 
 impl RENodeInit {
-    #[trace_resources(info="RENodeInit")]
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {

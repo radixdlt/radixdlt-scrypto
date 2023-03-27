@@ -1,7 +1,7 @@
 use std::{
     fmt::{Display, Formatter},
     fs::File, io::Write};
-use fixedstr::str32;
+use fixedstr::{str64, str32};
 
 
 pub enum OutputDataEvent {
@@ -23,7 +23,7 @@ impl Display for OutputDataEvent {
 pub enum OutputParamValue {
     NumberI64(i64),
     NumberU64(u64),
-    Literal(str32) // using contant 32-bytes length string for speed optimisation
+    Literal(str64) // using contant 64-bytes length string for speed optimisation
 }
 impl Display for OutputParamValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -37,7 +37,7 @@ impl Display for OutputParamValue {
 }
 impl Default for OutputParamValue {
     fn default() -> Self {
-        OutputParamValue::Literal(str32::new())
+        OutputParamValue::Literal(str64::new())
     }
 }
 
