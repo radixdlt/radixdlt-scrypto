@@ -857,6 +857,7 @@ dependencies = [
  "parity-wasm",
  "radix-engine-constants",
  "radix-engine-interface",
+ "radix-engine-stores",
  "sbor",
  "strum",
  "transaction",
@@ -919,7 +920,6 @@ name = "radix-engine-stores"
 version = "0.9.0"
 dependencies = [
  "itertools",
- "radix-engine",
  "radix-engine-interface",
  "rocksdb",
  "sbor",
