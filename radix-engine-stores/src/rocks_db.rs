@@ -5,7 +5,7 @@ use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine::{ledger::*, wasm::WasmEngine};
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
@@ -56,13 +56,13 @@ impl RocksdbSubstateStore {
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(PackageAddress::Normal([0; 26]).into()),
+            NodeId::GlobalObject(PackageAddress::Normal([0; 26]).into()),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(PackageAddress::Normal([255; 26]).into()),
+            NodeId::GlobalObject(PackageAddress::Normal([255; 26]).into()),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
@@ -72,7 +72,7 @@ impl RocksdbSubstateStore {
         let mut addresses = Vec::new();
         for substate_id in substate_ids {
             if let SubstateId(
-                RENodeId::GlobalObject(Address::Package(package_address)),
+                NodeId::GlobalObject(Address::Package(package_address)),
                 TypedModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) = substate_id
@@ -90,13 +90,13 @@ impl RocksdbSubstateStore {
         end: ComponentAddress,
     ) -> Vec<ComponentAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(Address::Component(start)),
+            NodeId::GlobalObject(Address::Component(start)),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(Address::Component(end)),
+            NodeId::GlobalObject(Address::Component(end)),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
@@ -105,7 +105,7 @@ impl RocksdbSubstateStore {
         let mut addresses = Vec::new();
         for substate_id in substate_ids {
             if let SubstateId(
-                RENodeId::GlobalObject(Address::Component(component_address)),
+                NodeId::GlobalObject(Address::Component(component_address)),
                 TypedModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) = substate_id
@@ -132,13 +132,13 @@ impl RocksdbSubstateStore {
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(ResourceAddress::Fungible([0; 26]).into()),
+            NodeId::GlobalObject(ResourceAddress::Fungible([0; 26]).into()),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(ResourceAddress::NonFungible([255; 26]).into()),
+            NodeId::GlobalObject(ResourceAddress::NonFungible([255; 26]).into()),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
@@ -147,7 +147,7 @@ impl RocksdbSubstateStore {
         let mut addresses = Vec::new();
         for substate_id in substate_ids {
             if let SubstateId(
-                RENodeId::GlobalObject(Address::Resource(resource_address)),
+                NodeId::GlobalObject(Address::Resource(resource_address)),
                 TypedModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) = substate_id
@@ -204,7 +204,7 @@ impl QueryableSubstateStore for RocksdbSubstateStore {
             let (key, value) = kv.unwrap();
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
-                RENodeId::KeyValueStore(id),
+                NodeId::KeyValueStore(id),
                 TypedModuleId::ObjectState,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
             ) = substate_id

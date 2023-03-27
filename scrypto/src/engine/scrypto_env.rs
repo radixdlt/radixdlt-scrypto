@@ -49,7 +49,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_key_value_store_info(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
     ) -> Result<KeyValueStoreSchema, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
@@ -61,7 +61,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn globalize(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         modules: BTreeMap<TypedModuleId, ObjectId>,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
@@ -80,7 +80,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn globalize_with_address(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         modules: BTreeMap<TypedModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, ClientApiError> {
@@ -103,7 +103,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
@@ -112,7 +112,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_module_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         node_module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
@@ -136,7 +136,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_object_type_info(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
@@ -170,7 +170,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
         unsafe { drop_object(node_id.as_ptr(), node_id.len()) };
@@ -182,7 +182,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     fn sys_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {

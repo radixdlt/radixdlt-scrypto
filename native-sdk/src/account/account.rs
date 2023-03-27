@@ -15,7 +15,7 @@ impl Account {
         Y: ClientApi<E>,
     {
         api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            &NodeId::GlobalObject(self.0.into()),
             ACCOUNT_DEPOSIT_IDENT,
             scrypto_encode(&AccountDepositInput { bucket }).unwrap(),
         )?;

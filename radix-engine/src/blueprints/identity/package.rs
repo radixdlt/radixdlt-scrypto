@@ -52,7 +52,7 @@ impl IdentityNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -110,7 +110,7 @@ impl IdentityBlueprint {
     pub fn create<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
+    ) -> Result<(NodeId, AccessRulesConfig), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -128,13 +128,13 @@ impl IdentityBlueprint {
 
         let component_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
-        Ok((RENodeId::Object(component_id), access_rules))
+        Ok((NodeId::Object(component_id), access_rules))
     }
 
     pub fn create_virtual<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
+    ) -> Result<(NodeId, AccessRulesConfig), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {

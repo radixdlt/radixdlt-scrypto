@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
     ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision,
@@ -25,7 +25,7 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::GlobalObject(CLOCK.into()),
+                &NodeId::GlobalObject(CLOCK.into()),
                 CLOCK_GET_CURRENT_TIME_IDENT,
                 scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
             )
@@ -68,7 +68,7 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::GlobalObject(CLOCK.into()),
+                &NodeId::GlobalObject(CLOCK.into()),
                 CLOCK_COMPARE_CURRENT_TIME_IDENT,
                 scrypto_encode(&ClockCompareCurrentTimeInput {
                     instant,

@@ -56,7 +56,7 @@ pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
     pub fn register<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -92,7 +92,7 @@ impl ValidatorBlueprint {
                 let validator_address = validator.address;
                 let manager = validator.manager;
                 api.call_method(
-                    &RENodeId::GlobalObject(manager.into()),
+                    &NodeId::GlobalObject(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateValidator::Register(key, stake_amount),
@@ -109,7 +109,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unregister<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -138,7 +138,7 @@ impl ValidatorBlueprint {
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
-                &RENodeId::GlobalObject(manager.into()),
+                &NodeId::GlobalObject(manager.into()),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     validator_address,
@@ -154,7 +154,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn stake<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -209,7 +209,7 @@ impl ValidatorBlueprint {
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
                 api.call_method(
-                    &RENodeId::GlobalObject(receiver.into()),
+                    &NodeId::GlobalObject(receiver.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -226,7 +226,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unstake<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -274,7 +274,7 @@ impl ValidatorBlueprint {
             lp_token_resman.burn(lp_tokens, api)?;
 
             let manager_handle = api.sys_lock_substate(
-                RENodeId::GlobalObject(manager.into()),
+                NodeId::GlobalObject(manager.into()),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -310,7 +310,7 @@ impl ValidatorBlueprint {
                 };
 
                 api.call_method(
-                    &RENodeId::GlobalObject(manager.into()),
+                    &NodeId::GlobalObject(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -327,7 +327,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn claim_xrd<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -359,7 +359,7 @@ impl ValidatorBlueprint {
 
         let current_epoch = {
             let mgr_handle = api.sys_lock_substate(
-                RENodeId::GlobalObject(manager.into()),
+                NodeId::GlobalObject(manager.into()),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -396,7 +396,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_key<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -426,7 +426,7 @@ impl ValidatorBlueprint {
                 if !stake_amount.is_zero() {
                     let update = UpdateValidator::Register(key, stake_amount);
                     api.call_method(
-                        &RENodeId::GlobalObject(manager.into()),
+                        &NodeId::GlobalObject(manager.into()),
                         EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                         scrypto_encode(&EpochManagerUpdateValidatorInput {
                             validator_address,
@@ -442,7 +442,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_accept_delegated_stake<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -704,7 +704,7 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize_with_address(
-            RENodeId::Object(validator_id),
+            NodeId::Object(validator_id),
             btreemap!(
                 TypedModuleId::AccessRules => access_rules.id(),
                 TypedModuleId::Metadata => metadata.id(),
@@ -754,7 +754,7 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize_with_address(
-            RENodeId::Object(validator_id),
+            NodeId::Object(validator_id),
             btreemap!(
                 TypedModuleId::AccessRules => access_rules.id(),
                 TypedModuleId::Metadata => metadata.id(),

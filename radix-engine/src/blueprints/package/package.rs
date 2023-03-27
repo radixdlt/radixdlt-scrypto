@@ -163,7 +163,7 @@ where
     );
 
     let node_id = if let Some(address) = package_address {
-        RENodeId::GlobalObject(PackageAddress::Normal(address).into())
+        NodeId::GlobalObject(PackageAddress::Normal(address).into())
     } else {
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
@@ -254,7 +254,7 @@ impl PackageNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -416,7 +416,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn set_royalty_config<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -442,7 +442,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn claim_royalty<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

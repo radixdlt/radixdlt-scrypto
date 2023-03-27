@@ -8,7 +8,7 @@ use crate::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    EntityType, InvocationDebugIdentifier, LockHandle, RENodeId, SubstateOffset, TypedModuleId,
+    EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateOffset, TypedModuleId,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -82,7 +82,7 @@ impl KernelModule for KernelTraceModule {
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
@@ -98,7 +98,7 @@ impl KernelModule for KernelTraceModule {
 
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping node: id = {:?}", node_id);
         Ok(())
@@ -106,7 +106,7 @@ impl KernelModule for KernelTraceModule {
 
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: &TypedModuleId,
         offset: &SubstateOffset,
         flags: &LockFlags,

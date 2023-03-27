@@ -2,7 +2,7 @@ use crate::types::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
 pub struct VaultCreationEvent {
-    pub vault_id: RENodeId,
+    pub vault_id: NodeId,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]

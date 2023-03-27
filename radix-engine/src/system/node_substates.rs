@@ -13,7 +13,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::{
-    ComponentOffset, KeyValueStoreOffset, RENodeId, SubstateOffset,
+    ComponentOffset, KeyValueStoreOffset, NodeId, SubstateOffset,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -1298,24 +1298,24 @@ impl<'a> SubstateRef<'a> {
     }
 
     // TODO: remove this method
-    pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (HashSet<NodeId>, Vec<NodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {
                 let nodes = worktop
                     .resources
                     .values()
-                    .map(|o| RENodeId::Object(o.bucket_id()))
+                    .map(|o| NodeId::Object(o.bucket_id()))
                     .collect();
                 (HashSet::new(), nodes)
             }
             SubstateRef::VaultInfo(vault) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::GlobalObject(vault.resource_address.into()));
+                references.insert(NodeId::GlobalObject(vault.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::ProofInfo(proof) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::GlobalObject(proof.resource_address.into()));
+                references.insert(NodeId::GlobalObject(proof.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::FungibleProof(proof) => {
@@ -1334,23 +1334,23 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::BucketInfo(bucket) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::GlobalObject(bucket.resource_address.into()));
+                references.insert(NodeId::GlobalObject(bucket.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
                 let mut references = HashSet::new();
                 for component_ref in &substate.dependent_components {
-                    references.insert(RENodeId::GlobalObject(component_ref.clone().into()));
+                    references.insert(NodeId::GlobalObject(component_ref.clone().into()));
                 }
                 for resource_ref in &substate.dependent_resources {
-                    references.insert(RENodeId::GlobalObject(resource_ref.clone().into()));
+                    references.insert(NodeId::GlobalObject(resource_ref.clone().into()));
                 }
                 (references, Vec::new())
             }
             SubstateRef::PackageRoyalty(substate) => {
                 let mut owns = Vec::new();
                 if let Some(vault) = substate.royalty_vault {
-                    owns.push(RENodeId::Object(vault.id()));
+                    owns.push(NodeId::Object(vault.id()));
                 }
                 (HashSet::new(), owns)
             }
@@ -1360,7 +1360,7 @@ impl<'a> SubstateRef<'a> {
                     TypeInfoSubstate::Object {
                         package_address, ..
                     } => {
-                        references.insert(RENodeId::GlobalObject(package_address.clone().into()));
+                        references.insert(NodeId::GlobalObject(package_address.clone().into()));
                     }
                     TypeInfoSubstate::KeyValueStore(..) => {}
                 }
@@ -1369,7 +1369,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::FungibleResourceManager(..) => (HashSet::new(), Vec::new()),
             SubstateRef::NonFungibleResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::KeyValueStore(substate.non_fungible_table));
+                owned_nodes.push(NodeId::KeyValueStore(substate.non_fungible_table));
 
                 (HashSet::new(), owned_nodes)
             }
@@ -1387,7 +1387,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.controlled_asset));
+                owned_nodes.push(NodeId::Object(substate.controlled_asset));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
@@ -1398,7 +1398,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
                 if let Some(vault) = substate.royalty_vault {
-                    owned_nodes.push(RENodeId::Object(vault.vault_id()));
+                    owned_nodes.push(NodeId::Object(vault.vault_id()));
                 }
                 (HashSet::new(), owned_nodes)
             }
@@ -1413,19 +1413,17 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Account(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::KeyValueStore(
-                    substate.vaults.key_value_store_id(),
-                ));
+                owned_nodes.push(NodeId::KeyValueStore(substate.vaults.key_value_store_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::AuthZone(substate) => {
                 let mut references = HashSet::new();
                 let mut owned_nodes = Vec::new();
                 for proof in &substate.proofs {
-                    owned_nodes.push(RENodeId::Object(proof.0));
+                    owned_nodes.push(NodeId::Object(proof.0));
                 }
                 if let Some(parent) = substate.parent {
-                    references.insert(RENodeId::Object(parent.0));
+                    references.insert(NodeId::Object(parent.0));
                 }
                 (references, owned_nodes)
             }

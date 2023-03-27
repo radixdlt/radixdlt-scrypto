@@ -18,7 +18,7 @@ pub struct AuthZoneParams {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
-    pub pre_allocated_ids: BTreeSet<RENodeId>,
+    pub pre_allocated_ids: BTreeSet<NodeId>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
@@ -78,7 +78,7 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn pre_allocated_ids(&self) -> &BTreeSet<RENodeId> {
+    pub fn pre_allocated_ids(&self) -> &BTreeSet<NodeId> {
         &self.context.pre_allocated_ids
     }
 

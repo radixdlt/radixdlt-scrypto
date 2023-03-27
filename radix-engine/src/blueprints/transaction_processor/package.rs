@@ -49,7 +49,7 @@ impl TransactionProcessorNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

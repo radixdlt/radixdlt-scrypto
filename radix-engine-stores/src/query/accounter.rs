@@ -19,7 +19,7 @@ impl<'s, S: SubstateDatabase> ResourceAccounter<'s, S> {
         }
     }
 
-    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), StateTreeTraverserError> {
+    pub fn add_resources(&mut self, node_id: NodeId) -> Result<(), StateTreeTraverserError> {
         let mut state_tree_visitor =
             StateTreeTraverser::new(self.substate_db, &mut self.accounting, 100);
         state_tree_visitor.traverse_all_descendents(None, node_id)

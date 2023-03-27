@@ -146,7 +146,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Object(proof.0),
+            NodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -155,7 +155,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
-                RENodeId::Object(proof.0),
+                NodeId::Object(proof.0),
                 SubstateOffset::Proof(ProofOffset::Fungible),
                 LockFlags::read_only(),
             )?;
@@ -196,7 +196,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Object(proof.0),
+            NodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -205,7 +205,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
-                RENodeId::Object(proof.0),
+                NodeId::Object(proof.0),
                 SubstateOffset::Proof(ProofOffset::NonFungible),
                 LockFlags::read_only(),
             )?;
@@ -253,7 +253,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut remaining = amount.clone();
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Object(proof.0),
+            NodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::Fungible),
             LockFlags::read_only(),
         )?;
@@ -336,7 +336,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut remaining = ids.clone();
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Object(proof.0),
+            NodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::NonFungible),
             LockFlags::read_only(),
         )?;

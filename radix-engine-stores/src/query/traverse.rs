@@ -10,7 +10,7 @@ use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
-    RENodeNotFound(RENodeId),
+    RENodeNotFound(NodeId),
     MaxDepthExceeded,
 }
 
@@ -37,8 +37,7 @@ pub trait StateTreeVisitor {
     ) {
     }
 
-    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
-    }
+    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &NodeId, _depth: u32) {}
 }
 
 impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v, S, V> {
@@ -53,7 +52,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
     pub fn traverse_all_descendents(
         &mut self,
         parent_node_id: Option<&SubstateId>,
-        node_id: RENodeId,
+        node_id: NodeId,
     ) -> Result<(), StateTreeTraverserError> {
         self.traverse_recursive(parent_node_id, node_id, 0)
     }
@@ -61,7 +60,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
     fn traverse_recursive(
         &mut self,
         parent: Option<&SubstateId>,
-        node_id: RENodeId,
+        node_id: NodeId,
         depth: u32,
     ) -> Result<(), StateTreeTraverserError> {
         if depth > self.max_depth {
@@ -69,11 +68,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
-            RENodeId::KeyValueStore(kv_store_id) => {
+            NodeId::KeyValueStore(kv_store_id) => {
                 let map = self.substate_db.get_kv_store_entries(&kv_store_id);
                 for (entry_id, substate) in map.iter() {
                     let substate_id = SubstateId(
-                        RENodeId::KeyValueStore(kv_store_id),
+                        NodeId::KeyValueStore(kv_store_id),
                         TypedModuleId::ObjectState,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id.clone())),
                     );
@@ -93,7 +92,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            RENodeId::Object(..) => {
+            NodeId::Object(..) => {
                 let substate_id = SubstateId(
                     node_id,
                     TypedModuleId::TypeInfo,
@@ -182,11 +181,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            RENodeId::GlobalObject(Address::Component(ComponentAddress::Account(..)))
-            | RENodeId::GlobalObject(Address::Component(
+            NodeId::GlobalObject(Address::Component(ComponentAddress::Account(..)))
+            | NodeId::GlobalObject(Address::Component(
                 ComponentAddress::EcdsaSecp256k1VirtualAccount(..),
             ))
-            | RENodeId::GlobalObject(Address::Component(
+            | NodeId::GlobalObject(Address::Component(
                 ComponentAddress::EddsaEd25519VirtualAccount(..),
             )) => {
                 let substate_id = SubstateId(
@@ -206,7 +205,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .expect("Broken Node Store");
                 }
             }
-            RENodeId::GlobalObject(Address::Component(_)) => {
+            NodeId::GlobalObject(Address::Component(_)) => {
                 let substate_id = SubstateId(
                     node_id,
                     TypedModuleId::ObjectState,

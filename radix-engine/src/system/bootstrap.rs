@@ -54,7 +54,7 @@ pub fn create_genesis(
 
     // Package Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(PACKAGE_PACKAGE.into()));
         let package_address = PACKAGE_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -76,7 +76,7 @@ pub fn create_genesis(
 
     // Metadata Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(METADATA_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(METADATA_PACKAGE.into()));
         let package_address = METADATA_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -98,7 +98,7 @@ pub fn create_genesis(
 
     // Royalty Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ROYALTY_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ROYALTY_PACKAGE.into()));
         let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
 
         instructions.push(Instruction::CallFunction {
@@ -121,7 +121,7 @@ pub fn create_genesis(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCESS_RULES_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ACCESS_RULES_PACKAGE.into()));
         let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -143,7 +143,7 @@ pub fn create_genesis(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(RESOURCE_MANAGER_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(RESOURCE_MANAGER_PACKAGE.into()));
         let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -175,7 +175,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -199,7 +199,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(PACKAGE_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -216,7 +216,7 @@ pub fn create_genesis(
 
     // Identity Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(IDENTITY_PACKAGE.into()));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -238,7 +238,7 @@ pub fn create_genesis(
 
     // EpochManager Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(EPOCH_MANAGER_PACKAGE.into()));
         let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -260,7 +260,7 @@ pub fn create_genesis(
 
     // Clock Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(CLOCK_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(CLOCK_PACKAGE.into()));
         let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -282,7 +282,7 @@ pub fn create_genesis(
 
     // Account Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -304,7 +304,7 @@ pub fn create_genesis(
 
     // AccessController Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCESS_CONTROLLER_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ACCESS_CONTROLLER_PACKAGE.into()));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -326,7 +326,7 @@ pub fn create_genesis(
 
     // TransactionProcessor Package
     {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_PROCESSOR_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(TRANSACTION_PROCESSOR_PACKAGE.into()));
         let package_address = TRANSACTION_PROCESSOR_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -352,7 +352,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -373,7 +373,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -394,7 +394,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(SYSTEM_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(SYSTEM_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -413,7 +413,7 @@ pub fn create_genesis(
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(FAUCET_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(FAUCET_PACKAGE.into()));
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -433,7 +433,7 @@ pub fn create_genesis(
     // Clock Component
     {
         let component_address = CLOCK.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(CLOCK.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(CLOCK.into()));
         instructions.push(Instruction::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
@@ -466,8 +466,8 @@ pub fn create_genesis(
 
         let component_address = EPOCH_MANAGER.to_array_without_entity_id();
         let olympia_validator_token_address = VALIDATOR_OWNER_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
-        pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(EPOCH_MANAGER.into()));
         instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
@@ -576,7 +576,7 @@ where
 {
     if substate_db
         .get_substate(
-            &RENodeId::GlobalObject(RADIX_TOKEN.into()),
+            &NodeId::GlobalObject(RADIX_TOKEN.into()),
             TypedModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         )

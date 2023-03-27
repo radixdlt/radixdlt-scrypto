@@ -8,7 +8,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, SubstateOffset};
+use radix_engine_interface::api::types::{NodeId, ResourceManagerOffset, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -189,7 +189,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -253,7 +253,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         bucket: Bucket,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -267,8 +267,7 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         // FIXME: check if the bucket is locked!!!
-        let dropped_bucket: DroppedBucket =
-            api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
+        let dropped_bucket: DroppedBucket = api.kernel_drop_node(&NodeId::Object(bucket.0))?.into();
 
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {
@@ -311,7 +310,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_bucket<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -343,7 +342,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(Bucket(bucket_id))
     }
 
-    pub(crate) fn create_vault<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -375,7 +374,7 @@ impl FungibleResourceManagerBlueprint {
         Runtime::emit_event(
             api,
             VaultCreationEvent {
-                vault_id: RENodeId::Object(vault_id),
+                vault_id: NodeId::Object(vault_id),
             },
         )?;
 
@@ -383,7 +382,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_resource_type<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<ResourceType, RuntimeError>
     where
@@ -405,7 +404,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_total_supply<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<Decimal, RuntimeError>
     where

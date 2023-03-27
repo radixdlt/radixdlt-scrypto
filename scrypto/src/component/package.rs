@@ -31,7 +31,7 @@ impl BorrowedPackage {
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
         ScryptoEnv
             .call_module_method(
-                &RENodeId::GlobalObject(self.0.into()),
+                &NodeId::GlobalObject(self.0.into()),
                 TypedModuleId::ObjectState,
                 PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
@@ -42,7 +42,7 @@ impl BorrowedPackage {
     pub fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
-                &RENodeId::GlobalObject(self.0.into()),
+                &NodeId::GlobalObject(self.0.into()),
                 TypedModuleId::ObjectState,
                 PACKAGE_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),

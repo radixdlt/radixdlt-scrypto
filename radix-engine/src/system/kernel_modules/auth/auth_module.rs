@@ -25,7 +25,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
+use radix_engine_interface::api::types::{NodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::blueprints::package::{
     PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -35,7 +35,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    VisibilityError(RENodeId),
+    VisibilityError(NodeId),
     Unauthorized(ActorIdentifier, MethodAuthorization),
 }
 
@@ -43,7 +43,7 @@ pub enum AuthError {
 pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
-    pub auth_zone_stack: Vec<RENodeId>,
+    pub auth_zone_stack: Vec<NodeId>,
 }
 
 impl AuthModule {
@@ -51,10 +51,7 @@ impl AuthModule {
         matches!(
             actor,
             Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(
-                    RENodeId::GlobalObject(..),
-                    ..
-                )),
+                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::GlobalObject(..), ..)),
                 ..
             }
         )
@@ -94,7 +91,7 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(identifier.package_address.into()),
+                &NodeId::GlobalObject(identifier.package_address.into()),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
@@ -152,8 +149,8 @@ impl AuthModule {
                 }
             }
 
-            MethodIdentifier(RENodeId::Object(object_id), ..) => {
-                let node_id = RENodeId::Object(*object_id);
+            MethodIdentifier(NodeId::Object(object_id), ..) => {
+                let node_id = NodeId::Object(*object_id);
                 let (package_address, blueprint) = api.get_object_type_info(node_id)?;
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
@@ -179,14 +176,14 @@ impl AuthModule {
                         let method_key = identifier.method_key();
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
-                                &RENodeId::GlobalObject(resource_address.into()),
+                                &NodeId::GlobalObject(resource_address.into()),
                                 TypedModuleId::AccessRules1,
                                 method_key,
                                 api,
                             )?,
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
-                                    &RENodeId::GlobalObject(resource_address.into()),
+                                    &NodeId::GlobalObject(resource_address.into()),
                                     TypedModuleId::AccessRules1,
                                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                     LockFlags::read_only(),
@@ -230,7 +227,7 @@ impl AuthModule {
                 // TODO: Clean this up
                 let auth = if matches!(
                     node_id,
-                    RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
+                    NodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&TypedModuleId::ObjectState)
                 {
                     Self::method_authorization_stateful(
@@ -256,7 +253,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         module_id: TypedModuleId,
         key: MethodKey,
         api: &mut Y,
@@ -275,7 +272,7 @@ impl AuthModule {
             };
 
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(package_address.into()),
+                &NodeId::GlobalObject(package_address.into()),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -329,7 +326,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         module_id: TypedModuleId,
         key: MethodKey,
         api: &mut Y,
@@ -352,7 +349,7 @@ impl AuthModule {
         Ok(authorization)
     }
 
-    pub fn last_auth_zone(&self) -> RENodeId {
+    pub fn last_auth_zone(&self) -> NodeId {
         self.auth_zone_stack
             .last()
             .cloned()

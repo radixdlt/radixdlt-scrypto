@@ -24,8 +24,8 @@ use radix_engine_interface::api::substate_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
-    RENodeIdWasNotAllocated(RENodeId),
-    AllocatedIDsNotEmpty(BTreeSet<RENodeId>),
+    NodeIdWasNotAllocated(NodeId),
+    AllocatedIDsNotEmpty(BTreeSet<NodeId>),
     OutOfID,
 }
 
@@ -124,7 +124,7 @@ pub enum KernelError {
 
     // invocation
     WasmRuntimeError(WasmRuntimeError),
-    RENodeNotFound(RENodeId),
+    RENodeNotFound(NodeId),
     InvalidDirectAccess,
 
     // ID allocation
@@ -136,31 +136,31 @@ pub enum KernelError {
 
     // RENode
     ContainsDuplicatedOwns,
-    StoredNodeRemoved(RENodeId),
-    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    StoredNodeRemoved(NodeId),
+    RENodeGlobalizeTypeNotAllowed(NodeId),
     TrackError(TrackError),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     BlobNotFound(Hash),
-    DropNodeFailure(RENodeId),
+    DropNodeFailure(NodeId),
 
     // Substate Constraints
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, PackageAddress, String),
-    InvalidId(RENodeId),
+    InvalidId(NodeId),
 
     // Actor Constraints
     InvalidDropNodeAccess {
         mode: ExecutionMode,
         actor: Actor,
-        node_id: RENodeId,
+        node_id: NodeId,
         package_address: PackageAddress,
         blueprint_name: String,
     },
     InvalidSubstateAccess {
         mode: ExecutionMode,
         actor: Actor,
-        node_id: RENodeId,
+        node_id: NodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     },
@@ -177,10 +177,10 @@ impl CanBeAbortion for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
-    OffsetDoesNotExist(RENodeId, SubstateOffset),
-    RENodeNotVisible(RENodeId),
-    RENodeNotOwned(RENodeId),
-    MovingLockedRENode(RENodeId),
+    OffsetDoesNotExist(NodeId, SubstateOffset),
+    RENodeNotVisible(NodeId),
+    RENodeNotOwned(NodeId),
+    MovingLockedRENode(NodeId),
     FailedToMoveSubstateToTrack(TrackError),
 }
 
@@ -193,7 +193,7 @@ pub enum SystemError {
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
-    InvalidModuleSet(RENodeId, BTreeSet<TypedModuleId>),
+    InvalidModuleSet(NodeId, BTreeSet<TypedModuleId>),
     InvalidModule,
     InvalidModuleType {
         expected_package: PackageAddress,

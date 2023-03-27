@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
@@ -56,7 +56,7 @@ impl SysProof for Proof {
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            &NodeId::Object(self.0),
             PROOF_GET_AMOUNT_IDENT,
             scrypto_encode(&ProofGetAmountInput {}).unwrap(),
         )?;
@@ -71,7 +71,7 @@ impl SysProof for Proof {
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            &NodeId::Object(self.0),
             PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
             scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
         )?;
@@ -86,7 +86,7 @@ impl SysProof for Proof {
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            &NodeId::Object(self.0),
             PROOF_GET_RESOURCE_ADDRESS_IDENT,
             scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
         )?;
@@ -101,7 +101,7 @@ impl SysProof for Proof {
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            &NodeId::Object(self.0),
             PROOF_CLONE_IDENT,
             scrypto_encode(&ProofCloneInput {}).unwrap(),
         )?;

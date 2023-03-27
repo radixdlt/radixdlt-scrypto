@@ -25,7 +25,7 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::types::{RENodeId, VaultOffset};
+use radix_engine_interface::api::types::{NodeId, VaultOffset};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
@@ -280,7 +280,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
         if let Some(output) = self.substate_db.get_substate(&SubstateId(
-            RENodeId::GlobalObject(component_address.into()),
+            NodeId::GlobalObject(component_address.into()),
             TypedModuleId::Royalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
@@ -291,7 +291,7 @@ impl TestRunner {
                 .and_then(|vault| {
                     self.substate_db
                         .get_substate(&SubstateId(
-                            RENodeId::Object(vault.vault_id()),
+                            NodeId::Object(vault.vault_id()),
                             TypedModuleId::ObjectState,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
@@ -304,7 +304,7 @@ impl TestRunner {
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_db.get_substate(&SubstateId(
-            RENodeId::GlobalObject(package_address.into()),
+            NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Royalty),
         )) {
@@ -315,7 +315,7 @@ impl TestRunner {
                 .and_then(|vault| {
                     self.substate_db
                         .get_substate(&SubstateId(
-                            RENodeId::Object(vault.vault_id()),
+                            NodeId::Object(vault.vault_id()),
                             TypedModuleId::ObjectState,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
@@ -351,7 +351,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<ObjectId> {
-        let node_id = RENodeId::GlobalObject(component_address.into());
+        let node_id = NodeId::GlobalObject(component_address.into());
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -364,7 +364,7 @@ impl TestRunner {
 
     pub fn inspect_vault_balance(&mut self, vault_id: ObjectId) -> Option<Decimal> {
         if let Some(output) = self.substate_db().get_substate(&SubstateId(
-            RENodeId::Object(vault_id),
+            NodeId::Object(vault_id),
             TypedModuleId::ObjectState,
             SubstateOffset::Vault(VaultOffset::Info),
         )) {
@@ -382,7 +382,7 @@ impl TestRunner {
     pub fn inspect_fungible_vault(&mut self, vault_id: ObjectId) -> Option<Decimal> {
         self.substate_db()
             .get_substate(&SubstateId(
-                RENodeId::Object(vault_id),
+                NodeId::Object(vault_id),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Vault(VaultOffset::LiquidFungible),
             ))
@@ -395,7 +395,7 @@ impl TestRunner {
     ) -> Option<BTreeSet<NonFungibleLocalId>> {
         self.substate_db()
             .get_substate(&SubstateId(
-                RENodeId::Object(vault_id),
+                NodeId::Object(vault_id),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             ))
@@ -412,7 +412,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = RENodeId::GlobalObject(component_address.into());
+        let node_id = NodeId::GlobalObject(component_address.into());
         let mut accounter = ResourceAccounter::new(&self.substate_db);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
@@ -469,7 +469,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
         let substate_id = SubstateId(
-            RENodeId::GlobalObject(system_address.into()),
+            NodeId::GlobalObject(system_address.into()),
             TypedModuleId::ObjectState,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
@@ -485,7 +485,7 @@ impl TestRunner {
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate_id = SubstateId(
-            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+            NodeId::GlobalObject(EPOCH_MANAGER.into()),
             TypedModuleId::ObjectState,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
@@ -1189,7 +1189,7 @@ impl TestRunner {
                 Emitter::Function(node_id, _, blueprint_name),
                 local_type_index,
             ) => {
-                let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+                let NodeId::GlobalObject(Address::Package(package_address)) = node_id else {
                     panic!("must be a package address")
                 };
                 (
@@ -1201,7 +1201,7 @@ impl TestRunner {
         };
 
         let substate_id = SubstateId(
-            RENodeId::GlobalObject(Address::Package(package_address)),
+            NodeId::GlobalObject(Address::Package(package_address)),
             TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Info),
         );

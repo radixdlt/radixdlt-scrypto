@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, CommittableSubstateDatabase};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use std::collections::BTreeSet;
@@ -66,7 +66,7 @@ impl Publish {
                 RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let substate_id = SubstateId(
-                RENodeId::GlobalObject(package_address.0.into()),
+                NodeId::GlobalObject(package_address.0.into()),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Code),
             );
@@ -85,7 +85,7 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_db.put_substate(
                 SubstateId(
-                    RENodeId::GlobalObject(package_address.0.into()),
+                    NodeId::GlobalObject(package_address.0.into()),
                     TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::Code),
                 ),
@@ -105,7 +105,7 @@ impl Publish {
 
             substate_db.put_substate(
                 SubstateId(
-                    RENodeId::GlobalObject(package_address.0.into()),
+                    NodeId::GlobalObject(package_address.0.into()),
                     TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),

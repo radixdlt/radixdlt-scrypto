@@ -4,7 +4,7 @@ use crate::errors::CallFrameError;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
 use radix_engine_interface::api::types::{
-    BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset, TypedModuleId,
+    BucketOffset, NodeId, ProofOffset, SubstateId, SubstateOffset, TypedModuleId,
 };
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
@@ -14,7 +14,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 pub struct Heap {
-    nodes: HashMap<RENodeId, HeapRENode>,
+    nodes: HashMap<NodeId, HeapRENode>,
 }
 
 impl Heap {
@@ -24,13 +24,13 @@ impl Heap {
         }
     }
 
-    pub fn contains_node(&self, node_id: &RENodeId) -> bool {
+    pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
     }
 
     pub fn get_substate(
         &mut self,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: TypedModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, CallFrameError> {
@@ -58,7 +58,7 @@ impl Heap {
 
     pub fn get_substate_mut(
         &mut self,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: TypedModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRefMut, CallFrameError> {
@@ -84,14 +84,14 @@ impl Heap {
         }
     }
 
-    pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
+    pub fn create_node(&mut self, node_id: NodeId, node: HeapRENode) {
         self.nodes.insert(node_id, node);
     }
 
     pub fn move_nodes_to_store(
         &mut self,
         track: &mut Track,
-        nodes: Vec<RENodeId>,
+        nodes: Vec<NodeId>,
     ) -> Result<(), CallFrameError> {
         for node_id in nodes {
             self.move_node_to_store(track, node_id)?;
@@ -103,7 +103,7 @@ impl Heap {
     pub fn move_node_to_store(
         &mut self,
         track: &mut Track,
-        node_id: RENodeId,
+        node_id: NodeId,
     ) -> Result<(), CallFrameError> {
         let node = self
             .nodes
@@ -120,7 +120,7 @@ impl Heap {
         Ok(())
     }
 
-    pub fn remove_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, CallFrameError> {
+    pub fn remove_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, CallFrameError> {
         self.nodes
             .remove(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))

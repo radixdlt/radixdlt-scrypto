@@ -114,12 +114,12 @@ impl CommitResult {
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
                 Emitter::Function(
-                    RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                    NodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
                     TypedModuleId::ObjectState,
                     ..,
                 )
                 | Emitter::Method(
-                    RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
+                    NodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
                     TypedModuleId::ObjectState,
                 ),
                 ..,

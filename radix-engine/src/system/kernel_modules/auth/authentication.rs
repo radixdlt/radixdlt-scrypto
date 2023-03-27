@@ -39,7 +39,7 @@ impl Authentication {
 
     fn auth_zone_stack_matches<P, Y>(
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         api: &mut Y,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -78,7 +78,7 @@ impl Authentication {
                 remaining_barrier_crossings_allowed -= 1;
             }
             if let Some(id) = auth_zone.parent {
-                current_auth_zone_id = RENodeId::Object(id.0);
+                current_auth_zone_id = NodeId::Object(id.0);
             } else {
                 break;
             }
@@ -94,7 +94,7 @@ impl Authentication {
 
     fn auth_zone_stack_has_amount<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         resource_rule: &HardResourceOrNonFungible,
         amount: Decimal,
         api: &mut Y,
@@ -118,7 +118,7 @@ impl Authentication {
 
     fn auth_zone_stack_matches_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         resource_rule: &HardResourceOrNonFungible,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -166,7 +166,7 @@ impl Authentication {
 
     pub fn verify_proof_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         proof_rule: &HardProofRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -250,7 +250,7 @@ impl Authentication {
 
     pub fn verify_auth_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         auth_rule: &HardAuthRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -280,7 +280,7 @@ impl Authentication {
 
     pub fn verify_method_auth<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         method_auth: &MethodAuthorization,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {

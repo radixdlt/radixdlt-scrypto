@@ -44,7 +44,7 @@ impl WorktopBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let mut node = api.kernel_drop_node(&RENodeId::Object(input.worktop.id()))?;
+        let mut node = api.kernel_drop_node(&NodeId::Object(input.worktop.id()))?;
         let substate = node
             .substates
             .remove(&(
@@ -62,7 +62,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn put<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -99,7 +99,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -155,7 +155,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -211,7 +211,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_all<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -240,7 +240,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -272,7 +272,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -304,7 +304,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -337,7 +337,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

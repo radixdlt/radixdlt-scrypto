@@ -197,7 +197,7 @@ impl EpochManagerBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            RENodeId::Object(epoch_manager_id),
+            NodeId::Object(epoch_manager_id),
             btreemap!(
                 TypedModuleId::AccessRules => access_rules.id(),
                 TypedModuleId::Metadata => metadata.id(),
@@ -209,10 +209,7 @@ impl EpochManagerBlueprint {
         Ok(address)
     }
 
-    pub(crate) fn get_current_epoch<Y>(
-        receiver: &RENodeId,
-        api: &mut Y,
-    ) -> Result<u64, RuntimeError>
+    pub(crate) fn get_current_epoch<Y>(receiver: &NodeId, api: &mut Y) -> Result<u64, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -228,7 +225,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn next_round<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         round: u64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -290,7 +287,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn set_epoch<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         epoch: u64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -310,7 +307,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         key: EcdsaSecp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
@@ -336,7 +333,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         validator_address: ComponentAddress,
         update: UpdateValidator,
         api: &mut Y,

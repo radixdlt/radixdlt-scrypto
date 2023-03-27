@@ -286,7 +286,7 @@ where
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
     api.globalize_with_address(
-        RENodeId::Object(object_id),
+        NodeId::Object(object_id),
         btreemap!(
             TypedModuleId::AccessRules => resman_access_rules.id(),
             TypedModuleId::AccessRules1 => vault_access_rules.id(),

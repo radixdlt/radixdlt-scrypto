@@ -6,7 +6,7 @@ use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateId, SubstateOffset};
+use radix_engine_interface::api::types::{LockHandle, NodeId, SubstateId, SubstateOffset};
 
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;
@@ -14,8 +14,8 @@ use super::track::{Track, TrackError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
-    pub nodes_to_move: Vec<RENodeId>,
-    pub node_refs_to_copy: HashSet<RENodeId>,
+    pub nodes_to_move: Vec<NodeId>,
+    pub node_refs_to_copy: HashSet<NodeId>,
 }
 
 impl CallFrameUpdate {
@@ -26,14 +26,14 @@ impl CallFrameUpdate {
         }
     }
 
-    pub fn move_node(node_id: RENodeId) -> Self {
+    pub fn move_node(node_id: NodeId) -> Self {
         CallFrameUpdate {
             nodes_to_move: vec![node_id],
             node_refs_to_copy: HashSet::new(),
         }
     }
 
-    pub fn copy_ref(node_id: RENodeId) -> Self {
+    pub fn copy_ref(node_id: NodeId) -> Self {
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(node_id);
         CallFrameUpdate {
@@ -42,7 +42,7 @@ impl CallFrameUpdate {
         }
     }
 
-    pub fn add_ref(&mut self, node_id: RENodeId) {
+    pub fn add_ref(&mut self, node_id: NodeId) {
         self.node_refs_to_copy.insert(node_id);
     }
 }
@@ -62,11 +62,11 @@ pub enum RENodeVisibilityOrigin {
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
-    pub node_id: RENodeId,
+    pub node_id: NodeId,
     pub module_id: TypedModuleId,
     pub offset: SubstateOffset,
-    pub temp_references: HashSet<RENodeId>,
-    pub substate_owned_nodes: Vec<RENodeId>,
+    pub temp_references: HashSet<NodeId>,
+    pub substate_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
 }
 
@@ -96,14 +96,14 @@ pub struct CallFrame {
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
     /// - Global node refs obtained through substate locking.
-    immortal_node_refs: HashMap<RENodeId, RENodeRefData>,
+    immortal_node_refs: HashMap<NodeId, RENodeRefData>,
 
     /// Node refs obtained through substate locking, which will be dropped upon unlocking.
-    temp_node_refs: HashMap<RENodeId, u32>,
+    temp_node_refs: HashMap<NodeId, u32>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
-    owned_root_nodes: HashMap<RENodeId, u32>,
+    owned_root_nodes: HashMap<NodeId, u32>,
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
@@ -114,7 +114,7 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         track: &mut Track<'s>,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: TypedModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -142,7 +142,7 @@ impl CallFrame {
         let mut temp_references = HashSet::new();
         for node_id in references {
             // TODO: fix this ugly condition
-            if matches!(node_id, RENodeId::GlobalObject(_)) {
+            if matches!(node_id, NodeId::GlobalObject(_)) {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
                     node_id,
@@ -206,7 +206,7 @@ impl CallFrame {
             let (references, owned_nodes) = substate_ref.references_and_owned_nodes();
 
             // Reserving original Vec element order with `IndexSet`
-            let mut new_children: IndexSet<RENodeId> = index_set_new();
+            let mut new_children: IndexSet<NodeId> = index_set_new();
             for own in owned_nodes {
                 if !new_children.insert(own) {
                     return Err(RuntimeError::KernelError(
@@ -328,35 +328,35 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(
-            RENodeId::GlobalObject(RADIX_TOKEN.into()),
+            NodeId::GlobalObject(RADIX_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(SYSTEM_TOKEN.into()),
+            NodeId::GlobalObject(SYSTEM_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
+            NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
+            NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(PACKAGE_TOKEN.into()),
+            NodeId::GlobalObject(PACKAGE_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+            NodeId::GlobalObject(EPOCH_MANAGER.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(CLOCK.into()),
+            NodeId::GlobalObject(CLOCK.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
+            NodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -439,7 +439,7 @@ impl CallFrame {
         Ok(())
     }
 
-    fn take_node_internal(&mut self, node_id: &RENodeId) -> Result<(), CallFrameError> {
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), CallFrameError> {
         match self.owned_root_nodes.remove(node_id) {
             None => {
                 return Err(CallFrameError::RENodeNotOwned(node_id.clone()));
@@ -456,7 +456,7 @@ impl CallFrame {
 
     pub fn create_node<'f, 's>(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         re_node: RENodeInit,
         node_modules: BTreeMap<TypedModuleId, RENodeModuleInit>,
         heap: &mut Heap,
@@ -530,12 +530,12 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn add_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibilityOrigin) {
+    pub fn add_ref(&mut self, node_id: NodeId, visibility: RENodeVisibilityOrigin) {
         self.immortal_node_refs
             .insert(node_id, RENodeRefData::new(visibility));
     }
 
-    pub fn owned_nodes(&self) -> Vec<RENodeId> {
+    pub fn owned_nodes(&self) -> Vec<NodeId> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
@@ -543,7 +543,7 @@ impl CallFrame {
     pub fn remove_node(
         &mut self,
         heap: &mut Heap,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
@@ -569,7 +569,7 @@ impl CallFrame {
         &self,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: TypedModuleId,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
@@ -631,7 +631,7 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RENodeVisibilityOrigin> {
+    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<RENodeVisibilityOrigin> {
         if self.owned_root_nodes.contains_key(node_id) {
             Some(RENodeVisibilityOrigin::Normal)
         } else if let Some(_) = self.temp_node_refs.get(node_id) {
@@ -645,7 +645,7 @@ impl CallFrame {
 
     pub fn check_node_visibility(
         &self,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))

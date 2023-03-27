@@ -2,7 +2,7 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::types::{ObjectId, RENodeId, TypedModuleId};
+use radix_engine_interface::api::types::{NodeId, ObjectId, TypedModuleId};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
@@ -29,8 +29,8 @@ impl Metadata {
 }
 
 impl MetadataObject for Metadata {
-    fn self_id(&self) -> (RENodeId, TypedModuleId) {
-        (RENodeId::Object(self.0), TypedModuleId::ObjectState)
+    fn self_id(&self) -> (NodeId, TypedModuleId) {
+        (NodeId::Object(self.0), TypedModuleId::ObjectState)
     }
 }
 
@@ -38,13 +38,13 @@ impl MetadataObject for Metadata {
 pub struct AttachedMetadata(pub Address);
 
 impl MetadataObject for AttachedMetadata {
-    fn self_id(&self) -> (RENodeId, TypedModuleId) {
+    fn self_id(&self) -> (NodeId, TypedModuleId) {
         (self.0.into(), TypedModuleId::Metadata)
     }
 }
 
 pub trait MetadataObject {
-    fn self_id(&self) -> (RENodeId, TypedModuleId);
+    fn self_id(&self) -> (NodeId, TypedModuleId);
 
     fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
         let (node_id, module_id) = self.self_id();

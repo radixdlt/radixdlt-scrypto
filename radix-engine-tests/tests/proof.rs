@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
@@ -314,7 +314,7 @@ fn cant_move_restricted_proof() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                NodeMoveError::CantMoveDownstream(RENodeId::Object(..))
+                NodeMoveError::CantMoveDownstream(NodeId::Object(..))
             ))
         )
     });

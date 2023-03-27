@@ -289,7 +289,7 @@ impl AccessControllerNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -437,7 +437,7 @@ impl AccessControllerNativePackage {
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
-            RENodeId::Object(object_id),
+            NodeId::Object(object_id),
             btreemap!(
                 TypedModuleId::AccessRules => access_rules.id(),
                 TypedModuleId::Metadata => metadata.id(),
@@ -449,7 +449,7 @@ impl AccessControllerNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -466,7 +466,7 @@ impl AccessControllerNativePackage {
     }
 
     fn initiate_recovery_as_primary<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -502,7 +502,7 @@ impl AccessControllerNativePackage {
     }
 
     fn initiate_recovery_as_recovery<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -538,7 +538,7 @@ impl AccessControllerNativePackage {
     }
 
     fn quick_confirm_primary_role_recovery_proposal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -580,7 +580,7 @@ impl AccessControllerNativePackage {
     }
 
     fn quick_confirm_recovery_role_recovery_proposal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -622,7 +622,7 @@ impl AccessControllerNativePackage {
     }
 
     fn timed_confirm_recovery<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -664,7 +664,7 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_primary_role_recovery_proposal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -693,7 +693,7 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_recovery_role_recovery_proposal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -722,7 +722,7 @@ impl AccessControllerNativePackage {
     }
 
     fn lock_primary_role<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -744,7 +744,7 @@ impl AccessControllerNativePackage {
     }
 
     fn unlock_primary_role<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -766,7 +766,7 @@ impl AccessControllerNativePackage {
     }
 
     fn stop_timed_recovery<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -921,7 +921,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
 }
 
 fn transition<Y, I>(
-    receiver: &RENodeId,
+    receiver: &NodeId,
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
@@ -945,7 +945,7 @@ where
 }
 
 fn transition_mut<Y, I>(
-    receiver: &RENodeId,
+    receiver: &NodeId,
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
@@ -976,7 +976,7 @@ where
 
 fn update_access_rules<Y>(
     api: &mut Y,
-    receiver: &RENodeId,
+    receiver: &NodeId,
     access_rules: AccessRulesConfig,
 ) -> Result<(), RuntimeError>
 where

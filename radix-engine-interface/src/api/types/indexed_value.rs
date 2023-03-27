@@ -14,8 +14,8 @@ use utils::ContextualDisplay;
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    references: HashSet<RENodeId>,
-    owned_nodes: Vec<RENodeId>,
+    references: HashSet<NodeId>,
+    owned_nodes: Vec<NodeId>,
     scrypto_value: RefCell<Option<ScryptoValue>>,
 }
 
@@ -27,8 +27,8 @@ impl IndexedScryptoValue {
             Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let mut references = HashSet::<RENodeId>::new();
-        let mut owned_nodes = Vec::<RENodeId>::new();
+        let mut references = HashSet::<NodeId>::new();
+        let mut owned_nodes = Vec::<NodeId>::new();
         loop {
             let event = traverser.next_event();
             match event.event {
@@ -42,15 +42,15 @@ impl IndexedScryptoValue {
                                 references.insert(a.into());
                             }
                             ScryptoCustomValue::InternalRef(a) => {
-                                references.insert(RENodeId::Object(a.0));
+                                references.insert(NodeId::Object(a.0));
                             }
                             ScryptoCustomValue::Own(o) => {
                                 owned_nodes.push(match o {
                                     Own::Bucket(id)
                                     | Own::Proof(id)
                                     | Own::Vault(id)
-                                    | Own::Object(id) => RENodeId::Object(id),
-                                    Own::KeyValueStore(id) => RENodeId::KeyValueStore(id),
+                                    | Own::Object(id) => NodeId::Object(id),
+                                    Own::KeyValueStore(id) => NodeId::KeyValueStore(id),
                                 });
                             }
                             ScryptoCustomValue::Decimal(_)
@@ -128,15 +128,15 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn references(&self) -> &HashSet<RENodeId> {
+    pub fn references(&self) -> &HashSet<NodeId> {
         &self.references
     }
 
-    pub fn owned_node_ids(&self) -> &Vec<RENodeId> {
+    pub fn owned_node_ids(&self) -> &Vec<NodeId> {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, HashSet<RENodeId>) {
+    pub fn unpack(self) -> (Vec<u8>, Vec<NodeId>, HashSet<NodeId>) {
         (self.bytes, self.owned_nodes, self.references)
     }
 }
@@ -170,8 +170,8 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
 }
 
 pub struct ScryptoValueVisitor {
-    pub references: HashSet<RENodeId>,
-    pub owned_nodes: Vec<RENodeId>,
+    pub references: HashSet<NodeId>,
+    pub owned_nodes: Vec<NodeId>,
 }
 
 impl ScryptoValueVisitor {
@@ -196,22 +196,22 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
                 self.references.insert(value.clone().into());
             }
             ScryptoCustomValue::InternalRef(value) => {
-                self.references.insert(RENodeId::Object(value.0));
+                self.references.insert(NodeId::Object(value.0));
             }
             ScryptoCustomValue::Own(value) => {
                 match value {
                     Own::Bucket(object_id) => {
-                        self.owned_nodes.push(RENodeId::Object(*object_id));
+                        self.owned_nodes.push(NodeId::Object(*object_id));
                     }
                     Own::Proof(proof_id) => {
-                        self.owned_nodes.push(RENodeId::Object(*proof_id));
+                        self.owned_nodes.push(NodeId::Object(*proof_id));
                     }
-                    Own::Vault(vault_id) => self.owned_nodes.push(RENodeId::Object(*vault_id)),
+                    Own::Vault(vault_id) => self.owned_nodes.push(NodeId::Object(*vault_id)),
                     Own::Object(component_id) => {
-                        self.owned_nodes.push(RENodeId::Object(*component_id))
+                        self.owned_nodes.push(NodeId::Object(*component_id))
                     }
                     Own::KeyValueStore(kv_store_id) => {
-                        self.owned_nodes.push(RENodeId::KeyValueStore(*kv_store_id))
+                        self.owned_nodes.push(NodeId::KeyValueStore(*kv_store_id))
                     }
                 };
             }

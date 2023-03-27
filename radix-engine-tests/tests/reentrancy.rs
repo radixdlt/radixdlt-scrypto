@@ -1,7 +1,7 @@
 use radix_engine::errors::{KernelError, RuntimeError};
 use radix_engine::kernel::track::{LockState, TrackError};
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -39,7 +39,7 @@ fn mut_reentrancy_should_not_be_possible() {
             e,
             RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
                 SubstateId(
-                    RENodeId::GlobalObject(..),
+                    NodeId::GlobalObject(..),
                     TypedModuleId::ObjectState,
                     SubstateOffset::Component(ComponentOffset::State0)
                 ),
@@ -115,7 +115,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
             e,
             RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
                 SubstateId(
-                    RENodeId::GlobalObject(..),
+                    NodeId::GlobalObject(..),
                     TypedModuleId::ObjectState,
                     SubstateOffset::Component(ComponentOffset::State0)
                 ),

@@ -12,8 +12,8 @@ use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
-    CantMoveDownstream(RENodeId),
-    CantMoveUpstream(RENodeId),
+    CantMoveDownstream(NodeId),
+    CantMoveUpstream(NodeId),
 }
 
 #[derive(Debug, Clone)]
@@ -21,12 +21,12 @@ pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
-        node_id: RENodeId,
+        node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Object(..) => {
+            NodeId::Object(..) => {
                 let (package_address, blueprint) = api.get_object_type_info(node_id)?;
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
@@ -91,26 +91,22 @@ impl NodeMoveModule {
                 Ok(())
             }
 
-            RENodeId::KeyValueStore(..) | RENodeId::GlobalObject(..) => {
-                Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                    NodeMoveError::CantMoveDownstream(node_id),
-                )))
-            }
+            NodeId::KeyValueStore(..) | NodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
+                ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
+            )),
         }
     }
 
     fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
-        node_id: RENodeId,
+        node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Object(..) => Ok(()),
+            NodeId::Object(..) => Ok(()),
 
-            RENodeId::KeyValueStore(..) | RENodeId::GlobalObject(..) => {
-                Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                    NodeMoveError::CantMoveUpstream(node_id),
-                )))
-            }
+            NodeId::KeyValueStore(..) | NodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
+                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
+            )),
         }
     }
 }

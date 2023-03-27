@@ -26,10 +26,10 @@ impl FnIdentifier {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodReceiver(pub RENodeId, pub TypedModuleId);
+pub struct MethodReceiver(pub NodeId, pub TypedModuleId);
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodIdentifier(pub RENodeId, pub TypedModuleId, pub String);
+pub struct MethodIdentifier(pub NodeId, pub TypedModuleId, pub String);
 
 impl MethodIdentifier {
     pub fn method_key(&self) -> MethodKey {

@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
-    pub pre_allocated_ids: BTreeSet<RENodeId>,
+    pub pre_allocated_ids: BTreeSet<NodeId>,
     pub blobs: Vec<Vec<u8>>,
     pub nonce: u64,
 }

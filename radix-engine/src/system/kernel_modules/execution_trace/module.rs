@@ -46,7 +46,7 @@ impl ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
-    pub node_id: RENodeId,
+    pub node_id: NodeId,
     pub vault_id: ObjectId,
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
@@ -248,7 +248,7 @@ impl ResourceSummary {
         let mut proofs = index_map_new();
         for node_id in &call_frame_update.nodes_to_move {
             match &node_id {
-                RENodeId::Object(object_id) => {
+                NodeId::Object(object_id) => {
                     if let Some(x) = api.kernel_read_bucket(*object_id) {
                         buckets.insert(*object_id, x);
                     }
@@ -262,11 +262,11 @@ impl ResourceSummary {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &RENodeId) -> Self {
+    pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &NodeId) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         match node_id {
-            RENodeId::Object(object_id) => {
+            NodeId::Object(object_id) => {
                 if let Some(x) = api.kernel_read_bucket(*object_id) {
                     buckets.insert(*object_id, x);
                 }
@@ -283,7 +283,7 @@ impl ResourceSummary {
 impl KernelModule for ExecutionTraceModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
@@ -295,7 +295,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
@@ -308,7 +308,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
         api.kernel_get_module_state()
@@ -464,8 +464,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::Object(vault_id), ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -479,8 +478,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::Object(vault_id), ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -506,8 +504,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -657,8 +654,7 @@ pub fn calculate_resource_changes(
 
     // Calculate per instruction index, actor, vault resource changes.
     let mut vault_changes =
-        index_map_new::<usize, IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>(
-        );
+        index_map_new::<usize, IndexMap<NodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Actor(Actor {
             identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),

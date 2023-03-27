@@ -72,7 +72,7 @@ where
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let receiver =
-            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidNodeId)?;
+            scrypto_decode::<NodeId>(&receiver).map_err(WasmRuntimeError::InvalidNodeId)?;
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
@@ -130,7 +130,7 @@ where
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let component_id =
-            scrypto_decode::<RENodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+            scrypto_decode::<NodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let modules = scrypto_decode::<BTreeMap<TypedModuleId, ObjectId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
@@ -157,7 +157,7 @@ where
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let node_id =
-            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+            scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
         self.api.drop_object(node_id)?;
 
@@ -171,7 +171,7 @@ where
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let node_id =
-            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+            scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let offset =
             scrypto_decode::<SubstateOffset>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
 
@@ -237,7 +237,7 @@ where
 
     fn get_type_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
-            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+            scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let type_info = self.api.get_object_type_info(node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");

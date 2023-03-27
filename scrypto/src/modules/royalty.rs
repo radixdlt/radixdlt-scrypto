@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{ObjectId, RENodeId, RoyaltyConfig, TypedModuleId};
+use radix_engine_interface::api::types::{NodeId, ObjectId, RoyaltyConfig, TypedModuleId};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
@@ -32,8 +32,8 @@ impl Royalty {
 }
 
 impl RoyaltyObject for Royalty {
-    fn self_id(&self) -> (RENodeId, TypedModuleId) {
-        (RENodeId::Object(self.0), TypedModuleId::ObjectState)
+    fn self_id(&self) -> (NodeId, TypedModuleId) {
+        (NodeId::Object(self.0), TypedModuleId::ObjectState)
     }
 }
 
@@ -41,13 +41,13 @@ impl RoyaltyObject for Royalty {
 pub struct AttachedRoyalty(pub Address);
 
 impl RoyaltyObject for AttachedRoyalty {
-    fn self_id(&self) -> (RENodeId, TypedModuleId) {
+    fn self_id(&self) -> (NodeId, TypedModuleId) {
         (self.0.into(), TypedModuleId::Royalty)
     }
 }
 
 pub trait RoyaltyObject {
-    fn self_id(&self) -> (RENodeId, TypedModuleId);
+    fn self_id(&self) -> (NodeId, TypedModuleId);
 
     fn set_config(&self, royalty_config: RoyaltyConfig) {
         let (node_id, module_id) = self.self_id();

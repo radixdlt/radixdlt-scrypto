@@ -19,7 +19,7 @@ pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -47,7 +47,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn push<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -72,7 +72,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -113,7 +113,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -154,7 +154,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -195,7 +195,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -224,7 +224,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear_signature_proofs<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -248,7 +248,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

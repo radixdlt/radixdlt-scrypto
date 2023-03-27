@@ -22,7 +22,7 @@ mod cyclic_map {
                 kv_store1.id.clone()
             };
 
-            let node_id = RENodeId::KeyValueStore(kv_store1_id);
+            let node_id = NodeId::KeyValueStore(kv_store1_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
@@ -52,7 +52,7 @@ mod cyclic_map {
             let kv_store = KeyValueStore::new();
             let kv_store_id = kv_store.id.clone();
 
-            let node_id = RENodeId::KeyValueStore(kv_store_id.clone());
+            let node_id = NodeId::KeyValueStore(kv_store_id.clone());
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));

@@ -31,7 +31,7 @@ pub struct VaultInfoSubstate {
 }
 
 impl VaultInfoSubstate {
-    pub fn of<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Self, RuntimeError>
+    pub fn of<Y>(receiver: &NodeId, api: &mut Y) -> Result<Self, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -50,7 +50,7 @@ impl VaultInfoSubstate {
 pub struct FungibleVault;
 
 impl FungibleVault {
-    pub fn liquid_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn liquid_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -65,7 +65,7 @@ impl FungibleVault {
         Ok(amount)
     }
 
-    pub fn locked_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn locked_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -80,7 +80,7 @@ impl FungibleVault {
         Ok(amount)
     }
 
-    pub fn is_locked<Y>(receiver: &RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    pub fn is_locked<Y>(receiver: &NodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -88,7 +88,7 @@ impl FungibleVault {
     }
 
     pub fn take<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
@@ -114,7 +114,7 @@ impl FungibleVault {
     }
 
     pub fn put<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource: LiquidFungibleResource,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -147,7 +147,7 @@ impl FungibleVault {
 
     // protected method
     pub fn lock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<FungibleProof, RuntimeError>
@@ -186,7 +186,7 @@ impl FungibleVault {
 
     // protected method
     pub fn unlock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -217,7 +217,7 @@ impl FungibleVault {
 pub struct NonFungibleVault;
 
 impl NonFungibleVault {
-    pub fn liquid_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn liquid_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -232,7 +232,7 @@ impl NonFungibleVault {
         Ok(amount)
     }
 
-    pub fn locked_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn locked_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -247,7 +247,7 @@ impl NonFungibleVault {
         Ok(amount)
     }
 
-    pub fn is_locked<Y>(receiver: &RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    pub fn is_locked<Y>(receiver: &NodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -255,7 +255,7 @@ impl NonFungibleVault {
     }
 
     pub fn liquid_non_fungible_local_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
@@ -273,7 +273,7 @@ impl NonFungibleVault {
     }
 
     pub fn locked_non_fungible_local_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
@@ -291,7 +291,7 @@ impl NonFungibleVault {
     }
 
     pub fn take<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
@@ -318,7 +318,7 @@ impl NonFungibleVault {
     }
 
     pub fn take_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         ids: &BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
@@ -344,7 +344,7 @@ impl NonFungibleVault {
     }
 
     pub fn put<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource: LiquidNonFungibleResource,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -378,7 +378,7 @@ impl NonFungibleVault {
 
     // protected method
     pub fn lock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
@@ -429,7 +429,7 @@ impl NonFungibleVault {
 
     // protected method
     pub fn lock_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
@@ -471,7 +471,7 @@ impl NonFungibleVault {
 
     // protected method
     pub fn unlock_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -510,7 +510,7 @@ pub struct VaultBlueprint;
 
 impl VaultBlueprint {
     pub fn take<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -549,7 +549,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(bucket_id)
+            NodeId::Object(bucket_id)
         } else {
             // Take
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
@@ -570,7 +570,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(bucket_id)
+            NodeId::Object(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -578,7 +578,7 @@ impl VaultBlueprint {
     }
 
     pub fn take_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -621,7 +621,7 @@ impl VaultBlueprint {
     }
 
     pub fn put<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -634,7 +634,7 @@ impl VaultBlueprint {
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
-            .kernel_drop_node(&RENodeId::Object(input.bucket.0))?
+            .kernel_drop_node(&NodeId::Object(input.bucket.0))?
             .into();
 
         // Check resource address
@@ -658,7 +658,7 @@ impl VaultBlueprint {
     }
 
     pub fn get_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -682,7 +682,7 @@ impl VaultBlueprint {
     }
 
     pub fn get_resource_address<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -699,7 +699,7 @@ impl VaultBlueprint {
     }
 
     pub fn get_non_fungible_local_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -725,7 +725,7 @@ impl VaultBlueprint {
     }
 
     pub fn lock_fee<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -791,7 +791,7 @@ impl VaultBlueprint {
     }
 
     pub fn recall<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -826,7 +826,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(bucket_id)
+            NodeId::Object(bucket_id)
         } else {
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
             let bucket_id = api.new_object(
@@ -844,7 +844,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(bucket_id)
+            NodeId::Object(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -854,7 +854,7 @@ impl VaultBlueprint {
     }
 
     pub fn recall_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -896,7 +896,7 @@ impl VaultBlueprint {
     }
 
     pub fn create_proof<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -928,7 +928,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            NodeId::Object(proof_id)
         } else {
             let amount = NonFungibleVault::liquid_amount(receiver, api)?
                 + NonFungibleVault::locked_amount(receiver, api)?;
@@ -949,7 +949,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            NodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();
@@ -957,7 +957,7 @@ impl VaultBlueprint {
     }
 
     pub fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -991,7 +991,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            NodeId::Object(proof_id)
         } else {
             let proof_info = ProofInfoSubstate {
                 resource_address: info.resource_address,
@@ -1008,7 +1008,7 @@ impl VaultBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            NodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();
@@ -1016,7 +1016,7 @@ impl VaultBlueprint {
     }
 
     pub fn create_proof_by_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1059,7 +1059,7 @@ impl VaultBlueprint {
     // FIXME: set up auth
 
     pub fn lock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1076,7 +1076,7 @@ impl VaultBlueprint {
     }
 
     pub fn lock_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1093,7 +1093,7 @@ impl VaultBlueprint {
     }
 
     pub fn unlock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1110,7 +1110,7 @@ impl VaultBlueprint {
     }
 
     pub fn unlock_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

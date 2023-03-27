@@ -456,7 +456,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         node_init: &RENodeInit,
         node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
@@ -498,7 +498,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -533,7 +533,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -600,7 +600,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: &TypedModuleId,
         offset: &SubstateOffset,
         flags: &LockFlags,

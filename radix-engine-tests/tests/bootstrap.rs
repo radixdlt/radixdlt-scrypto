@@ -70,7 +70,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(|rc| rc.amount == allocation_amount
-            && rc.node_id == RENodeId::GlobalObject(account_address.into())));
+            && rc.node_id == NodeId::GlobalObject(account_address.into())));
 }
 
 #[test]

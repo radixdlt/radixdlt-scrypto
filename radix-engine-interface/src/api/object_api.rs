@@ -13,35 +13,35 @@ pub trait ClientObjectApi<E> {
         app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, E>;
 
-    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<(PackageAddress, String), E>;
+    fn get_object_type_info(&mut self, node_id: NodeId) -> Result<(PackageAddress, String), E>;
 
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, E>;
 
-    fn get_key_value_store_info(&mut self, node_id: RENodeId) -> Result<KeyValueStoreSchema, E>;
+    fn get_key_value_store_info(&mut self, node_id: NodeId) -> Result<KeyValueStoreSchema, E>;
 
     fn globalize(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         modules: BTreeMap<TypedModuleId, ObjectId>,
     ) -> Result<Address, E>;
 
     fn globalize_with_address(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         modules: BTreeMap<TypedModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, E>;
 
     fn call_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
     fn call_module_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         node_module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
@@ -55,5 +55,5 @@ pub trait ClientObjectApi<E> {
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
-    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), E>;
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
 }

@@ -15,7 +15,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 
 pub struct LockInfo {
-    pub node_id: RENodeId,
+    pub node_id: NodeId,
     pub module_id: TypedModuleId,
     pub offset: SubstateOffset,
     pub flags: LockFlags,
@@ -26,15 +26,15 @@ pub struct LockInfo {
 
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError>;
 
     /// Allocates a new node id useable for create_node
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<RENodeId, RuntimeError>;
+    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError>;
 
     /// Creates a new RENode
     fn kernel_create_node(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         init: RENodeInit,
         node_module_init: BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError>;
@@ -44,7 +44,7 @@ pub trait KernelSubstateApi {
     /// Locks a visible substate
     fn kernel_lock_substate(
         &mut self,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: TypedModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -105,10 +105,7 @@ pub trait KernelApi<W: WasmEngine, E>:
 pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
-    fn kernel_get_node_visibility_origin(
-        &self,
-        node_id: RENodeId,
-    ) -> Option<RENodeVisibilityOrigin>;
+    fn kernel_get_node_visibility_origin(&self, node_id: NodeId) -> Option<RENodeVisibilityOrigin>;
 
     fn kernel_get_current_depth(&self) -> usize;
 

@@ -97,7 +97,7 @@ impl ClockNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -192,7 +192,7 @@ impl ClockNativePackage {
 
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(
-            RENodeId::Object(clock_id),
+            NodeId::Object(clock_id),
             btreemap!(
                 TypedModuleId::AccessRules => access_rules.id(),
                 TypedModuleId::Metadata => metadata.id(),
@@ -205,7 +205,7 @@ impl ClockNativePackage {
     }
 
     fn set_current_time<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -234,7 +234,7 @@ impl ClockNativePackage {
     }
 
     fn get_current_time<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -262,7 +262,7 @@ impl ClockNativePackage {
     }
 
     fn compare_current_time<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

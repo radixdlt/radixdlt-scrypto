@@ -1,6 +1,6 @@
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
+    KeyValueStoreId, KeyValueStoreOffset, NodeId, SubstateOffset,
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;
@@ -52,7 +52,7 @@ impl<
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
         let handle = env
             .sys_lock_substate(
-                RENodeId::KeyValueStore(self.id),
+                NodeId::KeyValueStore(self.id),
                 offset,
                 LockFlags::read_only(),
             )
@@ -79,7 +79,7 @@ impl<
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
         let handle = env
             .sys_lock_substate(
-                RENodeId::KeyValueStore(self.id),
+                NodeId::KeyValueStore(self.id),
                 offset.clone(),
                 LockFlags::MUTABLE,
             )
@@ -112,7 +112,7 @@ impl<
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload.clone()));
         let handle = env
             .sys_lock_substate(
-                RENodeId::KeyValueStore(self.id),
+                NodeId::KeyValueStore(self.id),
                 offset.clone(),
                 LockFlags::MUTABLE,
             )

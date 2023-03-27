@@ -13,10 +13,10 @@ pub enum LocalRef {
 }
 
 impl LocalRef {
-    pub fn to_re_node_id(&self) -> RENodeId {
+    pub fn to_re_node_id(&self) -> NodeId {
         match self {
-            LocalRef::Bucket(id) => RENodeId::Object(id.clone()),
-            LocalRef::Vault(id) => RENodeId::Object(id.clone()),
+            LocalRef::Bucket(id) => NodeId::Object(id.clone()),
+            LocalRef::Vault(id) => NodeId::Object(id.clone()),
         }
     }
 }
@@ -43,7 +43,7 @@ pub struct ProofInfoSubstate {
 
 impl ProofInfoSubstate {
     pub fn of<Y: KernelSubstateApi + ClientSubstateApi<RuntimeError>>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
         let handle = api.sys_lock_substate(
@@ -197,7 +197,7 @@ pub struct ProofBlueprint;
 
 impl ProofBlueprint {
     pub(crate) fn clone<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -229,7 +229,7 @@ impl ProofBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            NodeId::Object(proof_id)
         } else {
             let handle = api.sys_lock_substate(
                 receiver.clone(),
@@ -250,7 +250,7 @@ impl ProofBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            NodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();
@@ -258,7 +258,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -295,7 +295,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -325,7 +325,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -354,7 +354,7 @@ impl ProofBlueprint {
         })?;
         let proof = input.proof;
 
-        let mut heap_node = api.kernel_drop_node(&RENodeId::Object(proof.0))?;
+        let mut heap_node = api.kernel_drop_node(&NodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
             .remove(&(

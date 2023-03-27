@@ -97,7 +97,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
@@ -107,7 +107,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -115,7 +115,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -132,7 +132,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
         _module_id: &TypedModuleId,
         _offset: &SubstateOffset,
         _flags: &LockFlags,

@@ -5,8 +5,8 @@ use radix_engine_interface::address::EntityType;
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
-    pre_allocated_ids: BTreeSet<RENodeId>,
-    frame_allocated_ids: Vec<BTreeSet<RENodeId>>,
+    pre_allocated_ids: BTreeSet<NodeId>,
+    frame_allocated_ids: Vec<BTreeSet<NodeId>>,
     next_entity_ids: BTreeMap<EntityType, u32>,
     next_id: u32,
     transaction_hash: Hash,
@@ -14,7 +14,7 @@ pub struct IdAllocator {
 
 impl IdAllocator {
     /// Creates an ID allocator.
-    pub fn new(transaction_hash: Hash, pre_allocated_ids: BTreeSet<RENodeId>) -> Self {
+    pub fn new(transaction_hash: Hash, pre_allocated_ids: BTreeSet<NodeId>) -> Self {
         Self {
             pre_allocated_ids,
             frame_allocated_ids: vec![BTreeSet::new()],
@@ -38,13 +38,13 @@ impl IdAllocator {
         Ok(())
     }
 
-    pub fn take_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+    pub fn take_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.last_mut().expect("No frame found");
         let frame_allocated = ids.remove(&node_id);
         let pre_allocated = self.pre_allocated_ids.remove(&node_id);
         if !frame_allocated && !pre_allocated {
             return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
-                IdAllocationError::RENodeIdWasNotAllocated(node_id),
+                IdAllocationError::NodeIdWasNotAllocated(node_id),
             )));
         }
         Ok(())
@@ -52,7 +52,7 @@ impl IdAllocator {
 
     // Protected, only virtual manager should call this
     // TODO: Clean up interface
-    pub fn allocate_virtual_node_id(&mut self, node_id: RENodeId) {
+    pub fn allocate_virtual_node_id(&mut self, node_id: NodeId) {
         let ids = self
             .frame_allocated_ids
             .last_mut()
@@ -60,40 +60,38 @@ impl IdAllocator {
         ids.insert(node_id);
     }
 
-    pub fn allocate_node_id(&mut self, node_type: EntityType) -> Result<RENodeId, RuntimeError> {
+    pub fn allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
         let node_id = match node_type {
-            EntityType::KeyValueStore => {
-                self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
-            }
-            EntityType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
-            EntityType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
+            EntityType::KeyValueStore => self.new_kv_store_id().map(|id| NodeId::KeyValueStore(id)),
+            EntityType::Object => self.new_object_id().map(|id| NodeId::Object(id)),
+            EntityType::Vault => self.new_vault_id().map(|id| NodeId::Object(id)),
             EntityType::GlobalPackage => self
                 .new_package_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalEpochManager => self
                 .new_epoch_manager_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalFungibleResourceManager => self
                 .new_fungible_resource_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalNonFungibleResourceManager => self
                 .new_non_fungible_resource_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalAccount => self
                 .new_account_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalIdentity => self
                 .new_identity_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalComponent => self
                 .new_component_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
             EntityType::GlobalAccessController => self
                 .new_access_controller_address()
-                .map(|address| RENodeId::GlobalObject(address.into())),
+                .map(|address| NodeId::GlobalObject(address.into())),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 

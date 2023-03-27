@@ -209,7 +209,7 @@ impl AccountNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -376,7 +376,7 @@ impl AccountNativePackage {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
-            RENodeId::Object(account_id),
+            NodeId::Object(account_id),
             btreemap!(
                 TypedModuleId::AccessRules => access_rules.id(),
                 TypedModuleId::Metadata => metadata.id(),
@@ -429,7 +429,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_internal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -451,7 +451,7 @@ impl AccountNativePackage {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
+            let node_id = NodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
             let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
             handle
@@ -485,7 +485,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -502,7 +502,7 @@ impl AccountNativePackage {
     }
 
     fn lock_contingent_fee<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -519,7 +519,7 @@ impl AccountNativePackage {
     }
 
     fn deposit<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -544,7 +544,7 @@ impl AccountNativePackage {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
+            let node_id = NodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
             let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
             handle
@@ -583,7 +583,7 @@ impl AccountNativePackage {
     }
 
     fn deposit_batch<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -613,7 +613,7 @@ impl AccountNativePackage {
                 let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
                 let kv_store_id = account.vaults.key_value_store_id();
 
-                let node_id = RENodeId::KeyValueStore(kv_store_id);
+                let node_id = NodeId::KeyValueStore(kv_store_id);
                 let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
                 let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                 handle
@@ -653,7 +653,7 @@ impl AccountNativePackage {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -675,7 +675,7 @@ impl AccountNativePackage {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
+            let node_id = NodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
             let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
             handle
@@ -705,7 +705,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -727,7 +727,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -749,7 +749,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -773,7 +773,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -797,7 +797,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -819,7 +819,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -841,7 +841,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

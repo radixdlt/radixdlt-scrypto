@@ -28,7 +28,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    LockHandle, NodeId, ProofOffset, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
@@ -123,16 +123,16 @@ where
 
     fn create_virtual_account(
         &mut self,
-        global_node_id: RENodeId,
+        global_node_id: NodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
+            NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         self.current_frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
+            NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -216,16 +216,16 @@ where
 
     fn create_virtual_identity(
         &mut self,
-        global_node_id: RENodeId,
+        global_node_id: NodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
+            NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         self.current_frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
+            NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -251,13 +251,13 @@ where
 
     fn try_virtualize(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         _module_id: TypedModuleId,
         _offset: &SubstateOffset,
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::GlobalObject(Address::Component(component_address)) => {
+            NodeId::GlobalObject(Address::Component(component_address)) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
@@ -301,9 +301,9 @@ where
         }
     }
 
-    fn drop_node_internal(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
+            NodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id.clone(),
             ))),
@@ -463,7 +463,7 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::GlobalObject(Address::Resource(..)) => {
+                    NodeId::GlobalObject(Address::Resource(..)) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
@@ -482,7 +482,7 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    RENodeId::GlobalObject(Address::Package(package_address)) => {
+                    NodeId::GlobalObject(Address::Package(package_address)) => {
                         // TODO: Cleanup
                         {
                             if is_native_package(*package_address) {
@@ -514,7 +514,7 @@ where
                             }
                         }
                     }
-                    RENodeId::GlobalObject(Address::Component(global_address)) => {
+                    NodeId::GlobalObject(Address::Component(global_address)) => {
                         if matches!(
                             global_address,
                             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
@@ -552,7 +552,7 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    RENodeId::Object(..) => {
+                    NodeId::Object(..) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
@@ -629,7 +629,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -667,7 +667,7 @@ where
         Ok(node)
     }
 
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<RENodeId, RuntimeError> {
+    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
@@ -676,7 +676,7 @@ where
 
     fn kernel_create_node(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         init: RENodeInit,
         module_init: BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
@@ -687,11 +687,11 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         match (node_id, &init) {
-            (RENodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::Object(..), RENodeInit::Object(..)) => {}
-            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
+            (NodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
+            (NodeId::Object(..), RENodeInit::Object(..)) => {}
+            (NodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
@@ -723,10 +723,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_get_node_visibility_origin(
-        &self,
-        node_id: RENodeId,
-    ) -> Option<RENodeVisibilityOrigin> {
+    fn kernel_get_node_visibility_origin(&self, node_id: NodeId) -> Option<RENodeVisibilityOrigin> {
         let visibility = self.current_frame.get_node_visibility(&node_id)?;
         Some(visibility)
     }
@@ -745,7 +742,7 @@ where
 
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            &RENodeId::Object(bucket_id),
+            &NodeId::Object(bucket_id),
             TypedModuleId::ObjectState,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
@@ -757,7 +754,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            &RENodeId::Object(bucket_id),
+                            &NodeId::Object(bucket_id),
                             TypedModuleId::ObjectState,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
@@ -774,7 +771,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            &RENodeId::Object(bucket_id),
+                            &NodeId::Object(bucket_id),
                             TypedModuleId::ObjectState,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
@@ -795,7 +792,7 @@ where
 
     fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            &RENodeId::Object(proof_id),
+            &NodeId::Object(proof_id),
             TypedModuleId::ObjectState,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
@@ -807,7 +804,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            &RENodeId::Object(proof_id),
+                            &NodeId::Object(proof_id),
                             TypedModuleId::ObjectState,
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
@@ -825,7 +822,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            &RENodeId::Object(proof_id),
+                            &NodeId::Object(proof_id),
                             TypedModuleId::ObjectState,
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )
@@ -852,7 +849,7 @@ where
 {
     fn kernel_lock_substate(
         &mut self,
-        node_id: &RENodeId,
+        node_id: &NodeId,
         module_id: TypedModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -918,9 +915,9 @@ where
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
                     RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        RENodeId::GlobalObject(package_address),
+                        NodeId::GlobalObject(package_address),
                     )) => {
-                        let node_id = RENodeId::GlobalObject(*package_address);
+                        let node_id = NodeId::GlobalObject(*package_address);
                         let module_id = TypedModuleId::ObjectState;
                         self.track
                             .acquire_lock(

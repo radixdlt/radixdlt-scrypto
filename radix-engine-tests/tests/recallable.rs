@@ -1,7 +1,7 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::NodeId;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
@@ -29,7 +29,7 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Object(
+            RuntimeError::KernelError(KernelError::RENodeNotFound(NodeId::Object(
                 non_existing_vault_id,
             ))),
         ))

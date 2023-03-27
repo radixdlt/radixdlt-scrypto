@@ -32,7 +32,7 @@ pub trait ClientSubstateApi<E: Debug> {
     // TODO: expose non-SELF?
     fn sys_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, E>;

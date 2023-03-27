@@ -42,7 +42,7 @@ where
 {
     fn sys_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -154,7 +154,7 @@ where
             .package_address();
 
         let handle = self.kernel_lock_substate(
-            &RENodeId::GlobalObject(package_address.into()),
+            &NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
@@ -354,13 +354,13 @@ where
 
     fn globalize(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         modules: BTreeMap<TypedModuleId, ObjectId>,
     ) -> Result<Address, RuntimeError> {
         // FIXME check completeness of modules
 
         let node_type = match node_id {
-            RENodeId::Object(..) => {
+            NodeId::Object(..) => {
                 let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let (package_address, blueprint) = match type_info {
                     TypeInfoSubstate::Object {
@@ -390,7 +390,7 @@ where
 
     fn globalize_with_address(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
         modules: BTreeMap<TypedModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, RuntimeError> {
@@ -452,7 +452,7 @@ where
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
-                    let node_id = RENodeId::Object(object_id);
+                    let node_id = NodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
                         (package_address, blueprint.as_str()),
@@ -466,7 +466,7 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(&RENodeId::Object(object_id))?;
+                    let mut node = self.kernel_drop_node(&NodeId::Object(object_id))?;
 
                     let access_rules = node
                         .substates
@@ -481,7 +481,7 @@ where
                         .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
                 }
                 TypedModuleId::Metadata => {
-                    let node_id = RENodeId::Object(object_id);
+                    let node_id = NodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
                         (package_address, blueprint.as_str()),
@@ -510,7 +510,7 @@ where
                     );
                 }
                 TypedModuleId::Royalty => {
-                    let node_id = RENodeId::Object(object_id);
+                    let node_id = NodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
                         (package_address, blueprint.as_str()),
@@ -562,7 +562,7 @@ where
 
     fn call_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -571,7 +571,7 @@ where
 
     fn call_module_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         node_module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
@@ -605,7 +605,7 @@ where
 
     fn get_object_type_info(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let blueprint = match type_info {
@@ -624,7 +624,7 @@ where
 
     fn get_key_value_store_info(
         &mut self,
-        node_id: RENodeId,
+        node_id: NodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let schema = match type_info {
@@ -658,7 +658,7 @@ where
         Ok(node_id.into())
     }
 
-    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         self.kernel_drop_node(&node_id)?;
         Ok(())
     }
@@ -824,7 +824,7 @@ where
             }?;
 
             let handle = self.kernel_lock_substate(
-                &RENodeId::GlobalObject(Address::Package(package_address)),
+                &NodeId::GlobalObject(Address::Package(package_address)),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -876,7 +876,7 @@ where
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
-                    RENodeId::GlobalObject(Address::Package(package_address)),
+                    NodeId::GlobalObject(Address::Package(package_address)),
                     TypedModuleId::ObjectState,
                     blueprint_name,
                 ),

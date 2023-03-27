@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{ObjectId, RENodeId};
+use radix_engine_interface::api::types::{NodeId, ObjectId};
 use radix_engine_interface::api::{types::*, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
@@ -156,21 +156,21 @@ pub struct OwnedComponent(pub ObjectId);
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(&RENodeId::Object(self.0), method, args)
+            .call_method(&NodeId::Object(self.0), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_type_info(RENodeId::Object(self.0))
+            .get_object_type_info(NodeId::Object(self.0))
             .unwrap()
             .0
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_type_info(RENodeId::Object(self.0))
+            .get_object_type_info(NodeId::Object(self.0))
             .unwrap()
             .1
     }
@@ -189,7 +189,7 @@ impl LocalComponent for OwnedComponent {
 
         let address = ScryptoEnv
             .globalize(
-                RENodeId::Object(self.0),
+                NodeId::Object(self.0),
                 btreemap!(
                     TypedModuleId::AccessRules => access_rules.id(),
                     TypedModuleId::Metadata => metadata.id(),
@@ -222,21 +222,21 @@ impl GlobalComponentRef {
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(&RENodeId::GlobalObject(self.0.into()), method, args)
+            .call_method(&NodeId::GlobalObject(self.0.into()), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
+            .get_object_type_info(NodeId::GlobalObject(self.0.into()))
             .unwrap()
             .0
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
+            .get_object_type_info(NodeId::GlobalObject(self.0.into()))
             .unwrap()
             .1
     }

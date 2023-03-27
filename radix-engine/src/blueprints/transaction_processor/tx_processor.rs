@@ -261,7 +261,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        &RENodeId::GlobalObject(component_address.into()),
+                        &NodeId::GlobalObject(component_address.into()),
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -331,7 +331,7 @@ impl TransactionProcessorBlueprint {
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        &RENodeId::GlobalObject(resource_address.into()),
+                        &NodeId::GlobalObject(resource_address.into()),
                         FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
                     )?;
@@ -355,7 +355,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        &RENodeId::GlobalObject(resource_address.into()),
+                        &NodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -377,7 +377,7 @@ impl TransactionProcessorBlueprint {
                     let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
                     let rtn = api.call_method(
-                        &RENodeId::GlobalObject(resource_address.into()),
+                        &NodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -390,7 +390,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
-                        &RENodeId::Object(vault_id),
+                        &NodeId::Object(vault_id),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -455,7 +455,7 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        &RENodeId::GlobalObject(package_address.into()),
+                        &NodeId::GlobalObject(package_address.into()),
                         TypedModuleId::ObjectState,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -478,7 +478,7 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        &RENodeId::GlobalObject(component_address.into()),
+                        &NodeId::GlobalObject(component_address.into()),
                         TypedModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -498,7 +498,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        &RENodeId::GlobalObject(package_address.into()),
+                        &NodeId::GlobalObject(package_address.into()),
                         TypedModuleId::ObjectState,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -515,7 +515,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
-                        &RENodeId::GlobalObject(component_address.into()),
+                        &NodeId::GlobalObject(component_address.into()),
                         TypedModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),

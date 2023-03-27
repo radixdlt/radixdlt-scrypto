@@ -71,7 +71,7 @@ fn test_trace_resource_transfers() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(source_component.into())
+            |r| r.node_id == NodeId::GlobalObject(source_component.into())
                 && r.amount == -Decimal::from(transfer_amount)
         ));
 
@@ -82,7 +82,7 @@ fn test_trace_resource_transfers() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(target_component.into())
+            |r| r.node_id == NodeId::GlobalObject(target_component.into())
                 && r.amount == Decimal::from(transfer_amount)
         ));
 
@@ -92,7 +92,7 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == RENodeId::GlobalObject(account.into())
+        .any(|r| r.node_id == NodeId::GlobalObject(account.into())
             && r.amount == -Decimal::from(total_fee_paid)));
 }
 
@@ -148,7 +148,7 @@ fn test_trace_fee_payments() {
         .into_iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(funded_component.into())
+            |r| r.node_id == NodeId::GlobalObject(funded_component.into())
                 && r.amount == -total_fee_paid
         ));
 }

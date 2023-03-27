@@ -19,7 +19,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::{api::types::RENodeId, *};
+use radix_engine_interface::{api::types::NodeId, *};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -141,7 +141,7 @@ impl KernelModule for CostingModule {
             } = callee;
             let maybe_component = match &identifier {
                 ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
-                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
+                    NodeId::GlobalObject(Address::Component(address)) => Some(address),
                     _ => None,
                 },
                 _ => None,
@@ -155,7 +155,7 @@ impl KernelModule for CostingModule {
         //===========================
         let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
-            &RENodeId::GlobalObject(package_address.into()),
+            &NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
@@ -189,7 +189,7 @@ impl KernelModule for CostingModule {
         //===========================
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(component_address.clone().into()),
+                &NodeId::GlobalObject(component_address.clone().into()),
                 TypedModuleId::Royalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
@@ -203,7 +203,7 @@ impl KernelModule for CostingModule {
 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(component_address.clone().into()),
+                    &NodeId::GlobalObject(component_address.clone().into()),
                     TypedModuleId::Royalty,
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     LockFlags::MUTABLE,
@@ -233,7 +233,7 @@ impl KernelModule for CostingModule {
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
@@ -259,7 +259,7 @@ impl KernelModule for CostingModule {
 
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
         _module_id: &TypedModuleId,
         _offset: &SubstateOffset,
         _flags: &LockFlags,
