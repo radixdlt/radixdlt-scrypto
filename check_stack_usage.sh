@@ -40,9 +40,9 @@ function get_stack_usage() {
 get_stack_usage
 echo "Estimated debug stack usage $stack"
 if [ $stack -ge $STACK_ERROR_VALUE ] ; then
-    echo "ERROR - this is more than threshold $STACK_ERROR_VALUE"
+    echo "ERROR - this is more than threshold $STACK_ERROR_VALUE! Please refer to stack_sizes.rs for more information, how to reduce stack usage"
     exit 1
 elif [ $stack -ge $STACK_WARN_VALUE ] ; then
-    echo "WARNING - this is more than threshold $STACK_WARN_VALUE"
+    echo "WARNING - this is more than threshold $STACK_WARN_VALUE. Please refer to stack_sizes.rs for more information, how to reduce stack usage"
 fi
 

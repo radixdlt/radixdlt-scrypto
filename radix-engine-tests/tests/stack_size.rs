@@ -3,6 +3,35 @@ use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::*;
 use radix_engine::system::kernel_modules::auth::AuthError;
 
+// This file is supposed collect tests that help monitoring and debugging stack usage.
+
+// Large enums might consume stack pretty quick.
+// Below macros and functions help to debug such issues.
+// Our intention is to keep error enums no greater than 100 bytes.
+// Our approach is to Box enum members, which make the enum so large.
+// Example:
+//
+//  pub enum CallFrameError {
+//    OffsetDoesNotExist(OffsetDoesNotExist),      <--- OffsetDoesNotExist size 64
+//    RENodeNotVisible(RENodeId),
+//    RENodeNotOwned(RENodeId),
+//    MovingLockedRENode(RENodeId),
+//    FailedToMoveSubstateToTrack(TrackError),     <--- TrakcError size 88
+//  }
+//
+// Size of CallFrameError reaches almost 100, so we want to Box largest members reducing the enum size
+// to 40.
+//
+//  pub enum CallFrameError {
+//    OffsetDoesNotExist(Box<OffsetDoesNotExist>),
+//    RENodeNotVisible(RENodeId),
+//    RENodeNotOwned(RENodeId),
+//    MovingLockedRENode(RENodeId),
+//    FailedToMoveSubstateToTrack(Box<TrackError>),
+//  }
+//
+//
+
 macro_rules! check_size {
     ($type:ident, $size:expr) => {
         assert!(
@@ -26,7 +55,6 @@ macro_rules! print_size {
 
 #[test]
 fn test_error_enum_sizes() {
-    // Large enums might consume stack pretty quick.
     println!("Popular error enums sizes:");
     print_size!(RuntimeError);
     print_size!(KernelError);
