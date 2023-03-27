@@ -7,8 +7,8 @@ use std::process::Command;
 use std::process::ExitStatus;
 
 use cargo_toml::Manifest;
-use radix_engine::system::package::*;
 use radix_engine::types::*;
+use radix_engine::utils::*;
 
 #[derive(Debug)]
 pub enum BuildError {

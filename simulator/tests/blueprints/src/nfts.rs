@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData)]
 struct Car {
     name: String,
     manufacturer: String,

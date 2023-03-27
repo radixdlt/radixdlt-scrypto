@@ -31,36 +31,29 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_component_type_info(
+    fn get_type_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn lock_substate(
         &mut self,
@@ -84,6 +77,10 @@ pub trait WasmRuntime {
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn update_wasm_memory_usage(
@@ -102,6 +99,10 @@ pub trait WasmRuntime {
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

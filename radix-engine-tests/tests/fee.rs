@@ -38,10 +38,8 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address = receipt1
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let commit_result = receipt1.expect_commit(true);
+    let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
 }
@@ -242,7 +240,7 @@ fn test_fee_accounting_success() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&RADIX_TOKEN)
@@ -253,13 +251,13 @@ fn test_fee_accounting_success() {
         .get(&RADIX_TOKEN)
         .cloned()
         .unwrap();
-    let summary = &receipt.execution.fee_summary;
+    let summary = &commit_result.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
             - 66
             - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.total_cost_units_consumed
+                * summary.execution_cost_sum
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -306,6 +304,7 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
+    let commit_result = receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&RADIX_TOKEN)
@@ -316,12 +315,12 @@ fn test_fee_accounting_failure() {
         .get(&RADIX_TOKEN)
         .cloned()
         .unwrap();
-    let summary = &receipt.execution.fee_summary;
+    let summary = &commit_result.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
             - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.total_cost_units_consumed
+                * summary.execution_cost_sum
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -387,7 +386,7 @@ fn test_contingent_fee_accounting_success() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&RADIX_TOKEN)
@@ -398,13 +397,13 @@ fn test_contingent_fee_accounting_success() {
         .get(&RADIX_TOKEN)
         .cloned()
         .unwrap();
-    let summary = &receipt.execution.fee_summary;
+    let summary = &commit_result.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.total_cost_units_consumed + contingent_fee
+        account1_balance - effective_price * summary.execution_cost_sum + contingent_fee
     );
     assert_eq!(account2_new_balance, account2_balance - contingent_fee);
 }
@@ -449,6 +448,7 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
+    let commit_result = receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&RADIX_TOKEN)
@@ -459,12 +459,12 @@ fn test_contingent_fee_accounting_failure() {
         .get(&RADIX_TOKEN)
         .cloned()
         .unwrap();
-    let summary = &receipt.execution.fee_summary;
+    let summary = &commit_result.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.total_cost_units_consumed
+        account1_balance - effective_price * summary.execution_cost_sum
     );
     assert_eq!(account2_new_balance, account2_balance);
 }

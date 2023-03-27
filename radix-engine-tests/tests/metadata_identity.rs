@@ -21,11 +21,7 @@ fn create_identity(
             .create_identity(rule!(require(owner_id)))
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        let component_address = receipt
-            .expect_commit()
-            .entity_changes
-            .new_component_addresses[0];
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         component_address
     }

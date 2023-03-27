@@ -191,6 +191,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         schema: generate_full_schema(aggregator),
         substates,
         functions,
+        event_schema: [].into(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(

@@ -4,28 +4,17 @@ use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientEventApi;
-use radix_engine_interface::api::ClientLoggerApi;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
-    ClientUnsafeApi,
-};
-use radix_engine_interface::blueprints::resource::AccessRulesConfig;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientUnsafeApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientPackageApi<RuntimeError>
-        + ClientObjectApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -34,13 +23,7 @@ where
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientUnsafeApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientPackageApi<RuntimeError>
-        + ClientObjectApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {
@@ -53,14 +36,7 @@ where
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientUnsafeApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientPackageApi<RuntimeError>
-        + ClientObjectApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>
-        + ClientLoggerApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -96,16 +72,16 @@ where
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let receiver =
-            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidReceiver)?;
+            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let node_module_id = NodeModuleId::from_u32(module_id)
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =
             self.api
-                .call_module_method(receiver, node_module_id, ident.as_str(), args)?;
+                .call_module_method(&receiver, node_module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -120,9 +96,9 @@ where
         let package_address = scrypto_decode::<PackageAddress>(&package_address)
             .map_err(WasmRuntimeError::InvalidPackageAddress)?;
         let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let function_ident =
-            String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+            String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let return_data =
             self.api
@@ -131,49 +107,13 @@ where
         self.allocate_buffer(return_data)
     }
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: Vec<u8>,
-        access_rules: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema =
-            scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
-        let access_rules = scrypto_decode::<AccessRulesConfig>(&access_rules)
-            .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
-        let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
-            .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
-        let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
-            .map_err(WasmRuntimeError::InvalidMetadata)?;
-        let event_schema = scrypto_decode::<
-            BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-        >(&event_schema)
-        .map_err(WasmRuntimeError::InvalidEventSchema)?;
-
-        let package_address = self.api.new_package(
-            code,
-            schema,
-            access_rules,
-            royalty_config,
-            metadata,
-            event_schema,
-        )?;
-        let package_address_encoded =
-            scrypto_encode(&package_address).expect("Failed to encode package address");
-
-        self.allocate_buffer(package_address_encoded)
-    }
-
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
@@ -184,15 +124,15 @@ where
         self.allocate_buffer(component_id_encoded)
     }
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let component_id = scrypto_decode::<RENodeId>(&component_id)
-            .map_err(WasmRuntimeError::InvalidComponentId)?;
+        let component_id =
+            scrypto_decode::<RENodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let modules = scrypto_decode::<BTreeMap<NodeModuleId, ObjectId>>(&modules)
-            .map_err(WasmRuntimeError::InvalidValue)?;
+            .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;
         let component_address_encoded =
@@ -201,19 +141,25 @@ where
         self.allocate_buffer(component_address_encoded)
     }
 
-    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let key_value_store_id = self.api.new_key_value_store()?;
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let schema = scrypto_decode::<KeyValueStoreSchema>(&schema)
+            .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
+
+        let key_value_store_id = self.api.new_key_value_store(schema)?;
         let key_value_store_id_encoded =
             scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
 
         self.allocate_buffer(key_value_store_id_encoded)
     }
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        self.api.sys_drop_node(node_id)?;
+        self.api.drop_object(node_id)?;
 
         Ok(())
     }
@@ -267,16 +213,29 @@ where
         self.allocate_buffer(buffer)
     }
 
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let auth_zone = self.api.get_auth_zone()?;
+
+        let buffer = scrypto_encode(&auth_zone).expect("Failed to encode auth_zone");
+        self.allocate_buffer(buffer)
+    }
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let rule =
+            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRules)?;
+
+        self.api
+            .assert_access_rule(rule)
+            .map_err(InvokeError::downstream)
+    }
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
             .consume_cost_units(n, ClientCostingReason::RunWasm)
             .map_err(InvokeError::downstream)
     }
 
-    fn get_component_type_info(
-        &mut self,
-        node_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_type_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let type_info = self.api.get_object_type_info(node_id)?;
@@ -300,7 +259,7 @@ where
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.emit_event(
-            scrypto_decode(&event_name).expect("Failed to decode level"),
+            String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
             event,
         )?;
         Ok(())
@@ -312,10 +271,22 @@ where
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.log_message(
-            scrypto_decode::<Level>(&level).expect("Failed to decode level"),
-            scrypto_decode::<String>(&message).expect("Failed to decode message"),
+            scrypto_decode::<Level>(&level).map_err(WasmRuntimeError::InvalidLogLevel)?,
+            String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?,
         )?;
         Ok(())
+    }
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let hash = self.api.get_transaction_hash()?;
+
+        self.allocate_buffer(scrypto_encode(&hash).expect("Failed to encode transaction hash"))
+    }
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let uuid = self.api.generate_uuid()?;
+
+        self.allocate_buffer(scrypto_encode(&uuid).expect("Failed to encode UUID"))
     }
 }
 
@@ -366,19 +337,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
@@ -386,7 +345,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         access_rules: Vec<u8>,
@@ -394,11 +353,14 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -431,13 +393,17 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.fee_reserve
             .consume_execution(n, CostingReason::RunWasm)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))
     }
 
-    fn get_component_type_info(
+    fn get_type_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -464,6 +430,18 @@ impl WasmRuntime for NopWasmRuntime {
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

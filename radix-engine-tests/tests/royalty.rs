@@ -26,7 +26,7 @@ fn test_component_royalty() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress = receipt.output(1);
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Call the paid method
     let receipt = test_runner.execute_manifest(
@@ -37,9 +37,9 @@ fn test_component_royalty() {
         vec![],
     );
 
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
     assert_eq!(
-        receipt.execution.fee_summary.total_royalty_cost_xrd,
+        commit_result.fee_summary.total_royalty_cost_xrd,
         dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
     );
 }
@@ -77,7 +77,7 @@ fn set_up_package_and_component() -> (
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
@@ -92,7 +92,7 @@ fn set_up_package_and_component() -> (
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress = receipt.output(1);
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     (
         test_runner,
@@ -123,9 +123,9 @@ fn test_package_royalty() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
     assert_eq!(
-        receipt.execution.fee_summary.total_royalty_cost_xrd,
+        commit_result.fee_summary.total_royalty_cost_xrd,
         (dec!("1") + dec!("2")) * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
     );
 }
@@ -149,7 +149,7 @@ fn test_royalty_accumulation_when_success() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
         Some(dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
@@ -180,13 +180,10 @@ fn test_royalty_accumulation_when_failure() {
     );
 
     receipt.expect_commit_failure();
-    assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
-        Some(dec!("0"))
-    );
+    assert_eq!(test_runner.inspect_package_royalty(package_address), None);
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("0"))
+        None
     );
 }
 
@@ -208,8 +205,8 @@ fn test_claim_royalty() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
+    receipt.expect_commit(true);
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
         Some(dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
@@ -238,7 +235,7 @@ fn test_claim_royalty() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 
     // Claim component royalty
     let receipt = test_runner.execute_manifest(
@@ -258,7 +255,7 @@ fn test_claim_royalty() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 
     // assert nothing left
     assert_eq!(

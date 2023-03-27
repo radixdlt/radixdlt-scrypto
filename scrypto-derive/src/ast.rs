@@ -1,6 +1,25 @@
 use syn::parse::{Parse, ParseStream};
-use syn::token::Brace;
-use syn::{braced, Ident, ItemImpl, ItemStruct, ItemUse, Result, Token, Visibility};
+use syn::punctuated::Punctuated;
+use syn::token::{Brace, Paren};
+use syn::{
+    braced, parenthesized, Attribute, Ident, ItemImpl, ItemStruct, ItemUse, Path, Result, Token,
+    Visibility,
+};
+
+/// Represents a blueprint which is a module with an optional set of attributes
+pub struct Blueprint {
+    pub attributes: Vec<Attribute>,
+    pub module: BlueprintMod,
+}
+
+impl Parse for Blueprint {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(Self {
+            attributes: input.call(Attribute::parse_outer)?,
+            module: input.parse()?,
+        })
+    }
+}
 
 /// Represents a Blueprint module which consists of a struct and an implementation of said struct
 pub struct BlueprintMod {
@@ -42,6 +61,21 @@ impl Parse for BlueprintMod {
             structure,
             implementation,
             semi,
+        })
+    }
+}
+
+pub struct EventsInner {
+    pub paren_token: Paren,
+    pub paths: Punctuated<Path, Token![,]>,
+}
+
+impl Parse for EventsInner {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        Ok(Self {
+            paren_token: parenthesized!(content in input),
+            paths: content.parse_terminated(Path::parse)?,
         })
     }
 }

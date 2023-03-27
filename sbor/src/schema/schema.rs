@@ -1,8 +1,12 @@
-use crate::rust::vec::Vec;
+use crate::rust::prelude::*;
 use crate::*;
 
 /// An array of custom type kinds, and associated extra information which can attach to the type kinds
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+// NB - the generic parameter E isn't embedded in the value model itself - instead:
+// * Via TypeKind, E::CustomTypeKind<LocalTypeIndex> gets embedded
+// * Via TypeValidation, E::CustomTypeValidation gets embedded
+// So theses are the child types which need to be registered with the sbor macro for it to compile
 #[sbor(child_types = "E::CustomTypeKind<LocalTypeIndex>, E::CustomTypeValidation")]
 pub struct Schema<E: CustomTypeExtension> {
     pub type_kinds: Vec<SchemaTypeKind<E>>,
@@ -17,6 +21,14 @@ pub type SchemaTypeValidation<E> = TypeValidation<<E as CustomTypeExtension>::Cu
 pub type SchemaCustomTypeValidation<E> = <E as CustomTypeExtension>::CustomTypeValidation;
 
 impl<E: CustomTypeExtension> Schema<E> {
+    pub fn empty() -> Self {
+        Self {
+            type_kinds: vec![],
+            type_metadata: vec![],
+            type_validations: vec![],
+        }
+    }
+
     pub fn resolve_type_kind(
         &self,
         type_index: LocalTypeIndex,

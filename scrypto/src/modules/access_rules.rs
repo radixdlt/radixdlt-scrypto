@@ -1,4 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
@@ -42,7 +43,7 @@ impl AttachedAccessRules {
         // TODO: allow setting method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                self.0.clone().into(),
+                &self.0.clone().into(),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -58,7 +59,7 @@ impl AttachedAccessRules {
         // TODO: allow locking method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                self.0.clone().into(),
+                &self.0.clone().into(),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {

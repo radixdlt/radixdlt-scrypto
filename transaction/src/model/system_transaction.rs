@@ -17,14 +17,14 @@ pub struct SystemTransaction {
 impl SystemTransaction {
     pub fn get_executable<'a>(
         &'a self,
-        initial_proofs: Vec<NonFungibleGlobalId>,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
         // Fake transaction hash
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs,
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            virtual_resources: BTreeSet::new(),
         };
 
         Executable::new(

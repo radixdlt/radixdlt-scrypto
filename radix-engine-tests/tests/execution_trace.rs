@@ -1,6 +1,5 @@
-use radix_engine::kernel::event::TrackedEvent;
 use radix_engine::system::kernel_modules::execution_trace::{
-    KernelCallOrigin, KernelCallTrace, ResourceSpecifier, WorktopChange,
+    ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
@@ -36,16 +35,16 @@ fn test_trace_resource_transfers() {
         ResourceAddress,
         ComponentAddress,
         ComponentAddress,
-    ) = receipt.output(1);
+    ) = receipt.expect_commit(true).output(1);
 
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
-    println!("{:?}", receipt.expect_commit().resource_changes);
-    assert_eq!(2, receipt.expect_commit().resource_changes.len()); // Two instructions
+    println!("{:?}", receipt.execution_trace.resource_changes);
+    assert_eq!(2, receipt.execution_trace.resource_changes.len()); // Two instructions
     assert_eq!(
         1,
         receipt
-            .expect_commit()
+            .execution_trace
             .resource_changes
             .get(&0)
             .unwrap()
@@ -54,21 +53,20 @@ fn test_trace_resource_transfers() {
     assert_eq!(
         2,
         receipt
-            .expect_commit()
+            .execution_trace
             .resource_changes
             .get(&1)
             .unwrap()
             .len()
     ); // One resource change in the first instruction (lock fee)
 
-    let fee_summary = &receipt.execution.fee_summary;
-
+    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
     let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.bad_debt_xrd;
+        - fee_summary.total_bad_debt_xrd;
 
     // Source vault withdrawal
     assert!(receipt
-        .expect_commit()
+        .execution_trace
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -79,7 +77,7 @@ fn test_trace_resource_transfers() {
 
     // Target vault deposit
     assert!(receipt
-        .expect_commit()
+        .execution_trace
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -90,7 +88,7 @@ fn test_trace_resource_transfers() {
 
     // Fee withdrawal
     assert!(receipt
-        .expect_commit()
+        .execution_trace
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -119,6 +117,7 @@ fn test_trace_fee_payments() {
 
     let funded_component = test_runner
         .execute_manifest(manifest_prepare, vec![])
+        .expect_commit(true)
         .new_component_addresses()
         .into_iter()
         .nth(0)
@@ -139,11 +138,10 @@ fn test_trace_fee_payments() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let _ = receipt.expect_commit_success();
-    let resource_changes = &receipt.expect_commit().resource_changes;
-    let fee_summary = &receipt.execution.fee_summary;
+    let resource_changes = &receipt.execution_trace.resource_changes;
+    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
     let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.bad_debt_xrd;
+        - fee_summary.total_bad_debt_xrd;
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
@@ -183,14 +181,7 @@ fn test_instruction_traces() {
 
     receipt.expect_commit_success();
 
-    let mut traces: Vec<KernelCallTrace> = receipt
-        .execution
-        .events
-        .into_iter()
-        .filter_map(|e| match e {
-            TrackedEvent::KernelCallTrace(trace) => Some(trace),
-        })
-        .collect();
+    let mut traces: Vec<ExecutionTrace> = receipt.execution_trace.execution_traces;
 
     // Expecting a single root trace
     assert_eq!(1, traces.len());
@@ -212,7 +203,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let KernelCallOrigin::ScryptoMethod(FnIdentifier {
+        if let Origin::ScryptoMethod(FnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -232,7 +223,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -259,7 +250,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
@@ -282,7 +273,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
@@ -305,7 +296,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoFunction(FnIdentifier {
+            Origin::ScryptoFunction(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: PROOF_BLUEPRINT.to_string(),
                 ident: PROOF_DROP_IDENT.to_string()
@@ -328,7 +319,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -352,7 +343,7 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
@@ -361,7 +352,7 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let KernelCallOrigin::ScryptoFunction(FnIdentifier {
+        if let Origin::ScryptoFunction(FnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin
@@ -435,7 +426,7 @@ fn test_worktop_changes() {
     {
         receipt.expect_commit_success();
 
-        let worktop_changes = receipt.execution.worktop_changes();
+        let worktop_changes = receipt.execution_trace.worktop_changes();
 
         // Lock fee
         assert_eq!(worktop_changes.get(&0), None);
@@ -573,6 +564,7 @@ fn test_worktop_changes() {
         assert_eq!(
             worktop_changes.get(&13),
             Some(&vec![
+                WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into())),
                 WorktopChange::Take(ResourceSpecifier::Ids(
                     non_fungible_resource,
                     [
@@ -582,16 +574,15 @@ fn test_worktop_changes() {
                     ]
                     .into()
                 )),
-                WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into()))
             ])
         );
     }
 }
 
 fn traces_for_instruction(
-    traces: &Vec<KernelCallTrace>,
+    traces: &Vec<ExecutionTrace>,
     instruction_index: usize,
-) -> Vec<&KernelCallTrace> {
+) -> Vec<&ExecutionTrace> {
     traces
         .iter()
         .filter(|t| t.instruction_index == instruction_index)

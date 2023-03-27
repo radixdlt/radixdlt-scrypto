@@ -3,15 +3,15 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::types::*;
+use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
-use super::{EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate};
+use super::*;
 
 pub struct EpochManagerNativePackage;
 
@@ -85,11 +85,21 @@ impl EpochManagerNativePackage {
                 export_name: EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
             },
         );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RoundChangeEvent,
+                EpochChangeEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let epoch_manager_schema = BlueprintSchema {
             schema,
             substates,
             functions,
+            event_schema,
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -164,11 +174,24 @@ impl EpochManagerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RegisterValidatorEvent,
+                UnregisterValidatorEvent,
+                StakeEvent,
+                UnstakeEvent,
+                ClaimXrdEvent,
+                UpdateAcceptingStakeDelegationStateEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
             schema,
             substates,
             functions,
+            event_schema,
         };
 
         PackageSchema {
@@ -193,8 +216,8 @@ impl EpochManagerNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
-        input: IndexedScryptoValue,
+        receiver: Option<&RENodeId>,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -209,7 +232,19 @@ impl EpochManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                EpochManagerBlueprint::create(input, api)
+                let input: EpochManagerCreateInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::create(
+                    input.validator_owner_token,
+                    input.component_address,
+                    input.validator_set,
+                    input.initial_epoch,
+                    input.rounds_per_epoch,
+                    input.num_unstake_epochs,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -217,7 +252,12 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                EpochManagerBlueprint::get_current_epoch(receiver, input, api)
+                let _input: EpochManagerGetCurrentEpochInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = EpochManagerBlueprint::get_current_epoch(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             EPOCH_MANAGER_SET_EPOCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -225,7 +265,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                EpochManagerBlueprint::set_epoch(receiver, input, api)
+                let input: EpochManagerSetEpochInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::set_epoch(receiver, input.epoch, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             EPOCH_MANAGER_NEXT_ROUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -233,7 +277,12 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                EpochManagerBlueprint::next_round(receiver, input, api)
+                let input: EpochManagerNextRoundInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::next_round(receiver, input.round, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             EPOCH_MANAGER_CREATE_VALIDATOR_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -241,7 +290,12 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                EpochManagerBlueprint::create_validator(receiver, input, api)
+                let input: EpochManagerCreateValidatorInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::create_validator(receiver, input.key, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -249,7 +303,18 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                EpochManagerBlueprint::update_validator(receiver, input, api)
+                let input: EpochManagerUpdateValidatorInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = EpochManagerBlueprint::update_validator(
+                    receiver,
+                    input.validator_address,
+                    input.update,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_REGISTER_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

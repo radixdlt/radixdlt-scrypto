@@ -267,8 +267,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             .build(),
     };
     let result = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    result.expect_commit_success();
-    let mintable_resource_address = result.new_resource_addresses()[0].clone();
+    let mintable_resource_address = result.expect_commit(true).new_resource_addresses()[0].clone();
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) = string_manifest_builder(
@@ -316,5 +315,5 @@ where
         .expect_commit_success();
 }
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct SampleNonFungibleData {}

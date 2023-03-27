@@ -2,6 +2,9 @@ use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
+#[derive(ScryptoSbor, NonFungibleData)]
+pub struct MyData {}
+
 #[blueprint]
 mod bucket_test {
 
@@ -28,9 +31,7 @@ mod bucket_test {
                 .metadata("name", "TestToken")
                 .mint_initial_supply(1u32);
 
-            ScryptoEnv
-                .sys_drop_node(RENodeId::Object(bucket.0))
-                .unwrap();
+            ScryptoEnv.drop_object(RENodeId::Object(bucket.0)).unwrap();
         }
 
         pub fn drop_empty(amount: u32) {
@@ -124,7 +125,7 @@ mod bucket_test {
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
             let resource_address =
-                ResourceBuilder::new_uuid_non_fungible().create_with_no_initial_supply();
+                ResourceBuilder::new_uuid_non_fungible::<MyData>().create_with_no_initial_supply();
             Bucket::new(resource_address)
         }
     }

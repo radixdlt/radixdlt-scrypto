@@ -14,7 +14,7 @@ pub trait ExecutableInvocation: Invocation {
     fn resolve<Y: KernelSubstateApi>(
         self,
         api: &mut Y,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError>;
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError>;
 
     fn payload_size(&self) -> usize;
 }
@@ -23,8 +23,8 @@ pub trait Executor {
     type Output: Debug;
 
     fn execute<Y, W>(
-        self,
-        args: IndexedScryptoValue,
+        &self,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where

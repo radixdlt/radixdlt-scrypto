@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);
@@ -153,11 +153,10 @@ fn transfer_test(c: &mut Criterion) {
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
                 &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
-                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
-            .expect_commit()
-            .entity_changes
-            .new_component_addresses[0];
+            .expect_commit(true)
+            .new_component_addresses()[0];
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
@@ -174,9 +173,9 @@ fn transfer_test(c: &mut Criterion) {
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
                 &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
-                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
-            .expect_commit();
+            .expect_commit(true);
 
             account
         })
@@ -203,9 +202,9 @@ fn transfer_test(c: &mut Criterion) {
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
             &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
-                .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+                .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
         )
-        .expect_commit();
+        .expect_commit(true);
     }
 
     // Create a transfer manifest
@@ -229,10 +228,10 @@ fn transfer_test(c: &mut Criterion) {
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
                 &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
-                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 
-            fwk.add_measurement(&receipt.execution.resources_usage);
+            fwk.add_measurement(&receipt.execution_trace.resources_usage);
 
             receipt.expect_commit_success();
             nonce += 1;

@@ -168,7 +168,7 @@ fn build_call_arguments<'a>(
     type_index: LocalTypeIndex,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-) -> Result<(&'a mut ManifestBuilder, Vec<u8>), BuildCallArgumentsError> {
+) -> Result<(&'a mut ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
     match schema.resolve_type_kind(type_index) {
         Some(TypeKind::Tuple { field_types }) => {
@@ -194,10 +194,10 @@ fn build_call_arguments<'a>(
         _ => panic!("Inconsistent schema"),
     }
 
-    let encoded = manifest_encode(&ManifestValue::Tuple { fields: built_args })
-        .expect("Failed to encode ManifestValue");
-
-    Ok((builder, encoded))
+    Ok((
+        builder,
+        to_manifest_value(&ManifestValue::Tuple { fields: built_args }),
+    ))
 }
 
 macro_rules! parse_basic_type {
@@ -562,7 +562,7 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let resource_address = ResourceAddress::Normal([1u8; 26]);
+        let resource_address = ResourceAddress::Fungible([1u8; 26]);
 
         let arg =
             Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);

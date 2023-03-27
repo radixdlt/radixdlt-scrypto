@@ -1,5 +1,4 @@
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::AuthZoneError;
+use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
@@ -242,15 +241,14 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let virtual_badge_non_fungible_global_id =
             NonFungibleGlobalId::from_public_key(&public_key);
 
-        let access_rules = manifest_decode::<AccessRulesConfig>(&manifest_args!(
+        let access_rules: AccessRulesConfig = manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,
             HashMap::<MethodKey, AccessRule>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll
-        ))
-        .unwrap();
+        );
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
         test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
@@ -286,16 +284,14 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
@@ -314,7 +310,7 @@ fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -340,11 +336,11 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)],
         );
         receipt.expect_commit_success();
 
-        receipt.new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -359,16 +355,14 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
@@ -392,11 +386,11 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)],
         );
         receipt.expect_commit_success();
 
-        receipt.new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -418,7 +412,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -428,7 +422,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     component_address: ComponentAddress,
-    initial_proofs: Vec<NonFungibleGlobalId>,
+    initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
 impl MutableAccessRulesTestRunner {
@@ -447,18 +441,17 @@ impl MutableAccessRulesTestRunner {
             )
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-        receipt.expect_commit_success();
-        let component_address = receipt.new_component_addresses()[0];
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,
             component_address,
-            initial_proofs: Vec::new(),
+            initial_proofs: BTreeSet::new(),
         }
     }
 
     pub fn add_initial_proof(&mut self, initial_proof: NonFungibleGlobalId) {
-        self.initial_proofs.push(initial_proof);
+        self.initial_proofs.insert(initial_proof);
     }
 
     pub fn set_method_auth(

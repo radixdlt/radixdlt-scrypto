@@ -1,22 +1,19 @@
+use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::types::FnIdentifier;
-use radix_engine_interface::api::ClientActorApi;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
-use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
-use radix_engine_interface::blueprints::transaction_runtime::{
-    TransactionRuntimeGenerateUuidInput, TransactionRuntimeGetHashInput,
-    TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeExtension};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
+use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::*;
-use sbor::generate_full_schema_from_single_type;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -29,7 +26,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+                &RENodeId::GlobalObject(EPOCH_MANAGER.into()),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )
@@ -81,7 +78,7 @@ impl Runtime {
     ) -> T {
         let output = ScryptoEnv
             .call_method(
-                RENodeId::GlobalObject(component_address.into()),
+                &RENodeId::GlobalObject(component_address.into()),
                 method.as_ref(),
                 args,
             )
@@ -91,42 +88,23 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let output = ScryptoEnv
-            .call_method(
-                RENodeId::TransactionRuntime,
-                TRANSACTION_RUNTIME_GET_HASH_IDENT,
-                scrypto_encode(&TransactionRuntimeGetHashInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&output).unwrap()
+        ScryptoEnv.get_transaction_hash().unwrap()
     }
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let output = ScryptoEnv
-            .call_method(
-                RENodeId::TransactionRuntime,
-                TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
-                scrypto_encode(&TransactionRuntimeGenerateUuidInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&output).unwrap()
+        ScryptoEnv.generate_uuid().unwrap()
     }
 
     /// Emits an application event
-    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(event: T) {
-        // TODO: Simplify once ScryptoEvent trait is implemented
-        let event_name = {
-            let (local_type_index, schema) =
-                generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            (*schema
-                .resolve_type_metadata(local_type_index)
-                .expect("Cant fail")
-                .type_name)
-                .to_owned()
-        };
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv
-            .emit_event(event_name, scrypto_encode(&event).unwrap())
+            .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
             .unwrap();
+    }
+
+    pub fn assert_access_rule(access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.assert_access_rule(access_rule).unwrap();
     }
 }

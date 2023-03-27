@@ -1,17 +1,16 @@
-use crate::blueprints::epoch_manager::Validator;
-use crate::blueprints::transaction_processor::InstructionOutput;
+use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::kernel::event::TrackedEvent;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::execution_trace::{ResourceChange, WorktopChange};
+use crate::system::kernel_modules::execution_trace::{
+    ExecutionTrace, ResourceChange, WorktopChange,
+};
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::data::scrypto::{
-    ScryptoDecode, ScryptoValue, ScryptoValueDisplayContext,
-};
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
@@ -22,21 +21,17 @@ pub struct ResourcesUsage {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct TransactionExecution {
-    pub fee_summary: FeeSummary,
-    pub events: Vec<TrackedEvent>,
+pub struct TransactionExecutionTrace {
+    pub execution_traces: Vec<ExecutionTrace>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub resources_usage: ResourcesUsage,
 }
 
-impl TransactionExecution {
+impl TransactionExecutionTrace {
     pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
         let mut aggregator = index_map_new::<usize, Vec<WorktopChange>>();
-        for event in &self.events {
-            match event {
-                TrackedEvent::KernelCallTrace(kernel_call_trace) => {
-                    kernel_call_trace.worktop_changes(&mut aggregator)
-                }
-            }
+        for trace in &self.execution_traces {
+            trace.worktop_changes(&mut aggregator)
         }
         aggregator
     }
@@ -51,24 +46,129 @@ pub enum TransactionResult {
 }
 
 impl TransactionResult {
-    pub fn expect_commit(&self) -> &CommitResult {
+    pub fn is_commit_success(&self) -> bool {
         match self {
-            TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
+            TransactionResult::Commit(c) => matches!(c.outcome, TransactionOutcome::Success(_)),
+            _ => false,
         }
     }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
-    pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
-    pub entity_changes: EntityChanges,
-    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub application_logs: Vec<(Level, String)>,
+    pub state_update_summary: StateUpdateSummary,
+    pub outcome: TransactionOutcome,
+    pub fee_summary: FeeSummary,
+    pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
+    pub application_logs: Vec<(Level, String)>,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct StateUpdateSummary {
+    pub new_packages: Vec<PackageAddress>,
+    pub new_components: Vec<ComponentAddress>,
+    pub new_resources: Vec<ResourceAddress>,
+    pub balance_changes: IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
+    /// This field accounts for two conditions:
+    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
+    /// 2. Fee payments for failed transactions.
+    pub direct_vault_updates: IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>>,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub enum BalanceChange {
+    Fungible(Decimal),
+    NonFungible {
+        added: BTreeSet<NonFungibleLocalId>,
+        removed: BTreeSet<NonFungibleLocalId>,
+    },
+}
+
+impl BalanceChange {
+    pub fn fungible(&mut self) -> &mut Decimal {
+        match self {
+            BalanceChange::Fungible(x) => x,
+            BalanceChange::NonFungible { .. } => panic!("Not fungible"),
+        }
+    }
+    pub fn added_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
+        match self {
+            BalanceChange::Fungible(..) => panic!("Not non fungible"),
+            BalanceChange::NonFungible { added, .. } => added,
+        }
+    }
+    pub fn removed_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
+        match self {
+            BalanceChange::Fungible(..) => panic!("Not non fungible"),
+            BalanceChange::NonFungible { removed, .. } => removed,
+        }
+    }
+}
+
+impl CommitResult {
+    pub fn next_epoch(&self) -> Option<(BTreeMap<ComponentAddress, Validator>, u64)> {
+        // Note: Node should use a well-known index id
+        for (ref event_type_id, ref event_data) in self.application_events.iter() {
+            if let EventTypeIdentifier(
+                Emitter::Function(
+                    RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                    NodeModuleId::SELF,
+                    ..,
+                )
+                | Emitter::Method(
+                    RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
+                    NodeModuleId::SELF,
+                ),
+                ..,
+            ) = event_type_id
+            {
+                if let Ok(EpochChangeEvent {
+                    ref epoch,
+                    ref validators,
+                }) = scrypto_decode(&event_data)
+                {
+                    return Some((validators.clone(), *epoch));
+                }
+            }
+        }
+        None
+    }
+
+    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
+        &self.state_update_summary.new_packages
+    }
+
+    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
+        &self.state_update_summary.new_components
+    }
+
+    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
+        &self.state_update_summary.new_resources
+    }
+
+    pub fn balance_changes(&self) -> &IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>> {
+        &self.state_update_summary.balance_changes
+    }
+
+    pub fn direct_vault_updates(
+        &self,
+    ) -> &IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>> {
+        &self.state_update_summary.direct_vault_updates
+    }
+
+    pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
+        match &self.outcome {
+            TransactionOutcome::Success(o) => match o.get(nth) {
+                Some(InstructionOutput::CallReturn(value)) => {
+                    scrypto_decode::<T>(value).expect("Output can't be converted")
+                }
+                _ => panic!("No output for [{}]", nth),
+            },
+            TransactionOutcome::Failure(_) => panic!("Transaction failed"),
+        }
+    }
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -79,6 +179,10 @@ pub enum TransactionOutcome {
 }
 
 impl TransactionOutcome {
+    pub fn is_success(&self) -> bool {
+        matches!(self, Self::Success(_))
+    }
+
     pub fn expect_success(&self) -> &Vec<InstructionOutput> {
         match self {
             TransactionOutcome::Success(results) => results,
@@ -94,39 +198,6 @@ impl TransactionOutcome {
             TransactionOutcome::Success(results) => Ok(results),
             TransactionOutcome::Failure(error) => Err(f(error)),
         }
-    }
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct EntityChanges {
-    pub new_package_addresses: Vec<PackageAddress>,
-    pub new_component_addresses: Vec<ComponentAddress>,
-    pub new_resource_addresses: Vec<ResourceAddress>,
-}
-
-impl EntityChanges {
-    pub fn new(new_global_addresses: Vec<Address>) -> Self {
-        let mut entity_changes = Self {
-            new_package_addresses: Vec::new(),
-            new_component_addresses: Vec::new(),
-            new_resource_addresses: Vec::new(),
-        };
-
-        for new_global_address in new_global_addresses {
-            match new_global_address {
-                Address::Package(package_address) => {
-                    entity_changes.new_package_addresses.push(package_address)
-                }
-                Address::Component(component_address) => entity_changes
-                    .new_component_addresses
-                    .push(component_address),
-                Address::Resource(resource_address) => {
-                    entity_changes.new_resource_addresses.push(resource_address)
-                }
-            }
-        }
-
-        entity_changes
     }
 }
 
@@ -148,15 +219,11 @@ pub enum AbortReason {
 /// Represents a transaction receipt.
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
-    pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
+    pub execution_trace: TransactionExecutionTrace,
 }
 
 impl TransactionReceipt {
-    pub fn is_commit(&self) -> bool {
-        matches!(self.result, TransactionResult::Commit(_))
-    }
-
     pub fn is_commit_success(&self) -> bool {
         matches!(
             self.result,
@@ -181,12 +248,33 @@ impl TransactionReceipt {
         matches!(self.result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit(&self) -> &CommitResult {
+    pub fn expect_commit(&self, success: bool) -> &CommitResult {
         match &self.result {
-            TransactionResult::Commit(c) => c,
+            TransactionResult::Commit(c) => {
+                if c.outcome.is_success() != success {
+                    panic!(
+                        "Expected {} but was {}",
+                        if success { "success" } else { "failure" },
+                        if c.outcome.is_success() {
+                            "success"
+                        } else {
+                            "failure"
+                        }
+                    )
+                }
+                c
+            }
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
+    }
+
+    pub fn expect_commit_success(&self) -> &CommitResult {
+        self.expect_commit(true)
+    }
+
+    pub fn expect_commit_failure(&self) -> &CommitResult {
+        self.expect_commit(false)
     }
 
     pub fn expect_rejection(&self) -> &RejectionError {
@@ -223,32 +311,6 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_success(&self) -> &Vec<InstructionOutput> {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(x) => x,
-                TransactionOutcome::Failure(err) => {
-                    panic!("Expected success but was failed:\n{:?}", err)
-                }
-            },
-            TransactionResult::Reject(err) => panic!("Transaction was rejected:\n{:?}", err),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
-        }
-    }
-
-    pub fn expect_commit_failure(&self) -> &RuntimeError {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(_) => {
-                    panic!("Expected failure but was success")
-                }
-                TransactionOutcome::Failure(err) => err,
-            },
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
-        }
-    }
-
     pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
@@ -268,30 +330,6 @@ impl TransactionReceipt {
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(..) => panic!("Transaction was aborted"),
         }
-    }
-
-    pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
-        match &self.expect_commit_success()[nth] {
-            InstructionOutput::CallReturn(value) => {
-                scrypto_decode::<T>(value).expect("Output can't be converted")
-            }
-            InstructionOutput::None => panic!("No call return from the instruction"),
-        }
-    }
-
-    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
-        let commit = self.expect_commit();
-        &commit.entity_changes.new_package_addresses
-    }
-
-    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
-        let commit = self.expect_commit();
-        &commit.entity_changes.new_component_addresses
-    }
-
-    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
-        let commit = self.expect_commit();
-        &commit.entity_changes.new_resource_addresses
     }
 }
 
@@ -319,10 +357,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let execution = &self.execution;
         let result = &self.result;
-
         let bech32_encoder = context.encoder;
+        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
 
         write!(
             f,
@@ -338,26 +375,26 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             },
         )?;
 
-        write!(
-            f,
-            "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
-            "Transaction Fee:".bold().green(),
-            execution.fee_summary.total_execution_cost_xrd,
-            execution.fee_summary.total_royalty_cost_xrd,
-            execution.fee_summary.bad_debt_xrd,
-        )?;
-
-        write!(
-            f,
-            "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
-            "Cost Units:".bold().green(),
-            execution.fee_summary.cost_unit_limit,
-            execution.fee_summary.total_cost_units_consumed,
-            execution.fee_summary.cost_unit_price,
-            execution.fee_summary.tip_percentage
-        )?;
-
         if let TransactionResult::Commit(c) = &result {
+            write!(
+                f,
+                "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
+                "Transaction Fee:".bold().green(),
+                c.fee_summary.total_execution_cost_xrd,
+                c.fee_summary.total_royalty_cost_xrd,
+                c.fee_summary.total_bad_debt_xrd,
+            )?;
+
+            write!(
+                f,
+                "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
+                "Cost Units:".bold().green(),
+                c.fee_summary.cost_unit_limit,
+                c.fee_summary.execution_cost_sum,
+                c.fee_summary.cost_unit_price,
+                c.fee_summary.tip_percentage
+            )?;
+
             write!(
                 f,
                 "\n{} {}",
@@ -386,22 +423,19 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             for (i, (event_type_identifier, event_data)) in c.application_events.iter().enumerate()
             {
                 let event_data_value =
-                    scrypto_decode::<ScryptoValue>(&event_data).expect("Event must be decodable!");
+                    IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
                 write!(
                     f,
-                    "\n{} Identifier: {:?}, Event Data: {:?}",
+                    "\n{} Emitter: {:?}, Local Type Index: {:?}, Data: {}",
                     prefix!(i, c.application_events),
-                    event_type_identifier,
-                    event_data_value
+                    event_type_identifier.0,
+                    event_type_identifier.1,
+                    event_data_value.display(context)
                 )?;
             }
-        }
 
-        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
-
-        if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
-                write!(f, "\n{}", "Outputs:".bold().green())?;
+                write!(f, "\n{} {}", "Outputs:".bold().green(), outputs.len())?;
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,
@@ -416,42 +450,92 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     )?;
                 }
             }
-        }
 
-        if let TransactionResult::Commit(c) = &result {
+            let mut balance_changes = Vec::new();
+            for (address, map) in c.balance_changes() {
+                for (resource, delta) in map {
+                    balance_changes.push((address, resource, delta));
+                }
+            }
+            write!(
+                f,
+                "\n{} {}",
+                "Balance Changes:".bold().green(),
+                balance_changes.len()
+            )?;
+            for (i, (address, resource, delta)) in balance_changes.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} Entity: {}, Address: {}, Delta: {}",
+                    prefix!(i, balance_changes),
+                    address.display(bech32_encoder),
+                    resource.display(bech32_encoder),
+                    match delta {
+                        BalanceChange::Fungible(d) => format!("{}", d),
+                        BalanceChange::NonFungible { added, removed } => {
+                            format!("+{:?}, -{:?}", added, removed)
+                        }
+                    }
+                )?;
+            }
+
+            let mut direct_vault_updates = Vec::new();
+            for (object_id, map) in c.direct_vault_updates() {
+                for (resource, delta) in map {
+                    direct_vault_updates.push((object_id, resource, delta));
+                }
+            }
+            write!(
+                f,
+                "\n{} {}",
+                "Direct Vault Updates:".bold().green(),
+                direct_vault_updates.len()
+            )?;
+            for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} Vault: {}, Address: {}, Delta: {}",
+                    prefix!(i, direct_vault_updates),
+                    hex::encode(object_id),
+                    resource.display(bech32_encoder),
+                    match delta {
+                        BalanceChange::Fungible(d) => format!("{}", d),
+                        BalanceChange::NonFungible { added, removed } => {
+                            format!("+{:?}, -{:?}", added, removed)
+                        }
+                    }
+                )?;
+            }
+
             write!(
                 f,
                 "\n{} {}",
                 "New Entities:".bold().green(),
-                c.entity_changes.new_package_addresses.len()
-                    + c.entity_changes.new_component_addresses.len()
-                    + c.entity_changes.new_resource_addresses.len()
+                c.new_package_addresses().len()
+                    + c.new_component_addresses().len()
+                    + c.new_resource_addresses().len()
             )?;
-
-            for (i, package_address) in c.entity_changes.new_package_addresses.iter().enumerate() {
+            for (i, package_address) in c.new_package_addresses().iter().enumerate() {
                 write!(
                     f,
                     "\n{} Package: {}",
-                    prefix!(i, c.entity_changes.new_package_addresses),
+                    prefix!(i, c.new_package_addresses()),
                     package_address.display(bech32_encoder)
                 )?;
             }
-            for (i, component_address) in
-                c.entity_changes.new_component_addresses.iter().enumerate()
-            {
+            for (i, component_address) in c.new_component_addresses().iter().enumerate() {
                 write!(
                     f,
                     "\n{} Component: {}",
-                    prefix!(i, c.entity_changes.new_component_addresses),
+                    prefix!(i, c.new_component_addresses()),
                     component_address.display(bech32_encoder)
                 )?;
             }
-            for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
-            {
+            for (i, resource_address) in c.new_resource_addresses().iter().enumerate() {
                 write!(
                     f,
                     "\n{} Resource: {}",
-                    prefix!(i, c.entity_changes.new_resource_addresses),
+                    prefix!(i, c.new_resource_addresses()),
                     resource_address.display(bech32_encoder)
                 )?;
             }

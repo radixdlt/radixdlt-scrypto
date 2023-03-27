@@ -78,14 +78,13 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
         let mut env = ScryptoEnv;
         let substate = match &self.original_data {
             OriginalData::KeyValueStoreEntry(_) => {
-                scrypto_encode(&KeyValueStoreEntrySubstate::Some(
-                    scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap(),
-                ))
-                .unwrap()
+                let substate: Option<ScryptoValue> =
+                    Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
+                scrypto_encode(&substate).unwrap()
             }
-            OriginalData::ComponentAppState(_) => scrypto_encode(&ComponentStateSubstate {
-                raw: scrypto_encode(&self.value).unwrap(),
-            })
+            OriginalData::ComponentAppState(_) => scrypto_encode(&ComponentStateSubstate(
+                scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap(),
+            ))
             .unwrap(),
         };
         env.sys_write_substate(self.lock_handle, substate).unwrap();
@@ -130,11 +129,8 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
             )
             .unwrap();
         let raw_substate = env.sys_read_substate(lock_handle).unwrap();
-        let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
-        DataRef {
-            lock_handle,
-            value: scrypto_decode(&substate.raw).unwrap(),
-        }
+        let value: V = scrypto_decode(&raw_substate).unwrap();
+        DataRef { lock_handle, value }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
@@ -147,11 +143,11 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
             )
             .unwrap();
         let raw_substate = env.sys_read_substate(lock_handle).unwrap();
-        let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
+        let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,
             original_data: OriginalData::ComponentAppState(raw_substate),
-            value: scrypto_decode(&substate.raw).unwrap(),
+            value,
         }
     }
 }

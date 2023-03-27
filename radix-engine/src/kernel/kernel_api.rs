@@ -15,6 +15,8 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 
 pub struct LockInfo {
+    pub node_id: RENodeId,
+    pub module_id: NodeModuleId,
     pub offset: SubstateOffset,
     pub flags: LockFlags,
 }
@@ -24,13 +26,15 @@ pub struct LockInfo {
 
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError>;
 
     /// Allocates a new node id useable for create_node
-    fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
+    fn kernel_allocate_node_id(
+        &mut self,
+        node_type: AllocateEntityType,
+    ) -> Result<RENodeId, RuntimeError>;
 
     /// Creates a new RENode
-    /// TODO: Remove, replace with lock_substate + get_ref_mut use
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
@@ -43,7 +47,7 @@ pub trait KernelSubstateApi {
     /// Locks a visible substate
     fn kernel_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -86,7 +90,7 @@ pub trait KernelWasmApi<W: WasmEngine> {
 }
 
 pub trait KernelInvokeApi<I: Invocation, E> {
-    fn kernel_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
+    fn kernel_invoke(&mut self, invocation: Box<I>) -> Result<I::Output, E>;
 }
 
 /// Interface of the Kernel, for Kernel modules.

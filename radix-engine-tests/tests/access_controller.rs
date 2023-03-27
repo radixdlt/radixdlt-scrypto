@@ -240,15 +240,14 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_component_address,
             "stop_timed_recovery",
-            manifest_encode(&AccessControllerStopTimedRecoveryInput {
+            to_manifest_value(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(RADIX_TOKEN)),
                     recovery_role: rule!(require(RADIX_TOKEN)),
                     confirmation_role: rule!(require(RADIX_TOKEN)),
                 },
                 timed_recovery_delay_in_minutes: Some(10),
-            })
-            .unwrap(),
+            }),
         )
         .build();
 
@@ -1466,12 +1465,12 @@ impl AccessControllerTestRunner {
             .build();
         let receipt = test_runner.execute_manifest(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)],
         );
         receipt.expect_commit_success();
 
         let access_controller_component_address =
-            receipt.new_component_addresses().get(0).unwrap().clone();
+            receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,
@@ -1492,7 +1491,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
-                manifest_encode(&AccessControllerCreateProofInput {}).unwrap(),
+                to_manifest_value(&AccessControllerCreateProofInput {}),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();
@@ -1518,15 +1517,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                manifest_encode(&AccessControllerInitiateRecoveryAsPrimaryInput {
+                to_manifest_value(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                }),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1561,7 +1559,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                manifest_encode(
+                to_manifest_value(
                     &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
                         rule_set: RuleSet {
                             primary_role: proposed_primary_role,
@@ -1570,8 +1568,7 @@ impl AccessControllerTestRunner {
                         },
                         timed_recovery_delay_in_minutes,
                     },
-                )
-                .unwrap(),
+                ),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1590,15 +1587,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-                manifest_encode(&AccessControllerTimedConfirmRecoveryInput {
+                to_manifest_value(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                }),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1616,7 +1612,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                manifest_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput).unwrap(),
+                to_manifest_value(&AccessControllerCancelPrimaryRoleRecoveryProposalInput),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1628,7 +1624,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
-                manifest_encode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
+                to_manifest_value(&AccessControllerLockPrimaryRoleInput {}),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1640,7 +1636,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
-                manifest_encode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
+                to_manifest_value(&AccessControllerUnlockPrimaryRoleInput {}),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1659,15 +1655,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "stop_timed_recovery",
-                manifest_encode(&AccessControllerStopTimedRecoveryInput {
+                to_manifest_value(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                }),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1676,7 +1671,7 @@ impl AccessControllerTestRunner {
     fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
         self.test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&self.account.1)].into(),
+            [NonFungibleGlobalId::from_public_key(&self.account.1)],
         )
     }
 

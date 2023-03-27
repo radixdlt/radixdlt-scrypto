@@ -24,11 +24,11 @@ impl SetCurrentEpoch {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
+            args: to_manifest_value(&EpochManagerSetEpochInput { epoch: self.epoch }),
         }];
 
         let blobs = vec![];
-        let initial_proofs = vec![AuthAddresses::system_role()];
+        let initial_proofs = btreeset![AuthAddresses::system_role()];
         handle_system_transaction(instructions, blobs, initial_proofs, self.trace, true, out)
             .map(|_| ())
     }

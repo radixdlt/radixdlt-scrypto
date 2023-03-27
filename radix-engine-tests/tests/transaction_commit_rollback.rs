@@ -29,8 +29,7 @@ fn test_state_track_success() {
     );
 
     // Assert
-    receipt.expect_commit_success();
-    let state_updates = &receipt.expect_commit().state_updates;
+    let state_updates = &receipt.expect_commit(true).state_updates;
     println!("");
     for (o, n) in state_updates.down_substate_offsets() {
         println!("DOWN: {:?}, {}", o, n);
@@ -43,28 +42,30 @@ fn test_state_track_success() {
         2 /* Package(Info) */
         + 2 /* Package(CodeType) */
         + 2 /* Package(Code) */
+        + 3 /* Package(Royalty) */
+        + 2 /* PackageAccessRules */
         + 2 /* KeyValueStore(Entry([92, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
         + 2 /* Vault(Info) */
         + 2 /* Vault(LiquidFungible) */
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
-        + 1 /* PackageAccessRules */
-        + 1 /* PackageEventSchema */
+        + 2 /* PackageAccessRules */
     );
     assert_eq!(
         state_updates.up_substate_ids().len(),
         2 /* Package(Info) */
         + 2 /* Package(CodeType) */
         + 2 /* Package(Code) */
+        + 3 /* Package(Royalty) */
+        + 2 /* PackageAccessRules */
         + 2 /* KeyValueStore(Entry([92, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
         + 2 /* Vault(Info) */
         + 2 /* Vault(LiquidFungible) */
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
-        + 1 /* PackageAccessRules */
-        + 1 /* PackageEventSchema */
+        + 2 /* PackageAccessRules */
     );
 }
 
@@ -100,7 +101,18 @@ fn test_state_track_failure() {
     });
     assert_eq!(
         1,
-        receipt.expect_commit().state_updates.down_substates.len()
+        receipt
+            .expect_commit(false)
+            .state_updates
+            .down_substates
+            .len()
     ); // only the vault is down
-    assert_eq!(1, receipt.expect_commit().state_updates.up_substates.len());
+    assert_eq!(
+        1,
+        receipt
+            .expect_commit(false)
+            .state_updates
+            .up_substates
+            .len()
+    );
 }

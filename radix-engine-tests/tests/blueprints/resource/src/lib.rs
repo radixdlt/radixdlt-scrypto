@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]
@@ -13,10 +13,11 @@ mod resource_test {
 
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
-            let super_admin_badge: ResourceAddress = ResourceBuilder::new_uuid_non_fungible()
-                .metadata("name", "Super Admin Badge")
-                .mintable(rule!(allow_all), rule!(allow_all))
-                .create_with_no_initial_supply();
+            let super_admin_badge: ResourceAddress =
+                ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
+                    .metadata("name", "Super Admin Badge")
+                    .mintable(rule!(allow_all), rule!(allow_all))
+                    .create_with_no_initial_supply();
 
             let super_admin_manager = borrow_resource_manager!(super_admin_badge);
             super_admin_manager.set_mintable(rule!(require(super_admin_badge)));
@@ -103,13 +104,14 @@ mod resource_test {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_integer_non_fungible().mint_initial_supply(vec![(
-                0u64.into(),
-                Sandwich {
-                    name: "name".to_string(),
-                    available: false,
-                },
-            )]);
+            let badge = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
+                .mint_initial_supply(vec![(
+                    0u64.into(),
+                    Sandwich {
+                        name: "name".to_string(),
+                        available: false,
+                    },
+                )]);
             let manager_badge =
                 NonFungibleGlobalId::new(badge.resource_address(), NonFungibleLocalId::integer(0));
 
@@ -127,6 +129,27 @@ mod resource_test {
             });
 
             badge
+        }
+    }
+}
+
+#[blueprint]
+mod auth_resource {
+    struct AuthResource;
+
+    impl AuthResource {
+        pub fn create() -> ComponentAddress {
+            Self {}.instantiate().globalize()
+        }
+
+        pub fn mint(&self, resource: ResourceAddress) -> Bucket {
+            let resource_manager = borrow_resource_manager!(resource);
+            let bucket = resource_manager.mint(1);
+            bucket
+        }
+
+        pub fn burn(&self, bucket: Bucket) {
+            bucket.burn();
         }
     }
 }

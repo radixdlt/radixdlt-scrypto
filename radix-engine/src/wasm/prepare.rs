@@ -246,7 +246,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        DROP_NODE_FUNCTION_NAME => {
+                        DROP_OBJECT_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -259,7 +259,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        DROP_NODE_FUNCTION_NAME.to_string(),
+                                        DROP_OBJECT_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -360,83 +360,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        NEW_PACKAGE_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                    ],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-
-                                return Err(PrepareError::InvalidImport(
-                                    InvalidImport::InvalidFunctionType(
-                                        NEW_PACKAGE_FUNCTION_NAME.to_string(),
-                                    ),
-                                ));
-                            }
-                        }
-                        NEW_COMPONENT_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                    ],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-
-                                return Err(PrepareError::InvalidImport(
-                                    InvalidImport::InvalidFunctionType(
-                                        NEW_COMPONENT_FUNCTION_NAME.to_string(),
-                                    ),
-                                ));
-                            }
-                        }
-                        GLOBALIZE_COMPONENT_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
-                                    ],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-                                return Err(PrepareError::InvalidImport(
-                                    InvalidImport::InvalidFunctionType(
-                                        GLOBALIZE_COMPONENT_FUNCTION_NAME.to_string(),
-                                    ),
-                                ));
-                            }
-                        }
-                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
+                        GET_AUTH_ZONE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -446,14 +370,78 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        NEW_KEY_VALUE_STORE_FUNCTION_NAME.to_string(),
+                                        GET_AUTH_ZONE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME => {
+                        ASSERT_ACCESS_RULE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        ASSERT_ACCESS_RULE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        NEW_OBJECT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        NEW_OBJECT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GLOBALIZE_OBJECT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GLOBALIZE_OBJECT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -465,7 +453,41 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                        NEW_KEY_VALUE_STORE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -499,6 +521,30 @@ impl WasmModule {
                                         ValueType::I32,
                                     ],
                                     vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GET_TRANSACTION_HASH_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GENERATE_UUID_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }
@@ -947,6 +993,7 @@ mod tests {
                         export_name: "Test_f".to_string(),
                     }
                 ),
+                event_schema: [].into(),
             },
         );
 

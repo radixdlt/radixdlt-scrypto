@@ -2,20 +2,19 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::transaction_runtime::*;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
-use sbor::generate_full_schema_from_single_type;
-use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::ToOwned;
+use radix_engine_interface::traits::ScryptoEvent;
+use sbor::rust::prelude::*;
 
 #[derive(Debug)]
 pub struct Runtime {}
 
 impl Runtime {
     /// Emits an application event
-    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe, Y, E>(
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
         api: &mut Y,
         event: T,
     ) -> Result<(), E>
@@ -23,17 +22,7 @@ impl Runtime {
         Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        // TODO: Simplify once ScryptoEvent trait is implemented
-        let event_name = {
-            let (local_type_index, schema) =
-                generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            (*schema
-                .resolve_type_metadata(local_type_index)
-                .expect("Cant fail")
-                .type_name)
-                .to_owned()
-        };
-        api.emit_event(event_name, scrypto_encode(&event).unwrap())
+        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
@@ -42,7 +31,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+            &RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         )?;
@@ -56,7 +45,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(CLOCK.into()),
+            &RENodeId::GlobalObject(CLOCK.into()),
             CLOCK_GET_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
@@ -75,7 +64,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(CLOCK.into()),
+            &RENodeId::GlobalObject(CLOCK.into()),
             CLOCK_COMPARE_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockCompareCurrentTimeInput {
                 precision,
@@ -94,11 +83,14 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let rtn = api.call_method(
-            RENodeId::TransactionRuntime,
-            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
-            scrypto_encode(&TransactionRuntimeGenerateUuidInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        api.generate_uuid()
+    }
+
+    pub fn assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        api.assert_access_rule(access_rule)
     }
 }

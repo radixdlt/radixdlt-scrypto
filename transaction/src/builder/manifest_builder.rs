@@ -19,7 +19,11 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
-use radix_engine_interface::data::manifest::{manifest_encode, model::*};
+#[cfg(feature = "dump_manifest_to_file")]
+use radix_engine_interface::data::manifest::manifest_encode;
+use radix_engine_interface::data::manifest::{
+    model::*, to_manifest_value, ManifestEncode, ManifestValue,
+};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
@@ -268,6 +272,11 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::DropAllProofs).0
     }
 
+    /// Drops all virtual proofs.
+    pub fn clear_signature_proofs(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::ClearSignatureProofs).0
+    }
+
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
@@ -283,27 +292,26 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_fungible_with_initial_supply".to_string(),
-                args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility,
                     metadata,
                     access_rules,
                     initial_supply,
-                })
-                .unwrap(),
+                }),
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-                args: manifest_encode(&ResourceManagerCreateFungibleInput {
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility,
                     metadata,
                     access_rules,
-                })
-                .unwrap(),
+                }),
             });
         }
 
@@ -321,7 +329,7 @@ impl ManifestBuilder {
     where
         R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        V: ManifestEncode + NonFungibleData,
     {
         let access_rules = access_rules
             .into_iter()
@@ -331,33 +339,35 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .map(|(id, e)| (id, (to_manifest_value(&e),)))
                 .collect();
 
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
-                    id_type,
-                    metadata,
-                    access_rules,
-                    entries,
-                })
-                .unwrap(),
+                args: to_manifest_value(
+                    &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        id_type,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        metadata,
+                        access_rules,
+                        entries,
+                    },
+                ),
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-                args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                     metadata,
                     access_rules,
-                })
-                .unwrap(),
+                }),
             });
         }
 
@@ -369,24 +379,16 @@ impl ManifestBuilder {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: manifest_encode(&IdentityCreateInput { access_rule }).unwrap(),
+            args: to_manifest_value(&IdentityCreateInput { access_rule }),
         });
         self
     }
 
-    pub fn create_validator(
-        &mut self,
-        key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
-    ) -> &mut Self {
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerCreateValidatorInput {
-                key,
-                owner_access_rule,
-            })
-            .unwrap(),
+            args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
         });
         self
     }
@@ -454,13 +456,13 @@ impl ManifestBuilder {
         package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
-        args: Vec<u8>,
+        args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address,
             blueprint_name: blueprint_name.to_string(),
             function_name: function_name.to_string(),
-            args,
+            args: to_manifest_value(&args),
         });
         self
     }
@@ -470,12 +472,12 @@ impl ManifestBuilder {
         &mut self,
         component_address: ComponentAddress,
         method_name: &str,
-        args: Vec<u8>,
+        args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address,
             method_name: method_name.to_owned(),
-            args,
+            args: args,
         });
         self
     }
@@ -595,10 +597,19 @@ impl ManifestBuilder {
     /// Builds a transaction manifest.
     /// TODO: consider using self
     pub fn build(&self) -> TransactionManifest {
-        TransactionManifest {
+        let m = TransactionManifest {
             instructions: self.instructions.clone(),
             blobs: self.blobs.values().cloned().collect(),
+        };
+        #[cfg(feature = "dump_manifest_to_file")]
+        {
+            let bytes = manifest_encode(&m).unwrap();
+            let m_hash = hash(&bytes);
+            let path = format!("manifest_{:?}.raw", m_hash);
+            std::fs::write(&path, bytes).unwrap();
+            println!("manifest dumped to file {}", &path);
         }
+        m
     }
 
     /// Creates a token resource with mutable supply.
@@ -667,8 +678,20 @@ impl ManifestBuilder {
         self.create_fungible_resource(0, metadata, access_rules, Some(initial_supply))
     }
 
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn_from_worktop(
+        &mut self,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+            builder
+                .add_instruction(Instruction::BurnResource { bucket_id })
+                .0
+        })
+    }
+
+    pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
+        self.take_from_worktop(resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -694,15 +717,17 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        V: ManifestEncode,
     {
         let entries = entries
             .into_iter()
-            .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+            .map(|(id, e)| (id, (to_manifest_value(&e),)))
             .collect();
+        let input = NonFungibleResourceManagerMintManifestInput { entries };
+
         self.add_instruction(Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args: to_manifest_value(&input),
         });
         self
     }
@@ -714,15 +739,17 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         T: IntoIterator<Item = V>,
-        V: NonFungibleData,
+        V: ManifestEncode,
     {
         let entries = entries
             .into_iter()
-            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .map(|e| (to_manifest_value(&e),))
             .collect();
+        let input = NonFungibleResourceManagerMintUuidManifestInput { entries };
+
         self.add_instruction(Instruction::MintUuidNonFungible {
             resource_address,
-            entries,
+            args: to_manifest_value(&input),
         });
         self
     }
@@ -752,10 +779,9 @@ impl ManifestBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: manifest_encode(&AccountCreateGlobalInput {
+            args: to_manifest_value(&AccountCreateGlobalInput {
                 withdraw_rule: withdraw_auth,
-            })
-            .unwrap(),
+            }),
         })
         .0
     }
@@ -767,12 +793,11 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountLockFeeAndWithdrawInput {
+        let args = to_manifest_value(&AccountLockFeeAndWithdrawInput {
             resource_address,
             amount,
             amount_to_lock,
-        })
-        .unwrap();
+        });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -789,12 +814,11 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountLockFeeAndWithdrawNonFungiblesInput {
+        let args = to_manifest_value(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
             ids,
-        })
-        .unwrap();
+        });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -806,7 +830,7 @@ impl ManifestBuilder {
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let args = manifest_encode(&AccountLockFeeInput { amount }).unwrap();
+        let args = to_manifest_value(&AccountLockFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -817,7 +841,7 @@ impl ManifestBuilder {
     }
 
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        let args = manifest_encode(&AccountLockContingentFeeInput { amount }).unwrap();
+        let args = to_manifest_value(&AccountLockContingentFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -834,11 +858,10 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountWithdrawInput {
+        let args = to_manifest_value(&AccountWithdrawInput {
             resource_address,
             amount,
-        })
-        .unwrap();
+        });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -855,11 +878,10 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountWithdrawNonFungiblesInput {
+        let args = to_manifest_value(&AccountWithdrawNonFungiblesInput {
             ids: ids.clone(),
             resource_address,
-        })
-        .unwrap();
+        });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -875,7 +897,7 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountCreateProofInput { resource_address }).unwrap();
+        let args = to_manifest_value(&AccountCreateProofInput { resource_address });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -892,11 +914,10 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountCreateProofByAmountInput {
+        let args = to_manifest_value(&AccountCreateProofByAmountInput {
             resource_address,
             amount,
-        })
-        .unwrap();
+        });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
@@ -913,11 +934,10 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = manifest_encode(&AccountCreateProofByIdsInput {
+        let args = to_manifest_value(&AccountCreateProofByIdsInput {
             resource_address,
             ids: ids.clone(),
-        })
-        .unwrap();
+        });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,

@@ -85,13 +85,13 @@ impl ShowLedger {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
         let blobs = vec![];
-        let initial_proofs = vec![];
+        let initial_proofs = btreeset![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
-        Ok(receipt.output(0))
+        Ok(receipt.expect_commit(true).output(0))
     }
 
     pub fn get_current_time<O: std::io::Write>(
@@ -101,12 +101,12 @@ impl ShowLedger {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: manifest_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
-        let initial_proofs = vec![];
+        let initial_proofs = btreeset![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
-        Ok(receipt.output(0))
+        Ok(receipt.expect_commit(true).output(0))
     }
 }

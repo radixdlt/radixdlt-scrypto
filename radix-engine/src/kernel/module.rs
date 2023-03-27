@@ -5,9 +5,7 @@ use crate::errors::RuntimeError;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
@@ -47,7 +45,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         _api: &mut Y,
-        _actor: &Option<Actor>,
+        _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -91,7 +89,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_type: &RENodeType,
+        _node_type: &AllocateEntityType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -173,45 +171,6 @@ pub trait KernelModule {
     fn on_drop_lock<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    //======================
-    // Other events
-    //======================
-
-    #[inline(always)]
-    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _units: u32,
-        _reason: ClientCostingReason,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _vault_id: ObjectId,
-        locked_fee: LiquidFungibleResource,
-        _contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
-        Ok(locked_fee)
-    }
-
-    #[inline(always)]
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _new_index: usize,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _consumed_memory: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

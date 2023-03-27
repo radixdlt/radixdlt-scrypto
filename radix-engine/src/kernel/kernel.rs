@@ -13,9 +13,7 @@ use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::IdentityBlueprint;
-use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
-};
+use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -25,19 +23,21 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
-use radix_engine_interface::api::package::PackageCodeSubstate;
+use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
+use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::mem;
 use resources_tracker_macro::trace_resources;
 
@@ -146,15 +146,23 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
             let kv_store_id = {
-                let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
+                let node_id = self.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
-                self.kernel_create_node(node_id, node, BTreeMap::new())?;
+                self.kernel_create_node(
+                    node_id,
+                    node,
+                    btreemap!(
+                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                            KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                        )
+                    ),
+                )?;
                 node_id
             };
 
             let node_id = {
                 let node_modules = btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         global: false
@@ -165,7 +173,7 @@ where
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                let node_id = self.kernel_allocate_node_id(AllocateEntityType::Object)?;
                 let node = RENodeInit::Object(btreemap!(
                     SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
                 ));
@@ -191,14 +199,15 @@ where
         };
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-
         let metadata = Metadata::sys_create(self)?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             component_id,
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             global_node_id.into(),
         )?;
@@ -226,12 +235,14 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             local_id,
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             global_node_id.into(),
         )?;
@@ -291,13 +302,11 @@ where
         }
     }
 
-    fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::AuthZoneStack | RENodeId::TransactionRuntime | RENodeId::Object(..) => {
-                api.current_frame.remove_node(&mut api.heap, node_id)
-            }
+            RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                node_id,
+                node_id.clone(),
             ))),
         })
     }
@@ -347,24 +356,19 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        resolved: ResolvedInvocation<X>,
+        mut resolved: Box<ResolvedInvocation<X>>,
     ) -> Result<X::Output, RuntimeError> {
-        let executor = resolved.executor;
-        let actor = resolved.resolved_actor;
-        let args = resolved.args;
-        let mut call_frame_update = resolved.update;
+        let caller = Box::new(self.current_frame.actor.clone());
 
-        let caller = self.current_frame.actor.clone();
+        let executor = &resolved.executor;
+        let actor = &resolved.resolved_actor;
+        let args = &resolved.args;
+        let call_frame_update = &mut resolved.update;
 
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(
-                    api,
-                    &Some(actor.clone()),
-                    &mut call_frame_update,
-                    &args,
-                )
+                KernelModuleMixer::before_push_frame(api, &actor, call_frame_update, &args)
             })?;
         }
 
@@ -375,7 +379,7 @@ where
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
                 actor.clone(),
-                call_frame_update,
+                call_frame_update.clone(),
             )?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
@@ -384,9 +388,11 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_execution_start(api, &caller)
-            })?;
+            {
+                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                    KernelModuleMixer::on_execution_start(api, &caller)
+                })?;
+            }
 
             // Auto drop locks
             self.current_frame
@@ -397,9 +403,11 @@ where
                 self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
 
             // Handle execution finish
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
-            })?;
+            {
+                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
+                    KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
+                })?;
+            }
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -440,6 +448,7 @@ where
     ) -> Result<(), RuntimeError> {
         match (cur, next) {
             (ExecutionMode::Kernel, ..) => Ok(()),
+            (ExecutionMode::Client, ExecutionMode::System) => Ok(()),
             _ => Err(RuntimeError::KernelError(
                 KernelError::InvalidModeTransition(*cur, *next),
             )),
@@ -448,7 +457,7 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        resolved: ResolvedInvocation<X>,
+        resolved: Box<ResolvedInvocation<X>>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
@@ -477,45 +486,31 @@ where
                     RENodeId::GlobalObject(Address::Package(package_address)) => {
                         // TODO: Cleanup
                         {
-                            match *package_address {
-                                PACKAGE_LOADER
-                                | RESOURCE_MANAGER_PACKAGE
-                                | IDENTITY_PACKAGE
-                                | EPOCH_MANAGER_PACKAGE
-                                | CLOCK_PACKAGE
-                                | ACCOUNT_PACKAGE
-                                | ACCESS_CONTROLLER_PACKAGE => {
+                            if is_native_package(*package_address) {
+                                self.current_frame
+                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                continue;
+                            } else {
+                                if self.current_frame.get_node_visibility(node_id).is_none() {
+                                    let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                                    self.track
+                                        .acquire_lock(
+                                            SubstateId(
+                                                *node_id,
+                                                NodeModuleId::TypeInfo,
+                                                offset.clone(),
+                                            ),
+                                            LockFlags::read_only(),
+                                        )
+                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                    self.track
+                                        .release_lock(
+                                            SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                            false,
+                                        )
+                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                                     self.current_frame
                                         .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-                                _ => {
-                                    if self.current_frame.get_node_visibility(node_id).is_none() {
-                                        let offset =
-                                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                                        self.track
-                                            .acquire_lock(
-                                                SubstateId(
-                                                    *node_id,
-                                                    NodeModuleId::TypeInfo,
-                                                    offset.clone(),
-                                                ),
-                                                LockFlags::read_only(),
-                                            )
-                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                        self.track
-                                            .release_lock(
-                                                SubstateId(
-                                                    *node_id,
-                                                    NodeModuleId::TypeInfo,
-                                                    offset,
-                                                ),
-                                                false,
-                                            )
-                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                        self.current_frame
-                                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    }
                                 }
                             }
                         }
@@ -570,14 +565,15 @@ where
 
                             let substate_ref =
                                 self.track
-                                    .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
+                                    .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                             let type_substate: &TypeInfoSubstate = substate_ref.into();
-                            if !matches!(
-                                (
-                                    type_substate.package_address,
-                                    type_substate.blueprint_name.as_str()
-                                ),
-                                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                            if !matches!(type_substate,
+                                TypeInfoSubstate::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+
+                                } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(VAULT_BLUEPRINT)
                             ) {
                                 return Err(RuntimeError::KernelError(
                                     KernelError::InvalidDirectAccess,
@@ -605,7 +601,8 @@ where
         Ok(output)
     }
 
-    fn execute_in_mode<X, RTN, E>(
+    #[inline(always)]
+    pub fn execute_in_mode<X, RTN, E>(
         &mut self,
         execution_mode: ExecutionMode,
         execute: X,
@@ -634,7 +631,7 @@ where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -643,7 +640,7 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let (package_address, blueprint_name) = self.get_object_type_info(node_id)?;
+            let (package_address, blueprint_name) = self.get_object_type_info(node_id.clone())?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
@@ -654,7 +651,7 @@ where
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
-                        node_id,
+                        node_id: node_id.clone(),
                         package_address,
                         blueprint_name,
                     },
@@ -673,7 +670,10 @@ where
     }
 
     #[trace_resources]
-    fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+    fn kernel_allocate_node_id(
+        &mut self,
+        node_type: AllocateEntityType,
+    ) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
@@ -696,17 +696,14 @@ where
         match (node_id, &init) {
             (RENodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
         let push_to_store = match init {
-            RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
+            RENodeInit::GlobalObject(..) => true,
             _ => false,
         };
 
@@ -760,7 +757,7 @@ where
     #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Object(bucket_id),
+            &RENodeId::Object(bucket_id),
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
@@ -772,7 +769,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(bucket_id),
+                            &RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
@@ -789,7 +786,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(bucket_id),
+                            &RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
@@ -811,7 +808,7 @@ where
     #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Object(proof_id),
+            &RENodeId::Object(proof_id),
             NodeModuleId::SELF,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
@@ -823,7 +820,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(proof_id),
+                            &RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
@@ -841,7 +838,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Object(proof_id),
+                            &RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )
@@ -870,7 +867,7 @@ where
     #[trace_resources]
     fn kernel_lock_substate(
         &mut self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         module_id: NodeModuleId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -896,7 +893,7 @@ where
                     KernelError::InvalidSubstateAccess {
                         mode: current_mode,
                         actor: actor.clone(),
-                        node_id,
+                        node_id: node_id.clone(),
                         offset,
                         flags,
                     },
@@ -922,7 +919,7 @@ where
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,
-                        node_id,
+                        &node_id,
                         module_id,
                         offset.clone(),
                         flags,
@@ -954,7 +951,7 @@ where
                         self.current_frame.acquire_lock(
                             &mut self.heap,
                             &mut self.track,
-                            node_id,
+                            &node_id,
                             module_id,
                             offset.clone(),
                             flags,
@@ -1095,7 +1092,10 @@ where
     N: ExecutableInvocation,
 {
     #[trace_resources]
-    fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+    fn kernel_invoke(
+        &mut self,
+        invocation: Box<N>,
+    ) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
             &invocation.debug_identifier(),

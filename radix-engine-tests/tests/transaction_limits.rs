@@ -1,5 +1,5 @@
 use radix_engine::{
-    errors::{ModuleError, RuntimeError},
+    errors::{ModuleError, RejectionError, RuntimeError},
     system::kernel_modules::transaction_limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
@@ -106,7 +106,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
         .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(vec![]);
+    let executable = transactions.get_executable(btreeset![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate reads limit to avoid Fee limit transaction result
@@ -143,7 +143,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
         .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(vec![]);
+    let executable = transactions.get_executable(btreeset![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate writes limit to avoid Fee limit transaction result
@@ -180,7 +180,6 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     ));
     assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
             PackageSchema::default(),
@@ -193,11 +192,15 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
-        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 144,
-        _ => false,
+    receipt.expect_specific_rejection(|e| {
+        matches!(
+            e,
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(_)
+                )
+            ))
+        )
     })
 }
 
@@ -207,7 +210,7 @@ fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
     let data: Vec<u8> = (0..DEFAULT_MAX_INVOKE_INPUT_SIZE).map(|_| 0).collect();
     let blueprint_name = "test_blueprint";
     let function_name = "test_fn";
-    let package_address = PACKAGE_LOADER;
+    let package_address = PACKAGE_PACKAGE;
 
     // Act
     let ret =

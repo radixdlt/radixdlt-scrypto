@@ -50,7 +50,7 @@ impl VisibilityProperties {
     pub fn check_substate_access(
         mode: ExecutionMode,
         actor: &Actor,
-        node_id: RENodeId,
+        node_id: &RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> bool {
@@ -77,14 +77,16 @@ impl VisibilityProperties {
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Info) => true,
                 SubstateOffset::Proof(ProofOffset::Info) => true,
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Proof(..) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
+            (ExecutionMode::System, offset) => match offset {
+                SubstateOffset::AuthZone(_) => read_only,
+                _ => false,
+            },
             (ExecutionMode::KernelModule, offset) => match offset {
                 // TODO: refine based on specific module
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
@@ -94,22 +96,18 @@ impl VisibilityProperties {
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Code) => read_only,
+                SubstateOffset::Package(PackageOffset::Royalty) => true,
+                SubstateOffset::Package(PackageOffset::FunctionAccessRules) => true,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
-                SubstateOffset::PackageAccessRules => read_only,
                 SubstateOffset::TypeInfo(_) => read_only,
                 SubstateOffset::AccessRules(_) => read_only,
+                SubstateOffset::AuthZone(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(
-                        offset,
-                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)
-                            | SubstateOffset::PackageEventSchema(
-                                PackageEventSchemaOffset::PackageEventSchema
-                            )
-                    ) {
+                    if matches!(offset, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)) {
                         return true;
                     }
 
@@ -117,21 +115,7 @@ impl VisibilityProperties {
                         // Native
                         FnIdentifier {
                             package_address, ..
-                        } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            || package_address.eq(&IDENTITY_PACKAGE)
-                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                            || package_address.eq(&CLOCK_PACKAGE)
-                            || package_address.eq(&ACCOUNT_PACKAGE)
-                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                            || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
-                            || package_address.eq(&AUTH_ZONE_PACKAGE)
-                            || package_address.eq(&METADATA_PACKAGE)
-                            || package_address.eq(&ROYALTY_PACKAGE)
-                            || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE_LOADER) =>
-                        {
-                            true
-                        }
+                        } if is_native_package(*package_address) => true,
                         // Scrypto
                         _ => match &actor.identifier {
                             ActorIdentifier::Function(..) => match (node_id, offset) {
@@ -234,21 +218,7 @@ impl VisibilityProperties {
                         // Native
                         FnIdentifier {
                             package_address, ..
-                        } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            || package_address.eq(&IDENTITY_PACKAGE)
-                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                            || package_address.eq(&CLOCK_PACKAGE)
-                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                            || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
-                            || package_address.eq(&AUTH_ZONE_PACKAGE)
-                            || package_address.eq(&METADATA_PACKAGE)
-                            || package_address.eq(&ROYALTY_PACKAGE)
-                            || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE_LOADER)
-                            || package_address.eq(&ACCOUNT_PACKAGE) =>
-                        {
-                            true
-                        }
+                        } if is_native_package(*package_address) => true,
 
                         // Scrypto
                         _ => match &actor.identifier {
@@ -307,27 +277,23 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
-            SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRules(..) => true,
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,
             SubstateOffset::KeyValueStore(..) => true,
-            SubstateOffset::NonFungibleStore(..) => true,
             SubstateOffset::Vault(..) => true,
             SubstateOffset::EpochManager(..) => true,
             SubstateOffset::Validator(..) => true,
             SubstateOffset::Bucket(..) => false,
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
+            SubstateOffset::AuthZone(..) => false,
             SubstateOffset::Clock(..) => true,
-            SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,
-            SubstateOffset::PackageAccessRules => true,
-            SubstateOffset::PackageEventSchema(..) => true,
         }
     }
 
@@ -347,7 +313,7 @@ impl SubstateProperties {
                 ))),
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     package_address,

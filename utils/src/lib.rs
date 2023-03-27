@@ -8,6 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 mod contextual_display;
 #[cfg(feature = "serde")]
 mod contextual_serialize;
+pub mod rust;
 mod slice;
 
 pub use contextual_display::*;

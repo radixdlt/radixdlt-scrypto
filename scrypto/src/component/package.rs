@@ -1,12 +1,12 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::AttachedMetadata;
 use crate::runtime::*;
-use radix_engine_interface::api::node_modules::royalty::{
-    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
-    PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::package::{
+    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
+    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use sbor::rust::collections::BTreeMap;
@@ -31,9 +31,9 @@ impl BorrowedPackage {
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::PackageRoyalty,
-                PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+                &RENodeId::GlobalObject(self.0.into()),
+                NodeModuleId::SELF,
+                PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
             )
             .unwrap();
@@ -42,9 +42,9 @@ impl BorrowedPackage {
     pub fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::PackageRoyalty,
-                PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
+                &RENodeId::GlobalObject(self.0.into()),
+                NodeModuleId::SELF,
+                PACKAGE_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
             )
             .unwrap();

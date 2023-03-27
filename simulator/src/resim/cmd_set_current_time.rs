@@ -25,14 +25,13 @@ impl SetCurrentTime {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: manifest_encode(&ClockSetCurrentTimeInput {
+            args: to_manifest_value(&ClockSetCurrentTimeInput {
                 current_time_ms: self.date_time.to_instant().seconds_since_unix_epoch * 1000,
-            })
-            .unwrap(),
+            }),
         }];
 
         let blobs = vec![];
-        let initial_proofs = vec![
+        let initial_proofs = btreeset![
             AuthAddresses::system_role(),
             AuthAddresses::validator_role(),
         ];

@@ -1,11 +1,13 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
+use crate::blueprints::package::PackageError;
+use crate::blueprints::resource::AuthZoneError;
 use crate::blueprints::resource::{
-    BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
+    BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
+    VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
@@ -13,9 +15,8 @@ use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
-use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
+use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
-use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
@@ -146,7 +147,6 @@ pub enum KernelError {
     // Substate Constraints
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, PackageAddress, String),
-    InvalidOverwrite,
     InvalidId(RENodeId),
 
     // Actor Constraints
@@ -181,12 +181,19 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
+    FailedToMoveSubstateToTrack(TrackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    NotAnObject,
+    NotAKeyValueStore,
+    InvalidSubstateWrite,
+    InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
+    InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
+    InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
     InvalidModule,
     InvalidModuleType {
         expected_package: PackageAddress,
@@ -195,6 +202,7 @@ pub enum SystemError {
         actual_blueprint: String,
     },
     SubstateValidationError(SubstateValidationError),
+    AssertAccessRuleFailed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -206,6 +214,8 @@ pub enum SubstateValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
+    CallMethodOnKeyValueStore,
+
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),
@@ -214,11 +224,11 @@ pub enum InterpreterError {
     ScryptoBlueprintNotFound(PackageAddress, String),
     ScryptoFunctionNotFound(String),
     ScryptoReceiverNotMatch(String),
-    ScryptoInputSchemaNotMatch(String),
+    ScryptoInputSchemaNotMatch(String, String),
     ScryptoInputDecodeError(DecodeError),
 
     ScryptoOutputDecodeError(DecodeError),
-    ScryptoOutputSchemaNotMatch(String),
+    ScryptoOutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -318,11 +328,11 @@ pub enum ApplicationError {
 
     ValidatorError(ValidatorError),
 
-    ResourceManagerError(ResourceManagerError),
+    ResourceManagerError(FungibleResourceManagerError),
+
+    NonFungibleResourceManagerError(NonFungibleResourceManagerError),
 
     AccessRulesChainError(AccessRulesChainError),
-
-    TransactionRuntimeError(TransactionRuntimeError),
 
     BucketError(BucketError),
 
@@ -361,8 +371,8 @@ impl From<EpochManagerError> for ApplicationError {
     }
 }
 
-impl From<ResourceManagerError> for ApplicationError {
-    fn from(value: ResourceManagerError) -> Self {
+impl From<FungibleResourceManagerError> for ApplicationError {
+    fn from(value: FungibleResourceManagerError) -> Self {
         Self::ResourceManagerError(value)
     }
 }
@@ -370,12 +380,6 @@ impl From<ResourceManagerError> for ApplicationError {
 impl From<AccessRulesChainError> for ApplicationError {
     fn from(value: AccessRulesChainError) -> Self {
         Self::AccessRulesChainError(value)
-    }
-}
-
-impl From<TransactionRuntimeError> for ApplicationError {
-    fn from(value: TransactionRuntimeError) -> Self {
-        Self::TransactionRuntimeError(value)
     }
 }
 

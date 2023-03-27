@@ -28,7 +28,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![AuthAddresses::system_role()]),
+        .get_executable(btreeset![AuthAddresses::system_role()]),
     );
 
     // Assert
@@ -57,7 +57,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![]),
+        .get_executable(btreeset![]),
     );
 
     // Assert
@@ -118,8 +118,7 @@ fn validator_can_set_current_time() {
     let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
-    receipt.expect_commit_success();
-    let current_unix_time_rounded_to_minutes: i64 = receipt.output(2);
+    let current_unix_time_rounded_to_minutes: i64 = receipt.expect_commit(true).output(2);
     assert_eq!(
         current_unix_time_rounded_to_minutes,
         expected_unix_time_rounded_to_minutes
@@ -145,8 +144,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_success();
-    let current_time_rounded_to_minutes: i64 = receipt.output(1);
+    let current_time_rounded_to_minutes: i64 = receipt.expect_commit(true).output(1);
     assert_eq!(current_time_rounded_to_minutes, 0);
 }
 

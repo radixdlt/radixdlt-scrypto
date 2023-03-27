@@ -17,7 +17,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_blueprint() starts");
 
     // parse blueprint struct and impl
-    let bp = parse2::<ast::BlueprintMod>(input)?;
+    let blueprint = parse2::<ast::Blueprint>(input)?;
+    let bp = blueprint.module;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
@@ -107,6 +108,36 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = {
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let (function_names, function_schemas) = generate_schema(bp_ident, bp_items)?;
+
+        // Getting the event types if the event attribute is defined for the type
+        let (event_type_names, event_type_paths) = {
+            let mut paths = std::collections::BTreeMap::<String, Path>::new();
+            for attribute in blueprint.attributes {
+                if attribute.path.is_ident("events") {
+                    let events_inner = parse2::<ast::EventsInner>(attribute.tokens)?;
+                    for path in events_inner.paths.iter() {
+                        let ident_string = quote! { #path }
+                            .to_string()
+                            .split(':')
+                            .last()
+                            .unwrap()
+                            .trim()
+                            .to_owned();
+                        if let Some(..) = paths.insert(ident_string, path.clone()) {
+                            return Err(Error::new(
+                                path.span(),
+                                "An event with an identical name has already been registered",
+                            ));
+                        }
+                    }
+                }
+            }
+            (
+                paths.keys().into_iter().cloned().collect::<Vec<_>>(),
+                paths.values().into_iter().cloned().collect::<Vec<_>>(),
+            )
+        };
+
         quote! {
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
@@ -128,10 +159,18 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions.insert(#function_names.to_string(), #function_schemas);
                 )*
 
+                // Aggregate event schemas
+                let mut event_schema = BTreeMap::new();
+                #({
+                    let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
+                    event_schema.insert(#event_type_names.to_owned(), local_type_index);
+                })*
+
                 let return_data = BlueprintSchema {
                     schema: generate_full_schema(aggregator),
                     substates,
                     functions,
+                    event_schema
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -709,10 +748,12 @@ mod tests {
                                 export_name: "Test_y".to_string(),
                             }
                         );
+                        let mut event_schema = BTreeMap::new();
                         let return_data = BlueprintSchema {
                             schema: generate_full_schema(aggregator),
                             substates,
                             functions,
+                            event_schema
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

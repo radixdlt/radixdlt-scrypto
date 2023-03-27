@@ -80,6 +80,8 @@ pub enum Instruction {
 
     DropAllProofs,
 
+    ClearSignatureProofs,
+
     CallFunction {
         package_address: Value,
         blueprint_name: Value,
@@ -155,12 +157,12 @@ pub enum Instruction {
 
     MintNonFungible {
         resource_address: Value,
-        entries: Value,
+        args: Value,
     },
 
     MintUuidNonFungible {
         resource_address: Value,
-        entries: Value,
+        args: Value,
     },
 
     CreateFungibleResource {
@@ -178,12 +180,14 @@ pub enum Instruction {
 
     CreateNonFungibleResource {
         id_type: Value,
+        schema: Value,
         metadata: Value,
         access_rules: Value,
     },
 
     CreateNonFungibleResourceWithInitialSupply {
         id_type: Value,
+        schema: Value,
         metadata: Value,
         access_rules: Value,
         initial_supply: Value,
@@ -191,7 +195,6 @@ pub enum Instruction {
 
     CreateValidator {
         key: Value,
-        owner_access_rule: Value,
     },
     CreateAccessController {
         controlled_asset: Value,

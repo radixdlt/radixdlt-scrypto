@@ -4,6 +4,7 @@ use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -21,7 +22,7 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         node_id: RENodeId,
-        actor: &Option<Actor>,
+        callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
@@ -29,20 +30,43 @@ impl NodeMoveModule {
                 let (package_address, blueprint) = api.get_object_type_info(node_id)?;
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                        if let Some(Actor {
+                        if let Actor {
                             identifier:
                                 ActorIdentifier::Function(FnIdentifier {
                                     package_address: RESOURCE_MANAGER_PACKAGE,
                                     ..
                                 }),
                             ..
-                        }) = actor
+                        } = callee
                         {
                             return Ok(());
                         }
 
+                        // Change to restricted unless it's moved to auth zone.
+                        // TODO: align with barrier design?
+                        let mut changed_to_restricted = true;
+                        if let Actor {
+                            identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
+                            ..
+                        } = callee
+                        {
+                            let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+                            if let TypeInfoSubstate::Object {
+                                package_address,
+                                blueprint_name,
+                                ..
+                            } = type_info
+                            {
+                                if package_address == RESOURCE_MANAGER_PACKAGE
+                                    && blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
+                                {
+                                    changed_to_restricted = false;
+                                }
+                            }
+                        }
+
                         let handle = api.kernel_lock_substate(
-                            node_id,
+                            &node_id,
                             NodeModuleId::SELF,
                             SubstateOffset::Proof(ProofOffset::Info),
                             LockFlags::MUTABLE,
@@ -56,17 +80,7 @@ impl NodeMoveModule {
                             )));
                         }
 
-                        // Change to restricted unless it's for auth zone.
-                        if !matches!(
-                            actor,
-                            Some(Actor {
-                                identifier: ActorIdentifier::Method(MethodIdentifier(
-                                    RENodeId::AuthZoneStack,
-                                    ..
-                                )),
-                                ..
-                            })
-                        ) {
+                        if changed_to_restricted {
                             proof.change_to_restricted();
                         }
 
@@ -77,13 +91,11 @@ impl NodeMoveModule {
                 Ok(())
             }
 
-            RENodeId::TransactionRuntime
-            | RENodeId::AuthZoneStack
-            | RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
-            )),
+            RENodeId::KeyValueStore(..) | RENodeId::GlobalObject(..) => {
+                Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                    NodeMoveError::CantMoveDownstream(node_id),
+                )))
+            }
         }
     }
 
@@ -94,13 +106,11 @@ impl NodeMoveModule {
         match node_id {
             RENodeId::Object(..) => Ok(()),
 
-            RENodeId::TransactionRuntime
-            | RENodeId::AuthZoneStack
-            | RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
-            )),
+            RENodeId::KeyValueStore(..) | RENodeId::GlobalObject(..) => {
+                Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                    NodeMoveError::CantMoveUpstream(node_id),
+                )))
+            }
         }
     }
 }
@@ -108,13 +118,13 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<Actor>,
+        callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             // TODO: Move into system layer
-            Self::prepare_move_downstream(*node_id, actor, api)?;
+            Self::prepare_move_downstream(*node_id, callee, api)?;
         }
 
         Ok(())

@@ -11,16 +11,14 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::package::{
-    PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
-};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -50,36 +48,52 @@ impl CostingModule {
     pub fn take_fee_reserve(self) -> SystemLoanFeeReserve {
         self.fee_reserve
     }
-}
 
-fn apply_execution_cost<Y: KernelModuleApi<RuntimeError>, F>(
-    api: &mut Y,
-    reason: CostingReason,
-    base_price: F,
-    multiplier: usize,
-) -> Result<(), RuntimeError>
-where
-    F: Fn(&FeeTable) -> u32,
-{
-    let cost_units = base_price(&api.kernel_get_module_state().costing.fee_table);
-    api.kernel_get_module_state()
-        .costing
-        .fee_reserve
-        .consume_multiplied_execution(cost_units, multiplier, reason)
-        .map_err(|e| {
-            RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
-        })
+    pub fn apply_execution_cost<F>(
+        &mut self,
+        reason: CostingReason,
+        base_price: F,
+        multiplier: usize,
+    ) -> Result<(), RuntimeError>
+    where
+        F: Fn(&FeeTable) -> u32,
+    {
+        let cost_units = base_price(&self.fee_table);
+        self.fee_reserve
+            .consume_multiplied_execution(cost_units, multiplier, reason)
+            .map_err(|e| {
+                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
+                    e,
+                )))
+            })
+    }
+
+    pub fn credit_cost_units(
+        &mut self,
+        vault_id: ObjectId,
+        locked_fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
+        self.fee_reserve
+            .lock_fee(vault_id, locked_fee, contingent)
+            .map_err(|e| {
+                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
+                    e,
+                )))
+            })
+    }
 }
 
 fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     api: &mut Y,
-    receiver: RoyaltyReceiver,
-    amount: u32,
+    cost_units: u32,
+    recipient: RoyaltyRecipient,
+    recipient_vault_id: ObjectId,
 ) -> Result<(), RuntimeError> {
     api.kernel_get_module_state()
         .costing
         .fee_reserve
-        .consume_royalty(receiver, amount)
+        .consume_royalty(cost_units, recipient, recipient_vault_id)
         .map_err(|e| {
             RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
         })
@@ -92,7 +106,6 @@ impl KernelModule for CostingModule {
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-
         if current_depth == api.kernel_get_module_state().costing.max_call_depth {
             return Err(RuntimeError::ModuleError(ModuleError::CostingError(
                 CostingError::MaxCallDepthLimitReached,
@@ -100,8 +113,7 @@ impl KernelModule for CostingModule {
         }
 
         if current_depth > 0 {
-            apply_execution_cost(
-                api,
+            api.kernel_get_module_state().costing.apply_execution_cost(
                 CostingReason::Invoke,
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::Invoke {
@@ -115,166 +127,105 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (fn_identifier, optional_component) = match &callee {
-            Some(Actor {
+        let (fn_identifier, optional_component) = {
+            let Actor {
                 identifier,
                 fn_identifier,
-            }) => {
-                let maybe_component = match &identifier {
-                    ActorIdentifier::Method(MethodIdentifier(node_id, ..))
-                        if matches!(
-                            node_id,
-                            RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(
-                                ..
-                            )))
-                        ) =>
-                    {
-                        Some(node_id)
-                    }
+            } = callee;
+            let maybe_component = match &identifier {
+                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
+                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
                     _ => None,
-                };
+                },
+                _ => None,
+            };
 
-                (fn_identifier, maybe_component)
-            }
-            _ => {
-                return Ok(());
-            }
+            (fn_identifier, maybe_component)
         };
 
-        // FIXME: algin native packages with wasm package, or read package type info and disallow royalty on native package.
+        //===========================
+        // Apply package royalty
+        //===========================
         let package_address = fn_identifier.package_address;
-        if package_address == RESOURCE_MANAGER_PACKAGE
-            || package_address == IDENTITY_PACKAGE
-            || package_address == EPOCH_MANAGER_PACKAGE
-            || package_address == CLOCK_PACKAGE
-            || package_address == ACCOUNT_PACKAGE
-            || package_address == ACCESS_CONTROLLER_PACKAGE
-            || package_address == TRANSACTION_RUNTIME_PACKAGE
-            || package_address == AUTH_ZONE_PACKAGE
-            || package_address == METADATA_PACKAGE
-            || package_address == ROYALTY_PACKAGE
-            || package_address == ACCESS_RULES_PACKAGE
-            || package_address == PACKAGE_LOADER
-        {
-            return Ok(());
-        }
-
-        /*
-         * Apply package royalty
-         */
         let handle = api.kernel_lock_substate(
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-            LockFlags::read_only(),
+            &RENodeId::GlobalObject(package_address.into()),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Royalty),
+            LockFlags::MUTABLE,
         )?;
-        let package_royalty_config: &PackageRoyaltyConfigSubstate =
-            api.kernel_get_substate_ref(handle)?;
-        let royalty_amount = package_royalty_config
-            .royalty_config
+        let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let royalty_charge = substate
+            .blueprint_royalty_configs
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
-        api.kernel_drop_lock(handle)?;
-
-        // FIXME: refactor to defer substate loading to finalization.
-        let handle = api.kernel_lock_substate(
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-            LockFlags::read_only(),
-        )?;
-        let package_royalty_accumulator: &PackageRoyaltyAccumulatorSubstate =
-            api.kernel_get_substate_ref(handle)?;
-        {
-            let royalty_vault = package_royalty_accumulator.royalty_vault.clone();
-            let vault_node_id = RENodeId::Object(
-                royalty_vault
-                    .expect("FIXME: cleanup royalty vault mess")
-                    .vault_id(),
-            );
-            let vault_handle = api.kernel_lock_substate(
-                vault_node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Info),
-                LockFlags::read_only(),
+        if royalty_charge > 0 {
+            let vault_id = if let Some(vault) = substate.royalty_vault {
+                vault.id()
+            } else {
+                let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
+                substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
+                substate.royalty_vault = Some(new_vault);
+                new_vault.id()
+            };
+            apply_royalty_cost(
+                api,
+                royalty_charge,
+                RoyaltyRecipient::Package(package_address),
+                vault_id,
             )?;
-            api.kernel_drop_lock(vault_handle)?;
-            let vault_handle = api.kernel_lock_substate(
-                vault_node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                LockFlags::MUTABLE,
-            )?;
-            api.kernel_drop_lock(vault_handle)?;
         }
         api.kernel_drop_lock(handle)?;
 
-        apply_royalty_cost(
-            api,
-            RoyaltyReceiver::Package(fn_identifier.package_address),
-            royalty_amount,
-        )?;
-
-        /*
-         * Apply component royalty
-         */
-        if let Some(component_node_id) = optional_component {
+        //===========================
+        // Apply component royalty
+        //===========================
+        if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
-                *component_node_id,
+                &RENodeId::GlobalObject(component_address.clone().into()),
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
             )?;
-            let component_royalty_config: &ComponentRoyaltyConfigSubstate =
-                api.kernel_get_substate_ref(handle)?;
-            let royalty_amount = component_royalty_config
+            let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
+            let royalty_charge = substate
                 .royalty_config
                 .get_rule(&fn_identifier.ident)
                 .clone();
             api.kernel_drop_lock(handle)?;
 
-            // FIXME: refactor to defer substate loading to finalization.
-            let handle = api.kernel_lock_substate(
-                *component_node_id,
-                NodeModuleId::ComponentRoyalty,
-                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                LockFlags::read_only(),
-            )?;
-            {
-                let royalty_accumulator: &ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_get_substate_ref(handle)?;
-                let royalty_vault = royalty_accumulator.royalty_vault.clone();
-                let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
-                let vault_handle = api.kernel_lock_substate(
-                    vault_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Info),
-                    LockFlags::read_only(),
-                )?;
-                api.kernel_drop_lock(vault_handle)?;
-                let vault_handle = api.kernel_lock_substate(
-                    vault_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            if royalty_charge > 0 {
+                let handle = api.kernel_lock_substate(
+                    &RENodeId::GlobalObject(component_address.clone().into()),
+                    NodeModuleId::ComponentRoyalty,
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     LockFlags::MUTABLE,
                 )?;
-                api.kernel_drop_lock(vault_handle)?;
+                let mut substate: &mut ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_get_substate_ref_mut(handle)?;
+                let vault_id = if let Some(vault) = substate.royalty_vault {
+                    vault.id()
+                } else {
+                    let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
+                    substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
+                    substate.royalty_vault = Some(new_vault);
+                    new_vault.id()
+                };
+                apply_royalty_cost(
+                    api,
+                    royalty_charge,
+                    RoyaltyRecipient::Component(component_address.clone()),
+                    vault_id,
+                )?;
+                api.kernel_drop_lock(handle)?;
             }
-            api.kernel_drop_lock(handle)?;
-
-            apply_royalty_cost(
-                api,
-                RoyaltyReceiver::Component(*component_node_id),
-                royalty_amount,
-            )?;
         }
 
         Ok(())
@@ -287,8 +238,7 @@ impl KernelModule for CostingModule {
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::CreateNode,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
             1,
@@ -298,8 +248,7 @@ impl KernelModule for CostingModule {
 
     fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::DropNode,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
             1,
@@ -315,8 +264,7 @@ impl KernelModule for CostingModule {
         _offset: &SubstateOffset,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::LockSubstate,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
             1,
@@ -329,8 +277,7 @@ impl KernelModule for CostingModule {
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::ReadSubstate,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 }),
             1,
@@ -343,8 +290,7 @@ impl KernelModule for CostingModule {
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::WriteSubstate,
             |fee_table| {
                 fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: size as u32 })
@@ -358,49 +304,11 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::DropLock,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
             1,
         )?;
         Ok(())
-    }
-
-    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        units: u32,
-        reason: ClientCostingReason,
-    ) -> Result<(), RuntimeError> {
-        // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
-        // These values will be tweaked, alongside the whole fee table.
-        apply_execution_cost(
-            api,
-            match reason {
-                ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunNative => CostingReason::RunNative,
-            },
-            |_| units,
-            5,
-        )
-    }
-
-    fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        vault_id: ObjectId,
-        fee: LiquidFungibleResource,
-        contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
-        let changes = api
-            .kernel_get_module_state()
-            .costing
-            .fee_reserve
-            .lock_fee(vault_id, fee, contingent)
-            .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
-            })?;
-        Ok(changes)
     }
 }

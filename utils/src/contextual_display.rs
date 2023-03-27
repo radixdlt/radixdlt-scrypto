@@ -1,5 +1,5 @@
-use sbor::rust::fmt;
-use sbor::rust::string::{String, ToString};
+use crate::rust::fmt;
+use crate::rust::prelude::*;
 
 /// This trait is used where context is required to correctly display a value.
 ///

@@ -1,18 +1,13 @@
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::data::scrypto::ScryptoValue;
+use radix_engine_derive::ScryptoDescribe;
 use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
-pub struct ComponentStateSubstate {
-    pub raw: Vec<u8>,
-}
-
-impl ComponentStateSubstate {
-    pub fn new(raw: Vec<u8>) -> Self {
-        ComponentStateSubstate { raw }
-    }
-}
+#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode, ScryptoDescribe, PartialEq, Eq)]
+#[sbor(transparent)]
+pub struct ComponentStateSubstate(pub ScryptoValue);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyConfigSubstate {
@@ -21,5 +16,5 @@ pub struct ComponentRoyaltyConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyAccumulatorSubstate {
-    pub royalty_vault: Own,
+    pub royalty_vault: Option<Own>,
 }

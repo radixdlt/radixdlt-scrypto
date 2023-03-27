@@ -1,16 +1,15 @@
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{NonFungibleData, RENodeId};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -29,9 +28,9 @@ impl ResourceManager {
         let result = api
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
-                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                scrypto_encode(&FungibleResourceManagerCreateInput {
                     metadata,
                     access_rules,
                     divisibility,
@@ -56,9 +55,9 @@ impl ResourceManager {
         let result = api
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     metadata,
                     access_rules,
                     divisibility,
@@ -72,7 +71,7 @@ impl ResourceManager {
         Ok((ResourceManager(resource_address), bucket))
     }
 
-    pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
+    pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -81,12 +80,14 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
+        let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
-            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateInput {
                 id_type,
+                non_fungible_schema,
                 metadata,
                 access_rules,
             })
@@ -96,47 +97,49 @@ impl ResourceManager {
         Ok(ResourceManager(resource_address))
     }
 
-    /// Mints non-fungible resources
-    pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        local_id: NonFungibleLocalId,
+    pub fn new_non_fungible_with_address<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        address: [u8; 26], // TODO: Clean this up
         api: &mut Y,
-    ) -> Result<Bucket, E>
+    ) -> Result<Self, E>
     where
         Y: ClientApi<E>,
     {
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            local_id,
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-
-        let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
-            scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
+                metadata,
+                access_rules,
+                resource_address: address,
+            })
+            .unwrap(),
         )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
+        let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
-        &mut self,
+    pub fn mint_non_fungible_single_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+        &self,
         data: T,
         api: &mut Y,
-    ) -> Result<Bucket, E>
+    ) -> Result<(Bucket, NonFungibleLocalId), E>
     where
         Y: ClientApi<E>,
     {
-        // TODO: Implement UUID generation in ResourceManager
-        let mut entries = Vec::new();
-        entries.push((scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()));
+        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
-            scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
+            &RENodeId::GlobalObject(self.0.into()),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value })
+                .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -152,15 +155,15 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
-            scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
+            &RENodeId::GlobalObject(self.0.into()),
+            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn get_non_fungible_mutable_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
+    pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
         &self,
         id: NonFungibleLocalId,
         api: &mut Y,
@@ -169,13 +172,12 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
+            &RENodeId::GlobalObject(self.0.into()),
+            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerGetNonFungibleInput { id }).unwrap(),
         )?;
 
-        let output: [Vec<u8>; 2] = scrypto_decode(&rtn).unwrap();
-        let data = scrypto_decode(&output[0]).unwrap();
+        let data = scrypto_decode(&rtn).unwrap();
         Ok(data)
     }
 
@@ -184,7 +186,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
             scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
         )?;
@@ -201,7 +203,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput { bucket }).unwrap(),
         )?;
@@ -213,7 +215,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
         )?;
@@ -225,7 +227,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -237,7 +239,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
+            &RENodeId::GlobalObject(self.0.into()),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;

@@ -9,10 +9,7 @@ pub enum EventError {
         blueprint_name: String,
         event_name: String,
     },
-    InvalidEventSchema,
+    EventSchemaNotMatch(String),
     NoAssociatedPackage,
-    DuplicateEventNamesFound,
-    FailedToSborEncodeEventSchema,
-    FailedToSborEncodeEvent,
     InvalidActor,
 }

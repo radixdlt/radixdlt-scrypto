@@ -12,7 +12,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceAddress {
-    Normal([u8; ADDRESS_HASH_LENGTH]), // TODO: change to fungible & non-fungible
+    Fungible([u8; ADDRESS_HASH_LENGTH]),
+    NonFungible([u8; ADDRESS_HASH_LENGTH]),
 }
 
 impl TryFrom<&[u8]> for ResourceAddress {
@@ -23,7 +24,10 @@ impl TryFrom<&[u8]> for ResourceAddress {
             ADDRESS_LENGTH => match EntityType::try_from(slice[0])
                 .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
             {
-                EntityType::Resource => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                EntityType::NonFungibleResource => {
+                    Ok(Self::NonFungible(copy_u8_array(&slice[1..])))
+                }
+                EntityType::FungibleResource => Ok(Self::Fungible(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -34,7 +38,7 @@ impl TryFrom<&[u8]> for ResourceAddress {
 impl ResourceAddress {
     pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
         match self {
-            Self::Normal(v) => v.clone(),
+            Self::Fungible(v) | Self::NonFungible(v) => v.clone(),
         }
     }
 
@@ -42,7 +46,7 @@ impl ResourceAddress {
         let mut buf = Vec::new();
         buf.push(EntityType::resource(self).id());
         match self {
-            Self::Normal(v) => buf.extend(v),
+            Self::Fungible(v) | Self::NonFungible(v) => buf.extend(v),
         }
         buf
     }
@@ -100,8 +104,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
 
         // This could be made more performant by streaming the hex into the formatter
         match self {
-            ResourceAddress::Normal(_) => {
-                write!(f, "NormalResource[{}]", self.to_hex())
+            ResourceAddress::Fungible(_) => {
+                write!(f, "FungibleResource[{}]", self.to_hex())
+            }
+            ResourceAddress::NonFungible(_) => {
+                write!(f, "NonFungibleResource[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))

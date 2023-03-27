@@ -807,10 +807,11 @@ name = "sbor"
 version = "0.9.0"
 dependencies = [
  "const-sha1",
- "indexmap",
+ "hex",
  "lazy_static",
  "sbor-derive",
  "serde",
+ "utils",
 ]
 
 [[package]]
@@ -1105,6 +1106,7 @@ dependencies = [
  "ed25519-dalek",
  "hex",
  "lazy_static",
+ "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
@@ -1149,7 +1151,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 name = "utils"
 version = "0.9.0"
 dependencies = [
- "sbor",
+ "indexmap",
  "serde",
 ]
 

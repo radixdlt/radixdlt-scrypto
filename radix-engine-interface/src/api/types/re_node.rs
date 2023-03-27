@@ -10,61 +10,60 @@ pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
-pub enum RENodeType {
-    AuthZoneStack,
+pub enum AllocateEntityType {
     GlobalAccount,
     GlobalComponent,
-    GlobalResourceManager,
+    GlobalFungibleResourceManager,
+    GlobalNonFungibleResourceManager,
     GlobalPackage,
     GlobalEpochManager,
     GlobalValidator,
     GlobalAccessController,
     GlobalIdentity,
     KeyValueStore,
-    NonFungibleStore,
     Object,
     Vault,
-    TransactionRuntime,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
-    AuthZoneStack,
-    TransactionRuntime,
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
-    NonFungibleStore(NonFungibleStoreId),
+    // This is only used for owned objects (global objects have addresses)
+    // TODO: Rename to OwnedObject when it won't cause so many merge conflicts!
     Object(ObjectId),
 }
 
 impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::AuthZoneStack => write!(f, "AuthZoneStack"),
-            Self::TransactionRuntime => write!(f, "TransactionRuntime"),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
                 .finish(),
-            Self::NonFungibleStore(id) => f
-                .debug_tuple("NonFungibleStore")
-                .field(&hex::encode(id))
-                .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::GlobalObject(address) => f.debug_tuple("Global").field(&address).finish(),
+            Self::GlobalObject(address) => f.debug_tuple("GlobalObject").field(&address).finish(),
         }
     }
 }
 
-impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
-    fn into(self) -> [u8; OBJECT_ID_LENGTH] {
-        match self {
+impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
+    fn from(value: RENodeId) -> Self {
+        match value {
             RENodeId::KeyValueStore(id) => id,
-            RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
-            _ => panic!("Not a stored id: {:?}", self),
+            _ => panic!("Not a stored id: {:?}", value),
+        }
+    }
+}
+
+impl From<RENodeId> for Vec<u8> {
+    fn from(value: RENodeId) -> Self {
+        // Note - these are all guaranteed to be distinct
+        match value {
+            RENodeId::KeyValueStore(id) => id.to_vec(),
+            RENodeId::Object(id) => id.to_vec(),
+            RENodeId::GlobalObject(address) => address.to_vec(),
         }
     }
 }
@@ -117,11 +116,8 @@ pub enum NodeModuleId {
     TypeInfo,
     Metadata,
     AccessRules,
-    AccessRules1,
+    AccessRules1, // TODO: remove
     ComponentRoyalty,
-    PackageRoyalty,
-    FunctionAccessRules,
-    PackageEventSchema,
 }
 
 impl NodeModuleId {
@@ -133,9 +129,6 @@ impl NodeModuleId {
             3u32 => Some(NodeModuleId::AccessRules),
             4u32 => Some(NodeModuleId::AccessRules1),
             5u32 => Some(NodeModuleId::ComponentRoyalty),
-            6u32 => Some(NodeModuleId::PackageRoyalty),
-            7u32 => Some(NodeModuleId::FunctionAccessRules),
-            8u32 => Some(NodeModuleId::PackageEventSchema),
             _ => None,
         }
     }
@@ -148,16 +141,8 @@ impl NodeModuleId {
             NodeModuleId::AccessRules => 3u32,
             NodeModuleId::AccessRules1 => 4u32,
             NodeModuleId::ComponentRoyalty => 5u32,
-            NodeModuleId::PackageRoyalty => 6u32,
-            NodeModuleId::FunctionAccessRules => 7u32,
-            NodeModuleId::PackageEventSchema => 8u32,
         }
     }
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AuthZoneStackOffset {
-    AuthZoneStack,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -177,11 +162,6 @@ pub enum RoyaltyOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum PackageEventSchemaOffset {
-    PackageEventSchema,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     /// Component application state at offset `0x00`.
     State0,
@@ -192,6 +172,8 @@ pub enum PackageOffset {
     Info,
     CodeType,
     Code,
+    Royalty,
+    FunctionAccessRules,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -202,11 +184,6 @@ pub enum ResourceManagerOffset {
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub enum NonFungibleStoreOffset {
-    Entry(NonFungibleLocalId),
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -257,11 +234,6 @@ pub enum ClockOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum TransactionRuntimeOffset {
-    TransactionRuntime,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
@@ -271,15 +243,18 @@ pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AuthZoneOffset {
+    AuthZone,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
-    AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
-    NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
     Validator(ValidatorOffset),
@@ -287,17 +262,15 @@ pub enum SubstateOffset {
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Clock(ClockOffset),
-    TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+    AuthZone(AuthZoneOffset),
 
     // Node modules
     // TODO: align with module ID allocation?
     TypeInfo(TypeInfoOffset),
     AccessRules(AccessRulesOffset),
-    PackageAccessRules,
     Royalty(RoyaltyOffset),
-    PackageEventSchema(PackageEventSchemaOffset),
 }
 
 /// TODO: separate space addresses?

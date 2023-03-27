@@ -1,5 +1,6 @@
 use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::blueprints::transaction_processor::RuntimeValidation;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::network::NetworkDefinition;
@@ -93,7 +94,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                 payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthAddresses::signer_set(&signer_keys),
-                    virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                    virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
                     cost_unit_limit: header.cost_unit_limit,
@@ -131,10 +132,10 @@ impl NotarizedTransactionValidator {
         self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
         let initial_proofs = AuthAddresses::signer_set(&preview_intent.signer_public_keys);
 
-        let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
+        let mut virtual_resources = BTreeSet::new();
         if flags.assume_all_signature_proofs {
-            virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
-            virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
+            virtual_resources.insert(ECDSA_SECP256K1_TOKEN);
+            virtual_resources.insert(EDDSA_ED25519_TOKEN);
         }
 
         let header = &intent.header;
@@ -157,7 +158,7 @@ impl NotarizedTransactionValidator {
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
-                    virtualizable_proofs_resource_addresses,
+                    virtual_resources,
                 },
                 fee_payment,
                 runtime_validations: vec![
@@ -270,6 +271,7 @@ impl NotarizedTransactionValidator {
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                Instruction::ClearSignatureProofs => {}
                 Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)
@@ -380,12 +382,9 @@ impl NotarizedTransactionValidator {
     }
 
     pub fn validate_call_args(
-        args: &[u8],
+        value: &ManifestValue,
         id_validator: &mut ManifestValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value: ManifestValue =
-            manifest_decode(args).map_err(CallDataValidationError::DecodeError)?;
-
         id_validator
             .process_call_data(&value)
             .map_err(CallDataValidationError::IdValidationError)?;

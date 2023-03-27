@@ -20,13 +20,13 @@ pub mod well_known_scrypto_custom_types {
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub const PRECISE_DECIMAL_ID: u8 = VALUE_KIND_PRECISE_DECIMAL;
     pub const NON_FUNGIBLE_LOCAL_ID_ID: u8 = VALUE_KIND_NON_FUNGIBLE_LOCAL_ID;
+    pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
 }
 
-fn named_type_kind(
-    name: &'static str,
+fn unnamed_type_kind(
     custom_type_kind: ScryptoCustomTypeKind,
 ) -> TypeData<ScryptoCustomTypeKind, LocalTypeIndex> {
-    TypeData::no_child_names(TypeKind::Custom(custom_type_kind), name)
+    TypeData::unnamed(TypeKind::Custom(custom_type_kind))
 }
 
 create_well_known_lookup!(
@@ -36,53 +36,54 @@ create_well_known_lookup!(
         // Addresses
         (
             ADDRESS_ID,
-            named_type_kind("Address", ScryptoCustomTypeKind::Address)
+            unnamed_type_kind(ScryptoCustomTypeKind::Address)
         ),
         (
             PACKAGE_ADDRESS_ID,
-            named_type_kind("PackageAddress", ScryptoCustomTypeKind::PackageAddress)
+            unnamed_type_kind(ScryptoCustomTypeKind::PackageAddress)
         ),
         (
             COMPONENT_ADDRESS_ID,
-            named_type_kind("ComponentAddress", ScryptoCustomTypeKind::ComponentAddress)
+            unnamed_type_kind(ScryptoCustomTypeKind::ComponentAddress)
         ),
         (
             RESOURCE_ADDRESS_ID,
-            named_type_kind("ResourceAddress", ScryptoCustomTypeKind::ResourceAddress)
+            unnamed_type_kind(ScryptoCustomTypeKind::ResourceAddress)
         ),
         // Owned entities
-        (OWN_ID, named_type_kind("Own", ScryptoCustomTypeKind::Own)),
+        (OWN_ID, unnamed_type_kind(ScryptoCustomTypeKind::Own)),
         (
             OWN_BUCKET_ID,
-            named_type_kind("Bucket", ScryptoCustomTypeKind::Bucket)
+            unnamed_type_kind(ScryptoCustomTypeKind::Bucket)
         ),
         (
             OWN_PROOF_ID,
-            named_type_kind("Proof", ScryptoCustomTypeKind::Proof)
+            unnamed_type_kind(ScryptoCustomTypeKind::Proof)
         ),
         (
             OWN_VAULT_ID,
-            named_type_kind("Vault", ScryptoCustomTypeKind::Vault)
+            unnamed_type_kind(ScryptoCustomTypeKind::Vault)
         ),
         (
             OWN_KEY_VALUE_STORE_ID,
-            named_type_kind("KeyValueStore", ScryptoCustomTypeKind::KeyValueStore)
+            unnamed_type_kind(ScryptoCustomTypeKind::KeyValueStore)
         ),
         // Others
         (
             DECIMAL_ID,
-            named_type_kind("Decimal", ScryptoCustomTypeKind::Decimal)
+            unnamed_type_kind(ScryptoCustomTypeKind::Decimal)
         ),
         (
             PRECISE_DECIMAL_ID,
-            named_type_kind("PreciseDecimal", ScryptoCustomTypeKind::PreciseDecimal)
+            unnamed_type_kind(ScryptoCustomTypeKind::PreciseDecimal)
         ),
         (
             NON_FUNGIBLE_LOCAL_ID_ID,
-            named_type_kind(
-                "NonFungibleLocalId",
-                ScryptoCustomTypeKind::NonFungibleLocalId
-            )
+            unnamed_type_kind(ScryptoCustomTypeKind::NonFungibleLocalId)
+        ),
+        (
+            REFERENCE_ID,
+            unnamed_type_kind(ScryptoCustomTypeKind::Reference)
         ),
     ]
 );
