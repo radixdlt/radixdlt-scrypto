@@ -44,20 +44,27 @@ pub const ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0d;
 /// An enum which represents the different addressable entities.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
-    Package,
-    NonFungibleResource,
-    FungibleResource,
-    NormalComponent,
-    AccountComponent,
-    IdentityComponent,
-    EpochManager,
-    Validator,
-    Clock,
-    EcdsaSecp256k1VirtualAccountComponent,
-    EddsaEd25519VirtualAccountComponent,
-    EcdsaSecp256k1VirtualIdentityComponent,
-    EddsaEd25519VirtualIdentityComponent,
-    AccessControllerComponent,
+    GlobalPackage,
+    GlobalFungibleResourceManager,
+    GlobalNonFungibleResourceManager,
+    GlobalEpochManager,
+    GlobalValidator,
+    GlobalClock,
+    GlobalAccessController,
+    GlobalAccount,
+    GlobalIdentity,
+    GlobalComponent,
+
+    GlobalVirtualEcdsaAccount,
+    GlobalVirtualEddsaAccount,
+    GlobalVirtualEcdsaIdentity,
+    GlobalVirtualEddsaIdentity,
+
+    InternalVault,
+    InternalAccessController,
+    InternalAccount,
+    InternalComponent,
+    InternalKeyValueStore,
 }
 
 impl EntityType {

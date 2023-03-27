@@ -4,6 +4,7 @@ use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 use radix_engine_common::data::scrypto::model::*;
+use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -11,29 +12,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ResourceAddress {
-    Fungible([u8; ADDRESS_HASH_LENGTH]),
-    NonFungible([u8; ADDRESS_HASH_LENGTH]),
-}
-
-impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::NonFungibleResource => {
-                    Ok(Self::NonFungible(copy_u8_array(&slice[1..])))
-                }
-                EntityType::FungibleResource => Ok(Self::Fungible(copy_u8_array(&slice[1..]))),
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
-            },
-            _ => Err(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
+pub struct ResourceAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 
 impl ResourceAddress {
     pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
@@ -59,6 +38,44 @@ impl ResourceAddress {
         let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
 
         Self::try_from(bytes.as_ref())
+    }
+}
+
+impl TryFrom<&[u8]> for ResourceAddress {
+    type Error = ResourceAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
+                .map_err(|_| ResourceAddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::NonFungibleResource | EntityType::FungibleResource => {
+                    Ok(Self(copy_u8_array(&slice[1..])))
+                }
+                _ => Err(ResourceAddressError::InvalidEntityTypeId(slice[0])),
+            },
+            _ => Err(ResourceAddressError::InvalidLength(slice.len())),
+        }
+    }
+}
+
+//========
+// error
+//========
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ResourceAddressError {
+    InvalidLength(usize),
+    InvalidEntityTypeId(u8),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ResourceAddressError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ResourceAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

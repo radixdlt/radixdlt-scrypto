@@ -647,11 +647,11 @@ CREATE_ACCESS_CONTROLLER
                 "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn",
             ),
             (
-                "${account_component_address}",
+                "${account_address}",
                 "account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn",
             ),
             (
-                "${other_account_component_address}",
+                "${other_account_address}",
                 "account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh",
             ),
             (

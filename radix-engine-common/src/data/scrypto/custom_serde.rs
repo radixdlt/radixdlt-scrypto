@@ -1,5 +1,4 @@
 use super::*;
-use crate::data::scrypto::model::InternalRef;
 use crate::*;
 use sbor::serde_serialization::*;
 use sbor::traversal::*;
@@ -24,7 +23,7 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
                 false,
             ),
             ScryptoCustomValue::Own(value) => {
-                (SerializableType::String(hex::encode(value.id())), true)
+                (SerializableType::String(hex::encode(&value.0)), true)
             }
             ScryptoCustomValue::Decimal(value) => {
                 (SerializableType::String(value.to_string()), false)
@@ -35,8 +34,8 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomValue::NonFungibleLocalId(value) => {
                 (SerializableType::String(value.to_string()), true)
             }
-            ScryptoCustomValue::InternalRef(InternalRef(object_id)) => {
-                (SerializableType::String(hex::encode(object_id)), true)
+            ScryptoCustomValue::InternalRef(value) => {
+                (SerializableType::String(hex::encode(&value.0)), true)
             }
         };
         CustomTypeSerialization {
@@ -115,6 +114,8 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
+        use radix_engine_constants::NODE_ID_LENGTH;
+
         use crate::math::{Decimal, PreciseDecimal};
 
         let encoder = Bech32Encoder::for_simulator();
@@ -126,7 +127,7 @@ mod tests {
                     )),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Own(Own::Vault([0; OBJECT_ID_LENGTH])),
+                    value: ScryptoCustomValue::Own(Own([0; NODE_ID_LENGTH])),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -156,7 +157,7 @@ mod tests {
                     ),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::InternalRef(InternalRef([0; OBJECT_ID_LENGTH])),
+                    value: ScryptoCustomValue::InternalRef(InternalRef([0; NODE_ID_LENGTH])),
                 },
             ],
         };

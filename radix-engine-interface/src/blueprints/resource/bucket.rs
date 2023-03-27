@@ -143,7 +143,7 @@ pub type BucketUnlockNonFungiblesOutput = ();
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Bucket(pub ObjectId);
+pub struct Bucket(pub NodeId);
 
 //========
 // binary

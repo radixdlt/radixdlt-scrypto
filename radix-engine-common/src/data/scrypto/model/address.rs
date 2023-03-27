@@ -1,96 +1,49 @@
-use crate::address::{AddressDisplayContext, AddressError, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::*;
 use crate::*;
+use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::ContextualDisplay;
-
-pub const ENTITY_BYTES_LENGTH: usize = 1;
-pub const ADDRESS_HASH_LENGTH: usize = 26;
-pub const ADDRESS_LENGTH: usize = ENTITY_BYTES_LENGTH + ADDRESS_HASH_LENGTH;
+use utils::copy_u8_array;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Address {
-    Package(PackageAddress),
-    Component(ComponentAddress),
-    Resource(ResourceAddress),
-}
+pub struct Address(pub [u8; NODE_ID_LENGTH]);
 
 impl Address {
-    pub fn encode_body_common<X: CustomValueKind, E: Encoder<X>>(
-        &self,
-        encoder: &mut E,
-    ) -> Result<(), EncodeError> {
-        encoder.write_slice(&self.to_vec())
-    }
-
-    pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
-        decoder: &mut D,
-    ) -> Result<Self, DecodeError> {
-        let slice = decoder.read_slice(ADDRESS_LENGTH)?;
-        PackageAddress::try_from(slice)
-            .map(|x| Address::Package(x))
-            .or(ComponentAddress::try_from(slice).map(|x| Address::Component(x)))
-            .or(ResourceAddress::try_from(slice).map(|x| Address::Resource(x)))
-            .map_err(|_| DecodeError::InvalidCustomValue)
-    }
-
     pub fn to_vec(&self) -> Vec<u8> {
-        match self {
-            Address::Package(inner) => inner.to_vec(),
-            Address::Component(inner) => inner.to_vec(),
-            Address::Resource(inner) => inner.to_vec(),
+        self.0.to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for Address {
+    type Error = ParseAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            NODE_ID_LENGTH => Ok(Self(copy_u8_array(slice))),
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl From<ComponentAddress> for Address {
-    fn from(value: ComponentAddress) -> Self {
-        Address::Component(value)
-    }
+//========
+// error
+//========
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseAddressError {
+    InvalidLength(usize),
 }
 
-impl From<ResourceAddress> for Address {
-    fn from(value: ResourceAddress) -> Self {
-        Address::Resource(value)
-    }
-}
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseAddressError {}
 
-impl From<PackageAddress> for Address {
-    fn from(value: PackageAddress) -> Self {
-        Address::Package(value)
-    }
-}
-
-// TODO: replace with TryInto
-
-impl Into<ComponentAddress> for Address {
-    fn into(self) -> ComponentAddress {
-        match self {
-            Address::Component(component_address) => component_address,
-            _ => panic!("Not a component address"),
-        }
-    }
-}
-
-impl Into<PackageAddress> for Address {
-    fn into(self) -> PackageAddress {
-        match self {
-            Address::Package(package_address) => package_address,
-            _ => panic!("Not a package address"),
-        }
-    }
-}
-
-impl Into<ResourceAddress> for Address {
-    fn into(self) -> ResourceAddress {
-        match self {
-            Address::Resource(resource_address) => resource_address,
-            _ => panic!("Not a resource address"),
-        }
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -98,99 +51,16 @@ impl Into<ResourceAddress> for Address {
 // binary
 //========
 
-impl Categorize<ScryptoCustomValueKind> for Address {
-    #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Address)
-    }
-}
-
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Address {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.encode_body_common(encoder)
-    }
-}
-
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Address {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        Self::decode_body_common(decoder)
-    }
-}
-
-impl Describe<ScryptoCustomTypeKind> for Address {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(crate::data::scrypto::well_known_scrypto_custom_types::ADDRESS_ID);
-}
+well_known_scrypto_custom_type!(
+    Address,
+    ScryptoCustomValueKind::Address,
+    Type::Address,
+    NODE_ID_LENGTH,
+    ADDRESS_ID
+);
 
 //==================
 // binary (manifest)
 //==================
 
-impl Categorize<ManifestCustomValueKind> for Address {
-    #[inline]
-    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
-        ValueKind::Custom(ManifestCustomValueKind::Address)
-    }
-}
-
-impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for Address {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.encode_body_common(encoder)
-    }
-}
-
-impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for Address {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ManifestCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        Self::decode_body_common(decoder)
-    }
-}
-
-//======
-// text
-//======
-
-impl fmt::Debug for Address {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self {
-            Address::Package(a) => write!(f, "{}", a.display(NO_NETWORK)),
-            Address::Component(a) => write!(f, "{}", a.display(NO_NETWORK)),
-            Address::Resource(a) => write!(f, "{}", a.display(NO_NETWORK)),
-        }
-    }
-}
-
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Address {
-    type Error = AddressError;
-
-    fn contextual_format<F: fmt::Write>(
-        &self,
-        f: &mut F,
-        context: &AddressDisplayContext<'a>,
-    ) -> Result<(), Self::Error> {
-        match self {
-            Address::Package(a) => a.contextual_format(f, context),
-            Address::Component(a) => a.contextual_format(f, context),
-            Address::Resource(a) => a.contextual_format(f, context),
-        }
-    }
-}
+manifest_type!(Address, ManifestCustomValueKind::Address, NODE_ID_LENGTH);

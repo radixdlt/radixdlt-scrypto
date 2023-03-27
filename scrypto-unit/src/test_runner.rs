@@ -436,12 +436,12 @@ impl TestRunner {
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 
-        let account_component = receipt.expect_commit(true).new_component_addresses()[0];
+        let account = receipt.expect_commit(true).new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
             .call_method(FAUCET_COMPONENT, "free", manifest_args!())
             .call_method(
-                account_component,
+                account,
                 "deposit_batch",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
@@ -449,7 +449,7 @@ impl TestRunner {
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 
-        account_component
+        account
     }
 
     pub fn new_virtual_account(

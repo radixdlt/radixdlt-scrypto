@@ -3,7 +3,7 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::model::*;use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -12,25 +12,8 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum PackageAddress {
-    Normal([u8; ADDRESS_HASH_LENGTH]),
-}
+pub struct PackageAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 
-impl TryFrom<&[u8]> for PackageAddress {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::Package => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
-            },
-            _ => Err(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
 
 impl PackageAddress {
     pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
@@ -60,6 +43,43 @@ impl PackageAddress {
 
     pub fn size(self) -> usize {
         ADDRESS_HASH_LENGTH
+    }
+}
+
+
+impl TryFrom<&[u8]> for PackageAddress {
+    type Error = AddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
+                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::Package => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+            },
+            _ => Err(AddressError::InvalidLength(slice.len())),
+        }
+    }
+}
+
+//========
+// error
+//========
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PackageAddressError {
+    InvalidLength(usize),
+    InvalidEntityTypeId(u8),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for PackageAddressError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for PackageAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

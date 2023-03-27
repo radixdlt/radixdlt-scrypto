@@ -44,7 +44,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateStore::new();
     let account_public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let account_component_address = ComponentAddress::virtual_account_from_public_key(
+    let account_address = ComponentAddress::virtual_account_from_public_key(
         &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
     );
     let allocation_amount = dec!("100");
@@ -70,7 +70,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(|rc| rc.amount == allocation_amount
-            && rc.node_id == RENodeId::GlobalObject(account_component_address.into())));
+            && rc.node_id == RENodeId::GlobalObject(account_address.into())));
 }
 
 #[test]

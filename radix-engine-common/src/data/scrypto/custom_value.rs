@@ -83,6 +83,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_constants::NODE_ID_LENGTH;
+
     use super::*;
 
     #[test]
@@ -141,13 +143,7 @@ mod tests {
 
     #[test]
     fn test_custom_types_group2() {
-        let values = (
-            Own::Bucket([1u8; OBJECT_ID_LENGTH]),
-            Own::Proof([2u8; OBJECT_ID_LENGTH]),
-            Own::Vault([3u8; OBJECT_ID_LENGTH]),
-            Own::Object([4u8; OBJECT_ID_LENGTH]),
-            Own::KeyValueStore([5u8; OBJECT_ID_LENGTH]),
-        );
+        let values = (Own([1u8; NODE_ID_LENGTH]),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
@@ -155,38 +151,16 @@ mod tests {
                 92, // prefix
                 33, // tuple
                 5,  // length
-                144, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, 1, // own
-                144, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, // own
-                144, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, 3, 3, 3, 3, 3, // own
-                144, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4, 4, 4, 4, 4, 4, // own
-                144, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                5, 5, 5, 5, 5, 5 // own
+                144, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, // own
             ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
-                fields: vec![
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Bucket([1u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Proof([2u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Vault([3u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Object([4u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; OBJECT_ID_LENGTH])),
-                    },
-                ]
+                fields: vec![ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Own(Own([1u8; NODE_ID_LENGTH])),
+                },]
             }
         );
     }

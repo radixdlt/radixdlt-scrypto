@@ -5,6 +5,7 @@ use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 use radix_engine_common::data::scrypto::model::*;
+use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -13,92 +14,11 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ComponentAddress {
-    Normal([u8; ADDRESS_HASH_LENGTH]),
-    Account([u8; ADDRESS_HASH_LENGTH]),
-    Identity([u8; ADDRESS_HASH_LENGTH]),
-    Clock([u8; ADDRESS_HASH_LENGTH]),
-    EpochManager([u8; ADDRESS_HASH_LENGTH]),
-    Validator([u8; ADDRESS_HASH_LENGTH]),
-    EcdsaSecp256k1VirtualAccount([u8; ADDRESS_HASH_LENGTH]),
-    EddsaEd25519VirtualAccount([u8; ADDRESS_HASH_LENGTH]),
-    EcdsaSecp256k1VirtualIdentity([u8; ADDRESS_HASH_LENGTH]),
-    EddsaEd25519VirtualIdentity([u8; ADDRESS_HASH_LENGTH]),
-    AccessController([u8; ADDRESS_HASH_LENGTH]),
-}
-
-impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
-                EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
-                EntityType::IdentityComponent => Ok(Self::Identity(copy_u8_array(&slice[1..]))),
-                EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
-                EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
-                EntityType::Validator => Ok(Self::Validator(copy_u8_array(&slice[1..]))),
-                EntityType::EcdsaSecp256k1VirtualAccountComponent => Ok(
-                    Self::EcdsaSecp256k1VirtualAccount(copy_u8_array(&slice[1..])),
-                ),
-                EntityType::EddsaEd25519VirtualAccountComponent => {
-                    Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
-                }
-                EntityType::EddsaEd25519VirtualIdentityComponent => Ok(
-                    Self::EddsaEd25519VirtualIdentity(copy_u8_array(&slice[1..])),
-                ),
-                EntityType::EcdsaSecp256k1VirtualIdentityComponent => Ok(
-                    Self::EcdsaSecp256k1VirtualIdentity(copy_u8_array(&slice[1..])),
-                ),
-                EntityType::AccessControllerComponent => {
-                    Ok(Self::AccessController(copy_u8_array(&slice[1..])))
-                }
-                EntityType::FungibleResource
-                | EntityType::NonFungibleResource
-                | EntityType::Package => Err(AddressError::InvalidEntityTypeId(slice[0])),
-            },
-            _ => Err(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
+pub struct ComponentAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 
 impl ComponentAddress {
-    pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
-        match self {
-            Self::Normal(v)
-            | Self::Account(v)
-            | Self::Clock(v)
-            | Self::EpochManager(v)
-            | Self::Validator(v)
-            | Self::EcdsaSecp256k1VirtualAccount(v)
-            | Self::EddsaEd25519VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualIdentity(v)
-            | Self::EddsaEd25519VirtualIdentity(v)
-            | Self::Identity(v)
-            | Self::AccessController(v) => v.clone(),
-        }
-    }
-
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.push(EntityType::component(self).id());
-        match self {
-            Self::Normal(v)
-            | Self::Account(v)
-            | Self::Identity(v)
-            | Self::Clock(v)
-            | Self::EpochManager(v)
-            | Self::Validator(v)
-            | Self::EddsaEd25519VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualIdentity(v)
-            | Self::EddsaEd25519VirtualIdentity(v)
-            | Self::AccessController(v) => buf.extend(v),
-        }
-        buf
+        self.0.to_vec()
     }
 
     pub fn to_hex(&self) -> String {
@@ -142,6 +62,54 @@ impl ComponentAddress {
     }
 }
 
+impl TryFrom<&[u8]> for ComponentAddress {
+    type Error = ComponentAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            NODE_ID_LENGTH => match EntityType::try_from(slice[0])
+                .map_err(|_| ComponentAddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::NormalComponent
+                | EntityType::AccountComponent
+                | EntityType::IdentityComponent
+                | EntityType::Clock
+                | EntityType::EpochManager
+                | EntityType::Validator
+                | EntityType::EcdsaSecp256k1VirtualAccountComponent
+                | EntityType::EddsaEd25519VirtualAccountComponent
+                | EntityType::EddsaEd25519VirtualIdentityComponent
+                | EntityType::EcdsaSecp256k1VirtualIdentityComponent
+                | EntityType::AccessControllerComponent
+                | EntityType::FungibleResource
+                | EntityType::NonFungibleResource
+                | EntityType::Package => Err(ComponentAddressError::InvalidEntityTypeId(slice[0])),
+            },
+            _ => Err(ComponentAddressError::InvalidLength(slice.len())),
+        }
+    }
+}
+
+//========
+// error
+//========
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ComponentAddressError {
+    InvalidLength(usize),
+    InvalidEntityTypeId(u8),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ComponentAddressError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ComponentAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 //========
 // binary
 //========
@@ -150,14 +118,14 @@ well_known_scrypto_custom_type!(
     ComponentAddress,
     ScryptoCustomValueKind::Address,
     Type::ComponentAddress,
-    ADDRESS_LENGTH,
+    NODE_ID_LENGTH,
     COMPONENT_ADDRESS_ID
 );
 
 manifest_type!(
     ComponentAddress,
     ManifestCustomValueKind::Address,
-    ADDRESS_LENGTH
+    NODE_ID_LENGTH
 );
 
 //======

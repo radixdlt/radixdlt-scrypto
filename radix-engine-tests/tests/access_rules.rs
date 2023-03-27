@@ -275,7 +275,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, _account_component) = test_runner.new_account(false);
+    let (public_key, _, _account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
         .assert_access_rule(rule!(require(RADIX_TOKEN)))
@@ -300,10 +300,10 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
 fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
+    let (public_key, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account_component, RADIX_TOKEN)
+        .create_proof_from_account(account, RADIX_TOKEN)
         .assert_access_rule(rule!(require(RADIX_TOKEN)))
         .build();
 
@@ -321,7 +321,7 @@ fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
+    let (public_key, _, account) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     let component_address = {
@@ -344,7 +344,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
+        .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .call_method(
             component_address,
             "assert_access_rule",
@@ -371,7 +371,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
+    let (public_key, _, account) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     let component_address = {
@@ -394,7 +394,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
+        .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.call_method(
                 component_address,
@@ -403,7 +403,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
             )
         })
         .call_method(
-            account_component,
+            account,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )

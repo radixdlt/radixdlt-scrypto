@@ -238,7 +238,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
 
     let manifest = ManifestBuilder::new()
         .call_method(
-            test_runner.access_controller_component_address,
+            test_runner.access_controller_address,
             "stop_timed_recovery",
             to_manifest_value(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
@@ -1422,7 +1422,7 @@ struct AccessControllerTestRunner {
 
     pub account: (ComponentAddress, PublicKey),
 
-    pub access_controller_component_address: ComponentAddress,
+    pub access_controller_address: ComponentAddress,
     pub primary_role_badge: ResourceAddress,
     pub recovery_role_badge: ResourceAddress,
     pub confirmation_role_badge: ResourceAddress,
@@ -1436,23 +1436,23 @@ impl AccessControllerTestRunner {
         let mut test_runner = TestRunner::builder().build();
 
         // Creating a new account - this is where the badges will be held
-        let (public_key, _, account_component) = test_runner.new_account(false);
+        let (public_key, _, account) = test_runner.new_account(false);
 
         // Creating the resource to be protected
-        let controlled_asset = test_runner.create_fungible_resource(1.into(), 0, account_component);
+        let controlled_asset = test_runner.create_fungible_resource(1.into(), 0, account);
 
         // Creating three badges for the three roles.
         let primary_role_badge =
-            test_runner.create_fungible_resource(1.into(), 0, account_component);
+            test_runner.create_fungible_resource(1.into(), 0, account);
         let recovery_role_badge =
-            test_runner.create_fungible_resource(1.into(), 0, account_component);
+            test_runner.create_fungible_resource(1.into(), 0, account);
         let confirmation_role_badge =
-            test_runner.create_fungible_resource(1.into(), 0, account_component);
+            test_runner.create_fungible_resource(1.into(), 0, account);
 
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
-            .lock_fee(account_component, 10.into())
-            .withdraw_from_account(account_component, controlled_asset, 1.into())
+            .lock_fee(account, 10.into())
+            .withdraw_from_account(account, controlled_asset, 1.into())
             .take_from_worktop(controlled_asset, |builder, bucket| {
                 builder.create_access_controller(
                     bucket,
@@ -1469,14 +1469,14 @@ impl AccessControllerTestRunner {
         );
         receipt.expect_commit_success();
 
-        let access_controller_component_address =
+        let access_controller_address =
             receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,
-            account: (account_component, public_key.into()),
+            account: (account, public_key.into()),
 
-            access_controller_component_address,
+            access_controller_address,
             primary_role_badge,
             recovery_role_badge,
             confirmation_role_badge,
@@ -1489,7 +1489,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 "create_proof",
                 to_manifest_value(&AccessControllerCreateProofInput {}),
             )
@@ -1515,7 +1515,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 method_name,
                 to_manifest_value(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
@@ -1557,7 +1557,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 method_name,
                 to_manifest_value(
                     &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
@@ -1585,7 +1585,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
                 to_manifest_value(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
@@ -1610,7 +1610,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 method_name,
                 to_manifest_value(&AccessControllerCancelPrimaryRoleRecoveryProposalInput),
             )
@@ -1622,7 +1622,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 "lock_primary_role",
                 to_manifest_value(&AccessControllerLockPrimaryRoleInput {}),
             )
@@ -1634,7 +1634,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 "unlock_primary_role",
                 to_manifest_value(&AccessControllerUnlockPrimaryRoleInput {}),
             )
@@ -1653,7 +1653,7 @@ impl AccessControllerTestRunner {
         let manifest = self
             .manifest_builder(as_role)
             .call_method(
-                self.access_controller_component_address,
+                self.access_controller_address,
                 "stop_timed_recovery",
                 to_manifest_value(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {

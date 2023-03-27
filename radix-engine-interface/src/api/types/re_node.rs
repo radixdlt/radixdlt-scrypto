@@ -11,7 +11,7 @@ use sbor::rust::prelude::*;
 pub struct NodeId([u8; Self::LENGTH]);
 
 impl NodeId {
-    pub const LENGTH: usize = 27;
+    pub const LENGTH: usize = NODE_ID_LENGTH;
 
     pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 1]) -> Self {
         let mut buf = [0u8; Self::LENGTH];
@@ -72,36 +72,6 @@ impl Into<Vec<u8>> for SubstateKey {
     fn into(self) -> Vec<u8> {
         self.0
     }
-}
-
-//===============
-// NodeId Config
-//===============
-
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
-pub enum EntityType {
-    GlobalPackage,
-    GlobalFungibleResourceManager,
-    GlobalNonFungibleResourceManager,
-    GlobalEpochManager,
-    GlobalValidator,
-    GlobalClock,
-    GlobalAccessController,
-    GlobalAccount,
-    GlobalIdentity,
-    GlobalComponent,
-
-    GlobalVirtualEcdsaAccount,
-    GlobalVirtualEddsaAccount,
-    GlobalVirtualEcdsaIdentity,
-    GlobalVirtualEddsaIdentity,
-
-    InternalVault,
-    InternalAccessController,
-    InternalAccount,
-    InternalComponent,
-    InternalKeyValueStore,
 }
 
 //=================
