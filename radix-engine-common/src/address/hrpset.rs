@@ -1,7 +1,7 @@
 use sbor::rust::format;
 use sbor::rust::string::String;
 
-use crate::address::entity::EntityType;
+use crate::address::entity_type::EntityType;
 use crate::network::NetworkDefinition;
 
 /// Represents an HRP set (typically corresponds to a network).

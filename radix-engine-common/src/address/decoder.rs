@@ -1,4 +1,4 @@
-use super::entity::EntityType;
+use super::entity_type::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
 use crate::data::scrypto::model::ComponentAddress;

@@ -1442,12 +1442,9 @@ impl AccessControllerTestRunner {
         let controlled_asset = test_runner.create_fungible_resource(1.into(), 0, account);
 
         // Creating three badges for the three roles.
-        let primary_role_badge =
-            test_runner.create_fungible_resource(1.into(), 0, account);
-        let recovery_role_badge =
-            test_runner.create_fungible_resource(1.into(), 0, account);
-        let confirmation_role_badge =
-            test_runner.create_fungible_resource(1.into(), 0, account);
+        let primary_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
+        let recovery_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
+        let confirmation_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
 
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
@@ -1469,8 +1466,7 @@ impl AccessControllerTestRunner {
         );
         receipt.expect_commit_success();
 
-        let access_controller_address =
-            receipt.expect_commit(true).new_component_addresses()[0];
+        let access_controller_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,

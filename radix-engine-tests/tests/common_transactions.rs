@@ -33,15 +33,13 @@ fn transfer_of_funds_to_another_account_succeeds() {
     test_manifest(|this_account_address, bech32_encoder| {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(12).unwrap();
         let public_key = private_key.public_key();
-        let other_account_address =
-            ComponentAddress::virtual_account_from_public_key(&public_key);
+        let other_account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/account/resource_transfer.rtm"),
             xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
             this_account_address = this_account_address.display(bech32_encoder),
-            other_account_address =
-                other_account_address.display(bech32_encoder)
+            other_account_address = other_account_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -57,8 +55,8 @@ fn multi_account_fund_transfer_succeeds() {
                     "../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
                 xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
-                this_account_address = bech32_encoder
-                    .encode_component_address_to_string(&this_account_address),
+                this_account_address =
+                    bech32_encoder.encode_component_address_to_string(&this_account_address),
                 account_a_component_address = other_accounts[0].display(bech32_encoder),
                 account_b_component_address = other_accounts[1].display(bech32_encoder),
                 account_c_component_address = other_accounts[2].display(bech32_encoder)
