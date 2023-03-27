@@ -61,7 +61,7 @@ pub struct LoadedSubstate {
 
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
-    substate_store: &'s dyn ReadableSubstateStore,
+    substate_store: &'s dyn SubstateDatabase,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
 }
 
@@ -80,7 +80,7 @@ pub struct PreExecutionError {
 }
 
 impl<'s> Track<'s> {
-    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
+    pub fn new(substate_store: &'s dyn SubstateDatabase) -> Self {
         Self {
             substate_store,
             loaded_substates: index_map_new(),
@@ -504,7 +504,7 @@ fn determine_result_type(
 
 /// This is just used when finalizing track into a commit
 struct FinalizingTrack<'s> {
-    substate_store: &'s dyn ReadableSubstateStore,
+    substate_store: &'s dyn SubstateDatabase,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
 }
 
@@ -600,7 +600,7 @@ impl<'s> FinalizingTrack<'s> {
     }
 
     pub fn summarize_update(
-        substate_store: &dyn ReadableSubstateStore,
+        substate_store: &dyn SubstateDatabase,
         state_updates: &IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> StateUpdateSummary {
         let mut new_packages = index_set_new();
@@ -636,7 +636,7 @@ impl<'s> FinalizingTrack<'s> {
     }
 
     pub fn generate_diff(
-        substate_store: &dyn ReadableSubstateStore,
+        substate_store: &dyn SubstateDatabase,
         state_updates: IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> StateDiff {
         let mut diff = StateDiff::new();
@@ -662,7 +662,7 @@ impl<'s> FinalizingTrack<'s> {
     }
 
     fn get_substate_output_id(
-        substate_store: &dyn ReadableSubstateStore,
+        substate_store: &dyn SubstateDatabase,
         substate_id: &SubstateId,
     ) -> Option<OutputId> {
         substate_store.get_substate(&substate_id).map(|s| OutputId {
@@ -679,7 +679,7 @@ impl<'s> FinalizingTrack<'s> {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct BalanceChangeAccounting<'a, 'b> {
-    substate_store: &'a dyn ReadableSubstateStore,
+    substate_store: &'a dyn SubstateDatabase,
     indexed_state_updates: IndexMap<
         RENodeId,
         IndexMap<NodeModuleId, IndexMap<SubstateOffset, &'b (PersistedSubstate, Option<u32>)>>,
@@ -688,7 +688,7 @@ pub struct BalanceChangeAccounting<'a, 'b> {
 
 impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
     pub fn new(
-        substate_store: &'a dyn ReadableSubstateStore,
+        substate_store: &'a dyn SubstateDatabase,
         state_updates: &'b IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> Self {
         let mut indexed_state_updates: IndexMap<

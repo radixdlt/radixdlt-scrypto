@@ -9,12 +9,12 @@ use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource,
 };
 
-pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
+pub struct ResourceAccounter<'s, S: SubstateDatabase + QueryableSubstateStore> {
     substate_store: &'s S,
     accounting: Accounting,
 }
 
-impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s, S> {
+impl<'s, S: SubstateDatabase + QueryableSubstateStore> ResourceAccounter<'s, S> {
     pub fn new(substate_store: &'s S) -> Self {
         ResourceAccounter {
             substate_store,

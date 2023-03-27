@@ -21,7 +21,7 @@ pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
-pub fn execute_preview<S: ReadableSubstateStore, W: WasmEngine, IHM: IntentHashManager>(
+pub fn execute_preview<S: SubstateDatabase, W: WasmEngine, IHM: IntentHashManager>(
     substate_store: &S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     intent_hash_manager: &IHM,

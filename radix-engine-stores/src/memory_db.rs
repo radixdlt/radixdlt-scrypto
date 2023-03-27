@@ -1,5 +1,5 @@
 use crate::kernel::interpreters::ScryptoInterpreter;
-use crate::ledger::WriteableSubstateStore;
+use crate::ledger::CommittableSubstateDatabase;
 use crate::ledger::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -96,7 +96,7 @@ impl ReadableSubstateStore for InMemorySubstateStore {
     }
 }
 
-impl WriteableSubstateStore for InMemorySubstateStore {
+impl CommittableSubstateDatabase for InMemorySubstateStore {
     fn put_substate(
         &mut self,
         node_id: &NodeId,

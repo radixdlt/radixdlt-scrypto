@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::ledger::{OutputValue, ReadableSubstateStore, CommittableSubstateDatabase};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;

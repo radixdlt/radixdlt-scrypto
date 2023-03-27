@@ -8,7 +8,7 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
-use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::ledger::*;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -547,7 +547,7 @@ pub fn bootstrap<S, W>(
     scrypto_interpreter: &ScryptoInterpreter<W>,
 ) -> Option<TransactionReceipt>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
     bootstrap_with_validator_set(
@@ -571,7 +571,7 @@ pub fn bootstrap_with_validator_set<S, W>(
     num_unstake_epochs: u64,
 ) -> Option<TransactionReceipt>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
     if substate_store

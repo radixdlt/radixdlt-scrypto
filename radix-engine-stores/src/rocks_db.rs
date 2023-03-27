@@ -226,7 +226,7 @@ impl ReadableSubstateStore for RocksdbSubstateStore {
     }
 }
 
-impl WriteableSubstateStore for RocksdbSubstateStore {
+impl CommittableSubstateDatabase for RocksdbSubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.write(
             substate_id,

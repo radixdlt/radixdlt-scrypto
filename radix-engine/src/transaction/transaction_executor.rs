@@ -4,7 +4,7 @@ use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::{PreExecutionError, Track};
-use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::ledger::{CommittableSubstateDatabase, SubstateDatabase};
 use crate::system::kernel_modules::costing::*;
 use crate::system::kernel_modules::execution_trace::calculate_resource_changes;
 use crate::transaction::*;
@@ -111,7 +111,7 @@ impl ExecutionConfig {
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
 struct TransactionExecutor<'s, 'w, S, W>
 where
-    S: ReadableSubstateStore,
+    S: SubstateDatabase,
     W: WasmEngine,
 {
     substate_store: &'s S,
@@ -120,7 +120,7 @@ where
 
 impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
 where
-    S: ReadableSubstateStore,
+    S: SubstateDatabase,
     W: WasmEngine,
 {
     pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
@@ -387,7 +387,7 @@ where
 }
 
 pub fn execute_and_commit_transaction<
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 >(
     substate_store: &mut S,
@@ -409,7 +409,7 @@ pub fn execute_and_commit_transaction<
     receipt
 }
 
-pub fn execute_transaction<S: ReadableSubstateStore, W: WasmEngine>(
+pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
     substate_store: &S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     fee_reserve_config: &FeeReserveConfig,

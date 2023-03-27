@@ -17,7 +17,7 @@ pub enum StateTreeTraverserError {
 pub struct StateTreeTraverser<
     's,
     'v,
-    S: ReadableSubstateStore + QueryableSubstateStore,
+    S: SubstateDatabase + QueryableSubstateStore,
     V: StateTreeVisitor,
 > {
     substate_store: &'s S,
@@ -46,7 +46,7 @@ pub trait StateTreeVisitor {
     }
 }
 
-impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisitor>
+impl<'s, 'v, S: SubstateDatabase + QueryableSubstateStore, V: StateTreeVisitor>
     StateTreeTraverser<'s, 'v, S, V>
 {
     pub fn new(substate_store: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
