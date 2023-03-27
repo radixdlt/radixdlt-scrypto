@@ -189,12 +189,15 @@ pub trait SubstateStore {
         module_id: ModuleId,
     ) -> Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
 
-    /// Closes the store and returns the state changes and dependencies.
+    /// Reverts all non force write changes.
     ///
-    /// If `is_success` is false, non force write changes will be reverted.
+    /// Note that dependencies will never be reverted.
+    fn revert_non_force_write_changes(&mut self);
+
+    /// Finalizes changes captured by this substate store.
     ///
-    /// Note that dependencies are never reverted.
-    fn finalize(self, is_success: bool) -> (StateChanges, StateDependencies);
+    ///  Returns the state changes and dependencies.
+    fn finalize(self) -> (StateChanges, StateDependencies);
 }
 
 pub struct StateChanges {
