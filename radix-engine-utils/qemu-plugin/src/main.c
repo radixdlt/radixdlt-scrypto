@@ -60,6 +60,7 @@ static void vcpu_tb_trans_callback(qemu_plugin_id_t id, struct qemu_plugin_tb *t
 static void plugin_exit(qemu_plugin_id_t id, void *p)
 {
     shm_unlink(SHARED_MEM_ID);
+    qemu_plugin_outs("[QEMU-scrypto-plugin] Exit\n");
 }
 
 // Plugin entry function
