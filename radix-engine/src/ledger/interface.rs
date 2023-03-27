@@ -185,8 +185,9 @@ pub trait SubstateStore {
     /// In case the module does not exist, an empty iterator is returned.
     ///
     /// # Panics
-    /// - If iteration is not enabled for the module
     /// - If the module ID is invalid
+    /// - If iteration is not enabled for the module
+    /// - If any of the substates within the module is WRITE locked
     fn list_substates(
         &mut self,
         node_id: &NodeId,
@@ -214,7 +215,7 @@ pub enum StateChange {
     /*
     /// Deletes a substate.
     Delete,
-    /// Edits an element of a substate, specified by SBOR path.
+    /// Edits an element of a substate, identified by an SBOR path.
     Edit,
     */
 }
