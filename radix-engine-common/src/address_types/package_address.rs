@@ -1,12 +1,11 @@
-use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
+use crate::address::EncodeBech32AddressError;
+use crate::address::{AddressDisplayContext, EntityType, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-use radix_engine_common::data::scrypto::model::*;
 use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
@@ -18,20 +17,6 @@ pub struct PackageAddress([u8; NODE_ID_LENGTH]); // private to ensure entity typ
 impl PackageAddress {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
-    }
-
-    pub fn to_hex(&self) -> String {
-        hex::encode(self.to_vec())
-    }
-
-    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
-        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
-
-        Self::try_from(bytes.as_ref())
-    }
-
-    pub fn size(self) -> usize {
-        ADDRESS_HASH_LENGTH
     }
 }
 
@@ -46,13 +31,13 @@ impl TryFrom<&[u8]> for PackageAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
+            NODE_ID_LENGTH => match EntityType::from_repr(slice[0])
+                .ok_or(ParsePackageAddressError::InvalidEntityTypeId(slice[0]))?
             {
-                EntityType::Package => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+                EntityType::GlobalPackage => Ok(Self(copy_u8_array(&slice[1..]))),
+                _ => Err(ParsePackageAddressError::InvalidEntityTypeId(slice[0])),
             },
-            _ => Err(AddressError::InvalidLength(slice.len())),
+            _ => Err(ParsePackageAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -85,14 +70,14 @@ well_known_scrypto_custom_type!(
     PackageAddress,
     ScryptoCustomValueKind::Address,
     Type::PackageAddress,
-    ADDRESS_LENGTH,
+    NODE_ID_LENGTH,
     PACKAGE_ADDRESS_ID
 );
 
 manifest_type!(
     PackageAddress,
     ManifestCustomValueKind::Address,
-    ADDRESS_LENGTH
+    NODE_ID_LENGTH
 );
 
 //========
@@ -106,7 +91,7 @@ impl fmt::Debug for PackageAddress {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
-    type Error = AddressError;
+    type Error = EncodeBech32AddressError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
@@ -114,15 +99,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
-            return encoder.encode_package_address_to_fmt(f, self);
+            return encoder.encode_to_fmt(f, &self.0);
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        match self {
-            PackageAddress::Normal(_) => {
-                write!(f, "NormalPackage[{}]", self.to_hex())
-            }
-        }
-        .map_err(|err| AddressError::FormatError(err))
+        write!(f, "PackageAddress({})", hex::encode(&self.0))
+            .map_err(|err| EncodeBech32AddressError::FormatError(err))
     }
 }

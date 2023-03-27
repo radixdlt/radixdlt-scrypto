@@ -7,7 +7,7 @@ use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InternalRef(pub [u8; NODE_ID_LENGTH]);
 
 impl InternalRef {
@@ -57,3 +57,13 @@ well_known_scrypto_custom_type!(
     NODE_ID_LENGTH,
     REFERENCE_ID
 );
+
+//======
+// text
+//======
+
+impl fmt::Debug for InternalRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "InternalRef({})", hex::encode(&self.0))
+    }
+}

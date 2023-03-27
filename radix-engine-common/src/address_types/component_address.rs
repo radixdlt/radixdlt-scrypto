@@ -6,7 +6,6 @@ use crate::well_known_scrypto_custom_type;
 use crate::*;
 use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
@@ -18,10 +17,6 @@ pub struct ComponentAddress([u8; NODE_ID_LENGTH]); // private to ensure entity t
 impl ComponentAddress {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
-    }
-
-    pub fn to_hex(&self) -> String {
-        hex::encode(&self.0)
     }
 
     pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(
@@ -159,7 +154,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "ComponentAddress({})", self.to_hex())
+        write!(f, "ComponentAddress({})", hex::encode(&self.0))
             .map_err(EncodeBech32AddressError::FormatError)
     }
 }

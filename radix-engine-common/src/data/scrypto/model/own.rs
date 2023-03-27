@@ -7,7 +7,7 @@ use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Own(pub [u8; NODE_ID_LENGTH]);
 
 impl Own {
@@ -57,3 +57,13 @@ well_known_scrypto_custom_type!(
     NODE_ID_LENGTH,
     OWN_ID
 );
+
+//======
+// text
+//======
+
+impl fmt::Debug for Own {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "Own({})", hex::encode(&self.0))
+    }
+}

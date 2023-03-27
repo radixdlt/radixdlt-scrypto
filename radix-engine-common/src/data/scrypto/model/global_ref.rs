@@ -7,7 +7,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Address(pub [u8; NODE_ID_LENGTH]);
 
 impl Address {
@@ -63,3 +63,13 @@ well_known_scrypto_custom_type!(
 //==================
 
 manifest_type!(Address, ManifestCustomValueKind::Address, NODE_ID_LENGTH);
+
+//======
+// text
+//======
+
+impl fmt::Debug for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "GlobalRef({})", hex::encode(&self.0))
+    }
+}
