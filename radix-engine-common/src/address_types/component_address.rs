@@ -103,6 +103,11 @@ impl TryFrom<&[u8]> for ComponentAddress {
         }
     }
 }
+impl Into<[u8; NODE_ID_LENGTH]> for ComponentAddress {
+    fn into(self) -> [u8; NODE_ID_LENGTH] {
+        self.0
+    }
+}
 
 //========
 // error

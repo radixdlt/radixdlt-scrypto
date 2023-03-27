@@ -12,7 +12,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Worktop(pub ObjectId);
+pub struct Worktop(pub NodeId);
 
 impl Worktop {
     pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(

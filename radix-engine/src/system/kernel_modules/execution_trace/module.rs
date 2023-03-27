@@ -35,7 +35,7 @@ pub struct ExecutionTraceModule {
     kernel_call_traces_stacks: IndexMap<usize, Vec<ExecutionTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation, instruction index)
-    vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+    vault_ops: Vec<(TraceActor, NodeId, VaultOp, usize)>,
 }
 
 impl ExecutionTraceModule {
@@ -47,7 +47,7 @@ impl ExecutionTraceModule {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub node_id: NodeId,
-    pub vault_id: ObjectId,
+    pub vault_id: NodeId,
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
@@ -159,8 +159,8 @@ impl ProofSnapshot {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: IndexMap<ObjectId, BucketSnapshot>,
-    pub proofs: IndexMap<ObjectId, ProofSnapshot>,
+    pub buckets: IndexMap<NodeId, BucketSnapshot>,
+    pub proofs: IndexMap<NodeId, ProofSnapshot>,
 }
 
 // TODO: Clean up
@@ -574,7 +574,7 @@ impl ExecutionTraceModule {
         mut self,
     ) -> (
         Vec<ExecutionTrace>,
-        Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+        Vec<(TraceActor, NodeId, VaultOp, usize)>,
     ) {
         let mut execution_traces = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
@@ -592,7 +592,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &ObjectId,
+        vault_id: &NodeId,
     ) {
         let actor = caller
             .clone()
@@ -608,7 +608,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &ObjectId) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &NodeId) {
         let actor = caller
             .clone()
             .map(|a| TraceActor::Actor(a))
@@ -625,7 +625,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &ObjectId,
+        vault_id: &NodeId,
     ) {
         let actor = caller
             .clone()
@@ -643,8 +643,8 @@ impl ExecutionTraceModule {
 }
 
 pub fn calculate_resource_changes(
-    mut vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-    fee_payments: &IndexMap<ObjectId, Decimal>,
+    mut vault_ops: Vec<(TraceActor, NodeId, VaultOp, usize)>,
+    fee_payments: &IndexMap<NodeId, Decimal>,
     is_commit_success: bool,
 ) -> IndexMap<usize, Vec<ResourceChange>> {
     // Retain lock fee only if the transaction fails.
@@ -654,7 +654,7 @@ pub fn calculate_resource_changes(
 
     // Calculate per instruction index, actor, vault resource changes.
     let mut vault_changes =
-        index_map_new::<usize, IndexMap<NodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>();
+        index_map_new::<usize, IndexMap<NodeId, IndexMap<NodeId, (ResourceAddress, Decimal)>>>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Actor(Actor {
             identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),

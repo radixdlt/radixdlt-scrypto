@@ -1,4 +1,6 @@
 use crate::*;
+use radix_engine_common::address_types::*;
+use radix_engine_common::data::scrypto::model::*;
 use sbor::rust::prelude::*;
 
 //=========================================================================
@@ -6,7 +8,7 @@ use sbor::rust::prelude::*;
 //=========================================================================
 
 /// The unique identifier of a (stored) node.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct NodeId([u8; Self::LENGTH]);
 
@@ -30,6 +32,48 @@ impl AsRef<[u8]> for NodeId {
 impl Into<[u8; NodeId::LENGTH]> for NodeId {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0
+    }
+}
+
+impl From<[u8; NodeId::LENGTH]> for NodeId {
+    fn from(value: [u8; NodeId::LENGTH]) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Address> for NodeId {
+    fn from(value: Address) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<ComponentAddress> for NodeId {
+    fn from(value: ComponentAddress) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<ResourceAddress> for NodeId {
+    fn from(value: ResourceAddress) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<PackageAddress> for NodeId {
+    fn from(value: PackageAddress) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<Own> for NodeId {
+    fn from(value: Own) -> Self {
+        Self(value.0.into())
+    }
+}
+
+impl From<Reference> for NodeId {
+    fn from(value: Reference) -> Self {
+        Self(value.0.into())
     }
 }
 

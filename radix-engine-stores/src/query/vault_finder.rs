@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::vec::Vec;
 
 pub struct VaultFinder {
-    vaults: Vec<ObjectId>,
+    vaults: Vec<NodeId>,
     resource_address: ResourceAddress,
 }
 
@@ -16,7 +16,7 @@ impl VaultFinder {
         }
     }
 
-    pub fn to_vaults(self) -> Vec<ObjectId> {
+    pub fn to_vaults(self) -> Vec<NodeId> {
         self.vaults
     }
 }
@@ -24,7 +24,7 @@ impl VaultFinder {
 impl StateTreeVisitor for VaultFinder {
     fn visit_fungible_vault(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         info: &VaultInfoSubstate,
         _resource: &LiquidFungibleResource,
     ) {
@@ -35,7 +35,7 @@ impl StateTreeVisitor for VaultFinder {
 
     fn visit_non_fungible_vault(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         info: &VaultInfoSubstate,
         _resource: &LiquidNonFungibleResource,
     ) {

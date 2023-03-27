@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{NodeId, ObjectId};
+use radix_engine_interface::api::types::{NodeId, NodeId};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
@@ -7,7 +7,7 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-pub struct Vault(pub ObjectId); // native stub
+pub struct Vault(pub NodeId); // native stub
 
 impl Vault {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(

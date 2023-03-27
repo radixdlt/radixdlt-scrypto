@@ -23,7 +23,7 @@ pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> 
 pub trait StateTreeVisitor {
     fn visit_fungible_vault(
         &mut self,
-        _vault_id: ObjectId,
+        _vault_id: NodeId,
         _info: &VaultInfoSubstate,
         _resource: &LiquidFungibleResource,
     ) {
@@ -31,7 +31,7 @@ pub trait StateTreeVisitor {
 
     fn visit_non_fungible_vault(
         &mut self,
-        _vault_id: ObjectId,
+        _vault_id: NodeId,
         _info: &VaultInfoSubstate,
         _resource: &LiquidNonFungibleResource,
     ) {

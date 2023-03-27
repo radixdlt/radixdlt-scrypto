@@ -2,7 +2,7 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::types::{NodeId, ObjectId, TypedModuleId};
+use radix_engine_interface::api::types::{NodeId, NodeId, TypedModuleId};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
@@ -11,7 +11,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Metadata(pub ObjectId);
+pub struct Metadata(pub NodeId);
 
 impl Metadata {
     pub fn new() -> Self {

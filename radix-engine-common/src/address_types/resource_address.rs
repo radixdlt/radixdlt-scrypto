@@ -53,6 +53,12 @@ impl TryFrom<&[u8]> for ResourceAddress {
     }
 }
 
+impl Into<[u8; NODE_ID_LENGTH]> for ResourceAddress {
+    fn into(self) -> [u8; NODE_ID_LENGTH] {
+        self.0
+    }
+}
+
 //========
 // error
 //========

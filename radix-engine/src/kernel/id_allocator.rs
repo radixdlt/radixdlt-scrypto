@@ -217,11 +217,11 @@ impl IdAllocator {
         Ok(ResourceAddress::Fungible(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {
+    pub fn new_object_id(&mut self) -> Result<NodeId, IdAllocationError> {
         self.next_object_id(INTERNAL_OBJECT_NORMAL_COMPONENT_ID)
     }
 
-    pub fn new_vault_id(&mut self) -> Result<ObjectId, IdAllocationError> {
+    pub fn new_vault_id(&mut self) -> Result<NodeId, IdAllocationError> {
         self.next_object_id(INTERNAL_OBJECT_VAULT_ID)
     }
 

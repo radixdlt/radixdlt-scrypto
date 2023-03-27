@@ -146,7 +146,7 @@ where
         &mut self,
         blueprint_ident: &str,
         mut app_states: Vec<Vec<u8>>,
-    ) -> Result<ObjectId, RuntimeError> {
+    ) -> Result<NodeId, RuntimeError> {
         let package_address = self
             .kernel_get_current_actor()
             .unwrap()
@@ -355,7 +355,7 @@ where
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, NodeId>,
     ) -> Result<Address, RuntimeError> {
         // FIXME check completeness of modules
 
@@ -391,7 +391,7 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, NodeId>,
         address: Address,
     ) -> Result<Address, RuntimeError> {
         let module_ids = modules.keys().cloned().collect::<BTreeSet<TypedModuleId>>();
@@ -688,7 +688,7 @@ where
 
     fn credit_cost_units(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
@@ -715,7 +715,7 @@ impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+    fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();

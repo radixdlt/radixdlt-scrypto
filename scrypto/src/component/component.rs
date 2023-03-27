@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{NodeId, ObjectId};
+use radix_engine_interface::api::types::{NodeId, NodeId};
 use radix_engine_interface::api::{types::*, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
@@ -151,7 +151,7 @@ pub trait LocalComponent: Sized {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct OwnedComponent(pub ObjectId);
+pub struct OwnedComponent(pub NodeId);
 
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {

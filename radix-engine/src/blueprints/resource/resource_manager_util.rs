@@ -270,7 +270,7 @@ fn build_access_rules(
 }
 
 pub fn globalize_resource_manager<Y>(
-    object_id: ObjectId,
+    object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, String>,

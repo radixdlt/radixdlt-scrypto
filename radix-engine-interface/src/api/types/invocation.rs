@@ -55,7 +55,7 @@ impl FnIdentifier {
     }
 
     pub fn size(&self) -> usize {
-        self.blueprint_name.len() + self.ident.len() + self.package_address.size()
+        self.blueprint_name.len() + self.ident.len() + self.package_address.as_ref().len()
     }
 }
 

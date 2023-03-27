@@ -61,7 +61,7 @@ pub struct CommitResult {
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
-    pub fee_payments: IndexMap<ObjectId, Decimal>,
+    pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
 }
@@ -75,7 +75,7 @@ pub struct StateUpdateSummary {
     /// This field accounts for two conditions:
     /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
     /// 2. Fee payments for failed transactions.
-    pub direct_vault_updates: IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>>,
+    pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -155,7 +155,7 @@ impl CommitResult {
 
     pub fn direct_vault_updates(
         &self,
-    ) -> &IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>> {
+    ) -> &IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.direct_vault_updates
     }
 

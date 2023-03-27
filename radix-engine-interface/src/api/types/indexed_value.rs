@@ -1,7 +1,6 @@
 use crate::api::types::*;
 use core::cell::RefCell;
 use core::convert::Infallible;
-use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::*;
 use sbor::path::SborPathBuf;
 use sbor::rust::cell::Ref;
@@ -38,20 +37,11 @@ impl IndexedScryptoValue {
                 TraversalEvent::TerminalValue(r) => {
                     if let traversal::TerminalValueRef::Custom(c) = r {
                         match c.0 {
-                            ScryptoCustomValue::Address(a) => {
-                                references.insert(a.into());
+                            ScryptoCustomValue::Reference(node_id) => {
+                                references.insert(node_id.0.into());
                             }
-                            ScryptoCustomValue::InternalRef(a) => {
-                                references.insert(NodeId::Object(a.0));
-                            }
-                            ScryptoCustomValue::Own(o) => {
-                                owned_nodes.push(match o {
-                                    Own::Bucket(id)
-                                    | Own::Proof(id)
-                                    | Own::Vault(id)
-                                    | Own::Object(id) => NodeId::Object(id),
-                                    Own::KeyValueStore(id) => NodeId::KeyValueStore(id),
-                                });
+                            ScryptoCustomValue::Own(node_id) => {
+                                owned_nodes.push(node_id.0.into());
                             }
                             ScryptoCustomValue::Decimal(_)
                             | ScryptoCustomValue::PreciseDecimal(_)
@@ -192,29 +182,10 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
         value: &ScryptoCustomValue,
     ) -> Result<(), Self::Err> {
         match value {
-            ScryptoCustomValue::Address(value) => {
+            ScryptoCustomValue::Reference(value) => {
                 self.references.insert(value.clone().into());
             }
-            ScryptoCustomValue::InternalRef(value) => {
-                self.references.insert(NodeId::Object(value.0));
-            }
-            ScryptoCustomValue::Own(value) => {
-                match value {
-                    Own::Bucket(object_id) => {
-                        self.owned_nodes.push(NodeId::Object(*object_id));
-                    }
-                    Own::Proof(proof_id) => {
-                        self.owned_nodes.push(NodeId::Object(*proof_id));
-                    }
-                    Own::Vault(vault_id) => self.owned_nodes.push(NodeId::Object(*vault_id)),
-                    Own::Object(component_id) => {
-                        self.owned_nodes.push(NodeId::Object(*component_id))
-                    }
-                    Own::KeyValueStore(kv_store_id) => {
-                        self.owned_nodes.push(NodeId::KeyValueStore(*kv_store_id))
-                    }
-                };
-            }
+            ScryptoCustomValue::Own(value) => self.owned_nodes.push(value.clone().into()),
 
             ScryptoCustomValue::Decimal(_)
             | ScryptoCustomValue::PreciseDecimal(_)

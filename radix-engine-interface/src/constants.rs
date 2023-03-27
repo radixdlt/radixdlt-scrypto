@@ -54,7 +54,7 @@ pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
-    EntityType::NormalComponent as u8,
+    EntityType::GlobalComponent as u8,
     236,
     50,
     10,
@@ -83,5 +83,5 @@ pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     215,
 ]);
 
-pub const CLOCK: ComponentAddress = component_address(EntityType::Clock, 0);
-pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::EpochManager, 0);
+pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
+pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);

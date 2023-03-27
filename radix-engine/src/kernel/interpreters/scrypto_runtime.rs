@@ -131,7 +131,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let component_id =
             scrypto_decode::<NodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let modules = scrypto_decode::<BTreeMap<TypedModuleId, ObjectId>>(&modules)
+        let modules = scrypto_decode::<BTreeMap<TypedModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;

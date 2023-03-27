@@ -32,12 +32,13 @@ pub trait ClientSubstateApi<E: Debug> {
     // TODO: expose non-SELF?
     fn sys_lock_substate(
         &mut self,
-        node_id: NodeId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
+
     fn sys_read_typed_substate<S: ScryptoDecode>(
         &mut self,
         lock_handle: LockHandle,
@@ -46,7 +47,9 @@ pub trait ClientSubstateApi<E: Debug> {
         let typed_substate: S = scrypto_decode(&buf).unwrap();
         Ok(typed_substate)
     }
+
     fn sys_write_substate(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
+
     fn sys_write_typed_substate<S: ScryptoEncode>(
         &mut self,
         lock_handle: LockHandle,
@@ -55,5 +58,6 @@ pub trait ClientSubstateApi<E: Debug> {
         let buf = scrypto_encode(&substate).unwrap();
         self.sys_write_substate(lock_handle, buf)
     }
+
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
 }

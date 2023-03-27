@@ -77,7 +77,7 @@ impl Accounting {
 impl StateTreeVisitor for Accounting {
     fn visit_fungible_vault(
         &mut self,
-        _vault_id: ObjectId,
+        _vault_id: NodeId,
         info: &VaultInfoSubstate,
         resource: &LiquidFungibleResource,
     ) {
@@ -86,7 +86,7 @@ impl StateTreeVisitor for Accounting {
 
     fn visit_non_fungible_vault(
         &mut self,
-        _vault_id: ObjectId,
+        _vault_id: NodeId,
         info: &VaultInfoSubstate,
         resource: &LiquidNonFungibleResource,
     ) {

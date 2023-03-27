@@ -1,8 +1,5 @@
 use crate::*;
-use radix_engine_common::{
-    crypto::*,
-    data::scrypto::model::{Address, InternalRef},
-};
+use radix_engine_common::{crypto::*, data::scrypto::model::Reference};
 use sbor::rust::prelude::*;
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
@@ -15,8 +12,7 @@ pub struct TransactionProcessorRunInput<'a> {
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, Vec<u8>>,
     pub blobs: Cow<'a, [Vec<u8>]>,
-    pub global_references: BTreeSet<Address>,
-    pub local_references: BTreeSet<InternalRef>,
+    pub references: BTreeSet<Reference>,
 }
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;

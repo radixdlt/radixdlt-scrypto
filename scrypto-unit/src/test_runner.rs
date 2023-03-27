@@ -350,7 +350,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
-    ) -> Vec<ObjectId> {
+    ) -> Vec<NodeId> {
         let node_id = NodeId::GlobalObject(component_address.into());
         let mut vault_finder = VaultFinder::new(resource_address);
 
@@ -362,7 +362,7 @@ impl TestRunner {
         vault_finder.to_vaults()
     }
 
-    pub fn inspect_vault_balance(&mut self, vault_id: ObjectId) -> Option<Decimal> {
+    pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {
         if let Some(output) = self.substate_db().get_substate(&SubstateId(
             NodeId::Object(vault_id),
             TypedModuleId::ObjectState,
@@ -379,7 +379,7 @@ impl TestRunner {
         }
     }
 
-    pub fn inspect_fungible_vault(&mut self, vault_id: ObjectId) -> Option<Decimal> {
+    pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
             .get_substate(&SubstateId(
                 NodeId::Object(vault_id),
@@ -391,7 +391,7 @@ impl TestRunner {
 
     pub fn inspect_non_fungible_vault(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
     ) -> Option<BTreeSet<NonFungibleLocalId>> {
         self.substate_db()
             .get_substate(&SubstateId(

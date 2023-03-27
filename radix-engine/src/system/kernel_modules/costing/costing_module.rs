@@ -70,7 +70,7 @@ impl CostingModule {
 
     pub fn credit_cost_units(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
@@ -88,7 +88,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     api: &mut Y,
     cost_units: u32,
     recipient: RoyaltyRecipient,
-    recipient_vault_id: ObjectId,
+    recipient_vault_id: NodeId,
 ) -> Result<(), RuntimeError> {
     api.kernel_get_module_state()
         .costing

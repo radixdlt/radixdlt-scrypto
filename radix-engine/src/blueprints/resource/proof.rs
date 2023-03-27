@@ -8,8 +8,8 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
-    Bucket(ObjectId),
-    Vault(ObjectId),
+    Bucket(NodeId),
+    Vault(NodeId),
 }
 
 impl LocalRef {

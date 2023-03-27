@@ -24,7 +24,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         blueprint_ident: &str,
         app_states: Vec<Vec<u8>>,
-    ) -> Result<ObjectId, ClientApiError> {
+    ) -> Result<NodeId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
@@ -62,7 +62,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, NodeId>,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
@@ -81,7 +81,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, ObjectId>,
+        modules: BTreeMap<TypedModuleId, NodeId>,
         address: Address,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
@@ -234,7 +234,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientAuthApi<ClientApiError> for ScryptoEnv {
-    fn get_auth_zone(&mut self) -> Result<ObjectId, ClientApiError> {
+    fn get_auth_zone(&mut self) -> Result<NodeId, ClientApiError> {
         let auth_zone = copy_buffer(unsafe { get_auth_zone() });
 
         scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)

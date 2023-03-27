@@ -18,7 +18,7 @@ use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct AccessRules(pub ObjectId);
+pub struct AccessRules(pub NodeId);
 
 impl AccessRules {
     pub fn new(access_rules: AccessRulesConfig) -> Self {

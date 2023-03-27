@@ -113,8 +113,8 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot>;
+    fn kernel_read_bucket(&mut self, bucket_id: NodeId) -> Option<BucketSnapshot>;
+    fn kernel_read_proof(&mut self, proof_id: NodeId) -> Option<ProofSnapshot>;
 }
 
 pub trait KernelModuleApi<E>:

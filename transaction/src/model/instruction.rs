@@ -113,7 +113,7 @@ pub enum Instruction {
     },
 
     RecallResource {
-        vault_id: ObjectId,
+        vault_id: NodeId,
         amount: Decimal,
     },
 
