@@ -2,8 +2,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod child_component {
-    struct ChildComponent {
-    }
+    struct ChildComponent {}
 
     impl ChildComponent {
         pub fn create() -> ChildComponentComponent {
@@ -17,7 +16,6 @@ mod child_component {
     }
 }
 
-
 #[blueprint]
 mod my_component {
     use child_component::*;
@@ -29,17 +27,13 @@ mod my_component {
     impl MyComponent {
         pub fn create() -> ComponentAddress {
             let child = ChildComponent::create();
-            Self {
-                child,
-            }.instantiate().globalize()
+            Self { child }.instantiate().globalize()
         }
 
         pub fn get_address_in_local() -> ComponentAddress {
             let child = ChildComponent::create();
             let address = child.get_address();
-            Self {
-                child,
-            }.instantiate().globalize();
+            Self { child }.instantiate().globalize();
             address.into()
         }
 

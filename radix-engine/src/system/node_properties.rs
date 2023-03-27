@@ -144,9 +144,45 @@ impl VisibilityProperties {
                                 // Otherwise, false
                                 _ => false,
                             },
-                            ActorIdentifier::Method(_, method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Object(component_address), ..) => {
-                                    match (node_id, offset) {
+                            ActorIdentifier::Method(_, method_identifier) => {
+                                match method_identifier {
+                                    MethodIdentifier(RENodeId::Object(component_address), ..) => {
+                                        match (node_id, offset) {
+                                            // READ package code & abi
+                                            (
+                                                RENodeId::GlobalObject(_),
+                                                SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                            )
+                                            | (
+                                                RENodeId::GlobalObject(_),
+                                                SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                            )
+                                            | (
+                                                RENodeId::GlobalObject(_),
+                                                SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                            ) => read_only,
+                                            // READ/WRITE KVStore entry
+                                            (
+                                                RENodeId::KeyValueStore(_),
+                                                SubstateOffset::KeyValueStore(
+                                                    KeyValueStoreOffset::Entry(..),
+                                                ),
+                                            ) => true,
+                                            // READ/WRITE component application state
+                                            (
+                                                RENodeId::Object(addr),
+                                                SubstateOffset::Component(ComponentOffset::State0),
+                                            ) => addr.eq(component_address),
+                                            // Otherwise, false
+                                            _ => false,
+                                        }
+                                    }
+                                    MethodIdentifier(
+                                        RENodeId::GlobalObject(Address::Component(
+                                            component_address,
+                                        )),
+                                        ..,
+                                    ) => match (node_id, offset) {
                                         // READ package code & abi
                                         (
                                             RENodeId::GlobalObject(_),
@@ -169,47 +205,15 @@ impl VisibilityProperties {
                                         ) => true,
                                         // READ/WRITE component application state
                                         (
-                                            RENodeId::Object(addr),
+                                            RENodeId::GlobalObject(Address::Component(addr)),
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         // Otherwise, false
                                         _ => false,
-                                    }
-                                }
-                                MethodIdentifier(
-                                    RENodeId::GlobalObject(Address::Component(component_address)),
-                                    ..,
-                                ) => match (node_id, offset) {
-                                    // READ package code & abi
-                                    (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                    )
-                                    | (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                    )
-                                    | (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                    ) => read_only,
-                                    // READ/WRITE KVStore entry
-                                    (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
-                                    ) => true,
-                                    // READ/WRITE component application state
-                                    (
-                                        RENodeId::GlobalObject(Address::Component(addr)),
-                                        SubstateOffset::Component(ComponentOffset::State0),
-                                    ) => addr.eq(component_address),
-                                    // Otherwise, false
+                                    },
                                     _ => false,
-                                },
-                                _ => false,
-                            },
+                                }
+                            }
                         },
                     }
                 } else {
@@ -229,9 +233,29 @@ impl VisibilityProperties {
                                 _ => false,
                             },
 
-                            ActorIdentifier::Method(_, method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Object(component_address), ..) => {
-                                    match (node_id, offset) {
+                            ActorIdentifier::Method(_, method_identifier) => {
+                                match method_identifier {
+                                    MethodIdentifier(RENodeId::Object(component_address), ..) => {
+                                        match (node_id, offset) {
+                                            (
+                                                RENodeId::KeyValueStore(_),
+                                                SubstateOffset::KeyValueStore(
+                                                    KeyValueStoreOffset::Entry(..),
+                                                ),
+                                            ) => true,
+                                            (
+                                                RENodeId::Object(addr),
+                                                SubstateOffset::Component(ComponentOffset::State0),
+                                            ) => addr.eq(component_address),
+                                            _ => false,
+                                        }
+                                    }
+                                    MethodIdentifier(
+                                        RENodeId::GlobalObject(Address::Component(
+                                            component_address,
+                                        )),
+                                        ..,
+                                    ) => match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),
                                             SubstateOffset::KeyValueStore(
@@ -239,30 +263,14 @@ impl VisibilityProperties {
                                             ),
                                         ) => true,
                                         (
-                                            RENodeId::Object(addr),
+                                            RENodeId::GlobalObject(Address::Component(addr)),
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         _ => false,
-                                    }
-                                }
-                                MethodIdentifier(
-                                    RENodeId::GlobalObject(Address::Component(component_address)),
-                                    ..,
-                                ) => match (node_id, offset) {
-                                    (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
-                                    ) => true,
-                                    (
-                                        RENodeId::GlobalObject(Address::Component(addr)),
-                                        SubstateOffset::Component(ComponentOffset::State0),
-                                    ) => addr.eq(component_address),
+                                    },
                                     _ => false,
-                                },
-                                _ => false,
-                            },
+                                }
+                            }
                         },
                     }
                 }

@@ -707,14 +707,14 @@ where
     W: WasmEngine,
 {
     fn get_global_address(&mut self) -> Result<Address, RuntimeError> {
-        self.kernel_get_current_actor().and_then(|e| {
-            match e.identifier {
-                ActorIdentifier::Method(Some(address), ..) => {
-                    Some(address)
-                }
-                _ => None
-            }
-        }).ok_or(RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist))
+        self.kernel_get_current_actor()
+            .and_then(|e| match e.identifier {
+                ActorIdentifier::Method(Some(address), ..) => Some(address),
+                _ => None,
+            })
+            .ok_or(RuntimeError::SystemError(
+                SystemError::GlobalAddressDoesNotExist,
+            ))
     }
 
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
@@ -873,7 +873,8 @@ where
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
             Some(Actor {
-                identifier: ActorIdentifier::Method(_, MethodIdentifier(node_id, node_module_id, ..)),
+                identifier:
+                    ActorIdentifier::Method(_, MethodIdentifier(node_id, node_module_id, ..)),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, node_module_id),

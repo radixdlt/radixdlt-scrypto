@@ -4,10 +4,10 @@ use super::kernel_api::KernelNodeApi;
 use super::kernel_api::KernelSubstateApi;
 use super::kernel_api::KernelWasmApi;
 use crate::errors::*;
+use crate::kernel::kernel_api::KernelInternalApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
-use crate::kernel::kernel_api::KernelInternalApi;
 
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;

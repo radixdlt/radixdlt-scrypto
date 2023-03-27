@@ -13,7 +13,11 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn method<I: Into<FnIdentifier>>(global_address: Option<Address>, identifier: I, method: MethodIdentifier) -> Self {
+    pub fn method<I: Into<FnIdentifier>>(
+        global_address: Option<Address>,
+        identifier: I,
+        method: MethodIdentifier,
+    ) -> Self {
         Self {
             fn_identifier: identifier.into(),
             identifier: ActorIdentifier::Method(global_address, method),

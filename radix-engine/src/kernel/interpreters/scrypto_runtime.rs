@@ -213,7 +213,6 @@ where
         self.allocate_buffer(buffer)
     }
 
-
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let actor = self.api.get_fn_identifier()?;
 

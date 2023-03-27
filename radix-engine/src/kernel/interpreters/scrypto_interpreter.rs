@@ -11,7 +11,9 @@ use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi};
+use crate::kernel::kernel_api::{
+    KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
+};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -142,17 +144,23 @@ impl ExecutableInvocation for MethodInvocation {
             blueprint_name.clone(),
             self.identifier.2.clone(),
         );
-        let global_address = api.kernel_get_current_actor().and_then(|a| match a.identifier {
-            ActorIdentifier::Method(global, ..) => global,
-            _ => {
-                if let RENodeId::GlobalObject(address) = self.identifier.0 {
-                    Some(address)
-                } else {
-                    None
+        let global_address = api
+            .kernel_get_current_actor()
+            .and_then(|a| match a.identifier {
+                ActorIdentifier::Method(global, ..) => global,
+                _ => {
+                    if let RENodeId::GlobalObject(address) = self.identifier.0 {
+                        Some(address)
+                    } else {
+                        None
+                    }
                 }
-            },
-        });
-        let actor = Actor::method(global_address, fn_identifier.clone(), self.identifier.clone());
+            });
+        let actor = Actor::method(
+            global_address,
+            fn_identifier.clone(),
+            self.identifier.clone(),
+        );
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {

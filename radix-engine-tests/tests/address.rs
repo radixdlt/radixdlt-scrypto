@@ -3,7 +3,6 @@ use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-
 #[test]
 fn get_global_address_in_local_should_fail() {
     // Arrange
@@ -13,12 +12,22 @@ fn get_global_address_in_local_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "MyComponent", "get_address_in_local", manifest_args!())
+        .call_function(
+            package_address,
+            "MyComponent",
+            "get_address_in_local",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist)));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist)
+        )
+    });
 }
 
 #[test]

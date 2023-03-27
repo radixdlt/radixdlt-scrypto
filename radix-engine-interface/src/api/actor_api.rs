@@ -1,5 +1,5 @@
-use radix_engine_common::data::scrypto::model::Address;
 use crate::api::types::*;
+use radix_engine_common::data::scrypto::model::Address;
 use sbor::rust::fmt::Debug;
 
 pub trait ClientActorApi<E: Debug> {

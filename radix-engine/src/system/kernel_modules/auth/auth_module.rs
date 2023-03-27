@@ -51,24 +51,21 @@ impl AuthModule {
         matches!(
             actor,
             Actor {
-                identifier: ActorIdentifier::Method(_, MethodIdentifier(
-                    RENodeId::GlobalObject(..),
-                    ..
-                )),
+                identifier: ActorIdentifier::Method(
+                    _,
+                    MethodIdentifier(RENodeId::GlobalObject(..), ..)
+                ),
                 ..
             }
         )
     }
 
     fn global_object_barrier(actor: &Option<Actor>) -> Option<Address> {
-        actor.as_ref().and_then(|actor| {
-            match &actor.identifier {
-                ActorIdentifier::Method(_, MethodIdentifier(
-                                            RENodeId::GlobalObject(address),
-                                            ..
-                                        )) => Some(address.clone()),
-                _ => None,
+        actor.as_ref().and_then(|actor| match &actor.identifier {
+            ActorIdentifier::Method(_, MethodIdentifier(RENodeId::GlobalObject(address), ..)) => {
+                Some(address.clone())
             }
+            _ => None,
         })
     }
 

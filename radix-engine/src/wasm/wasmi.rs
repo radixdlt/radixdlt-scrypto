@@ -729,7 +729,11 @@ impl WasmiModule {
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
         linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);
-        linker_define!(linker, GET_GLOBAL_ADDRESS_FUNCTION_NAME, host_get_global_address);
+        linker_define!(
+            linker,
+            GET_GLOBAL_ADDRESS_FUNCTION_NAME,
+            host_get_global_address
+        );
         linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_actor);
         linker_define!(linker, GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
         linker_define!(
