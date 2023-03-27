@@ -305,6 +305,11 @@ pub trait CommittableSubstateDatabase {
     fn commit(&mut self, state_changes: StateChanges) -> Result<(), CommitError>;
 }
 
+/// Interface for listing nodes within a substate database.
+pub trait ListableSubstateDatabase {
+    fn list_nodes(&self) -> Vec<NodeId>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
