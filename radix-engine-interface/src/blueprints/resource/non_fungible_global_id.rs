@@ -45,7 +45,8 @@ impl NonFungibleGlobalId {
         if parts.len() != 2 {
             return Err(ParseNonFungibleGlobalIdError::RequiresTwoParts);
         }
-        let resource_address = bech32_decoder.validate_and_decode_resource_address(parts[0])?;
+        let full_data = bech32_decoder.validate_and_decode(parts[0])?;
+        let resource_address = ResourceAddress::try_from(full_data.as_ref())?;
         let local_id = NonFungibleLocalId::from_str(parts[1])?;
         Ok(NonFungibleGlobalId::new(resource_address, local_id))
     }
@@ -58,13 +59,20 @@ impl NonFungibleGlobalId {
 /// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleGlobalIdError {
-    InvalidResourceAddress(AddressError),
+    DecodeBech32AddressError(DecodeBech32AddressError),
+    InvalidResourceAddress(ParseResourceAddressError),
     InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     RequiresTwoParts,
 }
 
-impl From<AddressError> for ParseNonFungibleGlobalIdError {
-    fn from(err: AddressError) -> Self {
+impl From<DecodeBech32AddressError> for ParseNonFungibleGlobalIdError {
+    fn from(err: DecodeBech32AddressError) -> Self {
+        Self::DecodeBech32AddressError(err)
+    }
+}
+
+impl From<ParseResourceAddressError> for ParseNonFungibleGlobalIdError {
+    fn from(err: ParseResourceAddressError) -> Self {
         Self::InvalidResourceAddress(err)
     }
 }
@@ -228,7 +236,7 @@ mod tests {
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(&bech32_decoder, ":",),
-            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
+            Err(ParseNonFungibleGlobalIdError::DecodeBech32AddressError(_))
         ));
 
         assert!(matches!(
@@ -236,7 +244,7 @@ mod tests {
                 &bech32_decoder,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#1#",
             ),
-            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
+            Err(ParseNonFungibleGlobalIdError::DecodeBech32AddressError(_))
         ));
 
         assert!(matches!(

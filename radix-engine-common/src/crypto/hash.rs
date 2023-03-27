@@ -23,6 +23,13 @@ impl Hash {
         result
     }
 
+    /// Returns the lower 26 bytes.
+    pub fn lower_26_bytes(&self) -> [u8; 26] {
+        let mut result = [0u8; 26];
+        result.copy_from_slice(&self.0[6..32]);
+        result
+    }
+
     /// Returns the lower 16 bytes.
     pub fn lower_16_bytes(&self) -> [u8; 16] {
         let mut result = [0u8; 16];

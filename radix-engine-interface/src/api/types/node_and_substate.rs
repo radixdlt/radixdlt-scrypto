@@ -90,8 +90,14 @@ pub struct SubstateKey(Vec<u8>);
 impl SubstateKey {
     pub const MIN_LENGTH: usize = 1;
     pub const MAX_LENGTH: usize = 128;
-    pub const MIN: Self = Self(vec![u8::MIN; Self::MIN_LENGTH]);
-    pub const MAX: Self = Self(vec![u8::MAX; Self::MAX_LENGTH]);
+
+    pub fn min() -> Self {
+        Self(vec![u8::MIN; Self::MIN_LENGTH])
+    }
+
+    pub fn max() -> Self {
+        Self(vec![u8::MIN; Self::MIN_LENGTH])
+    }
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Self::from_vec(slice.to_vec())
