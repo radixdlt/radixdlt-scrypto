@@ -14,8 +14,8 @@ use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::IdentityBlueprint;
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -641,13 +641,13 @@ where
                 blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess {
+                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
-                        actor: Box::new(actor.clone()),
-                        node_id: Box::new(node_id.clone()),
-                        package_address: Box::new(package_address),
+                        actor: actor.clone(),
+                        node_id: node_id.clone(),
+                        package_address,
                         blueprint_name,
-                    },
+                    })),
                 ));
             }
         }
@@ -874,13 +874,13 @@ where
                 flags,
             ) {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidSubstateAccess {
+                    KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                         mode: current_mode,
-                        actor: Box::new(actor.clone()),
-                        node_id: Box::new(node_id.clone()),
-                        offset: Box::new(offset),
+                        actor: actor.clone(),
+                        node_id: node_id.clone(),
+                        offset,
                         flags,
-                    },
+                    })),
                 ));
             }
         }

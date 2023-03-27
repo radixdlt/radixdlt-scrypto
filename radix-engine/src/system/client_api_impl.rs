@@ -1,5 +1,7 @@
 use crate::errors::SystemError;
-use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
+use crate::errors::{
+    ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
+};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
@@ -419,8 +421,7 @@ where
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(node_id),
-                Box::new(module_ids),
+                Box::new(InvalidModuleSet(node_id, module_ids)),
             )));
         }
 
@@ -469,12 +470,14 @@ where
                         (package_address, blueprint.as_str()),
                         (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
                     ) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: Box::new(ACCESS_RULES_PACKAGE),
-                            expected_blueprint: Box::new(ACCOUNT_BLUEPRINT.to_string()),
-                            actual_package: Box::new(package_address),
-                            actual_blueprint: Box::new(blueprint),
-                        }));
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_package: ACCESS_RULES_PACKAGE,
+                                expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
+                                actual_package: package_address,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
                     }
 
                     let mut node = self.kernel_drop_node(RENodeId::Object(object_id))?;
@@ -498,12 +501,14 @@ where
                         (package_address, blueprint.as_str()),
                         (METADATA_PACKAGE, METADATA_BLUEPRINT)
                     ) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: Box::new(METADATA_PACKAGE),
-                            expected_blueprint: Box::new(METADATA_BLUEPRINT.to_string()),
-                            actual_package: Box::new(package_address),
-                            actual_blueprint: Box::new(blueprint),
-                        }));
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_package: METADATA_PACKAGE,
+                                expected_blueprint: METADATA_BLUEPRINT.to_string(),
+                                actual_package: package_address,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
                     }
 
                     let node = self.kernel_drop_node(node_id)?;
@@ -527,12 +532,14 @@ where
                         (package_address, blueprint.as_str()),
                         (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
                     ) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: Box::new(ROYALTY_PACKAGE),
-                            expected_blueprint: Box::new(COMPONENT_ROYALTY_BLUEPRINT.to_string()),
-                            actual_package: Box::new(package_address),
-                            actual_blueprint: Box::new(blueprint),
-                        }));
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_package: ROYALTY_PACKAGE,
+                                expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
+                                actual_package: package_address,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
                     }
 
                     let mut node = self.kernel_drop_node(node_id)?;

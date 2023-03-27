@@ -1,6 +1,6 @@
 use super::track::Track;
 use crate::blueprints::resource::*;
-use crate::errors::CallFrameError;
+use crate::errors::{CallFrameError, OffsetDoesNotExist};
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
@@ -55,12 +55,12 @@ impl Heap {
                 .substates
                 .get(&(module_id, offset.clone()))
                 .map(|s| s.to_ref())
-                .ok_or(|| {
-                    CallFrameError::OffsetDoesNotExist(
-                        Box::new(node_id.clone()),
-                        Box::new(offset.clone()),
-                    )
-                }),
+                .ok_or((|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                })()),
         }
     }
 
@@ -88,12 +88,12 @@ impl Heap {
                 .substates
                 .get_mut(&(module_id, offset.clone()))
                 .map(|s| s.to_ref_mut())
-                .ok_or(|| {
-                    CallFrameError::OffsetDoesNotExist(
-                        Box::new(node_id.clone()),
-                        Box::new(offset.clone()),
-                    )
-                }),
+                .ok_or((|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                })()),
         }
     }
 

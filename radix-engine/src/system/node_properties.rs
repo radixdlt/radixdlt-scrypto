@@ -1,4 +1,4 @@
-use crate::errors::{KernelError, RuntimeError};
+use crate::errors::{InvalidOwnership, KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
@@ -302,17 +302,21 @@ impl SubstateProperties {
             (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match offset {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    Box::new(offset.clone()),
-                    Box::new(package_address),
-                    Box::new(blueprint_name.to_string()),
+                    Box::new(InvalidOwnership(
+                        offset.clone(),
+                        package_address,
+                        blueprint_name.to_string(),
+                    )),
                 ))),
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    Box::new(offset.clone()),
-                    Box::new(package_address),
-                    Box::new(blueprint_name.to_string()),
+                    Box::new(InvalidOwnership(
+                        offset.clone(),
+                        package_address,
+                        blueprint_name.to_string(),
+                    )),
                 ))),
             },
             _ => Ok(()),
