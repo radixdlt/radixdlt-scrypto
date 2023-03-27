@@ -131,6 +131,10 @@ pub enum AcquireLockError {
 }
 
 /// Represents the interface between Radix Engine and Track.
+///
+/// In practice, we will likely end up with only one implementation.
+///
+/// The trait here is for formalizing the interface and intended user flow.
 pub trait SubstateStore {
     /// Acquires a lock over a substate.
     ///
@@ -153,13 +157,13 @@ pub trait SubstateStore {
     /// Reads a substate of the given node module.
     ///
     /// # Panics
-    /// - If lock handle is invalid
+    /// - If the lock handle is invalid
     fn get_substate(&self, handle: u32) -> &IndexedScryptoValue;
 
     /// Updates a substate.
     ///
     /// # Panics
-    /// - If lock handle is invalid or not associated with WRITE permission
+    /// - If the lock handle is invalid, or not associated with WRITE permission
     fn put_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Inserts a substate into the substate store.
