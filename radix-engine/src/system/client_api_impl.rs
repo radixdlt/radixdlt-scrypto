@@ -30,9 +30,9 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use resources_tracker_macro::trace_resources;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;

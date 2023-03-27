@@ -4,9 +4,9 @@ use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::cmp::min;
 use strum::EnumCount;
-use resources_tracker_macro::trace_resources;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 

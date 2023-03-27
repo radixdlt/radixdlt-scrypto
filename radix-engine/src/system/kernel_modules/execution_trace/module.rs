@@ -8,9 +8,9 @@ use crate::system::node::RENodeModuleInit;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
-use resources_tracker_macro::trace_resources;
 
 //===================================================================================
 // Note: ExecutionTrace must not produce any error or transactional side effect!
@@ -368,7 +368,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    #[trace_resources(info="ExecutionTraceModule")]
+    #[trace_resources(info = "ExecutionTraceModule")]
     fn handle_before_create_node(&mut self) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();

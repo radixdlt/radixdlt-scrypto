@@ -24,9 +24,9 @@ use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::crypto::Hash;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
-use resources_tracker_macro::trace_resources;
 
 bitflags! {
     pub struct EnabledModules: u32 {

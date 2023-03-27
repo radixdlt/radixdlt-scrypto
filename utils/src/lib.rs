@@ -15,4 +15,3 @@ pub use contextual_display::*;
 #[cfg(feature = "serde")]
 pub use contextual_serialize::*;
 pub use slice::*;
-

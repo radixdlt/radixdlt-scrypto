@@ -11,8 +11,8 @@ use radix_engine_interface::api::types::{
     AllocateEntityType, InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId,
     SubstateOffset,
 };
-use sbor::rust::collections::BTreeMap;
 use resources_tracker_macro::trace_resources;
+use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -82,7 +82,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    #[trace_resources(info="KernelDebugModule")]
+    #[trace_resources(info = "KernelDebugModule")]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &RENodeId,

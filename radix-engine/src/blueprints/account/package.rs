@@ -23,7 +23,6 @@ use radix_engine_interface::api::types::ClientCostingReason;
 
 use resources_tracker_macro::trace_resources;
 
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
     /// An owned [`KeyValueStore`] which maps the [`ResourceAddress`] to an [`Own`] of the vault

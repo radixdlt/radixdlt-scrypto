@@ -1,9 +1,8 @@
-use std::{io::prelude::*, fs::File};
 use shared_memory::*;
+use std::{fs::File, io::prelude::*};
 
 pub mod data_analyzer;
 pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
-
 
 /// Shared memory name
 const SHARED_MEM_ID: &str = "/shm-scrypto";
@@ -17,33 +16,30 @@ std::thread_local! {
     pub static QEMU_PLUGIN_CALIBRATOR: std::cell::RefCell<QemuPluginInterfaceCalibrator> = std::cell::RefCell::new(QemuPluginInterfaceCalibrator::new());
 }
 
-
-
 pub struct QemuPluginInterface<'a> {
-    counters_stack: Vec<(&'a str,u64)>,
+    counters_stack: Vec<(&'a str, u64)>,
     stack_top: usize,
     output_data: Vec<OutputData<'a>>,
     counter_offset: u64,
     counter_offset_parent: u64,
-    shmem: Shmem
+    shmem: Shmem,
 }
 
 impl<'a> QemuPluginInterface<'a> {
     pub fn new() -> Self {
-
         let shmem_conf = ShmemConf::new().os_id(SHARED_MEM_ID);
         let shmem = match shmem_conf.open() {
             Ok(v) => v,
-            Err(x) => panic!("Unable to open shmem {:?}", x)
+            Err(x) => panic!("Unable to open shmem {:?}", x),
         };
 
         let mut ret = Self {
-            counters_stack: vec![("",0); 20],
+            counters_stack: vec![("", 0); 20],
             stack_top: 0,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
             counter_offset_parent: 0,
-            shmem
+            shmem,
         };
 
         // Test connection with QEMU plugin.
@@ -69,13 +65,18 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions: 0,
             cpu_instructions_calibrated: 0,
             function_name: key,
-            param: arg.to_vec() });
+            param: arg.to_vec(),
+        });
 
         self.stack_top += 1;
         self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server();
     }
 
-    pub fn stop_counting(&mut self, key: &'static str, arg: &[data_analyzer::OutputParam]) -> (usize, u64) {
+    pub fn stop_counting(
+        &mut self,
+        key: &'static str,
+        arg: &[data_analyzer::OutputParam],
+    ) -> (usize, u64) {
         let n = self.communicate_with_server();
 
         if self.stack_top == 0 {
@@ -91,7 +92,8 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions: self.counters_stack[self.stack_top].1,
             cpu_instructions_calibrated: 0,
             function_name: key,
-            param: arg.to_vec() });
+            param: arg.to_vec(),
+        });
 
         let ret = self.counters_stack[self.stack_top].1;
         (self.stack_top, ret)
@@ -99,9 +101,7 @@ impl<'a> QemuPluginInterface<'a> {
 
     fn communicate_with_server(&mut self) -> u64 {
         let raw_ptr = self.shmem.as_ptr() as *const u64;
-        let ret = unsafe {
-            std::ptr::read_volatile(raw_ptr)
-        };
+        let ret = unsafe { std::ptr::read_volatile(raw_ptr) };
 
         ret
     }
@@ -114,16 +114,24 @@ impl<'a> QemuPluginInterface<'a> {
 
         let overflow_range = 1;
         let mut ov_cnt = 0;
-        for i in (0..=self.output_data.len()-1).rev() {
-            if ! matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
+        for i in (0..=self.output_data.len() - 1).rev() {
+            if !matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
                 continue;
             }
 
-            self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions.checked_sub(self.counter_offset) {
+            self.output_data[i].cpu_instructions_calibrated = match self.output_data[i]
+                .cpu_instructions
+                .checked_sub(self.counter_offset)
+            {
                 Some(v) => v,
                 None => {
                     if self.counter_offset - self.output_data[i].cpu_instructions > overflow_range {
-                        println!("subtraction overflow: {}  {}  {}", self.output_data[i].cpu_instructions, self.output_data[i].function_name, self.output_data[i].stack_depth);
+                        println!(
+                            "subtraction overflow: {}  {}  {}",
+                            self.output_data[i].cpu_instructions,
+                            self.output_data[i].function_name,
+                            self.output_data[i].stack_depth
+                        );
                         ov_cnt += 1;
                     }
                     0
@@ -131,20 +139,29 @@ impl<'a> QemuPluginInterface<'a> {
             };
 
             if i > 0 {
-                for j in (0..=i-1).rev() {
-                    if ! matches!(self.output_data[j].event, OutputDataEvent::FunctionExit) {
+                for j in (0..=i - 1).rev() {
+                    if !matches!(self.output_data[j].event, OutputDataEvent::FunctionExit) {
                         if j == i - 1 {
                             break;
                         }
                         continue;
                     }
                     if self.output_data[j].stack_depth > self.output_data[i].stack_depth {
-
-                        self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions_calibrated.checked_sub(self.counter_offset_parent) {
+                        self.output_data[i].cpu_instructions_calibrated = match self.output_data[i]
+                            .cpu_instructions_calibrated
+                            .checked_sub(self.counter_offset_parent)
+                        {
                             Some(v) => v,
                             None => {
-                                if self.counter_offset - self.output_data[i].cpu_instructions > overflow_range {
-                                    println!("Subtraction overflow 2: {}  {}  {}", self.output_data[i].cpu_instructions, self.output_data[i].function_name, self.output_data[i].stack_depth);
+                                if self.counter_offset - self.output_data[i].cpu_instructions
+                                    > overflow_range
+                                {
+                                    println!(
+                                        "Subtraction overflow 2: {}  {}  {}",
+                                        self.output_data[i].cpu_instructions,
+                                        self.output_data[i].function_name,
+                                        self.output_data[i].stack_depth
+                                    );
                                     ov_cnt += 1;
                                 }
                                 0
@@ -157,7 +174,7 @@ impl<'a> QemuPluginInterface<'a> {
             }
         }
 
-        println!("Subtraction overflow count {}", ov_cnt );
+        println!("Subtraction overflow count {}", ov_cnt);
     }
 
     #[allow(dead_code)]
@@ -166,7 +183,8 @@ impl<'a> QemuPluginInterface<'a> {
             for v in &self.output_data {
                 v.write(&mut file);
             }
-            file.flush().expect(&format!("Unable to flush {} file.", file_name))
+            file.flush()
+                .expect(&format!("Unable to flush {} file.", file_name))
         } else {
             panic!("Unable to create {} file.", file_name)
         }
@@ -184,11 +202,8 @@ impl<'a> Drop for QemuPluginInterface<'a> {
     }
 }
 
-
-
 pub struct QemuPluginInterfaceCalibrator {}
 impl QemuPluginInterfaceCalibrator {
-
     fn new() -> QemuPluginInterfaceCalibrator {
         let mut ret = QemuPluginInterfaceCalibrator {};
         ret.calibrate_counters();
@@ -197,17 +212,23 @@ impl QemuPluginInterfaceCalibrator {
 
     // measures time of QEMU Plugin instrumentation (only between calls)
     fn calibrate_inner() -> u64 {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", &[]) );
-        QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner", &[]) ).1
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", &[]));
+        QEMU_PLUGIN
+            .with(|v| v.borrow_mut().stop_counting("calibrate_inner", &[]))
+            .1
     }
 
     // measures time of QEMU Plugin instrumentation (with calls)
     fn calibrate() -> (u64, u64) {
-        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", &[]) );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", &[]));
         let ret = QemuPluginInterfaceCalibrator::calibrate_inner();
-        (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate", &[]) ).1, ret)
+        (
+            QEMU_PLUGIN
+                .with(|v| v.borrow_mut().stop_counting("calibrate", &[]))
+                .1,
+            ret,
+        )
     }
-
 
     fn calibrate_counters(&mut self) {
         let loop_max = 10;
@@ -228,7 +249,11 @@ impl QemuPluginInterfaceCalibrator {
         println!("child out: {:?}\navg: {}", cal_data_child, child_out);
         println!("parent out: {:?}\navg: {}", cal_data_parent, parent_out);
 
-        println!("QemuPlugin counter offset self: {} instructions, parent for each child: {}", child_out, parent_out - child_out + child_out / 3);
+        println!(
+            "QemuPlugin counter offset self: {} instructions, parent for each child: {}",
+            child_out,
+            parent_out - child_out + child_out / 3
+        );
 
         QEMU_PLUGIN.with(|v| {
             v.borrow_mut().counter_offset = child_out;
@@ -236,5 +261,4 @@ impl QemuPluginInterfaceCalibrator {
             v.borrow_mut().output_data.clear();
         });
     }
-
 }

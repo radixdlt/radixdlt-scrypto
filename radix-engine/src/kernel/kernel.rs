@@ -38,9 +38,8 @@ use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use sbor::rust::mem;
 use resources_tracker_macro::trace_resources;
-
+use sbor::rust::mem;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -861,7 +860,6 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-
     #[trace_resources]
     fn kernel_lock_substate(
         &mut self,
