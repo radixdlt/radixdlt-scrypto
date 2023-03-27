@@ -246,97 +246,107 @@ macro_rules! manifest_args {
     }};
 }
 
-/// Constructs an address.
-#[macro_export]
-macro_rules! construct_address {
-    (EntityType::FungibleResource, $($bytes:expr),*) => {
-        $crate::address_types::ResourceAddress([$($bytes),*])
-    };
-    (EntityType::NonFungibleResource, $($bytes:expr),*) => {
-        $crate::address_types::ResourceAddress([$($bytes),*])
-    };
-    (EntityType::Package, $($bytes:expr),*) => {
-        $crate::address_types::PackageAddress::Normal([$($bytes),*])
-    };
-    (EntityType::NormalComponent, $($bytes:expr),*) => {
-        $crate::address_types::ComponentAddress::Normal([$($bytes),*])
-    };
-    (EntityType::AccountComponent, $($bytes:expr),*) => {
-        $crate::address_types::ComponentAddress::Account([$($bytes),*])
-    };
-    (EntityType::EpochManager, $($bytes:expr),*) => {
-        $crate::address_types::ComponentAddress::EpochManager([$($bytes),*])
-    };
-    (EntityType::Clock, $($bytes:expr),*) => {
-        $crate::address_types::ComponentAddress::Clock([$($bytes),*])
-    };
+pub const fn component_address(
+    entity_type: crate::address::EntityType,
+    last_byte: u8,
+) -> crate::address_types::ComponentAddress {
+    crate::address_types::ComponentAddress::new_unchecked([
+        entity_type as u8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        last_byte,
+    ])
 }
 
-#[macro_export]
-macro_rules! vanity_address {
-    (EntityType::$entity_type:tt, $last_byte:literal) => {
-        $crate::construct_address!(
-            EntityType::$entity_type,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            $last_byte
-        )
-    };
-    (EntityType::$entity_type:tt, [$repeat_byte:literal; 26]) => {
-        $crate::construct_address!(
-            EntityType::$entity_type,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte,
-            $repeat_byte
-        )
-    };
-    (EntityType::$entity_type:tt, $($bytes:literal),*) => {
-        $crate::construct_address!($crate::address::EntityType::$entity_type, $($bytes),*)
-    };
+pub const fn resource_address(
+    entity_type: crate::address::EntityType,
+    last_byte: u8,
+) -> crate::address_types::ResourceAddress {
+    crate::address_types::ResourceAddress::new_unchecked([
+        entity_type as u8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        last_byte,
+    ])
+}
+
+pub const fn package_address(
+    entity_type: crate::address::EntityType,
+    last_byte: u8,
+) -> crate::address_types::PackageAddress {
+    crate::address_types::PackageAddress::new_unchecked([
+        entity_type as u8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        last_byte,
+    ])
 }

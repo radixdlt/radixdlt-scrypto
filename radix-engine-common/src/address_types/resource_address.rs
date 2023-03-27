@@ -13,6 +13,10 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct ResourceAddress([u8; NODE_ID_LENGTH]); // private to ensure entity type check
 
 impl ResourceAddress {
+    pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
+        Self(raw)
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }

@@ -12,7 +12,7 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
     type CustomSerializationContext<'a> = ScryptoValueDisplayContext<'a>;
 
     fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
-        context: &SerializationContext<'s, 'a, Self>,
+        _context: &SerializationContext<'s, 'a, Self>,
         _: LocalTypeIndex,
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
