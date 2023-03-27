@@ -123,6 +123,8 @@ extern "C" {
     // System API
     //===============
 
+    pub fn get_global_address() -> Buffer;
+
     pub fn get_actor() -> Buffer;
 
     pub fn get_auth_zone() -> Buffer;
@@ -259,6 +261,11 @@ pub unsafe fn write_substate(_handle: u32, _data_ptr: *const u8, _data_len: usiz
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn drop_lock(_handle: u32) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_global_address() -> Buffer {
     unreachable!()
 }
 

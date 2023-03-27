@@ -206,6 +206,14 @@ where
         Ok(())
     }
 
+    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let address = self.api.get_global_address()?;
+
+        let buffer = scrypto_encode(&address).expect("Failed to encode address");
+        self.allocate_buffer(buffer)
+    }
+
+
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let actor = self.api.get_fn_identifier()?;
 
@@ -386,6 +394,10 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn drop_lock(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

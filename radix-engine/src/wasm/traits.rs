@@ -75,6 +75,8 @@ pub trait WasmRuntime {
 
     fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

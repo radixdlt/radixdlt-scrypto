@@ -42,6 +42,10 @@ impl Runtime {
         NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
+    pub fn get_global_address() -> Address {
+        ScryptoEnv.get_global_address().unwrap()
+    }
+
     /// Returns the running entity.
     pub fn actor() -> FnIdentifier {
         ScryptoEnv.get_fn_identifier().unwrap()

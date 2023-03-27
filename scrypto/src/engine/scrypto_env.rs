@@ -227,7 +227,9 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
     fn get_global_address(&mut self) -> Result<Address, ClientApiError> {
-        todo!()
+        let global_address = copy_buffer(unsafe { get_global_address() });
+
+        scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
