@@ -22,3 +22,5 @@ pub use royalty_config::*;
 pub use strum::*;
 pub use traits::*;
 pub use wasm::*;
+
+pub type LockHandle = u32;

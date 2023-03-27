@@ -345,7 +345,7 @@ impl AccountNativePackage {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
-            let node_id = api.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
+            let node_id = api.kernel_allocate_node_id(EntityType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
             api.kernel_create_node(
                 node_id,
@@ -401,7 +401,7 @@ impl AccountNativePackage {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
-            let node_id = api.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
+            let node_id = api.kernel_allocate_node_id(EntityType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
             api.kernel_create_node(
                 node_id,

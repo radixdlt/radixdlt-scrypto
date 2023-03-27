@@ -139,7 +139,7 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
             let kv_store_id = {
-                let node_id = self.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
+                let node_id = self.kernel_allocate_node_id(EntityType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
                 self.kernel_create_node(
                     node_id,
@@ -166,7 +166,7 @@ where
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
 
-                let node_id = self.kernel_allocate_node_id(AllocateEntityType::Object)?;
+                let node_id = self.kernel_allocate_node_id(EntityType::Object)?;
                 let node = RENodeInit::Object(btreemap!(
                     SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
                 ));
@@ -669,7 +669,7 @@ where
 
     fn kernel_allocate_node_id(
         &mut self,
-        node_type: AllocateEntityType,
+        node_type: EntityType,
     ) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;

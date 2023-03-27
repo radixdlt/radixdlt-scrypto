@@ -150,7 +150,7 @@ impl IdentityBlueprint {
             AccessRule::DenyAll,
         );
 
-        let node_id = api.kernel_allocate_node_id(AllocateEntityType::Object)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::Object)?;
         api.kernel_create_node(
             node_id,
             RENodeInit::Object(btreemap!()),

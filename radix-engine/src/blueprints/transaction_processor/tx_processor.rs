@@ -72,7 +72,7 @@ impl TransactionProcessorBlueprint {
         }
 
         // Create a worktop
-        let worktop_node_id = api.kernel_allocate_node_id(AllocateEntityType::Object)?;
+        let worktop_node_id = api.kernel_allocate_node_id(EntityType::Object)?;
         api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Object(btreemap!(

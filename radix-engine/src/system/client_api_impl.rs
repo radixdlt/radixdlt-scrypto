@@ -232,13 +232,13 @@ where
                     RENodeInit::Object(btreemap!(
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 PROOF_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
@@ -246,7 +246,7 @@ where
                         SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()),
                         SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 BUCKET_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
@@ -256,7 +256,7 @@ where
                         SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
                         SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 VAULT_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
@@ -266,18 +266,18 @@ where
                         SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
                     )),
-                    AllocateEntityType::Vault,
+                    EntityType::Vault,
                 ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
-            METADATA_PACKAGE => (RENodeInit::Object(btreemap!()), AllocateEntityType::Object),
+            METADATA_PACKAGE => (RENodeInit::Object(btreemap!()), EntityType::Object),
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
@@ -285,14 +285,14 @@ where
                 RENodeInit::Object(btreemap!(
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next())
                 )),
-                AllocateEntityType::Object,
+                EntityType::Object,
             ),
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
                 VALIDATOR_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
                         SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next())
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 EPOCH_MANAGER_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
@@ -300,7 +300,7 @@ where
                         SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()),
                         SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next())
                     )),
-                    AllocateEntityType::Object,
+                    EntityType::Object,
                 ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
@@ -309,22 +309,22 @@ where
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController)
                         => RuntimeSubstate::AccessController(parser.decode_next())
                 )),
-                AllocateEntityType::Object,
+                EntityType::Object,
             ),
-            IDENTITY_PACKAGE => (RENodeInit::Object(btreemap!()), AllocateEntityType::Object),
+            IDENTITY_PACKAGE => (RENodeInit::Object(btreemap!()), EntityType::Object),
             ACCOUNT_PACKAGE => (
                 RENodeInit::Object(btreemap!(
                     SubstateOffset::Account(AccountOffset::Account)
                         => RuntimeSubstate::Account(parser.decode_next())
                 )),
-                AllocateEntityType::Object,
+                EntityType::Object,
             ),
             CLOCK_PACKAGE => (
                 RENodeInit::Object(btreemap!(
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
                         => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
                 )),
-                AllocateEntityType::Object,
+                EntityType::Object,
             ),
             _ => (
                 RENodeInit::Object(btreemap!(
@@ -332,7 +332,7 @@ where
                         ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
                     )
                 )),
-                AllocateEntityType::Object,
+                EntityType::Object,
             ),
         };
         parser.end();
@@ -372,15 +372,15 @@ where
                 };
 
                 match (package_address, blueprint.as_str()) {
-                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => AllocateEntityType::GlobalAccount,
-                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => AllocateEntityType::GlobalIdentity,
+                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
+                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
                     (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-                        AllocateEntityType::GlobalAccessController
+                        EntityType::GlobalAccessController
                     }
                     (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => {
-                        AllocateEntityType::GlobalValidator
+                        EntityType::GlobalValidator
                     }
-                    _ => AllocateEntityType::GlobalComponent,
+                    _ => EntityType::GlobalComponent,
                 }
             }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
@@ -648,7 +648,7 @@ where
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let node_id = self.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
+        let node_id = self.kernel_allocate_node_id(EntityType::KeyValueStore)?;
 
         self.kernel_create_node(
             node_id,

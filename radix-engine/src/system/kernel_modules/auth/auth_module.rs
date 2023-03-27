@@ -448,7 +448,7 @@ impl KernelModule for AuthModule {
         );
 
         // Create node
-        let auth_zone_node_id = api.kernel_allocate_node_id(AllocateEntityType::Object)?;
+        let auth_zone_node_id = api.kernel_allocate_node_id(EntityType::Object)?;
         api.kernel_create_node(
             auth_zone_node_id,
             RENodeInit::Object(btreemap!(

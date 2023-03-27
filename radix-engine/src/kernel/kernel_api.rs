@@ -31,7 +31,7 @@ pub trait KernelNodeApi {
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(
         &mut self,
-        node_type: AllocateEntityType,
+        node_type: EntityType,
     ) -> Result<RENodeId, RuntimeError>;
 
     /// Creates a new RENode

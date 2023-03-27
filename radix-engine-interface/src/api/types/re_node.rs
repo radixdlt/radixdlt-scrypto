@@ -1,113 +1,40 @@
-use super::*;
-use crate::data::scrypto::model::*;
 use crate::*;
-use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 
-pub const INTERNAL_OBJECT_NORMAL_COMPONENT_ID: u8 = 0x0d;
-pub const INTERNAL_OBJECT_VAULT_ID: u8 = 0x0e;
-pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
 
-// TODO: Remove when better type system implemented
+//==========================================================
+// Please update REP-60 after updating types defined here!
+//==========================================================
+
+
+//===============
+// NodeId
+//===============
+
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
-pub enum AllocateEntityType {
-    GlobalAccount,
-    GlobalComponent,
+pub enum EntityType {
+    GlobalPackage,
     GlobalFungibleResourceManager,
     GlobalNonFungibleResourceManager,
-    GlobalPackage,
     GlobalEpochManager,
     GlobalValidator,
+    GlobalClock,
     GlobalAccessController,
+    GlobalAccount,
     GlobalIdentity,
-    KeyValueStore,
-    Object,
-    Vault,
-}
+    GlobalComponent,
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum RENodeId {
-    GlobalObject(Address),
-    KeyValueStore(KeyValueStoreId),
-    // This is only used for owned objects (global objects have addresses)
-    // TODO: Rename to OwnedObject when it won't cause so many merge conflicts!
-    Object(ObjectId),
-}
+    GlobalVirtualEcdsaAccount,
+    GlobalVirtualEddsaAccount,
+    GlobalVirtualEcdsaIdentity,
+    GlobalVirtualEddsaIdentity,
 
-impl fmt::Debug for RENodeId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::KeyValueStore(id) => f
-                .debug_tuple("KeyValueStore")
-                .field(&hex::encode(id))
-                .finish(),
-            Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::GlobalObject(address) => f.debug_tuple("GlobalObject").field(&address).finish(),
-        }
-    }
-}
-
-impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
-    fn from(value: RENodeId) -> Self {
-        match value {
-            RENodeId::KeyValueStore(id) => id,
-            RENodeId::Object(id) => id,
-            _ => panic!("Not a stored id: {:?}", value),
-        }
-    }
-}
-
-impl From<RENodeId> for Vec<u8> {
-    fn from(value: RENodeId) -> Self {
-        // Note - these are all guaranteed to be distinct
-        match value {
-            RENodeId::KeyValueStore(id) => id.to_vec(),
-            RENodeId::Object(id) => id.to_vec(),
-            RENodeId::GlobalObject(address) => address.to_vec(),
-        }
-    }
-}
-
-impl From<RENodeId> for Address {
-    fn from(node_id: RENodeId) -> Self {
-        match node_id {
-            RENodeId::GlobalObject(address) => address,
-            _ => panic!("Not an address"),
-        }
-    }
-}
-
-impl From<Address> for RENodeId {
-    fn from(address: Address) -> Self {
-        RENodeId::GlobalObject(address)
-    }
-}
-
-impl Into<ComponentAddress> for RENodeId {
-    fn into(self) -> ComponentAddress {
-        match self {
-            RENodeId::GlobalObject(address) => address.into(),
-            _ => panic!("Not a component address: {:?}", self),
-        }
-    }
-}
-
-impl Into<PackageAddress> for RENodeId {
-    fn into(self) -> PackageAddress {
-        match self {
-            RENodeId::GlobalObject(address) => address.into(),
-            _ => panic!("Not a package address"),
-        }
-    }
-}
-
-impl Into<ResourceAddress> for RENodeId {
-    fn into(self) -> ResourceAddress {
-        match self {
-            RENodeId::GlobalObject(address) => address.into(),
-            _ => panic!("Not a resource address"),
-        }
-    }
+    InternalVault,
+    InternalAccessController,
+    InternalAccount,
+    InternalComponent,
+    InternalKeyValueStore,
 }
 
 //===============
