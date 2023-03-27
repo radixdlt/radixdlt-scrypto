@@ -1,24 +1,25 @@
-use std::fs::File;
-use std::io::prelude::*;
+use std::{io::prelude::*, fs::File};
 use shared_memory::*;
 
 pub mod data_analyzer;
 pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
 
 
-
+/// Shared memory name
 const SHARED_MEM_ID: &str = "/shm-scrypto";
+/// Maximum pre-allocated data entries
 const OUTPUT_DATA_COUNT: usize = 500000;
 
 std::thread_local! {
-    pub static QEMU_PLUGIN: std::cell::RefCell<QemuPluginInterface<'static>> = std::cell::RefCell::new(QemuPluginInterface::new(true));
+    /// Global QEMU plugin object variable
+    pub static QEMU_PLUGIN: std::cell::RefCell<QemuPluginInterface<'static>> = std::cell::RefCell::new(QemuPluginInterface::new());
+    /// Global QEMU plugin calibrator object variable, needs to be executed before QEMU plugin to measure and initialize data.
     pub static QEMU_PLUGIN_CALIBRATOR: std::cell::RefCell<QemuPluginInterfaceCalibrator> = std::cell::RefCell::new(QemuPluginInterfaceCalibrator::new());
 }
 
 
 
 pub struct QemuPluginInterface<'a> {
-    enabled: bool,
     counters_stack: Vec<(&'a str,u64)>,
     stack_top: usize,
     output_data: Vec<OutputData<'a>>,
@@ -27,9 +28,8 @@ pub struct QemuPluginInterface<'a> {
     shmem: Shmem
 }
 
-
 impl<'a> QemuPluginInterface<'a> {
-    pub fn new(enabled: bool) -> Self {
+    pub fn new() -> Self {
 
         let shmem_conf = ShmemConf::new().os_id(SHARED_MEM_ID);
         let shmem = match shmem_conf.open() {
@@ -38,8 +38,7 @@ impl<'a> QemuPluginInterface<'a> {
         };
 
         let mut ret = Self {
-            enabled,
-            counters_stack: Vec::with_capacity(100),
+            counters_stack: vec![("",0); 20],
             stack_top: 0,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
@@ -47,12 +46,8 @@ impl<'a> QemuPluginInterface<'a> {
             shmem
         };
 
-        // test connection with qemu plugin
+        // Test connection with QEMU plugin.
         ret.communicate_with_server();
-
-        for _ in 0..ret.counters_stack.capacity() {
-            ret.counters_stack.push(("",0));
-        }
 
         ret
     }
@@ -62,12 +57,8 @@ impl<'a> QemuPluginInterface<'a> {
     }
 
     pub fn start_counting(&mut self, key: &'static str, arg: &[data_analyzer::OutputParam]) {
-        if !self.enabled {
-            return;
-        }
-
         if self.stack_top == self.counters_stack.len() {
-            panic!("Stack too small");
+            panic!("Stack too small, extend elements count of counters_stack field.");
         }
 
         self.counters_stack[self.stack_top].0 = key;
@@ -86,10 +77,6 @@ impl<'a> QemuPluginInterface<'a> {
 
     pub fn stop_counting(&mut self, key: &'static str, arg: &[data_analyzer::OutputParam]) -> (usize, u64) {
         let n = self.communicate_with_server();
-
-        if !self.enabled {
-            return (0,0);
-        }
 
         if self.stack_top == 0 {
             panic!("Not counting!");
@@ -119,6 +106,7 @@ impl<'a> QemuPluginInterface<'a> {
         ret
     }
 
+    // Applies calibration data to each item.
     fn prepare_output_data(&mut self) {
         if self.output_data.is_empty() {
             return;
@@ -177,41 +165,21 @@ impl<'a> QemuPluginInterface<'a> {
             for v in &self.output_data {
                 v.write(&mut file);
             }
-            file.flush().expect("Unable to flush /tmp/out.txt file.")
+            file.flush().expect(&format!("Unable to flush {} file.", file_name))
         } else {
-            panic!("Unable to create /tmp/out.txt file.")
+            panic!("Unable to create {} file.", file_name)
         }
     }
 }
-
 
 impl<'a> Drop for QemuPluginInterface<'a> {
     fn drop(&mut self) {
         self.prepare_output_data();
-        self.save_output_to_file("/tmp/out.txt");
+
+        // Uncomment following function call for plugin debug purposes
+        // self.save_output_to_file("/tmp/out.txt");
 
         DataAnalyzer::save_xml(&self.output_data, "/tmp/out.xml");
-    }
-}
-
-impl<'a> OutputData<'a> {
-    fn write(&self, file: &mut File) {
-        let spaces = std::iter::repeat(' ').take(4 * self.stack_depth).collect::<String>();
-
-        match self.event {
-            OutputDataEvent::FunctionEnter => 
-                file.write_fmt(format_args!("{}++enter: {} {}", spaces, self.function_name, self.stack_depth)).expect("Unable to write output data"),
-            OutputDataEvent::FunctionExit =>
-                file.write_fmt(format_args!("{}--exit: {} {} {} {}", spaces, self.function_name, self.stack_depth, self.cpu_instructions, self.cpu_instructions_calibrated)).expect("Unable to write output data")
-        };
-
-        for p in &self.param {
-            file.write_fmt(format_args!(" {}=\"{}\"",
-                p.name, p.value.to_string().replace('\"', "&quot;"))
-            ).expect(&format!("Unable write data."));
-        }
-
-        file.write_fmt(format_args!("\n")).expect(&format!("Unable write data."));
     }
 }
 
@@ -221,17 +189,18 @@ pub struct QemuPluginInterfaceCalibrator {}
 impl QemuPluginInterfaceCalibrator {
 
     fn new() -> QemuPluginInterfaceCalibrator {
-        println!("QemuPluginInterfaceCalibrator");
         let mut ret = QemuPluginInterfaceCalibrator {};
         ret.calibrate_counters();
         ret
     }
 
+    // measures time of QEMU Plugin instrumentation (only between calls)
     fn calibrate_inner() -> u64 {
         QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner", &[]) );
         QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner", &[]) ).1
     }
 
+    // measures time of QEMU Plugin instrumentation (with calls)
     fn calibrate() -> (u64, u64) {
         QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate", &[]) );
         let ret = QemuPluginInterfaceCalibrator::calibrate_inner();

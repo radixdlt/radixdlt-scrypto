@@ -1,33 +1,59 @@
-#![allow(unused_imports)]
-
 use proc_macro::TokenStream;
+#[cfg(feature = "resource_tracker")]
 use proc_macro2::Span;
+#[cfg(feature = "resource_tracker")]
 use quote::{ToTokens, quote};
+#[cfg(feature = "resource_tracker")]
 use syn::{
+    parse_quote, FnArg,
+    Type::{Path, Reference},
     parse::{Parse, Parser},
-    parse_quote,
-    FnArg, Pat::Lit, Pat::Ident, Type::Path, Type::Reference
+    Pat::Ident, 
 };
 
-#[cfg(target_family = "unix")]
-#[cfg(feature = "resource_tracker")]
-use radix_engine_utils::QEMU_PLUGIN;
-#[cfg(feature = "resource_tracker")]
-use radix_engine_utils::data_analyzer::*;
-
+/// Empty implementation for compilation without 'resource_tracker' feature.
 #[cfg(not(feature = "resource_tracker"))]
 #[proc_macro_attribute]
 pub fn trace_resources(_attr: TokenStream, input: TokenStream) -> TokenStream {
     input
 }
 
-
-#[cfg(target_family = "unix")]
-#[cfg(feature = "resource_tracker")]
+/// 'trace_resources' attribute macro is used to log function execution cpu instructions count
+/// during QEMU emulation.
+/// Reauires 'resource_tracker' feature.
+/// 
+/// Macro parameters:
+/// - log=VALUE 
+///   Outputs VALUE, multiple log parameters can be used. Output instruction is added before
+///   original function block execution.
+/// - log_after=VALUE
+///   Outputs VALUE, multiple log_after parameters can be used. Output instruction is added after
+///   original function block execution.
+/// - log_after=ret
+///   Outputs original function block return value.
+/// - info="SOME_STRING"
+///   Outputs SOME_STRING.
+///
+/// VALUE can be:
+/// - identifier of signed/unsigned integer, boolean, &str or must implements conversion to string trait
+/// - method call
+/// - block instructions
+/// 
+///  Complex example:
+///  #[trace_resources(info="function from module X", log=param, log={data.len()}, log_after={param + 1}, log_after=ret)]
+///  fn test(param: u64, data: &mut Vec<u8>) -> u64 {
+///   ...
+///  }
+/// 
+/// Simple example which will output only instructions count:
+///  #[trace_resources]
+///  fn test(param: u64, data: &mut Vec<u8>) -> u64 {
+///   ...
+///  }
+/// 
+#[cfg(all(target_family = "unix", feature = "resource_tracker"))]
 #[proc_macro_attribute]
 pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
-    use radix_engine_utils::data_analyzer::{OutputParam, OutputParamValue};
-
     let args_parsed = syn::punctuated::Punctuated::<syn::ExprAssign, syn::Token![,]>::parse_terminated
         .parse(attr.clone())
         .expect("Wrong arguments passed");
@@ -95,6 +121,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
         }
     }
 
+    // prepare output
     let output = if let Ok(mut item) = syn::Item::parse.parse(input.clone()) {
         match item {
             syn::Item::Fn(ref mut item_fn) => {
@@ -113,9 +140,9 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                 let original_block = &mut item_fn.block;
                 let fn_signature = item_fn.sig.ident.to_string();
 
+                // new function block
                 item_fn.block = Box::new( parse_quote! {{ 
-                    use radix_engine_utils::QEMU_PLUGIN;
-                    use radix_engine_utils::data_analyzer::{OutputParam, OutputParamValue};
+                    use radix_engine_utils::{QEMU_PLUGIN, data_analyzer::{OutputParam, OutputParamValue}};
                     #arg_evaluate;
                     #args_quote_array;
                     QEMU_PLUGIN.with(|v| {
@@ -145,9 +172,8 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
 
 
 
-
-#[cfg(target_family = "unix")]
-#[cfg(feature = "resource_tracker")]
+/// Helper function
+#[cfg(all(target_family = "unix", feature = "resource_tracker"))]
 fn create_params( ident: &Vec<syn::Ident>, fn_sig: syn::ItemFn, additional_items: &Vec<proc_macro2::TokenStream> ) -> proc_macro2::TokenStream {
     let mut args_quote = Vec::new();
     for arg_ident in ident {
