@@ -18,8 +18,6 @@ inc = include_directories(join_paths(qemu_source_dir,'include/qemu'))
 
 dep = [
     dependency('glib-2.0'),
-    dependency('gio-2.0'),
-    dependency('gio-unix-2.0'),
     dependency('threads')
 ]
 
