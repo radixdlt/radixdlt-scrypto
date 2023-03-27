@@ -18,9 +18,6 @@ pub mod transaction;
 /// Native blueprints (to be moved to individual crates)
 pub mod blueprints;
 
-/// State manager for the Radix Engine
-pub mod state_manager;
-
 /// Wasm validation, instrumentation and execution.
 pub mod wasm;
 
