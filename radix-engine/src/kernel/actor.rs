@@ -3,7 +3,7 @@ use crate::types::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AdditionalActorInfo {
     Method(Option<Address>, RENodeId, NodeModuleId),
-    Function(FnIdentifier),
+    Function,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -31,8 +31,8 @@ impl Actor {
     pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
         let fn_identifier = identifier.into();
         Self {
-            fn_identifier: fn_identifier.clone(),
-            info: AdditionalActorInfo::Function(fn_identifier),
+            fn_identifier,
+            info: AdditionalActorInfo::Function,
         }
     }
 }

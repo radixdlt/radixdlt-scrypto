@@ -144,18 +144,16 @@ impl ExecutableInvocation for MethodInvocation {
             blueprint_name.clone(),
             self.identifier.2.clone(),
         );
-        let global_address = api
-            .kernel_get_current_actor()
-            .and_then(|a| match a.info {
-                AdditionalActorInfo::Method(global, ..) => global,
-                _ => {
-                    if let RENodeId::GlobalObject(address) = self.identifier.0 {
-                        Some(address)
-                    } else {
-                        None
-                    }
+        let global_address = api.kernel_get_current_actor().and_then(|a| match a.info {
+            AdditionalActorInfo::Method(global, ..) => global,
+            _ => {
+                if let RENodeId::GlobalObject(address) = self.identifier.0 {
+                    Some(address)
+                } else {
+                    None
                 }
-            });
+            }
+        });
         let actor = Actor::method(
             global_address,
             fn_identifier.clone(),

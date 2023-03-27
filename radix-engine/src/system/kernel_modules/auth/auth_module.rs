@@ -51,11 +51,7 @@ impl AuthModule {
         matches!(
             actor,
             Actor {
-                info: AdditionalActorInfo::Method(
-                    _,
-                    RENodeId::GlobalObject(..),
-                    ..
-                ),
+                info: AdditionalActorInfo::Method(_, RENodeId::GlobalObject(..), ..),
                 ..
             }
         )
@@ -382,8 +378,10 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = match &callee.info {
-            AdditionalActorInfo::Method(_, node_id, module_id) => Self::method_auth(node_id, module_id, callee.ident(), &args, api)?,
-            AdditionalActorInfo::Function(function) => Self::function_auth(function, api)?,
+            AdditionalActorInfo::Method(_, node_id, module_id) => {
+                Self::method_auth(node_id, module_id, callee.ident(), &args, api)?
+            }
+            AdditionalActorInfo::Function => Self::function_auth(&callee.fn_identifier, api)?,
         };
         let barrier_crossings_allowed = if Self::is_global_object_barrier(callee) {
             0

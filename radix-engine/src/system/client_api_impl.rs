@@ -806,8 +806,7 @@ where
             // Getting the package address and blueprint name associated with the actor
             let (package_address, blueprint_name) = match actor {
                 Some(Actor {
-                    info:
-                        AdditionalActorInfo::Method(_, node_id, node_module_id),
+                    info: AdditionalActorInfo::Method(_, node_id, node_module_id),
                     ..
                 }) => match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -823,13 +822,13 @@ where
                     )),
                 },
                 Some(Actor {
-                    info:
-                        AdditionalActorInfo::Function(FnIdentifier {
+                    info: AdditionalActorInfo::Function,
+                    fn_identifier:
+                        FnIdentifier {
                             package_address,
                             ref blueprint_name,
                             ..
-                        }),
-                    ..
+                        },
                 }) => Ok((package_address, blueprint_name.clone())),
                 None => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
@@ -873,21 +872,20 @@ where
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
             Some(Actor {
-                info:
-                    AdditionalActorInfo::Method(_, node_id, node_module_id),
+                info: AdditionalActorInfo::Method(_, node_id, node_module_id),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, node_module_id),
                 *local_type_index,
             )),
             Some(Actor {
-                info:
-                    AdditionalActorInfo::Function(FnIdentifier {
+                info: AdditionalActorInfo::Function,
+                fn_identifier:
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ..
-                    }),
-                ..
+                    },
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     RENodeId::GlobalObject(Address::Package(package_address)),
