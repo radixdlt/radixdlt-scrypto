@@ -24,7 +24,6 @@ use radix_engine_interface::blueprints::resource::VAULT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
-use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -263,7 +262,6 @@ impl<'s> Track<'s> {
         runtime_substate.to_ref_mut()
     }
 
-    #[trace_resources]
     pub fn insert_substate(
         &mut self,
         substate_id: SubstateId,

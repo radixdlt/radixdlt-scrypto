@@ -262,6 +262,7 @@ impl SystemLoanFeeReserve {
         }
     }
 
+    #[trace_resources]
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
         for i in 0..CostingReason::COUNT {
