@@ -3,7 +3,6 @@ use crate::*;
 use sbor::serde_serialization::*;
 use sbor::traversal::*;
 use sbor::*;
-use utils::ContextualDisplay;
 
 impl<'a> CustomSerializationContext<'a> for ScryptoValueDisplayContext<'a> {
     type CustomTypeExtension = ScryptoCustomTypeExtension;
@@ -18,10 +17,12 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
-            ScryptoCustomValue::Address(value) => (
-                SerializableType::String(value.to_string(context.custom_context.bech32_encoder)),
-                false,
-            ),
+            ScryptoCustomValue::Address(value) => {
+                (SerializableType::String(hex::encode(&value.0)), true)
+            }
+            ScryptoCustomValue::InternalRef(value) => {
+                (SerializableType::String(hex::encode(&value.0)), true)
+            }
             ScryptoCustomValue::Own(value) => {
                 (SerializableType::String(hex::encode(&value.0)), true)
             }
@@ -33,9 +34,6 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
             }
             ScryptoCustomValue::NonFungibleLocalId(value) => {
                 (SerializableType::String(value.to_string()), true)
-            }
-            ScryptoCustomValue::InternalRef(value) => {
-                (SerializableType::String(hex::encode(&value.0)), true)
             }
         };
         CustomTypeSerialization {
@@ -78,7 +76,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
+        let value = Address([0; 27]);
 
         let expected =
             json!("FungibleResource[010000000000000000000000000000000000000000000000000000]");
@@ -98,7 +96,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
+        let value = Address([0; 27]);
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
@@ -123,9 +121,7 @@ mod tests {
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Address(Address::Resource(
-                        ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]),
-                    )),
+                    value: ScryptoCustomValue::Address(Address([0; 27])),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Own(Own([0; NODE_ID_LENGTH])),

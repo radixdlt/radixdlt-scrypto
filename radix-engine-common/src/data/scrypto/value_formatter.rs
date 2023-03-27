@@ -226,11 +226,14 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for ScryptoCustomValu
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
-    context: &ScryptoValueDisplayContext,
+    _context: &ScryptoValueDisplayContext,
 ) -> fmt::Result {
     match value {
         ScryptoCustomValue::Address(value) => {
-            write!(f, "Address(\"{}\")", value.display(context.bech32_encoder))?;
+            write!(f, "Address(\"{}\")", hex::encode(value.to_vec()))?;
+        }
+        ScryptoCustomValue::InternalRef(value) => {
+            write!(f, "Address(\"{}\")", hex::encode(value.to_vec()))?;
         }
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;
@@ -243,9 +246,6 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ScryptoCustomValue::NonFungibleLocalId(value) => {
             write!(f, "NonFungibleLocalId(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::InternalRef(value) => {
-            write!(f, "Reference(\"{}\")", hex::encode(value.to_vec()))?;
         }
     }
     Ok(())

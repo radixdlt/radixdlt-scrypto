@@ -24,18 +24,27 @@ impl AsRef<[u8]> for ResourceAddress {
     }
 }
 
+impl TryFrom<[u8; NODE_ID_LENGTH]> for ResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
+        match EntityType::from_repr(value[0])
+            .ok_or(ParseResourceAddressError::InvalidEntityTypeId(value[0]))?
+        {
+            EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource => {
+                Ok(Self(value))
+            }
+            _ => Err(ParseResourceAddressError::InvalidEntityTypeId(value[0])),
+        }
+    }
+}
+
 impl TryFrom<&[u8]> for ResourceAddress {
     type Error = ParseResourceAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => match EntityType::from_repr(slice[0])
-                .ok_or(ParseResourceAddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::GlobalNonFungibleResourceManager
-                | EntityType::GlobalFungibleResourceManager => Ok(Self(copy_u8_array(&slice[1..]))),
-                _ => Err(ParseResourceAddressError::InvalidEntityTypeId(slice[0])),
-            },
+            NODE_ID_LENGTH => ResourceAddress::try_from(copy_u8_array(slice)),
             _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
         }
     }

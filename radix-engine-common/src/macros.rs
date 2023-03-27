@@ -250,25 +250,25 @@ macro_rules! manifest_args {
 #[macro_export]
 macro_rules! construct_address {
     (EntityType::FungibleResource, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ResourceAddress::Fungible([$($bytes),*])
+        $crate::address_types::ResourceAddress([$($bytes),*])
     };
     (EntityType::NonFungibleResource, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ResourceAddress::NonFungible([$($bytes),*])
+        $crate::address_types::ResourceAddress([$($bytes),*])
     };
     (EntityType::Package, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::PackageAddress::Normal([$($bytes),*])
+        $crate::address_types::PackageAddress::Normal([$($bytes),*])
     };
     (EntityType::NormalComponent, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ComponentAddress::Normal([$($bytes),*])
+        $crate::address_types::ComponentAddress::Normal([$($bytes),*])
     };
     (EntityType::AccountComponent, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ComponentAddress::Account([$($bytes),*])
+        $crate::address_types::ComponentAddress::Account([$($bytes),*])
     };
     (EntityType::EpochManager, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ComponentAddress::EpochManager([$($bytes),*])
+        $crate::address_types::ComponentAddress::EpochManager([$($bytes),*])
     };
     (EntityType::Clock, $($bytes:expr),*) => {
-        $crate::data::scrypto::model::ComponentAddress::Clock([$($bytes),*])
+        $crate::address_types::ComponentAddress::Clock([$($bytes),*])
     };
 }
 

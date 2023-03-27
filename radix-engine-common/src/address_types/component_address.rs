@@ -60,17 +60,16 @@ impl AsRef<[u8]> for ComponentAddress {
     }
 }
 
-impl TryFrom<&[u8]> for ComponentAddress {
+impl TryFrom<[u8; NODE_ID_LENGTH]> for ComponentAddress {
     type Error = ParseComponentAddressError;
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            NODE_ID_LENGTH => match EntityType::from_repr(slice[0])
-                .ok_or(ParseComponentAddressError::InvalidEntityTypeId(slice[0]))?
+    fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
+        match EntityType::from_repr(value[0])
+                .ok_or(ParseComponentAddressError::InvalidEntityTypeId(value[0]))?
             {
                 EntityType::GlobalPackage | // TODO: overlap with PackageAddress?
-                EntityType::GlobalFungibleResourceManager | // TODO: overlap with ResourceAddress?
-                EntityType::GlobalNonFungibleResourceManager |  // TODO: overlap with ResourceAddress?
+                EntityType::GlobalFungibleResource | // TODO: overlap with ResourceAddress?
+                EntityType::GlobalNonFungibleResource |  // TODO: overlap with ResourceAddress?
                 EntityType::GlobalEpochManager |
                 EntityType::GlobalValidator |
                 EntityType::GlobalClock |
@@ -81,13 +80,22 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 EntityType::GlobalVirtualEcdsaAccount |
                 EntityType::GlobalVirtualEddsaAccount |
                 EntityType::GlobalVirtualEcdsaIdentity |
-                EntityType::GlobalVirtualEddsaIdentity => Ok(Self(copy_u8_array(&slice[1..]))),
+                EntityType::GlobalVirtualEddsaIdentity => Ok(Self(value)),
                 EntityType::InternalVault |
                 EntityType::InternalAccessController |
                 EntityType::InternalAccount |
                 EntityType::InternalComponent |
-                EntityType::InternalKeyValueStore => Err(ParseComponentAddressError::InvalidEntityTypeId(slice[0])),
-            },
+                EntityType::InternalKeyValueStore => Err(ParseComponentAddressError::InvalidEntityTypeId(value[0])),
+            }
+    }
+}
+
+impl TryFrom<&[u8]> for ComponentAddress {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            NODE_ID_LENGTH => ComponentAddress::try_from(copy_u8_array(slice)),
             _ => Err(ParseComponentAddressError::InvalidLength(slice.len())),
         }
     }

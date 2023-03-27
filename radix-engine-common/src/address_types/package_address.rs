@@ -26,17 +26,25 @@ impl AsRef<[u8]> for PackageAddress {
     }
 }
 
+impl TryFrom<[u8; NODE_ID_LENGTH]> for PackageAddress {
+    type Error = ParsePackageAddressError;
+
+    fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
+        match EntityType::from_repr(value[0])
+            .ok_or(ParsePackageAddressError::InvalidEntityTypeId(value[0]))?
+        {
+            EntityType::GlobalPackage => Ok(Self(value)),
+            _ => Err(ParsePackageAddressError::InvalidEntityTypeId(value[0])),
+        }
+    }
+}
+
 impl TryFrom<&[u8]> for PackageAddress {
     type Error = ParsePackageAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => match EntityType::from_repr(slice[0])
-                .ok_or(ParsePackageAddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::GlobalPackage => Ok(Self(copy_u8_array(&slice[1..]))),
-                _ => Err(ParsePackageAddressError::InvalidEntityTypeId(slice[0])),
-            },
+            NODE_ID_LENGTH => PackageAddress::try_from(copy_u8_array(slice)),
             _ => Err(ParsePackageAddressError::InvalidLength(slice.len())),
         }
     }

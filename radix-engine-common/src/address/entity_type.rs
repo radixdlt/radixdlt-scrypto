@@ -5,8 +5,8 @@ use strum::FromRepr;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, FromRepr)]
 pub enum EntityType {
     GlobalPackage,
-    GlobalFungibleResourceManager,
-    GlobalNonFungibleResourceManager,
+    GlobalFungibleResource,
+    GlobalNonFungibleResource,
     GlobalEpochManager,
     GlobalValidator,
     GlobalClock,

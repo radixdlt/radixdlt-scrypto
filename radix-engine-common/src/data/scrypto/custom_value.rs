@@ -89,54 +89,24 @@ mod tests {
 
     #[test]
     fn test_custom_types_group1() {
-        let values = (
-            Address::Package(PackageAddress::Normal([1u8; 26])),
-            Address::Component(ComponentAddress::Normal([2u8; 26])),
-            Address::Resource(ResourceAddress::Fungible([3u8; 26])),
-            Address::Component(ComponentAddress::EpochManager([4u8; 26])),
-        );
+        let values = (Address([1u8; 27]),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
             vec![
                 92, // prefix
                 33, // tuple
-                4,  // length
-                128, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1,  // length
+                128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, // address
-                128, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                2, // address
-                128, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, // address
-                128, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4 // address
             ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
-                fields: vec![
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Package(
-                            PackageAddress::Normal([1u8; 26])
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Component(
-                            ComponentAddress::Normal([2u8; 26])
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Resource(
-                            ResourceAddress::Fungible([3u8; 26])
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Component(
-                            ComponentAddress::EpochManager([4u8; 26])
-                        )),
-                    },
-                ]
+                fields: vec![ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Address(Address([1u8; 27])),
+                },]
             }
         );
     }
