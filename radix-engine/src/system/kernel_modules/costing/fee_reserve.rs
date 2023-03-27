@@ -219,11 +219,7 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    fn consume_execution_internal(
-        &mut self,
-        cost_units: u32,
-        reason: CostingReason,
-    ) -> Result<(), FeeReserveError> {
+    fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
         if checked_add(
             self.execution_committed_sum,
             checked_add(self.royalty_committed_sum, cost_units)?,
@@ -231,10 +227,19 @@ impl SystemLoanFeeReserve {
         {
             return Err(FeeReserveError::LimitExceeded {
                 limit: self.cost_unit_limit,
-                committed: self.execution_committed_sum,
+                committed: self.execution_committed_sum + self.royalty_committed_sum,
                 new: cost_units,
             });
         }
+        Ok(())
+    }
+
+    fn consume_execution_internal(
+        &mut self,
+        cost_units: u32,
+        reason: CostingReason,
+    ) -> Result<(), FeeReserveError> {
+        self.check_cost_unit_limit(cost_units)?;
 
         let amount = self.effective_execution_price * cost_units as u128;
         if self.xrd_balance < amount {
@@ -253,6 +258,8 @@ impl SystemLoanFeeReserve {
         recipient: RoyaltyRecipient,
         recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError> {
+        self.check_cost_unit_limit(cost_units)?;
+
         let amount = self.effective_royalty_price * cost_units as u128;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance);
@@ -263,7 +270,7 @@ impl SystemLoanFeeReserve {
                 .or_insert((recipient_vault_id, 0))
                 .1
                 .add_assign(amount);
-            self.execution_committed_sum += cost_units;
+            self.royalty_committed_sum += cost_units;
             Ok(())
         }
     }
@@ -588,7 +595,7 @@ mod tests {
     }
 
     #[test]
-    fn test_royalty_limit() {
+    fn test_royalty_insufficient_balance() {
         let mut fee_reserve =
             SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 0, 1000, 50, false);
         fee_reserve
@@ -608,6 +615,27 @@ mod tests {
                 TEST_VAULT_ID_2
             ),
             Err(FeeReserveError::InsufficientBalance)
+        );
+    }
+
+    #[test]
+    fn test_royalty_exceeds_cost_unit_limit() {
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 0, 100, 50, false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(500), false)
+            .unwrap();
+        assert_eq!(
+            fee_reserve.consume_royalty(
+                200,
+                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                TEST_VAULT_ID_2
+            ),
+            Err(FeeReserveError::LimitExceeded {
+                limit: 100,
+                committed: 0,
+                new: 200
+            })
         );
     }
 }
