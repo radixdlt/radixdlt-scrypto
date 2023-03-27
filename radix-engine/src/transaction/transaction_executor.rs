@@ -114,7 +114,7 @@ where
     S: SubstateDatabase,
     W: WasmEngine,
 {
-    substate_store: &'s S,
+    substate_db: &'s S,
     scrypto_interpreter: &'w ScryptoInterpreter<W>,
 }
 
@@ -123,9 +123,9 @@ where
     S: SubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
+    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
         Self {
-            substate_store,
+            substate_db,
             scrypto_interpreter,
         }
     }
@@ -237,7 +237,7 @@ where
         }
 
         // Execute the instructions
-        let mut track = Track::new(self.substate_store);
+        let mut track = Track::new(self.substate_db);
         let (transaction_result, execution_traces, vault_ops) = {
             let mut id_allocator = IdAllocator::new(
                 transaction_hash.clone(),
@@ -390,33 +390,33 @@ pub fn execute_and_commit_transaction<
     S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 >(
-    substate_store: &mut S,
+    substate_db: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(
-        substate_store,
+        substate_db,
         scrypto_interpreter,
         fee_reserve_config,
         execution_config,
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        commit.state_updates.commit(substate_store);
+        substate_db.commit(commit.state_updates.clone());
     }
     receipt
 }
 
 pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
-    substate_store: &S,
+    substate_db: &S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_store, scrypto_interpreter).execute(
+    TransactionExecutor::new(substate_db, scrypto_interpreter).execute(
         transaction,
         fee_reserve_config,
         execution_config,

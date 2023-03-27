@@ -149,7 +149,7 @@ impl TestRunnerBuilder {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
             },
-            substate_store: InMemorySubstateStore::new(),
+            substate_db: InMemorySubstateStore::new(),
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
@@ -173,7 +173,7 @@ impl TestRunnerBuilder {
 
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
-    substate_store: InMemorySubstateStore,
+    substate_db: InMemorySubstateStore,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -190,12 +190,12 @@ impl TestRunner {
         }
     }
 
-    pub fn substate_store(&self) -> &InMemorySubstateStore {
-        &self.substate_store
+    pub fn substate_db(&self) -> &InMemorySubstateStore {
+        &self.substate_db
     }
 
-    pub fn substate_store_mut(&mut self) -> &mut InMemorySubstateStore {
-        &mut self.substate_store
+    pub fn substate_db_mut(&mut self) -> &mut InMemorySubstateStore {
+        &mut self.substate_db
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -252,7 +252,7 @@ impl TestRunner {
 
     pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
         let metadata_entry = self
-            .substate_store
+            .substate_db
             .get_substate(&SubstateId(
                 address.into(),
                 NodeModuleId::Metadata,
@@ -279,7 +279,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+        if let Some(output) = self.substate_db.get_substate(&SubstateId(
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
@@ -289,7 +289,7 @@ impl TestRunner {
                 .component_royalty_accumulator()
                 .royalty_vault
                 .and_then(|vault| {
-                    self.substate_store
+                    self.substate_db
                         .get_substate(&SubstateId(
                             RENodeId::Object(vault.vault_id()),
                             NodeModuleId::SELF,
@@ -303,7 +303,7 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+        if let Some(output) = self.substate_db.get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Royalty),
@@ -313,7 +313,7 @@ impl TestRunner {
                 .package_royalty()
                 .royalty_vault
                 .and_then(|vault| {
-                    self.substate_store
+                    self.substate_db
                         .get_substate(&SubstateId(
                             RENodeId::Object(vault.vault_id()),
                             NodeModuleId::SELF,
@@ -355,7 +355,7 @@ impl TestRunner {
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
-            StateTreeTraverser::new(&self.substate_store, &mut vault_finder, 100);
+            StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
@@ -363,7 +363,7 @@ impl TestRunner {
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: ObjectId) -> Option<Decimal> {
-        if let Some(output) = self.substate_store().get_substate(&SubstateId(
+        if let Some(output) = self.substate_db().get_substate(&SubstateId(
             RENodeId::Object(vault_id),
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Info),
@@ -380,7 +380,7 @@ impl TestRunner {
     }
 
     pub fn inspect_fungible_vault(&mut self, vault_id: ObjectId) -> Option<Decimal> {
-        self.substate_store()
+        self.substate_db()
             .get_substate(&SubstateId(
                 RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
@@ -393,7 +393,7 @@ impl TestRunner {
         &mut self,
         vault_id: ObjectId,
     ) -> Option<BTreeSet<NonFungibleLocalId>> {
-        self.substate_store()
+        self.substate_db()
             .get_substate(&SubstateId(
                 RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
@@ -413,7 +413,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = RENodeId::GlobalObject(component_address.into());
-        let mut accounter = ResourceAccounter::new(&self.substate_store);
+        let mut accounter = ResourceAccounter::new(&self.substate_db);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
@@ -474,7 +474,7 @@ impl TestRunner {
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
         let substate: ValidatorSubstate = self
-            .substate_store()
+            .substate_db()
             .get_substate(&substate_id)
             .unwrap()
             .substate
@@ -490,7 +490,7 @@ impl TestRunner {
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
         let substate: ValidatorSetSubstate = self
-            .substate_store()
+            .substate_db()
             .get_substate(&substate_id)
             .unwrap()
             .substate
@@ -671,14 +671,14 @@ impl TestRunner {
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let transaction_receipt = execute_transaction(
-            &mut self.substate_store,
+            &mut self.substate_db,
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let commit_receipt = commit.state_updates.commit(&mut self.substate_store);
+            let commit_receipt = commit.state_updates.commit(&mut self.substate_db);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(commit_receipt.outputs);
             }
@@ -692,7 +692,7 @@ impl TestRunner {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         execute_preview(
-            &self.substate_store,
+            &self.substate_db,
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
@@ -1100,8 +1100,8 @@ impl TestRunner {
         args: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
-        let substate_store = InMemorySubstateStore::new();
-        let mut track = Track::new(&substate_store);
+        let substate_db = InMemorySubstateStore::new();
+        let mut track = Track::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
@@ -1160,7 +1160,7 @@ impl TestRunner {
                     ),
                     NodeModuleId::SELF => {
                         let type_info = self
-                            .substate_store()
+                            .substate_db()
                             .get_substate(&SubstateId(
                                 *node_id,
                                 NodeModuleId::TypeInfo,
@@ -1207,7 +1207,7 @@ impl TestRunner {
         );
         (
             local_type_index,
-            self.substate_store()
+            self.substate_db()
                 .get_substate(&substate_id)
                 .unwrap()
                 .substate

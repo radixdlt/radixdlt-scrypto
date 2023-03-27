@@ -1,5 +1,5 @@
 use crate::blueprints::resource::VaultInfoSubstate;
-use crate::ledger::{*};
+use crate::ledger::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
@@ -14,13 +14,8 @@ pub enum StateTreeTraverserError {
     MaxDepthExceeded,
 }
 
-pub struct StateTreeTraverser<
-    's,
-    'v,
-    S: SubstateDatabase,
-    V: StateTreeVisitor,
-> {
-    substate_store: &'s S,
+pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
+    substate_db: &'s S,
     visitor: &'v mut V,
     max_depth: u32,
 }
@@ -46,12 +41,10 @@ pub trait StateTreeVisitor {
     }
 }
 
-impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
-    StateTreeTraverser<'s, 'v, S, V>
-{
-    pub fn new(substate_store: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
+impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v, S, V> {
+    pub fn new(substate_db: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
         StateTreeTraverser {
-            substate_store,
+            substate_db,
             visitor,
             max_depth,
         }
@@ -77,7 +70,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
             RENodeId::KeyValueStore(kv_store_id) => {
-                let map = self.substate_store.get_kv_store_entries(&kv_store_id);
+                let map = self.substate_db.get_kv_store_entries(&kv_store_id);
                 for (entry_id, substate) in map.iter() {
                     let substate_id = SubstateId(
                         RENodeId::KeyValueStore(kv_store_id),
@@ -107,7 +100,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 );
                 let output_value = self
-                    .substate_store
+                    .substate_db
                     .get_substate(&substate_id)
                     .expect("Broken Node Store");
                 let runtime_substate = output_value.substate.to_runtime();
@@ -121,7 +114,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                     } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                         && blueprint_name.eq(VAULT_BLUEPRINT) =>
                     {
-                        if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
+                        if let Some(output_value) = self.substate_db.get_substate(&SubstateId(
                             node_id,
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::Info),
@@ -130,7 +123,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                             match &info.resource_type {
                                 ResourceType::Fungible { .. } => {
                                     let liquid: LiquidFungibleResource = self
-                                        .substate_store
+                                        .substate_db
                                         .get_substate(&SubstateId(
                                             node_id,
                                             NodeModuleId::SELF,
@@ -148,7 +141,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                                 }
                                 ResourceType::NonFungible { .. } => {
                                     let liquid: LiquidNonFungibleResource = self
-                                        .substate_store
+                                        .substate_db
                                         .get_substate(&SubstateId(
                                             node_id,
                                             NodeModuleId::SELF,
@@ -176,7 +169,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                             SubstateOffset::Component(ComponentOffset::State0),
                         );
                         let output_value = self
-                            .substate_store
+                            .substate_db
                             .get_substate(&substate_id)
                             .expect("Broken Node Store");
                         let runtime_substate = output_value.substate.to_runtime();
@@ -202,7 +195,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                     SubstateOffset::Account(AccountOffset::Account),
                 );
                 let output_value = self
-                    .substate_store
+                    .substate_db
                     .get_substate(&substate_id)
                     .expect("Broken Node Store");
                 let runtime_substate = output_value.substate.to_runtime();
@@ -220,7 +213,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor>
                     SubstateOffset::Component(ComponentOffset::State0),
                 );
                 let output_value = self
-                    .substate_store
+                    .substate_db
                     .get_substate(&substate_id)
                     .expect("Broken Node Store");
                 let runtime_substate = output_value.substate.to_runtime();

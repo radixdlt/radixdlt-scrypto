@@ -7,21 +7,21 @@ use radix_engine_interface::blueprints::resource::{
 };
 
 pub struct ResourceAccounter<'s, S: SubstateDatabase> {
-    substate_store: &'s S,
+    substate_db: &'s S,
     accounting: Accounting,
 }
 
 impl<'s, S: SubstateDatabase> ResourceAccounter<'s, S> {
-    pub fn new(substate_store: &'s S) -> Self {
+    pub fn new(substate_db: &'s S) -> Self {
         ResourceAccounter {
-            substate_store,
+            substate_db,
             accounting: Accounting::new(),
         }
     }
 
     pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), StateTreeTraverserError> {
         let mut state_tree_visitor =
-            StateTreeTraverser::new(self.substate_store, &mut self.accounting, 100);
+            StateTreeTraverser::new(self.substate_db, &mut self.accounting, 100);
         state_tree_visitor.traverse_all_descendents(None, node_id)
     }
 

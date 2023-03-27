@@ -132,7 +132,7 @@ fn transfer_test(c: &mut Criterion) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_store = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
@@ -148,7 +148,7 @@ fn transfer_test(c: &mut Criterion) {
                 ))))
                 .build();
             let account = execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
@@ -168,7 +168,7 @@ fn transfer_test(c: &mut Criterion) {
                 )
                 .build();
             execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
@@ -197,7 +197,7 @@ fn transfer_test(c: &mut Criterion) {
 
     for nonce in 0..1000 {
         execute_and_commit_transaction(
-            &mut substate_store,
+            &mut substate_db,
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
@@ -223,7 +223,7 @@ fn transfer_test(c: &mut Criterion) {
     c.bench_function("Transfer", |b| {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),

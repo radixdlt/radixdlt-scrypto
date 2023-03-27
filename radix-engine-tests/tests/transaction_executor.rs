@@ -118,7 +118,7 @@ fn test_normal_transaction_flow() {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_store = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();
@@ -142,7 +142,7 @@ fn test_normal_transaction_flow() {
 
     // Act
     let receipt = execute_and_commit_transaction(
-        &mut substate_store,
+        &mut substate_db,
         &mut scrypto_interpreter,
         &fee_reserve_config,
         &execution_config,

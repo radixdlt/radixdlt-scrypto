@@ -31,11 +31,11 @@ pub enum DisplayError {
 /// Dump a package into console.
 pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     package_address: PackageAddress,
-    substate_store: &T,
+    substate_db: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let package: Option<PackageCodeSubstate> = substate_store
+    let package: Option<PackageCodeSubstate> = substate_db
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -71,7 +71,7 @@ struct ComponentStateDump {
 /// Dump a component into console.
 pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
-    substate_store: &T,
+    substate_db: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
@@ -80,7 +80,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
     // components have a `TypeInfoSubstate`. Other components require some special handling.
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
-            let type_info_substate: TypeInfoSubstate = substate_store
+            let type_info_substate: TypeInfoSubstate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::TypeInfo,
@@ -89,7 +89,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .ok_or(DisplayError::ComponentNotFound)?;
-            let access_rules_chain_substate = substate_store
+            let access_rules_chain_substate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
@@ -98,7 +98,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
-            let state: ComponentStateSubstate = substate_store
+            let state: ComponentStateSubstate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::SELF,
@@ -142,7 +142,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
-                    dump_kv_store(component_address, &kv_store_id, substate_store, output)?;
+                    dump_kv_store(component_address, &kv_store_id, substate_db, output)?;
                 queue.extend(maps);
                 vaults_found.extend(vaults);
             }
@@ -167,7 +167,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
             }
         }
         ComponentAddress::Account(..) => {
-            let account_substate = substate_store
+            let account_substate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::SELF,
@@ -176,7 +176,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().account().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
-            let access_rules_chain_substate = substate_store
+            let access_rules_chain_substate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
@@ -190,7 +190,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
             let vaults = dump_kv_store(
                 component_address,
                 &account_substate.vaults.key_value_store_id(),
-                substate_store,
+                substate_db,
                 output,
             )
             .map(|(_, vault_ids)| vault_ids)?
@@ -216,7 +216,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
             }
         }
         ComponentAddress::Identity(..) => {
-            let access_rules_chain_substate = substate_store
+            let access_rules_chain_substate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
@@ -235,7 +235,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
             }
         }
         ComponentAddress::AccessController(..) => {
-            let access_controller_substate = substate_store
+            let access_controller_substate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::Metadata,
@@ -244,7 +244,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_controller().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
-            let access_rules_chain_substate = substate_store
+            let access_rules_chain_substate = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
@@ -317,7 +317,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
     }
 
     if let Some(vaults) = component_state_dump.owned_vaults {
-        dump_resources(&vaults, substate_store, output);
+        dump_resources(&vaults, substate_db, output);
     }
 
     Ok(())
@@ -326,13 +326,13 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
 fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     kv_store_id: &KeyValueStoreId,
-    substate_store: &T,
+    substate_db: &T,
     output: &mut O,
 ) -> Result<(Vec<KeyValueStoreId>, Vec<ObjectId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let mut owned_kv_stores = Vec::new();
     let mut owned_vaults = Vec::new();
-    let map = substate_store.get_kv_store_entries(kv_store_id);
+    let map = substate_db.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
         "{}: {}, {}",
@@ -376,7 +376,7 @@ fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     vaults: &HashSet<ObjectId>,
-    substate_store: &T,
+    substate_db: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
@@ -384,7 +384,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         // READ vault info
-        let vault_info: VaultInfoSubstate = substate_store
+        let vault_info: VaultInfoSubstate = substate_db
             .get_substate(&SubstateId(
                 RENodeId::Object(*vault_id),
                 NodeModuleId::SELF,
@@ -397,7 +397,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         // READ resource manager
         let resource_address = vault_info.resource_address;
 
-        let name_metadata: Option<Option<ScryptoValue>> = substate_store
+        let name_metadata: Option<Option<ScryptoValue>> = substate_db
             .get_substate(&SubstateId(
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::Metadata,
@@ -421,7 +421,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         .map(|name| format!(", name: \"{}\"", name))
         .unwrap_or(String::new());
 
-        let symbol_metadata: Option<Option<ScryptoValue>> = substate_store
+        let symbol_metadata: Option<Option<ScryptoValue>> = substate_db
             .get_substate(&SubstateId(
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::Metadata,
@@ -447,7 +447,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         // DUMP resource
         let amount = if vault_info.resource_type.is_fungible() {
-            let vault: LiquidFungibleResource = substate_store
+            let vault: LiquidFungibleResource = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
@@ -458,7 +458,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap();
             vault.amount()
         } else {
-            let vault: LiquidNonFungibleResource = substate_store
+            let vault: LiquidNonFungibleResource = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
@@ -481,7 +481,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         // DUMP non-fungibles
         if !vault_info.resource_type.is_fungible() {
-            let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_store
+            let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(resource_address.into()),
                     NodeModuleId::SELF,
@@ -491,7 +491,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.to_runtime().into());
             let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
 
-            let vault: LiquidNonFungibleResource = substate_store
+            let vault: LiquidNonFungibleResource = substate_db
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
@@ -504,7 +504,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let ids = vault.ids();
             let non_fungible_id = resource_manager.non_fungible_table;
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: Option<ScryptoValue> = substate_store
+                let non_fungible: Option<ScryptoValue> = substate_db
                     .get_substate(&SubstateId(
                         RENodeId::KeyValueStore(non_fungible_id),
                         NodeModuleId::SELF,
@@ -537,10 +537,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 /// Dump a resource into console.
 pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     resource_address: ResourceAddress,
-    substate_store: &T,
+    substate_db: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<FungibleResourceManagerSubstate> = substate_store
+    let resource_manager: Option<FungibleResourceManagerSubstate> = substate_db
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,

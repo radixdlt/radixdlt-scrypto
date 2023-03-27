@@ -543,7 +543,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
 }
 
 pub fn bootstrap<S, W>(
-    substate_store: &mut S,
+    substate_db: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
 ) -> Option<TransactionReceipt>
 where
@@ -551,7 +551,7 @@ where
     W: WasmEngine,
 {
     bootstrap_with_validator_set(
-        substate_store,
+        substate_db,
         scrypto_interpreter,
         BTreeMap::new(),
         BTreeMap::new(),
@@ -562,7 +562,7 @@ where
 }
 
 pub fn bootstrap_with_validator_set<S, W>(
-    substate_store: &mut S,
+    substate_db: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
@@ -574,7 +574,7 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
-    if substate_store
+    if substate_db
         .get_substate(
             &RENodeId::GlobalObject(RADIX_TOKEN.into()),
             NodeModuleId::TypeInfo,
@@ -591,7 +591,7 @@ where
         );
 
         let transaction_receipt = execute_transaction(
-            substate_store,
+            substate_db,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
@@ -599,7 +599,7 @@ where
         );
 
         let commit_result = transaction_receipt.expect_commit(true);
-        commit_result.state_updates.commit(substate_store);
+        commit_result.state_updates.commit(substate_db);
 
         Some(transaction_receipt)
     } else {

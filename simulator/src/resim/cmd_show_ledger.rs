@@ -19,11 +19,11 @@ pub struct ShowLedger {}
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_store = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+        let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
-        for (last, package_address) in substate_store.list_packages().iter().identify_last() {
+        for (last, package_address) in substate_db.list_packages().iter().identify_last() {
             writeln!(
                 out,
                 "{} {}",
@@ -34,7 +34,7 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Components".green().bold()).map_err(Error::IOError)?;
-        for (last, component_address) in substate_store.list_components().iter().identify_last() {
+        for (last, component_address) in substate_db.list_components().iter().identify_last() {
             writeln!(
                 out,
                 "{} {}",
@@ -45,7 +45,7 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
-        for (last, resource_address) in substate_store
+        for (last, resource_address) in substate_db
             .list_resource_managers()
             .iter()
             .identify_last()
@@ -60,7 +60,7 @@ impl ShowLedger {
         }
 
         // Close the database
-        drop(substate_store);
+        drop(substate_db);
 
         let current_epoch = Self::get_current_epoch(out)?;
         writeln!(out, "{}: {}", "Current Epoch".green().bold(), current_epoch)

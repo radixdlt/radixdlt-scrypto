@@ -28,7 +28,7 @@ mod multi_threaded_test {
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,
         };
-        let mut substate_store = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+        let mut substate_db = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
@@ -44,7 +44,7 @@ mod multi_threaded_test {
                     ))))
                     .build();
                 let account = execute_and_commit_transaction(
-                    &mut substate_store,
+                    &mut substate_db,
                     &mut scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
@@ -74,7 +74,7 @@ mod multi_threaded_test {
             .build();
         for nonce in 0..10 {
             execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
@@ -103,7 +103,7 @@ mod multi_threaded_test {
             for _i in 0..20 {
                 s.spawn(|_| {
                     let receipt = execute_transaction(
-                        &substate_store,
+                        &substate_db,
                         &scrypto_interpreter,
                         &FeeReserveConfig::default(),
                         &ExecutionConfig::default(),

@@ -22,7 +22,7 @@ pub enum PreviewError {
 }
 
 pub fn execute_preview<S: SubstateDatabase, W: WasmEngine, IHM: IntentHashManager>(
-    substate_store: &S,
+    substate_db: &S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     intent_hash_manager: &IHM,
     network: &NetworkDefinition,
@@ -38,7 +38,7 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine, IHM: IntentHashManage
             .map_err(PreviewError::TransactionValidationError)?;
 
         execute_transaction(
-            substate_store,
+            substate_db,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),

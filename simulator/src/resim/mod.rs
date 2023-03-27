@@ -159,7 +159,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let mut substate_store = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -170,13 +170,13 @@ pub fn handle_system_transaction<O: std::io::Write>(
     };
 
     let receipt = execute_and_commit_transaction(
-        &mut substate_store,
+        &mut substate_db,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
         &ExecutionConfig::standard().with_trace(trace),
         &transaction.get_executable(initial_proofs),
     );
-    drop(substate_store);
+    drop(substate_db);
 
     if print_receipt {
         writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
@@ -219,7 +219,7 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let mut substate_store =
+            let mut substate_db =
                 RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
@@ -231,13 +231,13 @@ pub fn handle_manifest<O: std::io::Write>(
             let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 
             let receipt = execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::standard().with_trace(trace),
                 &transaction.get_executable(initial_proofs),
             );
-            drop(substate_store);
+            drop(substate_db);
 
             if print_receipt {
                 writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
@@ -293,9 +293,9 @@ pub fn get_signing_keys(
 
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-    let output = substate_store
+    let output = substate_db
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -326,9 +326,9 @@ pub fn get_blueprint(
     component_address: ComponentAddress,
 ) -> Result<(PackageAddress, String), Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-    let output = substate_store
+    let output = substate_db
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::TypeInfo,

@@ -90,15 +90,7 @@ pub fn encode_substate_id(
     let mut buffer = Vec::new();
     buffer.extend(&node_id.0);
     buffer.push(module_id.0);
-    match substate_key {
-        SubstateKey::Config => {
-            buffer.push(0);
-        }
-        SubstateKey::State(state_id) => {
-            buffer.push(1);
-            buffer.extend(state_id.as_ref()); // Length is marked by EOF
-        }
-    }
+    buffer.extend(substate_key.as_ref()); // Length is marked by EOF
     buffer
 }
 
@@ -114,8 +106,8 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
         let module_id = ModuleId(slice[NodeId::LENGTH]);
 
         // Decode substate key
-        if let Some(id) = SubstateKey::from_slice(&slice[NodeId::LENGTH + 1..]) {
-            return Some((node_id, module_id, SubstateKey::State(id)));
+        if let Some(substate_key) = SubstateKey::from_slice(&slice[NodeId::LENGTH + 1..]) {
+            return Some((node_id, module_id, substate_key));
         }
     }
     return None;
@@ -192,7 +184,7 @@ pub trait SubstateStore {
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>;
+    ) -> Box<dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>>;
 
     /// Reverts all non force write changes.
     ///
@@ -294,7 +286,7 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(dyn Iterator<Item = (SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+    ) -> Result<(Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)>>, Hash), ListSubstatesError>;
 }
 
 /// Interface for committing changes into a substate database.
@@ -318,7 +310,7 @@ mod tests {
     fn test_encode_decode_substate_id() {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
-        let substate_key = SubstateKey::State(SubstateKey::from_vec(vec![3]).unwrap());
+        let substate_key = SubstateKey::from_vec(vec![3]).unwrap();
         let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,
@@ -326,7 +318,7 @@ mod tests {
                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, // node id
                 2, // module id
-                1, 3, // substate key
+                3, // substate key
             ]
         );
         assert_eq!(

@@ -62,7 +62,7 @@ impl Publish {
 
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let mut substate_store =
+            let mut substate_db =
                 RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let substate_id = SubstateId(
@@ -71,7 +71,7 @@ impl Publish {
                 SubstateOffset::Package(PackageOffset::Code),
             );
 
-            let previous_version = substate_store
+            let previous_version = substate_db
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
@@ -83,7 +83,7 @@ impl Publish {
 
             // Overwrite package
             // TODO: implement real package overwrite
-            substate_store.put_substate(
+            substate_db.put_substate(
                 SubstateId(
                     RENodeId::GlobalObject(package_address.0.into()),
                     NodeModuleId::SELF,
@@ -103,7 +103,7 @@ impl Publish {
                 version: previous_version.unwrap_or(0),
             };
 
-            substate_store.put_substate(
+            substate_db.put_substate(
                 SubstateId(
                     RENodeId::GlobalObject(package_address.0.into()),
                     NodeModuleId::SELF,
