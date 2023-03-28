@@ -1,6 +1,6 @@
 use crate::errors::SystemError;
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
-use crate::kernel::actor::{Actor, AdditionalActorInfo, ExecutionMode};
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -56,8 +56,8 @@ where
             }
         }
 
-        let module_id = if let AdditionalActorInfo::Method(_, _, module_id, _, _, _) =
-            self.kernel_get_current_actor().unwrap().info
+        let module_id = if let Actor::Method(_, _, module_id, _, _, _) =
+            self.kernel_get_current_actor().unwrap()
         {
             module_id
         } else {
@@ -707,8 +707,8 @@ where
 {
     fn get_global_address(&mut self) -> Result<Address, RuntimeError> {
         self.kernel_get_current_actor()
-            .and_then(|e| match e.info {
-                AdditionalActorInfo::Method(Some(address), ..) => Some(address),
+            .and_then(|e| match e {
+                Actor::Method(Some(address), ..) => Some(address),
                 _ => None,
             })
             .ok_or(RuntimeError::SystemError(
@@ -804,10 +804,7 @@ where
         let (handle, blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let (package_address, blueprint_name) = match actor {
-                Some(Actor {
-                    info: AdditionalActorInfo::Method(_, node_id, node_module_id, ..),
-                    ..
-                }) => match node_module_id {
+                Some(Actor::Method(_, node_id, node_module_id, ..)) => match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                         Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
                     }
@@ -820,10 +817,7 @@ where
                         ApplicationError::EventError(EventError::NoAssociatedPackage),
                     )),
                 },
-                Some(Actor {
-                    info: AdditionalActorInfo::Function(package_address, ref blueprint_name, ..),
-                    ..
-                }) => Ok((package_address, blueprint_name.clone())),
+                Some(Actor::Function(package_address, ref blueprint_name, ..)) => Ok((package_address, blueprint_name.clone())),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
                 )),
@@ -865,17 +859,11 @@ where
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
-            Some(Actor {
-                info: AdditionalActorInfo::Method(_, node_id, node_module_id, ..),
-                ..
-            }) => Ok(EventTypeIdentifier(
+            Some(Actor::Method(_, node_id, node_module_id, ..)) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, node_module_id),
                 *local_type_index,
             )),
-            Some(Actor {
-                info: AdditionalActorInfo::Function(package_address, blueprint_name, ..),
-                ..
-            }) => Ok(EventTypeIdentifier(
+            Some(Actor::Function(package_address, blueprint_name, ..)) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     RENodeId::GlobalObject(Address::Package(package_address)),
                     NodeModuleId::SELF,

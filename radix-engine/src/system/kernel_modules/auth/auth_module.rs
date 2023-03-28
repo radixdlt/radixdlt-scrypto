@@ -7,7 +7,7 @@ use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, AdditionalActorInfo};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -36,7 +36,7 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized(AdditionalActorInfo, MethodAuthorization),
+    Unauthorized(Actor, MethodAuthorization),
 }
 
 #[derive(Debug, Clone)]
@@ -50,10 +50,7 @@ impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
         matches!(
             actor,
-            Actor {
-                info: AdditionalActorInfo::Method(_, RENodeId::GlobalObject(..), ..),
-                ..
-            }
+            Actor::Method(_, RENodeId::GlobalObject(..), ..)
         )
     }
 
@@ -376,14 +373,14 @@ impl KernelModule for AuthModule {
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorization = match &callee.info {
-            AdditionalActorInfo::Method(_, node_id, module_id, _, _, ident) => {
+        let authorization = match &callee {
+            Actor::Method(_, node_id, module_id, _, _, ident) => {
                 Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?
             }
-            AdditionalActorInfo::Function(package_address, blueprint_name, ident) => {
+            Actor::Function(package_address, blueprint_name, ident) => {
                 Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?
             },
-            AdditionalActorInfo::VirtualLazyLoad(..) => return Ok(()),
+            Actor::VirtualLazyLoad(..) => return Ok(()),
         };
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
@@ -396,7 +393,7 @@ impl KernelModule for AuthModule {
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(callee.info.clone(), authorization),
+                AuthError::Unauthorized(callee.clone(), authorization),
             )));
         }
 
@@ -418,7 +415,7 @@ impl KernelModule for AuthModule {
                 NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
 
-            if let AdditionalActorInfo::Method(Some(address), ..) = &actor.info {
+            if let Actor::Method(Some(address), ..) = &actor {
                 let id = scrypto_encode(&address).unwrap();
                 let non_fungible_global_id = NonFungibleGlobalId::new(
                     GLOBAL_OBJECT_TOKEN,

@@ -1,5 +1,4 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
-use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::SubstateProperties;
@@ -7,6 +6,7 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateId, SubstateOffset};
+use crate::kernel::actor::Actor;
 
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;

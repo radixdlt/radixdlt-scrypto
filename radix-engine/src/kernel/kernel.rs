@@ -1,4 +1,4 @@
-use super::actor::{Actor, ExecutionMode};
+use super::actor::{ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};
@@ -14,7 +14,7 @@ use super::track::{Track, TrackError};
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::AdditionalActorInfo;
+use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -499,10 +499,10 @@ where
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
-            match actor.info {
-                AdditionalActorInfo::Method(Some(address), ..) => {
+            match actor {
+                Actor::Method(Some(address), ..) => {
                     self.current_frame.add_ref(
-                        RENodeId::GlobalObject(address),
+                        RENodeId::GlobalObject(*address),
                         RENodeVisibilityOrigin::Normal,
                     );
                 }

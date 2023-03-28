@@ -1,4 +1,3 @@
-use super::actor::Actor;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -27,6 +26,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
+use crate::kernel::actor::Actor;
 
 bitflags! {
     pub struct EnabledModules: u32 {

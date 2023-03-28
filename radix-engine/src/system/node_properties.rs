@@ -1,5 +1,5 @@
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::actor::{Actor, AdditionalActorInfo, ExecutionMode};
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
@@ -110,8 +110,8 @@ impl VisibilityProperties {
                     if is_native_package(*actor.package_address()) {
                         true
                     } else {
-                        match &actor.info {
-                            AdditionalActorInfo::VirtualLazyLoad(..) | AdditionalActorInfo::Function(..) => match (node_id, offset) {
+                        match &actor {
+                            Actor::VirtualLazyLoad(..) | Actor::Function(..) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
                                     RENodeId::GlobalObject(_),
@@ -138,7 +138,7 @@ impl VisibilityProperties {
                                 // Otherwise, false
                                 _ => false,
                             },
-                            AdditionalActorInfo::Method(_, actor_node_id, ..) => {
+                            Actor::Method(_, actor_node_id, ..) => {
                                 match actor_node_id {
                                     RENodeId::Object(component_address) => {
                                         match (node_id, offset) {
@@ -211,8 +211,8 @@ impl VisibilityProperties {
                     if is_native_package(*actor.package_address()) {
                         true
                     } else {
-                        match &actor.info {
-                            AdditionalActorInfo::VirtualLazyLoad(..) | AdditionalActorInfo::Function(..) => match (node_id, offset) {
+                        match &actor {
+                            Actor::VirtualLazyLoad(..) | Actor::Function(..) => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -220,7 +220,7 @@ impl VisibilityProperties {
                                 _ => false,
                             },
 
-                            AdditionalActorInfo::Method(_, actor_node_id, ..) => {
+                            Actor::Method(_, actor_node_id, ..) => {
                                 match actor_node_id {
                                     RENodeId::Object(component_address) => {
                                         match (node_id, offset) {

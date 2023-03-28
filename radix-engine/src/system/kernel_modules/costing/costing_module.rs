@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{Actor, AdditionalActorInfo};
+use crate::kernel::actor::{Actor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -136,13 +136,13 @@ impl KernelModule for CostingModule {
         // Identify the function, and optional component address
         let (package_address, blueprint_name, ident, optional_component) = {
             let fn_identifier = callee.fn_identifier();
-            let (maybe_component, ident) = match &callee.info {
-                AdditionalActorInfo::Method(_, node_id, _, _, _, ident) => match node_id {
+            let (maybe_component, ident) = match &callee {
+                Actor::Method(_, node_id, _, _, _, ident) => match node_id {
                     RENodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
                     _ => (None, ident),
                 },
-                AdditionalActorInfo::Function(.., ident) => (None, ident),
-                AdditionalActorInfo::VirtualLazyLoad(..) => {
+                Actor::Function(.., ident) => (None, ident),
+                Actor::VirtualLazyLoad(..) => {
                     return Ok(());
                 }
             };

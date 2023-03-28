@@ -1,4 +1,3 @@
-use super::actor::Actor;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
 use super::module_mixer::KernelModuleMixer;
@@ -13,6 +12,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
+use crate::kernel::actor::Actor;
 
 pub struct LockInfo {
     pub node_id: RENodeId,
