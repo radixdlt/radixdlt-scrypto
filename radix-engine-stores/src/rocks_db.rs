@@ -119,3 +119,9 @@ impl SubstateDatabase for RocksdbSubstateStore {
         Ok((substates, Hash([0; Hash::LENGTH])))
     }
 }
+
+impl CommittableSubstateDatabase for RocksdbSubstateStore {
+    fn commit(&mut self, _state_changes: &StateUpdates) -> Result<(), CommitError> {
+        todo!()
+    }
+}

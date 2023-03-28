@@ -92,3 +92,9 @@ impl SubstateDatabase for InMemorySubstateStore {
         Ok((substates, Hash([0; Hash::LENGTH])))
     }
 }
+
+impl CommittableSubstateDatabase for InMemorySubstateStore {
+    fn commit(&mut self, _state_changes: &StateUpdates) -> Result<(), CommitError> {
+        todo!()
+    }
+}
