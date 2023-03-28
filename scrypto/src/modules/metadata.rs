@@ -5,13 +5,13 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
-use radix_engine_interface::types::{NodeId, NodeId, TypedModuleId};
+use radix_engine_interface::types::{NodeId, TypedModuleId};
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Metadata(pub NodeId);
+pub struct Metadata(pub Own);
 
 impl Metadata {
     pub fn new() -> Self {
@@ -24,18 +24,18 @@ impl Metadata {
             )
             .unwrap();
         let metadata: Own = scrypto_decode(&rtn).unwrap();
-        Self(metadata.id())
+        Self(metadata)
     }
 }
 
 impl MetadataObject for Metadata {
     fn self_id(&self) -> (NodeId, TypedModuleId) {
-        (NodeId::Object(self.0), TypedModuleId::ObjectState)
+        (self.0.as_node_id().clone(), TypedModuleId::ObjectState)
     }
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct AttachedMetadata(pub Address);
+pub struct AttachedMetadata(pub GlobalAddress);
 
 impl MetadataObject for AttachedMetadata {
     fn self_id(&self) -> (NodeId, TypedModuleId) {

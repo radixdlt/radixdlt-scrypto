@@ -4,7 +4,7 @@ use transaction::model::*;
 
 pub fn extract_refs_from_manifest(
     instructions: &[Instruction],
-) -> (BTreeSet<Address>, BTreeSet<InternalRef>) {
+) -> (BTreeSet<GlobalAddress>, BTreeSet<InternalRef>) {
     let mut global_references = BTreeSet::new();
     let mut local_references = BTreeSet::new();
 
@@ -24,7 +24,7 @@ pub fn extract_refs_from_manifest(
 
 pub fn extract_refs_from_instruction(
     instruction: &Instruction,
-    global_references: &mut BTreeSet<Address>,
+    global_references: &mut BTreeSet<GlobalAddress>,
     local_references: &mut BTreeSet<InternalRef>,
 ) {
     match instruction {
@@ -154,7 +154,7 @@ pub fn extract_refs_from_instruction(
 
 pub fn extract_refs_from_value(
     value: &ManifestValue,
-    global_references: &mut BTreeSet<Address>,
+    global_references: &mut BTreeSet<GlobalAddress>,
     local_references: &mut BTreeSet<InternalRef>,
 ) {
     match value {

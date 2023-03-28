@@ -71,7 +71,7 @@ pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
+    pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for two conditions:
     /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
     /// 2. Fee payments for failed transactions.
@@ -114,12 +114,12 @@ impl CommitResult {
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
                 Emitter::Function(
-                    NodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                    NodeId::GlobalObject(GlobalAddress::Package(EPOCH_MANAGER_PACKAGE)),
                     TypedModuleId::ObjectState,
                     ..,
                 )
                 | Emitter::Method(
-                    NodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
+                    NodeId::GlobalObject(GlobalAddress::Component(ComponentAddress::EpochManager(..))),
                     TypedModuleId::ObjectState,
                 ),
                 ..,
@@ -149,7 +149,7 @@ impl CommitResult {
         &self.state_update_summary.new_resources
     }
 
-    pub fn balance_changes(&self) -> &IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>> {
+    pub fn balance_changes(&self) -> &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.balance_changes
     }
 

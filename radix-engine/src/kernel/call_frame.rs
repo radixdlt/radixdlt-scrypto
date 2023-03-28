@@ -356,7 +356,7 @@ impl CallFrame {
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            NodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
+            NodeId::GlobalObject(GlobalAddress::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

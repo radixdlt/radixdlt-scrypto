@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::{types::*, ClientObjectApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
 };
@@ -17,7 +17,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
-use radix_engine_interface::types::{NodeId, NodeId};
+use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
@@ -155,24 +155,16 @@ pub struct OwnedComponent(pub NodeId);
 
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
-            .call_method(&NodeId::Object(self.0), method, args)
-            .unwrap();
+        let output = ScryptoEnv.call_method(&self.0, method, args).unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
-        ScryptoEnv
-            .get_object_type_info(NodeId::Object(self.0))
-            .unwrap()
-            .0
+        ScryptoEnv.get_object_type_info(self.0).unwrap().0
     }
 
     fn blueprint_name(&self) -> String {
-        ScryptoEnv
-            .get_object_type_info(NodeId::Object(self.0))
-            .unwrap()
-            .1
+        ScryptoEnv.get_object_type_info(self.0).unwrap().1
     }
 }
 
@@ -183,17 +175,17 @@ impl LocalComponent for OwnedComponent {
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
-        let metadata: Own = Own::Object(metadata.0);
-        let access_rules: Own = Own::Object(access_rules.0);
-        let royalty: Own = Own::Object(royalty.0);
+        let metadata: Own = Own(metadata.0);
+        let access_rules: Own = Own(access_rules.0);
+        let royalty: Own = Own(royalty.0);
 
         let address = ScryptoEnv
             .globalize(
-                NodeId::Object(self.0),
+                self.0,
                 btreemap!(
-                    TypedModuleId::AccessRules => access_rules.id(),
-                    TypedModuleId::Metadata => metadata.id(),
-                    TypedModuleId::Royalty => royalty.id(),
+                    TypedModuleId::AccessRules => access_rules.0,
+                    TypedModuleId::Metadata => metadata.0,
+                    TypedModuleId::Royalty => royalty.0,
                 ),
             )
             .unwrap();
@@ -229,14 +221,14 @@ impl Component for GlobalComponentRef {
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_type_info(NodeId::GlobalObject(self.0.into()))
+            .get_object_type_info(self.0.as_node_id())
             .unwrap()
             .0
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_type_info(NodeId::GlobalObject(self.0.into()))
+            .get_object_type_info(self.0.as_node_id())
             .unwrap()
             .1
     }

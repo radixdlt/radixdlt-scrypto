@@ -255,7 +255,7 @@ where
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            NodeId::GlobalObject(Address::Component(component_address)) => {
+            NodeId::GlobalObject(GlobalAddress::Component(component_address)) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
@@ -461,7 +461,7 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    NodeId::GlobalObject(Address::Resource(..)) => {
+                    NodeId::GlobalObject(GlobalAddress::Resource(..)) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
@@ -480,7 +480,7 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    NodeId::GlobalObject(Address::Package(package_address)) => {
+                    NodeId::GlobalObject(GlobalAddress::Package(package_address)) => {
                         // TODO: Cleanup
                         {
                             if is_native_package(*package_address) {
@@ -512,7 +512,7 @@ where
                             }
                         }
                     }
-                    NodeId::GlobalObject(Address::Component(global_address)) => {
+                    NodeId::GlobalObject(GlobalAddress::Component(global_address)) => {
                         if matches!(
                             global_address,
                             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
@@ -685,9 +685,9 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         match (node_id, &init) {
-            (NodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
-            (NodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (NodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(GlobalAddress::Component(..)), RENodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(GlobalAddress::Resource(..)), RENodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(GlobalAddress::Package(..)), RENodeInit::GlobalObject(..)) => {}
             (NodeId::Object(..), RENodeInit::Object(..)) => {}
             (NodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),

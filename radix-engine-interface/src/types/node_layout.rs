@@ -5,6 +5,7 @@ use sbor::rust::prelude::*;
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum TypedModuleId {
     TypeInfo,

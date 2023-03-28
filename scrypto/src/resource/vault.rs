@@ -53,7 +53,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_GET_AMOUNT_IDENT,
                 scrypto_encode(&VaultGetAmountInput {}).unwrap(),
             )
@@ -65,7 +65,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::GlobalObject(resource_address.into()),
+                &NodeId(resource_address.into()),
                 RESOURCE_MANAGER_CREATE_VAULT_IDENT,
                 scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
             )
@@ -77,7 +77,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_TAKE_IDENT,
                 scrypto_encode(&VaultTakeInput { amount }).unwrap(),
             )
@@ -89,7 +89,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&VaultLockFeeInput {
                     amount,
@@ -104,7 +104,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&VaultLockFeeInput {
                     amount,
@@ -122,7 +122,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_TAKE_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&VaultTakeNonFungiblesInput {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
@@ -137,7 +137,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_PUT_IDENT,
                 scrypto_encode(&VaultPutInput { bucket }).unwrap(),
             )
@@ -149,7 +149,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
             )
@@ -161,7 +161,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&VaultGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -173,7 +173,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_CREATE_PROOF_IDENT,
                 scrypto_encode(&VaultCreateProofInput {}).unwrap(),
             )
@@ -185,7 +185,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
                 scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
             )
@@ -197,7 +197,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 VAULT_CREATE_PROOF_BY_IDS_IDENT,
                 scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
             )

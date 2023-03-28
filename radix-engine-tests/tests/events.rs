@@ -107,7 +107,7 @@ fn scrypto_can_emit_registered_events() {
             ref event_data,
         )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
-            && *node_id == NodeId::GlobalObject(Address::Package(package_address))
+            && *node_id == NodeId::GlobalObject(GlobalAddress::Package(package_address))
             && blueprint_name == "ScryptoEvents" =>
             true,
         _ => false,
@@ -454,7 +454,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
-                        NodeId::GlobalObject(Address::Resource(..)),
+                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
                         TypedModuleId::ObjectState,
                     ),
                     ..,
@@ -1020,7 +1020,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
-                        NodeId::GlobalObject(Address::Resource(..)),
+                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
                         TypedModuleId::ObjectState,
                     ),
                     ..,
@@ -1173,7 +1173,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
-                        NodeId::GlobalObject(Address::Resource(resource_address)),
+                        NodeId::GlobalObject(GlobalAddress::Resource(resource_address)),
                         TypedModuleId::ObjectState,
                     ),
                     ..,
@@ -1199,7 +1199,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
-                        NodeId::GlobalObject(Address::Resource(..)),
+                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
                         TypedModuleId::ObjectState,
                     ),
                     ..,
@@ -1362,7 +1362,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
-                        NodeId::GlobalObject(Address::Resource(..)),
+                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
                         TypedModuleId::ObjectState,
                     ),
                     ..,
@@ -1497,7 +1497,7 @@ fn setting_metadata_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            Address::Resource(resource_address),
+            GlobalAddress::Resource(resource_address),
             "key".into(),
             MetadataEntry::Value(MetadataValue::I32(1)),
         )

@@ -356,7 +356,7 @@ where
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-    ) -> Result<Address, RuntimeError> {
+    ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME check completeness of modules
 
         let node_type = match node_id {
@@ -392,8 +392,8 @@ where
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-        address: Address,
-    ) -> Result<Address, RuntimeError> {
+        address: GlobalAddress,
+    ) -> Result<GlobalAddress, RuntimeError> {
         let module_ids = modules.keys().cloned().collect::<BTreeSet<TypedModuleId>>();
         let standard_object = btreeset!(
             TypedModuleId::Metadata,
@@ -824,7 +824,7 @@ where
             }?;
 
             let handle = self.kernel_lock_substate(
-                &NodeId::GlobalObject(Address::Package(package_address)),
+                &NodeId::GlobalObject(GlobalAddress::Package(package_address)),
                 TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -876,7 +876,7 @@ where
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
-                    NodeId::GlobalObject(Address::Package(package_address)),
+                    NodeId::GlobalObject(GlobalAddress::Package(package_address)),
                     TypedModuleId::ObjectState,
                     blueprint_name,
                 ),

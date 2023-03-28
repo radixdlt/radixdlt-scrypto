@@ -123,7 +123,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
             .sys_lock_substate(
-                self.node_id,
+                &self.node_id,
                 SubstateOffset::Component(ComponentOffset::State0),
                 LockFlags::read_only(),
             )

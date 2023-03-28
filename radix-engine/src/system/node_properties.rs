@@ -177,7 +177,7 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    NodeId::GlobalObject(Address::Component(component_address)),
+                                    NodeId::GlobalObject(GlobalAddress::Component(component_address)),
                                     ..,
                                 ) => match (node_id, offset) {
                                     // READ package code & abi
@@ -202,7 +202,7 @@ impl VisibilityProperties {
                                     ) => true,
                                     // READ/WRITE component application state
                                     (
-                                        NodeId::GlobalObject(Address::Component(addr)),
+                                        NodeId::GlobalObject(GlobalAddress::Component(addr)),
                                         SubstateOffset::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     // Otherwise, false
@@ -246,7 +246,7 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    NodeId::GlobalObject(Address::Component(component_address)),
+                                    NodeId::GlobalObject(GlobalAddress::Component(component_address)),
                                     ..,
                                 ) => match (node_id, offset) {
                                     (
@@ -256,7 +256,7 @@ impl VisibilityProperties {
                                         )),
                                     ) => true,
                                     (
-                                        NodeId::GlobalObject(Address::Component(addr)),
+                                        NodeId::GlobalObject(GlobalAddress::Component(addr)),
                                         SubstateOffset::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     _ => false,

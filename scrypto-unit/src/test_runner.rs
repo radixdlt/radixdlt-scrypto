@@ -232,7 +232,7 @@ impl TestRunner {
 
     pub fn set_metadata(
         &mut self,
-        address: Address,
+        address: GlobalAddress,
         key: &str,
         value: &str,
         proof: NonFungibleGlobalId,
@@ -250,7 +250,7 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
+    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
         let metadata_entry = self
             .substate_db
             .get_substate(&SubstateId(
@@ -1189,7 +1189,7 @@ impl TestRunner {
                 Emitter::Function(node_id, _, blueprint_name),
                 local_type_index,
             ) => {
-                let NodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+                let NodeId::GlobalObject(GlobalAddress::Package(package_address)) = node_id else {
                     panic!("must be a package address")
                 };
                 (
@@ -1201,7 +1201,7 @@ impl TestRunner {
         };
 
         let substate_id = SubstateId(
-            NodeId::GlobalObject(Address::Package(package_address)),
+            NodeId::GlobalObject(GlobalAddress::Package(package_address)),
             TypedModuleId::ObjectState,
             SubstateOffset::Package(PackageOffset::Info),
         );

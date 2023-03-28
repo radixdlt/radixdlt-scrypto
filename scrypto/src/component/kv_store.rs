@@ -3,7 +3,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{KeyValueStoreId, KeyValueStoreOffset, NodeId, SubstateOffset};
+use radix_engine_interface::types::*;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
 use scrypto_schema::KeyValueStoreSchema;
@@ -18,7 +18,7 @@ pub struct KeyValueStore<
     K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
     V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
 > {
-    pub id: KeyValueStoreId,
+    pub id: NodeId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }

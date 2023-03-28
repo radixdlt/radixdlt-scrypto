@@ -18,7 +18,7 @@ use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct AccessRules(pub NodeId);
+pub struct AccessRules(pub Own);
 
 impl AccessRules {
     pub fn new(access_rules: AccessRulesConfig) -> Self {
@@ -31,12 +31,12 @@ impl AccessRules {
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
-        Self(access_rules.id())
+        Self(access_rules)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct AttachedAccessRules(pub Address);
+pub struct AttachedAccessRules(pub GlobalAddress);
 
 impl AttachedAccessRules {
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {

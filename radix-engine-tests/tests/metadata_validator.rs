@@ -18,7 +18,7 @@ fn can_set_validator_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .set_metadata(
-            Address::Component(validator),
+            GlobalAddress::Component(validator),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
@@ -50,7 +50,7 @@ fn cannot_set_validator_metadata_without_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            Address::Component(validator),
+            GlobalAddress::Component(validator),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )

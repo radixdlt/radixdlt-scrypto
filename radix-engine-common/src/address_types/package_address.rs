@@ -11,6 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
+/// Address to a global package
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PackageAddress(NodeId); // private to ensure entity type check
 
@@ -61,6 +62,12 @@ impl TryFrom<&[u8]> for PackageAddress {
 impl Into<[u8; NODE_ID_LENGTH]> for PackageAddress {
     fn into(self) -> [u8; NODE_ID_LENGTH] {
         self.0.into()
+    }
+}
+
+impl Into<super::GlobalAddress> for PackageAddress {
+    fn into(self) -> super::GlobalAddress {
+        super::GlobalAddress::new_unchecked(self.0.into())
     }
 }
 

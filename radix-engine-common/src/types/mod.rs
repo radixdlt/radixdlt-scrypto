@@ -44,8 +44,8 @@ impl From<[u8; NodeId::LENGTH]> for NodeId {
     }
 }
 
-impl From<Address> for NodeId {
-    fn from(value: Address) -> Self {
+impl From<GlobalAddress> for NodeId {
+    fn from(value: GlobalAddress) -> Self {
         Self(value.into())
     }
 }

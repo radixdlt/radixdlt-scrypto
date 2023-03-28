@@ -10,10 +10,10 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::{NodeId, NodeId, RoyaltyConfig, TypedModuleId};
+use radix_engine_interface::types::{NodeId, RoyaltyConfig, TypedModuleId};
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Royalty(pub NodeId);
+pub struct Royalty(pub Own);
 
 impl Royalty {
     pub fn new(royalty_config: RoyaltyConfig) -> Self {
@@ -27,18 +27,18 @@ impl Royalty {
             .unwrap();
 
         let royalty: Own = scrypto_decode(&rtn).unwrap();
-        Self(royalty.id())
+        Self(royalty)
     }
 }
 
 impl RoyaltyObject for Royalty {
     fn self_id(&self) -> (NodeId, TypedModuleId) {
-        (NodeId::Object(self.0), TypedModuleId::ObjectState)
+        (self.0.as_node_id().clone(), TypedModuleId::ObjectState)
     }
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct AttachedRoyalty(pub Address);
+pub struct AttachedRoyalty(pub ComponentAddress);
 
 impl RoyaltyObject for AttachedRoyalty {
     fn self_id(&self) -> (NodeId, TypedModuleId) {

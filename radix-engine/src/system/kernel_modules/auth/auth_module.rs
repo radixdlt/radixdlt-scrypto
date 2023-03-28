@@ -227,7 +227,7 @@ impl AuthModule {
                 // TODO: Clean this up
                 let auth = if matches!(
                     node_id,
-                    NodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
+                    NodeId::GlobalObject(GlobalAddress::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&TypedModuleId::ObjectState)
                 {
                     Self::method_authorization_stateful(

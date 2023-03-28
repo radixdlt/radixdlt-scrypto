@@ -11,6 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
+/// Address to a global component
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ComponentAddress(NodeId); // private to ensure entity type check
 
@@ -75,9 +76,6 @@ impl TryFrom<[u8; NODE_ID_LENGTH]> for ComponentAddress {
         match EntityType::from_repr(value[0])
                 .ok_or(ParseComponentAddressError::InvalidEntityTypeId(value[0]))?
             {
-                EntityType::GlobalPackage | // TODO: overlap with PackageAddress?
-                EntityType::GlobalFungibleResource | // TODO: overlap with ResourceAddress?
-                EntityType::GlobalNonFungibleResource |  // TODO: overlap with ResourceAddress?
                 EntityType::GlobalEpochManager |
                 EntityType::GlobalValidator |
                 EntityType::GlobalClock |
@@ -89,6 +87,9 @@ impl TryFrom<[u8; NODE_ID_LENGTH]> for ComponentAddress {
                 EntityType::GlobalVirtualEddsaAccount |
                 EntityType::GlobalVirtualEcdsaIdentity |
                 EntityType::GlobalVirtualEddsaIdentity => Ok(Self(NodeId(value))),
+                EntityType::GlobalPackage | /* PackageAddress */
+                EntityType::GlobalFungibleResource | /* ResourceAddress */
+                EntityType::GlobalNonFungibleResource | /* ResourceAddress */
                 EntityType::InternalVault |
                 EntityType::InternalAccessController |
                 EntityType::InternalAccount |
@@ -112,6 +113,12 @@ impl TryFrom<&[u8]> for ComponentAddress {
 impl Into<[u8; NODE_ID_LENGTH]> for ComponentAddress {
     fn into(self) -> [u8; NODE_ID_LENGTH] {
         self.0.into()
+    }
+}
+
+impl Into<super::GlobalAddress> for ComponentAddress {
+    fn into(self) -> super::GlobalAddress {
+        super::GlobalAddress::new_unchecked(self.0.into())
     }
 }
 

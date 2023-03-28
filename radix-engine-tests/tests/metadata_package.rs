@@ -30,7 +30,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            Address::Package(package_address),
+            GlobalAddress::Package(package_address),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
@@ -73,7 +73,7 @@ fn can_set_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(
-            Address::Package(package_address),
+            GlobalAddress::Package(package_address),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
@@ -119,7 +119,7 @@ fn can_lock_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_method_access_rule(
-            Address::Package(package_address),
+            GlobalAddress::Package(package_address),
             MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             AccessRule::DenyAll,
         )
@@ -135,7 +135,7 @@ fn can_lock_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(
-            Address::Package(package_address),
+            GlobalAddress::Package(package_address),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )

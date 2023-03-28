@@ -1,12 +1,16 @@
 use crate::engine::wasm_api::*;
+use radix_engine_interface::address_types::ComponentAddress;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
+use radix_engine_interface::api::ClientTransactionRuntimeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
+use radix_engine_interface::data::scrypto::model::PackageAddress;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::{
+    FnIdentifier, Level, LockHandle, NodeId, SubstateKey, TypedModuleId,
+};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -41,7 +45,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_key_value_store(
         &mut self,
         schema: KeyValueStoreSchema,
-    ) -> Result<KeyValueStoreId, ClientApiError> {
+    ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -49,7 +53,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_key_value_store_info(
         &mut self,
-        node_id: NodeId,
+        node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
@@ -63,7 +67,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-    ) -> Result<Address, ClientApiError> {
+    ) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
 
@@ -82,8 +86,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-        address: Address,
-    ) -> Result<Address, ClientApiError> {
+        address: ComponentAddress,
+    ) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();
@@ -123,7 +127,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
             call_method(
                 receiver.as_ptr(),
                 receiver.len(),
-                node_module_id.id(),
+                node_module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),
@@ -136,7 +140,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_object_type_info(
         &mut self,
-        node_id: NodeId,
+        node_id: &NodeId,
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
@@ -182,19 +186,18 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     fn sys_lock_substate(
         &mut self,
-        node_id: NodeId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
-        let offset = scrypto_encode(&offset).unwrap();
 
         let handle = unsafe {
             lock_substate(
                 node_id.as_ptr(),
                 node_id.len(),
-                offset.as_ptr(),
-                offset.len(),
+                substate_key.as_ref().as_ptr(),
+                substate_key.as_ref().len(),
                 flags.bits(),
             )
         };

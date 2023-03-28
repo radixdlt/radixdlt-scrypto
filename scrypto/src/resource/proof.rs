@@ -1,4 +1,3 @@
-use radix_engine_common::types::NodeId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
@@ -63,7 +62,7 @@ impl ScryptoProof for Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 PROOF_CLONE_IDENT,
                 scrypto_encode(&ProofCloneInput {}).unwrap(),
             )
@@ -226,7 +225,7 @@ impl ScryptoProof for Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 PROOF_GET_AMOUNT_IDENT,
                 scrypto_encode(&ProofGetAmountInput {}).unwrap(),
             )
@@ -238,7 +237,7 @@ impl ScryptoProof for Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -250,7 +249,7 @@ impl ScryptoProof for Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0),
+                self.0.as_node_id(),
                 PROOF_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
             )
@@ -289,7 +288,7 @@ impl ValidatedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0 .0),
+               self.0.0.as_node_id(),
                 PROOF_GET_AMOUNT_IDENT,
                 scrypto_encode(&ProofGetAmountInput {}).unwrap(),
             )
@@ -301,7 +300,7 @@ impl ValidatedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0 .0),
+               self.0.0.as_node_id(),
                 PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -313,7 +312,7 @@ impl ValidatedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId::Object(self.0 .0),
+               self.0.0.as_node_id(),
                 PROOF_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
             )

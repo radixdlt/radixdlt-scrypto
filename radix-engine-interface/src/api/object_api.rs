@@ -10,24 +10,24 @@ pub trait ClientObjectApi<E> {
     // TODO: refine the interface
     fn new_object(&mut self, blueprint_ident: &str, app_states: Vec<Vec<u8>>) -> Result<NodeId, E>;
 
-    fn get_object_type_info(&mut self, node_id: NodeId) -> Result<(PackageAddress, String), E>;
+    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<(PackageAddress, String), E>;
 
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
 
-    fn get_key_value_store_info(&mut self, node_id: NodeId) -> Result<KeyValueStoreSchema, E>;
+    fn get_key_value_store_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
 
     fn globalize(
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-    ) -> Result<Address, E>;
+    ) -> Result<ComponentAddress, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-        address: Address,
-    ) -> Result<Address, E>;
+        address: ComponentAddress,
+    ) -> Result<(), E>;
 
     fn call_method(
         &mut self,

@@ -7,13 +7,14 @@ use crate::*;
 use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
-/// Address to a global resource
+/// Address to a local entity
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ResourceAddress(NodeId); // private to ensure entity type check
+pub struct LocalAddress(NodeId); // private to ensure entity type check
 
-impl ResourceAddress {
+impl LocalAddress {
     pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
         Self(NodeId(raw))
     }
@@ -27,47 +28,58 @@ impl ResourceAddress {
     }
 }
 
-impl AsRef<[u8]> for ResourceAddress {
+impl AsRef<[u8]> for LocalAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl TryFrom<[u8; NODE_ID_LENGTH]> for ResourceAddress {
-    type Error = ParseResourceAddressError;
+impl TryFrom<[u8; NODE_ID_LENGTH]> for LocalAddress {
+    type Error = ParseLocalAddressError;
 
     fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
         match EntityType::from_repr(value[0])
-            .ok_or(ParseResourceAddressError::InvalidEntityTypeId(value[0]))?
+            .ok_or(ParseLocalAddressError::InvalidEntityTypeId(value[0]))?
         {
-            EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource => {
-                Ok(Self(NodeId(value)))
+            EntityType::GlobalPackage
+            | EntityType::GlobalFungibleResource
+            | EntityType::GlobalNonFungibleResource
+            | EntityType::GlobalEpochManager
+            | EntityType::GlobalValidator
+            | EntityType::GlobalClock
+            | EntityType::GlobalAccessController
+            | EntityType::GlobalAccount
+            | EntityType::GlobalIdentity
+            | EntityType::GlobalComponent
+            | EntityType::GlobalVirtualEcdsaAccount
+            | EntityType::GlobalVirtualEddsaAccount
+            | EntityType::GlobalVirtualEcdsaIdentity
+            | EntityType::GlobalVirtualEddsaIdentity => {
+                Err(ParseLocalAddressError::InvalidEntityTypeId(value[0]))
             }
-            _ => Err(ParseResourceAddressError::InvalidEntityTypeId(value[0])),
+            EntityType::InternalVault
+            | EntityType::InternalAccessController
+            | EntityType::InternalAccount
+            | EntityType::InternalComponent
+            | EntityType::InternalKeyValueStore => Ok(Self(NodeId(value))),
         }
     }
 }
 
-impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = ParseResourceAddressError;
+impl TryFrom<&[u8]> for LocalAddress {
+    type Error = ParseLocalAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => ResourceAddress::try_from(copy_u8_array(slice)),
-            _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
+            NODE_ID_LENGTH => LocalAddress::try_from(copy_u8_array(slice)),
+            _ => Err(ParseLocalAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Into<[u8; NODE_ID_LENGTH]> for ResourceAddress {
+impl Into<[u8; NODE_ID_LENGTH]> for LocalAddress {
     fn into(self) -> [u8; NODE_ID_LENGTH] {
         self.0.into()
-    }
-}
-
-impl Into<super::GlobalAddress> for ResourceAddress {
-    fn into(self) -> super::GlobalAddress {
-        super::GlobalAddress::new_unchecked(self.0.into())
     }
 }
 
@@ -76,16 +88,16 @@ impl Into<super::GlobalAddress> for ResourceAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseResourceAddressError {
+pub enum ParseLocalAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceAddressError {}
+impl std::error::Error for ParseLocalAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseResourceAddressError {
+impl fmt::Display for ParseLocalAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -96,30 +108,30 @@ impl fmt::Display for ParseResourceAddressError {
 //========
 
 well_known_scrypto_custom_type!(
-    ResourceAddress,
+    LocalAddress,
     ScryptoCustomValueKind::Reference,
-    Type::ResourceAddress,
+    Type::Address,
     NODE_ID_LENGTH,
-    RESOURCE_ADDRESS_ID
+    ADDRESS_ID
 );
 
 manifest_type!(
-    ResourceAddress,
+    LocalAddress,
     ManifestCustomValueKind::Address,
     NODE_ID_LENGTH
 );
 
-//========
+//======
 // text
-//========
+//======
 
-impl fmt::Debug for ResourceAddress {
+impl fmt::Debug for LocalAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for LocalAddress {
     type Error = EncodeBech32AddressError;
 
     fn contextual_format<F: fmt::Write>(
@@ -132,7 +144,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "ResourceAddress({})", hex::encode(&self.0))
-            .map_err(|err| EncodeBech32AddressError::FormatError(err))
+        write!(f, "Address({})", hex::encode(&self.0))
+            .map_err(EncodeBech32AddressError::FormatError)
     }
 }
