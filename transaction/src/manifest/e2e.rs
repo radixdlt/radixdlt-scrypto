@@ -345,6 +345,18 @@ SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
     "k"
     Enum(0u8, Enum(11u8, NonFungibleLocalId("<some_string>")));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(12u8, Tuple(10000i64)));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(13u8, "https://radixdlt.com"));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(1u8, Array<Enum>(Enum(0u8, "some_string"), Enum(0u8, "another_string"), Enum(0u8, "yet_another_string")));
 REMOVE_METADATA
     Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
     "k";
