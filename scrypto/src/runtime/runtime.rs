@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
-use radix_engine_interface::constants::{EPOCH_MANAGER, GLOBAL_OBJECT_TOKEN, PACKAGE_TOKEN};
+use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
@@ -40,8 +40,9 @@ impl Runtime {
         ScryptoEnv.get_fn_identifier().unwrap()
     }
 
-    pub fn global_address() -> Address {
-        ScryptoEnv.get_global_address().unwrap()
+    pub fn global_address() -> ComponentAddress {
+        let address: Address = ScryptoEnv.get_global_address().unwrap();
+        address.into()
     }
 
     /// Returns the current package address.

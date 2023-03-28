@@ -114,7 +114,7 @@ impl fmt::Debug for NonFungibleGlobalId {
 }
 
 pub trait FromComponent: Sized {
-    fn from_component_address(component: ComponentAddress) -> Self;
+    fn from_component_address(component: &ComponentAddress) -> Self;
 }
 
 impl FromComponent for NonFungibleGlobalId {
