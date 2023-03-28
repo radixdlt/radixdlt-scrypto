@@ -7,10 +7,11 @@ pub mod well_known_scrypto_custom_types {
     use super::*;
 
     pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
-    pub const ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 1;
-    pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 2;
-    pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 3;
-    pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 4;
+    pub const GLOBAL_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 1;
+    pub const LOCAL_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 2;
+    pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 3;
+    pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 4;
+    pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 5;
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;
     pub const OWN_BUCKET_ID: u8 = VALUE_KIND_OWN + 1;
@@ -37,6 +38,14 @@ create_well_known_lookup!(
         (
             REFERENCE_ID,
             unnamed_type_kind(ScryptoCustomTypeKind::Reference)
+        ),
+        (
+            GLOBAL_ADDRESS_ID,
+            unnamed_type_kind(ScryptoCustomTypeKind::GlobalAddress)
+        ),
+        (
+            LOCAL_ADDRESS_ID,
+            unnamed_type_kind(ScryptoCustomTypeKind::LocalAddress)
         ),
         (
             PACKAGE_ADDRESS_ID,

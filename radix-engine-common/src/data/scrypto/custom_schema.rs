@@ -11,6 +11,8 @@ pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoCustomTypeKind {
     Reference, /* any */
+    GlobalAddress,
+    LocalAddress,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -54,6 +56,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
             ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
+            ScryptoCustomTypeKind::GlobalAddress => ScryptoCustomTypeKind::GlobalAddress,
+            ScryptoCustomTypeKind::LocalAddress => ScryptoCustomTypeKind::LocalAddress,
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
@@ -82,6 +86,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
             ScryptoCustomTypeKind::Reference
+            | ScryptoCustomTypeKind::GlobalAddress
+            | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -108,6 +114,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
         match type_kind {
             ScryptoCustomTypeKind::Reference
+            | ScryptoCustomTypeKind::GlobalAddress
+            | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -139,6 +147,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             // Even though they all map to the same thing, we keep the explicit match statement so that
             // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
             ScryptoCustomTypeKind::Reference
+            | ScryptoCustomTypeKind::GlobalAddress
+            | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -165,6 +175,14 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     ) -> bool {
         match custom_type_kind {
             ScryptoCustomTypeKind::Reference => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
+            ),
+            ScryptoCustomTypeKind::GlobalAddress => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
+            ),
+            ScryptoCustomTypeKind::LocalAddress => matches!(
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),

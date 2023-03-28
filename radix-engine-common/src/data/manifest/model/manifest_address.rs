@@ -1,3 +1,4 @@
+use crate::address::EntityType;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::types::NodeId;
 use crate::*;
@@ -7,6 +8,8 @@ use sbor::*;
 use utils::copy_u8_array;
 
 /// Any address supported by manifest, both global and local.
+///
+/// Must start with a supported entity type byte.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ManifestAddress(pub NodeId);
 
@@ -21,7 +24,12 @@ impl TryFrom<&[u8]> for ManifestAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NodeId::LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
+            NodeId::LENGTH => {
+                if EntityType::from_repr(slice[0]).is_none() {
+                    return Err(Self::Error::InvalidEntityTypeId(slice[0]));
+                }
+                Ok(Self(NodeId(copy_u8_array(slice))))
+            }
             _ => Err(ParseManifestAddressError::InvalidLength(slice.len())),
         }
     }
@@ -34,6 +42,7 @@ impl TryFrom<&[u8]> for ManifestAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseManifestAddressError {
     InvalidLength(usize),
+    InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]

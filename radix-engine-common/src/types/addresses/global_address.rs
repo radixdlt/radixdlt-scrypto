@@ -103,7 +103,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
-    ADDRESS_ID
+    GLOBAL_ADDRESS_ID
 );
 
 manifest_type!(
