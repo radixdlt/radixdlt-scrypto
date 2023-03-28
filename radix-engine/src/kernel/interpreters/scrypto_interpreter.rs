@@ -309,14 +309,11 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
         _api: &mut D,
     ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let resolved = ResolvedInvocation {
-            resolved_actor: Actor {
-                fn_identifier: FnIdentifier {
-                    package_address: self.package_address,
-                    blueprint_name: self.blueprint_name.to_string(),
-                    ident: FnIdent::System(self.virtual_func_id),
-                },
-                info: AdditionalActorInfo::VirtualLazyLoad,
-            },
+            resolved_actor: Actor::virtual_lazy_load(FnIdentifier {
+                package_address: self.package_address,
+                blueprint_name: self.blueprint_name.to_string(),
+                ident: FnIdent::System(self.virtual_func_id),
+            }),
             update: CallFrameUpdate::empty(),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
             executor: ScryptoExecutor {

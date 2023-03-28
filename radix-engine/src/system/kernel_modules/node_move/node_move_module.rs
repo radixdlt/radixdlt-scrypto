@@ -30,15 +30,7 @@ impl NodeMoveModule {
                 let (package_address, blueprint) = api.get_object_type_info(node_id)?;
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                        if let Actor {
-                            info: AdditionalActorInfo::Function(..),
-                            fn_identifier:
-                                FnIdentifier {
-                                    package_address: RESOURCE_MANAGER_PACKAGE,
-                                    ..
-                                },
-                        } = callee
-                        {
+                        if matches!(callee.info, AdditionalActorInfo::Function(..)) && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE) {
                             return Ok(());
                         }
 

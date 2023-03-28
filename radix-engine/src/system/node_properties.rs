@@ -24,11 +24,8 @@ impl VisibilityProperties {
             ExecutionMode::KernelModule => true,
             ExecutionMode::AutoDrop => {
                 if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint.eq(PROOF_BLUEPRINT) {
-                    actor
-                        .fn_identifier
-                        .package_address
-                        .eq(&RESOURCE_MANAGER_PACKAGE)
-                        && actor.fn_identifier.blueprint_name.eq(PROOF_BLUEPRINT)
+                    actor.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
+                        && actor.blueprint_name().eq(PROOF_BLUEPRINT)
                 } else {
                     false
                 }
@@ -39,7 +36,7 @@ impl VisibilityProperties {
                     (METADATA_PACKAGE, METADATA_BLUEPRINT)
                     | (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
                     | (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => true, // TODO: This is required for current implementation of globalize, maybe there's a better way
-                    _ => package_address.eq(&actor.fn_identifier.package_address),
+                    _ => package_address.eq(actor.package_address()),
                 }
             }
             _ => return false,
@@ -110,13 +107,10 @@ impl VisibilityProperties {
                         return true;
                     }
 
-                    match &actor.fn_identifier {
-                        // Native
-                        FnIdentifier {
-                            package_address, ..
-                        } if is_native_package(*package_address) => true,
-                        // Scrypto
-                        _ => match &actor.info {
+                    if is_native_package(*actor.package_address()) {
+                        true
+                    } else {
+                        match &actor.info {
                             AdditionalActorInfo::VirtualLazyLoad | AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
@@ -178,8 +172,8 @@ impl VisibilityProperties {
                                         }
                                     }
                                     RENodeId::GlobalObject(Address::Component(
-                                        component_address,
-                                    )) => match (node_id, offset) {
+                                                               component_address,
+                                                           )) => match (node_id, offset) {
                                         // READ package code & abi
                                         (
                                             RENodeId::GlobalObject(_),
@@ -211,17 +205,13 @@ impl VisibilityProperties {
                                     _ => false,
                                 }
                             }
-                        },
+                        }
                     }
                 } else {
-                    match &actor.fn_identifier {
-                        // Native
-                        FnIdentifier {
-                            package_address, ..
-                        } if is_native_package(*package_address) => true,
-
-                        // Scrypto
-                        _ => match &actor.info {
+                    if is_native_package(*actor.package_address()) {
+                        true
+                    } else {
+                        match &actor.info {
                             AdditionalActorInfo::VirtualLazyLoad | AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
@@ -248,8 +238,8 @@ impl VisibilityProperties {
                                         }
                                     }
                                     RENodeId::GlobalObject(Address::Component(
-                                        component_address,
-                                    )) => match (node_id, offset) {
+                                                               component_address,
+                                                           )) => match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),
                                             SubstateOffset::KeyValueStore(
@@ -265,7 +255,7 @@ impl VisibilityProperties {
                                     _ => false,
                                 }
                             }
-                        },
+                        }
                     }
                 }
             }

@@ -60,8 +60,9 @@ impl AuthModule {
     fn is_transaction_processor(actor: &Option<Actor>) -> bool {
         match actor {
             Some(actor) => {
-                actor.fn_identifier.package_address == TRANSACTION_PROCESSOR_PACKAGE
-                    && actor.fn_identifier.blueprint_name == TRANSACTION_PROCESSOR_BLUEPRINT
+                let fn_identifier = actor.fn_identifier();
+                fn_identifier.package_address == TRANSACTION_PROCESSOR_PACKAGE
+                    && fn_identifier.blueprint_name == TRANSACTION_PROCESSOR_BLUEPRINT
             }
             None => false,
         }
@@ -376,11 +377,11 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = match &callee.info {
-            AdditionalActorInfo::Method(_, node_id, module_id, ident) => {
+            AdditionalActorInfo::Method(_, node_id, module_id, _, _, ident) => {
                 Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?
             }
-            AdditionalActorInfo::Function(ident) => {
-                Self::function_auth(&callee.fn_identifier.package_address(), callee.fn_identifier.blueprint_name(), ident.as_str(), api)?
+            AdditionalActorInfo::Function(package_address, blueprint_name, ident) => {
+                Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?
             },
             AdditionalActorInfo::VirtualLazyLoad => return Ok(()),
         };
@@ -411,7 +412,7 @@ impl KernelModule for AuthModule {
         // Add Global Object and Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
         if let Some(actor) = &actor {
-            let package_address = actor.fn_identifier.package_address();
+            let package_address = actor.package_address();
             let id = scrypto_encode(&package_address).unwrap();
             let non_fungible_global_id =
                 NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());

@@ -446,18 +446,18 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match callee.info {
-                AdditionalActorInfo::Method(.., ref ident) => {
+            let origin = match &callee.info {
+                AdditionalActorInfo::Method(.., package_address, blueprint_name, ident) => {
                     Origin::ScryptoMethod(ApplicationFnIdentifier {
-                        package_address: callee.fn_identifier.package_address,
-                        blueprint_name: callee.fn_identifier.blueprint_name.to_string(),
+                        package_address: package_address.clone(),
+                        blueprint_name: blueprint_name.clone(),
                         ident: ident.clone(),
                     })
                 }
-                AdditionalActorInfo::Function(.., ref ident) => {
+                AdditionalActorInfo::Function(package_address, blueprint_name, ident) => {
                     Origin::ScryptoFunction(ApplicationFnIdentifier {
-                        package_address: callee.fn_identifier.package_address,
-                        blueprint_name: callee.fn_identifier.blueprint_name.to_string(),
+                        package_address: package_address.clone(),
+                        blueprint_name: blueprint_name.clone(),
                         ident: ident.clone(),
                     })
                 }
@@ -478,13 +478,8 @@ impl ExecutionTraceModule {
 
         match &callee {
             Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident: FnIdent::Application(ident),
-                    },
-                info: AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), ..),
+                info: AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), _module_id, package_address, blueprint_name, ident),
+                ..
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -492,13 +487,8 @@ impl ExecutionTraceModule {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
             Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident: FnIdent::Application(ident),
-                    },
-                info: AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), ..),
+                info: AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), _module_id, package_address, blueprint_name, ident),
+                ..
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -518,13 +508,8 @@ impl ExecutionTraceModule {
     ) {
         match &current_actor {
             Some(Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident: FnIdent::Application(ident),
-                    },
-                info: AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), ..),
+                info: AdditionalActorInfo::Method(_, RENodeId::Object(vault_id), _module_id, package_address, blueprint_name, ident),
+                ..
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -532,11 +517,7 @@ impl ExecutionTraceModule {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
             Some(Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        ident: FnIdent::System(..),
-                        ..
-                    },
+                info: AdditionalActorInfo::VirtualLazyLoad,
                 ..
             }) => return,
             _ => {}

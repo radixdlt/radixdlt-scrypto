@@ -56,7 +56,7 @@ where
             }
         }
 
-        let module_id = if let AdditionalActorInfo::Method(_, _, module_id, _) =
+        let module_id = if let AdditionalActorInfo::Method(_, _, module_id, _, _, _) =
             self.kernel_get_current_actor().unwrap().info
         {
             module_id
@@ -150,8 +150,7 @@ where
         let package_address = self
             .kernel_get_current_actor()
             .unwrap()
-            .fn_identifier
-            .package_address();
+            .package_address().clone();
 
         let handle = self.kernel_lock_substate(
             &RENodeId::GlobalObject(package_address.into()),
@@ -720,7 +719,7 @@ where
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
+        Ok(self.kernel_get_current_actor().unwrap().fn_identifier())
     }
 }
 
@@ -822,13 +821,8 @@ where
                     )),
                 },
                 Some(Actor {
-                    info: AdditionalActorInfo::Function(..),
-                    fn_identifier:
-                        FnIdentifier {
-                            package_address,
-                            ref blueprint_name,
-                            ..
-                        },
+                    info: AdditionalActorInfo::Function(package_address, ref blueprint_name, ..),
+                    ..
                 }) => Ok((package_address, blueprint_name.clone())),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
@@ -879,13 +873,8 @@ where
                 *local_type_index,
             )),
             Some(Actor {
-                info: AdditionalActorInfo::Function(..),
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    },
+                info: AdditionalActorInfo::Function(package_address, blueprint_name, ..),
+                ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     RENodeId::GlobalObject(Address::Package(package_address)),

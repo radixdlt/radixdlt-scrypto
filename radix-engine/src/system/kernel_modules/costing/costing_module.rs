@@ -135,26 +135,21 @@ impl KernelModule for CostingModule {
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (package_address, blueprint_name, ident, optional_component) = {
-            let Actor {
-                info: identifier,
-                fn_identifier,
-            } = callee;
-            let maybe_component = match &identifier {
-                AdditionalActorInfo::Method(_, node_id, ..) => match node_id {
-                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
-                    _ => None,
+            let fn_identifier = callee.fn_identifier();
+            let (maybe_component, ident) = match &callee.info {
+                AdditionalActorInfo::Method(_, node_id, _, _, _, ident) => match node_id {
+                    RENodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
+                    _ => (None, ident),
                 },
-                _ => None,
-            };
-
-            let ident = match &fn_identifier.ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => return Ok(()),
+                AdditionalActorInfo::Function(.., ident) => (None, ident),
+                AdditionalActorInfo::VirtualLazyLoad => {
+                    return Ok(());
+                }
             };
 
             (
                 fn_identifier.package_address,
-                &fn_identifier.blueprint_name,
+                fn_identifier.blueprint_name,
                 ident,
                 maybe_component,
             )
@@ -172,7 +167,7 @@ impl KernelModule for CostingModule {
         let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_charge = substate
             .blueprint_royalty_configs
-            .get(blueprint_name)
+            .get(blueprint_name.as_str())
             .map(|x| x.get_rule(ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {

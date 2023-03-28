@@ -2,27 +2,42 @@ use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AdditionalActorInfo {
-    Method(Option<Address>, RENodeId, NodeModuleId, String),
-    Function(String),
+    Method(Option<Address>, RENodeId, NodeModuleId, PackageAddress, String, String),
+    Function(PackageAddress, String, String),
     VirtualLazyLoad,
 }
 
 // TODO: This structure along with ActorIdentifier needs to be cleaned up
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Actor {
-    pub fn_identifier: FnIdentifier,
+    fn_identifier: FnIdentifier,
     pub info: AdditionalActorInfo,
 }
 
 impl Actor {
+    pub fn fn_identifier(&self) -> FnIdentifier {
+        self.fn_identifier.clone()
+    }
+
+    pub fn package_address(&self) -> &PackageAddress {
+        &self.fn_identifier.package_address
+    }
+
+    pub fn blueprint_name(&self) -> &str {
+        self.fn_identifier.blueprint_name.as_str()
+    }
+
     pub fn method<I: Into<FnIdentifier>>(
         global_address: Option<Address>,
         identifier: I,
         method: MethodIdentifier,
     ) -> Self {
+        let fn_identifier = identifier.into();
+        let package_address = fn_identifier.package_address;
+        let blueprint_name = fn_identifier.blueprint_name.clone();
         Self {
-            fn_identifier: identifier.into(),
-            info: AdditionalActorInfo::Method(global_address, method.0, method.1, method.2),
+            fn_identifier,
+            info: AdditionalActorInfo::Method(global_address, method.0, method.1, package_address, blueprint_name, method.2),
         }
     }
 
@@ -30,7 +45,15 @@ impl Actor {
         let fn_identifier = identifier.into();
         Self {
             fn_identifier,
-            info: AdditionalActorInfo::Function(ident.2),
+            info: AdditionalActorInfo::Function(ident.0, ident.1, ident.2),
+        }
+    }
+
+    pub fn virtual_lazy_load<I: Into<FnIdentifier>>(identifier: I) -> Self {
+        let fn_identifier = identifier.into();
+        Self {
+            fn_identifier,
+            info: AdditionalActorInfo::VirtualLazyLoad,
         }
     }
 }
