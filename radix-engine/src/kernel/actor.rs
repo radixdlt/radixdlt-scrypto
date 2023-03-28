@@ -10,8 +10,16 @@ pub enum Actor {
         blueprint_name: String,
         ident: String,
     },
-    Function(PackageAddress, String, String),
-    VirtualLazyLoad(PackageAddress, String, u8),
+    Function {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        ident: String,
+    },
+    VirtualLazyLoad {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        ident: u8,
+    },
 }
 
 impl Actor {
@@ -27,20 +35,24 @@ impl Actor {
                 blueprint_name.clone(),
                 ident.clone(),
             ),
-            Actor::Function(package_address, blueprint_name, ident) => {
-                FnIdentifier::application_ident(
-                    package_address.clone(),
-                    blueprint_name.clone(),
-                    ident.clone(),
-                )
-            }
-            Actor::VirtualLazyLoad(package_address, blueprint_name, ident) => {
-                FnIdentifier::system_ident(
-                    package_address.clone(),
-                    blueprint_name.clone(),
-                    ident.clone(),
-                )
-            }
+            Actor::Function {
+                package_address,
+                blueprint_name,
+                ident,
+            } => FnIdentifier::application_ident(
+                package_address.clone(),
+                blueprint_name.clone(),
+                ident.clone(),
+            ),
+            Actor::VirtualLazyLoad {
+                package_address,
+                blueprint_name,
+                ident,
+            } => FnIdentifier::system_ident(
+                package_address.clone(),
+                blueprint_name.clone(),
+                ident.clone(),
+            ),
         }
     }
 
@@ -49,16 +61,20 @@ impl Actor {
             Actor::Method {
                 package_address, ..
             } => package_address,
-            Actor::Function(package_address, ..) => package_address,
-            Actor::VirtualLazyLoad(package_address, ..) => package_address,
+            Actor::Function {
+                package_address, ..
+            } => package_address,
+            Actor::VirtualLazyLoad {
+                package_address, ..
+            } => package_address,
         }
     }
 
     pub fn blueprint_name(&self) -> &str {
         match &self {
             Actor::Method { blueprint_name, .. } => blueprint_name.as_str(),
-            Actor::Function(_, blueprint_name, ..) => blueprint_name.as_str(),
-            Actor::VirtualLazyLoad(_, blueprint_name, ..) => blueprint_name.as_str(),
+            Actor::Function { blueprint_name, .. } => blueprint_name.as_str(),
+            Actor::VirtualLazyLoad { blueprint_name, .. } => blueprint_name.as_str(),
         }
     }
 
@@ -79,7 +95,11 @@ impl Actor {
     }
 
     pub fn function(ident: FunctionIdentifier) -> Self {
-        Self::Function(ident.0, ident.1, ident.2)
+        Self::Function {
+            package_address: ident.0,
+            blueprint_name: ident.1,
+            ident: ident.2,
+        }
     }
 
     pub fn virtual_lazy_load(
@@ -87,7 +107,11 @@ impl Actor {
         blueprint_name: String,
         ident: u8,
     ) -> Self {
-        Self::VirtualLazyLoad(package_address, blueprint_name, ident)
+        Self::VirtualLazyLoad {
+            package_address,
+            blueprint_name,
+            ident,
+        }
     }
 }
 

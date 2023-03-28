@@ -383,10 +383,12 @@ impl KernelModule for AuthModule {
                 ident,
                 ..
             } => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
-            Actor::Function(package_address, blueprint_name, ident) => {
-                Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?
-            }
-            Actor::VirtualLazyLoad(..) => return Ok(()),
+            Actor::Function {
+                package_address,
+                blueprint_name,
+                ident,
+            } => Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?,
+            Actor::VirtualLazyLoad { .. } => return Ok(()),
         };
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();

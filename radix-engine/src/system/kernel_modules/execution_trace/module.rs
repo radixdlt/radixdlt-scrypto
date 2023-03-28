@@ -457,14 +457,16 @@ impl ExecutionTraceModule {
                     blueprint_name: blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::Function(package_address, blueprint_name, ident) => {
-                    Origin::ScryptoFunction(ApplicationFnIdentifier {
-                        package_address: package_address.clone(),
-                        blueprint_name: blueprint_name.clone(),
-                        ident: ident.clone(),
-                    })
-                }
-                Actor::VirtualLazyLoad(..) => {
+                Actor::Function {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                } => Origin::ScryptoFunction(ApplicationFnIdentifier {
+                    package_address: package_address.clone(),
+                    blueprint_name: blueprint_name.clone(),
+                    ident: ident.clone(),
+                }),
+                Actor::VirtualLazyLoad { .. } => {
                     return;
                 }
             };
@@ -528,7 +530,7 @@ impl ExecutionTraceModule {
             {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
-            Some(Actor::VirtualLazyLoad(..)) => return,
+            Some(Actor::VirtualLazyLoad { .. }) => return,
             _ => {}
         }
 

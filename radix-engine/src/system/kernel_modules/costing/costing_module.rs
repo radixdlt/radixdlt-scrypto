@@ -141,8 +141,8 @@ impl KernelModule for CostingModule {
                     RENodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
                     _ => (None, ident),
                 },
-                Actor::Function(.., ident) => (None, ident),
-                Actor::VirtualLazyLoad(..) => {
+                Actor::Function { ident, .. } => (None, ident),
+                Actor::VirtualLazyLoad { .. } => {
                     return Ok(());
                 }
             };

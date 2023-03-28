@@ -822,9 +822,11 @@ where
                         ApplicationError::EventError(EventError::NoAssociatedPackage),
                     )),
                 },
-                Some(Actor::Function(package_address, ref blueprint_name, ..)) => {
-                    Ok((package_address, blueprint_name.clone()))
-                }
+                Some(Actor::Function {
+                    package_address,
+                    ref blueprint_name,
+                    ..
+                }) => Ok((package_address, blueprint_name.clone())),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
                 )),
@@ -872,7 +874,11 @@ where
                 Emitter::Method(node_id, module_id),
                 *local_type_index,
             )),
-            Some(Actor::Function(package_address, blueprint_name, ..)) => Ok(EventTypeIdentifier(
+            Some(Actor::Function {
+                package_address,
+                blueprint_name,
+                ..
+            }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     RENodeId::GlobalObject(Address::Package(package_address)),
                     NodeModuleId::SELF,
