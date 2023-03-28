@@ -423,7 +423,7 @@ impl KernelModule for AuthModule {
             if let AdditionalActorInfo::Method(Some(address), ..) = &actor.info {
                 let id = scrypto_encode(&address).unwrap();
                 let non_fungible_global_id =
-                    NonFungibleGlobalId::new(OBJECT_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+                    NonFungibleGlobalId::new(GLOBAL_OBJECT_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
                 virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
             }
         }

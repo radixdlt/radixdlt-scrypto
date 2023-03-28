@@ -10,7 +10,7 @@ mod child_component {
         }
 
         pub fn get_address(&self) -> ComponentAddress {
-            let address = Runtime::get_global_address();
+            let address = Runtime::global_address();
             address.into()
         }
     }
@@ -38,7 +38,7 @@ mod my_component {
         }
 
         pub fn get_address_in_parent(&self) -> ComponentAddress {
-            let address = Runtime::get_global_address();
+            let address = Runtime::global_address();
             address.into()
         }
 

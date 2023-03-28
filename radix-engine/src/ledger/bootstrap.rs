@@ -219,8 +219,8 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = OBJECT_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(OBJECT_TOKEN.into()));
+        let resource_address = GLOBAL_OBJECT_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(GLOBAL_OBJECT_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
