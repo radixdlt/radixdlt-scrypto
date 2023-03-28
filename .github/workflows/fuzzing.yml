@@ -19,6 +19,10 @@ on:
           - raw
           - unique
           - minimize
+      watch_interval:
+        description: 'Check fuzzing status interval [s]'
+        required: true
+        default: 300
 
 env:
   CARGO_TERM_COLOR: always
@@ -73,7 +77,7 @@ jobs:
     - name: Watch AFL
       working-directory: fuzz-tests
       run: |
-        ./afl.sh watch 60
+        ./afl.sh watch ${{ github.event.inputs.watch_interval }}
 
     - name: Generate summary
       working-directory: fuzz-tests
