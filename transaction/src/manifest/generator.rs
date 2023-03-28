@@ -575,12 +575,7 @@ pub fn generate_instruction(
                         bech32_decoder,
                         blobs,
                     )?,
-                    entries: generate_non_fungible_mint_params(
-                        initial_supply,
-                        resolver,
-                        bech32_decoder,
-                        blobs,
-                    )?,
+                    entries: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
                 },
             ),
         },
@@ -930,46 +925,6 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
-/// This function generates the mint parameters of a non fungible resource from an array which has
-/// the following structure:
-///
-/// Map<NonFungibleLocalId, Tuple>
-/// - Every key is a NonFungibleLocalId
-/// - Every value is a Tuple of length 2
-///    - [0] Tuple (immutable data)
-///    - [1] Tuple (mutable data)
-fn generate_non_fungible_mint_params(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue,)>, GeneratorError> {
-    match value {
-        ast::Value::Map(key_type, _value_type, elements) => {
-            if key_type != &ast::Type::NonFungibleLocalId {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::NonFungibleLocalId,
-                    actual: key_type.clone(),
-                });
-            };
-            if elements.len() % 2 != 0 {
-                return Err(GeneratorError::OddNumberOfElements);
-            }
-
-            let mut mint_params = BTreeMap::new();
-            for i in 0..elements.len() / 2 {
-                let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
-                let non_fungible =
-                    generate_value(&elements[i * 2 + 1], None, resolver, bech32_decoder, blobs)?;
-                mint_params.insert(non_fungible_local_id, (non_fungible,));
-            }
-
-            Ok(mint_params)
-        }
-        v => invalid_type!(v, ast::Type::Array)?,
-    }
-}
-
 pub fn generate_value(
     value: &ast::Value,
     expected_type: Option<ManifestValueKind>,
@@ -1199,13 +1154,14 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::api::types::NonFungibleData;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRulesConfig, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::{dec, pdec};
+    use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1476,10 +1432,46 @@ mod tests {
         );
     }
 
+    #[derive(ScryptoSbor)]
+    struct MyNonFungibleData {
+        name: String,
+        description: String,
+        stored_number: Decimal,
+    }
+
+    // Because we can't import the derive trait
+    impl NonFungibleData for MyNonFungibleData {
+        const MUTABLE_FIELDS: &'static [&'static str] = &["description", "stored_number"];
+    }
+
+    #[test]
+    fn test_generate_non_fungible_instruction_with_specific_data() {
+        // This test is mostly to assist with generating manifest instructions for the testing harness
+        println!(
+            "{}",
+            crate::manifest::decompile(
+                &[Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
+                        ),
+                        metadata: BTreeMap::new(),
+                        access_rules: BTreeMap::new(),
+                    }),
+                }],
+                &NetworkDefinition::simulator()
+            )
+            .unwrap()
+        );
+    }
+
     #[test]
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));"##,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),

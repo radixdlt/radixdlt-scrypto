@@ -33,7 +33,7 @@ test_crates_features() {
     cargo $test_runner $crates $args
 
     if [ $doc_test_separately -eq 1 ] ; then
-        cargo test $crates --doc $args
+        RUST_MIN_STACK=4194304 cargo test $crates --doc $args
     fi
 }
 
