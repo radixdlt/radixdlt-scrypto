@@ -8,7 +8,7 @@ use sbor::rust::prelude::*;
 //=========================================================================
 
 /// The unique identifier of a (stored) node.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct NodeId(pub [u8; Self::LENGTH]);
 
@@ -82,12 +82,12 @@ impl From<Reference> for NodeId {
 }
 
 /// The unique identifier of a node module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct ModuleId(pub u8);
 
 /// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct SubstateKey(Vec<u8>);
 

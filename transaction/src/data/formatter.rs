@@ -1,4 +1,4 @@
-use crate::data::{to_address, to_decimal, to_non_fungible_local_id, to_precise_decimal};
+use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
 use radix_engine_interface::data::manifest::{
     model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };

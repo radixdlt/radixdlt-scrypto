@@ -2,7 +2,7 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_interface::address::{AddressError, Bech32Encoder};
+use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };

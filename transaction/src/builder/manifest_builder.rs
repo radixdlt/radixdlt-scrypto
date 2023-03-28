@@ -518,7 +518,7 @@ impl ManifestBuilder {
 
     pub fn set_method_access_rule(
         &mut self,
-        entity_address: Address,
+        entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     ) -> &mut Self {
@@ -532,7 +532,7 @@ impl ManifestBuilder {
 
     pub fn set_metadata(
         &mut self,
-        entity_address: Address,
+        entity_address: GlobalAddress,
         key: String,
         value: MetadataEntry,
     ) -> &mut Self {

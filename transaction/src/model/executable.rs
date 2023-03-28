@@ -1,4 +1,3 @@
-use radix_engine_common::data::scrypto::model::ResourceAddress;
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::blueprints::transaction_processor::RuntimeValidationRequest;
 use radix_engine_interface::crypto::Hash;

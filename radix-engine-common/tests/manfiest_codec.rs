@@ -1,12 +1,11 @@
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::data::manifest::*;
+use radix_engine_common::types::NodeId;
 use radix_engine_common::*;
 
 #[derive(ManifestSbor, PartialEq, Eq, Debug)]
 struct TestStruct {
     a: ManifestAddress,
-    b: ManifestAddress,
-    c: ManifestAddress,
     d: ManifestBucket,
     e: ManifestProof,
     f: ManifestExpression,
@@ -19,9 +18,7 @@ struct TestStruct {
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress::Package([0u8; 27]),
-        b: ManifestAddress::Resource([1u8; 27]),
-        c: ManifestAddress::Component([3u8; 27]),
+        a: ManifestAddress(NodeId([0u8; 27])),
         d: ManifestBucket(4),
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,

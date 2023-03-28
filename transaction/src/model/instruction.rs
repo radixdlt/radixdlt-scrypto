@@ -113,18 +113,18 @@ pub enum Instruction {
     },
 
     RecallResource {
-        vault_id: NodeId,
+        vault_id: LocalAddress,
         amount: Decimal,
     },
 
     SetMetadata {
-        entity_address: ManifestAddress,
+        entity_address: GlobalAddress,
         key: String,
         value: MetadataEntry,
     },
 
     RemoveMetadata {
-        entity_address: ManifestAddress,
+        entity_address: GlobalAddress,
         key: String,
     },
 
@@ -147,7 +147,7 @@ pub enum Instruction {
     },
 
     SetMethodAccessRule {
-        entity_address: ManifestAddress,
+        entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     },
