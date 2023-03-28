@@ -43,3 +43,6 @@ pub use radix_engine_interface::{
 
 pub use sbor::rust::prelude::*;
 pub use sbor::{Categorize, Decode, DecodeError, Encode, Sbor};
+
+// Needed for macros
+pub use radix_engine_interface::radix_engine_common;

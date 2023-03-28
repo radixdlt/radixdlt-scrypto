@@ -3,7 +3,6 @@ use crate::address::{AddressDisplayContext, EncodeBech32AddressError, EntityType
 use crate::crypto::{hash, PublicKey};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
-use crate::network::NetworkDefinition;
 use crate::types::NodeId;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
@@ -63,8 +62,7 @@ impl ComponentAddress {
         &self.0
     }
 
-    pub fn try_from_bech32(s: &str, network: &NetworkDefinition) -> Option<Self> {
-        let decoder = Bech32Decoder::new(network);
+    pub fn try_from_bech32(decoder: &Bech32Decoder, s: &str) -> Option<Self> {
         if let Ok((_, full_data)) = decoder.validate_and_decode(s) {
             Self::try_from(full_data.as_ref()).ok()
         } else {

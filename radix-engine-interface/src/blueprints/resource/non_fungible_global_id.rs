@@ -46,8 +46,8 @@ impl NonFungibleGlobalId {
         if parts.len() != 2 {
             return Err(ParseNonFungibleGlobalIdError::RequiresTwoParts);
         }
-        let full_data = bech32_decoder.validate_and_decode(parts[0])?;
-        let resource_address = ResourceAddress::try_from(full_data.as_ref())?;
+        let resource_address = ResourceAddress::try_from_bech32(bech32_decoder, parts[0])
+            .ok_or(ParseNonFungibleGlobalIdError::InvalidResourceAddress)?;
         let local_id = NonFungibleLocalId::from_str(parts[1])?;
         Ok(NonFungibleGlobalId::new(resource_address, local_id))
     }
@@ -60,22 +60,9 @@ impl NonFungibleGlobalId {
 /// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleGlobalIdError {
-    DecodeBech32AddressError(DecodeBech32AddressError),
-    InvalidResourceAddress(ParseResourceAddressError),
+    InvalidResourceAddress,
     InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     RequiresTwoParts,
-}
-
-impl From<DecodeBech32AddressError> for ParseNonFungibleGlobalIdError {
-    fn from(err: DecodeBech32AddressError) -> Self {
-        Self::DecodeBech32AddressError(err)
-    }
-}
-
-impl From<ParseResourceAddressError> for ParseNonFungibleGlobalIdError {
-    fn from(err: ParseResourceAddressError) -> Self {
-        Self::InvalidResourceAddress(err)
-    }
 }
 
 impl From<ParseNonFungibleLocalIdError> for ParseNonFungibleGlobalIdError {
@@ -237,7 +224,7 @@ mod tests {
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(&bech32_decoder, ":",),
-            Err(ParseNonFungibleGlobalIdError::DecodeBech32AddressError(_))
+            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
         ));
 
         assert!(matches!(
@@ -245,7 +232,7 @@ mod tests {
                 &bech32_decoder,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#1#",
             ),
-            Err(ParseNonFungibleGlobalIdError::DecodeBech32AddressError(_))
+            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
         ));
 
         assert!(matches!(

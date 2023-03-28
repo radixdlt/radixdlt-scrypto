@@ -24,6 +24,12 @@ impl Bech32Encoder {
         }
     }
 
+    pub fn encode(&self, full_data: &[u8]) -> Result<String, EncodeBech32AddressError> {
+        let mut buf = String::new();
+        self.encode_to_fmt(&mut buf, full_data)?;
+        Ok(buf)
+    }
+
     /// Low level method which performs the Bech32 encoding of the data.
     pub fn encode_to_fmt<F: fmt::Write>(
         &self,
