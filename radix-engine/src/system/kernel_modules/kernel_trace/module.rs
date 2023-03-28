@@ -1,3 +1,4 @@
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::types::*;
 use crate::{
@@ -11,7 +12,6 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::actor::Actor;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}

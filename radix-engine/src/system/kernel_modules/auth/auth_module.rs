@@ -48,10 +48,7 @@ pub struct AuthModule {
 
 impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
-        matches!(
-            actor,
-            Actor::Method(_, RENodeId::GlobalObject(..), ..)
-        )
+        matches!(actor, Actor::Method(_, RENodeId::GlobalObject(..), ..))
     }
 
     fn is_transaction_processor(actor: &Option<Actor>) -> bool {
@@ -379,7 +376,7 @@ impl KernelModule for AuthModule {
             }
             Actor::Function(package_address, blueprint_name, ident) => {
                 Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?
-            },
+            }
             Actor::VirtualLazyLoad(..) => return Ok(()),
         };
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };

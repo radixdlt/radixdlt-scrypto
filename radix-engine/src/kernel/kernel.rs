@@ -1,4 +1,4 @@
-use super::actor::{ExecutionMode};
+use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};

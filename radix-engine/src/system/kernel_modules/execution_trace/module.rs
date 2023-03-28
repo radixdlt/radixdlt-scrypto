@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::{Actor};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -477,15 +477,27 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            Actor::Method(_, RENodeId::Object(vault_id), _module_id, package_address, blueprint_name, ident)
-            if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            Actor::Method(
+                _,
+                RENodeId::Object(vault_id),
+                _module_id,
+                package_address,
+                blueprint_name,
+                ident,
+            ) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
-            Actor::Method(_, RENodeId::Object(vault_id), _module_id, package_address, blueprint_name, ident)
-            if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            Actor::Method(
+                _,
+                RENodeId::Object(vault_id),
+                _module_id,
+                package_address,
+                blueprint_name,
+                ident,
+            ) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
             {
@@ -503,8 +515,14 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         match &current_actor {
-            Some(Actor::Method(_, RENodeId::Object(vault_id), _module_id, package_address, blueprint_name, ident))
-            if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            Some(Actor::Method(
+                _,
+                RENodeId::Object(vault_id),
+                _module_id,
+                package_address,
+                blueprint_name,
+                ident,
+            )) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
@@ -657,8 +675,7 @@ pub fn calculate_resource_changes(
         index_map_new::<usize, IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>(
         );
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
-        if let TraceActor::Actor(Actor::Method(_, node_id, ..)) = actor
-        {
+        if let TraceActor::Actor(Actor::Method(_, node_id, ..)) = actor {
             match vault_op {
                 VaultOp::Create(_) => todo!("Not supported yet!"),
                 VaultOp::Put(resource_address, amount) => {

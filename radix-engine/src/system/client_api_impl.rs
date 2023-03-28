@@ -150,7 +150,8 @@ where
         let package_address = self
             .kernel_get_current_actor()
             .unwrap()
-            .package_address().clone();
+            .package_address()
+            .clone();
 
         let handle = self.kernel_lock_substate(
             &RENodeId::GlobalObject(package_address.into()),
@@ -817,7 +818,9 @@ where
                         ApplicationError::EventError(EventError::NoAssociatedPackage),
                     )),
                 },
-                Some(Actor::Function(package_address, ref blueprint_name, ..)) => Ok((package_address, blueprint_name.clone())),
+                Some(Actor::Function(package_address, ref blueprint_name, ..)) => {
+                    Ok((package_address, blueprint_name.clone()))
+                }
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
                 )),

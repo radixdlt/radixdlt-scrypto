@@ -111,33 +111,37 @@ impl VisibilityProperties {
                         true
                     } else {
                         match &actor {
-                            Actor::VirtualLazyLoad(..) | Actor::Function(..) => match (node_id, offset) {
-                                // READ package code & abi
-                                (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                ) => read_only,
-                                // READ global substates
-                                (
-                                    RENodeId::Object(_),
-                                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                                ) => read_only,
-                                // READ/WRITE KVStore entry
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                // Otherwise, false
-                                _ => false,
-                            },
+                            Actor::VirtualLazyLoad(..) | Actor::Function(..) => {
+                                match (node_id, offset) {
+                                    // READ package code & abi
+                                    (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                    ) => read_only,
+                                    // READ global substates
+                                    (
+                                        RENodeId::Object(_),
+                                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                                    ) => read_only,
+                                    // READ/WRITE KVStore entry
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    // Otherwise, false
+                                    _ => false,
+                                }
+                            }
                             Actor::Method(_, actor_node_id, ..) => {
                                 match actor_node_id {
                                     RENodeId::Object(component_address) => {
@@ -172,8 +176,8 @@ impl VisibilityProperties {
                                         }
                                     }
                                     RENodeId::GlobalObject(Address::Component(
-                                                               component_address,
-                                                           )) => match (node_id, offset) {
+                                        component_address,
+                                    )) => match (node_id, offset) {
                                         // READ package code & abi
                                         (
                                             RENodeId::GlobalObject(_),
@@ -212,34 +216,34 @@ impl VisibilityProperties {
                         true
                     } else {
                         match &actor {
-                            Actor::VirtualLazyLoad(..) | Actor::Function(..) => match (node_id, offset) {
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                _ => false,
-                            },
+                            Actor::VirtualLazyLoad(..) | Actor::Function(..) => {
+                                match (node_id, offset) {
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    _ => false,
+                                }
+                            }
 
-                            Actor::Method(_, actor_node_id, ..) => {
-                                match actor_node_id {
-                                    RENodeId::Object(component_address) => {
-                                        match (node_id, offset) {
-                                            (
-                                                RENodeId::KeyValueStore(_),
-                                                SubstateOffset::KeyValueStore(
-                                                    KeyValueStoreOffset::Entry(..),
-                                                ),
-                                            ) => true,
-                                            (
-                                                RENodeId::Object(addr),
-                                                SubstateOffset::Component(ComponentOffset::State0),
-                                            ) => addr.eq(component_address),
-                                            _ => false,
-                                        }
-                                    }
-                                    RENodeId::GlobalObject(Address::Component(
-                                                               component_address,
-                                                           )) => match (node_id, offset) {
+                            Actor::Method(_, actor_node_id, ..) => match actor_node_id {
+                                RENodeId::Object(component_address) => match (node_id, offset) {
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    (
+                                        RENodeId::Object(addr),
+                                        SubstateOffset::Component(ComponentOffset::State0),
+                                    ) => addr.eq(component_address),
+                                    _ => false,
+                                },
+                                RENodeId::GlobalObject(Address::Component(component_address)) => {
+                                    match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),
                                             SubstateOffset::KeyValueStore(
@@ -251,10 +255,10 @@ impl VisibilityProperties {
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         _ => false,
-                                    },
-                                    _ => false,
+                                    }
                                 }
-                            }
+                                _ => false,
+                            },
                         }
                     }
                 }

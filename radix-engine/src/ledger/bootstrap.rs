@@ -211,12 +211,9 @@ pub fn create_genesis(
 
     // Object Token
     {
-        let metadata: BTreeMap < String,
-        String> = BTreeMap::new();
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw,
-        (rule!(deny_all),
-        rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = GLOBAL_OBJECT_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::GlobalObject(GLOBAL_OBJECT_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
@@ -229,7 +226,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
+            }),
         });
     }
 
