@@ -84,7 +84,9 @@ jobs:
       run: |
         COMMIT=$(git rev-parse --short HEAD)
         echo -e \
-        "## Repo:\n \
+        "## Input params:\n \
+        ${{ toJSON(github.event.inputs) }}\n \
+        ## Repo:\n \
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
         ## Status:\n \
         \n\`\`\`\n \
