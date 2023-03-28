@@ -44,6 +44,21 @@ function get_cpus() {
     fi
 }
 
+function humanize_seconds()
+{
+   local t=$1
+   local d=$((t / 60 / 60 / 24))
+   local h=$((t / 60 / 60 % 24))
+   local m=$((t / 60 % 60))
+   local s=$((t % 60))
+
+   if [ $d -ne 0 ] ; then
+      printf '%d days %02d hours %02d minutes %02d seconds' $d $h $m $s
+   else
+      printf '%02d hours %02d minutes %02d seconds' $h $m $s
+   fi
+}
+
 target=$DFLT_TARGET
 cmd=${1:-watch}
 shift
@@ -53,22 +68,31 @@ if [ $cmd = "run" ] ; then
         error "duration parameter is missing"
     fi
     duration=${1}
+    if ! [[ $duration =~ ^[0-9]+$ ]] ; then
+        error "given duration '$duration' is not a number"
+    fi
     cpus=${2:-1}
     timeout=${3:-$DFLT_AFL_TIMEOUT}
     if [ $cpus = "all" ] ; then
         cpus=$(get_cpus)
         echo "CPU cores available: $cpus"
     fi
+    if ! [[ $cpus =~ ^[0-9]+$ ]] ; then
+        error "given instances '$cpus' is not a number or 'all'"
+    fi
+    if ! [[ $timeout =~ ^[0-9]+$ ]] ; then
+        error "given timeout '$timeout' is not a number"
+    fi
     echo "Running $cpus AFL instances for $duration seconds"
     mkdir -p afl
 
     for (( i=0; i<$cpus; i++ )) ; do
         if [ $i -eq 0 ] ; then
-            name=main_$i
+            name=${target}_main_$i
             # main fuzzer
             fuzzer="-M $name"
         else
-            name=secondary_$i
+            name=${target}_secondary_$i
             # secondary fuzzer
             fuzzer="-S $name"
         fi
@@ -80,17 +104,40 @@ if [ $cmd = "run" ] ; then
     # adding 'true', because screen returns always error, when listing sessions.
     screen -ls afl_ || true
 
+    echo "started=$(date +%s)" > afl/${target}_info
+    echo "duration=$duration" >> afl/${target}_info
+
 elif [ $cmd = "watch" ] ; then
     interval=${1:-$DFLT_INTERVAL}
-    while ! screen -ls afl_ | grep "No Sockets found" ; do
+    duration=
+    started=$(date +%s)
+    # afl/info should include most accurate info on duration and start time
+    if [ -f afl/${target}_info ] ; then
+        source afl/${target}_info
+    fi
+    # if no start time given, then get current time (it's better than nothing)
+    if [ $started = "none" ] ; then
+        stared=$(date +%s)
+    fi
+    while ! screen -ls afl_${target} | grep "No Sockets found" ; do
         sleep $interval
         # afl folder structure created with some delay after fuzz startup
         if [ -d afl/$target ] ; then
             cargo afl whatsup -d afl/$target
         fi
+        now=$(date +%s)
+        run_time=$(( now - started ))
+        echo "Fuzzing duration : $(humanize_seconds $run_time)"
+        if [ $duration != "" ] ; then
+            time_left=$(( duration - run_time ))
+            if [ $time_left -lt 0 ] ; then
+                time_left=0
+            fi
+            echo "Fuzzing ends in  : $(humanize_seconds $time_left)"
+        fi
     done
     echo "AFL instances status (0 means 'ok'):"
-    find afl -name "*.status" | xargs grep -H -v "*"
+    find afl -name "${target}_*.status" | xargs grep -H -v "*"
 else
     error "Command '$cmd' not supported"
 fi
