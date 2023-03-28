@@ -28,7 +28,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![AuthAddresses::system_role()]),
+        .get_executable(btreeset![AuthAddresses::system_role()]),
     );
 
     // Assert
@@ -57,7 +57,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![]),
+        .get_executable(btreeset![]),
     );
 
     // Assert

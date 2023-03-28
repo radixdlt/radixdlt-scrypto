@@ -135,10 +135,10 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     }
 
     fn securify<Y: ClientApi<RuntimeError>>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
-        let access_rules = AttachedAccessRules(receiver);
+        let access_rules = AttachedAccessRules(*receiver);
         let bucket = Self::securify_access_rules(&access_rules, api)?;
         Ok(bucket)
     }

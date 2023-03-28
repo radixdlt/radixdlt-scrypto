@@ -14,7 +14,7 @@ pub trait ExecutableInvocation: Invocation {
     fn resolve<Y: KernelSubstateApi>(
         self,
         api: &mut Y,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError>;
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError>;
 
     fn payload_size(&self) -> usize;
 }
@@ -24,7 +24,7 @@ pub trait Executor {
 
     fn execute<Y, W>(
         self,
-        args: IndexedScryptoValue,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
@@ -37,6 +37,6 @@ pub struct ResolvedInvocation<E: Executor> {
     pub update: CallFrameUpdate,
 
     // TODO: Make these two RENodes / Substates
-    pub resolved_actor: Option<Actor>,
+    pub resolved_actor: Actor,
     pub args: IndexedScryptoValue,
 }

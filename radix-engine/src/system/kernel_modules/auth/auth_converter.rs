@@ -1,4 +1,4 @@
-use super::method_authorization::{
+use super::authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible, MethodAuthorization,
 };

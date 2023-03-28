@@ -94,7 +94,7 @@ fn next_round_with_validator_auth_succeeds() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -132,7 +132,7 @@ fn next_epoch_with_validator_auth_succeeds() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -419,7 +419,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -480,7 +480,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -547,7 +547,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -615,7 +615,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -821,7 +821,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -868,7 +868,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![]),
+        .get_executable(btreeset![]),
     );
 
     // Assert
@@ -909,7 +909,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![AuthAddresses::system_role()]),
+        .get_executable(btreeset![AuthAddresses::system_role()]),
     );
 
     // Assert

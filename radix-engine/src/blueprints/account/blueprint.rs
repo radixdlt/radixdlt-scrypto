@@ -110,7 +110,7 @@ impl AccountBlueprint {
         Ok((account, modules))
     }
 
-    pub fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub fn securify<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -177,7 +177,7 @@ impl AccountBlueprint {
     }
 
     fn lock_fee_internal<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -189,7 +189,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver,
+            *receiver,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -232,7 +232,11 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn lock_fee<Y>(receiver: RENodeId, amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn lock_fee<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -241,7 +245,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_contingent_fee<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -252,7 +256,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn deposit<Y>(receiver: RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn deposit<Y>(receiver: &RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -260,7 +264,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver,
+            *receiver,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?;
@@ -309,7 +313,7 @@ impl AccountBlueprint {
     }
 
     pub fn deposit_batch<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -317,7 +321,7 @@ impl AccountBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver,
+            *receiver,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -375,7 +379,7 @@ impl AccountBlueprint {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -387,7 +391,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver,
+            *receiver,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -427,7 +431,7 @@ impl AccountBlueprint {
     }
 
     pub fn withdraw<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -446,7 +450,7 @@ impl AccountBlueprint {
     }
 
     pub fn withdraw_non_fungibles<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -465,7 +469,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_fee_and_withdraw<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -487,7 +491,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
@@ -509,7 +513,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -527,7 +531,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof_by_amount<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -546,7 +550,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof_by_ids<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

@@ -18,7 +18,7 @@ mod assert_access_rule {
                 ComponentAuthZone::push(bucket.create_proof())
             }
 
-            ComponentAuthZone::assert_access_rule(access_rule);
+            Runtime::assert_access_rule(access_rule);
 
             for _ in buckets.iter() {
                 ComponentAuthZone::pop().drop();

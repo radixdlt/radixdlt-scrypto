@@ -1,3 +1,4 @@
+pub mod auth_api;
 pub mod costing_api;
 pub mod event_api;
 pub mod execution_trace_api;

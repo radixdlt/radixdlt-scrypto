@@ -117,7 +117,6 @@ pub fn decompile_instruction<F: fmt::Write>(
     instruction: &Instruction,
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
-    println!("{:?}", instruction);
     match instruction {
         Instruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context

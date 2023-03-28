@@ -1,4 +1,3 @@
-use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -255,8 +254,8 @@ pub enum RuntimeSubstate {
     PackageCodeType(PackageCodeTypeSubstate),
     PackageRoyalty(PackageRoyaltySubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
-    AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
+    AuthZone(AuthZone),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 
@@ -348,8 +347,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
             /* Node module ends */
-            RuntimeSubstate::AuthZoneStack(..)
-            | RuntimeSubstate::BucketInfo(..)
+            RuntimeSubstate::BucketInfo(..)
             | RuntimeSubstate::BucketLiquidFungible(..)
             | RuntimeSubstate::BucketLiquidNonFungible(..)
             | RuntimeSubstate::BucketLockedFungible(..)
@@ -359,7 +357,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
-            | RuntimeSubstate::Worktop(..) => {
+            | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::AuthZone(..) => {
                 panic!("Should not get here");
             }
         }
@@ -416,8 +415,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
             /* Node module ends */
-            RuntimeSubstate::AuthZoneStack(..)
-            | RuntimeSubstate::BucketInfo(..)
+            RuntimeSubstate::BucketInfo(..)
             | RuntimeSubstate::BucketLiquidFungible(..)
             | RuntimeSubstate::BucketLiquidNonFungible(..)
             | RuntimeSubstate::BucketLockedFungible(..)
@@ -425,7 +423,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
-            | RuntimeSubstate::Worktop(..) => {
+            | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::AuthZone(..) => {
                 panic!("Should not get here");
             }
         }
@@ -514,8 +513,8 @@ impl RuntimeSubstate {
             RuntimeSubstate::FungibleProof(value) => SubstateRefMut::FungibleProof(value),
             RuntimeSubstate::NonFungibleProof(value) => SubstateRefMut::NonFungibleProof(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
-            RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
+            RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
         }
@@ -573,8 +572,8 @@ impl RuntimeSubstate {
             RuntimeSubstate::FungibleProof(value) => SubstateRef::FungibleProof(value),
             RuntimeSubstate::NonFungibleProof(value) => SubstateRef::NonFungibleProof(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
-            RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
+            RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
         }
@@ -972,20 +971,10 @@ impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<AuthZoneStackSubstate> for RuntimeSubstate {
-    fn into(self) -> AuthZoneStackSubstate {
-        if let RuntimeSubstate::AuthZoneStack(substate) = self {
-            substate
-        } else {
-            panic!("Not a auth zone stack");
-        }
-    }
-}
-
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
-    AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
+    AuthZone(&'a AuthZone),
     ComponentInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
@@ -1195,6 +1184,15 @@ impl<'a> From<SubstateRef<'a>> for &'a WorktopSubstate {
     }
 }
 
+impl<'a> From<SubstateRef<'a>> for &'a AuthZone {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::AuthZone(value) => value,
+            _ => panic!("Not a AuthZone"),
+        }
+    }
+}
+
 impl<'a> From<SubstateRef<'a>> for &'a Option<ScryptoValue> {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1276,15 +1274,6 @@ impl<'a> From<SubstateRef<'a>> for &'a AccessControllerSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::AuthZoneStack(value) => value,
-            _ => panic!("Not an AuthZoneStack"),
-        }
-    }
-}
-
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
@@ -1308,6 +1297,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    // TODO: remove this method
     pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {
@@ -1428,12 +1418,16 @@ impl<'a> SubstateRef<'a> {
                 ));
                 (HashSet::new(), owned_nodes)
             }
-            SubstateRef::AuthZoneStack(substate) => {
+            SubstateRef::AuthZone(substate) => {
+                let mut references = HashSet::new();
                 let mut owned_nodes = Vec::new();
-                for p in substate.all_proofs() {
-                    owned_nodes.push(RENodeId::Object(p.0));
+                for proof in &substate.proofs {
+                    owned_nodes.push(RENodeId::Object(proof.0));
                 }
-                (HashSet::new(), owned_nodes)
+                if let Some(parent) = substate.parent {
+                    references.insert(RENodeId::Object(parent.0));
+                }
+                (references, owned_nodes)
             }
             _ => (HashSet::new(), Vec::new()),
         }
@@ -1472,26 +1466,25 @@ pub enum SubstateRefMut<'a> {
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
     Worktop(&'a mut WorktopSubstate),
-    AuthZoneStack(&'a mut AuthZoneStackSubstate),
-    AuthZone(&'a mut AuthZoneStackSubstate),
+    AuthZone(&'a mut AuthZone),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::AuthZoneStack(value) => value,
-            _ => panic!("Not an auth zone"),
-        }
-    }
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut WorktopSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::Worktop(value) => value,
-            _ => panic!("Not an auth zone"),
+            _ => panic!("Not a worktop"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZone {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AuthZone(value) => value,
+            _ => panic!("Not a AuthZone"),
         }
     }
 }

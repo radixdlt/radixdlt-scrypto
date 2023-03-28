@@ -39,6 +39,9 @@ pub enum ExecutionMode {
     DropNode,
     AutoDrop,
 
+    /* System */
+    System,
+
     /* Kernel modules */
     KernelModule,
 

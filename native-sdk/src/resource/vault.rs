@@ -18,7 +18,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalObject(resource_address.into()),
+            &RENodeId::GlobalObject(resource_address.into()),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;
@@ -36,7 +36,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_PUT_IDENT,
             scrypto_encode(&VaultPutInput { bucket }).unwrap(),
         )?;
@@ -53,7 +53,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
         )?;
@@ -68,7 +68,7 @@ impl Vault {
         // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
         )?;
@@ -85,7 +85,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&VaultTakeNonFungiblesInput {
                 non_fungible_local_ids,
@@ -101,7 +101,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_GET_AMOUNT_IDENT,
             scrypto_encode(&VaultGetAmountInput {}).unwrap(),
         )?;
@@ -115,7 +115,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_CREATE_PROOF_IDENT,
             scrypto_encode(&VaultCreateProofInput {}).unwrap(),
         )?;
@@ -132,7 +132,7 @@ impl Vault {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
             scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
         )?;
@@ -149,7 +149,7 @@ impl Vault {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_CREATE_PROOF_BY_IDS_IDENT,
             scrypto_encode(&VaultCreateProofByIdsInput { ids }).unwrap(),
         )?;
@@ -166,7 +166,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_LOCK_FEE_IDENT,
             scrypto_encode(&VaultLockFeeInput {
                 amount,
@@ -186,7 +186,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_LOCK_FEE_IDENT,
             scrypto_encode(&VaultLockFeeInput {
                 amount,
@@ -205,7 +205,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Object(self.0),
+            &RENodeId::Object(self.0),
             VAULT_GET_RESOURCE_ADDRESS_IDENT,
             scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
         )?;

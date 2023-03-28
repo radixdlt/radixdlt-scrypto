@@ -82,8 +82,8 @@ impl IdentityNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
-        input: IndexedScryptoValue,
+        receiver: Option<&RENodeId>,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -255,7 +255,7 @@ impl IdentityBlueprint {
         Self::create_object(access_rules, api)
     }
 
-    fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn securify<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

@@ -106,7 +106,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
         .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(vec![]);
+    let executable = transactions.get_executable(btreeset![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate reads limit to avoid Fee limit transaction result
@@ -143,7 +143,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
         .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(vec![]);
+    let executable = transactions.get_executable(btreeset![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate writes limit to avoid Fee limit transaction result

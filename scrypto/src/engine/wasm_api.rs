@@ -35,6 +35,10 @@ extern "C" {
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
+    //===============
+    // Object API
+    //===============
+
     pub fn new_object(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
@@ -78,23 +82,6 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    //===============
-    // Package API
-    //===============
-
-    pub fn new_package(
-        code_ptr: *const u8,
-        code_len: usize,
-        schema_ptr: *const u8,
-        schema_len: usize,
-        access_rules_chain_ptr: *const u8,
-        access_rules_chain: usize,
-        royalty_config_ptr: *const u8,
-        royalty_config: usize,
-        metadata_ptr: *const u8,
-        metadata_len: usize,
-    ) -> Buffer;
-
     /// Invokes a function on a blueprint.
     pub fn call_function(
         package_address_ptr: *const u8,
@@ -133,15 +120,14 @@ extern "C" {
     pub fn drop_lock(handle: u32);
 
     //===============
-    // Actor API
+    // System API
     //===============
 
-    // Returns the current actor.
     pub fn get_actor() -> Buffer;
 
-    //===============
-    // Events API
-    //===============
+    pub fn get_auth_zone() -> Buffer;
+
+    pub fn assert_access_rule(rule_ptr: *const u8, rule_len: usize);
 
     pub fn emit_event(
         event_name_ptr: *const u8,
@@ -149,10 +135,6 @@ extern "C" {
         event_data_ptr: *const u8,
         event_data_len: usize,
     );
-
-    //===============
-    // Logger API
-    //===============
 
     pub fn log_message(
         level_ptr: *const u8,
@@ -238,22 +220,6 @@ pub unsafe fn call_method(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_package(
-    _code_ptr: *const u8,
-    _code_len: usize,
-    _schema_ptr: *const u8,
-    _schema_len: usize,
-    _access_rules_chain_ptr: *const u8,
-    _access_rules_chain: usize,
-    _royalty_config_ptr: *const u8,
-    _royalty_config: usize,
-    _metadata_ptr: *const u8,
-    _metadata_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn call_function(
     _package_address_ptr: *const u8,
     _package_address_len: usize,
@@ -298,6 +264,16 @@ pub unsafe fn drop_lock(_handle: u32) {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_actor() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_auth_zone() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn assert_access_rule(_rule_ptr: *const u8, _rule_len: usize) {
     unreachable!()
 }
 

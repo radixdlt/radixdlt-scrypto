@@ -7,6 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::vec::Vec;
 
@@ -80,7 +81,7 @@ where
 
         let return_data =
             self.api
-                .call_module_method(receiver, node_module_id, ident.as_str(), args)?;
+                .call_module_method(&receiver, node_module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -210,6 +211,22 @@ where
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)
+    }
+
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let auth_zone = self.api.get_auth_zone()?;
+
+        let buffer = scrypto_encode(&auth_zone).expect("Failed to encode auth_zone");
+        self.allocate_buffer(buffer)
+    }
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let rule =
+            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRules)?;
+
+        self.api
+            .assert_access_rule(rule)
+            .map_err(InvokeError::downstream)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -376,6 +393,10 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.fee_reserve
             .consume_execution(n, CostingReason::RunWasm)
@@ -417,6 +438,10 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

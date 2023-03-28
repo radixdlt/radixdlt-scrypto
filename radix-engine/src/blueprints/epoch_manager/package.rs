@@ -218,8 +218,8 @@ impl EpochManagerNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
-        input: IndexedScryptoValue,
+        receiver: Option<&RENodeId>,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

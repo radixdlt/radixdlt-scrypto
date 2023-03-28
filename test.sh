@@ -31,7 +31,7 @@ test_packages \
     examples/no-std"
 
 echo "Testing CLIs..."
-(cd simulator; cargo test)
+(cd simulator; RUST_MIN_STACK=4194304 cargo test)
 test_cli \
     "./tests/resim.sh \
     ./tests/scrypto.sh \

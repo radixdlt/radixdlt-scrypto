@@ -188,12 +188,15 @@ impl EpochManagerBlueprint {
         Ok(address)
     }
 
-    pub(crate) fn get_current_epoch<Y>(receiver: RENodeId, api: &mut Y) -> Result<u64, RuntimeError>
+    pub(crate) fn get_current_epoch<Y>(
+        receiver: &RENodeId,
+        api: &mut Y,
+    ) -> Result<u64, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
@@ -204,7 +207,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn next_round<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         round: u64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -212,7 +215,7 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
+        let mgr_handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
         let epoch_manager: &mut EpochManagerSubstate =
             api.kernel_get_substate_ref_mut(mgr_handle)?;
 
@@ -227,7 +230,7 @@ impl EpochManagerBlueprint {
 
         if round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
+            let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
             let preparing_validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
             let prepared_epoch = preparing_validator_set.epoch;
@@ -240,7 +243,7 @@ impl EpochManagerBlueprint {
             epoch_manager.round = 0;
 
             let handle = api.sys_lock_substate(
-                receiver,
+                receiver.clone(),
                 SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
                 LockFlags::MUTABLE,
             )?;
@@ -266,7 +269,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn set_epoch<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         epoch: u64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -274,7 +277,7 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::MUTABLE,
         )?;
@@ -286,7 +289,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         key: EcdsaSecp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
@@ -294,7 +297,7 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
@@ -308,7 +311,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
-        receiver: RENodeId,
+        receiver: &RENodeId,
         validator_address: ComponentAddress,
         update: UpdateValidator,
         api: &mut Y,
@@ -317,7 +320,7 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
             LockFlags::MUTABLE,
         )?;

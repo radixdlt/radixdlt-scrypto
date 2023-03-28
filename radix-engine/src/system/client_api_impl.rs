@@ -1,6 +1,6 @@
 use crate::errors::SystemError;
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -33,6 +33,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
 
 impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
@@ -64,7 +65,7 @@ where
             NodeModuleId::SELF
         };
 
-        self.kernel_lock_substate(node_id, module_id, offset, flags)
+        self.kernel_lock_substate(&node_id, module_id, offset, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -84,7 +85,7 @@ where
         } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&NodeModuleId::SELF) {
-            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+            let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
@@ -137,15 +138,6 @@ where
     }
 }
 
-impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
-    }
-}
-
 impl<'g, 's, W> ClientObjectApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -162,7 +154,7 @@ where
             .package_address();
 
         let handle = self.kernel_lock_substate(
-            RENodeId::GlobalObject(package_address.into()),
+            &RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
@@ -369,7 +361,7 @@ where
 
         let node_type = match node_id {
             RENodeId::Object(..) => {
-                let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+                let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let (package_address, blueprint) = match type_info {
                     TypeInfoSubstate::Object {
                         package_address,
@@ -423,7 +415,7 @@ where
             )));
         }
 
-        let node = self.kernel_drop_node(node_id)?;
+        let node = self.kernel_drop_node(&node_id)?;
 
         let mut module_substates = BTreeMap::new();
         let mut component_substates = BTreeMap::new();
@@ -476,7 +468,7 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(RENodeId::Object(object_id))?;
+                    let mut node = self.kernel_drop_node(&RENodeId::Object(object_id))?;
 
                     let access_rules = node
                         .substates
@@ -505,7 +497,7 @@ where
                         }));
                     }
 
-                    let node = self.kernel_drop_node(node_id)?;
+                    let node = self.kernel_drop_node(&node_id)?;
 
                     let mut substates = BTreeMap::new();
                     for ((module_id, offset), substate) in node.substates {
@@ -534,7 +526,7 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(node_id)?;
+                    let mut node = self.kernel_drop_node(&node_id)?;
 
                     let config = node
                         .substates
@@ -572,7 +564,7 @@ where
 
     fn call_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -581,15 +573,15 @@ where
 
     fn call_module_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         node_module_id: NodeModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = MethodInvocation {
-            identifier: MethodIdentifier(receiver, node_module_id, method_name.to_string()),
+        let invocation = Box::new(MethodInvocation {
+            identifier: MethodIdentifier(receiver.clone(), node_module_id, method_name.to_string()),
             args,
-        };
+        });
 
         self.kernel_invoke(invocation).map(|v| v.into())
     }
@@ -601,14 +593,14 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = FunctionInvocation {
+        let invocation = Box::new(FunctionInvocation {
             identifier: FunctionIdentifier::new(
                 package_address,
                 blueprint_name.to_string(),
                 function_name.to_string(),
             ),
             args,
-        };
+        });
 
         self.kernel_invoke(invocation).map(|v| v.into())
     }
@@ -617,7 +609,7 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object {
                 package_address,
@@ -636,7 +628,7 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
@@ -669,7 +661,7 @@ where
     }
 
     fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.kernel_drop_node(node_id)?;
+        self.kernel_drop_node(&node_id)?;
         Ok(())
     }
 }
@@ -707,6 +699,56 @@ where
         self.kernel_get_module_state()
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
+    }
+}
+
+impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
+    }
+}
+
+impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
+
+        Ok(auth_zone_id.into())
+    }
+
+    fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
+        let authorization = convert_contextless(&rule);
+        let barrier_crossings_allowed = 0;
+        let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
+
+        // Authenticate
+        // TODO: should we just run in `Client` model?
+        // Currently, this is to allow authentication to read auth zone substates directly without invocation.
+        self.execute_in_mode(ExecutionMode::System, |api| {
+            if !Authentication::verify_method_auth(
+                barrier_crossings_allowed,
+                auth_zone_id,
+                &authorization,
+                api,
+            )? {
+                return Err(RuntimeError::SystemError(
+                    SystemError::AssertAccessRuleFailed,
+                ));
+            }
+            Ok(())
+        })
     }
 }
 
@@ -784,7 +826,7 @@ where
             }?;
 
             let handle = self.kernel_lock_substate(
-                RENodeId::GlobalObject(Address::Package(package_address)),
+                &RENodeId::GlobalObject(Address::Package(package_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),

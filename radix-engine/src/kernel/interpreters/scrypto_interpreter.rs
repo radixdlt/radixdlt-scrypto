@@ -12,7 +12,7 @@ use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi};
-use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
+use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -97,7 +97,7 @@ impl ExecutableInvocation for MethodInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -109,7 +109,7 @@ impl ExecutableInvocation for MethodInvocation {
 
         let (package_address, blueprint_name) = match self.identifier.1 {
             NodeModuleId::SELF => {
-                let type_info = TypeInfoBlueprint::get_type(self.identifier.0, api)?;
+                let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
                     TypeInfoSubstate::Object {
                         package_address,
@@ -151,7 +151,7 @@ impl ExecutableInvocation for MethodInvocation {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(fn_identifier.package_address.into()),
+                    &RENodeId::GlobalObject(fn_identifier.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -187,7 +187,7 @@ impl ExecutableInvocation for MethodInvocation {
         };
 
         let resolved = ResolvedInvocation {
-            resolved_actor: Some(actor),
+            resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
@@ -196,7 +196,7 @@ impl ExecutableInvocation for MethodInvocation {
             args: value,
         };
 
-        Ok(resolved)
+        Ok(Box::new(resolved))
     }
 
     fn payload_size(&self) -> usize {
@@ -210,7 +210,7 @@ impl ExecutableInvocation for FunctionInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -234,7 +234,7 @@ impl ExecutableInvocation for FunctionInvocation {
                 // Will just disable the module for genesis.
             } else {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.identifier.0.into()),
+                    &RENodeId::GlobalObject(self.identifier.0.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -263,7 +263,7 @@ impl ExecutableInvocation for FunctionInvocation {
         }
 
         let resolved = ResolvedInvocation {
-            resolved_actor: Some(actor),
+            resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
@@ -277,7 +277,7 @@ impl ExecutableInvocation for FunctionInvocation {
             },
         };
 
-        Ok(resolved)
+        Ok(Box::new(resolved))
     }
 
     fn payload_size(&self) -> usize {
@@ -291,16 +291,16 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let resolved = ResolvedInvocation {
-            resolved_actor: Some(Actor {
+            resolved_actor: Actor {
                 fn_identifier: FnIdentifier {
                     package_address: self.package_address,
                     blueprint_name: self.blueprint_name.to_string(),
                     ident: FnIdent::System(self.virtual_func_id),
                 },
                 identifier: ActorIdentifier::VirtualLazyLoad,
-            }),
+            },
             update: CallFrameUpdate::empty(),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
             executor: ScryptoExecutor {
@@ -311,7 +311,7 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
             },
         };
 
-        Ok(resolved)
+        Ok(Box::new(resolved))
     }
 
     fn payload_size(&self) -> usize {
@@ -331,7 +331,7 @@ impl Executor for ScryptoExecutor {
 
     fn execute<Y, W>(
         self,
-        args: IndexedScryptoValue,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
@@ -352,7 +352,7 @@ impl Executor for ScryptoExecutor {
             };
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(self.package_address.into()),
+                &RENodeId::GlobalObject(self.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -363,7 +363,7 @@ impl Executor for ScryptoExecutor {
 
             NativeVm::invoke_native_package(
                 PACKAGE_CODE_ID,
-                self.receiver,
+                &self.receiver,
                 &export_name,
                 args,
                 api,
@@ -382,7 +382,7 @@ impl Executor for ScryptoExecutor {
 
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
-                self.receiver,
+                &self.receiver,
                 &export_name,
                 args,
                 api,
@@ -390,7 +390,7 @@ impl Executor for ScryptoExecutor {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalObject(self.package_address.into()),
+                &RENodeId::GlobalObject(self.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -400,7 +400,7 @@ impl Executor for ScryptoExecutor {
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.package_address.into()),
+                    &RENodeId::GlobalObject(self.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
@@ -418,7 +418,7 @@ impl Executor for ScryptoExecutor {
                     ))?
                     .clone();
                 api.kernel_drop_lock(handle)?;
-                schema
+                Box::new(schema)
             };
 
             //  Validate input
@@ -443,7 +443,7 @@ impl Executor for ScryptoExecutor {
             // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.package_address.into()),
+                    &RENodeId::GlobalObject(self.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -456,7 +456,7 @@ impl Executor for ScryptoExecutor {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalObject(self.package_address.into()),
+                        &RENodeId::GlobalObject(self.package_address.into()),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
@@ -467,7 +467,7 @@ impl Executor for ScryptoExecutor {
 
                     NativeVm::invoke_native_package(
                         native_package_code_id,
-                        self.receiver,
+                        &self.receiver,
                         &export_name,
                         args,
                         api,
@@ -477,7 +477,7 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalObject(self.package_address.into()),
+                            &RENodeId::GlobalObject(self.package_address.into()),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
@@ -505,7 +505,7 @@ impl Executor for ScryptoExecutor {
                         }
                         input.push(
                             runtime
-                                .allocate_buffer(args.into())
+                                .allocate_buffer(args.as_slice().to_vec())
                                 .expect("Failed to allocate buffer"),
                         );
 
@@ -549,15 +549,15 @@ struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
-        receiver: Option<MethodIdentifier>,
+        receiver: &Option<MethodIdentifier>,
         export_name: &str,
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let receiver = receiver.map(|r| r.0);
+        let receiver = receiver.as_ref().map(|x| &x.0);
 
         match native_package_code_id {
             PACKAGE_CODE_ID => {
@@ -581,9 +581,6 @@ impl NativeVm {
             }
             TRANSACTION_PROCESSOR_CODE_ID => {
                 TransactionProcessorNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            AUTH_ZONE_CODE_ID => {
-                AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             METADATA_CODE_ID => {
                 MetadataNativePackage::invoke_export(&export_name, receiver, input, api)

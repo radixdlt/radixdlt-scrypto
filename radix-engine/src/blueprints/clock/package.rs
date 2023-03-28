@@ -98,8 +98,8 @@ impl ClockNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
-        input: IndexedScryptoValue,
+        receiver: Option<&RENodeId>,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -147,7 +147,7 @@ impl ClockNativePackage {
     }
 
     fn create<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -197,8 +197,8 @@ impl ClockNativePackage {
     }
 
     fn set_current_time<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -213,7 +213,7 @@ impl ClockNativePackage {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
             LockFlags::MUTABLE,
         )?;
@@ -226,8 +226,8 @@ impl ClockNativePackage {
     }
 
     fn get_current_time<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -240,7 +240,7 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
-                    receiver,
+                    receiver.clone(),
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
@@ -254,8 +254,8 @@ impl ClockNativePackage {
     }
 
     fn compare_current_time<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -268,7 +268,7 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
-                    receiver,
+                    receiver.clone(),
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;

@@ -55,12 +55,12 @@ impl KernelModule for VirtualizationModule {
                 };
 
                 let rtn: Vec<u8> = api
-                    .kernel_invoke(VirtualLazyLoadInvocation {
+                    .kernel_invoke(Box::new(VirtualLazyLoadInvocation {
                         package_address: package,
                         blueprint_name: blueprint.to_string(),
                         virtual_func_id: virtual_func_id,
                         args: id,
-                    })?
+                    }))?
                     .into();
 
                 let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =

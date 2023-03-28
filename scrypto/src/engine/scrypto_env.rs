@@ -1,7 +1,9 @@
 use crate::engine::wasm_api::*;
+use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
@@ -101,7 +103,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
@@ -110,12 +112,12 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_module_method(
         &mut self,
-        receiver: RENodeId,
+        receiver: &RENodeId,
         node_module_id: NodeModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        let receiver = scrypto_encode(&receiver).unwrap();
+        let receiver = scrypto_encode(receiver).unwrap();
 
         let return_data = copy_buffer(unsafe {
             call_method(
@@ -228,6 +230,22 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         let actor = copy_buffer(unsafe { get_actor() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+}
+
+impl ClientAuthApi<ClientApiError> for ScryptoEnv {
+    fn get_auth_zone(&mut self) -> Result<ObjectId, ClientApiError> {
+        let auth_zone = copy_buffer(unsafe { get_auth_zone() });
+
+        scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)
+    }
+
+    fn assert_access_rule(&mut self, access_rule: AccessRule) -> Result<(), ClientApiError> {
+        let access_rule = scrypto_encode(&access_rule).unwrap();
+
+        unsafe { assert_access_rule(access_rule.as_ptr(), access_rule.len()) };
+
+        Ok(())
     }
 }
 

@@ -290,8 +290,8 @@ impl AccessControllerNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
-        input: IndexedScryptoValue,
+        receiver: Option<&RENodeId>,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -403,7 +403,7 @@ impl AccessControllerNativePackage {
     }
 
     fn create_global<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -449,8 +449,8 @@ impl AccessControllerNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -466,8 +466,8 @@ impl AccessControllerNativePackage {
     }
 
     fn initiate_recovery_as_primary<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -502,8 +502,8 @@ impl AccessControllerNativePackage {
     }
 
     fn initiate_recovery_as_recovery<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -538,8 +538,8 @@ impl AccessControllerNativePackage {
     }
 
     fn quick_confirm_primary_role_recovery_proposal<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -580,8 +580,8 @@ impl AccessControllerNativePackage {
     }
 
     fn quick_confirm_recovery_role_recovery_proposal<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -622,8 +622,8 @@ impl AccessControllerNativePackage {
     }
 
     fn timed_confirm_recovery<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -664,8 +664,8 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_primary_role_recovery_proposal<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -693,8 +693,8 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_recovery_role_recovery_proposal<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -722,8 +722,8 @@ impl AccessControllerNativePackage {
     }
 
     fn lock_primary_role<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -744,8 +744,8 @@ impl AccessControllerNativePackage {
     }
 
     fn unlock_primary_role<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -766,8 +766,8 @@ impl AccessControllerNativePackage {
     }
 
     fn stop_timed_recovery<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -918,7 +918,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
 }
 
 fn transition<Y, I>(
-    node_id: RENodeId,
+    receiver: &RENodeId,
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
@@ -927,7 +927,7 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+    let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -942,7 +942,7 @@ where
 }
 
 fn transition_mut<Y, I>(
-    node_id: RENodeId,
+    receiver: &RENodeId,
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
@@ -951,7 +951,7 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+    let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -973,7 +973,7 @@ where
 
 fn update_access_rules<Y>(
     api: &mut Y,
-    receiver: RENodeId,
+    receiver: &RENodeId,
     access_rules: AccessRulesConfig,
 ) -> Result<(), RuntimeError>
 where
@@ -981,7 +981,7 @@ where
 {
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
         api.call_module_method(
-            receiver.into(),
+            receiver,
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -995,7 +995,7 @@ where
         match entry {
             AccessRuleEntry::AccessRule(access_rule) => {
                 api.call_module_method(
-                    receiver.into(),
+                    receiver,
                     NodeModuleId::AccessRules,
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                     scrypto_encode(&AccessRulesSetMethodAccessRuleInput {

@@ -34,7 +34,7 @@ pub struct WorktopBlueprint;
 
 impl WorktopBlueprint {
     pub(crate) fn drop<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -44,7 +44,7 @@ impl WorktopBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let mut node = api.kernel_drop_node(RENodeId::Object(input.worktop.id()))?;
+        let mut node = api.kernel_drop_node(&RENodeId::Object(input.worktop.id()))?;
         let substate = node
             .substates
             .remove(&(
@@ -62,8 +62,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn put<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -81,7 +81,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             let worktop_handle = api.sys_lock_substate(
-                receiver,
+                receiver.clone(),
                 SubstateOffset::Worktop(WorktopOffset::Worktop),
                 LockFlags::MUTABLE,
             )?;
@@ -99,8 +99,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -118,7 +118,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
             let worktop_handle = api.sys_lock_substate(
-                receiver,
+                receiver.clone(),
                 SubstateOffset::Worktop(WorktopOffset::Worktop),
                 LockFlags::MUTABLE,
             )?;
@@ -155,8 +155,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_non_fungibles<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -174,7 +174,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
             let worktop_handle = api.sys_lock_substate(
-                receiver,
+                receiver.clone(),
                 SubstateOffset::Worktop(WorktopOffset::Worktop),
                 LockFlags::MUTABLE,
             )?;
@@ -211,8 +211,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_all<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -223,7 +223,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
@@ -240,8 +240,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -252,7 +252,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
@@ -272,8 +272,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_amount<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -284,7 +284,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
@@ -304,8 +304,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_non_fungibles<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -316,7 +316,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
@@ -337,8 +337,8 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
+        receiver: &RENodeId,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -349,7 +349,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver,
+            receiver.clone(),
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;

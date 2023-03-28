@@ -470,7 +470,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .mint_fungible(resource_address, 10.into())
-        .burn(10.into(), resource_address)
+        .burn_from_worktop(10.into(), resource_address)
         .build();
 
     // Act
@@ -552,7 +552,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .mint_non_fungible(resource_address, [(id.clone(), EmptyStruct {})])
-        .burn(1.into(), resource_address)
+        .burn_from_worktop(1.into(), resource_address)
         .build();
 
     // Act
@@ -636,7 +636,7 @@ fn epoch_manager_round_update_emits_correct_event() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -683,7 +683,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
