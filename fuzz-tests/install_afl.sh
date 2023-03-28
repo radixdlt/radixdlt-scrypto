@@ -1,13 +1,8 @@
 #!/bin/bash
 
-# this is to install a 'cargo afl' fuzzer with a flag, which prevents setting 'fuzzing' flag
+# This is to install a 'cargo afl' fuzzer with a flag, which prevents setting 'fuzzing' flag
 # when compiling fuzzed targets.
-
-if cargo afl help 1>/dev/null 2>&1 ; then
-    echo -e "cargo afl already installed. Remove it first with \ncargo uninstall afl"
-    exit 1
-fi
-
+# Installing it forcefully to make sure AFL is built wit the current rustc version
 echo "Installing cargo-afl"
-cargo install afl --features no_cfg_fuzzing
+cargo install --force afl --features no_cfg_fuzzing
 
