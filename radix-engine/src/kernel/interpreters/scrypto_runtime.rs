@@ -110,14 +110,16 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
-        app_states: Vec<u8>,
+        object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
+        let object_states = scrypto_decode::<Vec<Vec<u8>>>(&object_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
-        let component_id = self.api.new_object(blueprint_ident.as_ref(), app_states)?;
+        let component_id = self
+            .api
+            .new_object(blueprint_ident.as_ref(), object_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 
@@ -340,7 +342,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
-        app_states: Vec<u8>,
+        object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

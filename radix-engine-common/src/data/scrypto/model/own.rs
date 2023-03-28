@@ -1,7 +1,6 @@
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::types::NodeId;
 use crate::*;
-use radix_engine_constants::NODE_ID_LENGTH;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
@@ -26,7 +25,7 @@ impl TryFrom<&[u8]> for Own {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
+            NodeId::LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
             _ => Err(ParseOwnError::InvalidLength(slice.len())),
         }
     }
@@ -59,7 +58,7 @@ well_known_scrypto_custom_type!(
     Own,
     ScryptoCustomValueKind::Own,
     Type::Own,
-    NODE_ID_LENGTH,
+    NodeId::LENGTH,
     OWN_ID
 );
 

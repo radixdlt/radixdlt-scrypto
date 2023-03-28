@@ -4,7 +4,6 @@ use crate::data::scrypto::*;
 use crate::types::NodeId;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -15,7 +14,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct LocalAddress(NodeId); // private to ensure entity type check
 
 impl LocalAddress {
-    pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
+    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
 
@@ -34,10 +33,10 @@ impl AsRef<[u8]> for LocalAddress {
     }
 }
 
-impl TryFrom<[u8; NODE_ID_LENGTH]> for LocalAddress {
+impl TryFrom<[u8; NodeId::LENGTH]> for LocalAddress {
     type Error = ParseLocalAddressError;
 
-    fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         match EntityType::from_repr(value[0])
             .ok_or(ParseLocalAddressError::InvalidEntityTypeId(value[0]))?
         {
@@ -71,14 +70,14 @@ impl TryFrom<&[u8]> for LocalAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => LocalAddress::try_from(copy_u8_array(slice)),
+            NodeId::LENGTH => LocalAddress::try_from(copy_u8_array(slice)),
             _ => Err(ParseLocalAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Into<[u8; NODE_ID_LENGTH]> for LocalAddress {
-    fn into(self) -> [u8; NODE_ID_LENGTH] {
+impl Into<[u8; NodeId::LENGTH]> for LocalAddress {
+    fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
     }
 }
@@ -111,14 +110,14 @@ well_known_scrypto_custom_type!(
     LocalAddress,
     ScryptoCustomValueKind::Reference,
     Type::Address,
-    NODE_ID_LENGTH,
+    NodeId::LENGTH,
     ADDRESS_ID
 );
 
 manifest_type!(
     LocalAddress,
     ManifestCustomValueKind::Address,
-    NODE_ID_LENGTH
+    NodeId::LENGTH
 );
 
 //======

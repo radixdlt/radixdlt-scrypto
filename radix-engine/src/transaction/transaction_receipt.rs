@@ -119,7 +119,9 @@ impl CommitResult {
                     ..,
                 )
                 | Emitter::Method(
-                    NodeId::GlobalObject(GlobalAddress::Component(ComponentAddress::EpochManager(..))),
+                    NodeId::GlobalObject(GlobalAddress::Component(ComponentAddress::EpochManager(
+                        ..,
+                    ))),
                     TypedModuleId::ObjectState,
                 ),
                 ..,
@@ -149,7 +151,9 @@ impl CommitResult {
         &self.state_update_summary.new_resources
     }
 
-    pub fn balance_changes(&self) -> &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
+    pub fn balance_changes(
+        &self,
+    ) -> &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.balance_changes
     }
 

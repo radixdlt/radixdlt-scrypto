@@ -42,8 +42,8 @@ extern "C" {
     pub fn new_object(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
-        app_states_ptr: *const u8,
-        app_states_len: usize,
+        object_states_ptr: *const u8,
+        object_states_len: usize,
     ) -> Buffer;
 
     pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
@@ -157,8 +157,8 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 pub unsafe fn new_object(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
-    _app_states_ptr: *const u8,
-    _app_states: usize,
+    _object_states_ptr: *const u8,
+    _object_states: usize,
 ) -> Buffer {
     unreachable!()
 }

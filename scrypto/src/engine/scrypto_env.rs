@@ -1,5 +1,5 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::address_types::ComponentAddress;
+use radix_engine_interface::address_types::GlobalAddress;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::ClientTransactionRuntimeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
@@ -27,16 +27,16 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: Vec<Vec<u8>>,
+        object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, ClientApiError> {
-        let app_states = scrypto_encode(&app_states).unwrap();
+        let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
             new_object(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
-                app_states.as_ptr(),
-                app_states.len(),
+                object_states.as_ptr(),
+                object_states.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -67,7 +67,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-    ) -> Result<ComponentAddress, ClientApiError> {
+    ) -> Result<GlobalAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
 
@@ -86,7 +86,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-        address: ComponentAddress,
+        address: GlobalAddress,
     ) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();

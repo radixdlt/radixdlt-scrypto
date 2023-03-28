@@ -4,7 +4,6 @@ use crate::data::scrypto::*;
 use crate::types::NodeId;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use utils::{copy_u8_array, ContextualDisplay};
@@ -14,7 +13,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct ResourceAddress(NodeId); // private to ensure entity type check
 
 impl ResourceAddress {
-    pub const fn new_unchecked(raw: [u8; NODE_ID_LENGTH]) -> Self {
+    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
 
@@ -33,10 +32,10 @@ impl AsRef<[u8]> for ResourceAddress {
     }
 }
 
-impl TryFrom<[u8; NODE_ID_LENGTH]> for ResourceAddress {
+impl TryFrom<[u8; NodeId::LENGTH]> for ResourceAddress {
     type Error = ParseResourceAddressError;
 
-    fn try_from(value: [u8; NODE_ID_LENGTH]) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         match EntityType::from_repr(value[0])
             .ok_or(ParseResourceAddressError::InvalidEntityTypeId(value[0]))?
         {
@@ -53,14 +52,14 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => ResourceAddress::try_from(copy_u8_array(slice)),
+            NodeId::LENGTH => ResourceAddress::try_from(copy_u8_array(slice)),
             _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Into<[u8; NODE_ID_LENGTH]> for ResourceAddress {
-    fn into(self) -> [u8; NODE_ID_LENGTH] {
+impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
+    fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
     }
 }
@@ -99,14 +98,14 @@ well_known_scrypto_custom_type!(
     ResourceAddress,
     ScryptoCustomValueKind::Reference,
     Type::ResourceAddress,
-    NODE_ID_LENGTH,
+    NodeId::LENGTH,
     RESOURCE_ADDRESS_ID
 );
 
 manifest_type!(
     ResourceAddress,
     ManifestCustomValueKind::Address,
-    NODE_ID_LENGTH
+    NodeId::LENGTH
 );
 
 //========

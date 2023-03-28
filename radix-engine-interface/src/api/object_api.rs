@@ -8,11 +8,15 @@ use scrypto_schema::KeyValueStoreSchema;
 
 pub trait ClientObjectApi<E> {
     // TODO: refine the interface
-    fn new_object(&mut self, blueprint_ident: &str, app_states: Vec<Vec<u8>>) -> Result<NodeId, E>;
-
-    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<(PackageAddress, String), E>;
+    fn new_object(
+        &mut self,
+        blueprint_ident: &str,
+        object_states: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E>;
 
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
+
+    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<(PackageAddress, String), E>;
 
     fn get_key_value_store_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
 
@@ -20,13 +24,13 @@ pub trait ClientObjectApi<E> {
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-    ) -> Result<ComponentAddress, E>;
+    ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
         modules: BTreeMap<TypedModuleId, NodeId>,
-        address: ComponentAddress,
+        address: GlobalAddress,
     ) -> Result<(), E>;
 
     fn call_method(

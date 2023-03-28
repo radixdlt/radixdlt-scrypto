@@ -239,15 +239,15 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             blueprint_ident_ptr: u32,
             blueprint_ident_len: u32,
-            app_states_ptr: u32,
-            app_states_len: u32,
+            object_states_ptr: u32,
+            object_states_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
                 .new_object(
                     read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
-                    read_memory(&instance, app_states_ptr, app_states_len)?,
+                    read_memory(&instance, object_states_ptr, object_states_len)?,
                 )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 

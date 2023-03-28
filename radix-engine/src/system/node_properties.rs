@@ -177,7 +177,9 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    NodeId::GlobalObject(GlobalAddress::Component(component_address)),
+                                    NodeId::GlobalObject(GlobalAddress::Component(
+                                        component_address,
+                                    )),
                                     ..,
                                 ) => match (node_id, offset) {
                                     // READ package code & abi
@@ -246,7 +248,9 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    NodeId::GlobalObject(GlobalAddress::Component(component_address)),
+                                    NodeId::GlobalObject(GlobalAddress::Component(
+                                        component_address,
+                                    )),
                                     ..,
                                 ) => match (node_id, offset) {
                                     (

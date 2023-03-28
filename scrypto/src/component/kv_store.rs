@@ -18,7 +18,7 @@ pub struct KeyValueStore<
     K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
     V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
 > {
-    pub id: NodeId,
+    pub id: Own,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
@@ -37,7 +37,7 @@ impl<
         let id = env.new_key_value_store(schema).unwrap();
 
         Self {
-            id,
+            id: Own(id),
             key: PhantomData,
             value: PhantomData,
         }
@@ -47,13 +47,9 @@ impl<
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
+        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(
-                NodeId::KeyValueStore(self.id),
-                offset,
-                LockFlags::read_only(),
-            )
+            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::read_only())
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -74,13 +70,9 @@ impl<
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
+        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(
-                NodeId::KeyValueStore(self.id),
-                offset.clone(),
-                LockFlags::MUTABLE,
-            )
+            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::MUTABLE)
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -107,13 +99,9 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let value_payload = scrypto_encode(&value).unwrap();
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload.clone()));
+        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(
-                NodeId::KeyValueStore(self.id),
-                offset.clone(),
-                LockFlags::MUTABLE,
-            )
+            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::MUTABLE)
             .unwrap();
         let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
         env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
@@ -149,7 +137,7 @@ impl<
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::KeyValueStore(self.id).encode_body(encoder)
+        self.id.encode_body(encoder)
     }
 }
 
@@ -164,14 +152,11 @@ impl<
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         let own = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match own {
-            Own::KeyValueStore(_) => Ok(Self {
-                id: own.kv_store_id(),
-                key: PhantomData,
-                value: PhantomData,
-            }),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Ok(Self {
+            id: own,
+            key: PhantomData,
+            value: PhantomData,
+        })
     }
 }
 

@@ -181,8 +181,8 @@ fn new_object(
     mut caller: Caller<'_, HostState>,
     blueprint_ident_ptr: u32,
     blueprint_ident_len: u32,
-    app_states_ptr: u32,
-    app_states_len: u32,
+    object_states_ptr: u32,
+    object_states_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -197,8 +197,8 @@ fn new_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
-                app_states_ptr,
-                app_states_len,
+                object_states_ptr,
+                object_states_len,
             )?,
         )
         .map(|buffer| buffer.0)
@@ -508,15 +508,15 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              blueprint_ident_ptr: u32,
              blueprint_ident_len: u32,
-             app_states_ptr: u32,
-             app_states_len: u32|
+             object_states_ptr: u32,
+             object_states_len: u32|
              -> Result<u64, Trap> {
                 new_object(
                     caller,
                     blueprint_ident_ptr,
                     blueprint_ident_len,
-                    app_states_ptr,
-                    app_states_len,
+                    object_states_ptr,
+                    object_states_len,
                 )
                 .map_err(|e| e.into())
             },

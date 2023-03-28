@@ -151,20 +151,28 @@ pub trait LocalComponent: Sized {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct OwnedComponent(pub NodeId);
+pub struct OwnedComponent(pub Own);
 
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv.call_method(&self.0, method, args).unwrap();
+        let output = ScryptoEnv
+            .call_method(self.0.as_node_id(), method, args)
+            .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
-        ScryptoEnv.get_object_type_info(self.0).unwrap().0
+        ScryptoEnv
+            .get_object_type_info(self.0.as_node_id())
+            .unwrap()
+            .0
     }
 
     fn blueprint_name(&self) -> String {
-        ScryptoEnv.get_object_type_info(self.0).unwrap().1
+        ScryptoEnv
+            .get_object_type_info(self.0.as_node_id())
+            .unwrap()
+            .1
     }
 }
 
@@ -175,13 +183,13 @@ impl LocalComponent for OwnedComponent {
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
-        let metadata: Own = Own(metadata.0);
-        let access_rules: Own = Own(access_rules.0);
-        let royalty: Own = Own(royalty.0);
+        let metadata: Own = metadata.0;
+        let access_rules: Own = access_rules.0;
+        let royalty: Own = royalty.0;
 
         let address = ScryptoEnv
             .globalize(
-                self.0,
+                self.0.as_node_id().clone(),
                 btreemap!(
                     TypedModuleId::AccessRules => access_rules.0,
                     TypedModuleId::Metadata => metadata.0,
@@ -190,7 +198,7 @@ impl LocalComponent for OwnedComponent {
             )
             .unwrap();
 
-        address.into()
+        ComponentAddress::new_unchecked(address.into())
     }
 }
 
@@ -253,7 +261,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Object(self.0).encode_body(encoder)
+        self.0.encode_body(encoder)
     }
 }
 
@@ -262,11 +270,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            Own::Object(component_id) => Ok(Self(component_id)),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
     }
 }
 

@@ -115,16 +115,15 @@ mod tests {
     fn test_complex_encoding_with_network() {
         use crate::math::{Decimal, PreciseDecimal};
         use crate::types::NodeId;
-        use radix_engine_constants::NODE_ID_LENGTH;
 
         let encoder = Bech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Reference(Reference(NodeId([0; NODE_ID_LENGTH]))),
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([0; NodeId::LENGTH]))),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Own(Own(NodeId([0; NODE_ID_LENGTH]))),
+                    value: ScryptoCustomValue::Own(Own(NodeId([0; NodeId::LENGTH]))),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),

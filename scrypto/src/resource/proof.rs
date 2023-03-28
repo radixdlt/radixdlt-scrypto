@@ -288,7 +288,7 @@ impl ValidatedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-               self.0.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 PROOF_GET_AMOUNT_IDENT,
                 scrypto_encode(&ProofGetAmountInput {}).unwrap(),
             )
@@ -300,7 +300,7 @@ impl ValidatedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-               self.0.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -312,7 +312,7 @@ impl ValidatedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-               self.0.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 PROOF_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
             )

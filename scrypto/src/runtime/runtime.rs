@@ -1,6 +1,6 @@
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
+use radix_engine_interface::api::{ClientEventApi, ClientObjectApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -12,7 +12,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::traits::ScryptoEvent;
-use radix_engine_interface::types::FnIdentifier;
+use radix_engine_interface::types::{FnIdentifier, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -26,7 +26,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                &NodeId::GlobalObject(EPOCH_MANAGER.into()),
+                &NodeId(EPOCH_MANAGER.into()),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )
@@ -77,11 +77,7 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let output = ScryptoEnv
-            .call_method(
-                &NodeId::GlobalObject(component_address.into()),
-                method.as_ref(),
-                args,
-            )
+            .call_method(&NodeId(component_address.into()), method.as_ref(), args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }

@@ -2,7 +2,6 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::types::NodeId;
 use crate::*;
-use radix_engine_constants::NODE_ID_LENGTH;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -22,7 +21,7 @@ impl TryFrom<&[u8]> for Reference {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NODE_ID_LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
+            NodeId::LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
             _ => Err(ParseReferenceError::InvalidLength(slice.len())),
         }
     }
@@ -55,7 +54,7 @@ well_known_scrypto_custom_type!(
     Reference,
     ScryptoCustomValueKind::Reference,
     Type::Reference,
-    NODE_ID_LENGTH,
+    NodeId::LENGTH,
     REFERENCE_ID
 );
 
@@ -63,7 +62,7 @@ well_known_scrypto_custom_type!(
 // binary (manifest)
 //==================
 
-manifest_type!(Reference, ManifestCustomValueKind::Address, NODE_ID_LENGTH);
+manifest_type!(Reference, ManifestCustomValueKind::Address, NodeId::LENGTH);
 
 //======
 // text

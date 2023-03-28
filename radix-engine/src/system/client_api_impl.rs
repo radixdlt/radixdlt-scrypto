@@ -145,7 +145,7 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        mut app_states: Vec<Vec<u8>>,
+        mut object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
         let package_address = self
             .kernel_get_current_actor()
@@ -170,19 +170,19 @@ where
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
                     ),
                 ))?;
-        if schema.substates.len() != app_states.len() {
+        if schema.substates.len() != object_states.len() {
             return Err(RuntimeError::SystemError(
                 SystemError::SubstateValidationError(
                     SubstateValidationError::WrongNumberOfSubstates(
                         blueprint_ident.to_string(),
-                        app_states.len(),
+                        object_states.len(),
                         schema.substates.len(),
                     ),
                 ),
             ));
         }
-        for i in 0..app_states.len() {
-            validate_payload_against_schema(&app_states[i], &schema.schema, schema.substates[i])
+        for i in 0..object_states.len() {
+            validate_payload_against_schema(&object_states[i], &schema.schema, schema.substates[i])
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::SubstateValidationError(
                         SubstateValidationError::SchemaValidationError(
@@ -196,19 +196,19 @@ where
 
         struct SubstateSchemaParser<'a> {
             next_index: usize,
-            app_states: &'a Vec<Vec<u8>>,
+            object_states: &'a Vec<Vec<u8>>,
         }
 
         impl<'a> SubstateSchemaParser<'a> {
-            fn new(app_states: &'a Vec<Vec<u8>>) -> Self {
+            fn new(object_states: &'a Vec<Vec<u8>>) -> Self {
                 Self {
                     next_index: 0,
-                    app_states,
+                    object_states,
                 }
             }
 
             fn decode_next<S: ScryptoDecode>(&mut self) -> S {
-                if let Some(substate_bytes) = self.app_states.get(self.next_index) {
+                if let Some(substate_bytes) = self.object_states.get(self.next_index) {
                     let decoded = scrypto_decode(substate_bytes)
                         .expect("Unexpected decode error for app states");
                     self.next_index = self.next_index + 1;
@@ -219,13 +219,13 @@ where
             }
 
             fn end(self) {
-                if self.app_states.get(self.next_index).is_some() {
+                if self.object_states.get(self.next_index).is_some() {
                     panic!("Unexpected extra app states");
                 }
             }
         }
 
-        let mut parser = SubstateSchemaParser::new(&mut app_states);
+        let mut parser = SubstateSchemaParser::new(&mut object_states);
         let (node_init, node_type) = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
