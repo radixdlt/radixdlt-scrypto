@@ -47,7 +47,7 @@ pub struct AuthModule {
 }
 
 impl AuthModule {
-    fn is_global_object_barrier(actor: &Actor) -> bool {
+    fn is_barrier(actor: &Actor) -> bool {
         matches!(
             actor,
             Actor {
@@ -55,15 +55,6 @@ impl AuthModule {
                 ..
             }
         )
-    }
-
-    fn global_object_barrier(actor: &Option<Actor>) -> Option<Address> {
-        actor.as_ref().and_then(|actor| match &actor.info {
-            AdditionalActorInfo::Method(_, RENodeId::GlobalObject(address), ..) => {
-                Some(address.clone())
-            }
-            _ => None,
-        })
     }
 
     fn is_transaction_processor(actor: &Option<Actor>) -> bool {
@@ -383,7 +374,7 @@ impl KernelModule for AuthModule {
             }
             AdditionalActorInfo::Function => Self::function_auth(&callee.fn_identifier, api)?,
         };
-        let barrier_crossings_allowed = if Self::is_global_object_barrier(callee) {
+        let barrier_crossings_allowed = if Self::is_barrier(callee) {
             0
         } else {
             1
@@ -431,8 +422,11 @@ impl KernelModule for AuthModule {
         }
 
         // Prepare a new auth zone
-
-        let global_object_barrier = Self::global_object_barrier(&actor);
+        let is_barrier = if let Some(actor) = &actor {
+            Self::is_barrier(actor)
+        } else {
+            false
+        };
         let is_transaction_processor = Self::is_transaction_processor(&actor);
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_module_state().auth;
@@ -454,7 +448,7 @@ impl KernelModule for AuthModule {
             virtual_resources,
             virtual_non_fungibles,
             virtual_non_fungibles_non_extending,
-            global_object_barrier,
+            is_barrier,
             parent,
         );
 

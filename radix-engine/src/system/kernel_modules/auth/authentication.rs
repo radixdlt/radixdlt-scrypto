@@ -71,7 +71,7 @@ impl Authentication {
             }
 
             // Progress
-            if auth_zone.global_object_barrier.is_some() {
+            if auth_zone.is_barrier {
                 if remaining_barrier_crossings_allowed == 0 {
                     break;
                 }
