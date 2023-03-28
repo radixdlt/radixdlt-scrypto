@@ -51,10 +51,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(
-                        NodeModuleId::SELF,
-                        RESOURCE_MANAGER_BURN_IDENT.to_string(),
-                    ),
+                    key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -84,7 +81,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -114,7 +111,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -131,7 +128,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     key: MethodKey::new(
                         NodeModuleId::SELF,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
@@ -162,11 +159,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(
-                        NodeModuleId::SELF,
-                        RESOURCE_MANAGER_BURN_IDENT.to_string(),
-                    ),
-                    mutability: AccessRule::DenyAll,
+                    key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
             )
@@ -180,8 +174,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
-                    mutability: AccessRule::DenyAll,
+                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
             )
@@ -197,9 +191,9 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     key: MethodKey::new(
                         NodeModuleId::SELF,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
-                    mutability: AccessRule::DenyAll,
+                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
             )
@@ -225,8 +219,8 @@ impl ResourceManager {
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
-                mutability: AccessRule::DenyAll,
+                key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
+                mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             })
             .unwrap(),
         );

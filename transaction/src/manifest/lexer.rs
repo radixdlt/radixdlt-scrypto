@@ -98,6 +98,7 @@ pub enum TokenKind {
     CallFunction,
     CallMethod,
     PublishPackage,
+    PublishPackageAdvanced,
     BurnResource,
     RecallResource,
     SetMetadata,
@@ -117,8 +118,10 @@ pub enum TokenKind {
     CreateValidator,
     CreateAccessController,
     CreateIdentity,
+    CreateIdentityAdvanced,
     AssertAccessRule,
     CreateAccount,
+    CreateAccountAdvanced,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -432,6 +435,7 @@ impl Lexer {
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
+            "PUBLISH_PACKAGE_ADVANCED" => Ok(TokenKind::PublishPackageAdvanced),
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
@@ -454,8 +458,10 @@ impl Lexer {
             }
             "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
+            "CREATE_IDENTITY_ADVANCED" => Ok(TokenKind::CreateIdentityAdvanced),
             "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
             "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
+            "CREATE_ACCOUNT_ADVANCED" => Ok(TokenKind::CreateAccountAdvanced),
             "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),

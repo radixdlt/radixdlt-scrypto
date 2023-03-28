@@ -215,6 +215,7 @@ pub enum SubstateValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
+    InvalidSystemCall,
     CallMethodOnKeyValueStore,
 
     NativeUnexpectedReceiver(String),

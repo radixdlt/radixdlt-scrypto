@@ -20,6 +20,12 @@ impl NonFungibleGlobalId {
         Self(resource_address, local_id)
     }
 
+    pub fn package_actor(package_address: PackageAddress) -> Self {
+        let local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
+        NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id)
+    }
+
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
         self.0

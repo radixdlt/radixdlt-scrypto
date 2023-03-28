@@ -31,7 +31,7 @@ impl NodeMoveModule {
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                         if let Actor {
-                            info: AdditionalActorInfo::Function,
+                            info: AdditionalActorInfo::Function(..),
                             fn_identifier:
                                 FnIdentifier {
                                     package_address: RESOURCE_MANAGER_PACKAGE,

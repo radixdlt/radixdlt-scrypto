@@ -25,7 +25,7 @@ fn missing_memory_should_cause_error() {
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             PackageSchema::default(),
             BTreeMap::new(),
@@ -121,7 +121,7 @@ fn test_basic_package() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),
@@ -157,6 +157,7 @@ fn test_basic_package_missing_export() {
                     export_name: "not_exist".to_string(),
                 }
             ),
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         },
     );
@@ -164,7 +165,7 @@ fn test_basic_package_missing_export() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             package_schema,
             BTreeMap::new(),

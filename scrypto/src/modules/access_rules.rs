@@ -47,7 +47,7 @@ impl AttachedAccessRules {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::SELF, method_name.to_string()),
+                    key: MethodKey::new(NodeModuleId::SELF, method_name),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -63,8 +63,8 @@ impl AttachedAccessRules {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::SELF, method_name.to_string()),
-                    mutability: AccessRule::DenyAll,
+                    key: MethodKey::new(NodeModuleId::SELF, method_name),
+                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
             )
@@ -83,6 +83,15 @@ impl From<Mutability> for AccessRule {
         match val {
             Mutability::LOCKED => AccessRule::DenyAll,
             Mutability::MUTABLE(rule) => rule,
+        }
+    }
+}
+
+impl From<Mutability> for AccessRuleEntry {
+    fn from(val: Mutability) -> Self {
+        match val {
+            Mutability::LOCKED => AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            Mutability::MUTABLE(rule) => AccessRuleEntry::AccessRule(rule),
         }
     }
 }

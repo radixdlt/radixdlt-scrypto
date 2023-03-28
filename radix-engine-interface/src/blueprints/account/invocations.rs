@@ -9,8 +9,11 @@ use sbor::rust::prelude::*;
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
+pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID: u8 = 1u8;
+
 //================
-// Account Create
+// Account Create Local
 //================
 
 pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
@@ -21,17 +24,39 @@ pub struct AccountCreateLocalInput {}
 pub type AccountCreateLocalOutput = Own;
 
 //=============
-// Account New
+// Account Create Advanced
 //=============
 
-pub const ACCOUNT_CREATE_GLOBAL_IDENT: &str = "create_global";
+pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateGlobalInput {
-    pub withdraw_rule: AccessRule,
+pub struct AccountCreateAdvancedInput {
+    pub config: AccessRulesConfig,
 }
 
-pub type AccountCreateGlobalOutput = ComponentAddress;
+pub type AccountCreateAdvancedOutput = ComponentAddress;
+
+//=============
+// Account Create
+//=============
+
+pub const ACCOUNT_CREATE_IDENT: &str = "create";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountCreateInput {}
+
+pub type AccountCreateOutput = (ComponentAddress, Bucket);
+
+//==================
+// Account Securify
+//==================
+
+pub const ACCOUNT_SECURIFY_IDENT: &str = "securify";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountSecurifyInput {}
+
+pub type AccountSecurifyOutput = Bucket;
 
 //==================
 // Account Lock Fee

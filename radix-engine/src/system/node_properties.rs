@@ -117,7 +117,7 @@ impl VisibilityProperties {
                         } if is_native_package(*package_address) => true,
                         // Scrypto
                         _ => match &actor.info {
-                            AdditionalActorInfo::Function => match (node_id, offset) {
+                            AdditionalActorInfo::VirtualLazyLoad | AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
                                     RENodeId::GlobalObject(_),
@@ -222,7 +222,7 @@ impl VisibilityProperties {
 
                         // Scrypto
                         _ => match &actor.info {
-                            AdditionalActorInfo::Function => match (node_id, offset) {
+                            AdditionalActorInfo::VirtualLazyLoad | AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

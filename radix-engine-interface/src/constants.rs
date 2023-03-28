@@ -11,8 +11,14 @@ pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibl
 pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 3);
 pub const GLOBAL_OBJECT_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 4);
-pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
+pub const PACKAGE_OWNER_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 5);
+pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 6);
+pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 7);
+pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 8);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);

@@ -1,2 +1,16 @@
-CREATE_IDENTITY
-    Enum(0u8);
+CREATE_IDENTITY_ADVANCED
+    Tuple(                                    # Access Rules Config Struct
+        Map<Tuple, Enum>(),                   # Method auth Field
+        Map<String, Enum>(),                  # Grouped Auth Field
+        Enum(                                 # Default Auth Field
+            "AccessRuleEntry::AccessRule",
+            Enum("AccessRule::DenyAll")
+        ),
+        Map<Tuple, Enum>(),                   # Method Auth Mutability Field
+        Map<String, Enum>(),                  # Group Auth Mutability Field
+        Enum(                                 # Default Auth Mutability Field
+            "AccessRuleEntry::AccessRule",
+            Enum("AccessRule::DenyAll")
+        )
+    );
+CREATE_IDENTITY;

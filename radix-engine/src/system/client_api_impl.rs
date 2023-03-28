@@ -56,7 +56,7 @@ where
             }
         }
 
-        let module_id = if let AdditionalActorInfo::Method(_, _, module_id) =
+        let module_id = if let AdditionalActorInfo::Method(_, _, module_id, _) =
             self.kernel_get_current_actor().unwrap().info
         {
             module_id
@@ -594,7 +594,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = Box::new(FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
+            identifier: FunctionIdentifier::new(
                 package_address,
                 blueprint_name.to_string(),
                 function_name.to_string(),
@@ -806,7 +806,7 @@ where
             // Getting the package address and blueprint name associated with the actor
             let (package_address, blueprint_name) = match actor {
                 Some(Actor {
-                    info: AdditionalActorInfo::Method(_, node_id, node_module_id),
+                    info: AdditionalActorInfo::Method(_, node_id, node_module_id, ..),
                     ..
                 }) => match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -822,7 +822,7 @@ where
                     )),
                 },
                 Some(Actor {
-                    info: AdditionalActorInfo::Function,
+                    info: AdditionalActorInfo::Function(..),
                     fn_identifier:
                         FnIdentifier {
                             package_address,
@@ -830,7 +830,7 @@ where
                             ..
                         },
                 }) => Ok((package_address, blueprint_name.clone())),
-                None => Err(RuntimeError::ApplicationError(
+                _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
                 )),
             }?;
@@ -872,14 +872,14 @@ where
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
             Some(Actor {
-                info: AdditionalActorInfo::Method(_, node_id, node_module_id),
+                info: AdditionalActorInfo::Method(_, node_id, node_module_id, ..),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, node_module_id),
                 *local_type_index,
             )),
             Some(Actor {
-                info: AdditionalActorInfo::Function,
+                info: AdditionalActorInfo::Function(..),
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -894,7 +894,7 @@ where
                 ),
                 *local_type_index,
             )),
-            None => Err(RuntimeError::ApplicationError(
+            _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(EventError::InvalidActor),
             )),
         }?;

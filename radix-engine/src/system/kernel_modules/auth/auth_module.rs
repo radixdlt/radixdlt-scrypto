@@ -68,14 +68,14 @@ impl AuthModule {
     }
 
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
-        identifier: &FnIdentifier,
+        package_address: &PackageAddress,
+        blueprint_name: &str,
+        ident: &str,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = if identifier.package_address.eq(&PACKAGE_PACKAGE) {
+        let auth = if package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
-            if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                && identifier.ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
-            {
+            if blueprint_name.eq(PACKAGE_BLUEPRINT) && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT) {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
                     HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
@@ -84,17 +84,14 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(identifier.package_address.into()),
+                &RENodeId::GlobalObject((*package_address).into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let function_key = FnKey::new(
-                identifier.blueprint_name.to_string(),
-                identifier.ident.to_string(),
-            );
+            let function_key = FnKey::new(blueprint_name.to_string(), ident.to_string());
             let access_rule = package_access_rules
                 .access_rules
                 .get(&function_key)
@@ -120,23 +117,33 @@ impl AuthModule {
                 ) =>
             {
                 match ident {
+                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT => {
+                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule_and_mutability(
+                            node_id, *module_id, args, api,
+                        )?
+                    }
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::set_method_access_rule_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule(
                             node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::set_method_mutability_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_method_mutability(
+                            node_id, *module_id, args, api,
+                        )?
+                    }
+                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT => {
+                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule_and_mutability(
                             node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::set_group_access_rule_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule(
                             node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::set_group_mutability_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_group_mutability(
                             node_id, *module_id, args, api,
                         )?
                     }
@@ -168,7 +175,7 @@ impl AuthModule {
                         };
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
-                        let method_key = MethodKey::new(*module_id, ident.to_string());
+                        let method_key = MethodKey::new(*module_id, ident);
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
                                 &RENodeId::GlobalObject(resource_address.into()),
@@ -193,8 +200,8 @@ impl AuthModule {
                                     && (method_key.ident.eq(VAULT_RECALL_IDENT)
                                         || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                                 {
-                                    let access_rule = substate.access_rules.get_group("recall");
-                                    let authorization = convert_contextless(access_rule);
+                                    let access_rule = substate.access_rules.get_group_access_rule("recall");
+                                    let authorization = convert_contextless(&access_rule);
                                     authorization
                                 } else {
                                     return Err(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -215,7 +222,7 @@ impl AuthModule {
             }
 
             (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(*module_id, ident.to_string());
+                let method_key = MethodKey::new(*module_id, ident);
 
                 // TODO: Clean this up
                 let auth = if matches!(
@@ -310,8 +317,8 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get(&key);
-        let authorization = convert(&blueprint_schema.schema, index, &state, method_auth);
+        let method_auth = access_rules.access_rules.get_access_rule(&key);
+        let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
 
@@ -332,10 +339,10 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get(&key);
+        let method_auth = access_rules.access_rules.get_access_rule(&key);
 
         // TODO: Remove
-        let authorization = convert_contextless(method_auth);
+        let authorization = convert_contextless(&method_auth);
 
         api.kernel_drop_lock(handle)?;
 
@@ -369,10 +376,13 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = match &callee.info {
-            AdditionalActorInfo::Method(_, node_id, module_id) => {
-                Self::method_auth(node_id, module_id, callee.ident(), &args, api)?
+            AdditionalActorInfo::Method(_, node_id, module_id, ident) => {
+                Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?
             }
-            AdditionalActorInfo::Function => Self::function_auth(&callee.fn_identifier, api)?,
+            AdditionalActorInfo::Function(ident) => {
+                Self::function_auth(&callee.fn_identifier.package_address(), callee.fn_identifier.blueprint_name(), ident.as_str(), api)?
+            },
+            AdditionalActorInfo::VirtualLazyLoad => return Ok(()),
         };
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();

@@ -24,7 +24,7 @@ pub trait Executor {
     type Output: Debug;
 
     fn execute<Y, W>(
-        &self,
+        self,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>

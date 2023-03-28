@@ -2,10 +2,12 @@ use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AdditionalActorInfo {
-    Method(Option<Address>, RENodeId, NodeModuleId),
-    Function,
+    Method(Option<Address>, RENodeId, NodeModuleId, String),
+    Function(String),
+    VirtualLazyLoad,
 }
 
+// TODO: This structure along with ActorIdentifier needs to be cleaned up
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Actor {
     pub fn_identifier: FnIdentifier,
@@ -13,10 +15,6 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn ident(&self) -> &str {
-        self.fn_identifier.ident.as_str()
-    }
-
     pub fn method<I: Into<FnIdentifier>>(
         global_address: Option<Address>,
         identifier: I,
@@ -24,15 +22,15 @@ impl Actor {
     ) -> Self {
         Self {
             fn_identifier: identifier.into(),
-            info: AdditionalActorInfo::Method(global_address, method.0, method.1),
+            info: AdditionalActorInfo::Method(global_address, method.0, method.1, method.2),
         }
     }
 
-    pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
+    pub fn function<I: Into<FnIdentifier>>(identifier: I, ident: FunctionIdentifier) -> Self {
         let fn_identifier = identifier.into();
         Self {
             fn_identifier,
-            info: AdditionalActorInfo::Function,
+            info: AdditionalActorInfo::Function(ident.2),
         }
     }
 }
