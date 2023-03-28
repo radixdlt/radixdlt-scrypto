@@ -1,6 +1,8 @@
+use crate::address::Bech32Decoder;
 use crate::address::{AddressDisplayContext, EncodeBech32AddressError, EntityType, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
+use crate::network::NetworkDefinition;
 use crate::types::NodeId;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
@@ -9,11 +11,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
-/// Address to a local entity
+/// Address to a global entity
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct LocalAddress(NodeId); // private to ensure entity type check
+pub struct GlobalAddress(NodeId); // private to ensure entity type check
 
-impl LocalAddress {
+impl GlobalAddress {
     pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
@@ -25,20 +27,29 @@ impl LocalAddress {
     pub fn as_node_id(&self) -> &NodeId {
         &self.0
     }
+
+    pub fn try_from_bech32(s: &str, network: &NetworkDefinition) -> Option<Self> {
+        let decoder = Bech32Decoder::new(network);
+        if let Ok(full_data) = decoder.validate_and_decode(s) {
+            Self::try_from(full_data.as_ref()).ok()
+        } else {
+            None
+        }
+    }
 }
 
-impl AsRef<[u8]> for LocalAddress {
+impl AsRef<[u8]> for GlobalAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl TryFrom<[u8; NodeId::LENGTH]> for LocalAddress {
-    type Error = ParseLocalAddressError;
+impl TryFrom<[u8; NodeId::LENGTH]> for GlobalAddress {
+    type Error = ParseGlobalAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         match EntityType::from_repr(value[0])
-            .ok_or(ParseLocalAddressError::InvalidEntityTypeId(value[0]))?
+            .ok_or(ParseGlobalAddressError::InvalidEntityTypeId(value[0]))?
         {
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResource
@@ -53,30 +64,30 @@ impl TryFrom<[u8; NodeId::LENGTH]> for LocalAddress {
             | EntityType::GlobalVirtualEcdsaAccount
             | EntityType::GlobalVirtualEddsaAccount
             | EntityType::GlobalVirtualEcdsaIdentity
-            | EntityType::GlobalVirtualEddsaIdentity => {
-                Err(ParseLocalAddressError::InvalidEntityTypeId(value[0]))
-            }
+            | EntityType::GlobalVirtualEddsaIdentity => Ok(Self(NodeId(value))),
             EntityType::InternalVault
             | EntityType::InternalAccessController
             | EntityType::InternalAccount
             | EntityType::InternalComponent
-            | EntityType::InternalKeyValueStore => Ok(Self(NodeId(value))),
+            | EntityType::InternalKeyValueStore => {
+                Err(ParseGlobalAddressError::InvalidEntityTypeId(value[0]))
+            }
         }
     }
 }
 
-impl TryFrom<&[u8]> for LocalAddress {
-    type Error = ParseLocalAddressError;
+impl TryFrom<&[u8]> for GlobalAddress {
+    type Error = ParseGlobalAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NodeId::LENGTH => LocalAddress::try_from(copy_u8_array(slice)),
-            _ => Err(ParseLocalAddressError::InvalidLength(slice.len())),
+            NodeId::LENGTH => GlobalAddress::try_from(copy_u8_array(slice)),
+            _ => Err(ParseGlobalAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for LocalAddress {
+impl Into<[u8; NodeId::LENGTH]> for GlobalAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
     }
@@ -87,16 +98,16 @@ impl Into<[u8; NodeId::LENGTH]> for LocalAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseLocalAddressError {
+pub enum ParseGlobalAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseLocalAddressError {}
+impl std::error::Error for ParseGlobalAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseLocalAddressError {
+impl fmt::Display for ParseGlobalAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -107,7 +118,7 @@ impl fmt::Display for ParseLocalAddressError {
 //========
 
 well_known_scrypto_custom_type!(
-    LocalAddress,
+    GlobalAddress,
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
@@ -115,7 +126,7 @@ well_known_scrypto_custom_type!(
 );
 
 manifest_type!(
-    LocalAddress,
+    GlobalAddress,
     ManifestCustomValueKind::Address,
     NodeId::LENGTH
 );
@@ -124,13 +135,13 @@ manifest_type!(
 // text
 //======
 
-impl fmt::Debug for LocalAddress {
+impl fmt::Debug for GlobalAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for LocalAddress {
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for GlobalAddress {
     type Error = EncodeBech32AddressError;
 
     fn contextual_format<F: fmt::Write>(

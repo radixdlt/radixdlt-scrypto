@@ -29,7 +29,6 @@ pub use radix_engine_interface::data::manifest::*;
 pub use radix_engine_interface::data::scrypto::model::*;
 pub use radix_engine_interface::data::scrypto::*;
 pub use radix_engine_interface::math::*;
-pub use radix_engine_interface::radix_engine_common;
 pub use radix_engine_interface::time::*;
 pub use radix_engine_interface::traits::*;
 pub use radix_engine_interface::types::*;

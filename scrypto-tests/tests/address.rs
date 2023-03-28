@@ -1,39 +1,5 @@
 use bech32::{self, ToBase32, Variant};
-use radix_engine_common::address::*;
-use radix_engine_common::network::NetworkDefinition;
 use scrypto::prelude::*;
-
-fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
-    [
-        entity_byte,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ]
-}
 
 // ==============
 // Encoder Tests
@@ -42,7 +8,7 @@ fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
 #[test]
 fn encode_package_address_to_string_correct_entity_type_succeeds() {
     // Arrange
-    let package_address = PackageAddress::Normal([0u8; 26]);
+    let package_address =  package_address(EntityType::GlobalPackage, 1);
     let bech32_encoder = Bech32Encoder::for_simulator();
 
     // Act

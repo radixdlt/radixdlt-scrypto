@@ -46,9 +46,9 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
 mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
-    use crate::address_types::*;
     use crate::data::scrypto::model::*;
     use crate::data::scrypto::{scrypto_encode, ScryptoValue};
+    use crate::types::*;
     use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
