@@ -8,10 +8,47 @@ SET_METADATA
     "k"
     Enum(0u8, Enum(0u8, "v"));
 
+# Set String Metadata on Resource
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
     "k"
     Enum(0u8, Enum(0u8, "v"));
+
+# Set Boolean Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(1u8, true));
+
+# Set u8 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(2u8, 123u8));
+
+# Set u32 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(3u8, 123u32));
+
+# Set u64 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(4u8, 123u64));
+
+# Set i32 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(5u8, -123i32));
+
+# Set i64 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "k"
+    Enum(0u8, Enum(6u8, -123i64));
 
 REMOVE_METADATA
     Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
