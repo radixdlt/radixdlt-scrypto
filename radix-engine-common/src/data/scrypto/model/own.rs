@@ -15,6 +15,10 @@ impl Own {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
+
+    pub fn as_node_id(&self) -> &NodeId {
+        &self.0
+    }
 }
 
 impl TryFrom<&[u8]> for Own {

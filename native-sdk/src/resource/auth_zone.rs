@@ -5,7 +5,6 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NodeId;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -19,7 +18,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_DRAIN_IDENT,
@@ -32,7 +31,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CLEAR_IDENT,
@@ -47,7 +46,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT,
@@ -60,7 +59,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_POP_IDENT,
@@ -77,7 +76,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_IDENT,
@@ -95,7 +94,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
@@ -117,7 +116,7 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
@@ -140,7 +139,7 @@ impl ComponentAuthZone {
     {
         let proof: Proof = proof.into();
 
-        let auth_zone = NodeId::Object(api.get_auth_zone().unwrap());
+        let auth_zone = api.get_auth_zone().unwrap();
         let _rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_PUSH_IDENT,

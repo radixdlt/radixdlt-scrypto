@@ -31,7 +31,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &NodeId::GlobalObject(EPOCH_MANAGER.into()),
+            &NodeId(EPOCH_MANAGER.into()),
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         )?;
@@ -45,7 +45,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &NodeId::GlobalObject(CLOCK.into()),
+            &NodeId(CLOCK.into()),
             CLOCK_GET_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
@@ -64,7 +64,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &NodeId::GlobalObject(CLOCK.into()),
+            &NodeId(CLOCK.into()),
             CLOCK_COMPARE_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockCompareCurrentTimeInput {
                 precision,

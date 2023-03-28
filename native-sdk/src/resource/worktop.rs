@@ -6,13 +6,12 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Worktop(pub NodeId);
+pub struct Worktop(pub Own);
 
 impl Worktop {
     pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -26,10 +25,7 @@ impl Worktop {
             RESOURCE_MANAGER_PACKAGE,
             WORKTOP_BLUEPRINT,
             WORKTOP_DROP_IDENT,
-            scrypto_encode(&WorktopDropInput {
-                worktop: Own::Object(self.0),
-            })
-            .unwrap(),
+            scrypto_encode(&WorktopDropInput { worktop: self.0 }).unwrap(),
         )?;
 
         Ok(())
@@ -44,7 +40,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_PUT_IDENT,
             scrypto_encode(&WorktopPutInput { bucket }).unwrap(),
         )?;
@@ -62,7 +58,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_TAKE_IDENT,
             scrypto_encode(&WorktopTakeInput {
                 resource_address,
@@ -84,7 +80,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&WorktopTakeNonFungiblesInput {
                 resource_address,
@@ -105,7 +101,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_TAKE_ALL_IDENT,
             scrypto_encode(&WorktopTakeAllInput { resource_address }).unwrap(),
         )?;
@@ -121,7 +117,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_ASSERT_CONTAINS_IDENT,
             scrypto_encode(&WorktopAssertContainsInput { resource_address }).unwrap(),
         )?;
@@ -138,7 +134,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT,
             scrypto_encode(&WorktopAssertContainsAmountInput {
                 resource_address,
@@ -159,7 +155,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT,
             scrypto_encode(&WorktopAssertContainsNonFungiblesInput {
                 resource_address,
@@ -178,7 +174,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &NodeId::Object(self.0),
+            self.0.as_node_id(),
             WORKTOP_DRAIN_IDENT,
             scrypto_encode(&WorktopDrainInput {}).unwrap(),
         )?;
