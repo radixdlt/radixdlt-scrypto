@@ -374,11 +374,7 @@ impl KernelModule for AuthModule {
             }
             AdditionalActorInfo::Function => Self::function_auth(&callee.fn_identifier, api)?,
         };
-        let barrier_crossings_allowed = if Self::is_barrier(callee) {
-            0
-        } else {
-            1
-        };
+        let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
 
         // Authenticate
