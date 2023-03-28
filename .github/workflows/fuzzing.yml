@@ -27,6 +27,8 @@ jobs:
   transaction:
     name: Fuzz transaction (AFL)
     runs-on: fuzzing
+    # set timeout to 7days
+    timeout-minutes: 10080
     env:
       # Temporarily set below flags to workaround lack of RW access /proc filesystem,
       # which is required by below command
