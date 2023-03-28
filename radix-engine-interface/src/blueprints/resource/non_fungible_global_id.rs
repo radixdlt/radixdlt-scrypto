@@ -1,9 +1,9 @@
-use radix_engine_common::data::scrypto::scrypto_encode;
 use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::data::scrypto::scrypto_encode;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;
@@ -120,12 +120,8 @@ pub trait FromComponent: Sized {
 impl FromComponent for NonFungibleGlobalId {
     fn from_component_address(component_address: &ComponentAddress) -> Self {
         let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap())
-                .unwrap();
-        NonFungibleGlobalId::new(
-            GLOBAL_OBJECT_TOKEN,
-            non_fungible_local_id,
-        )
+            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
+        NonFungibleGlobalId::new(GLOBAL_OBJECT_TOKEN, non_fungible_local_id)
     }
 }
 

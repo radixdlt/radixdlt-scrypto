@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 #[blueprint]
 mod child_component {
     struct ChildComponent {
-        to_call: ComponentAddress
+        to_call: ComponentAddress,
     }
 
     impl ChildComponent {
@@ -19,7 +19,7 @@ mod child_component {
             let _: () = Runtime::call_method(
                 self.to_call,
                 "protected_method",
-                scrypto_args!(Runtime::global_address())
+                scrypto_args!(Runtime::global_address()),
             );
         }
     }
@@ -55,11 +55,16 @@ mod my_component {
             self.child.get_address()
         }
 
+        pub fn call_other_component_with_wrong_address(&self) {
+            let address = self.to_call;
+            Runtime::call_method(self.to_call, "protected_method", scrypto_args!(address))
+        }
+
         pub fn call_other_component_in_parent(&self) {
             Runtime::call_method(
                 self.to_call,
                 "protected_method",
-                scrypto_args!(Runtime::global_address())
+                scrypto_args!(Runtime::global_address()),
             )
         }
 
@@ -71,12 +76,11 @@ mod my_component {
 
 #[blueprint]
 mod called_component {
-    struct CalledComponent {
-    }
+    struct CalledComponent {}
 
     impl CalledComponent {
         pub fn create() -> ComponentAddress {
-            Self { }.instantiate().globalize()
+            Self {}.instantiate().globalize()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress) {

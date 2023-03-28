@@ -9,7 +9,8 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 1);
 pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 2);
 pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 3);
-pub const GLOBAL_OBJECT_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 4);
+pub const GLOBAL_OBJECT_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 4);
 pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 5);
 
