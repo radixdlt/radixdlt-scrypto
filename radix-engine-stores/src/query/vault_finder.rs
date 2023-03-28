@@ -1,6 +1,9 @@
-use crate::types::*;
-use crate::{blueprints::resource::VaultInfoSubstate, ledger::StateTreeVisitor};
-use radix_engine_interface::blueprints::resource::*;
+use super::{StateTreeVisitor, VaultInfoSubstate};
+use radix_engine_interface::{
+    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
+    types::{NodeId, ResourceAddress},
+};
+use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 pub struct VaultFinder {

@@ -919,6 +919,7 @@ dependencies = [
 name = "radix-engine-stores"
 version = "0.9.0"
 dependencies = [
+ "hex",
  "itertools",
  "radix-engine-interface",
  "rocksdb",

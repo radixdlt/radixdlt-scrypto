@@ -12,8 +12,11 @@ High-level Abstraction
 
 */
 
-use crate::types::*;
 use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::crypto::*;
+use radix_engine_interface::types::*;
+use radix_engine_interface::*;
+use sbor::rust::prelude::*;
 
 /// Utility function for encoding a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
 pub fn encode_substate_id(
@@ -22,7 +25,7 @@ pub fn encode_substate_id(
     substate_key: &SubstateKey,
 ) -> Vec<u8> {
     let mut buffer = Vec::new();
-    buffer.extend(&node_id.as_ref());
+    buffer.extend(node_id.as_ref());
     buffer.push(module_id.0);
     buffer.extend(substate_key.as_ref()); // Length is marked by EOF
     buffer

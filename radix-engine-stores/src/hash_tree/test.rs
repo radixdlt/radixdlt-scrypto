@@ -5,13 +5,9 @@ use crate::hash_tree::tree_store::{
 };
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::PackageAddress;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::{
-    KeyValueStoreOffset, NodeId, SubstateId, SubstateOffset, TypedModuleId,
-};
+use radix_engine_interface::types::{ModuleId, NodeId, PackageAddress, SubstateKey, TypedModuleId};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -336,7 +332,8 @@ fn sbor_decodes_what_was_encoded() {
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded = scrypto_decode::<Vec<TreeNode<SubstateId>>>(&encoded).unwrap();
+    let decoded =
+        scrypto_decode::<Vec<TreeNode<(NodeId, ModuleId, SubstateKey)>>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 
@@ -379,22 +376,19 @@ fn substate_id(
     re_node_id_seed: u8,
     node_module_id: TypedModuleId,
     substate_offset_seed: u8,
-) -> SubstateId {
-    let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);
+) -> (NodeId, ModuleId, SubstateKey) {
+    let fake_pkg_address = PackageAddress::new_unchecked([re_node_id_seed; 27]);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
-    SubstateId(
-        NodeId::GlobalObject(fake_pkg_address.into()),
-        node_module_id,
-        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_id)),
+    (
+        NodeId(fake_pkg_address.into()),
+        ModuleId(node_module_id as u8),
+        SubstateKey::from_vec(fake_kvs_entry_id).unwrap(),
     )
 }
 
 fn value_hash(value_seed: u8) -> Hash {
     let fake_kvs_value = scrypto_encode(&vec![value_seed; value_seed as usize]).unwrap();
-    let fake_kvs_entry = PersistedSubstate::KeyValueStoreEntry(Option::Some(
-        scrypto_decode(&fake_kvs_value).unwrap(),
-    ));
-    hash(scrypto_encode(&fake_kvs_entry).unwrap())
+    hash(fake_kvs_value)
 }
 
 fn nibbles(hex_string: &str) -> NibblePath {

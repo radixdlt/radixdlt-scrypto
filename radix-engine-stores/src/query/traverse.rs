@@ -1,18 +1,17 @@
-use crate::blueprints::resource::VaultInfoSubstate;
-use crate::ledger::*;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::PersistedSubstate;
-use crate::types::*;
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType, VAULT_BLUEPRINT,
-};
+use crate::interface::SubstateDatabase;
+use radix_engine_interface::blueprints::resource::{ResourceType, VAULT_BLUEPRINT};
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::data::scrypto::scrypto_decode;
+use radix_engine_interface::types::{
+    IndexedScryptoValue, ModuleId, SubstateKey, TypedModuleId, VaultOffset,
+};
+use radix_engine_interface::{
+    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
+    types::NodeId,
+};
+use sbor::rust::prelude::*;
 
-#[derive(Debug)]
-pub enum StateTreeTraverserError {
-    RENodeNotFound(NodeId),
-    MaxDepthExceeded,
-}
+use super::{TypeInfoSubstate, VaultInfoSubstate};
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
     substate_db: &'s S,
@@ -37,7 +36,13 @@ pub trait StateTreeVisitor {
     ) {
     }
 
-    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &NodeId, _depth: u32) {}
+    fn visit_node_id(
+        &mut self,
+        _parent_id: Option<&(NodeId, ModuleId, SubstateKey)>,
+        _node_id: &NodeId,
+        _depth: u32,
+    ) {
+    }
 }
 
 impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v, S, V> {
@@ -51,181 +56,151 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&SubstateId>,
+        parent_node_id: Option<&(NodeId, ModuleId, SubstateKey)>,
         node_id: NodeId,
-    ) -> Result<(), StateTreeTraverserError> {
+    ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
     }
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&SubstateId>,
+        parent: Option<&(NodeId, ModuleId, SubstateKey)>,
         node_id: NodeId,
         depth: u32,
-    ) -> Result<(), StateTreeTraverserError> {
+    ) {
         if depth > self.max_depth {
-            return Err(StateTreeTraverserError::MaxDepthExceeded);
+            return;
         }
+
+        // Notify visitor
         self.visitor.visit_node_id(parent, &node_id, depth);
-        match node_id {
-            NodeId::KeyValueStore(kv_store_id) => {
-                let map = self.substate_db.get_kv_store_entries(&kv_store_id);
-                for (entry_id, substate) in map.iter() {
-                    let substate_id = SubstateId(
-                        NodeId::KeyValueStore(kv_store_id),
-                        TypedModuleId::ObjectState,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id.clone())),
-                    );
-                    if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
-                        if let Some(value) = entry {
-                            let (_, own, _) =
-                                IndexedScryptoValue::from_scrypto_value(value.clone()).unpack();
-                            for child_node_id in own {
+
+        // Load type info
+        let type_info: TypeInfoSubstate = scrypto_decode(
+            &self
+                .substate_db
+                .get_substate(
+                    &node_id,
+                    TypedModuleId::TypeInfo.into(),
+                    &SubstateKey::from_vec(vec![0]).unwrap(),
+                )
+                .expect("Failed to get substate")
+                .expect("Missing TypeInfo substate")
+                .0,
+        )
+        .expect("Failed to decode TypeInfo substate");
+
+        match type_info {
+            TypeInfoSubstate::KeyValueStore(_) => {
+                for (substate_key, value) in self
+                    .substate_db
+                    .list_substates(&node_id, TypedModuleId::KeyValueStore.into())
+                    .expect("Failed to list key value store")
+                    .0
+                {
+                    let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
+                        .expect("Substate is not a scrypto value")
+                        .unpack();
+                    for child_node_id in owned_nodes {
+                        self.traverse_recursive(
+                            Some(&(
+                                node_id,
+                                TypedModuleId::KeyValueStore.into(),
+                                substate_key.clone(),
+                            )),
+                            child_node_id,
+                            depth + 1,
+                        );
+                    }
+                }
+            }
+            TypeInfoSubstate::Object {
+                package_address,
+                blueprint_name,
+                global: _,
+            } => {
+                if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    && blueprint_name.eq(VAULT_BLUEPRINT)
+                {
+                    let (value, _version) = self
+                        .substate_db
+                        .get_substate(
+                            &node_id,
+                            TypedModuleId::ObjectState.into(),
+                            &VaultOffset::Info.into(),
+                        )
+                        .expect("Broken database")
+                        .expect("Broken database");
+                    let info: VaultInfoSubstate =
+                        scrypto_decode(&value).expect("Failed to decode vault info");
+                    match &info.resource_type {
+                        ResourceType::Fungible { .. } => {
+                            let liquid: LiquidFungibleResource = scrypto_decode(
+                                &self
+                                    .substate_db
+                                    .get_substate(
+                                        &node_id,
+                                        TypedModuleId::ObjectState.into(),
+                                        &VaultOffset::LiquidFungible.into(),
+                                    )
+                                    .expect("Broken database")
+                                    .expect("Broken database")
+                                    .0,
+                            )
+                            .expect("Failed to decode liquid fungible");
+
+                            self.visitor
+                                .visit_fungible_vault(node_id.into(), &info, &liquid);
+                        }
+                        ResourceType::NonFungible { .. } => {
+                            let liquid: LiquidNonFungibleResource = scrypto_decode(
+                                &self
+                                    .substate_db
+                                    .get_substate(
+                                        &node_id,
+                                        TypedModuleId::ObjectState.into(),
+                                        &VaultOffset::LiquidNonFungible.into(),
+                                    )
+                                    .expect("Broken database")
+                                    .expect("Broken database")
+                                    .0,
+                            )
+                            .expect("Failed to decode liquid non-fungible");
+
+                            self.visitor
+                                .visit_non_fungible_vault(node_id.into(), &info, &liquid);
+                        }
+                    }
+                } else {
+                    for i in 0..0xff {
+                        let substate_key = SubstateKey::from_vec(vec![i]).unwrap();
+                        if let Some((value, _version)) = self
+                            .substate_db
+                            .get_substate(
+                                &node_id,
+                                TypedModuleId::ObjectState.into(),
+                                &substate_key,
+                            )
+                            .expect("Broken database")
+                        {
+                            let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
+                                .expect("Substate is not a scrypto value")
+                                .unpack();
+                            for child_node_id in owned_nodes {
                                 self.traverse_recursive(
-                                    Some(&substate_id),
+                                    Some(&(
+                                        node_id,
+                                        TypedModuleId::KeyValueStore.into(),
+                                        substate_key.clone(),
+                                    )),
                                     child_node_id,
                                     depth + 1,
-                                )
-                                .expect("Broken Node Store");
+                                );
                             }
                         }
                     }
                 }
             }
-            NodeId::Object(..) => {
-                let substate_id = SubstateId(
-                    node_id,
-                    TypedModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                );
-                let output_value = self
-                    .substate_db
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let type_substate: TypeInfoSubstate = runtime_substate.into();
-
-                match type_substate {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && blueprint_name.eq(VAULT_BLUEPRINT) =>
-                    {
-                        if let Some(output_value) = self.substate_db.get_substate(&SubstateId(
-                            node_id,
-                            TypedModuleId::ObjectState,
-                            SubstateOffset::Vault(VaultOffset::Info),
-                        )) {
-                            let info: VaultInfoSubstate = output_value.substate.into();
-                            match &info.resource_type {
-                                ResourceType::Fungible { .. } => {
-                                    let liquid: LiquidFungibleResource = self
-                                        .substate_db
-                                        .get_substate(&SubstateId(
-                                            node_id,
-                                            TypedModuleId::ObjectState,
-                                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                                        ))
-                                        .unwrap()
-                                        .substate
-                                        .into();
-
-                                    self.visitor.visit_fungible_vault(
-                                        node_id.into(),
-                                        &info,
-                                        &liquid,
-                                    );
-                                }
-                                ResourceType::NonFungible { .. } => {
-                                    let liquid: LiquidNonFungibleResource = self
-                                        .substate_db
-                                        .get_substate(&SubstateId(
-                                            node_id,
-                                            TypedModuleId::ObjectState,
-                                            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                                        ))
-                                        .unwrap()
-                                        .substate
-                                        .into();
-
-                                    self.visitor.visit_non_fungible_vault(
-                                        node_id.into(),
-                                        &info,
-                                        &liquid,
-                                    );
-                                }
-                            }
-                        } else {
-                            return Err(StateTreeTraverserError::RENodeNotFound(node_id));
-                        }
-                    }
-                    _ => {
-                        let substate_id = SubstateId(
-                            node_id,
-                            TypedModuleId::ObjectState,
-                            SubstateOffset::Component(ComponentOffset::State0),
-                        );
-                        let output_value = self
-                            .substate_db
-                            .get_substate(&substate_id)
-                            .expect("Broken Node Store");
-                        let runtime_substate = output_value.substate.to_runtime();
-                        let substate_ref = runtime_substate.to_ref();
-                        let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                        for child_node_id in owned_nodes {
-                            self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                                .expect("Broken Node Store");
-                        }
-                    }
-                }
-            }
-            NodeId::GlobalObject(Address::Component(ComponentAddress::Account(..)))
-            | NodeId::GlobalObject(Address::Component(
-                ComponentAddress::EcdsaSecp256k1VirtualAccount(..),
-            ))
-            | NodeId::GlobalObject(Address::Component(
-                ComponentAddress::EddsaEd25519VirtualAccount(..),
-            )) => {
-                let substate_id = SubstateId(
-                    node_id,
-                    TypedModuleId::ObjectState,
-                    SubstateOffset::Account(AccountOffset::Account),
-                );
-                let output_value = self
-                    .substate_db
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let substate_ref = runtime_substate.to_ref();
-                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                for child_node_id in owned_nodes {
-                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                        .expect("Broken Node Store");
-                }
-            }
-            NodeId::GlobalObject(Address::Component(_)) => {
-                let substate_id = SubstateId(
-                    node_id,
-                    TypedModuleId::ObjectState,
-                    SubstateOffset::Component(ComponentOffset::State0),
-                );
-                let output_value = self
-                    .substate_db
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let substate_ref = runtime_substate.to_ref();
-                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                for child_node_id in owned_nodes {
-                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                        .expect("Broken Node Store");
-                }
-            }
-            _ => {}
-        };
-
-        Ok(())
+        }
     }
 }

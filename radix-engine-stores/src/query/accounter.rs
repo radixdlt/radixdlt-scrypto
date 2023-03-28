@@ -1,10 +1,11 @@
-use crate::blueprints::resource::VaultInfoSubstate;
-use crate::ledger::*;
-use crate::types::hash_map::Entry;
-use crate::types::*;
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource,
+use super::{StateTreeTraverser, StateTreeVisitor, VaultInfoSubstate};
+use crate::interface::SubstateDatabase;
+use radix_engine_interface::{
+    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
+    math::Decimal,
+    types::{NodeId, ResourceAddress},
 };
+use sbor::rust::prelude::{hash_map::Entry, *};
 
 pub struct ResourceAccounter<'s, S: SubstateDatabase> {
     substate_db: &'s S,
@@ -19,7 +20,7 @@ impl<'s, S: SubstateDatabase> ResourceAccounter<'s, S> {
         }
     }
 
-    pub fn add_resources(&mut self, node_id: NodeId) -> Result<(), StateTreeTraverserError> {
+    pub fn add_resources(&mut self, node_id: NodeId) {
         let mut state_tree_visitor =
             StateTreeTraverser::new(self.substate_db, &mut self.accounting, 100);
         state_tree_visitor.traverse_all_descendents(None, node_id)

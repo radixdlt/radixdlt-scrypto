@@ -1,4 +1,5 @@
 use crate::*;
+use radix_engine_common::types::{ModuleId, SubstateKey};
 use sbor::rust::prelude::*;
 
 //=========================================================================
@@ -15,6 +16,12 @@ pub enum TypedModuleId {
     Royalty,
     AccessRules,
     AccessRules1, // TODO: remove
+}
+
+impl Into<ModuleId> for TypedModuleId {
+    fn into(self) -> ModuleId {
+        ModuleId(self as u8)
+    }
 }
 
 #[repr(u8)]
@@ -129,3 +136,31 @@ pub enum AccessControllerOffset {
 pub enum AuthZoneOffset {
     AuthZone,
 }
+
+macro_rules! into_substate_key {
+    ($t:ty) => {
+        impl Into<SubstateKey> for $t {
+            fn into(self) -> SubstateKey {
+                SubstateKey::from_vec(vec![self as u8])
+                    .expect("Failed to convert offset into substate key")
+            }
+        }
+    };
+}
+
+into_substate_key!(AccessRulesOffset);
+into_substate_key!(TypeInfoOffset);
+into_substate_key!(RoyaltyOffset);
+into_substate_key!(ComponentOffset);
+into_substate_key!(PackageOffset);
+into_substate_key!(ResourceManagerOffset);
+into_substate_key!(VaultOffset);
+into_substate_key!(EpochManagerOffset);
+into_substate_key!(ValidatorOffset);
+into_substate_key!(BucketOffset);
+into_substate_key!(ProofOffset);
+into_substate_key!(WorktopOffset);
+into_substate_key!(ClockOffset);
+into_substate_key!(AccountOffset);
+into_substate_key!(AccessControllerOffset);
+into_substate_key!(AuthZoneOffset);
