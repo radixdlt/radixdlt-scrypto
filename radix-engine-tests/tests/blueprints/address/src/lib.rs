@@ -14,6 +14,14 @@ mod child_component {
         pub fn get_address(&self) -> ComponentAddress {
             Runtime::global_address()
         }
+
+        pub fn call_other_component(&self) {
+            let _: () = Runtime::call_method(
+                self.to_call,
+                "protected_method",
+                scrypto_args!(Runtime::global_address())
+            );
+        }
     }
 }
 
@@ -47,12 +55,16 @@ mod my_component {
             self.child.get_address()
         }
 
-        pub fn call_other_component(&self) {
+        pub fn call_other_component_in_parent(&self) {
             Runtime::call_method(
                 self.to_call,
                 "protected_method",
                 scrypto_args!(Runtime::global_address())
             )
+        }
+
+        pub fn call_other_component_in_child(&self) {
+            self.child.call_other_component();
         }
     }
 }
@@ -67,7 +79,7 @@ mod called_component {
             Self { }.instantiate().globalize()
         }
 
-        pub fn protected_method(component_address: ComponentAddress) {
+        pub fn protected_method(&self, component_address: ComponentAddress) {
             let global_id = NonFungibleGlobalId::from_component_address(&component_address);
             Runtime::assert_access_rule(rule!(require(global_id)));
         }
