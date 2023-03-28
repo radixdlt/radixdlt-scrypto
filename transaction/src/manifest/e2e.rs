@@ -291,81 +291,81 @@ CLAIM_COMPONENT_ROYALTY
             r##"
 SET_METADATA
     Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    "k"
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
     Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    "k"
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(1u8, true));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(2u8, 123u8));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(3u8, 123u32));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(4u8, 123u64));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(5u8, -123i32));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(6u8, -123i64));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(7u8, Decimal("10.5")));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(8u8, Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(9u8, Enum(0u8, Bytes("0000000000000000000000000000000000000000000000000000000000000000ff"))));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(10u8, NonFungibleGlobalId("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:<some_string>")));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(11u8, NonFungibleLocalId("<some_string>")));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(12u8, Tuple(10000i64)));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(13u8, "https://radixdlt.com"));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(1u8, Array<Enum>(Enum(0u8, "some_string"), Enum(0u8, "another_string"), Enum(0u8, "yet_another_string")));
 REMOVE_METADATA
     Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    "k";
+    "field_name";
 REMOVE_METADATA
     Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    "k";
+    "field_name";
 REMOVE_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k";
+    "field_name";
 "##,
         );
     }
