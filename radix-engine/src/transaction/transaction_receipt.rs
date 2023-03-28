@@ -253,13 +253,14 @@ impl TransactionReceipt {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() != success {
                     panic!(
-                        "Expected {} but was {}",
+                        "Expected {} but was {}: {:?}",
                         if success { "success" } else { "failure" },
                         if c.outcome.is_success() {
                             "success"
                         } else {
                             "failure"
-                        }
+                        },
+                        c.outcome
                     )
                 }
                 c

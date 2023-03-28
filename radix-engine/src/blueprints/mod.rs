@@ -6,3 +6,4 @@ pub mod identity;
 pub mod package;
 pub mod resource;
 pub mod transaction_processor;
+pub mod util;

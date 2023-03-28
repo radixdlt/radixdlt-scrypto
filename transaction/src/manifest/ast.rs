@@ -100,6 +100,12 @@ pub enum Instruction {
         schema: Value,
         royalty_config: Value,
         metadata: Value,
+    },
+    PublishPackageAdvanced {
+        code: Value,
+        schema: Value,
+        royalty_config: Value,
+        metadata: Value,
         access_rules: Value,
     },
 
@@ -201,16 +207,19 @@ pub enum Instruction {
         rule_set: Value,
         timed_recovery_delay_in_minutes: Value,
     },
-    CreateIdentity {
-        access_rule: Value,
+
+    CreateIdentity {},
+    CreateIdentityAdvanced {
+        config: Value,
     },
 
     AssertAccessRule {
         access_rule: Value,
     },
 
-    CreateAccount {
-        withdraw_rule: Value,
+    CreateAccount {},
+    CreateAccountAdvanced {
+        config: Value,
     },
 }
 

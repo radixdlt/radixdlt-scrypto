@@ -5,7 +5,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -60,13 +60,19 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    builder.new_account(AccessRule::AllowAll);
+                    let config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    builder.new_account_advanced(config);
                 }
                 1 => {
-                    builder.new_account(AccessRule::AllowAll);
+                    let config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    builder.new_account_advanced(config);
                 }
                 2 => {
-                    builder.new_account(AccessRule::AllowAll);
+                    let config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    builder.new_account_advanced(config);
                 }
                 3 => {
                     builder.call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("100")));

@@ -191,6 +191,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         schema: generate_full_schema(aggregator),
         substates,
         functions,
+        virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
     };
 

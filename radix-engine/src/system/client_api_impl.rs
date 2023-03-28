@@ -594,7 +594,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = Box::new(FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
+            identifier: FunctionIdentifier::new(
                 package_address,
                 blueprint_name.to_string(),
                 function_name.to_string(),
@@ -813,14 +813,14 @@ where
                 },
                 Some(Actor {
                     identifier:
-                        ActorIdentifier::Function(FnIdentifier {
+                        ActorIdentifier::Function(FunctionIdentifier(
                             package_address,
                             ref blueprint_name,
-                            ..
-                        }),
+                            ..,
+                        )),
                     ..
                 }) => Ok((package_address, blueprint_name.clone())),
-                None => Err(RuntimeError::ApplicationError(
+                _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::InvalidActor),
                 )),
             }?;
@@ -870,11 +870,7 @@ where
             )),
             Some(Actor {
                 identifier:
-                    ActorIdentifier::Function(FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    }),
+                    ActorIdentifier::Function(FunctionIdentifier(package_address, blueprint_name, ..)),
                 ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
@@ -884,7 +880,7 @@ where
                 ),
                 *local_type_index,
             )),
-            None => Err(RuntimeError::ApplicationError(
+            _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(EventError::InvalidActor),
             )),
         }?;

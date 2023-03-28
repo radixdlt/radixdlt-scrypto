@@ -28,12 +28,12 @@ CALL_METHOD
     Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
     "lock_fee"
     Decimal("10");
-PUBLISH_PACKAGE
+PUBLISH_PACKAGE_ADVANCED
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(1u8), Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(2u8), "get"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(2u8), "set"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Map<String, Enum>(), Enum(1u8));
+    Tuple(Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 "##,
         );
     }
@@ -531,8 +531,9 @@ ASSERT_ACCESS_RULE
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_ACCOUNT
-    Enum(0u8);
+CREATE_ACCOUNT_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+CREATE_ACCOUNT;
 "##,
         );
     }
@@ -547,8 +548,9 @@ CREATE_ACCOUNT
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_IDENTITY
-    Enum(0u8);
+CREATE_IDENTITY_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+CREATE_IDENTITY;
 "##,
         );
     }
