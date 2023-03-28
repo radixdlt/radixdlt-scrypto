@@ -411,7 +411,7 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         let actor = api.kernel_get_current_actor();
 
-        // Add Package Actor Auth
+        // Add Global Object and Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
         if let Some(actor) = &actor {
             let package_address = actor.fn_identifier.package_address();
@@ -419,6 +419,13 @@ impl KernelModule for AuthModule {
             let non_fungible_global_id =
                 NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+
+            if let AdditionalActorInfo::Method(Some(address), ..) = &actor.info {
+                let id = scrypto_encode(&address).unwrap();
+                let non_fungible_global_id =
+                    NonFungibleGlobalId::new(OBJECT_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+                virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+            }
         }
 
         // Prepare a new auth zone
