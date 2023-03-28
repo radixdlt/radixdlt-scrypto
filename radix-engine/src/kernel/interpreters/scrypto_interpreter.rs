@@ -140,11 +140,6 @@ impl ExecutableInvocation for MethodInvocation {
             }
             _ => todo!(),
         };
-        let fn_identifier = FnIdentifier::application_ident(
-            package_address,
-            blueprint_name.clone(),
-            self.identifier.2.clone(),
-        );
         let global_address = api.kernel_get_current_actor().and_then(|a| match a.info {
             AdditionalActorInfo::Method(global, ..) => global,
             _ => {
@@ -157,8 +152,9 @@ impl ExecutableInvocation for MethodInvocation {
         });
         let actor = Actor::method(
             global_address,
-            fn_identifier.clone(),
             self.identifier.clone(),
+            package_address,
+            blueprint_name.clone(),
         );
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
@@ -167,7 +163,7 @@ impl ExecutableInvocation for MethodInvocation {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(fn_identifier.package_address.into()),
+                    &RENodeId::GlobalObject(package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -196,9 +192,9 @@ impl ExecutableInvocation for MethodInvocation {
         }
 
         let executor = ScryptoExecutor {
-            package_address: fn_identifier.package_address,
-            blueprint_name: fn_identifier.blueprint_name,
-            ident: fn_identifier.ident,
+            package_address,
+            blueprint_name,
+            ident: FnIdent::Application(self.identifier.2.clone()),
             receiver: Some(self.identifier),
         };
 
@@ -232,13 +228,7 @@ impl ExecutableInvocation for FunctionInvocation {
         })?;
         let nodes_to_move = value.owned_node_ids().clone();
         let mut node_refs_to_copy = value.references().clone();
-
-        let fn_identifier = FnIdentifier::application_ident(
-            self.identifier.0,
-            self.identifier.1.clone(),
-            self.identifier.2.clone(),
-        );
-        let actor = Actor::function(fn_identifier, self.identifier.clone());
+        let actor = Actor::function(self.identifier.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
