@@ -13,6 +13,7 @@ use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::ToString;
 
 pub struct AccessRules(pub Own);
 
