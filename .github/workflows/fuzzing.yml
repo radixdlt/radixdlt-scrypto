@@ -29,12 +29,6 @@ jobs:
     runs-on: fuzzing
     # set timeout to 7days
     timeout-minutes: 10080
-    env:
-      # Temporarily set below flags to workaround lack of RW access /proc filesystem,
-      # which is required by below command
-      #   ./fuzz.sh afl machine-init
-      AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES: 1
-      AFL_SKIP_CPUFREQ: 1
 
     steps:
     - uses: actions/checkout@v2
@@ -59,7 +53,7 @@ jobs:
       working-directory: fuzz-tests
       run: |
         ./install_afl.sh
-        #./fuzz.sh afl machine-init
+        ./fuzz.sh afl machine-init
 
     - name: Build AFL
       working-directory: fuzz-tests
