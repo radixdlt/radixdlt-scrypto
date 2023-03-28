@@ -137,7 +137,7 @@ pub enum KernelError {
     ContainsDuplicatedOwns,
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
-    TrackError(TrackError),
+    TrackError(Box<TrackError>),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     BlobNotFound(Hash),
@@ -145,24 +145,33 @@ pub enum KernelError {
 
     // Substate Constraints
     InvalidOffset(SubstateOffset),
-    InvalidOwnership(SubstateOffset, PackageAddress, String),
+    InvalidOwnership(Box<InvalidOwnership>),
     InvalidId(RENodeId),
 
     // Actor Constraints
-    InvalidDropNodeAccess {
-        mode: ExecutionMode,
-        actor: Actor,
-        node_id: RENodeId,
-        package_address: PackageAddress,
-        blueprint_name: String,
-    },
-    InvalidSubstateAccess {
-        mode: ExecutionMode,
-        actor: Actor,
-        node_id: RENodeId,
-        offset: SubstateOffset,
-        flags: LockFlags,
-    },
+    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidSubstateAccess(Box<InvalidSubstateAccess>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidOwnership(pub SubstateOffset, pub PackageAddress, pub String);
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidDropNodeAccess {
+    pub mode: ExecutionMode,
+    pub actor: Actor,
+    pub node_id: RENodeId,
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidSubstateAccess {
+    pub mode: ExecutionMode,
+    pub actor: Actor,
+    pub node_id: RENodeId,
+    pub offset: SubstateOffset,
+    pub flags: LockFlags,
 }
 
 impl CanBeAbortion for KernelError {
@@ -176,12 +185,15 @@ impl CanBeAbortion for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
-    OffsetDoesNotExist(RENodeId, SubstateOffset),
+    OffsetDoesNotExist(Box<OffsetDoesNotExist>),
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
-    FailedToMoveSubstateToTrack(TrackError),
+    FailedToMoveSubstateToTrack(Box<TrackError>),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct OffsetDoesNotExist(pub RENodeId, pub SubstateOffset);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
@@ -192,15 +204,10 @@ pub enum SystemError {
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
-    InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
+    InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
-    InvalidModuleType {
-        expected_package: PackageAddress,
-        expected_blueprint: String,
-        actual_package: PackageAddress,
-        actual_blueprint: String,
-    },
-    SubstateValidationError(SubstateValidationError),
+    InvalidModuleType(Box<InvalidModuleType>),
+    SubstateValidationError(Box<SubstateValidationError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -236,6 +243,17 @@ pub enum ModuleError {
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidModuleType {
+    pub expected_package: PackageAddress,
+    pub expected_blueprint: String,
+    pub actual_package: PackageAddress,
+    pub actual_blueprint: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidModuleSet(pub RENodeId, pub BTreeSet<NodeModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
@@ -346,7 +364,7 @@ pub enum ApplicationError {
 
     AccessControllerError(AccessControllerError),
 
-    EventError(EventError),
+    EventError(Box<EventError>),
 
     MetadataError(MetadataPanicError),
 }

@@ -1,5 +1,7 @@
 use crate::errors::SystemError;
-use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
+use crate::errors::{
+    ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
+};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
@@ -174,30 +176,30 @@ where
                 .blueprints
                 .get(blueprint_ident)
                 .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(
+                    SystemError::SubstateValidationError(Box::new(
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
-                    ),
+                    )),
                 ))?;
         if schema.substates.len() != app_states.len() {
             return Err(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(
+                SystemError::SubstateValidationError(Box::new(
                     SubstateValidationError::WrongNumberOfSubstates(
                         blueprint_ident.to_string(),
                         app_states.len(),
                         schema.substates.len(),
                     ),
-                ),
+                )),
             ));
         }
         for i in 0..app_states.len() {
             validate_payload_against_schema(&app_states[i], &schema.schema, schema.substates[i])
                 .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::SubstateValidationError(
+                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
                         SubstateValidationError::SchemaValidationError(
                             blueprint_ident.to_string(),
                             err.error_message(&schema.schema),
                         ),
-                    ))
+                    )))
                 })?;
         }
         self.kernel_drop_lock(handle)?;
@@ -419,7 +421,7 @@ where
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                node_id, module_ids,
+                Box::new(InvalidModuleSet(node_id, module_ids)),
             )));
         }
 
@@ -468,12 +470,14 @@ where
                         (package_address, blueprint.as_str()),
                         (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
                     ) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: ACCESS_RULES_PACKAGE,
-                            expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
-                            actual_package: package_address,
-                            actual_blueprint: blueprint,
-                        }));
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_package: ACCESS_RULES_PACKAGE,
+                                expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
+                                actual_package: package_address,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
                     }
 
                     let mut node = self.kernel_drop_node(RENodeId::Object(object_id))?;
@@ -497,12 +501,14 @@ where
                         (package_address, blueprint.as_str()),
                         (METADATA_PACKAGE, METADATA_BLUEPRINT)
                     ) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: METADATA_PACKAGE,
-                            expected_blueprint: METADATA_BLUEPRINT.to_string(),
-                            actual_package: package_address,
-                            actual_blueprint: blueprint,
-                        }));
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_package: METADATA_PACKAGE,
+                                expected_blueprint: METADATA_BLUEPRINT.to_string(),
+                                actual_package: package_address,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
                     }
 
                     let node = self.kernel_drop_node(node_id)?;
@@ -526,12 +532,14 @@ where
                         (package_address, blueprint.as_str()),
                         (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
                     ) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
-                            expected_package: ROYALTY_PACKAGE,
-                            expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
-                            actual_package: package_address,
-                            actual_blueprint: blueprint,
-                        }));
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_package: ROYALTY_PACKAGE,
+                                expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
+                                actual_package: package_address,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
                     }
 
                     let mut node = self.kernel_drop_node(node_id)?;
@@ -766,7 +774,7 @@ where
                     NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
                     NodeModuleId::SELF => self.get_object_type_info(node_id),
                     NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(EventError::NoAssociatedPackage),
+                        ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
                 Some(Actor {
@@ -779,7 +787,7 @@ where
                     ..
                 }) => Ok((package_address, blueprint_name.clone())),
                 None => Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(EventError::InvalidActor),
+                    ApplicationError::EventError(Box::new(EventError::InvalidActor)),
                 )),
             }?;
 
@@ -792,11 +800,11 @@ where
             let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
             let blueprint_schema = package_info.schema.blueprints.get(&blueprint_name).map_or(
                 Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
                         package_address,
                         blueprint_name: blueprint_name.clone(),
                         event_name: event_name.clone(),
-                    }),
+                    })),
                 )),
                 Ok,
             )?;
@@ -805,11 +813,11 @@ where
             // schema
             let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
                 Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
                         package_address,
                         blueprint_name,
                         event_name,
-                    }),
+                    })),
                 )),
                 Ok,
             )?;
@@ -843,7 +851,7 @@ where
                 *local_type_index,
             )),
             None => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(EventError::InvalidActor),
+                ApplicationError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
 
@@ -854,9 +862,9 @@ where
             event_type_identifier.1,
         )
         .map_err(|err| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(
+            RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
                 EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
-            ))
+            )))
         })?;
 
         // Adding the event to the event store

@@ -1,6 +1,6 @@
 use super::track::Track;
 use crate::blueprints::resource::*;
-use crate::errors::CallFrameError;
+use crate::errors::{CallFrameError, OffsetDoesNotExist};
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
@@ -12,6 +12,7 @@ use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -54,7 +55,12 @@ impl Heap {
                 .substates
                 .get(&(module_id, offset.clone()))
                 .map(|s| s.to_ref())
-                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+                .ok_or((|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                })()),
         }
     }
 
@@ -82,7 +88,12 @@ impl Heap {
                 .substates
                 .get_mut(&(module_id, offset.clone()))
                 .map(|s| s.to_ref_mut())
-                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+                .ok_or((|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                })()),
         }
     }
 
@@ -116,7 +127,7 @@ impl Heap {
             self.move_nodes_to_store(track, owned_nodes)?;
             track
                 .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(e))?;
+                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
         }
 
         Ok(())

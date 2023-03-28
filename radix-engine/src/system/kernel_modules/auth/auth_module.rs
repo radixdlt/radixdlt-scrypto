@@ -34,8 +34,10 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized(Option<ActorIdentifier>, MethodAuthorization),
+    Unauthorized(Box<Unauthorized>),
 }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct Unauthorized(pub Option<ActorIdentifier>, pub MethodAuthorization);
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
@@ -399,10 +401,10 @@ impl KernelModule for AuthModule {
         // Authorization check
         if !auth_zone_stack.check_auth(is_barrier, &method_auth, api)? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(
+                AuthError::Unauthorized(Box::new(Unauthorized(
                     next_actor.as_ref().map(|a| a.identifier.clone()),
                     method_auth,
-                ),
+                ))),
             )));
         }
 
