@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
 use sbor::rust::collections::BTreeMap;

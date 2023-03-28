@@ -1,7 +1,7 @@
 use crate::blueprints::clock::TimePrecision;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
-use radix_engine_common::data::scrypto::model::ComponentAddress;
+use radix_engine_common::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
 
 pub const CLOCK_BLUEPRINT: &str = "Clock";

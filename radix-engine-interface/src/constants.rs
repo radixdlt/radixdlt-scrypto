@@ -1,7 +1,6 @@
-use radix_engine_common::address::EntityType;
-
-use crate::address_types::*;
 use crate::*;
+use radix_engine_common::address::EntityType;
+use radix_engine_common::types::*;
 
 pub const RADIX_TOKEN: ResourceAddress = resource_address(EntityType::GlobalFungibleResource, 0);
 

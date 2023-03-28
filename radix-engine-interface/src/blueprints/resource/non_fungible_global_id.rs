@@ -3,6 +3,7 @@ use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;

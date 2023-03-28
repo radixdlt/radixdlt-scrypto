@@ -1,5 +1,4 @@
 use crate::data::scrypto::model::Own;
-use crate::data::scrypto::model::*;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;

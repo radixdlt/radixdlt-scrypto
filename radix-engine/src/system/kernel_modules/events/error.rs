@@ -1,4 +1,4 @@
-use radix_engine_interface::data::scrypto::model::PackageAddress;
+use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::*;
 use sbor::rust::string::String;
 

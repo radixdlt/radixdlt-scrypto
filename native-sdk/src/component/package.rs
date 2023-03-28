@@ -2,8 +2,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageSetRoyaltyConfigInput, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::data::scrypto::model::PackageAddress;
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
+use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;

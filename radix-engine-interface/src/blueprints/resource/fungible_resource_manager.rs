@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 

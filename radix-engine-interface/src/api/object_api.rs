@@ -1,4 +1,3 @@
-use crate::data::scrypto::model::*;
 use crate::types::*;
 use radix_engine_common::types::*;
 use sbor::rust::collections::*;

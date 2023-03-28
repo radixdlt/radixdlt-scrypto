@@ -45,7 +45,7 @@ mod simple {
 
 #[blueprint]
 mod empty_with_use_statements {
-    use radix_engine_common::data::scrypto::model::ComponentAddress;
+    use radix_engine_common::types::ComponentAddress;
 
     struct EmptyWithUse {}
 

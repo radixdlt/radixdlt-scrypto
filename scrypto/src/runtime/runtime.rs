@@ -12,6 +12,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::traits::ScryptoEvent;
+use radix_engine_interface::types::*;
 use radix_engine_interface::types::{FnIdentifier, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;

@@ -1,13 +1,13 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::address_types::GlobalAddress;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::ClientTransactionRuntimeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::model::PackageAddress;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::GlobalAddress;
+use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::{
     FnIdentifier, Level, LockHandle, NodeId, SubstateKey, TypedModuleId,
 };

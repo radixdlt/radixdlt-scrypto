@@ -8,7 +8,7 @@ use scrypto::prelude::*;
 #[test]
 fn encode_package_address_to_string_correct_entity_type_succeeds() {
     // Arrange
-    let package_address =  package_address(EntityType::GlobalPackage, 1);
+    let package_address = package_address(EntityType::GlobalPackage, 1);
     let bech32_encoder = Bech32Encoder::for_simulator();
 
     // Act

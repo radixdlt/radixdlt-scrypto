@@ -7,6 +7,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NodeId;
+use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
