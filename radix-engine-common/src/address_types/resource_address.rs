@@ -20,10 +20,8 @@ impl ResourceAddress {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
-}
 
-impl AsRef<NodeId> for ResourceAddress {
-    fn as_ref(&self) -> &NodeId {
+    pub fn as_node_id(&self) -> &NodeId {
         &self.0
     }
 }

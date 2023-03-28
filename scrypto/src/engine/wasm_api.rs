@@ -1,5 +1,5 @@
 // Re-export
-pub use radix_engine_interface::api::types::{Buffer, BufferId, Slice};
+pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
 use sbor::rust::vec::Vec;
 

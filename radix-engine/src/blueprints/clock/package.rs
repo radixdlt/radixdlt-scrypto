@@ -7,7 +7,6 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
@@ -16,6 +15,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 use radix_engine_interface::time::*;
+use radix_engine_interface::types::ClientCostingReason;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ClockSubstate {

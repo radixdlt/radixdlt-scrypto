@@ -25,7 +25,6 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::types::{NodeId, VaultOffset};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
@@ -44,6 +43,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
+use radix_engine_interface::types::{NodeId, VaultOffset};
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};

@@ -1,9 +1,9 @@
 // Re-exports
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
-use radix_engine_interface::api::types::{NodeId, SubstateOffset, TypedModuleId};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
+use radix_engine_interface::types::{NodeId, SubstateOffset, TypedModuleId};
 use radix_engine_interface::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;

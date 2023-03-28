@@ -6,7 +6,7 @@ use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{LockHandle, NodeId, SubstateId, SubstateOffset};
+use radix_engine_interface::types::{LockHandle, NodeId, SubstateId, SubstateOffset};
 
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;

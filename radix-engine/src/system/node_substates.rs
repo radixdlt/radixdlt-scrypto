@@ -12,14 +12,12 @@ use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::types::{
-    ComponentOffset, KeyValueStoreOffset, NodeId, SubstateOffset,
-};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
+use radix_engine_interface::types::{ComponentOffset, KeyValueStoreOffset, NodeId, SubstateOffset};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {

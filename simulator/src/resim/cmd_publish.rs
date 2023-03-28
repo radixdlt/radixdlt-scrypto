@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, CommittableSubstateDatabase};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NodeId;
+use radix_engine_interface::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use std::collections::BTreeSet;

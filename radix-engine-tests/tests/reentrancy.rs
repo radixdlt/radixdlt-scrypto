@@ -1,7 +1,7 @@
 use radix_engine::errors::{KernelError, RuntimeError};
 use radix_engine::kernel::track::{LockState, TrackError};
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NodeId;
+use radix_engine_interface::types::NodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

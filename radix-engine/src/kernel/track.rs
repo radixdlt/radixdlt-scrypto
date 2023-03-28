@@ -17,12 +17,12 @@ use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::Level;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::VAULT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::types::Level;
+use radix_engine_interface::types::*;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]

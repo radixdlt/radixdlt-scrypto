@@ -1,7 +1,7 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NodeId;
+use radix_engine_interface::types::NodeId;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;

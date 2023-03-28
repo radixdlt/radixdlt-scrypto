@@ -1,9 +1,9 @@
-use radix_engine_interface::api::types::{NodeId, NodeId};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::{NodeId, NodeId};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 

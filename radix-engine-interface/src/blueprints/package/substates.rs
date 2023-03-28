@@ -1,7 +1,7 @@
-use crate::api::types::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::schema::*;
+use crate::types::*;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};

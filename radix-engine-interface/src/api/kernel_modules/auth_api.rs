@@ -1,4 +1,5 @@
-use crate::{api::types::*, blueprints::resource::AccessRule};
+use crate::blueprints::resource::AccessRule;
+use radix_engine_common::types::*;
 use sbor::rust::fmt::Debug;
 
 pub trait ClientAuthApi<E: Debug> {

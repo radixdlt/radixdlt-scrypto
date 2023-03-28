@@ -1,9 +1,9 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;

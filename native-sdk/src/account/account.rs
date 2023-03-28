@@ -1,10 +1,10 @@
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
+use radix_engine_interface::types::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]

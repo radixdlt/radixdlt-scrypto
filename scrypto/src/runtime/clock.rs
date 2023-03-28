@@ -1,4 +1,3 @@
-use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
     ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision,
@@ -7,6 +6,7 @@ use radix_engine_interface::blueprints::clock::{
 use radix_engine_interface::constants::CLOCK;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
+use radix_engine_interface::types::NodeId;
 use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 

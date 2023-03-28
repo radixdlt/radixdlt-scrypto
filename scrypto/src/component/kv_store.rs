@@ -1,11 +1,9 @@
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    KeyValueStoreId, KeyValueStoreOffset, NodeId, SubstateOffset,
-};
 use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::{KeyValueStoreId, KeyValueStoreOffset, NodeId, SubstateOffset};
 use sbor::rust::marker::PhantomData;
 use sbor::*;
 use scrypto_schema::KeyValueStoreSchema;

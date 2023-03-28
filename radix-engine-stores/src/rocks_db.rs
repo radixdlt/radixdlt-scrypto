@@ -5,8 +5,8 @@ use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine::{ledger::*, wasm::WasmEngine};
-use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
+use radix_engine_interface::types::NodeId;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
 pub struct RocksdbSubstateStore {

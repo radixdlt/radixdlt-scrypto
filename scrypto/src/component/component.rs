@@ -8,7 +8,6 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{NodeId, NodeId};
 use radix_engine_interface::api::{types::*, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
@@ -18,6 +17,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
+use radix_engine_interface::types::{NodeId, NodeId};
 use sbor::rust::prelude::*;
 use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,

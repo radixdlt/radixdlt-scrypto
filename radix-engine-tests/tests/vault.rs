@@ -1,7 +1,7 @@
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NodeId;
+use radix_engine_interface::types::NodeId;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

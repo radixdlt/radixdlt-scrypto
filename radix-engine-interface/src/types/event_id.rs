@@ -1,5 +1,6 @@
-use crate::api::types::{NodeId, TypedModuleId};
+use super::TypedModuleId;
 use crate::ScryptoSbor;
+use radix_engine_common::types::*;
 use sbor::rust::string::String;
 use sbor::LocalTypeIndex;
 

@@ -1,9 +1,9 @@
 use crate::api::node_modules::metadata::*;
-use crate::api::types::TypedModuleId;
 use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
 use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use crate::blueprints::resource::*;
 use crate::rule;
+use crate::types::*;
 use crate::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;

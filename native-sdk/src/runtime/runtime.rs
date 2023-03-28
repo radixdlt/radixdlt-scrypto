@@ -1,4 +1,3 @@
-use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -7,6 +6,7 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use radix_engine_interface::traits::ScryptoEvent;
+use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::*;
 
 #[derive(Debug)]

@@ -7,8 +7,8 @@ use radix_engine::types::*;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use radix_engine_interface::api::types::IndexedScryptoValue;
-use radix_engine_interface::api::types::NodeId;
+use radix_engine_interface::types::IndexedScryptoValue;
+use radix_engine_interface::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::{
     AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource,

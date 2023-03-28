@@ -9,9 +9,9 @@ use crate::system::kernel_modules::execution_trace::{
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
+use radix_engine_interface::types::*;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]

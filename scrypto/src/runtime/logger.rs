@@ -1,4 +1,4 @@
-use radix_engine_interface::{api::types::Level, api::ClientLoggerApi};
+use radix_engine_interface::{api::ClientLoggerApi, types::Level};
 use sbor::rust::string::String;
 
 use crate::engine::scrypto_env::ScryptoEnv;

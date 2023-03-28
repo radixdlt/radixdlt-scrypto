@@ -7,7 +7,7 @@ use crate::{
     system::node::{RENodeInit, RENodeModuleInit},
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
+use radix_engine_interface::types::{
     EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateOffset, TypedModuleId,
 };
 use sbor::rust::collections::BTreeMap;

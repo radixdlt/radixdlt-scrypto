@@ -3,7 +3,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::types::SubstateOffset;
+use radix_engine_interface::types::SubstateOffset;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {

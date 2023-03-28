@@ -1,4 +1,4 @@
-use crate::api::types::*;
+use crate::types::*;
 use sbor::rust::fmt::Debug;
 
 pub trait ClientActorApi<E: Debug> {

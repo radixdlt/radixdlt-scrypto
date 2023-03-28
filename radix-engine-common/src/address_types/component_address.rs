@@ -56,10 +56,8 @@ impl ComponentAddress {
             }
         }
     }
-}
 
-impl AsRef<NodeId> for ComponentAddress {
-    fn as_ref(&self) -> &NodeId {
+    pub fn as_node_id(&self) -> &NodeId {
         &self.0
     }
 }

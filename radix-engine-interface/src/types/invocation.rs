@@ -1,7 +1,8 @@
-use crate::api::types::*;
 use crate::blueprints::resource::{FnKey, MethodKey};
 use crate::data::scrypto::model::*;
+use crate::types::*;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
 

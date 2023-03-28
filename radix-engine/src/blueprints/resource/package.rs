@@ -6,13 +6,13 @@ use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
-use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use radix_engine_interface::types::ClientCostingReason;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =

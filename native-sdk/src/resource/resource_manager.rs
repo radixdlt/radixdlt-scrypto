@@ -1,4 +1,3 @@
-use radix_engine_interface::api::types::{NodeId, NonFungibleData};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
@@ -7,6 +6,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::{NodeId, NonFungibleData};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;

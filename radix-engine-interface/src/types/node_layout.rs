@@ -1,6 +1,4 @@
 use crate::*;
-use radix_engine_common::address_types::*;
-use radix_engine_common::data::scrypto::model::*;
 use sbor::rust::prelude::*;
 
 //=========================================================================

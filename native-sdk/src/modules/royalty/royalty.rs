@@ -1,11 +1,11 @@
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltyCreateInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CREATE_IDENT,
 };
-use radix_engine_interface::api::types::RoyaltyConfig;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::RoyaltyConfig;
 use sbor::rust::prelude::*;
 
 pub struct ComponentRoyalty;

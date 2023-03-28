@@ -8,10 +8,10 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{NodeId, ResourceManagerOffset, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::{NodeId, ResourceManagerOffset, SubstateOffset};
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;

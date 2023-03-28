@@ -1,8 +1,8 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NodeId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::types::NodeId;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

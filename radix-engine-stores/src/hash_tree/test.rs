@@ -7,11 +7,11 @@ use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::PackageAddress;
-use radix_engine_interface::api::types::{
-    KeyValueStoreOffset, NodeId, SubstateId, SubstateOffset, TypedModuleId,
-};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::types::{
+    KeyValueStoreOffset, NodeId, SubstateId, SubstateOffset, TypedModuleId,
+};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {

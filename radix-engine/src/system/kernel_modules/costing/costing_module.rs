@@ -19,7 +19,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::{api::types::NodeId, *};
+use radix_engine_interface::{types::NodeId, *};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

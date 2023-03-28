@@ -14,11 +14,11 @@ use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::types::ClientCostingReason;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {

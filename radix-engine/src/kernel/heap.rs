@@ -3,13 +3,13 @@ use crate::blueprints::resource::*;
 use crate::errors::CallFrameError;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
-use radix_engine_interface::api::types::{
-    BucketOffset, NodeId, ProofOffset, SubstateId, SubstateOffset, TypedModuleId,
-};
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::{
+    BucketOffset, NodeId, ProofOffset, SubstateId, SubstateOffset, TypedModuleId,
+};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 

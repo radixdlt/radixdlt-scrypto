@@ -4,11 +4,11 @@ use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::ClientCostingReason;
-use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::types::ClientCostingReason;
+use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
