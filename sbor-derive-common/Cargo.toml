@@ -8,8 +8,12 @@ proc-macro2 = { version = "1.0.38" }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+utils = { path = "../utils", default-features = false }
 
 [features]
+default = ["std"]
+std = ["utils/std"]
+alloc = ["utils/alloc"]
 trace = []
 
 [lib]

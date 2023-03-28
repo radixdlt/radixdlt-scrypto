@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::Write;
 use std::process::Command;
@@ -9,6 +8,7 @@ use proc_macro2::TokenStream;
 use quote::format_ident;
 use quote::quote;
 use syn::*;
+use utils::rust::collections::NonIterMap;
 
 #[allow(dead_code)]
 pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
@@ -41,13 +41,13 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
 pub fn extract_attributes(
     attrs: &[Attribute],
     name: &str,
-) -> Option<HashMap<String, Option<String>>> {
+) -> Option<NonIterMap<String, Option<String>>> {
     for attr in attrs {
         if !attr.path.is_ident(name) {
             continue;
         }
 
-        let mut fields = HashMap::new();
+        let mut fields = NonIterMap::new();
         if let Ok(meta) = attr.parse_meta() {
             if let Meta::List(MetaList { nested, .. }) = meta {
                 nested.into_iter().for_each(|m| match m {
@@ -603,13 +603,16 @@ mod tests {
         };
         assert_eq!(
             extract_attributes(&[attr.clone()], "sbor"),
-            Some(HashMap::from([
-                ("skip".to_owned(), None),
-                (
-                    "custom_value_kind".to_owned(),
-                    Some("NoCustomValueKind".to_owned())
-                )
-            ]))
+            Some(NonIterMap::from_iter(
+                [
+                    ("skip".to_owned(), None),
+                    (
+                        "custom_value_kind".to_owned(),
+                        Some("NoCustomValueKind".to_owned())
+                    )
+                ]
+                .into_iter()
+            ))
         );
         assert_eq!(extract_attributes(&[attr], "mutable"), None);
     }
@@ -620,6 +623,9 @@ mod tests {
             #[mutable]
         };
         assert_eq!(extract_attributes(&[attr.clone()], "sbor"), None);
-        assert_eq!(extract_attributes(&[attr], "mutable"), Some(HashMap::new()));
+        assert_eq!(
+            extract_attributes(&[attr], "mutable"),
+            Some(NonIterMap::new())
+        );
     }
 }
