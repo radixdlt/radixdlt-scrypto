@@ -30,7 +30,6 @@ use utils::ContextualDisplay;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
-    InvalidAddress(AddressError),
     InvalidArguments,
     EncodeError(EncodeError),
     DecodeError(DecodeError),

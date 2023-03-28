@@ -34,7 +34,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use crate::data::from_address;
 use crate::model::*;
 use crate::validation::*;
 
@@ -523,7 +522,7 @@ impl ManifestBuilder {
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address: from_address(entity_address),
+            entity_address,
             key,
             rule,
         })
@@ -537,7 +536,7 @@ impl ManifestBuilder {
         value: MetadataEntry,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMetadata {
-            entity_address: from_address(entity_address),
+            entity_address,
             key,
             value,
         })
@@ -754,7 +753,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall(&mut self, vault_id: NodeId, amount: Decimal) -> &mut Self {
+    pub fn recall(&mut self, vault_id: LocalAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::RecallResource { vault_id, amount });
         self
     }
