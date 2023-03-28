@@ -142,7 +142,7 @@ impl KernelModule for CostingModule {
                     _ => (None, ident),
                 },
                 AdditionalActorInfo::Function(.., ident) => (None, ident),
-                AdditionalActorInfo::VirtualLazyLoad => {
+                AdditionalActorInfo::VirtualLazyLoad(..) => {
                     return Ok(());
                 }
             };

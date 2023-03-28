@@ -69,11 +69,19 @@ pub struct FnIdentifier {
 }
 
 impl FnIdentifier {
-    pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
+    pub fn application_ident(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
         Self {
             package_address,
             blueprint_name,
             ident: FnIdent::Application(ident),
+        }
+    }
+
+    pub fn system_ident(package_address: PackageAddress, blueprint_name: String, ident: u8) -> Self {
+        Self {
+            package_address,
+            blueprint_name,
+            ident: FnIdent::System(ident),
         }
     }
 

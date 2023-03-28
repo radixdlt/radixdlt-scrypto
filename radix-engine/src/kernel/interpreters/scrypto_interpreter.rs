@@ -140,7 +140,7 @@ impl ExecutableInvocation for MethodInvocation {
             }
             _ => todo!(),
         };
-        let fn_identifier = FnIdentifier::new(
+        let fn_identifier = FnIdentifier::application_ident(
             package_address,
             blueprint_name.clone(),
             self.identifier.2.clone(),
@@ -233,7 +233,7 @@ impl ExecutableInvocation for FunctionInvocation {
         let nodes_to_move = value.owned_node_ids().clone();
         let mut node_refs_to_copy = value.references().clone();
 
-        let fn_identifier = FnIdentifier::new(
+        let fn_identifier = FnIdentifier::application_ident(
             self.identifier.0,
             self.identifier.1.clone(),
             self.identifier.2.clone(),
@@ -309,11 +309,11 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
         _api: &mut D,
     ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let resolved = ResolvedInvocation {
-            resolved_actor: Actor::virtual_lazy_load(FnIdentifier {
-                package_address: self.package_address,
-                blueprint_name: self.blueprint_name.to_string(),
-                ident: FnIdent::System(self.virtual_func_id),
-            }),
+            resolved_actor: Actor::virtual_lazy_load(
+                self.package_address,
+                self.blueprint_name.to_string(),
+                self.virtual_func_id,
+            ),
             update: CallFrameUpdate::empty(),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
             executor: ScryptoExecutor {

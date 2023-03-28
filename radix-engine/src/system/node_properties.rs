@@ -111,7 +111,7 @@ impl VisibilityProperties {
                         true
                     } else {
                         match &actor.info {
-                            AdditionalActorInfo::VirtualLazyLoad | AdditionalActorInfo::Function(..) => match (node_id, offset) {
+                            AdditionalActorInfo::VirtualLazyLoad(..) | AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
                                     RENodeId::GlobalObject(_),
@@ -212,7 +212,7 @@ impl VisibilityProperties {
                         true
                     } else {
                         match &actor.info {
-                            AdditionalActorInfo::VirtualLazyLoad | AdditionalActorInfo::Function(..) => match (node_id, offset) {
+                            AdditionalActorInfo::VirtualLazyLoad(..) | AdditionalActorInfo::Function(..) => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

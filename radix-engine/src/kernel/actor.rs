@@ -4,7 +4,7 @@ use crate::types::*;
 pub enum AdditionalActorInfo {
     Method(Option<Address>, RENodeId, NodeModuleId, PackageAddress, String, String),
     Function(PackageAddress, String, String),
-    VirtualLazyLoad,
+    VirtualLazyLoad(PackageAddress, String, u8),
 }
 
 // TODO: This structure along with ActorIdentifier needs to be cleaned up
@@ -16,7 +16,17 @@ pub struct Actor {
 
 impl Actor {
     pub fn fn_identifier(&self) -> FnIdentifier {
-        self.fn_identifier.clone()
+        match &self.info {
+            AdditionalActorInfo::Method(_, _, _, package_address, blueprint_name, ident) => {
+                FnIdentifier::application_ident(package_address.clone(), blueprint_name.clone(), ident.clone())
+            }
+            AdditionalActorInfo::Function(package_address, blueprint_name, ident) => {
+                FnIdentifier::application_ident(package_address.clone(), blueprint_name.clone(), ident.clone())
+            }
+            AdditionalActorInfo::VirtualLazyLoad(package_address, blueprint_name, ident) => {
+                FnIdentifier::system_ident(package_address.clone(), blueprint_name.clone(), ident.clone())
+            }
+        }
     }
 
     pub fn package_address(&self) -> &PackageAddress {
@@ -49,11 +59,14 @@ impl Actor {
         }
     }
 
-    pub fn virtual_lazy_load<I: Into<FnIdentifier>>(identifier: I) -> Self {
-        let fn_identifier = identifier.into();
+    pub fn virtual_lazy_load(package_address: PackageAddress, blueprint_name: String, ident: u8) -> Self {
         Self {
-            fn_identifier,
-            info: AdditionalActorInfo::VirtualLazyLoad,
+            fn_identifier: FnIdentifier {
+                package_address: package_address.clone(),
+                blueprint_name: blueprint_name.clone(),
+                ident: FnIdent::System(ident),
+            },
+            info: AdditionalActorInfo::VirtualLazyLoad(package_address, blueprint_name, ident),
         }
     }
 }

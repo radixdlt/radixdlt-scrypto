@@ -461,7 +461,7 @@ impl ExecutionTraceModule {
                         ident: ident.clone(),
                     })
                 }
-                AdditionalActorInfo::VirtualLazyLoad => {
+                AdditionalActorInfo::VirtualLazyLoad(..) => {
                     return;
                 }
             };
@@ -517,7 +517,7 @@ impl ExecutionTraceModule {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
             Some(Actor {
-                info: AdditionalActorInfo::VirtualLazyLoad,
+                info: AdditionalActorInfo::VirtualLazyLoad(..),
                 ..
             }) => return,
             _ => {}
