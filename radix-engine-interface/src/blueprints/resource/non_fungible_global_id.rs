@@ -1,3 +1,4 @@
+use radix_engine_common::data::scrypto::scrypto_encode;
 use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
@@ -109,6 +110,22 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleGlobalId {
 impl fmt::Debug for NonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
+    }
+}
+
+pub trait FromComponent: Sized {
+    fn from_component_address(component: ComponentAddress) -> Self;
+}
+
+impl FromComponent for NonFungibleGlobalId {
+    fn from_component_address(component_address: &ComponentAddress) -> Self {
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap())
+                .unwrap();
+        NonFungibleGlobalId::new(
+            GLOBAL_OBJECT_TOKEN,
+            non_fungible_local_id,
+        )
     }
 }
 
