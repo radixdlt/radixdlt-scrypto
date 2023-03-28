@@ -125,13 +125,13 @@ impl CallFrame {
             if heap.contains_node(&node_id) {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
                     return Err(RuntimeError::KernelError(KernelError::TrackError(
-                        TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id),
+                        Box::new(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id)),
                     )));
                 }
             } else {
                 track
                     .acquire_lock(substate_id, flags)
-                    .map_err(KernelError::TrackError)?;
+                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
         }
 
@@ -288,7 +288,7 @@ impl CallFrame {
                         SubstateId(node_id.clone(), module_id, offset.clone()),
                         flags.contains(LockFlags::FORCE_WRITE),
                     )
-                    .map_err(KernelError::TrackError)?;
+                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
         }
 
@@ -525,7 +525,7 @@ impl CallFrame {
             for ((module_id, offset), substate) in substates {
                 track
                     .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
+                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
 
             self.add_ref(node_id, RENodeVisibilityOrigin::Normal);

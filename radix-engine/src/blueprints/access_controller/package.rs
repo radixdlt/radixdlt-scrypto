@@ -108,8 +108,8 @@ pub enum AccessControllerError {
 
     /// Occurs when the expected recovery proposal doesn't match that which was found
     RecoveryProposalMismatch {
-        expected: RecoveryProposal,
-        found: RecoveryProposal,
+        expected: Box<RecoveryProposal>,
+        found: Box<RecoveryProposal>,
     },
 }
 

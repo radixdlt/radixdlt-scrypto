@@ -42,4 +42,6 @@ test_benchmark  \
     "sbor-tests \
     radix-engine-tests"
 
+./check_stack_usage.sh
+
 echo "Congrats! All tests passed."

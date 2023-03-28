@@ -170,6 +170,8 @@ jobs:
           -p radix-engine \
           -p radix-engine-tests \
           --features serde
+        ./check_stack_usage.sh
+
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}

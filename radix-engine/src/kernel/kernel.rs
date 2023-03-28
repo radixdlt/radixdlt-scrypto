@@ -12,8 +12,8 @@ use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -393,13 +393,13 @@ where
                 blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess {
+                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
                         package_address,
                         blueprint_name,
-                    },
+                    })),
                 ));
             }
         }
@@ -631,13 +631,13 @@ where
                 flags,
             ) {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidSubstateAccess {
+                    KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
                         offset,
                         flags,
-                    },
+                    })),
                 ));
             }
         }
@@ -651,24 +651,31 @@ where
             flags,
         );
 
-        let lock_handle = match maybe_lock_handle {
-            Ok(lock_handle) => lock_handle,
-            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(node_id, module_id, ref offset),
-            )))) => {
-                let retry =
-                    KernelModuleMixer::on_substate_lock_fault(node_id, module_id, &offset, self)?;
-                if retry {
-                    self.current_frame.acquire_lock(
-                        &mut self.heap,
-                        &mut self.track,
-                        &node_id,
-                        module_id,
-                        offset.clone(),
-                        flags,
-                    )?
+        let lock_handle = match &maybe_lock_handle {
+            Ok(lock_handle) => *lock_handle,
+            Err(RuntimeError::KernelError(KernelError::TrackError(track_err))) => {
+                if let TrackError::NotFound(SubstateId(node_id, module_id, ref offset)) =
+                    **track_err
+                {
+                    let retry = KernelModuleMixer::on_substate_lock_fault(
+                        node_id, module_id, &offset, self,
+                    )?;
+                    if retry {
+                        self.current_frame.acquire_lock(
+                            &mut self.heap,
+                            &mut self.track,
+                            &node_id,
+                            module_id,
+                            offset.clone(),
+                            flags,
+                        )?
+                    } else {
+                        return maybe_lock_handle;
+                    }
                 } else {
-                    return maybe_lock_handle;
+                    return Err(RuntimeError::KernelError(KernelError::TrackError(
+                        track_err.clone(),
+                    )));
                 }
             }
             Err(err) => {
@@ -686,21 +693,27 @@ where
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
-                        self.track
+                        match self
+                            .track
                             .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
-                            .map_err(|_| err)?;
-                        self.current_frame
-                            .add_ref(node_id, RENodeVisibilityOrigin::Normal);
-                        self.current_frame.acquire_lock(
-                            &mut self.heap,
-                            &mut self.track,
-                            &node_id,
-                            module_id,
-                            offset.clone(),
-                            flags,
-                        )?
+                            .map_err(|_| err)
+                        {
+                            Ok(_) => {
+                                self.current_frame
+                                    .add_ref(node_id, RENodeVisibilityOrigin::Normal);
+                                self.current_frame.acquire_lock(
+                                    &mut self.heap,
+                                    &mut self.track,
+                                    &node_id,
+                                    module_id,
+                                    offset.clone(),
+                                    flags,
+                                )?
+                            }
+                            Err(err) => return Err(err.clone()),
+                        }
                     }
-                    _ => return Err(err),
+                    _ => return Err(err.clone()),
                 }
             }
         };
