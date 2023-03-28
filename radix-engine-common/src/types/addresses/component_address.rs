@@ -65,7 +65,7 @@ impl ComponentAddress {
 
     pub fn try_from_bech32(s: &str, network: &NetworkDefinition) -> Option<Self> {
         let decoder = Bech32Decoder::new(network);
-        if let Ok(full_data) = decoder.validate_and_decode(s) {
+        if let Ok((_, full_data)) = decoder.validate_and_decode(s) {
             Self::try_from(full_data.as_ref()).ok()
         } else {
             None
@@ -83,29 +83,14 @@ impl TryFrom<[u8; NodeId::LENGTH]> for ComponentAddress {
     type Error = ParseComponentAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        match EntityType::from_repr(value[0])
-                .ok_or(ParseComponentAddressError::InvalidEntityTypeId(value[0]))?
-            {
-                EntityType::GlobalEpochManager |
-                EntityType::GlobalValidator |
-                EntityType::GlobalClock |
-                EntityType::GlobalAccessController |
-                EntityType::GlobalAccount |
-                EntityType::GlobalIdentity |
-                EntityType::GlobalComponent |
-                EntityType::GlobalVirtualEcdsaAccount |
-                EntityType::GlobalVirtualEddsaAccount |
-                EntityType::GlobalVirtualEcdsaIdentity |
-                EntityType::GlobalVirtualEddsaIdentity => Ok(Self(NodeId(value))),
-                EntityType::GlobalPackage | /* PackageAddress */
-                EntityType::GlobalFungibleResource | /* ResourceAddress */
-                EntityType::GlobalNonFungibleResource | /* ResourceAddress */
-                EntityType::InternalVault |
-                EntityType::InternalAccessController |
-                EntityType::InternalAccount |
-                EntityType::InternalComponent |
-                EntityType::InternalKeyValueStore => Err(ParseComponentAddressError::InvalidEntityTypeId(value[0])),
-            }
+        if EntityType::from_repr(value[0])
+            .ok_or(ParseComponentAddressError::InvalidEntityTypeId(value[0]))?
+            .is_global_component()
+        {
+            Ok(Self(NodeId(value)))
+        } else {
+            Err(ParseComponentAddressError::InvalidEntityTypeId(value[0]))
+        }
     }
 }
 

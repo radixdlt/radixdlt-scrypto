@@ -23,7 +23,10 @@ impl Bech32Decoder {
     }
 
     /// Low level method which performs the Bech32 validation and decoding of the data.
-    pub fn validate_and_decode(&self, address: &str) -> Result<Vec<u8>, DecodeBech32AddressError> {
+    pub fn validate_and_decode(
+        &self,
+        address: &str,
+    ) -> Result<(EntityType, Vec<u8>), DecodeBech32AddressError> {
         // Decode the address string
         let (actual_hrp, data, variant) = bech32::decode(address)
             .map_err(|err| DecodeBech32AddressError::Bech32mDecodingError(err))?;
@@ -39,13 +42,13 @@ impl Bech32Decoder {
             .map_err(|err| DecodeBech32AddressError::Bech32mDecodingError(err))?;
 
         // Obtain the HRP based on the entity byte in the data
-        let expected_hrp = if let Some(entity_type_id) = data.get(0) {
+        let (entity_type, expected_hrp) = if let Some(entity_type_id) = data.get(0) {
             let entity_type = EntityType::from_repr(*entity_type_id).ok_or(
                 DecodeBech32AddressError::InvalidEntityTypeId(*entity_type_id),
             )?;
 
             // Obtain the HRP corresponding to this entity type
-            self.hrp_set.get_entity_hrp(&entity_type)
+            (entity_type, self.hrp_set.get_entity_hrp(&entity_type))
         } else {
             return Err(DecodeBech32AddressError::MissingEntityTypeByte);
         };
@@ -56,6 +59,6 @@ impl Bech32Decoder {
         }
 
         // Validation complete, return data bytes
-        Ok(data)
+        Ok((entity_type, data))
     }
 }

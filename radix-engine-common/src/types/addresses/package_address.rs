@@ -30,7 +30,7 @@ impl PackageAddress {
 
     pub fn try_from_bech32(s: &str, network: &NetworkDefinition) -> Option<Self> {
         let decoder = Bech32Decoder::new(network);
-        if let Ok(full_data) = decoder.validate_and_decode(s) {
+        if let Ok((_, full_data)) = decoder.validate_and_decode(s) {
             Self::try_from(full_data.as_ref()).ok()
         } else {
             None
@@ -48,11 +48,13 @@ impl TryFrom<[u8; NodeId::LENGTH]> for PackageAddress {
     type Error = ParsePackageAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        match EntityType::from_repr(value[0])
+        if EntityType::from_repr(value[0])
             .ok_or(ParsePackageAddressError::InvalidEntityTypeId(value[0]))?
+            .is_global_package()
         {
-            EntityType::GlobalPackage => Ok(Self(NodeId(value))),
-            _ => Err(ParsePackageAddressError::InvalidEntityTypeId(value[0])),
+            Ok(Self(NodeId(value)))
+        } else {
+            Err(ParsePackageAddressError::InvalidEntityTypeId(value[0]))
         }
     }
 }
