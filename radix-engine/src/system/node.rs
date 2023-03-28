@@ -24,8 +24,8 @@ pub enum RENodeModuleInit {
 }
 
 impl RENodeModuleInit {
-    pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
+    pub fn to_substates(self) -> IndexMap<SubstateOffset, RuntimeSubstate> {
+        let mut substates = index_map_new();
         match self {
             RENodeModuleInit::Metadata(metadata_substates) => {
                 substates.extend(metadata_substates);
@@ -66,15 +66,12 @@ pub enum RENodeInit {
 }
 
 impl RENodeInit {
-    pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
+    pub fn to_substates(self) -> BTreeMap<SubstateOffset, RuntimeSubstate> {
         match self {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
-                substates.extend(object_substates);
+                object_substates
             }
-            RENodeInit::KeyValueStore => {}
-        };
-
-        substates
+            RENodeInit::KeyValueStore => BTreeMap::new(),
+        }
     }
 }

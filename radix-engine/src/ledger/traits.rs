@@ -1,6 +1,9 @@
 use crate::{system::node_substates::PersistedSubstate, types::*};
 
 pub trait QueryableSubstateStore {
+    /// Returns the entire key-value store, as a map from key's entry to value's substate.
+    /// NOTE: This function is supposed to be used only for test assert purposes - the
+    /// implementations are sub-optimal, and the returned hashmap is inherently non-deterministic.
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,

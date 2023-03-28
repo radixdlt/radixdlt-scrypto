@@ -398,6 +398,104 @@ pub mod collections {
         pub use indexset;
     }
 
+    pub mod non_iter_map {
+
+        #[cfg(feature = "alloc")]
+        use hashbrown::HashMap;
+        #[cfg(not(feature = "alloc"))]
+        use std::collections::HashMap;
+
+        #[cfg(feature = "alloc")]
+        use core::hash::Hash;
+        #[cfg(not(feature = "alloc"))]
+        use std::hash::Hash;
+
+        #[cfg(feature = "alloc")]
+        use core::borrow::Borrow;
+        #[cfg(not(feature = "alloc"))]
+        use std::borrow::Borrow;
+
+        /// A thin wrapper around a `HashMap`, which guarantees that a `HashMap` usage will not
+        /// result in a non-deterministic execution (simply by disallowing the iteration over its
+        /// elements).
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        pub struct NonIterMap<K: Eq + Hash, V>(HashMap<K, V>);
+
+        impl<K: Hash + Eq, V> NonIterMap<K, V> {
+            /// Creates an empty map.
+            pub fn new() -> Self {
+                Self(HashMap::new())
+            }
+
+            /// Inserts a key-value pair into the map.
+            /// If the map did not have this key present, None is returned.
+            /// If the map did have this key present, the value is updated, and the old value is
+            /// returned.
+            pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+                self.0.insert(key, value)
+            }
+
+            /// Returns a reference to the value corresponding to the key.
+            pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+            where
+                Q: Hash + Eq,
+                K: Borrow<Q>,
+            {
+                self.0.get(key)
+            }
+
+            /// Returns a mutable reference to the value corresponding to the key.
+            pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+            where
+                Q: Hash + Eq,
+                K: Borrow<Q>,
+            {
+                self.0.get_mut(key)
+            }
+
+            /// Returns true if the map contains a value for the specified key.
+            pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+            where
+                Q: Hash + Eq,
+                K: Borrow<Q>,
+            {
+                self.0.contains_key(key)
+            }
+
+            /// Removes a key from the map, returning the value at the key if the key was previously
+            /// in the map.
+            pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+            where
+                Q: Hash + Eq,
+                K: Borrow<Q>,
+            {
+                self.0.remove(key)
+            }
+
+            /// Clears the map, removing all key-value pairs.
+            pub fn clear(&mut self) {
+                self.0.clear();
+            }
+
+            /// Returns the number of elements in the map.
+            pub fn len(&self) -> usize {
+                self.0.len()
+            }
+        }
+
+        impl<K: Hash + Eq, V> Default for NonIterMap<K, V> {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl<K: Hash + Eq, V> FromIterator<(K, V)> for NonIterMap<K, V> {
+            fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+                Self(HashMap::from_iter(iter))
+            }
+        }
+    }
+
     pub use btree_map::btreemap;
     pub use btree_map::BTreeMap;
     pub use btree_set::btreeset;
@@ -412,4 +510,5 @@ pub mod collections {
     pub use index_set::indexset;
     pub use index_set::IndexSet;
     pub use index_set::{new as index_set_new, with_capacity as index_set_with_capacity};
+    pub use non_iter_map::NonIterMap;
 }

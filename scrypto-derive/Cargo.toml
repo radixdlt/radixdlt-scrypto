@@ -14,6 +14,7 @@ quote = { version = "1.0.18" }
 serde = { version = "1.0.137", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 scrypto-schema = { path = "../scrypto-schema", default-features = false }
+utils = { path = "../utils", default-features = false }
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
@@ -27,14 +28,8 @@ scrypto-schema = { path = "../scrypto-schema", default-features = false }
 # - https://github.com/rust-lang/cargo/issues/7915
 #
 default = ["std"]
-std = [
-    "serde/std", "serde_json/std", 
-    "scrypto-schema/std", "scrypto-schema/serde"
-]
-alloc = [
-    "serde/alloc", "serde_json/alloc", 
-    "scrypto-schema/alloc", "scrypto-schema/serde"
-]
+std = ["serde/std", "serde_json/std", "scrypto-schema/std", "scrypto-schema/serde", "utils/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "scrypto-schema/alloc", "scrypto-schema/serde", "utils/alloc"]
 
 # Enable trace
 trace = []

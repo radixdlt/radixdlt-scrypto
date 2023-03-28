@@ -93,7 +93,7 @@ impl TransactionProcessorBlueprint {
 
         // Index blobs
         // TODO: defer blob hashing to post fee payments as it's computationally costly
-        let mut blobs_by_hash = HashMap::new();
+        let mut blobs_by_hash = NonIterMap::new();
         for blob in input.blobs.as_ref() {
             blobs_by_hash.insert(hash(blob), blob);
         }
@@ -213,7 +213,7 @@ impl TransactionProcessorBlueprint {
                     // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
                     // the former will drop all named proofs before clearing the auth zone.
 
-                    for (_, real_id) in processor.proof_id_mapping.drain() {
+                    for (_, real_id) in processor.proof_id_mapping.drain(..) {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
@@ -614,17 +614,17 @@ impl TransactionProcessorBlueprint {
 }
 
 struct TransactionProcessor<'blob> {
-    proof_id_mapping: HashMap<ManifestProof, ObjectId>,
-    bucket_id_mapping: HashMap<ManifestBucket, ObjectId>,
+    proof_id_mapping: IndexMap<ManifestProof, ObjectId>,
+    bucket_id_mapping: NonIterMap<ManifestBucket, ObjectId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>,
+    blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>,
 }
 
 impl<'blob> TransactionProcessor<'blob> {
-    fn new(blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>) -> Self {
+    fn new(blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>) -> Self {
         Self {
-            proof_id_mapping: HashMap::new(),
-            bucket_id_mapping: HashMap::new(),
+            proof_id_mapping: index_map_new(),
+            bucket_id_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         }
