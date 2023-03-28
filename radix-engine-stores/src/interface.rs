@@ -18,6 +18,8 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
+// TODO: Add streaming support for `list_substates`
+
 /// Utility function for encoding a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
 pub fn encode_substate_id(
     node_id: &NodeId,
@@ -163,14 +165,7 @@ pub struct StateDependencies {
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct ModuleConfig {
     /// When activated, the store will allow LIST over the substates within the module.
-    iteration_enabled: bool,
-}
-
-/// Error when initializing a database.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum InitError {
-    /// The database is already initialized with a different configuration.
-    AlreadyInitializedWithDifferentConfig,
+    pub iteration_enabled: bool,
 }
 
 /// Error when listing substates.
@@ -198,13 +193,6 @@ pub enum CommitError {
 
 /// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
-    /// Initializes the database with the given config.
-    ///
-    /// If the database is already initialized, implementation of this method will check if
-    /// the set configuration matches the expected configuration and return an error if they do
-    /// not match.
-    fn init(&self, config: BTreeMap<ModuleId, ModuleConfig>) -> Result<(), InitError>;
-
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
@@ -226,7 +214,7 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)>>, Hash), ListSubstatesError>;
+    ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
 }
 
 /// Interface for committing changes into a substate database.
