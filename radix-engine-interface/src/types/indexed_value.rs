@@ -10,6 +10,9 @@ use sbor::traversal::TraversalEvent;
 use sbor::*;
 use utils::ContextualDisplay;
 
+use super::format_scrypto_value;
+use super::ScryptoValueDisplayContext;
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,

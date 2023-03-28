@@ -307,7 +307,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
 
     if let Some(raw_state) = component_state_dump.raw_state {
         let value_display_context =
-            ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
+            ScryptoValueDisplayContext::with_optional_bech32(Some(&bech32_encoder));
         writeln!(
             output,
             "{}: {}",
@@ -345,7 +345,7 @@ fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
         if let Option::Some(value) = &substate.kv_store_entry() {
             let key: ScryptoValue = scrypto_decode(&key).unwrap();
             let value_display_context =
-                ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
+                ScryptoValueDisplayContext::with_optional_bech32(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -518,7 +518,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 if let Option::Some(value) = non_fungible {
                     let id = IndexedScryptoValue::from_typed(id);
                     let value_display_context =
-                        ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
+                        ScryptoValueDisplayContext::with_optional_bech32(Some(&bech32_encoder));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, data: {} }}",

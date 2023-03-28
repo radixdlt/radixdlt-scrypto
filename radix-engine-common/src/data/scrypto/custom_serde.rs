@@ -1,15 +1,32 @@
 use super::*;
+use crate::address::Bech32Encoder;
 use crate::*;
 use sbor::serde_serialization::*;
 use sbor::traversal::*;
 use sbor::*;
 
-impl<'a> CustomSerializationContext<'a> for ScryptoValueDisplayContext<'a> {
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ScryptoValueSerializationContext<'a> {
+    pub bech32_encoder: Option<&'a Bech32Encoder>,
+}
+
+impl<'a> ScryptoValueSerializationContext<'a> {
+    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self { bech32_encoder }
+    }
+    pub fn no_context() -> Self {
+        Self {
+            bech32_encoder: None,
+        }
+    }
+}
+
+impl<'a> CustomSerializationContext<'a> for ScryptoValueSerializationContext<'a> {
     type CustomTypeExtension = ScryptoCustomTypeExtension;
 }
 
 impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
-    type CustomSerializationContext<'a> = ScryptoValueDisplayContext<'a>;
+    type CustomSerializationContext<'a> = ScryptoValueSerializationContext<'a>;
 
     fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
         _context: &SerializationContext<'s, 'a, Self>,
@@ -83,10 +100,14 @@ mod tests {
             "value": "000000000000000000000000000000000000000000000000000000"
         });
 
-        assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
+        assert_simple_json_matches(
+            &value,
+            ScryptoValueSerializationContext::no_context(),
+            expected,
+        );
         assert_invertible_json_matches(
             &value,
-            ScryptoValueDisplayContext::no_context(),
+            ScryptoValueSerializationContext::no_context(),
             expected_invertible,
         );
     }
@@ -106,8 +127,16 @@ mod tests {
             "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
-        assert_simple_json_matches(&value, &encoder, expected_simple);
-        assert_invertible_json_matches(&value, &encoder, expected_invertible);
+        assert_simple_json_matches(
+            &value,
+            ScryptoValueSerializationContext::with_optional_bech32(Some(&encoder)),
+            expected_simple,
+        );
+        assert_invertible_json_matches(
+            &value,
+            ScryptoValueSerializationContext::with_optional_bech32(Some(&encoder)),
+            expected_invertible,
+        );
     }
 
     #[test]
@@ -232,13 +261,17 @@ mod tests {
             "kind": "Tuple"
         });
 
-        let context = ScryptoValueDisplayContext::with_optional_bench32(Some(&encoder));
+        let context = ScryptoValueSerializationContext::with_optional_bech32(Some(&encoder));
 
         assert_simple_json_matches(&value, context, expected_simple);
         assert_invertible_json_matches(&value, context, expected_invertible);
     }
 
-    fn assert_simple_json_matches<'a, T: ScryptoEncode, C: Into<ScryptoValueDisplayContext<'a>>>(
+    fn assert_simple_json_matches<
+        'a,
+        T: ScryptoEncode,
+        C: Into<ScryptoValueSerializationContext<'a>>,
+    >(
         value: &T,
         context: C,
         expected: JsonValue,
@@ -259,7 +292,7 @@ mod tests {
     fn assert_invertible_json_matches<
         'a,
         T: ScryptoEncode,
-        C: Into<ScryptoValueDisplayContext<'a>>,
+        C: Into<ScryptoValueSerializationContext<'a>>,
     >(
         value: &T,
         context: C,

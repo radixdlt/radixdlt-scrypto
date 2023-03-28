@@ -364,7 +364,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
     ) -> Result<(), Self::Error> {
         let result = &self.result;
         let bech32_encoder = context.encoder;
-        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
+        let context = ScryptoValueDisplayContext::with_optional_bech32(bech32_encoder);
 
         write!(
             f,

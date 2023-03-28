@@ -2,6 +2,7 @@ use crate::address::Bech32Encoder;
 use crate::data::scrypto::*;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
+use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -16,20 +17,20 @@ impl<'a> ScryptoValueDisplayContext<'a> {
         }
     }
 
-    pub fn with_optional_bench32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self { bech32_encoder }
     }
 }
 
 impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a Bech32Encoder {
     fn into(self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bench32(Some(self))
+        ScryptoValueDisplayContext::with_optional_bech32(Some(self))
     }
 }
 
 impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
     fn into(self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bench32(self)
+        ScryptoValueDisplayContext::with_optional_bech32(self)
     }
 }
 
@@ -45,6 +46,7 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for ScryptoValue {
     }
 }
 
+/// Used for debugging primarily
 pub fn format_scrypto_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoValue,
@@ -229,7 +231,6 @@ pub fn format_custom_value<F: fmt::Write>(
 ) -> fmt::Result {
     match value {
         ScryptoCustomValue::Reference(value) => {
-            // FIXME add bech32 support
             write!(f, "Reference(\"{}\")", hex::encode(value.to_vec()))?;
         }
         ScryptoCustomValue::Own(value) => {

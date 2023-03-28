@@ -1,6 +1,7 @@
 mod costing_reason;
 mod event_id;
 mod indexed_value;
+mod indexed_value_display;
 mod invocation;
 mod level;
 mod node_layout;
@@ -12,6 +13,7 @@ mod wasm;
 pub use costing_reason::*;
 pub use event_id::*;
 pub use indexed_value::*;
+pub use indexed_value_display::*;
 pub use invocation::*;
 pub use level::*;
 pub use node_layout::*;
