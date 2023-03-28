@@ -141,7 +141,7 @@ impl ExecutableInvocation for MethodInvocation {
             _ => todo!(),
         };
         let global_address = api.kernel_get_current_actor().and_then(|a| match a {
-            Actor::Method(global, ..) => global,
+            Actor::Method { global_address, .. } => global_address,
             _ => {
                 if let RENodeId::GlobalObject(address) = self.identifier.0 {
                     Some(address)

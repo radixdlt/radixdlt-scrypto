@@ -142,7 +142,10 @@ impl VisibilityProperties {
                                     _ => false,
                                 }
                             }
-                            Actor::Method(_, actor_node_id, ..) => {
+                            Actor::Method {
+                                node_id: actor_node_id,
+                                ..
+                            } => {
                                 match actor_node_id {
                                     RENodeId::Object(component_address) => {
                                         match (node_id, offset) {
@@ -228,7 +231,10 @@ impl VisibilityProperties {
                                 }
                             }
 
-                            Actor::Method(_, actor_node_id, ..) => match actor_node_id {
+                            Actor::Method {
+                                node_id: actor_node_id,
+                                ..
+                            } => match actor_node_id {
                                 RENodeId::Object(component_address) => match (node_id, offset) {
                                     (
                                         RENodeId::KeyValueStore(_),

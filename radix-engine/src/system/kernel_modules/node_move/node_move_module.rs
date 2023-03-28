@@ -39,7 +39,7 @@ impl NodeMoveModule {
                         // Change to restricted unless it's moved to auth zone.
                         // TODO: align with barrier design?
                         let mut changed_to_restricted = true;
-                        if let Actor::Method(_, node_id, ..) = callee {
+                        if let Actor::Method { node_id, .. } = callee {
                             let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
                             if let TypeInfoSubstate::Object {
                                 package_address,

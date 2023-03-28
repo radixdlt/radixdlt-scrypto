@@ -137,7 +137,7 @@ impl KernelModule for CostingModule {
         let (package_address, blueprint_name, ident, optional_component) = {
             let fn_identifier = callee.fn_identifier();
             let (maybe_component, ident) = match &callee {
-                Actor::Method(_, node_id, _, _, _, ident) => match node_id {
+                Actor::Method { node_id, ident, .. } => match node_id {
                     RENodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
                     _ => (None, ident),
                 },

@@ -500,7 +500,10 @@ where
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
             match actor {
-                Actor::Method(Some(address), ..) => {
+                Actor::Method {
+                    global_address: Some(address),
+                    ..
+                } => {
                     self.current_frame.add_ref(
                         RENodeId::GlobalObject(*address),
                         RENodeVisibilityOrigin::Normal,

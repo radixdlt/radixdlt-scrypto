@@ -56,14 +56,13 @@ where
             }
         }
 
-        let module_id = if let Actor::Method(_, _, module_id, _, _, _) =
-            self.kernel_get_current_actor().unwrap()
-        {
-            module_id
-        } else {
-            // TODO: Remove this
-            NodeModuleId::SELF
-        };
+        let module_id =
+            if let Actor::Method { module_id, .. } = self.kernel_get_current_actor().unwrap() {
+                module_id
+            } else {
+                // TODO: Remove this
+                NodeModuleId::SELF
+            };
 
         self.kernel_lock_substate(&node_id, module_id, offset, flags)
     }
@@ -709,7 +708,10 @@ where
     fn get_global_address(&mut self) -> Result<Address, RuntimeError> {
         self.kernel_get_current_actor()
             .and_then(|e| match e {
-                Actor::Method(Some(address), ..) => Some(address),
+                Actor::Method {
+                    global_address: Some(address),
+                    ..
+                } => Some(address),
                 _ => None,
             })
             .ok_or(RuntimeError::SystemError(
@@ -805,7 +807,9 @@ where
         let (handle, blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let (package_address, blueprint_name) = match actor {
-                Some(Actor::Method(_, node_id, node_module_id, ..)) => match node_module_id {
+                Some(Actor::Method {
+                    node_id, module_id, ..
+                }) => match module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                         Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
                     }
@@ -862,8 +866,10 @@ where
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
-            Some(Actor::Method(_, node_id, node_module_id, ..)) => Ok(EventTypeIdentifier(
-                Emitter::Method(node_id, node_module_id),
+            Some(Actor::Method {
+                node_id, module_id, ..
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id, module_id),
                 *local_type_index,
             )),
             Some(Actor::Function(package_address, blueprint_name, ..)) => Ok(EventTypeIdentifier(

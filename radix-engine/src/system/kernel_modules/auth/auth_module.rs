@@ -48,7 +48,13 @@ pub struct AuthModule {
 
 impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
-        matches!(actor, Actor::Method(_, RENodeId::GlobalObject(..), ..))
+        matches!(
+            actor,
+            Actor::Method {
+                node_id: RENodeId::GlobalObject(..),
+                ..
+            }
+        )
     }
 
     fn is_transaction_processor(actor: &Option<Actor>) -> bool {
@@ -371,9 +377,12 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = match &callee {
-            Actor::Method(_, node_id, module_id, _, _, ident) => {
-                Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?
-            }
+            Actor::Method {
+                node_id,
+                module_id,
+                ident,
+                ..
+            } => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
             Actor::Function(package_address, blueprint_name, ident) => {
                 Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?
             }
@@ -412,7 +421,11 @@ impl KernelModule for AuthModule {
                 NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
 
-            if let Actor::Method(Some(address), ..) = &actor {
+            if let Actor::Method {
+                global_address: Some(address),
+                ..
+            } = &actor
+            {
                 let id = scrypto_encode(&address).unwrap();
                 let non_fungible_global_id = NonFungibleGlobalId::new(
                     GLOBAL_OBJECT_TOKEN,
