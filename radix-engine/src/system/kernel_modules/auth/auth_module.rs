@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
-use radix_engine_interface::types::{NodeId, SubstateKey, VaultOffset};
+use radix_engine_interface::types::{NodeId, VaultOffset};
 use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

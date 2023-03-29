@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::{
-    BucketOffset, NodeId, ProofOffset, SubstateId, SubstateKey, TypedModuleId,
+    BucketOffset, NodeId, ProofOffset, SubstateKey, TypedModuleId,
 };
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;

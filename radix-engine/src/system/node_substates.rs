@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
-use radix_engine_interface::types::{ComponentOffset, KeyValueStoreOffset, NodeId, SubstateKey};
+use radix_engine_interface::types::{ComponentOffset, NodeId, SubstateKey};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
