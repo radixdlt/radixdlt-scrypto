@@ -589,10 +589,7 @@ mod tests {
             r#"Enum(0u8>"#,
             ParserError::UnexpectedToken(Token {
                 kind: TokenKind::GreaterThan,
-                span: Span {
-                    start: (1, 10),
-                    end: (1, 10)
-                }
+                span: Span { start: 8, end: 9 }
             })
         );
         parse_value_error!(
