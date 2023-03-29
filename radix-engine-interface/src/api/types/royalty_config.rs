@@ -1,4 +1,4 @@
-use sbor::rust::collections::{index_map_new, IndexMap};
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -9,14 +9,14 @@ use crate::*;
 /// Royalty rules
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct RoyaltyConfig {
-    pub rules: IndexMap<String, u32>,
+    pub rules: BTreeMap<String, u32>,
     pub default_rule: u32,
 }
 
 impl Default for RoyaltyConfig {
     fn default() -> Self {
         Self {
-            rules: index_map_new(),
+            rules: BTreeMap::new(),
             default_rule: 0,
         }
     }
@@ -29,13 +29,13 @@ impl RoyaltyConfig {
 }
 
 pub struct RoyaltyConfigBuilder {
-    rules: IndexMap<String, u32>,
+    rules: BTreeMap<String, u32>,
 }
 
 impl RoyaltyConfigBuilder {
     pub fn new() -> Self {
         Self {
-            rules: index_map_new(),
+            rules: BTreeMap::new(),
         }
     }
 
