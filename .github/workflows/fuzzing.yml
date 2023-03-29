@@ -3,10 +3,10 @@ name: Fuzzing
 on:
   workflow_dispatch:
     inputs:
-      duration:
-        description: 'Fuzzing duration [s]'
+      duration_hours:
+        description: 'Fuzzing duration [h]'
         required: true
-        default: 3600
+        default: 6
       timeout:
         description: 'AFL timeout [ms]'
         required: true
@@ -16,9 +16,9 @@ on:
         description: 'Fuzz input data generation mode'
         required: true
         options:
-          - raw
-          - unique
           - minimize
+          - unique
+          - raw
       watch_interval:
         description: 'Check fuzzing status interval [s]'
         required: true
@@ -72,7 +72,11 @@ jobs:
     - name: Start AFL
       working-directory: fuzz-tests
       run: |
-        ./afl.sh run ${{ github.event.inputs.duration }} all ${{ github.event.inputs.timeout }}
+        # scale=0 - get rid of fractional part
+        # dividing by 1 because 'scale' works only for division ;)
+        # Using floating arithmetics to allow providing fractions of hours (for test purposes)
+        SECONDS=$(echo "scale=0; ${{ github.event.inputs.duration_hours }} * 60 * 60 / 1" | bc)
+        ./afl.sh run $SECONDS all ${{ github.event.inputs.timeout }}
 
     - name: Watch AFL
       working-directory: fuzz-tests
