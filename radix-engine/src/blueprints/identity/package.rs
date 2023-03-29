@@ -128,7 +128,7 @@ impl IdentityBlueprint {
 
         let component_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
-        Ok((NodeId::Object(component_id), access_rules))
+        Ok((component_id, access_rules))
     }
 
     pub fn create_virtual<Y>(
@@ -150,7 +150,7 @@ impl IdentityBlueprint {
             AccessRule::DenyAll,
         );
 
-        let node_id = api.kernel_allocate_node_id(EntityType::Object)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalIdentity)?;
         api.kernel_create_node(
             node_id,
             NodeInit::Object(btreemap!()),

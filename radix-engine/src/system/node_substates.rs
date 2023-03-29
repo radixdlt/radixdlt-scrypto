@@ -1316,14 +1316,14 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::FungibleProof(proof) => {
                 let mut references = HashSet::new();
                 for r in proof.evidence.keys() {
-                    references.insert(r.to_re_node_id());
+                    references.insert(r.to_node_id());
                 }
                 (references, Vec::new())
             }
             SubstateRef::NonFungibleProof(proof) => {
                 let mut references = HashSet::new();
                 for r in proof.evidence.keys() {
-                    references.insert(r.to_re_node_id());
+                    references.insert(r.to_node_id());
                 }
                 (references, Vec::new())
             }

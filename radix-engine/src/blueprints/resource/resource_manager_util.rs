@@ -286,10 +286,10 @@ where
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
     api.globalize_with_address(
-        NodeId::Object(object_id),
+        object_id,
         btreemap!(
-            TypedModuleId::AccessRules => resman_access_rules.id(),
-            TypedModuleId::AccessRules1 => vault_access_rules.id(),
+            TypedModuleId::AccessRules => resman_access_rules.0,
+            TypedModuleId::AccessRules1 => vault_access_rules.0,
             TypedModuleId::Metadata => metadata.0,
             TypedModuleId::Royalty => royalty.0,
         ),

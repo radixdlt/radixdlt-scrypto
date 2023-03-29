@@ -27,12 +27,12 @@ impl From<ComposedProof> for NodeInit {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof) => NodeInit::Object(btreemap!(
-                ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(info),
-                ProofOffset::Proof.into() => RuntimeSubstate::FungibleProof(proof),
+                ProofOffset::Info.into() => RuntimeSubstate::ProofInfo(info),
+                ProofOffset::Fungible.into() => RuntimeSubstate::FungibleProof(proof),
             )),
             ComposedProof::NonFungible(info, proof) => NodeInit::Object(btreemap!(
-                ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(info),
-                ProofOffset::Proof.into() => RuntimeSubstate::NonFungibleProof(proof),
+                ProofOffset::Info.into() => RuntimeSubstate::ProofInfo(info),
+                ProofOffset::NonFungible.into() => RuntimeSubstate::NonFungibleProof(proof),
             )),
         }
     }
@@ -146,8 +146,8 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
-            NodeId::Object(proof.0),
-            ProofOffset::Proof.into(),
+            proof.0.as_node_id(),
+            &ProofOffset::Info.into(),
             LockFlags::read_only(),
         )?;
         let proof_info: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -155,8 +155,8 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
-                NodeId::Object(proof.0),
-                ProofOffset::Proof.into(),
+                proof.0.as_node_id(),
+                &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
             )?;
             let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -196,8 +196,8 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
-            NodeId::Object(proof.0),
-            ProofOffset::Proof.into(),
+            proof.0.as_node_id(),
+            &ProofOffset::Info.into(),
             LockFlags::read_only(),
         )?;
         let proof_info: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -205,8 +205,8 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
-                NodeId::Object(proof.0),
-                ProofOffset::Proof.into(),
+                proof.0.as_node_id(),
+                &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
             let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -253,8 +253,8 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut remaining = amount.clone();
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
-            NodeId::Object(proof.0),
-            ProofOffset::Proof.into(),
+            proof.0.as_node_id(),
+            &ProofOffset::Fungible.into(),
             LockFlags::read_only(),
         )?;
         let substate: &FungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -267,7 +267,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             if let Some(quota) = per_container.remove(container_id) {
                 let amount = Decimal::min(remaining, quota);
                 api.call_method(
-                    &container_id.to_re_node_id(),
+                    &container_id.to_node_id(),
                     match container_id {
                         LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
                         LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
@@ -336,8 +336,8 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut remaining = ids.clone();
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
-            NodeId::Object(proof.0),
-            ProofOffset::Proof.into(),
+            proof.0.as_node_id(),
+            &ProofOffset::NonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -350,7 +350,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             if let Some(quota) = per_container.remove(container_id) {
                 let ids = remaining.intersection(&quota).cloned().collect();
                 api.call_method(
-                    &container_id.to_re_node_id(),
+                    &container_id.to_node_id(),
                     match container_id {
                         LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                         LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,

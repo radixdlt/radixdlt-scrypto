@@ -136,7 +136,7 @@ where
             }
 
             let non_fungible_handle = api.sys_lock_substate(
-                NodeId::KeyValueStore(nf_store_id),
+                &nf_store_id,
                 &non_fungible_local_id.to_substate_key(),
                 LockFlags::MUTABLE,
             )?;
@@ -162,7 +162,7 @@ where
             ],
         )?;
 
-        Bucket(bucket_id)
+        Bucket(Own(bucket_id))
     };
 
     Ok(bucket)
@@ -181,15 +181,14 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
         Self::create_with_address(
             id_type,
             non_fungible_schema,
             metadata,
             access_rules,
-            resource_address.to_array_without_entity_id(),
+            resource_address.into(),
             api,
         )
     }
@@ -205,7 +204,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::NonFungible(resource_address);
+        let resource_address = ResourceAddress::new_unchecked(resource_address);
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
@@ -238,9 +237,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::UUID {
@@ -287,9 +285,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
         let mut non_fungible_entries = BTreeMap::new();
         for (entry,) in entries {
@@ -335,7 +332,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -402,11 +399,8 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         for (id, non_fungible) in non_fungibles {
-            let non_fungible_handle = api.sys_lock_substate(
-                NodeId::KeyValueStore(nf_store_id),
-                &id.to_substate_key(),
-                LockFlags::MUTABLE,
-            )?;
+            let non_fungible_handle =
+                api.sys_lock_substate(&nf_store_id, &id.to_substate_key(), LockFlags::MUTABLE)?;
 
             {
                 let cur_non_fungible: Option<ScryptoValue> =
@@ -435,7 +429,7 @@ impl NonFungibleResourceManagerBlueprint {
             },
         )?;
 
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
     pub(crate) fn mint_single_uuid_non_fungible<Y>(
@@ -448,7 +442,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -474,11 +468,8 @@ impl NonFungibleResourceManagerBlueprint {
         let id = NonFungibleLocalId::uuid(uuid).unwrap();
 
         {
-            let non_fungible_handle = api.sys_lock_substate(
-                NodeId::KeyValueStore(nf_store_id),
-                &id.to_substate_key(),
-                LockFlags::MUTABLE,
-            )?;
+            let non_fungible_handle =
+                api.sys_lock_substate(&nf_store_id, &id.to_substate_key(), LockFlags::MUTABLE)?;
             api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -502,7 +493,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
-        Ok((Bucket(bucket_id), id))
+        Ok((Bucket(Own(bucket_id)), id))
     }
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
@@ -515,7 +506,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -547,7 +538,7 @@ impl NonFungibleResourceManagerBlueprint {
 
                 {
                     let non_fungible_handle = api.sys_lock_substate(
-                        NodeId::KeyValueStore(nf_store_id),
+                        &nf_store_id,
                         &id.to_substate_key(),
                         LockFlags::MUTABLE,
                     )?;
@@ -577,7 +568,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
@@ -592,7 +583,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -603,8 +594,7 @@ impl NonFungibleResourceManagerBlueprint {
         let non_fungible_table_id = resource_manager.non_fungible_table;
         let mutable_fields = resource_manager.mutable_fields.clone();
 
-        let kv_schema =
-            api.get_key_value_store_info(NodeId::KeyValueStore(non_fungible_table_id))?;
+        let kv_schema = api.get_key_value_store_info(&non_fungible_table_id)?;
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
         let sbor_path = schema_path.to_sbor_path(&kv_schema.schema, non_fungible_type_index);
         let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
@@ -626,7 +616,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let non_fungible_handle = api.sys_lock_substate(
-            NodeId::KeyValueStore(non_fungible_table_id),
+            &non_fungible_table_id,
             &id.to_substate_key(),
             LockFlags::MUTABLE,
         )?;
@@ -663,7 +653,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -672,7 +662,7 @@ impl NonFungibleResourceManagerBlueprint {
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_handle = api.sys_lock_substate(
-            NodeId::KeyValueStore(non_fungible_table_id),
+            &non_fungible_table_id,
             &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
@@ -693,7 +683,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -705,7 +695,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleGlobalId::new(resource_manager.resource_address, id.clone());
 
         let non_fungible_handle = api.sys_lock_substate(
-            NodeId::KeyValueStore(non_fungible_table_id),
+            &non_fungible_table_id,
             &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
@@ -727,7 +717,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -750,7 +740,7 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
     pub(crate) fn burn<Y>(
@@ -763,12 +753,12 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
         // FIXME: check if the bucket is locked!!!
-        let dropped_bucket: DroppedBucket = api.kernel_drop_node(&NodeId::Object(bucket.0))?.into();
+        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
 
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {
@@ -805,12 +795,9 @@ impl NonFungibleResourceManagerBlueprint {
                     // Update total supply
                     resource_manager.total_supply -= resource.amount();
 
-                    // Burn non-fungible
-                    let node_id = NodeId::KeyValueStore(resource_manager.non_fungible_table);
-
                     for id in resource.into_ids() {
                         let non_fungible_handle = api.sys_lock_substate(
-                            node_id,
+                            &resource_manager.non_fungible_table,
                             &id.to_substate_key(),
                             LockFlags::MUTABLE,
                         )?;
@@ -831,7 +818,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -854,14 +841,9 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
-        Runtime::emit_event(
-            api,
-            VaultCreationEvent {
-                vault_id: NodeId::Object(vault_id),
-            },
-        )?;
+        Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
-        Ok(Own::Vault(vault_id))
+        Ok(Own(vault_id))
     }
 
     pub(crate) fn get_resource_type<Y>(
@@ -873,7 +855,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -895,7 +877,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: &NonFungibleResourceManagerSubstate =

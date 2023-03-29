@@ -59,7 +59,7 @@ pub struct TreeLeafNode<P> {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct ReNodeModulePayload {
     /// ReNode ID.
-    pub re_node_id: NodeId,
+    pub node_id: NodeId,
     /// Module ID.
     pub node_mode_id: ModuleId,
     /// An embedded root of the descendant Substate layer tree.

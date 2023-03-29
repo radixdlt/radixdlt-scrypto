@@ -112,11 +112,11 @@ where
 
     // Prepare node init.
     let node_init = NodeInit::GlobalObject(btreemap!(
-        PackageOffset::Package.into() => info.into(),
-        PackageOffset::Package.into() => code_type.into(),
-        PackageOffset::Package.into() => code.into(),
-        PackageOffset::Package.into() => royalty.into(),
-        PackageOffset::Package.into() => function_access_rules.into(),
+        PackageOffset::Info.into() => info.into(),
+        PackageOffset::CodeType.into() => code_type.into(),
+        PackageOffset::Code.into() => code.into(),
+        PackageOffset::Royalty.into() => royalty.into(),
+        PackageOffset::FunctionAccessRules.into() => function_access_rules.into(),
     ));
 
     // Prepare node modules.
@@ -129,24 +129,18 @@ where
             global: true,
         }),
     );
-    node_modules.insert(
-        TypedModuleId::Metadata,
-        ModuleInit::Metadata(
-            metadata
-                .into_iter()
-                .map(|(key, value)| {
-                    (
-                        SubstateKey::from_vec(scrypto_encode(&key).unwrap()).ok_or(
-                            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                                PackageError::InvalidMetadataKey(key),
-                            )),
-                        ),
-                        RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
-                    )
-                })
-                .collect(),
-        ),
-    );
+    let metadata_init = BTreeMap::new();
+    for (key, value) in metadata {
+        metadata_init.insert(
+            SubstateKey::from_vec(scrypto_encode(&key).unwrap()).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidMetadataKey(key),
+                )),
+            )?,
+            RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
+        );
+    }
+    node_modules.insert(TypedModuleId::Metadata, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
         TypedModuleId::AccessRules,
         ModuleInit::AccessRules(MethodAccessRulesSubstate {
@@ -166,13 +160,13 @@ where
     );
 
     let node_id = if let Some(address) = package_address {
-        NodeId::GlobalObject(PackageAddress::Normal(address).into())
+        NodeId(address)
     } else {
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
     api.kernel_create_node(node_id, node_init, node_modules)?;
 
-    let package_address: PackageAddress = node_id.into();
+    let package_address = PackageAddress::new_unchecked(node_id.into());
     Ok(IndexedScryptoValue::from_typed(&package_address))
 }
 
@@ -433,7 +427,7 @@ impl PackageNativePackage {
         // FIXME: double check if auth is set up for any package
 
         let handle =
-            api.sys_lock_substate(receiver, PackageOffset::Package.into(), LockFlags::MUTABLE)?;
+            api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
         let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -454,11 +448,11 @@ impl PackageNativePackage {
         })?;
 
         let handle =
-            api.sys_lock_substate(receiver, PackageOffset::Package.into(), LockFlags::MUTABLE)?;
+            api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
         let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let bucket = match substate.royalty_vault.clone() {
-            Some(vault) => Vault(vault.vault_id()).sys_take_all(api)?,
+            Some(vault) => Vault(vault).sys_take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
         Ok(IndexedScryptoValue::from_typed(&bucket))

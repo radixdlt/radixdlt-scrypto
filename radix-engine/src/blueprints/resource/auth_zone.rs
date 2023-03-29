@@ -32,7 +32,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -60,7 +60,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -85,7 +85,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -95,7 +95,7 @@ impl AuthZoneBlueprint {
             compose_proof_by_amount(&proofs, input.resource_address, None, api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::Object)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -107,9 +107,8 @@ impl AuthZoneBlueprint {
                 })
             ),
         )?;
-        let proof_id = node_id.into();
 
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
+        Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
@@ -126,7 +125,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::read_only(),
         )?;
 
@@ -136,7 +135,7 @@ impl AuthZoneBlueprint {
             compose_proof_by_amount(&proofs, input.resource_address, Some(input.amount), api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::Object)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -148,9 +147,8 @@ impl AuthZoneBlueprint {
                 })
             ),
         )?;
-        let proof_id = node_id.into();
 
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
+        Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
@@ -167,7 +165,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -177,7 +175,7 @@ impl AuthZoneBlueprint {
             compose_proof_by_ids(&proofs, input.resource_address, Some(input.ids), api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::Object)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -189,9 +187,8 @@ impl AuthZoneBlueprint {
                 })
             ),
         )?;
-        let proof_id = node_id.into();
 
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
+        Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
 
     pub(crate) fn clear<Y>(
@@ -208,7 +205,7 @@ impl AuthZoneBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
         let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
@@ -237,7 +234,7 @@ impl AuthZoneBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
         let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
@@ -261,7 +258,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            AuthZoneOffset::AuthZone.into(),
+            &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 

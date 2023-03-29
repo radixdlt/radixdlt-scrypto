@@ -101,7 +101,7 @@ where
         ],
     )?;
 
-    Ok(Bucket(bucket_id))
+    Ok(Bucket(Own(bucket_id)))
 }
 
 pub struct FungibleResourceManagerBlueprint;
@@ -116,9 +116,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
+        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
         let resource_manager_substate =
             FungibleResourceManagerSubstate::create(resource_address, divisibility, 0.into())?;
@@ -143,16 +142,15 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(EntityType::GlobalFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
+        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
         Self::create_with_initial_supply_and_address(
             divisibility,
             metadata,
             access_rules,
             initial_supply,
-            resource_address.to_array_without_entity_id(),
+            resource_address.into(),
             api,
         )
     }
@@ -168,7 +166,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address: ResourceAddress = ResourceAddress::Fungible(resource_address);
+        let resource_address = ResourceAddress::new_unchecked(resource_address);
 
         let resource_manager_substate = FungibleResourceManagerSubstate::create(
             resource_address,
@@ -198,7 +196,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -249,7 +247,7 @@ impl FungibleResourceManagerBlueprint {
 
         Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
     pub(crate) fn burn<Y>(
@@ -262,12 +260,12 @@ impl FungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
         // FIXME: check if the bucket is locked!!!
-        let dropped_bucket: DroppedBucket = api.kernel_drop_node(&NodeId::Object(bucket.0))?.into();
+        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
 
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {
@@ -316,7 +314,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -339,7 +337,7 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
     pub(crate) fn create_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
@@ -348,7 +346,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -371,14 +369,9 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        Runtime::emit_event(
-            api,
-            VaultCreationEvent {
-                vault_id: NodeId::Object(vault_id),
-            },
-        )?;
+        Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
-        Ok(Own::Vault(vault_id))
+        Ok(Own(vault_id))
     }
 
     pub(crate) fn get_resource_type<Y>(
@@ -390,7 +383,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -412,7 +405,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let resman_handle = api.sys_lock_substate(
             receiver,
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: &FungibleResourceManagerSubstate =

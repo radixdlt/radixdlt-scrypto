@@ -71,7 +71,7 @@ impl TransactionProcessorBlueprint {
         }
 
         // Create a worktop
-        let worktop_node_id = api.kernel_allocate_node_id(EntityType::Object)?;
+        let worktop_node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
         api.kernel_create_node(
             worktop_node_id,
             NodeInit::Object(btreemap!(
@@ -85,7 +85,7 @@ impl TransactionProcessorBlueprint {
                 })
             ),
         )?;
-        let worktop = Worktop(worktop_node_id.into());
+        let worktop = Worktop(Own(worktop_node_id));
 
         // Decode instructions
         let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
@@ -213,7 +213,7 @@ impl TransactionProcessorBlueprint {
                     // the former will drop all named proofs before clearing the auth zone.
 
                     for (_, real_id) in processor.proof_id_mapping.drain() {
-                        let proof = Proof(real_id);
+                        let proof = Proof(Own(real_id));
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     ComponentAuthZone::sys_clear(api)?;
@@ -260,7 +260,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        &NodeId::GlobalObject(component_address.into()),
+                        component_address.as_node_id(),
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -330,7 +330,7 @@ impl TransactionProcessorBlueprint {
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        &NodeId::GlobalObject(resource_address.into()),
+                        resource_address.as_node_id(),
                         FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
                     )?;
@@ -354,7 +354,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        &NodeId::GlobalObject(resource_address.into()),
+                        resource_address.as_node_id(),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -376,7 +376,7 @@ impl TransactionProcessorBlueprint {
                     let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
                     let rtn = api.call_method(
-                        &NodeId::GlobalObject(resource_address.into()),
+                        resource_address.as_node_id(),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -389,7 +389,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
-                        &NodeId::Object(vault_id),
+                        vault_id.as_node_id(),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -452,7 +452,7 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        &NodeId::GlobalObject(package_address.into()),
+                        package_address.as_node_id(),
                         TypedModuleId::ObjectState,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -475,7 +475,7 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        &NodeId::GlobalObject(component_address.into()),
+                        component_address.as_node_id(),
                         TypedModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -495,7 +495,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        &NodeId::GlobalObject(package_address.into()),
+                        package_address.as_node_id(),
                         TypedModuleId::ObjectState,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -512,7 +512,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
-                        &NodeId::GlobalObject(component_address.into()),
+                        component_address.as_node_id(),
                         TypedModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -595,7 +595,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 TransactionProcessorError::BucketNotFound(bucket_id.0),
             )),
         )?;
-        Ok(Bucket(real_id))
+        Ok(Bucket(Own(real_id)))
     }
 
     fn take_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
@@ -607,7 +607,7 @@ impl<'blob> TransactionProcessor<'blob> {
                         TransactionProcessorError::BucketNotFound(bucket_id.0),
                     ),
                 ))?;
-        Ok(Bucket(real_id))
+        Ok(Bucket(Own(real_id)))
     }
 
     fn get_blob(&mut self, blob_ref: &ManifestBlobRef) -> Result<&'blob Vec<u8>, RuntimeError> {
@@ -632,7 +632,7 @@ impl<'blob> TransactionProcessor<'blob> {
                         TransactionProcessorError::ProofNotFound(proof_id.0),
                     ),
                 ))?;
-        Ok(Proof(real_id))
+        Ok(Proof(Own(real_id)))
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
@@ -644,7 +644,7 @@ impl<'blob> TransactionProcessor<'blob> {
                         TransactionProcessorError::ProofNotFound(proof_id.0),
                     ),
                 ))?;
-        Ok(Proof(real_id))
+        Ok(Proof(Own(real_id)))
     }
 
     fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
@@ -653,7 +653,8 @@ impl<'blob> TransactionProcessor<'blob> {
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.bucket_id_mapping.insert(new_id.clone(), bucket.0);
+        self.bucket_id_mapping
+            .insert(new_id.clone(), bucket.0.into());
         Ok(new_id)
     }
 
@@ -663,7 +664,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.proof_id_mapping.insert(new_id.clone(), proof.0);
+        self.proof_id_mapping.insert(new_id.clone(), proof.0.into());
         Ok(new_id)
     }
 
@@ -680,11 +681,11 @@ impl<'blob> TransactionProcessor<'blob> {
             let (package_address, blueprint) = api.get_object_type_info(owned_node)?;
             match (package_address, blueprint.as_str()) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
-                    let bucket = Bucket(owned_node.clone().into());
+                    let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }
                 (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                    let proof = Proof(owned_node.clone().into());
+                    let proof = Proof(Own(owned_node.clone()));
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
                 _ => {}
@@ -753,22 +754,22 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     for TransactionProcessorWithApi<'blob, 'a, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
-        self.processor.take_bucket(&b).map(|x| Own::Bucket(x.0))
+        self.processor.take_bucket(&b).map(|x| x.0)
     }
 
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, RuntimeError> {
-        self.processor.take_proof(&p).map(|x| Own::Proof(x.0))
+        self.processor.take_proof(&p).map(|x| x.0)
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {
                 let buckets = self.worktop.sys_drain(self.api)?;
-                Ok(buckets.into_iter().map(|b| Own::Bucket(b.0)).collect())
+                Ok(buckets.into_iter().map(|b| b.0).collect())
             }
             ManifestExpression::EntireAuthZone => {
                 let proofs = ComponentAuthZone::sys_drain(self.api)?;
-                Ok(proofs.into_iter().map(|p| Own::Proof(p.0)).collect())
+                Ok(proofs.into_iter().map(|p| p.0).collect())
             }
         }
     }

@@ -127,7 +127,7 @@ fn hash_returns_to_same_when_previous_state_restored() {
 }
 
 #[test]
-fn hash_differs_when_states_only_differ_by_re_node_id() {
+fn hash_differs_when_states_only_differ_by_node_id() {
     let mut store_1 = TypedInMemoryTreeStore::new();
     let hash_1 = put_at_next_version(
         &mut store_1,
@@ -361,23 +361,23 @@ fn serialized_keys_are_strictly_increasing() {
 }
 
 fn change(
-    re_node_id_seed: u8,
+    node_id_seed: u8,
     node_module_id: TypedModuleId,
     substate_offset_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
     SubstateHashChange::new(
-        substate_id(re_node_id_seed, node_module_id, substate_offset_seed),
+        substate_id(node_id_seed, node_module_id, substate_offset_seed),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
     )
 }
 
 fn substate_id(
-    re_node_id_seed: u8,
+    node_id_seed: u8,
     node_module_id: TypedModuleId,
     substate_offset_seed: u8,
 ) -> (NodeId, ModuleId, SubstateKey) {
-    let fake_pkg_address = PackageAddress::new_unchecked([re_node_id_seed; 27]);
+    let fake_pkg_address = PackageAddress::new_unchecked([node_id_seed; 27]);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     (
         NodeId(fake_pkg_address.into()),

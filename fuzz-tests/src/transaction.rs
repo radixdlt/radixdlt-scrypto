@@ -95,7 +95,7 @@ impl Fuzzer {
                 }
                 | Instruction::ClaimComponentRoyalty { component_address } => {
                     if let Some(address) =
-                        self.get_account(&component_address.to_array_without_entity_id())
+                        self.get_account(&component_address.into())
                     {
                         *component_address = address;
                     }
@@ -131,7 +131,7 @@ impl Fuzzer {
                     resource_address, ..
                 } => {
                     if let Some(address) =
-                        self.get_resource(&resource_address.to_array_without_entity_id())
+                        self.get_resource(&resource_address.into())
                     {
                         *resource_address = address;
                     }

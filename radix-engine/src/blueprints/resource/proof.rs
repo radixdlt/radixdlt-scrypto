@@ -13,10 +13,10 @@ pub enum LocalRef {
 }
 
 impl LocalRef {
-    pub fn to_re_node_id(&self) -> NodeId {
+    pub fn to_node_id(&self) -> NodeId {
         match self {
-            LocalRef::Bucket(id) => NodeId::Object(id.clone()),
-            LocalRef::Vault(id) => NodeId::Object(id.clone()),
+            LocalRef::Bucket(id) => id.clone(),
+            LocalRef::Vault(id) => id.clone(),
         }
     }
 }
@@ -91,7 +91,7 @@ impl FungibleProof {
     ) -> Result<Self, RuntimeError> {
         for (container_id, locked_amount) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
+                &container_id.to_node_id(),
                 match container_id {
                     LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
@@ -108,7 +108,7 @@ impl FungibleProof {
     pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container_id, locked_amount) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
+                &container_id.to_node_id(),
                 match container_id {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => VAULT_UNLOCK_AMOUNT_IDENT,
@@ -153,7 +153,7 @@ impl NonFungibleProof {
     ) -> Result<Self, RuntimeError> {
         for (container_id, locked_ids) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
+                &container_id.to_node_id(),
                 match container_id {
                     LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
@@ -170,7 +170,7 @@ impl NonFungibleProof {
     pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container_id, locked_ids) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
+                &container_id.to_node_id(),
                 match container_id {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => VAULT_UNLOCK_NON_FUNGIBLES_IDENT,

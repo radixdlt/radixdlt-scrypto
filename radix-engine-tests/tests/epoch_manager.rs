@@ -852,8 +852,8 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            VALIDATOR_OWNER_TOKEN.to_array_without_entity_id(),
-            EPOCH_MANAGER.to_array_without_entity_id(),
+            VALIDATOR_OWNER_TOKEN.into(),
+            EPOCH_MANAGER.into(),
             validator_set,
             1u64,
             1u64,
@@ -893,8 +893,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: "create".to_string(),
         args: manifest_args!(
-            VALIDATOR_OWNER_TOKEN.to_array_without_entity_id(),
-            EPOCH_MANAGER.to_array_without_entity_id(),
+            VALIDATOR_OWNER_TOKEN.into(),
+            EPOCH_MANAGER.into(),
             validator_set,
             1u64,
             1u64,
