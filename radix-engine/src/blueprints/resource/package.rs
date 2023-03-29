@@ -29,6 +29,8 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
+const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str =
+    "take_FungibleVault";
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -45,6 +47,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_NonFungibleResourceManager";
+const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str =
+    "take_NonFungibleVault";
 
 pub struct ResourceManagerNativePackage;
 
@@ -392,21 +396,21 @@ impl ResourceManagerNativePackage {
 
             let mut functions = BTreeMap::new();
             functions.insert(
+                VAULT_TAKE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                    export_name: FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 VAULT_LOCK_FEE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<VaultLockFeeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultLockFeeOutput>(),
                     export_name: VAULT_LOCK_FEE_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                VAULT_TAKE_IDENT.to_string(),
-                FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
-                    export_name: VAULT_TAKE_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -529,7 +533,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
-                export_name: VAULT_TAKE_IDENT.to_string(),
+                export_name: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1504,13 +1508,29 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::lock_fee(receiver, input, api)
             }
-            VAULT_TAKE_IDENT => {
+            FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::take(receiver, input, api)
+                let input: VaultTakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::take(receiver, &input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: VaultTakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::take(receiver, &input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
