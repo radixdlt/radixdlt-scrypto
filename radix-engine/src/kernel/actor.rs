@@ -6,99 +6,69 @@ pub enum Actor {
         global_address: Option<Address>,
         node_id: RENodeId,
         module_id: NodeModuleId,
-        package_address: PackageAddress,
-        blueprint_name: String,
+        blueprint: Blueprint,
         ident: String,
     },
     Function {
-        package_address: PackageAddress,
-        blueprint_name: String,
+        blueprint: Blueprint,
         ident: String,
     },
     VirtualLazyLoad {
-        package_address: PackageAddress,
-        blueprint_name: String,
+        blueprint: Blueprint,
         ident: u8,
     },
 }
 
 impl Actor {
-    pub fn blueprint(&self) -> Blueprint {
+    pub fn blueprint(&self) -> &Blueprint {
         match self {
-            Actor::Method {
-                package_address,
-                blueprint_name,
-                ..
-            } => Blueprint::new(package_address, blueprint_name.as_str()),
-            Actor::Function {
-                package_address,
-                blueprint_name,
-                ..
-            } => Blueprint::new(package_address, blueprint_name.as_str()),
-            Actor::VirtualLazyLoad {
-                package_address,
-                blueprint_name,
-                ..
-            } => Blueprint::new(package_address, blueprint_name.as_str()),
+            Actor::Method { blueprint, .. }
+            | Actor::Function { blueprint, .. }
+            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         }
     }
 
     pub fn package_address(&self) -> &PackageAddress {
-        match &self {
-            Actor::Method {
-                package_address, ..
-            } => package_address,
-            Actor::Function {
-                package_address, ..
-            } => package_address,
-            Actor::VirtualLazyLoad {
-                package_address, ..
-            } => package_address,
-        }
+        let blueprint = match &self {
+            Actor::Method { blueprint, .. } => blueprint,
+            Actor::Function { blueprint, .. } => blueprint,
+            Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
+        };
+
+        &blueprint.package_address
     }
 
     pub fn blueprint_name(&self) -> &str {
         match &self {
-            Actor::Method { blueprint_name, .. } => blueprint_name.as_str(),
-            Actor::Function { blueprint_name, .. } => blueprint_name.as_str(),
-            Actor::VirtualLazyLoad { blueprint_name, .. } => blueprint_name.as_str(),
+            Actor::Method { blueprint, .. }
+            | Actor::Function { blueprint, .. }
+            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
         }
     }
 
     pub fn method(
         global_address: Option<Address>,
         method: MethodIdentifier,
-        package_address: PackageAddress,
-        blueprint_name: String,
+        blueprint: Blueprint,
     ) -> Self {
         Self::Method {
             global_address,
             node_id: method.0,
             module_id: method.1,
-            package_address,
-            blueprint_name,
+            blueprint,
             ident: method.2,
         }
     }
 
     pub fn function(ident: FunctionIdentifier) -> Self {
         Self::Function {
-            package_address: ident.0,
-            blueprint_name: ident.1,
-            ident: ident.2,
+            blueprint: ident.0,
+            ident: ident.1,
         }
     }
 
-    pub fn virtual_lazy_load(
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: u8,
-    ) -> Self {
-        Self::VirtualLazyLoad {
-            package_address,
-            blueprint_name,
-            ident,
-        }
+    pub fn virtual_lazy_load(blueprint: Blueprint, ident: u8) -> Self {
+        Self::VirtualLazyLoad { blueprint, ident }
     }
 }
 

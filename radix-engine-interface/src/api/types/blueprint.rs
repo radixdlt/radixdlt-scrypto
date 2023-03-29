@@ -16,4 +16,8 @@ impl Blueprint {
             blueprint_name: blueprint_name.to_string(),
         }
     }
+
+    pub fn size(&self) -> usize {
+        self.package_address.size() + self.blueprint_name.len()
+    }
 }

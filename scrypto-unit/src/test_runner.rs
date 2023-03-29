@@ -1220,11 +1220,11 @@ impl TestRunner {
                             .clone();
 
                         match type_info {
-                            TypeInfoSubstate::Object {
-                                package_address,
-                                blueprint_name,
-                                ..
-                            } => (package_address, blueprint_name, *local_type_index),
+                            TypeInfoSubstate::Object { blueprint, .. } => (
+                                blueprint.package_address,
+                                blueprint.blueprint_name,
+                                *local_type_index,
+                            ),
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }

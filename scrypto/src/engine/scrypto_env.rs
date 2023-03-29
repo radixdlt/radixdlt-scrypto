@@ -134,10 +134,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_type_info(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<(PackageAddress, String), ClientApiError> {
+    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<Blueprint, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
         let bytes = copy_buffer(unsafe { get_object_type_info(node_id.as_ptr(), node_id.len()) });

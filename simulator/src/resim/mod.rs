@@ -322,9 +322,7 @@ pub fn export_blueprint_schema(
     Ok(schema)
 }
 
-pub fn get_blueprint(
-    component_address: ComponentAddress,
-) -> Result<(PackageAddress, String), Error> {
+pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
@@ -338,11 +336,7 @@ pub fn get_blueprint(
     let type_info = output.substate.type_info();
 
     match type_info {
-        TypeInfoSubstate::Object {
-            package_address,
-            blueprint_name,
-            ..
-        } => Ok((*package_address, blueprint_name.to_string())),
+        TypeInfoSubstate::Object { blueprint, .. } => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
     }
 }

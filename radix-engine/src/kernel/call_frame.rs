@@ -246,15 +246,11 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => {
+                        TypeInfoSubstate::Object { blueprint, .. } => {
                             SubstateProperties::verify_can_own(
                                 &offset,
-                                *package_address,
-                                blueprint_name.as_str(),
+                                blueprint.package_address,
+                                blueprint.blueprint_name.as_str(),
                             )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
@@ -500,15 +496,11 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => {
+                        TypeInfoSubstate::Object { blueprint, .. } => {
                             SubstateProperties::verify_can_own(
                                 &offset,
-                                *package_address,
-                                blueprint_name.as_str(),
+                                blueprint.package_address,
+                                blueprint.blueprint_name.as_str(),
                             )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}

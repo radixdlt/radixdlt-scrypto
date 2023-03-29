@@ -165,14 +165,14 @@ impl Component for OwnedComponent {
         ScryptoEnv
             .get_object_type_info(RENodeId::Object(self.0))
             .unwrap()
-            .0
+            .package_address
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
             .get_object_type_info(RENodeId::Object(self.0))
             .unwrap()
-            .1
+            .blueprint_name
     }
 }
 
@@ -231,14 +231,14 @@ impl Component for GlobalComponentRef {
         ScryptoEnv
             .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
             .unwrap()
-            .0
+            .package_address
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
             .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
             .unwrap()
-            .1
+            .blueprint_name
     }
 }
 

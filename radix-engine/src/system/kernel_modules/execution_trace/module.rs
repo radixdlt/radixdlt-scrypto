@@ -448,24 +448,19 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Actor::Method {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    ..
+                    blueprint, ident, ..
                 } => Origin::ScryptoMethod(ApplicationFnIdentifier {
-                    package_address: package_address.clone(),
-                    blueprint_name: blueprint_name.clone(),
+                    package_address: blueprint.package_address.clone(),
+                    blueprint_name: blueprint.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::Function {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                } => Origin::ScryptoFunction(ApplicationFnIdentifier {
-                    package_address: package_address.clone(),
-                    blueprint_name: blueprint_name.clone(),
-                    ident: ident.clone(),
-                }),
+                Actor::Function { blueprint, ident } => {
+                    Origin::ScryptoFunction(ApplicationFnIdentifier {
+                        package_address: blueprint.package_address.clone(),
+                        blueprint_name: blueprint.blueprint_name.clone(),
+                        ident: ident.clone(),
+                    })
+                }
                 Actor::VirtualLazyLoad { .. } => {
                     return;
                 }
@@ -484,24 +479,20 @@ impl ExecutionTraceModule {
         match &callee {
             Actor::Method {
                 node_id: RENodeId::Object(vault_id),
-                package_address,
-                blueprint_name,
+                blueprint,
                 ident,
                 ..
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(VAULT_BLUEPRINT)
+            } if blueprint.eq(&Blueprint::new(&RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT))
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
             Actor::Method {
                 node_id: RENodeId::Object(vault_id),
-                package_address,
-                blueprint_name,
+                blueprint,
                 ident,
                 ..
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(VAULT_BLUEPRINT)
+            } if blueprint.eq(&Blueprint::new(&RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT))
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(&current_actor, vault_id)
@@ -520,12 +511,10 @@ impl ExecutionTraceModule {
         match &current_actor {
             Some(Actor::Method {
                 node_id: RENodeId::Object(vault_id),
-                package_address,
-                blueprint_name,
+                blueprint,
                 ident,
                 ..
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(VAULT_BLUEPRINT)
+            }) if blueprint.eq(&Blueprint::new(&RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT))
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)

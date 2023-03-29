@@ -71,14 +71,15 @@ impl AuthModule {
     }
 
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
-        package_address: &PackageAddress,
-        blueprint_name: &str,
+        blueprint: &Blueprint,
         ident: &str,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = if package_address.eq(&PACKAGE_PACKAGE) {
+        let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
-            if blueprint_name.eq(PACKAGE_BLUEPRINT) && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT) {
+            if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
+                && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
+            {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
                     HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
@@ -87,14 +88,14 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject((*package_address).into()),
+                &RENodeId::GlobalObject((blueprint.package_address).into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let function_key = FnKey::new(blueprint_name.to_string(), ident.to_string());
+            let function_key = FnKey::new(blueprint.blueprint_name.to_string(), ident.to_string());
             let access_rule = package_access_rules
                 .access_rules
                 .get(&function_key)
@@ -156,8 +157,8 @@ impl AuthModule {
 
             (RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
-                let (package_address, blueprint) = api.get_object_type_info(node_id)?;
-                match (package_address, blueprint.as_str()) {
+                let blueprint = api.get_object_type_info(node_id)?;
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
                         let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
                             RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
@@ -263,19 +264,15 @@ impl AuthModule {
     ) -> Result<MethodAuthorization, RuntimeError> {
         let (blueprint_schema, index) = {
             let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
-            let (package_address, blueprint_ident) = match type_info {
-                TypeInfoSubstate::Object {
-                    package_address,
-                    blueprint_name,
-                    ..
-                } => (package_address, blueprint_name),
+            let blueprint = match type_info {
+                TypeInfoSubstate::Object { blueprint, .. } => blueprint,
                 TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::SystemError(SystemError::NotAnObject))
                 }
             };
 
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(package_address.into()),
+                &RENodeId::GlobalObject(blueprint.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -284,7 +281,7 @@ impl AuthModule {
             let schema = package
                 .schema
                 .blueprints
-                .get(&blueprint_ident)
+                .get(&blueprint.blueprint_name)
                 .expect("Blueprint schema not found")
                 .clone();
             let index = match schema.substates.get(0) {
@@ -385,11 +382,9 @@ impl KernelModule for AuthModule {
                 ident,
                 ..
             } => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
-            Actor::Function {
-                package_address,
-                blueprint_name,
-                ident,
-            } => Self::function_auth(package_address, blueprint_name, ident.as_str(), api)?,
+            Actor::Function { blueprint, ident } => {
+                Self::function_auth(blueprint, ident.as_str(), api)?
+            }
             Actor::VirtualLazyLoad { .. } => return Ok(()),
         };
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
@@ -479,8 +474,7 @@ impl KernelModule for AuthModule {
             )),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-                    package_address: RESOURCE_MANAGER_PACKAGE,
-                    blueprint_name: AUTH_ZONE_BLUEPRINT.to_owned(),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false
                 })
             ),

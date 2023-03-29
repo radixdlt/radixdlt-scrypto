@@ -26,23 +26,15 @@ impl MethodIdentifier {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct FunctionIdentifier(pub PackageAddress, pub String, pub String);
+pub struct FunctionIdentifier(pub Blueprint, pub String);
 
 impl FunctionIdentifier {
-    pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
-        Self(package_address, blueprint_name, ident)
-    }
-
-    pub fn package_address(&self) -> PackageAddress {
-        self.0
-    }
-
-    pub fn blueprint_name(&self) -> &String {
-        &self.1
+    pub fn new(blueprint: Blueprint, ident: String) -> Self {
+        Self(blueprint, ident)
     }
 
     pub fn size(&self) -> usize {
-        self.1.len() + self.2.len() + self.0.size()
+        self.0.size() + self.1.len()
     }
 }
 
@@ -136,8 +128,7 @@ impl Invocation for MethodInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VirtualLazyLoadInvocation {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
+    pub blueprint: Blueprint,
     pub virtual_func_id: u8,
     pub args: [u8; 26],
 }

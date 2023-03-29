@@ -114,12 +114,9 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let type_substate: TypeInfoSubstate = runtime_substate.into();
 
                 match type_substate {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && blueprint_name.eq(VAULT_BLUEPRINT) =>
+                    TypeInfoSubstate::Object { blueprint, .. }
+                        if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT) =>
                     {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                             node_id,

@@ -1357,10 +1357,8 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::TypeInfo(substate) => {
                 let mut references = HashSet::new();
                 match substate {
-                    TypeInfoSubstate::Object {
-                        package_address, ..
-                    } => {
-                        references.insert(RENodeId::GlobalObject(package_address.clone().into()));
+                    TypeInfoSubstate::Object { blueprint, .. } => {
+                        references.insert(RENodeId::GlobalObject(blueprint.package_address.into()));
                     }
                     TypeInfoSubstate::KeyValueStore(..) => {}
                 }

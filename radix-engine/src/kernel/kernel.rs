@@ -125,8 +125,8 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok((package_address, blueprint)) = api.get_object_type_info(node_id) {
-                    match (package_address, blueprint.as_str()) {
+                if let Ok(blueprint) = api.get_object_type_info(node_id) {
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
                                 RESOURCE_MANAGER_PACKAGE,
@@ -313,16 +313,12 @@ where
                         .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        global,
-                    } => {
+                    TypeInfoSubstate::Object { blueprint, global } => {
                         if *global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && blueprint_name.eq(VAULT_BLUEPRINT)
+                        } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
                         {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
@@ -386,20 +382,20 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let (package_address, blueprint_name) = self.get_object_type_info(node_id.clone())?;
+            let blueprint = self.get_object_type_info(node_id.clone())?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
-                package_address,
-                blueprint_name.as_str(),
+                blueprint.package_address,
+                blueprint.blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        package_address,
-                        blueprint_name,
+                        package_address: blueprint.package_address,
+                        blueprint_name: blueprint.blueprint_name,
                     },
                 ));
             }

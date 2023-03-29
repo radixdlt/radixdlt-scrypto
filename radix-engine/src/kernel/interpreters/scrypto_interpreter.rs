@@ -109,15 +109,11 @@ impl ExecutableInvocation for MethodInvocation {
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
 
-        let (package_address, blueprint_name) = match self.identifier.1 {
+        let blueprint = match self.identifier.1 {
             NodeModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } => (package_address, blueprint_name),
+                    TypeInfoSubstate::Object { blueprint, .. } => blueprint,
 
                     TypeInfoSubstate::KeyValueStore(..) => {
                         return Err(RuntimeError::InterpreterError(
@@ -128,15 +124,15 @@ impl ExecutableInvocation for MethodInvocation {
             }
             NodeModuleId::Metadata => {
                 // TODO: Check if type has metadata
-                (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string())
+                Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT)
             }
             NodeModuleId::ComponentRoyalty => {
                 // TODO: Check if type has royalty
-                (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
+                Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
             }
             NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                 // TODO: Check if type has access rules
-                (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
+                Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
             }
             _ => todo!(),
         };
@@ -150,20 +146,15 @@ impl ExecutableInvocation for MethodInvocation {
                 }
             }
         });
-        let actor = Actor::method(
-            global_address,
-            self.identifier.clone(),
-            package_address,
-            blueprint_name.clone(),
-        );
+        let actor = Actor::method(global_address, self.identifier.clone(), blueprint.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if package_address.eq(&PACKAGE_PACKAGE) {
+            if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(package_address.into()),
+                    &RENodeId::GlobalObject(blueprint.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -188,12 +179,11 @@ impl ExecutableInvocation for MethodInvocation {
             }
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(package_address.into()));
+            node_refs_to_copy.insert(RENodeId::GlobalObject(blueprint.package_address.into()));
         }
 
         let executor = ScryptoExecutor {
-            package_address,
-            blueprint_name,
+            blueprint,
             ident: FnIdent::Application(self.identifier.2.clone()),
             receiver: Some(self.identifier),
         };
@@ -232,15 +222,20 @@ impl ExecutableInvocation for FunctionInvocation {
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if self.identifier.0.eq(&PACKAGE_PACKAGE) {
+            if self.identifier.0.package_address.eq(&PACKAGE_PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
-            } else if self.identifier.0.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
+            } else if self
+                .identifier
+                .0
+                .package_address
+                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+            {
                 // Required for bootstrap.
                 // Can be removed once the auto reference copying logic is moved to a kernel module.
                 // Will just disable the module for genesis.
             } else {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(self.identifier.0.into()),
+                    &RENodeId::GlobalObject(self.identifier.0.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -265,7 +260,9 @@ impl ExecutableInvocation for FunctionInvocation {
             }
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(self.identifier.0.into()));
+            node_refs_to_copy.insert(RENodeId::GlobalObject(
+                self.identifier.0.package_address.into(),
+            ));
         }
 
         let resolved = ResolvedInvocation {
@@ -276,9 +273,8 @@ impl ExecutableInvocation for FunctionInvocation {
             },
             args: value,
             executor: ScryptoExecutor {
-                package_address: self.identifier.0,
-                blueprint_name: self.identifier.1,
-                ident: FnIdent::Application(self.identifier.2),
+                blueprint: self.identifier.0,
+                ident: FnIdent::Application(self.identifier.1),
                 receiver: None,
             },
         };
@@ -299,16 +295,11 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
         _api: &mut D,
     ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
         let resolved = ResolvedInvocation {
-            resolved_actor: Actor::virtual_lazy_load(
-                self.package_address,
-                self.blueprint_name.to_string(),
-                self.virtual_func_id,
-            ),
+            resolved_actor: Actor::virtual_lazy_load(self.blueprint.clone(), self.virtual_func_id),
             update: CallFrameUpdate::empty(),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
             executor: ScryptoExecutor {
-                package_address: self.package_address,
-                blueprint_name: self.blueprint_name,
+                blueprint: self.blueprint,
                 ident: FnIdent::System(self.virtual_func_id),
                 receiver: None,
             },
@@ -323,8 +314,7 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
 }
 
 pub struct ScryptoExecutor {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
+    pub blueprint: Blueprint,
     pub ident: FnIdent,
     pub receiver: Option<MethodIdentifier>,
 }
@@ -341,7 +331,7 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.package_address.eq(&PACKAGE_PACKAGE) {
+        let output = if self.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
@@ -355,7 +345,7 @@ impl Executor for ScryptoExecutor {
             };
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(self.package_address.into()),
+                &RENodeId::GlobalObject(self.blueprint.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -371,7 +361,11 @@ impl Executor for ScryptoExecutor {
                 args,
                 api,
             )?
-        } else if self.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
+        } else if self
+            .blueprint
+            .package_address
+            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+        {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
             let export_name = match self.ident {
@@ -393,7 +387,7 @@ impl Executor for ScryptoExecutor {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(self.package_address.into()),
+                &RENodeId::GlobalObject(self.blueprint.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -403,7 +397,7 @@ impl Executor for ScryptoExecutor {
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(self.package_address.into()),
+                    &RENodeId::GlobalObject(self.blueprint.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
@@ -412,12 +406,9 @@ impl Executor for ScryptoExecutor {
                 let schema = package_info
                     .schema
                     .blueprints
-                    .get(&self.blueprint_name)
+                    .get(&self.blueprint.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::ScryptoBlueprintNotFound(
-                            self.package_address,
-                            self.blueprint_name.clone(),
-                        ),
+                        InterpreterError::ScryptoBlueprintNotFound(self.blueprint.clone()),
                     ))?
                     .clone();
                 api.kernel_drop_lock(handle)?;
@@ -446,7 +437,7 @@ impl Executor for ScryptoExecutor {
             // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(self.package_address.into()),
+                    &RENodeId::GlobalObject(self.blueprint.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -459,7 +450,7 @@ impl Executor for ScryptoExecutor {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        &RENodeId::GlobalObject(self.package_address.into()),
+                        &RENodeId::GlobalObject(self.blueprint.package_address.into()),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
@@ -480,13 +471,13 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
-                            &RENodeId::GlobalObject(self.package_address.into()),
+                            &RENodeId::GlobalObject(self.blueprint.package_address.into()),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
-                        let wasm_instance =
-                            api.kernel_create_wasm_instance(self.package_address, handle)?;
+                        let wasm_instance = api
+                            .kernel_create_wasm_instance(self.blueprint.package_address, handle)?;
                         api.kernel_drop_lock(handle)?;
 
                         wasm_instance

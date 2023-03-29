@@ -197,10 +197,8 @@ pub enum SystemError {
     InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
     InvalidModule,
     InvalidModuleType {
-        expected_package: PackageAddress,
-        expected_blueprint: String,
-        actual_package: PackageAddress,
-        actual_blueprint: String,
+        expected_blueprint: Blueprint,
+        actual_blueprint: Blueprint,
     },
     SubstateValidationError(SubstateValidationError),
     AssertAccessRuleFailed,
@@ -223,7 +221,7 @@ pub enum InterpreterError {
     NativeExportDoesNotExist(String),
     NativeInvalidCodeId(u8),
 
-    ScryptoBlueprintNotFound(PackageAddress, String),
+    ScryptoBlueprintNotFound(Blueprint),
     ScryptoFunctionNotFound(String),
     ScryptoReceiverNotMatch(String),
     ScryptoInputSchemaNotMatch(String, String),
