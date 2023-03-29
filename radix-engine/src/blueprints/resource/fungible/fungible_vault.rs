@@ -10,6 +10,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
+use crate::blueprints::resource;
 
 pub struct FungibleVaultBlueprint;
 
@@ -50,5 +51,36 @@ impl FungibleVaultBlueprint {
         )?;
 
         Ok(Bucket(bucket_id))
+    }
+
+    pub fn put<Y>(
+        receiver: &RENodeId,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // Drop other bucket
+        let other_bucket: DroppedBucket = api
+            .kernel_drop_node(&RENodeId::Object(bucket.0))?
+            .into();
+
+        // Check resource address
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        if info.resource_address != other_bucket.info.resource_address {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::MismatchingResource),
+            ));
+        }
+
+        // Put
+        if let DroppedBucketResource::Fungible(r) = other_bucket.resource {
+            FungibleVault::put(receiver, r, api)?;
+        } else {
+            panic!("expecting fungible bucket")
+        }
+
+        Ok(())
     }
 }

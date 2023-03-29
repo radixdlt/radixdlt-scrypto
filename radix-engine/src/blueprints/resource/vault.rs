@@ -558,42 +558,6 @@ impl VaultBlueprint {
         }
     }
 
-    pub fn put<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultPutInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        // Drop other bucket
-        let other_bucket: DroppedBucket = api
-            .kernel_drop_node(&RENodeId::Object(input.bucket.0))?
-            .into();
-
-        // Check resource address
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if info.resource_address != other_bucket.info.resource_address {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::MismatchingResource),
-            ));
-        }
-
-        // Put
-        match other_bucket.resource {
-            DroppedBucketResource::Fungible(r) => {
-                FungibleVault::put(receiver, r, api)?;
-            }
-            DroppedBucketResource::NonFungible(r) => {
-                NonFungibleVault::put(receiver, r, api)?;
-            }
-        }
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 
     pub fn get_amount<Y>(
         receiver: &RENodeId,

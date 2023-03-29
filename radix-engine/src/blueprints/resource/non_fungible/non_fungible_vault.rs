@@ -51,4 +51,37 @@ impl NonFungibleVaultBlueprint {
 
         Ok(Bucket(bucket_id))
     }
+
+
+    pub fn put<Y>(
+        receiver: &RENodeId,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+
+        // Drop other bucket
+        let other_bucket: DroppedBucket = api
+            .kernel_drop_node(&RENodeId::Object(bucket.0))?
+            .into();
+
+        // Check resource address
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        if info.resource_address != other_bucket.info.resource_address {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::MismatchingResource),
+            ));
+        }
+
+        // Put
+        if let DroppedBucketResource::NonFungible(r) = other_bucket.resource {
+            NonFungibleVault::put(receiver, r, api)?;
+        } else {
+            panic!("Expected non fungible bucket");
+        }
+
+        Ok(())
+    }
 }
