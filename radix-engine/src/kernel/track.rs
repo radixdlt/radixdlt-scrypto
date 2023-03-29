@@ -20,10 +20,10 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::blueprints::resource::VAULT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
+use crate::blueprints::resource::VaultBlueprint;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -876,8 +876,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .clone();
 
         if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
-            blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                && blueprint.blueprint_name == VAULT_BLUEPRINT
+            VaultBlueprint::is_vault_blueprint(&blueprint)
         } else {
             false
         }

@@ -556,6 +556,187 @@ impl ResourceManagerNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
+
+        let fungible_vault_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+            virtual_lazy_load_functions: btreemap!(),
+            event_schema,
+        };
+
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<VaultInfoSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
+        substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+        substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+        substates.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            VAULT_LOCK_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultLockFeeInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultLockFeeOutput>(),
+                export_name: VAULT_LOCK_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_TAKE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                export_name: VAULT_TAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultTakeNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultTakeNonFungiblesOutput>(),
+                export_name: VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_RECALL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                export_name: VAULT_RECALL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultRecallNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultRecallNonFungiblesOutput>(),
+                export_name: VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_PUT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                export_name: VAULT_PUT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                export_name: VAULT_GET_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<VaultGetResourceAddressInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultGetResourceAddressOutput>(),
+                export_name: VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<VaultGetNonFungibleLocalIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultGetNonFungibleLocalIdsOutput>(),
+                export_name: VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                export_name: VAULT_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultCreateProofByAmountOutput>(),
+                export_name: VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofByIdsInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultCreateProofByIdsOutput>(),
+                export_name: VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_LOCK_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultLockAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultLockAmountOutput>(),
+                export_name: VAULT_LOCK_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultLockNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultLockNonFungiblesOutput>(),
+                export_name: VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultUnlockAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultUnlockAmountOutput>(),
+                export_name: VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<VaultUnlockNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultUnlockNonFungiblesOutput>(),
+                export_name: VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                LockFeeEvent,
+                WithdrawResourceEvent,
+                DepositResourceEvent,
+                RecallResourceEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
         let vault_schema = BlueprintSchema {
             schema,
             substates,
@@ -968,6 +1149,7 @@ impl ResourceManagerNativePackage {
             blueprints: btreemap!(
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
+                FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
                 VAULT_BLUEPRINT.to_string() => vault_schema,
                 BUCKET_BLUEPRINT.to_string() => bucket_schema,
                 PROOF_BLUEPRINT.to_string() => proof_schema,

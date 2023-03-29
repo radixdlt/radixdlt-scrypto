@@ -46,11 +46,12 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
+        // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             let blueprint = self.get_object_type_info(node_id)?;
             if !matches!(
                 (blueprint.package_address, blueprint.blueprint_name.as_str()),
-                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
             ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
@@ -256,6 +257,16 @@ where
                         SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
                     )),
                     AllocateEntityType::Object,
+                ),
+                FUNGIBLE_VAULT_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
+                    )),
+                    AllocateEntityType::Vault,
                 ),
                 VAULT_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(

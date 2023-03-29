@@ -357,7 +357,7 @@ impl FungibleResourceManagerBlueprint {
             resource_type: ResourceType::Fungible { divisibility },
         };
         let vault_id = api.new_object(
-            VAULT_BLUEPRINT,
+            FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),

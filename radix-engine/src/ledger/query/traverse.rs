@@ -1,12 +1,11 @@
-use crate::blueprints::resource::VaultInfoSubstate;
+use crate::blueprints::resource::{VaultBlueprint, VaultInfoSubstate};
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType, VAULT_BLUEPRINT,
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -115,8 +114,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
 
                 match type_substate {
                     TypeInfoSubstate::Object { blueprint, .. }
-                        if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT) =>
+                        if VaultBlueprint::is_vault_blueprint(&blueprint) =>
                     {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                             node_id,
