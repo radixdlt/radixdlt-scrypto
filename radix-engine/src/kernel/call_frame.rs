@@ -96,17 +96,17 @@ pub struct CallFrame {
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
     /// - Global node refs obtained through substate locking.
-    immortal_node_refs: HashMap<RENodeId, RENodeRefData>,
+    immortal_node_refs: NonIterMap<RENodeId, RENodeRefData>,
 
     /// Node refs obtained through substate locking, which will be dropped upon unlocking.
-    temp_node_refs: HashMap<RENodeId, u32>,
+    temp_node_refs: NonIterMap<RENodeId, u32>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
-    owned_root_nodes: HashMap<RENodeId, u32>,
+    owned_root_nodes: IndexMap<RENodeId, u32>,
 
     next_lock_handle: LockHandle,
-    locks: HashMap<LockHandle, SubstateLock>,
+    locks: IndexMap<LockHandle, SubstateLock>,
 }
 
 impl CallFrame {
@@ -319,11 +319,11 @@ impl CallFrame {
         let mut frame = Self {
             depth: 0,
             actor: None,
-            immortal_node_refs: HashMap::new(),
-            temp_node_refs: HashMap::new(),
-            owned_root_nodes: HashMap::new(),
+            immortal_node_refs: NonIterMap::new(),
+            temp_node_refs: NonIterMap::new(),
+            owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
-            locks: HashMap::new(),
+            locks: index_map_new(),
         };
 
         // Add well-known global refs to current frame
@@ -380,8 +380,8 @@ impl CallFrame {
         actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
-        let mut owned_heap_nodes = HashMap::new();
-        let mut next_node_refs = HashMap::new();
+        let mut owned_heap_nodes = index_map_new();
+        let mut next_node_refs = NonIterMap::new();
 
         for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(&node_id)?;
@@ -397,10 +397,10 @@ impl CallFrame {
             depth: parent.depth + 1,
             actor: Some(actor),
             immortal_node_refs: next_node_refs,
-            temp_node_refs: HashMap::new(),
+            temp_node_refs: NonIterMap::new(),
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
-            locks: HashMap::new(),
+            locks: index_map_new(),
         };
 
         Ok(frame)

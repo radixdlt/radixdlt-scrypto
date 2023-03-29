@@ -1,5 +1,5 @@
 use radix_engine_interface::crypto::Hash;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::NonIterMap;
 
 pub trait IntentHashManager {
     fn allows(&self, hash: &Hash) -> bool;
@@ -11,13 +11,13 @@ pub enum HashStatus {
 }
 
 pub struct TestIntentHashManager {
-    hash_status_map: HashMap<Hash, HashStatus>,
+    hash_status_map: NonIterMap<Hash, HashStatus>,
 }
 
 impl TestIntentHashManager {
     pub fn new() -> Self {
         Self {
-            hash_status_map: HashMap::new(),
+            hash_status_map: NonIterMap::new(),
         }
     }
 

@@ -1,6 +1,6 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::*;
@@ -15,13 +15,13 @@ macro_rules! trace {
 pub fn extract_attributes(
     attrs: &[Attribute],
     name: &str,
-) -> Option<HashMap<String, Option<String>>> {
+) -> Option<BTreeMap<String, Option<String>>> {
     for attr in attrs {
         if !attr.path.is_ident(name) {
             continue;
         }
 
-        let mut fields = HashMap::new();
+        let mut fields = BTreeMap::new();
         if let Ok(meta) = attr.parse_meta() {
             if let Meta::List(MetaList { nested, .. }) = meta {
                 nested.into_iter().for_each(|m| match m {

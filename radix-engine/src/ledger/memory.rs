@@ -11,6 +11,9 @@ use radix_engine_interface::api::types::{
 /// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemorySubstateStore {
+    /// A hashmap from IDs to values.
+    /// This structure does not preserve deterministic ordering, but it is only used for test
+    /// purposes (where it actually puts the Engine's determinism under test).
     substates: HashMap<SubstateId, OutputValue>,
 }
 

@@ -2,7 +2,7 @@ use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::CallFrameError;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
-use crate::types::HashMap;
+use crate::types::NonIterMap;
 use radix_engine_interface::api::types::{
     BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -14,13 +14,13 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 pub struct Heap {
-    nodes: HashMap<RENodeId, HeapRENode>,
+    nodes: NonIterMap<RENodeId, HeapRENode>,
 }
 
 impl Heap {
     pub fn new() -> Self {
         Self {
-            nodes: HashMap::new(),
+            nodes: NonIterMap::new(),
         }
     }
 

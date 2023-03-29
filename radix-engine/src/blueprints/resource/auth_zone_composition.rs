@@ -188,12 +188,13 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
 ) -> Result<
     (
         BTreeSet<NonFungibleLocalId>,
-        HashMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+        NonIterMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
     ),
     RuntimeError,
 > {
+    let mut total = BTreeSet::<NonFungibleLocalId>::new();
     // calculate the max locked non-fungibles of each container
-    let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
+    let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
             RENodeId::Object(proof.0),
@@ -211,22 +212,17 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             )?;
             let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
             for (container_id, locked_ids) in &proof.evidence {
-                let new_ids = locked_ids.clone();
-                if let Some(ids) = max.get_mut(container_id) {
-                    ids.extend(new_ids);
+                total.extend(locked_ids.clone());
+                if let Some(ids) = per_container.get_mut(container_id) {
+                    ids.extend(locked_ids.clone());
                 } else {
-                    max.insert(container_id.clone(), new_ids);
+                    per_container.insert(container_id.clone(), locked_ids.clone());
                 }
             }
         } else {
             api.sys_drop_lock(handle)?;
         }
     }
-    let mut total = BTreeSet::<NonFungibleLocalId>::new();
-    for value in max.values() {
-        total.extend(value.clone());
-    }
-    let per_container = max.into_iter().collect();
     Ok((total, per_container))
 }
 
