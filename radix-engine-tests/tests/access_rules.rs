@@ -3,8 +3,9 @@ use radix_engine::system::node_modules::access_rules::AuthZoneError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+    AuthAddresses, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
@@ -175,8 +176,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     });
 }
 
-#[test]
-fn component_access_rules_can_be_mutated_through_manifest_native_call() {
+fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -203,7 +203,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             .set_method_access_rule(
                 Address::Component(test_runner.component_address),
                 MethodKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
-                rule!(deny_all),
+                to_rule,
             )
             .build(),
     );
@@ -214,6 +214,22 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     receipt.expect_specific_failure(|e| {
         matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
+}
+
+#[test]
+fn component_access_rules_can_be_mutated_to_deny_all_through_manifest() {
+    component_access_rules_can_be_mutated_through_manifest(rule!(deny_all));
+}
+
+#[test]
+fn component_access_rules_can_be_mutated_to_fungible_resource_through_manifest() {
+    component_access_rules_can_be_mutated_through_manifest(rule!(require(RADIX_TOKEN)));
+}
+
+#[test]
+fn component_access_rules_can_be_mutated_to_non_fungible_resource_through_manifest() {
+    let non_fungible_global_id = AuthAddresses::system_role();
+    component_access_rules_can_be_mutated_through_manifest(rule!(require(non_fungible_global_id)));
 }
 
 #[test]
