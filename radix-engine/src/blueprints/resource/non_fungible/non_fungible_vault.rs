@@ -19,8 +19,8 @@ impl NonFungibleVaultBlueprint {
         amount: &Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Check amount
         let info = VaultInfoSubstate::of(receiver, api)?;
@@ -41,7 +41,7 @@ impl NonFungibleVaultBlueprint {
                     resource_address: info.resource_address,
                     resource_type: info.resource_type,
                 })
-                    .unwrap(),
+                .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&taken).unwrap(),
@@ -52,20 +52,12 @@ impl NonFungibleVaultBlueprint {
         Ok(Bucket(bucket_id))
     }
 
-
-    pub fn put<Y>(
-        receiver: &RENodeId,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    pub fn put<Y>(receiver: &RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-
         // Drop other bucket
-        let other_bucket: DroppedBucket = api
-            .kernel_drop_node(&RENodeId::Object(bucket.0))?
-            .into();
+        let other_bucket: DroppedBucket = api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
 
         // Check resource address
         let info = VaultInfoSubstate::of(receiver, api)?;
@@ -83,5 +75,15 @@ impl NonFungibleVaultBlueprint {
         }
 
         Ok(())
+    }
+
+    pub fn get_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let amount = NonFungibleVault::liquid_amount(receiver, api)?
+            + NonFungibleVault::locked_amount(receiver, api)?;
+
+        Ok(amount)
     }
 }

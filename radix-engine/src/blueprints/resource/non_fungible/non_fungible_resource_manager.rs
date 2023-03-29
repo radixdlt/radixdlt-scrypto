@@ -206,12 +206,8 @@ impl NonFungibleResourceManagerBlueprint {
     {
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
-        let (resource_manager_substate, _) = build_non_fungible_resource_manager_substate(
-            id_type,
-            0,
-            non_fungible_schema,
-            api,
-        )?;
+        let (resource_manager_substate, _) =
+            build_non_fungible_resource_manager_substate(id_type, 0, non_fungible_schema, api)?;
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -701,8 +697,7 @@ impl NonFungibleResourceManagerBlueprint {
             api.kernel_get_substate_ref(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(resource_address, id.clone());
+        let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(non_fungible_table_id),

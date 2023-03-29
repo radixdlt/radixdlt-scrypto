@@ -202,11 +202,11 @@ fn test_radiswap() {
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         92500 /* CreateNode */
-        + 198000 /* DropLock */
+        + 195000 /* DropLock */
         + 90000 /* DropNode */
         + 25340 /* Invoke */
-        + 200500 /* LockSubstate */
-        + 2601400 /* ReadSubstate */
+        + 197500 /* LockSubstate */
+        + 2598400 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
         + 1630745 /* RunWasm */
@@ -312,11 +312,11 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         147500 /* CreateNode */
-        + 308500 /* DropLock */
+        + 308000 /* DropLock */
         + 147500 /* DropNode */
         + 44790 /* Invoke */
-        + 316500 /* LockSubstate */
-        + 6617110 /* ReadSubstate */
+        + 316000 /* LockSubstate */
+        + 6616610 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
         + 1409300 /* RunWasm */

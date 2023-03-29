@@ -1,3 +1,4 @@
+use crate::blueprints::resource;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -10,7 +11,6 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
-use crate::blueprints::resource;
 
 pub struct FungibleVaultBlueprint;
 
@@ -20,8 +20,8 @@ impl FungibleVaultBlueprint {
         amount: &Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Check amount
         let info = VaultInfoSubstate::of(receiver, api)?;
@@ -42,7 +42,7 @@ impl FungibleVaultBlueprint {
                     resource_address: info.resource_address,
                     resource_type: info.resource_type,
                 })
-                    .unwrap(),
+                .unwrap(),
                 scrypto_encode(&taken).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
@@ -53,18 +53,12 @@ impl FungibleVaultBlueprint {
         Ok(Bucket(bucket_id))
     }
 
-    pub fn put<Y>(
-        receiver: &RENodeId,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    pub fn put<Y>(receiver: &RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let other_bucket: DroppedBucket = api
-            .kernel_drop_node(&RENodeId::Object(bucket.0))?
-            .into();
+        let other_bucket: DroppedBucket = api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
 
         // Check resource address
         let info = VaultInfoSubstate::of(receiver, api)?;
@@ -82,5 +76,15 @@ impl FungibleVaultBlueprint {
         }
 
         Ok(())
+    }
+
+    pub fn get_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let amount = FungibleVault::liquid_amount(receiver, api)?
+            + FungibleVault::locked_amount(receiver, api)?;
+
+        Ok(amount)
     }
 }

@@ -29,10 +29,9 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
-const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str =
-    "take_FungibleVault";
-const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str =
-    "put_FungibleVault";
+const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
+const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
+const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -49,10 +48,9 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_NonFungibleResourceManager";
-const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str =
-    "take_NonFungibleVault";
-const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str =
-    "put_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
 
 pub struct ResourceManagerNativePackage;
 
@@ -294,9 +292,11 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
+                        ),
                     output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
+                        ),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
                 },
             );
@@ -395,8 +395,10 @@ impl ResourceManagerNativePackage {
             substates.push(aggregator.add_child_type_and_descendents::<VaultInfoSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
-            substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            substates.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -418,6 +420,15 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
+                VAULT_GET_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                    export_name: FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 VAULT_LOCK_FEE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
@@ -436,19 +447,11 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                VAULT_GET_AMOUNT_IDENT.to_string(),
-                FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
-                    input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
-                    export_name: VAULT_GET_AMOUNT_IDENT.to_string(),
-                },
-            );
-            functions.insert(
                 VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
-                    input: aggregator.add_child_type_and_descendents::<VaultGetResourceAddressInput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<VaultGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultGetResourceAddressOutput>(),
                     export_name: VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
@@ -467,7 +470,8 @@ impl ResourceManagerNativePackage {
                 VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofByAmountOutput>(),
                     export_name: VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
@@ -583,7 +587,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                 output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
-                export_name: VAULT_GET_AMOUNT_IDENT.to_string(),
+                export_name: NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1584,13 +1588,29 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::put(receiver, input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_GET_AMOUNT_IDENT => {
+            FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::get_amount(receiver, input, api)
+                let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::get_amount(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::get_amount(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_GET_RESOURCE_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

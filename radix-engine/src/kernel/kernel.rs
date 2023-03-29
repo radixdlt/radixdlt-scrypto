@@ -317,8 +317,7 @@ where
                         if *global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        } else if VaultBlueprint::is_vault_blueprint(blueprint)
-                        {
+                        } else if VaultBlueprint::is_vault_blueprint(blueprint) {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
                         } else {

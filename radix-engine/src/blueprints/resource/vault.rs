@@ -512,7 +512,7 @@ impl VaultBlueprint {
     pub fn is_vault_blueprint(blueprint: &Blueprint) -> bool {
         blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
             && (blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
-            || blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
+                || blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
     }
 
     pub fn take_non_fungibles<Y>(
@@ -556,31 +556,6 @@ impl VaultBlueprint {
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
         }
-    }
-
-
-    pub fn get_amount<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        let amount = if info.resource_type.is_fungible() {
-            FungibleVault::liquid_amount(receiver, api)?
-                + FungibleVault::locked_amount(receiver, api)?
-        } else {
-            NonFungibleVault::liquid_amount(receiver, api)?
-                + NonFungibleVault::locked_amount(receiver, api)?
-        };
-
-        Ok(IndexedScryptoValue::from_typed(&amount))
     }
 
     pub fn get_resource_address<Y>(

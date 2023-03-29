@@ -32,10 +32,7 @@ pub struct FungibleResourceManagerSubstate {
 }
 
 impl FungibleResourceManagerSubstate {
-    pub fn create(
-        divisibility: u8,
-        total_supply: Decimal,
-    ) -> Result<Self, RuntimeError> {
+    pub fn create(divisibility: u8, total_supply: Decimal) -> Result<Self, RuntimeError> {
         if divisibility > DIVISIBILITY_MAXIMUM {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(
@@ -164,10 +161,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_manager_substate = FungibleResourceManagerSubstate::create(
-            divisibility,
-            initial_supply,
-        )?;
+        let resource_manager_substate =
+            FungibleResourceManagerSubstate::create(divisibility, initial_supply)?;
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
