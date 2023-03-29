@@ -1,5 +1,7 @@
 use sbor::rust::str::FromStr;
 
+/// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
+/// byte-based / UTF-8 index.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
     /// The start of the span, inclusive
