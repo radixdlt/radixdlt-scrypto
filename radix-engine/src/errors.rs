@@ -9,7 +9,6 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::actor::{Actor, ExecutionMode};
-use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::events::EventError;
@@ -138,7 +137,6 @@ pub enum KernelError {
     ContainsDuplicatedOwns,
     StoredNodeRemoved(NodeId),
     RENodeGlobalizeTypeNotAllowed(NodeId),
-    TrackError(TrackError),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     BlobNotFound(Hash),
@@ -181,7 +179,6 @@ pub enum CallFrameError {
     RENodeNotVisible(NodeId),
     RENodeNotOwned(NodeId),
     MovingLockedRENode(NodeId),
-    FailedToMoveSubstateToTrack(TrackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

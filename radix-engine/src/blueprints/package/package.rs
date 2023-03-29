@@ -149,13 +149,13 @@ where
     );
     node_modules.insert(
         TypedModuleId::AccessRules,
-        ModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
+        ModuleInit::AccessRules(MethodAccessRulesSubstate {
             access_rules: access_rules,
         }),
     );
     node_modules.insert(
         TypedModuleId::Royalty,
-        ModuleInit::ComponentRoyalty(
+        ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
             },

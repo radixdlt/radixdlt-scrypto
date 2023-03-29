@@ -43,7 +43,7 @@ where
     fn sys_lock_substate(
         &mut self,
         node_id: &NodeId,
-        substate_key: SubstateKey,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
@@ -475,7 +475,7 @@ where
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
                     module_init
-                        .insert(module_id, ModuleInit::MethodAccessRules(access_rules));
+                        .insert(module_id, ModuleInit::AccessRules(access_rules));
                 }
                 TypedModuleId::Metadata => {
                     let node_id = NodeId::Object(object_id);
@@ -536,7 +536,7 @@ where
 
                     module_init.insert(
                         TypedModuleId::Royalty,
-                        ModuleInit::ComponentRoyalty(config, accumulator),
+                        ModuleInit::Royalty(config, accumulator),
                     );
                 }
             }

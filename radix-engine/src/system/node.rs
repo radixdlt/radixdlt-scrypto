@@ -14,10 +14,10 @@ pub enum ModuleInit {
     Metadata(BTreeMap<SubstateKey, RuntimeSubstate>),
 
     /* Access rules */
-    MethodAccessRules(MethodAccessRulesSubstate),
+    AccessRules(MethodAccessRulesSubstate),
 
     /* Royalty */
-    ComponentRoyalty(
+    Royalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
     ),
@@ -30,13 +30,13 @@ impl ModuleInit {
             ModuleInit::Metadata(metadata_substates) => {
                 substates.extend(metadata_substates);
             }
-            ModuleInit::MethodAccessRules(access_rules) => {
+            ModuleInit::AccessRules(access_rules) => {
                 substates.insert(AccessRulesOffset::AccessRules.into(), access_rules.into());
             }
             ModuleInit::TypeInfo(type_info) => {
                 substates.insert(TypeInfoOffset::TypeInfo.into(), type_info.into());
             }
-            ModuleInit::ComponentRoyalty(config, accumulator) => {
+            ModuleInit::Royalty(config, accumulator) => {
                 substates.insert(RoyaltyOffset::Royalty.into(), config.into());
                 substates.insert(RoyaltyOffset::Royalty.into(), accumulator.into());
             }
