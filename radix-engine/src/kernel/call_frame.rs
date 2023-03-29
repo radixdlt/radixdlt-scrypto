@@ -15,26 +15,26 @@ use super::track::{Track, TrackError};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
     pub nodes_to_move: Vec<RENodeId>,
-    pub node_refs_to_copy: HashSet<RENodeId>,
+    pub node_refs_to_copy: IndexSet<RENodeId>,
 }
 
 impl CallFrameUpdate {
     pub fn empty() -> Self {
         CallFrameUpdate {
             nodes_to_move: Vec::new(),
-            node_refs_to_copy: HashSet::new(),
+            node_refs_to_copy: index_set_new(),
         }
     }
 
     pub fn move_node(node_id: RENodeId) -> Self {
         CallFrameUpdate {
             nodes_to_move: vec![node_id],
-            node_refs_to_copy: HashSet::new(),
+            node_refs_to_copy: index_set_new(),
         }
     }
 
     pub fn copy_ref(node_id: RENodeId) -> Self {
-        let mut node_refs_to_copy = HashSet::new();
+        let mut node_refs_to_copy = index_set_new();
         node_refs_to_copy.insert(node_id);
         CallFrameUpdate {
             nodes_to_move: vec![],
@@ -65,7 +65,7 @@ pub struct SubstateLock {
     pub node_id: RENodeId,
     pub module_id: NodeModuleId,
     pub offset: SubstateOffset,
-    pub temp_references: HashSet<RENodeId>,
+    pub temp_references: IndexSet<RENodeId>,
     pub substate_owned_nodes: Vec<RENodeId>,
     pub flags: LockFlags,
 }
@@ -139,7 +139,7 @@ impl CallFrame {
         let (references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
         // Expand references
-        let mut temp_references = HashSet::new();
+        let mut temp_references = index_set_new();
         for node_id in references {
             // TODO: fix this ugly condition
             if matches!(node_id, RENodeId::GlobalObject(_)) {

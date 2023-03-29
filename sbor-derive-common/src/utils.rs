@@ -1,5 +1,5 @@
+use itertools::Itertools;
 use std::collections::BTreeMap;
-use std::collections::HashSet;
 use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
@@ -192,16 +192,7 @@ pub fn get_hash_of_code(input: &TokenStream) -> [u8; 20] {
 }
 
 pub fn get_unique_types<'a>(types: &[&'a syn::Type]) -> Vec<&'a syn::Type> {
-    let mut seen = HashSet::<&syn::Type>::new();
-    let mut out = Vec::<&syn::Type>::new();
-    for t in types {
-        if seen.contains(t) {
-            continue;
-        }
-        seen.insert(t);
-        out.push(t);
-    }
-    out
+    types.into_iter().unique().cloned().collect()
 }
 
 pub(crate) struct FieldsData {
