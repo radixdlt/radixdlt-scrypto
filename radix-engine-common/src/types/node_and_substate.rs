@@ -51,6 +51,12 @@ impl From<GlobalAddress> for NodeId {
     }
 }
 
+impl From<LocalAddress> for NodeId {
+    fn from(value: LocalAddress) -> Self {
+        Self(value.into())
+    }
+}
+
 impl From<ComponentAddress> for NodeId {
     fn from(value: ComponentAddress) -> Self {
         Self(value.into())

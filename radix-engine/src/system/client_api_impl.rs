@@ -154,7 +154,7 @@ where
             .package_address();
 
         let handle = self.kernel_lock_substate(
-            &NodeId::GlobalObject(package_address.into()),
+            package_address.as_node_id(),
             TypedModuleId::ObjectState,
             PackageOffset::Package.into(),
             LockFlags::read_only(),

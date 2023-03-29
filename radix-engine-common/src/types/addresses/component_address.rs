@@ -2,6 +2,7 @@ use crate::address::Bech32Decoder;
 use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK};
 use crate::crypto::{hash, PublicKey};
 use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::model::Reference;
 use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
@@ -112,6 +113,12 @@ impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
 impl Into<super::GlobalAddress> for ComponentAddress {
     fn into(self) -> super::GlobalAddress {
         super::GlobalAddress::new_unchecked(self.0.into())
+    }
+}
+
+impl From<ComponentAddress> for Reference {
+    fn from(value: ComponentAddress) -> Self {
+        Self(value.into())
     }
 }
 

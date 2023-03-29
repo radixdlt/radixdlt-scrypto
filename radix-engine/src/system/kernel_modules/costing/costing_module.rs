@@ -155,9 +155,9 @@ impl KernelModule for CostingModule {
         //===========================
         let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
-            &NodeId::GlobalObject(package_address.into()),
+            package_address.as_node_id(),
             TypedModuleId::ObjectState,
-            PackageOffset::Package.into(),
+            &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
@@ -189,7 +189,7 @@ impl KernelModule for CostingModule {
         //===========================
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
-                &NodeId::GlobalObject(component_address.clone().into()),
+                component_address.as_node_id(),
                 TypedModuleId::Royalty,
                 RoyaltyOffset::Royalty.into(),
                 LockFlags::read_only(),
@@ -203,7 +203,7 @@ impl KernelModule for CostingModule {
 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
-                    &NodeId::GlobalObject(component_address.clone().into()),
+                    component_address.as_node_id(),
                     TypedModuleId::Royalty,
                     RoyaltyOffset::Royalty.into(),
                     LockFlags::MUTABLE,

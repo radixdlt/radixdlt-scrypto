@@ -247,16 +247,11 @@ impl ResourceSummary {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         for node_id in &call_frame_update.nodes_to_move {
-            match &node_id {
-                NodeId::Object(object_id) => {
-                    if let Some(x) = api.kernel_read_bucket(*object_id) {
-                        buckets.insert(*object_id, x);
-                    }
-                    if let Some(x) = api.kernel_read_proof(*object_id) {
-                        proofs.insert(*object_id, x);
-                    }
-                }
-                _ => {}
+            if let Some(x) = api.kernel_read_bucket(node_id) {
+                buckets.insert(*node_id, x);
+            }
+            if let Some(x) = api.kernel_read_proof(node_id) {
+                proofs.insert(*node_id, x);
             }
         }
         Self { buckets, proofs }
@@ -265,16 +260,11 @@ impl ResourceSummary {
     pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &NodeId) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
-        match node_id {
-            NodeId::Object(object_id) => {
-                if let Some(x) = api.kernel_read_bucket(*object_id) {
-                    buckets.insert(*object_id, x);
-                }
-                if let Some(x) = api.kernel_read_proof(*object_id) {
-                    proofs.insert(*object_id, x);
-                }
-            }
-            _ => {}
+        if let Some(x) = api.kernel_read_bucket(node_id) {
+            buckets.insert(*node_id, x);
+        }
+        if let Some(x) = api.kernel_read_proof(node_id) {
+            proofs.insert(*node_id, x);
         }
         Self { buckets, proofs }
     }
@@ -464,7 +454,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::Object(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(vault_id, ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -478,7 +468,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::Object(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(vault_id, ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -504,7 +494,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(NodeId::Object(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(vault_id, ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>

@@ -1,6 +1,7 @@
 use crate::address::Bech32Decoder;
 use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::model::Reference;
 use crate::data::scrypto::*;
 use crate::types::NodeId;
 use crate::types::*;
@@ -77,6 +78,12 @@ impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
 impl Into<super::GlobalAddress> for ResourceAddress {
     fn into(self) -> super::GlobalAddress {
         super::GlobalAddress::new_unchecked(self.0.into())
+    }
+}
+
+impl From<ResourceAddress> for Reference {
+    fn from(value: ResourceAddress) -> Self {
+        Self(value.into())
     }
 }
 

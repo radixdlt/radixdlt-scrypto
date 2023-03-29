@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::{
-    BucketOffset, NodeId, ProofOffset, SubstateKey, TypedModuleId,
+    BucketOffset, IndexedScryptoValue, NodeId, ProofOffset, SubstateKey, TypedModuleId,
 };
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
@@ -129,7 +129,7 @@ impl Heap {
 
 #[derive(Debug)]
 pub struct HeapNode {
-    pub substates: BTreeMap<(TypedModuleId, SubstateKey), RuntimeSubstate>,
+    pub substates: BTreeMap<(TypedModuleId, SubstateKey), IndexedScryptoValue>,
 }
 
 pub struct DroppedBucket {

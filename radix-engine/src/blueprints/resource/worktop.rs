@@ -49,7 +49,8 @@ impl WorktopBlueprint {
             .substates
             .remove(&(TypedModuleId::ObjectState, WorktopOffset::Worktop.into()))
             .unwrap();
-        let worktop: WorktopSubstate = substate.into();
+        // FIXME double check who's checking if the node is of the right blueprint.
+        let worktop: WorktopSubstate = substate.as_typed().unwrap();
         for (_, bucket) in worktop.resources {
             let bucket = Bucket(bucket);
             bucket.sys_drop_empty(api)?;

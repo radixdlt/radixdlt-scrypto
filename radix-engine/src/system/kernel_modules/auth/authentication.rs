@@ -57,7 +57,7 @@ impl Authentication {
             let handle = api.kernel_lock_substate(
                 &current_auth_zone_id,
                 TypedModuleId::ObjectState,
-                AuthZoneOffset::AuthZone.into(),
+                &AuthZoneOffset::AuthZone.into(),
                 LockFlags::read_only(),
             )?;
             let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
@@ -78,7 +78,7 @@ impl Authentication {
                 remaining_barrier_crossings_allowed -= 1;
             }
             if let Some(id) = auth_zone.parent {
-                current_auth_zone_id = NodeId::Object(id.0);
+                current_auth_zone_id = id.into();
             } else {
                 break;
             }
