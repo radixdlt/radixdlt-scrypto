@@ -4,7 +4,7 @@ use sbor::rust::str::FromStr;
 /// byte-based / UTF-8 index.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
-    /// The start of the span, inclusive
+    /// The start of the span, exclusive
     pub start: usize,
     /// The end of the span, inclusive
     pub end: usize,
