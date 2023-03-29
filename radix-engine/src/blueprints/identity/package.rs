@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::{NodeInit, ModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
@@ -153,9 +153,9 @@ impl IdentityBlueprint {
         let node_id = api.kernel_allocate_node_id(EntityType::Object)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::Object(btreemap!()),
+            NodeInit::Object(btreemap!()),
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: IDENTITY_PACKAGE,
                     blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                     global: false,

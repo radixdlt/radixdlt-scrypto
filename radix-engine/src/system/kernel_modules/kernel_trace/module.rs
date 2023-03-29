@@ -4,7 +4,7 @@ use crate::types::*;
 use crate::{
     errors::RuntimeError,
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
-    system::node::{RENodeInit, RENodeModuleInit},
+    system::node::{NodeInit, ModuleInit},
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{
@@ -83,8 +83,8 @@ impl KernelModule for KernelTraceModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_init: &RENodeInit,
-        node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
+        node_init: &NodeInit,
+        node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError> {
         log!(
             api,

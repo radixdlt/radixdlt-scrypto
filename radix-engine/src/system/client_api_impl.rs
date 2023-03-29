@@ -5,8 +5,8 @@ use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::NodeInit;
+use crate::system::node::ModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
@@ -65,7 +65,7 @@ where
             TypedModuleId::ObjectState
         };
 
-        self.kernel_lock_substate(&node_id, module_id, offset, flags)
+        self.kernel_lock_substate(&node_id, module_id, substate_key, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -85,7 +85,7 @@ where
         } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&TypedModuleId::ObjectState) {
-            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+            let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
@@ -229,19 +229,19 @@ where
         let (node_init, node_type) = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         ResourceManagerOffset::ResourceManager.into() => RuntimeSubstate::ResourceManager(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         ResourceManagerOffset::ResourceManager.into() => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
                 PROOF_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(parser.decode_next()),
                         ProofOffset::Proof.into() => RuntimeSubstate::FungibleProof(parser.decode_next()),
                         ProofOffset::Proof.into() => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
@@ -249,7 +249,7 @@ where
                     EntityType::Object,
                 ),
                 BUCKET_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         BucketOffset::Bucket.into() => RuntimeSubstate::BucketInfo(parser.decode_next()),
                         BucketOffset::Bucket.into() => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
                         BucketOffset::Bucket.into() => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
@@ -259,7 +259,7 @@ where
                     EntityType::Object,
                 ),
                 VAULT_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         VaultOffset::Vault.into() => RuntimeSubstate::VaultInfo(parser.decode_next()),
                         VaultOffset::Vault.into() => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
                         VaultOffset::Vault.into() => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
@@ -270,10 +270,10 @@ where
                 ),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
-            METADATA_PACKAGE => (RENodeInit::Object(btreemap!()), EntityType::Object),
+            METADATA_PACKAGE => (NodeInit::Object(btreemap!()), EntityType::Object),
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         RoyaltyOffset::Royalty.into() => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
                         RoyaltyOffset::Royalty.into() => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
                     )),
@@ -282,20 +282,20 @@ where
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
             ACCESS_RULES_PACKAGE => (
-                RENodeInit::Object(btreemap!(
+                NodeInit::Object(btreemap!(
                     AccessRulesOffset::AccessRules.into() => RuntimeSubstate::MethodAccessRules(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
                 VALIDATOR_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         ValidatorOffset::Validator.into() => RuntimeSubstate::Validator(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
                 EPOCH_MANAGER_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
+                    NodeInit::Object(btreemap!(
                         EpochManagerOffset::EpochManager.into() => RuntimeSubstate::EpochManager(parser.decode_next()),
                         EpochManagerOffset::EpochManager.into() => RuntimeSubstate::ValidatorSet(parser.decode_next()),
                         EpochManagerOffset::EpochManager.into() => RuntimeSubstate::ValidatorSet(parser.decode_next())
@@ -305,29 +305,29 @@ where
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
             ACCESS_CONTROLLER_PACKAGE => (
-                RENodeInit::Object(btreemap!(
+                NodeInit::Object(btreemap!(
                     AccessControllerOffset::AccessController.into()
                         => RuntimeSubstate::AccessController(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
-            IDENTITY_PACKAGE => (RENodeInit::Object(btreemap!()), EntityType::Object),
+            IDENTITY_PACKAGE => (NodeInit::Object(btreemap!()), EntityType::Object),
             ACCOUNT_PACKAGE => (
-                RENodeInit::Object(btreemap!(
+                NodeInit::Object(btreemap!(
                     AccountOffset::Account.into()
                         => RuntimeSubstate::Account(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
             CLOCK_PACKAGE => (
-                RENodeInit::Object(btreemap!(
+                NodeInit::Object(btreemap!(
                     ClockOffset::Clock.into()
                         => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
             _ => (
-                RENodeInit::Object(btreemap!(
+                NodeInit::Object(btreemap!(
                     ComponentOffset::Component.into() => RuntimeSubstate::ComponentState(
                         ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
                     )
@@ -343,7 +343,7 @@ where
             node_id,
             node_init,
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
                 ),
             ),
@@ -417,10 +417,10 @@ where
 
         let mut module_substates = BTreeMap::new();
         let mut component_substates = BTreeMap::new();
-        for ((node_module_id, offset), substate) in node.substates {
+        for ((node_module_id, substate_key), substate) in node.substates {
             match node_module_id {
                 TypedModuleId::ObjectState => component_substates.insert(offset, substate),
-                _ => module_substates.insert((node_module_id, offset), substate),
+                _ => module_substates.insert((node_module_id, substate_key), substate),
             };
         }
 
@@ -438,7 +438,7 @@ where
 
         module_init.insert(
             TypedModuleId::TypeInfo,
-            RENodeModuleInit::TypeInfo(type_info_substate),
+            ModuleInit::TypeInfo(type_info_substate),
         );
 
         // TODO: Check node type matches modules provided
@@ -475,7 +475,7 @@ where
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
                     module_init
-                        .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
+                        .insert(module_id, ModuleInit::MethodAccessRules(access_rules));
                 }
                 TypedModuleId::Metadata => {
                     let node_id = NodeId::Object(object_id);
@@ -495,7 +495,7 @@ where
                     let node = self.kernel_drop_node(&node_id)?;
 
                     let mut substates = BTreeMap::new();
-                    for ((module_id, offset), substate) in node.substates {
+                    for ((module_id, substate_key), substate) in node.substates {
                         if let TypedModuleId::ObjectState = module_id {
                             substates.insert(offset, substate);
                         }
@@ -503,7 +503,7 @@ where
 
                     module_init.insert(
                         TypedModuleId::Metadata,
-                        RENodeModuleInit::Metadata(substates),
+                        ModuleInit::Metadata(substates),
                     );
                 }
                 TypedModuleId::Royalty => {
@@ -536,7 +536,7 @@ where
 
                     module_init.insert(
                         TypedModuleId::Royalty,
-                        RENodeModuleInit::ComponentRoyalty(config, accumulator),
+                        ModuleInit::ComponentRoyalty(config, accumulator),
                     );
                 }
             }
@@ -544,7 +544,7 @@ where
 
         self.kernel_create_node(
             address.into(),
-            RENodeInit::GlobalObject(component_substates),
+            NodeInit::GlobalObject(component_substates),
             module_init,
         )?;
 
@@ -638,9 +638,9 @@ where
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::KeyValueStore,
+            NodeInit::KeyValueStore,
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
         ))?;
 
         Ok(node_id.into())

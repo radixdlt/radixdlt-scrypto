@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::SysProof;
@@ -100,7 +100,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -141,7 +141,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -182,7 +182,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,

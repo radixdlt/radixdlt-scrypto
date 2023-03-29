@@ -16,8 +16,8 @@ use crate::system::kernel_modules::transaction_limits::{
     TransactionLimitsConfig, TransactionLimitsModule,
 };
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::NodeInit;
+use crate::system::node::ModuleInit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -457,8 +457,8 @@ impl KernelModule for KernelModuleMixer {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_init: &RENodeInit,
-        node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
+        node_init: &NodeInit,
+        node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -602,36 +602,36 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &NodeId,
         module_id: &TypedModuleId,
-        offset: &SubstateKey,
+        substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            KernelTraceModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            CostingModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            NodeMoveModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            AuthModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            LoggerModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            TransactionRuntimeModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            ExecutionTraceModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            TransactionLimitsModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
+            EventsModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         Ok(())
     }

@@ -4,11 +4,11 @@ use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::ModuleInit;
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
-    system::node::RENodeInit,
+    system::node::NodeInit,
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
@@ -234,8 +234,8 @@ impl KernelModule for CostingModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
+        _node_init: &NodeInit,
+        _node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(

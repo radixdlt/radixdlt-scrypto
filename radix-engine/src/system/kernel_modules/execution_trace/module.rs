@@ -3,8 +3,8 @@ use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::NodeInit;
+use crate::system::node::ModuleInit;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -284,8 +284,8 @@ impl KernelModule for ExecutionTraceModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
+        _node_init: &NodeInit,
+        _node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state()
             .execution_trace

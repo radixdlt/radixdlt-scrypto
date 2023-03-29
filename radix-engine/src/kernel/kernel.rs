@@ -1,7 +1,7 @@
 use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
-use super::heap::{Heap, HeapRENode};
+use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
@@ -17,7 +17,7 @@ use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::{NodeInit, ModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
@@ -138,12 +138,12 @@ where
         let component_id = {
             let kv_store_id = {
                 let node_id = self.kernel_allocate_node_id(EntityType::KeyValueStore)?;
-                let node = RENodeInit::KeyValueStore;
+                let node = NodeInit::KeyValueStore;
                 self.kernel_create_node(
                     node_id,
                     node,
                     btreemap!(
-                        TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                        TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
                             KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
                         )
                     ),
@@ -153,7 +153,7 @@ where
 
             let node_id = {
                 let node_modules = btreemap!(
-                    TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                    TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         global: false
@@ -165,7 +165,7 @@ where
                 };
 
                 let node_id = self.kernel_allocate_node_id(EntityType::Object)?;
-                let node = RENodeInit::Object(btreemap!(
+                let node = NodeInit::Object(btreemap!(
                     AccountOffset::Account.into() => RuntimeSubstate::Account(account_substate)
                 ));
                 self.kernel_create_node(node_id, node, node_modules)?;
@@ -299,7 +299,7 @@ where
         }
     }
 
-    fn drop_node_internal(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
             NodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
@@ -627,7 +627,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -675,8 +675,8 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        init: RENodeInit,
-        module_init: BTreeMap<TypedModuleId, RENodeModuleInit>,
+        init: NodeInit,
+        module_init: BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError> {
         KernelModuleMixer::before_create_node(self, &node_id, &init, &module_init)?;
 
@@ -685,16 +685,16 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         match (node_id, &init) {
-            (NodeId::GlobalObject(GlobalAddress::Component(..)), RENodeInit::GlobalObject(..)) => {}
-            (NodeId::GlobalObject(GlobalAddress::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (NodeId::GlobalObject(GlobalAddress::Package(..)), RENodeInit::GlobalObject(..)) => {}
-            (NodeId::Object(..), RENodeInit::Object(..)) => {}
-            (NodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
+            (NodeId::GlobalObject(GlobalAddress::Component(..)), NodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(GlobalAddress::Resource(..)), NodeInit::GlobalObject(..)) => {}
+            (NodeId::GlobalObject(GlobalAddress::Package(..)), NodeInit::GlobalObject(..)) => {}
+            (NodeId::Object(..), NodeInit::Object(..)) => {}
+            (NodeId::KeyValueStore(..), NodeInit::KeyValueStore) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
         let push_to_store = match init {
-            RENodeInit::GlobalObject(..) => true,
+            NodeInit::GlobalObject(..) => true,
             _ => false,
         };
 
@@ -919,12 +919,12 @@ where
                         let module_id = TypedModuleId::ObjectState;
                         self.track
                             .acquire_lock(
-                                SubstateId(node_id, module_id, offset.clone()),
+                                SubstateId(node_id, module_id, substate_key.clone()),
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
                         self.track
-                            .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
+                            .release_lock(SubstateId(node_id, module_id, substate_key.clone()), false)
                             .map_err(|_| err)?;
                         self.current_frame
                             .add_ref(node_id, RENodeVisibilityOrigin::Normal);

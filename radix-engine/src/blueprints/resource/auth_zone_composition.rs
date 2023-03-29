@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node::RENodeInit;
+use crate::system::node::NodeInit;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
@@ -23,14 +23,14 @@ pub enum ComposedProof {
     NonFungible(ProofInfoSubstate, NonFungibleProof),
 }
 
-impl From<ComposedProof> for RENodeInit {
+impl From<ComposedProof> for NodeInit {
     fn from(value: ComposedProof) -> Self {
         match value {
-            ComposedProof::Fungible(info, proof) => RENodeInit::Object(btreemap!(
+            ComposedProof::Fungible(info, proof) => NodeInit::Object(btreemap!(
                 ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(info),
                 ProofOffset::Proof.into() => RuntimeSubstate::FungibleProof(proof),
             )),
-            ComposedProof::NonFungible(info, proof) => RENodeInit::Object(btreemap!(
+            ComposedProof::NonFungible(info, proof) => NodeInit::Object(btreemap!(
                 ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(info),
                 ProofOffset::Proof.into() => RuntimeSubstate::NonFungibleProof(proof),
             )),

@@ -1,12 +1,12 @@
 use super::actor::Actor;
 use super::call_frame::RENodeVisibilityOrigin;
-use super::heap::HeapRENode;
+use super::heap::HeapNode;
 use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::ModuleInit;
+use crate::system::node::NodeInit;
 use crate::system::node_substates::SubstateRef;
 use crate::system::node_substates::SubstateRefMut;
 use crate::types::*;
@@ -26,7 +26,7 @@ pub struct LockInfo {
 
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError>;
 
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError>;
@@ -35,8 +35,8 @@ pub trait KernelNodeApi {
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        init: RENodeInit,
-        node_module_init: BTreeMap<TypedModuleId, RENodeModuleInit>,
+        init: NodeInit,
+        node_module_init: BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError>;
 }
 
@@ -46,7 +46,7 @@ pub trait KernelSubstateApi {
         &mut self,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        substate_key: SubstateKey,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
 
@@ -105,7 +105,7 @@ pub trait KernelApi<W: WasmEngine, E>:
 pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
-    fn kernel_get_node_visibility_origin(&self, node_id: NodeId) -> Option<RENodeVisibilityOrigin>;
+    fn kernel_get_node_visibility_origin(&self, node_id: &NodeId) -> Option<RENodeVisibilityOrigin>;
 
     fn kernel_get_current_depth(&self) -> usize;
 
@@ -113,8 +113,8 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: NodeId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&mut self, proof_id: NodeId) -> Option<ProofSnapshot>;
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
 pub trait KernelModuleApi<E>:

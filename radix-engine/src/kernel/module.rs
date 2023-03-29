@@ -2,7 +2,7 @@ use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::RuntimeError;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::{NodeInit, ModuleInit};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
@@ -98,8 +98,8 @@ pub trait KernelModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, RENodeModuleInit>,
+        _node_init: &NodeInit,
+        _node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

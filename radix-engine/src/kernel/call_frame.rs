@@ -1,6 +1,6 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::{NodeInit, ModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -8,7 +8,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateId, SubstateKey};
 
-use super::heap::{Heap, HeapRENode};
+use super::heap::{Heap, HeapNode};
 use super::kernel_api::LockInfo;
 use super::track::{Track, TrackError};
 
@@ -121,7 +121,7 @@ impl CallFrame {
     ) -> Result<LockHandle, RuntimeError> {
         self.check_node_visibility(&node_id)?;
         if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
-            let substate_id = SubstateId(node_id.clone(), module_id, offset.clone());
+            let substate_id = SubstateId(node_id.clone(), module_id, substate_key.clone());
             if heap.contains_node(&node_id) {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
                     return Err(RuntimeError::KernelError(KernelError::TrackError(
@@ -285,7 +285,7 @@ impl CallFrame {
             if !heap.contains_node(&node_id) {
                 track
                     .release_lock(
-                        SubstateId(node_id.clone(), module_id, offset.clone()),
+                        SubstateId(node_id.clone(), module_id, substate_key.clone()),
                         flags.contains(LockFlags::FORCE_WRITE),
                     )
                     .map_err(KernelError::TrackError)?;
@@ -457,8 +457,8 @@ impl CallFrame {
     pub fn create_node<'f, 's>(
         &mut self,
         node_id: NodeId,
-        re_node: RENodeInit,
-        node_modules: BTreeMap<TypedModuleId, RENodeModuleInit>,
+        re_node: NodeInit,
+        node_modules: BTreeMap<TypedModuleId, ModuleInit>,
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
@@ -470,11 +470,11 @@ impl CallFrame {
         }
         for (node_module_id, module_init) in node_modules {
             for (offset, substate) in module_init.to_substates() {
-                substates.insert((node_module_id, offset), substate);
+                substates.insert((node_module_id, substate_key), substate);
             }
         }
 
-        for ((_module_id, offset), substate) in &substates {
+        for ((_module_id, substate_key), substate) in &substates {
             let substate_ref = substate.to_ref();
             let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
@@ -510,16 +510,16 @@ impl CallFrame {
         }
 
         if push_to_store {
-            for ((module_id, offset), substate) in substates {
+            for ((module_id, substate_key), substate) in substates {
                 track
-                    .insert_substate(SubstateId(node_id, module_id, offset), substate)
+                    .insert_substate(SubstateId(node_id, module_id, substate_key), substate)
                     .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
             }
 
             self.add_ref(node_id, RENodeVisibilityOrigin::Normal);
         } else {
             // Insert node into heap
-            let heap_root_node = HeapRENode {
+            let heap_root_node = HeapNode {
                 substates,
                 //child_nodes,
             };
@@ -544,7 +544,7 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<HeapRENode, RuntimeError> {
+    ) -> Result<HeapNode, RuntimeError> {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
         for (_, substate) in &node.substates {
@@ -574,9 +574,9 @@ impl CallFrame {
         offset: &SubstateKey,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = if heap.contains_node(&node_id) {
-            heap.get_substate(node_id, module_id, offset)?
+            heap.get_substate(node_id, module_id, substate_key)?
         } else {
-            track.get_substate(node_id, module_id, offset)
+            track.get_substate(node_id, module_id, substate_key)
         };
 
         Ok(substate_ref)

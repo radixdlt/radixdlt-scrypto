@@ -6,7 +6,7 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::types::SubstateKey;
 
 #[derive(Debug)]
-pub enum RENodeModuleInit {
+pub enum ModuleInit {
     /* Type info */
     TypeInfo(TypeInfoSubstate),
 
@@ -23,20 +23,20 @@ pub enum RENodeModuleInit {
     ),
 }
 
-impl RENodeModuleInit {
+impl ModuleInit {
     pub fn to_substates(self) -> HashMap<SubstateKey, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateKey, RuntimeSubstate>::new();
         match self {
-            RENodeModuleInit::Metadata(metadata_substates) => {
+            ModuleInit::Metadata(metadata_substates) => {
                 substates.extend(metadata_substates);
             }
-            RENodeModuleInit::MethodAccessRules(access_rules) => {
+            ModuleInit::MethodAccessRules(access_rules) => {
                 substates.insert(AccessRulesOffset::AccessRules.into(), access_rules.into());
             }
-            RENodeModuleInit::TypeInfo(type_info) => {
+            ModuleInit::TypeInfo(type_info) => {
                 substates.insert(TypeInfoOffset::TypeInfo.into(), type_info.into());
             }
-            RENodeModuleInit::ComponentRoyalty(config, accumulator) => {
+            ModuleInit::ComponentRoyalty(config, accumulator) => {
                 substates.insert(RoyaltyOffset::Royalty.into(), config.into());
                 substates.insert(RoyaltyOffset::Royalty.into(), accumulator.into());
             }
@@ -47,20 +47,20 @@ impl RENodeModuleInit {
 }
 
 #[derive(Debug)]
-pub enum RENodeInit {
+pub enum NodeInit {
     GlobalObject(BTreeMap<SubstateKey, RuntimeSubstate>),
     Object(BTreeMap<SubstateKey, RuntimeSubstate>),
     KeyValueStore,
 }
 
-impl RENodeInit {
+impl NodeInit {
     pub fn to_substates(self) -> HashMap<SubstateKey, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateKey, RuntimeSubstate>::new();
         match self {
-            RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
+            NodeInit::GlobalObject(object_substates) | NodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }
-            RENodeInit::KeyValueStore => {}
+            NodeInit::KeyValueStore => {}
         };
 
         substates

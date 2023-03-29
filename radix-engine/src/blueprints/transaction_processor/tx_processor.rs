@@ -3,8 +3,8 @@ use crate::errors::ApplicationError;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::NodeInit;
+use crate::system::node::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -74,11 +74,11 @@ impl TransactionProcessorBlueprint {
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::Object)?;
         api.kernel_create_node(
             worktop_node_id,
-            RENodeInit::Object(btreemap!(
+            NodeInit::Object(btreemap!(
                 WorktopOffset::Worktop.into() => RuntimeSubstate::Worktop(WorktopSubstate::new())
             )),
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                     global: false,

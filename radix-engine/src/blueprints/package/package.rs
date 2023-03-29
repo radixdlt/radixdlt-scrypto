@@ -2,7 +2,7 @@ use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::{NodeInit, ModuleInit};
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
@@ -111,7 +111,7 @@ where
     // Can't use the ClientApi because of chicken-and-egg issue.
 
     // Prepare node init.
-    let node_init = RENodeInit::GlobalObject(btreemap!(
+    let node_init = NodeInit::GlobalObject(btreemap!(
         PackageOffset::Package.into() => info.into(),
         PackageOffset::Package.into() => code_type.into(),
         PackageOffset::Package.into() => code.into(),
@@ -123,7 +123,7 @@ where
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         TypedModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+        ModuleInit::TypeInfo(TypeInfoSubstate::Object {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
@@ -131,7 +131,7 @@ where
     );
     node_modules.insert(
         TypedModuleId::Metadata,
-        RENodeModuleInit::Metadata(
+        ModuleInit::Metadata(
             metadata
                 .into_iter()
                 .map(|(key, value)| {
@@ -149,13 +149,13 @@ where
     );
     node_modules.insert(
         TypedModuleId::AccessRules,
-        RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
+        ModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
             access_rules: access_rules,
         }),
     );
     node_modules.insert(
         TypedModuleId::Royalty,
-        RENodeModuleInit::ComponentRoyalty(
+        ModuleInit::ComponentRoyalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
             },

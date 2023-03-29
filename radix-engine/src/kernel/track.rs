@@ -1,6 +1,5 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
-use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
@@ -22,6 +21,9 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::Level;
 use radix_engine_interface::types::*;
+use radix_engine_stores::interface::{
+    AcquireLockError, StateDependencies, StateUpdates, SubstateDatabase, SubstateStore,
+};
 use sbor::rust::collections::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -61,21 +63,7 @@ pub struct LoadedSubstate {
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
     substate_db: &'s dyn SubstateDatabase,
-    loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TrackError {
-    NotFound(SubstateId),
-    SubstateLocked(SubstateId, LockState),
-    LockUnmodifiedBaseOnNewSubstate(SubstateId),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
-    ReferenceNotAllowed,
-}
-
-pub struct PreExecutionError {
-    pub fee_summary: FeeSummary,
-    pub error: FeeReserveError,
+    loaded_substates: IndexMap<(NodeId, ModuleId, SubstateKey), LoadedSubstate>,
 }
 
 impl<'s> SubstateStore for Track<'s> {

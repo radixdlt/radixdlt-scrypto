@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::{NodeInit, ModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
@@ -346,12 +346,12 @@ impl AccountNativePackage {
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
             let node_id = api.kernel_allocate_node_id(EntityType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore;
+            let node = NodeInit::KeyValueStore;
             api.kernel_create_node(
                 node_id,
                 node,
                 btreemap!(
-                    TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                    TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
                         KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
                     )
                 ),
@@ -402,12 +402,12 @@ impl AccountNativePackage {
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
             let node_id = api.kernel_allocate_node_id(EntityType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore;
+            let node = NodeInit::KeyValueStore;
             api.kernel_create_node(
                 node_id,
                 node,
                 btreemap!(
-                    TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                    TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
                         KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
                     )
                 ),

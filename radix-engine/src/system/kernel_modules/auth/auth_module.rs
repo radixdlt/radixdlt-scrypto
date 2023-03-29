@@ -13,8 +13,8 @@ use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::NodeInit;
+use crate::system::node::ModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
@@ -448,11 +448,11 @@ impl KernelModule for AuthModule {
         let auth_zone_node_id = api.kernel_allocate_node_id(EntityType::Object)?;
         api.kernel_create_node(
             auth_zone_node_id,
-            RENodeInit::Object(btreemap!(
+            NodeInit::Object(btreemap!(
                 AuthZoneOffset::AuthZone.into() => RuntimeSubstate::AuthZone(auth_zone)
             )),
             btreemap!(
-                TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: AUTH_ZONE_BLUEPRINT.to_owned(),
                     global: false
