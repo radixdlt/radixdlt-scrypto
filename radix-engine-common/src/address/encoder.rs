@@ -1,10 +1,9 @@
-use super::entity_type::EntityType;
 use super::hrpset::HrpSet;
 use crate::address::errors::EncodeBech32AddressError;
 use crate::network::NetworkDefinition;
+use crate::types::EntityType;
 use bech32::{self, ToBase32, Variant, WriteBase32};
-use sbor::rust::borrow::Cow;
-use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
 #[derive(Debug)]

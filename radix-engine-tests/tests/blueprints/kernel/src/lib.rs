@@ -12,7 +12,7 @@ mod read {
             ScryptoEnv
                 .sys_lock_substate(
                     NodeId::GlobalObject(component_address.into()),
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    TypeInfoOffset::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
                 .unwrap();

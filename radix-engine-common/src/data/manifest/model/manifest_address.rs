@@ -1,5 +1,5 @@
-use crate::address::EntityType;
 use crate::data::manifest::ManifestCustomValueKind;
+use crate::types::EntityType;
 use crate::types::NodeId;
 use crate::*;
 use sbor::rust::fmt;

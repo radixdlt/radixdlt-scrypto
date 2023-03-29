@@ -1,8 +1,9 @@
-use crate::address::{AddressDisplayContext, EntityType, NO_NETWORK};
+use crate::address::{AddressDisplayContext, NO_NETWORK};
 use crate::address::{Bech32Decoder, EncodeBech32AddressError};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::types::NodeId;
+use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 use sbor::rust::fmt;

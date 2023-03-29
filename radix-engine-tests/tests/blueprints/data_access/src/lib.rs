@@ -13,7 +13,7 @@ mod data_access {
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
                     NodeId::GlobalObject(component_address.into()),
-                    SubstateOffset::Component(ComponentOffset::State0),
+                    ComponentOffset::Component.into(),
                     LockFlags::read_only(),
                 )
                 .unwrap();
@@ -25,7 +25,7 @@ mod data_access {
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
                     NodeId::GlobalObject(component_address.into()),
-                    SubstateOffset::Component(ComponentOffset::State0),
+                    ComponentOffset::Component.into(),
                     LockFlags::MUTABLE,
                 )
                 .unwrap();

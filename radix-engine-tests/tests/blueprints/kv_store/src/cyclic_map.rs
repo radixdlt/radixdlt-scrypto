@@ -23,7 +23,7 @@ mod cyclic_map {
             };
 
             let node_id = NodeId::KeyValueStore(kv_store1_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+            let offset = SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
             let substate: Option<ScryptoValue> = Option::Some(
@@ -53,7 +53,7 @@ mod cyclic_map {
             let kv_store_id = kv_store.id.clone();
 
             let node_id = NodeId::KeyValueStore(kv_store_id.clone());
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+            let offset = SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&0u32).unwrap(),
             ));
             let substate: Option<ScryptoValue> = Option::Some(

@@ -10,7 +10,7 @@ pub use local_address::*;
 pub use package_address::*;
 pub use resource_address::*;
 
-use crate::address::EntityType;
+use crate::types::EntityType;
 
 pub const fn component_address(entity_type: EntityType, last_byte: u8) -> ComponentAddress {
     ComponentAddress::new_unchecked([

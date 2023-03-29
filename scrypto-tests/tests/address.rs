@@ -1,6 +1,6 @@
 use bech32::{self, ToBase32, Variant};
 use scrypto::{
-    address::{Bech32Decoder, Bech32Encoder, DecodeBech32AddressError, EntityType},
+    address::{Bech32Decoder, Bech32Encoder, DecodeBech32AddressError},
     network::NetworkDefinition,
     prelude::*,
 };

@@ -26,7 +26,7 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
+                ComponentOffset::Component.into(),
                 RESOURCE_MANAGER_PACKAGE,
                 ..
             ))
@@ -57,7 +57,7 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
+                ComponentOffset::Component.into(),
                 RESOURCE_MANAGER_PACKAGE,
                 ..
             ))

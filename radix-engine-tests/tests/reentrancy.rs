@@ -41,7 +41,7 @@ fn mut_reentrancy_should_not_be_possible() {
                 SubstateId(
                     NodeId::GlobalObject(..),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Component(ComponentOffset::State0)
+                    ComponentOffset::Component.into()
                 ),
                 LockState::Write
             )))
@@ -117,7 +117,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
                 SubstateId(
                     NodeId::GlobalObject(..),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Component(ComponentOffset::State0)
+                    ComponentOffset::Component.into()
                 ),
                 LockState::Read(1),
             )))

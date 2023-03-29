@@ -1,9 +1,9 @@
 use super::hrpset::HrpSet;
-use super::{entity_type::EntityType, errors::DecodeBech32AddressError};
+use crate::address::DecodeBech32AddressError;
 use crate::network::NetworkDefinition;
-use sbor::rust::vec::Vec;
-
+use crate::types::EntityType;
 use bech32::{self, FromBase32, Variant};
+use sbor::rust::prelude::*;
 
 /// Represents a decoder which understands how to decode Scrypto addresses in Bech32.
 pub struct Bech32Decoder {
