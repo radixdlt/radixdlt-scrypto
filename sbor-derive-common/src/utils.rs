@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::io::Write;
 use std::process::Command;
@@ -41,13 +41,13 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
 pub fn extract_attributes(
     attrs: &[Attribute],
     name: &str,
-) -> Option<HashMap<String, Option<String>>> {
+) -> Option<BTreeMap<String, Option<String>>> {
     for attr in attrs {
         if !attr.path.is_ident(name) {
             continue;
         }
 
-        let mut fields = HashMap::new();
+        let mut fields = BTreeMap::new();
         if let Ok(meta) = attr.parse_meta() {
             if let Meta::List(MetaList { nested, .. }) = meta {
                 nested.into_iter().for_each(|m| match m {
@@ -603,7 +603,7 @@ mod tests {
         };
         assert_eq!(
             extract_attributes(&[attr.clone()], "sbor"),
-            Some(HashMap::from([
+            Some(BTreeMap::from([
                 ("skip".to_owned(), None),
                 (
                     "custom_value_kind".to_owned(),
@@ -620,6 +620,9 @@ mod tests {
             #[mutable]
         };
         assert_eq!(extract_attributes(&[attr.clone()], "sbor"), None);
-        assert_eq!(extract_attributes(&[attr], "mutable"), Some(HashMap::new()));
+        assert_eq!(
+            extract_attributes(&[attr], "mutable"),
+            Some(BTreeMap::new())
+        );
     }
 }
