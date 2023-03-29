@@ -424,7 +424,7 @@ impl AccessControllerNativePackage {
         };
 
         let substate =
-            AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
+            AccessControllerSubstate::new(vault.0 .0, input.timed_recovery_delay_in_minutes);
         let object_id = api.new_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
@@ -437,11 +437,11 @@ impl AccessControllerNativePackage {
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
-            NodeId::Object(object_id),
+            object_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
         )?;
 
@@ -930,7 +930,7 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let offset = AccessControllerOffset::AccessController.into();
-    let handle = api.sys_lock_substate(receiver, offset, LockFlags::read_only())?;
+    let handle = api.sys_lock_substate(receiver, &offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -954,7 +954,7 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = AccessControllerOffset::AccessController.into();
-    let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
+    let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;

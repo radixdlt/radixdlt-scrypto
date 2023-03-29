@@ -190,13 +190,13 @@ impl ClockNativePackage {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let address = ComponentAddress::Clock(input.component_address);
+        let address = ComponentAddress::new_unchecked(input.component_address);
         api.globalize_with_address(
-            NodeId::Object(clock_id),
+            clock_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;
@@ -220,8 +220,11 @@ impl ClockNativePackage {
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        let handle =
-            api.sys_lock_substate(receiver, ClockOffset::Clock.into(), LockFlags::MUTABLE)?;
+        let handle = api.sys_lock_substate(
+            receiver,
+            &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+            LockFlags::MUTABLE,
+        )?;
         let current_time_rounded_to_minutes_substate: &mut ClockSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
         current_time_rounded_to_minutes_substate.current_time_rounded_to_minutes_ms =
@@ -246,7 +249,7 @@ impl ClockNativePackage {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
                     receiver,
-                    ClockOffset::Clock.into(),
+                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;
@@ -274,7 +277,7 @@ impl ClockNativePackage {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
                     receiver,
-                    ClockOffset::Clock.into(),
+                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;

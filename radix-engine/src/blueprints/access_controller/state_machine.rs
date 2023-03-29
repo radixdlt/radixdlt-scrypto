@@ -7,6 +7,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::time::TimeComparisonOperator;
 
 use super::{
@@ -63,7 +64,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         // controller is in recovery or normal operations.
         match self.state {
             (PrimaryRoleState::Unlocked, _, _) => {
-                Vault(self.controlled_asset).sys_create_proof(api)
+                Vault(Own(self.controlled_asset)).sys_create_proof(api)
             }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
         }

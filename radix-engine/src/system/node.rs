@@ -37,8 +37,8 @@ impl ModuleInit {
                 substates.insert(TypeInfoOffset::TypeInfo.into(), type_info.into());
             }
             ModuleInit::Royalty(config, accumulator) => {
-                substates.insert(RoyaltyOffset::Royalty.into(), config.into());
-                substates.insert(RoyaltyOffset::Royalty.into(), accumulator.into());
+                substates.insert(RoyaltyOffset::RoyaltyConfig.into(), config.into());
+                substates.insert(RoyaltyOffset::RoyaltyAccumulator.into(), accumulator.into());
             }
         }
 

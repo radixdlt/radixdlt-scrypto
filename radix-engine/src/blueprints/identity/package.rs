@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::{NodeInit, ModuleInit};
+use crate::system::node::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
@@ -95,9 +95,9 @@ impl IdentityNativePackage {
         let address = api.globalize(
             node_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
         )?;
         Ok(IndexedScryptoValue::from_typed(&address))

@@ -2,7 +2,7 @@ use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::RuntimeError;
-use crate::system::node::{NodeInit, ModuleInit};
+use crate::system::node::{ModuleInit, NodeInit};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;

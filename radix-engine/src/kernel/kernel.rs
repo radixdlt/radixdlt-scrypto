@@ -17,7 +17,7 @@ use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::node::{NodeInit, ModuleInit};
+use crate::system::node::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
@@ -137,7 +137,7 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
             let kv_store_id = {
-                let node_id = self.kernel_allocate_node_id(EntityType::KeyValueStore)?;
+                let node_id = self.kernel_allocate_node_id(EntityType::InternalKeyValueStore)?;
                 let node = NodeInit::KeyValueStore;
                 self.kernel_create_node(
                     node_id,
@@ -202,9 +202,9 @@ where
         self.globalize_with_address(
             component_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
             global_node_id.into(),
         )?;
@@ -237,9 +237,9 @@ where
         self.globalize_with_address(
             local_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
             global_node_id.into(),
         )?;
@@ -924,7 +924,10 @@ where
                             )
                             .map_err(|_| err.clone())?;
                         self.track
-                            .release_lock(SubstateId(node_id, module_id, substate_key.clone()), false)
+                            .release_lock(
+                                SubstateId(node_id, module_id, substate_key.clone()),
+                                false,
+                            )
                             .map_err(|_| err)?;
                         self.current_frame
                             .add_ref(node_id, RENodeVisibilityOrigin::Normal);

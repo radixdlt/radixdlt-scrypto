@@ -73,14 +73,14 @@ pub fn extract_refs_from_instruction(
             value,
             ..
         } => {
-            global_references.insert(entity_address.into());
+            global_references.insert(entity_address.clone());
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(value).unwrap()).unwrap();
             extract_refs_from_value(&value, global_references, local_references);
         }
         Instruction::RemoveMetadata { entity_address, .. }
         | Instruction::SetMethodAccessRule { entity_address, .. } => {
-            global_references.insert(entity_address.into());
+            global_references.insert(entity_address.clone());
         }
         Instruction::RecallResource { vault_id, .. } => {
             // TODO: This needs to be cleaned up

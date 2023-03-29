@@ -105,7 +105,8 @@ pub trait KernelApi<W: WasmEngine, E>:
 pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
-    fn kernel_get_node_visibility_origin(&self, node_id: &NodeId) -> Option<RENodeVisibilityOrigin>;
+    fn kernel_get_node_visibility_origin(&self, node_id: &NodeId)
+        -> Option<RENodeVisibilityOrigin>;
 
     fn kernel_get_current_depth(&self) -> usize;
 

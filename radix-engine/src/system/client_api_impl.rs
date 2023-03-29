@@ -5,8 +5,8 @@ use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
-use crate::system::node::NodeInit;
 use crate::system::node::ModuleInit;
+use crate::system::node::NodeInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
@@ -474,8 +474,7 @@ where
                         .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
-                    module_init
-                        .insert(module_id, ModuleInit::AccessRules(access_rules));
+                    module_init.insert(module_id, ModuleInit::AccessRules(access_rules));
                 }
                 TypedModuleId::Metadata => {
                     let node_id = NodeId::Object(object_id);
@@ -501,10 +500,7 @@ where
                         }
                     }
 
-                    module_init.insert(
-                        TypedModuleId::Metadata,
-                        ModuleInit::Metadata(substates),
-                    );
+                    module_init.insert(TypedModuleId::Metadata, ModuleInit::Metadata(substates));
                 }
                 TypedModuleId::Royalty => {
                     let node_id = NodeId::Object(object_id);
@@ -634,7 +630,7 @@ where
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let node_id = self.kernel_allocate_node_id(EntityType::KeyValueStore)?;
+        let node_id = self.kernel_allocate_node_id(EntityType::InternalKeyValueStore)?;
 
         self.kernel_create_node(
             node_id,

@@ -10,7 +10,7 @@ pub const CLOCK_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ClockCreateInput {
-    pub component_address: [u8; 26], // TODO: Clean this up
+    pub component_address: [u8; 27], // TODO: Clean this up
 }
 
 pub type ClockCreateOutput = ComponentAddress;

@@ -290,8 +290,8 @@ where
         btreemap!(
             TypedModuleId::AccessRules => resman_access_rules.id(),
             TypedModuleId::AccessRules1 => vault_access_rules.id(),
-            TypedModuleId::Metadata => metadata.id(),
-            TypedModuleId::Royalty => royalty.id(),
+            TypedModuleId::Metadata => metadata.0,
+            TypedModuleId::Royalty => royalty.0,
         ),
         resource_address.into(),
     )?;

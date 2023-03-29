@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::{NodeInit, ModuleInit};
+use crate::system::node::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
@@ -345,7 +345,7 @@ impl AccountNativePackage {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
-            let node_id = api.kernel_allocate_node_id(EntityType::KeyValueStore)?;
+            let node_id = api.kernel_allocate_node_id(EntityType::InternalKeyValueStore)?;
             let node = NodeInit::KeyValueStore;
             api.kernel_create_node(
                 node_id,
@@ -361,7 +361,7 @@ impl AccountNativePackage {
 
         let account_id = {
             let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id.into()),
+                vaults: Own(kv_store_id),
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
@@ -376,11 +376,11 @@ impl AccountNativePackage {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
-            NodeId::Object(account_id),
+            account_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
         )?;
 
@@ -401,7 +401,7 @@ impl AccountNativePackage {
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
         let kv_store_id = {
-            let node_id = api.kernel_allocate_node_id(EntityType::KeyValueStore)?;
+            let node_id = api.kernel_allocate_node_id(EntityType::InternalKeyValueStore)?;
             let node = NodeInit::KeyValueStore;
             api.kernel_create_node(
                 node_id,
@@ -417,7 +417,7 @@ impl AccountNativePackage {
 
         let account_id = {
             let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id.into()),
+                vaults: Own(kv_store_id),
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
@@ -425,7 +425,7 @@ impl AccountNativePackage {
             )?
         };
 
-        Ok(IndexedScryptoValue::from_typed(&Own::Object(account_id)))
+        Ok(IndexedScryptoValue::from_typed(&Own(account_id)))
     }
 
     fn lock_fee_internal<Y>(
@@ -443,17 +443,16 @@ impl AccountNativePackage {
 
         let handle = api.sys_lock_substate(
             receiver,
-            AccountOffset::Account.into(),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = NodeId::KeyValueStore(kv_store_id);
-            let handle = api.sys_lock_substate(node_id, &substate_key, LockFlags::read_only())?;
+            let own = account.vaults;
+            let handle =
+                api.sys_lock_substate(own.as_node_id(), &substate_key, LockFlags::read_only())?;
             handle
         };
 
@@ -464,7 +463,7 @@ impl AccountNativePackage {
 
             match entry {
                 Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!")),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
@@ -536,17 +535,16 @@ impl AccountNativePackage {
 
         let handle = api.sys_lock_substate(
             receiver,
-            AccountOffset::Account.into(),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = NodeId::KeyValueStore(kv_store_id);
-            let handle = api.sys_lock_substate(node_id, &substate_key, LockFlags::MUTABLE)?;
+            let own = account.vaults;
+            let handle =
+                api.sys_lock_substate(own.as_node_id(), &substate_key, LockFlags::MUTABLE)?;
             handle
         };
 
@@ -558,11 +556,11 @@ impl AccountNativePackage {
 
             match entry {
                 Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!"),
                 Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
+                    let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                     let entry: &mut Option<ScryptoValue> =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
@@ -596,7 +594,7 @@ impl AccountNativePackage {
 
         let handle = api.sys_lock_substate(
             receiver,
-            AccountOffset::Account.into(),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -612,10 +610,9 @@ impl AccountNativePackage {
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
                 let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-                let kv_store_id = account.vaults.key_value_store_id();
-
-                let node_id = NodeId::KeyValueStore(kv_store_id);
-                let handle = api.sys_lock_substate(node_id, &substate_key, LockFlags::MUTABLE)?;
+                let own = account.vaults;
+                let handle =
+                    api.sys_lock_substate(own.as_node_id(), &substate_key, LockFlags::MUTABLE)?;
                 handle
             };
 
@@ -627,11 +624,11 @@ impl AccountNativePackage {
 
                 match entry {
                     Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
+                        .map(|own| Vault(own))
                         .expect("Impossible Case!"),
                     Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
+                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                         let entry: &mut Option<ScryptoValue> =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
@@ -663,21 +660,20 @@ impl AccountNativePackage {
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).unwrap();
 
         let handle = api.sys_lock_substate(
             receiver,
-            AccountOffset::Account.into(),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = NodeId::KeyValueStore(kv_store_id);
-            let substate_key = SubstateKey::from(encoded_key).unwrap();
-            let handle = api.sys_lock_substate(node_id, substate_key, LockFlags::read_only())?;
+            let own = account.vaults;
+            let handle =
+                api.sys_lock_substate(own.as_node_id(), &substate_key, LockFlags::read_only())?;
             handle
         };
 
@@ -688,7 +684,7 @@ impl AccountNativePackage {
 
             match entry {
                 Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!")),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }

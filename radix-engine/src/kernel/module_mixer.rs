@@ -16,8 +16,8 @@ use crate::system::kernel_modules::transaction_limits::{
     TransactionLimitsConfig, TransactionLimitsModule,
 };
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::node::NodeInit;
 use crate::system::node::ModuleInit;
+use crate::system::node::NodeInit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -622,13 +622,31 @@ impl KernelModule for KernelModuleMixer {
             LoggerModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            TransactionRuntimeModule::before_lock_substate(
+                api,
+                node_id,
+                module_id,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            ExecutionTraceModule::before_lock_substate(
+                api,
+                node_id,
+                module_id,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            TransactionLimitsModule::before_lock_substate(
+                api,
+                node_id,
+                module_id,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::EVENTS) {
             EventsModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
