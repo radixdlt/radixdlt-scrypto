@@ -214,7 +214,7 @@ where
     }
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.get_fn_identifier()?;
+        let actor = self.api.get_blueprint()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)

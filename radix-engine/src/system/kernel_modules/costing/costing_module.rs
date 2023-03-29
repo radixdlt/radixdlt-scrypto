@@ -147,11 +147,7 @@ impl KernelModule for CostingModule {
                 }
             };
 
-            (
-                blueprint,
-                ident,
-                maybe_component,
-            )
+            (blueprint, ident, maybe_component)
         };
 
         //===========================

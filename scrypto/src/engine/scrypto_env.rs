@@ -232,8 +232,8 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_actor() });
+    fn get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+        let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }

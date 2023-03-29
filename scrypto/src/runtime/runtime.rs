@@ -1,5 +1,4 @@
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::types::FnIdentifier;
 use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -36,8 +35,8 @@ impl Runtime {
     }
 
     /// Returns the running entity.
-    pub fn actor() -> FnIdentifier {
-        ScryptoEnv.get_fn_identifier().unwrap()
+    pub fn blueprint() -> Blueprint {
+        ScryptoEnv.get_blueprint().unwrap()
     }
 
     pub fn global_address() -> ComponentAddress {
@@ -47,7 +46,7 @@ impl Runtime {
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        Self::actor().package_address
+        Self::blueprint().package_address
     }
 
     pub fn package_token() -> NonFungibleGlobalId {

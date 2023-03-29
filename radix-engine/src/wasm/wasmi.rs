@@ -630,7 +630,7 @@ impl WasmiModule {
             },
         );
 
-        let host_get_actor = Func::wrap(
+        let host_get_blueprint = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
                 get_actor(caller).map_err(|e| e.into())
@@ -734,7 +734,7 @@ impl WasmiModule {
             GET_GLOBAL_ADDRESS_FUNCTION_NAME,
             host_get_global_address
         );
-        linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_actor);
+        linker_define!(linker, GET_BLUEPRINT_FUNCTION_NAME, host_get_blueprint);
         linker_define!(linker, GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
         linker_define!(
             linker,

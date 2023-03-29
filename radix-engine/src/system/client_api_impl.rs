@@ -719,10 +719,10 @@ where
             ))
     }
 
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+    fn get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self.kernel_get_current_actor().unwrap().fn_identifier())
+        Ok(self.kernel_get_current_actor().unwrap().blueprint())
     }
 }
 

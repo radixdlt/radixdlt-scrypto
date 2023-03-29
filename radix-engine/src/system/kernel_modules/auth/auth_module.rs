@@ -7,7 +7,7 @@ use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
-use crate::kernel::actor::{Actor};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -61,7 +61,10 @@ impl AuthModule {
         match actor {
             Some(actor) => {
                 let blueprint = actor.blueprint();
-                blueprint.eq(&Blueprint::new(&TRANSACTION_PROCESSOR_PACKAGE, TRANSACTION_PROCESSOR_BLUEPRINT))
+                blueprint.eq(&Blueprint::new(
+                    &TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                ))
             }
             None => false,
         }

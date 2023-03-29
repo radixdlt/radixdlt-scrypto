@@ -1,3 +1,4 @@
+mod blueprint;
 mod costing_reason;
 mod event_id;
 mod indexed_value;
@@ -9,7 +10,6 @@ mod re_node_ids;
 mod royalty_config;
 mod traits;
 mod wasm;
-mod blueprint;
 
 pub use blueprint::*;
 pub use costing_reason::*;

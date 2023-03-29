@@ -43,39 +43,6 @@ impl Actor {
         }
     }
 
-    pub fn fn_identifier(&self) -> FnIdentifier {
-        match self {
-            Actor::Method {
-                package_address,
-                blueprint_name,
-                ident,
-                ..
-            } => FnIdentifier::application_ident(
-                package_address.clone(),
-                blueprint_name.clone(),
-                ident.clone(),
-            ),
-            Actor::Function {
-                package_address,
-                blueprint_name,
-                ident,
-            } => FnIdentifier::application_ident(
-                package_address.clone(),
-                blueprint_name.clone(),
-                ident.clone(),
-            ),
-            Actor::VirtualLazyLoad {
-                package_address,
-                blueprint_name,
-                ident,
-            } => FnIdentifier::system_ident(
-                package_address.clone(),
-                blueprint_name.clone(),
-                ident.clone(),
-            ),
-        }
-    }
-
     pub fn package_address(&self) -> &PackageAddress {
         match &self {
             Actor::Method {
