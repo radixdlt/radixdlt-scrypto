@@ -421,10 +421,21 @@ pub mod collections {
         #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct NonIterMap<K: Eq + Hash, V>(HashMap<K, V>);
 
+        #[cfg(feature = "alloc")]
+        pub type Entry<'a, K, V> =
+            hashbrown::hash_map::Entry<'a, K, V, hashbrown::hash_map::DefaultHashBuilder>;
+        #[cfg(not(feature = "alloc"))]
+        pub type Entry<'a, K, V> = std::collections::hash_map::Entry<'a, K, V>;
+
         impl<K: Hash + Eq, V> NonIterMap<K, V> {
             /// Creates an empty map.
             pub fn new() -> Self {
                 Self(HashMap::new())
+            }
+
+            /// Gets the given key's corresponding entry in the map for in-place manipulation.
+            pub fn entry(&mut self, key: K) -> Entry<K, V> {
+                self.0.entry(key)
             }
 
             /// Inserts a key-value pair into the map.

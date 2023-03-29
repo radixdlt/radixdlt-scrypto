@@ -159,11 +159,10 @@ impl CallFrame {
         }
 
         for node_id in &temp_references {
-            if let Some(count) = self.temp_node_refs.get_mut(&node_id) {
-                *count += 1;
-            } else {
-                self.temp_node_refs.insert(node_id.clone(), 1);
-            }
+            self.temp_node_refs
+                .entry(node_id.clone())
+                .or_default()
+                .add_assign(1);
         }
 
         let lock_handle = self.next_lock_handle;
@@ -425,13 +424,14 @@ impl CallFrame {
                 .get(&node_id)
                 .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
 
-            if let Some(existing_ref_data) = to.immortal_node_refs.get_mut(&node_id) {
-                if existing_ref_data.visibility == RENodeVisibilityOrigin::DirectAccess {
-                    existing_ref_data.visibility = ref_data.visibility;
-                }
-            } else {
-                to.immortal_node_refs.insert(node_id, ref_data.clone());
-            }
+            to.immortal_node_refs
+                .entry(node_id)
+                .and_modify(|e| {
+                    if e.visibility == RENodeVisibilityOrigin::DirectAccess {
+                        e.visibility = ref_data.visibility
+                    }
+                })
+                .or_insert(ref_data.clone());
         }
 
         Ok(())
