@@ -23,8 +23,28 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn blueprint(&self) -> Blueprint {
+        match self {
+            Actor::Method {
+                package_address,
+                blueprint_name,
+                ..
+            } => Blueprint::new(package_address, blueprint_name.as_str()),
+            Actor::Function {
+                package_address,
+                blueprint_name,
+                ..
+            } => Blueprint::new(package_address, blueprint_name.as_str()),
+            Actor::VirtualLazyLoad {
+                package_address,
+                blueprint_name,
+                ..
+            } => Blueprint::new(package_address, blueprint_name.as_str()),
+        }
+    }
+
     pub fn fn_identifier(&self) -> FnIdentifier {
-        match &self {
+        match self {
             Actor::Method {
                 package_address,
                 blueprint_name,

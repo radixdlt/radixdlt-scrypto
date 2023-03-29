@@ -7,7 +7,7 @@ use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -60,9 +60,8 @@ impl AuthModule {
     fn is_transaction_processor(actor: &Option<Actor>) -> bool {
         match actor {
             Some(actor) => {
-                let fn_identifier = actor.fn_identifier();
-                fn_identifier.package_address == TRANSACTION_PROCESSOR_PACKAGE
-                    && fn_identifier.blueprint_name == TRANSACTION_PROCESSOR_BLUEPRINT
+                let blueprint = actor.blueprint();
+                blueprint.eq(&Blueprint::new(&TRANSACTION_PROCESSOR_PACKAGE, TRANSACTION_PROCESSOR_BLUEPRINT))
             }
             None => false,
         }
