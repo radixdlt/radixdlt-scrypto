@@ -1,6 +1,5 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
-use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
@@ -71,7 +70,7 @@ pub enum TrackError {
     SubstateLocked(SubstateId, LockState),
     LockUnmodifiedBaseOnNewSubstate(SubstateId),
     LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
-    InternalRefNotAllowed,
+    ReferenceNotAllowed,
 }
 
 pub struct PreExecutionError {

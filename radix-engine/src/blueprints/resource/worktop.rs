@@ -47,10 +47,7 @@ impl WorktopBlueprint {
         let mut node = api.kernel_drop_node(&NodeId::Object(input.worktop.id()))?;
         let substate = node
             .substates
-            .remove(&(
-                TypedModuleId::ObjectState,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-            ))
+            .remove(&(TypedModuleId::ObjectState, WorktopOffset::Worktop.into()))
             .unwrap();
         let worktop: WorktopSubstate = substate.into();
         for (_, bucket) in worktop.resources {
@@ -80,11 +77,8 @@ impl WorktopBlueprint {
             input.bucket.sys_burn(api)?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
-            let worktop_handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+            let worktop_handle =
+                api.sys_lock_substate(receiver, WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
             let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
             if let Some(own) = worktop.resources.get(&resource_address).cloned() {
                 Bucket(own.bucket_id()).sys_put(input.bucket, api)?;
@@ -117,11 +111,8 @@ impl WorktopBlueprint {
             let bucket = ResourceManager(resource_address).new_empty_bucket(api)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
-            let worktop_handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+            let worktop_handle =
+                api.sys_lock_substate(receiver, WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
             let mut worktop: &mut WorktopSubstate =
                 api.kernel_get_substate_ref_mut(worktop_handle)?;
             let existing_bucket = Bucket(
@@ -173,11 +164,8 @@ impl WorktopBlueprint {
             let bucket = ResourceManager(resource_address).new_empty_bucket(api)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
-            let worktop_handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-                LockFlags::MUTABLE,
-            )?;
+            let worktop_handle =
+                api.sys_lock_substate(receiver, WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
             let mut worktop: &mut WorktopSubstate =
                 api.kernel_get_substate_ref_mut(worktop_handle)?;
             let existing_bucket = Bucket(
@@ -222,11 +210,8 @@ impl WorktopBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let worktop_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Worktop(WorktopOffset::Worktop),
-            LockFlags::MUTABLE,
-        )?;
+        let worktop_handle =
+            api.sys_lock_substate(receiver, WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
         let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
         if let Some(bucket) = worktop.resources.remove(&input.resource_address) {
             // Move
@@ -252,8 +237,8 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            receiver,
+            WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
@@ -284,8 +269,8 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            receiver,
+            WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
@@ -316,8 +301,8 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Worktop(WorktopOffset::Worktop),
+            receiver,
+            WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
@@ -348,11 +333,8 @@ impl WorktopBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let worktop_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Worktop(WorktopOffset::Worktop),
-            LockFlags::MUTABLE,
-        )?;
+        let worktop_handle =
+            api.sys_lock_substate(receiver, WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
         let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
         worktop.resources.clear();

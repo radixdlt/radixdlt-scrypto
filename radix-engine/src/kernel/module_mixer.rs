@@ -602,7 +602,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &NodeId,
         module_id: &TypedModuleId,
-        offset: &SubstateOffset,
+        offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

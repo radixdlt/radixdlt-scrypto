@@ -929,8 +929,8 @@ where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
-    let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::read_only())?;
+    let offset = AccessControllerOffset::AccessController.into();
+    let handle = api.sys_lock_substate(receiver, offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -953,8 +953,8 @@ where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
-    let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
+    let offset = AccessControllerOffset::AccessController.into();
+    let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;

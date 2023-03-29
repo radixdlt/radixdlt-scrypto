@@ -1,7 +1,5 @@
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::ledger::StateUpdates;
-use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
 use crate::system::kernel_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
@@ -10,8 +8,9 @@ use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
+use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
+use radix_engine_stores::interface::StateUpdates;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]

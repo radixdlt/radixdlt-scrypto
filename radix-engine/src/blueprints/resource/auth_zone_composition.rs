@@ -6,7 +6,7 @@ use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{types::*, LockFlags};
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 
 use super::AuthZoneError;
@@ -27,12 +27,12 @@ impl From<ComposedProof> for RENodeInit {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof) => RENodeInit::Object(btreemap!(
-                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(info),
-                SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(proof),
+                ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(info),
+                ProofOffset::Proof.into() => RuntimeSubstate::FungibleProof(proof),
             )),
             ComposedProof::NonFungible(info, proof) => RENodeInit::Object(btreemap!(
-                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(info),
-                SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(proof),
+                ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(info),
+                ProofOffset::Proof.into() => RuntimeSubstate::NonFungibleProof(proof),
             )),
         }
     }
@@ -147,7 +147,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     for proof in proofs {
         let handle = api.sys_lock_substate(
             NodeId::Object(proof.0),
-            SubstateOffset::Proof(ProofOffset::Info),
+            ProofOffset::Proof.into(),
             LockFlags::read_only(),
         )?;
         let proof_info: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -156,7 +156,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
 
             let handle = api.sys_lock_substate(
                 NodeId::Object(proof.0),
-                SubstateOffset::Proof(ProofOffset::Fungible),
+                ProofOffset::Proof.into(),
                 LockFlags::read_only(),
             )?;
             let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -197,7 +197,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     for proof in proofs {
         let handle = api.sys_lock_substate(
             NodeId::Object(proof.0),
-            SubstateOffset::Proof(ProofOffset::Info),
+            ProofOffset::Proof.into(),
             LockFlags::read_only(),
         )?;
         let proof_info: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -206,7 +206,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
 
             let handle = api.sys_lock_substate(
                 NodeId::Object(proof.0),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
+                ProofOffset::Proof.into(),
                 LockFlags::read_only(),
             )?;
             let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -254,7 +254,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
             NodeId::Object(proof.0),
-            SubstateOffset::Proof(ProofOffset::Fungible),
+            ProofOffset::Proof.into(),
             LockFlags::read_only(),
         )?;
         let substate: &FungibleProof = api.kernel_get_substate_ref(handle)?;
@@ -337,7 +337,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
             NodeId::Object(proof.0),
-            SubstateOffset::Proof(ProofOffset::NonFungible),
+            ProofOffset::Proof.into(),
             LockFlags::read_only(),
         )?;
         let substate: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;

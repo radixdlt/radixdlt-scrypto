@@ -6,7 +6,7 @@ use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::types::{LockHandle, NodeId, SubstateId, SubstateOffset};
+use radix_engine_interface::types::{LockHandle, NodeId, SubstateId, SubstateKey};
 
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;
@@ -64,7 +64,7 @@ pub enum RENodeVisibilityOrigin {
 pub struct SubstateLock {
     pub node_id: NodeId,
     pub module_id: TypedModuleId,
-    pub offset: SubstateOffset,
+    pub substate_key: SubstateKey,
     pub temp_references: HashSet<NodeId>,
     pub substate_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
@@ -116,11 +116,11 @@ impl CallFrame {
         track: &mut Track<'s>,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        offset: SubstateOffset,
+        substate_key: SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         self.check_node_visibility(&node_id)?;
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))) {
+        if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
             let substate_id = SubstateId(node_id.clone(), module_id, offset.clone());
             if heap.contains_node(&node_id) {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -242,7 +242,7 @@ impl CallFrame {
                 if let Ok(info) = heap.get_substate(
                     child_id,
                     TypedModuleId::TypeInfo,
-                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    &TypeInfoOffset::TypeInfo.into(),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
@@ -281,7 +281,7 @@ impl CallFrame {
 
         let flags = substate_lock.flags;
 
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))) {
+        if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
             if !heap.contains_node(&node_id) {
                 track
                     .release_lock(
@@ -484,7 +484,7 @@ impl CallFrame {
                 if let Ok(info) = heap.get_substate(
                     &child_id,
                     TypedModuleId::TypeInfo,
-                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    &TypeInfoOffset::TypeInfo.into(),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
@@ -571,7 +571,7 @@ impl CallFrame {
         track: &'f mut Track<'s>,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        offset: &SubstateOffset,
+        offset: &SubstateKey,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = if heap.contains_node(&node_id) {
             heap.get_substate(node_id, module_id, offset)?

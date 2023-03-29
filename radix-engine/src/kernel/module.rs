@@ -134,7 +134,7 @@ pub trait KernelModule {
         _api: &mut Y,
         _node_id: &NodeId,
         _module_id: &TypedModuleId,
-        _offset: &SubstateOffset,
+        _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         Ok(())

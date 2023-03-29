@@ -3,7 +3,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::types::SubstateOffset;
+use radix_engine_interface::types::SubstateKey;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -11,7 +11,7 @@ pub enum RENodeModuleInit {
     TypeInfo(TypeInfoSubstate),
 
     /* Metadata */
-    Metadata(BTreeMap<SubstateOffset, RuntimeSubstate>),
+    Metadata(BTreeMap<SubstateKey, RuntimeSubstate>),
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
@@ -24,33 +24,21 @@ pub enum RENodeModuleInit {
 }
 
 impl RENodeModuleInit {
-    pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
+    pub fn to_substates(self) -> HashMap<SubstateKey, RuntimeSubstate> {
+        let mut substates = HashMap::<SubstateKey, RuntimeSubstate>::new();
         match self {
             RENodeModuleInit::Metadata(metadata_substates) => {
                 substates.extend(metadata_substates);
             }
             RENodeModuleInit::MethodAccessRules(access_rules) => {
-                substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                    access_rules.into(),
-                );
+                substates.insert(AccessRulesOffset::AccessRules.into(), access_rules.into());
             }
             RENodeModuleInit::TypeInfo(type_info) => {
-                substates.insert(
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    type_info.into(),
-                );
+                substates.insert(TypeInfoOffset::TypeInfo.into(), type_info.into());
             }
             RENodeModuleInit::ComponentRoyalty(config, accumulator) => {
-                substates.insert(
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-                    config.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                    accumulator.into(),
-                );
+                substates.insert(RoyaltyOffset::Royalty.into(), config.into());
+                substates.insert(RoyaltyOffset::Royalty.into(), accumulator.into());
             }
         }
 
@@ -60,14 +48,14 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
-    Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
+    GlobalObject(BTreeMap<SubstateKey, RuntimeSubstate>),
+    Object(BTreeMap<SubstateKey, RuntimeSubstate>),
     KeyValueStore,
 }
 
 impl RENodeInit {
-    pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
+    pub fn to_substates(self) -> HashMap<SubstateKey, RuntimeSubstate> {
+        let mut substates = HashMap::<SubstateKey, RuntimeSubstate>::new();
         match self {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);

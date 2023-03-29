@@ -175,10 +175,10 @@ where
         let node_id =
             scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let offset =
-            scrypto_decode::<SubstateOffset>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
+            scrypto_decode::<SubstateKey>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.sys_lock_substate(node_id, offset, flags)?;
+        let handle = self.api.sys_lock_substate(node_id, substate_key, flags)?;
 
         Ok(handle)
     }

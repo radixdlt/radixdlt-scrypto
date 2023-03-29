@@ -68,7 +68,7 @@ impl Publish {
             let substate_id = SubstateId(
                 NodeId::GlobalObject(package_address.0.into()),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::Code),
+                PackageOffset::Package.into(),
             );
 
             let previous_version = substate_db
@@ -87,7 +87,7 @@ impl Publish {
                 SubstateId(
                     NodeId::GlobalObject(package_address.0.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::Code),
+                    PackageOffset::Package.into(),
                 ),
                 output_value,
             );
@@ -107,7 +107,7 @@ impl Publish {
                 SubstateId(
                     NodeId::GlobalObject(package_address.0.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    PackageOffset::Package.into(),
                 ),
                 output_value,
             );

@@ -42,8 +42,8 @@ where
 {
     fn sys_lock_substate(
         &mut self,
-        node_id: NodeId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        substate_key: SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
@@ -85,7 +85,7 @@ where
         } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&TypedModuleId::ObjectState) {
-            let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
@@ -156,7 +156,7 @@ where
         let handle = self.kernel_lock_substate(
             &NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::Package(PackageOffset::Info),
+            PackageOffset::Package.into(),
             LockFlags::read_only(),
         )?;
         let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
@@ -230,41 +230,41 @@ where
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
+                        ResourceManagerOffset::ResourceManager.into() => RuntimeSubstate::ResourceManager(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
+                        ResourceManagerOffset::ResourceManager.into() => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
                 PROOF_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
-                        SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()),
-                        SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
+                        ProofOffset::Proof.into() => RuntimeSubstate::ProofInfo(parser.decode_next()),
+                        ProofOffset::Proof.into() => RuntimeSubstate::FungibleProof(parser.decode_next()),
+                        ProofOffset::Proof.into() => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
                     )),
                     EntityType::Object,
                 ),
                 BUCKET_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
+                        BucketOffset::Bucket.into() => RuntimeSubstate::BucketInfo(parser.decode_next()),
+                        BucketOffset::Bucket.into() => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
+                        BucketOffset::Bucket.into() => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
+                        BucketOffset::Bucket.into() => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
+                        BucketOffset::Bucket.into() => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
                     )),
                     EntityType::Object,
                 ),
                 VAULT_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
+                        VaultOffset::Vault.into() => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                        VaultOffset::Vault.into() => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
+                        VaultOffset::Vault.into() => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
+                        VaultOffset::Vault.into() => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
+                        VaultOffset::Vault.into() => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
                     )),
                     EntityType::Vault,
                 ),
@@ -274,8 +274,8 @@ where
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
-                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
+                        RoyaltyOffset::Royalty.into() => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
+                        RoyaltyOffset::Royalty.into() => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
@@ -283,22 +283,22 @@ where
             },
             ACCESS_RULES_PACKAGE => (
                 RENodeInit::Object(btreemap!(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next())
+                    AccessRulesOffset::AccessRules.into() => RuntimeSubstate::MethodAccessRules(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
                 VALIDATOR_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next())
+                        ValidatorOffset::Validator.into() => RuntimeSubstate::Validator(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
                 EPOCH_MANAGER_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(parser.decode_next()),
-                        SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()),
-                        SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next())
+                        EpochManagerOffset::EpochManager.into() => RuntimeSubstate::EpochManager(parser.decode_next()),
+                        EpochManagerOffset::EpochManager.into() => RuntimeSubstate::ValidatorSet(parser.decode_next()),
+                        EpochManagerOffset::EpochManager.into() => RuntimeSubstate::ValidatorSet(parser.decode_next())
                     )),
                     EntityType::Object,
                 ),
@@ -306,7 +306,7 @@ where
             },
             ACCESS_CONTROLLER_PACKAGE => (
                 RENodeInit::Object(btreemap!(
-                    SubstateOffset::AccessController(AccessControllerOffset::AccessController)
+                    AccessControllerOffset::AccessController.into()
                         => RuntimeSubstate::AccessController(parser.decode_next())
                 )),
                 EntityType::Object,
@@ -314,21 +314,21 @@ where
             IDENTITY_PACKAGE => (RENodeInit::Object(btreemap!()), EntityType::Object),
             ACCOUNT_PACKAGE => (
                 RENodeInit::Object(btreemap!(
-                    SubstateOffset::Account(AccountOffset::Account)
+                    AccountOffset::Account.into()
                         => RuntimeSubstate::Account(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
             CLOCK_PACKAGE => (
                 RENodeInit::Object(btreemap!(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
+                    ClockOffset::Clock.into()
                         => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
             _ => (
                 RENodeInit::Object(btreemap!(
-                    SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
+                    ComponentOffset::Component.into() => RuntimeSubstate::ComponentState(
                         ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
                     )
                 )),
@@ -361,7 +361,7 @@ where
 
         let node_type = match node_id {
             NodeId::Object(..) => {
-                let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+                let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
                 let (package_address, blueprint) = match type_info {
                     TypeInfoSubstate::Object {
                         package_address,
@@ -427,10 +427,7 @@ where
         let mut module_init = BTreeMap::new();
 
         let type_info = module_substates
-            .remove(&(
-                TypedModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ))
+            .remove(&(TypedModuleId::TypeInfo, TypeInfoOffset::TypeInfo.into()))
             .unwrap();
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
 
@@ -472,7 +469,7 @@ where
                         .substates
                         .remove(&(
                             TypedModuleId::ObjectState,
-                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                            AccessRulesOffset::AccessRules.into(),
                         ))
                         .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
@@ -528,18 +525,12 @@ where
 
                     let config = node
                         .substates
-                        .remove(&(
-                            TypedModuleId::ObjectState,
-                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-                        ))
+                        .remove(&(TypedModuleId::ObjectState, RoyaltyOffset::Royalty.into()))
                         .unwrap();
                     let config: ComponentRoyaltyConfigSubstate = config.into();
                     let accumulator = node
                         .substates
-                        .remove(&(
-                            TypedModuleId::ObjectState,
-                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                        ))
+                        .remove(&(TypedModuleId::ObjectState, RoyaltyOffset::Royalty.into()))
                         .unwrap();
                     let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
 
@@ -605,9 +596,9 @@ where
 
     fn get_object_type_info(
         &mut self,
-        node_id: NodeId,
+        node_id: &NodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object {
                 package_address,
@@ -624,9 +615,9 @@ where
 
     fn get_key_value_store_info(
         &mut self,
-        node_id: NodeId,
+        node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
@@ -637,10 +628,7 @@ where
         Ok(schema)
     }
 
-    fn new_key_value_store(
-        &mut self,
-        schema: KeyValueStoreSchema,
-    ) -> Result<KeyValueStoreId, RuntimeError> {
+    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
@@ -826,7 +814,7 @@ where
             let handle = self.kernel_lock_substate(
                 &NodeId::GlobalObject(GlobalAddress::Package(package_address)),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::Info),
+                PackageOffset::Package.into(),
                 LockFlags::read_only(),
             )?;
             let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;

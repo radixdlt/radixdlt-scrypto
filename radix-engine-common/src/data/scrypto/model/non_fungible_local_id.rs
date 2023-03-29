@@ -1,6 +1,7 @@
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::*;
+use crate::types::SubstateKey;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
@@ -112,6 +113,11 @@ impl NonFungibleLocalId {
 
     pub fn uuid(value: u128) -> Result<Self, ContentValidationError> {
         value.try_into()
+    }
+
+    pub fn to_substate_key(&self) -> SubstateKey {
+        SubstateKey::from_vec(scrypto_encode(self).expect("Failed to encode non-fungible local id"))
+            .expect("Failed to convert non-fungible local id to SubstateKey")
     }
 }
 

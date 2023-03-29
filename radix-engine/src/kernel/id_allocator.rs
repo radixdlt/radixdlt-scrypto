@@ -226,7 +226,7 @@ impl IdAllocator {
     }
 
     /// Creates a new key value store ID.
-    pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
+    pub fn new_kv_store_id(&mut self) -> Result<NodeId, IdAllocationError> {
         self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 }

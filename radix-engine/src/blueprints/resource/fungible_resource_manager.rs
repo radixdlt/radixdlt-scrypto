@@ -11,7 +11,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::{NodeId, ResourceManagerOffset, SubstateOffset};
+use radix_engine_interface::types::{NodeId, ResourceManagerOffset};
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
@@ -197,8 +197,8 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -261,8 +261,8 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -315,8 +315,8 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -347,8 +347,8 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -389,8 +389,8 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -411,8 +411,8 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: &FungibleResourceManagerSubstate =

@@ -39,7 +39,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
         .get_substate(&SubstateId(
             NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::Package(PackageOffset::Code),
+            PackageOffset::Package.into(),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
@@ -84,7 +84,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    TypeInfoOffset::TypeInfo.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
@@ -93,7 +93,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -102,7 +102,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Component(ComponentOffset::State0),
+                    ComponentOffset::Component.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
@@ -129,7 +129,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                     _ => None,
                 })
                 .collect();
-            let mut queue: VecDeque<KeyValueStoreId> = raw_state
+            let mut queue: VecDeque<NodeId> = raw_state
                 .owned_node_ids()
                 .iter()
                 .cloned()
@@ -171,7 +171,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Account(AccountOffset::Account),
+                    AccountOffset::Account.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().account().clone())
@@ -180,7 +180,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -220,7 +220,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -239,7 +239,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::Metadata,
-                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
+                    AccessControllerOffset::AccessController.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_controller().clone())
@@ -248,7 +248,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -325,10 +325,10 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
 
 fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
-    kv_store_id: &KeyValueStoreId,
+    kv_store_id: &NodeId,
     substate_db: &T,
     output: &mut O,
-) -> Result<(Vec<KeyValueStoreId>, Vec<NodeId>), DisplayError> {
+) -> Result<(Vec<NodeId>, Vec<NodeId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let mut owned_kv_stores = Vec::new();
     let mut owned_vaults = Vec::new();
@@ -388,7 +388,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .get_substate(&SubstateId(
                 NodeId::Object(*vault_id),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Vault(VaultOffset::Info),
+                VaultOffset::Vault.into(),
             ))
             .map(|s| s.substate)
             .map(|s| s.into())
@@ -401,7 +401,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .get_substate(&SubstateId(
                 NodeId::GlobalObject(resource_address.into()),
                 TypedModuleId::Metadata,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode("name").unwrap(),
                 )),
             ))
@@ -425,7 +425,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .get_substate(&SubstateId(
                 NodeId::GlobalObject(resource_address.into()),
                 TypedModuleId::Metadata,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode("symbol").unwrap(),
                 )),
             ))
@@ -451,7 +451,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::Object(*vault_id),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                    VaultOffset::Vault.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.into())
@@ -462,7 +462,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::Object(*vault_id),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                    VaultOffset::Vault.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.into())
@@ -485,7 +485,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(resource_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                    ResourceManagerOffset::ResourceManager.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into());
@@ -495,7 +495,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::Object(*vault_id),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                    VaultOffset::Vault.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.into())
@@ -508,7 +508,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .get_substate(&SubstateId(
                         NodeId::KeyValueStore(non_fungible_id),
                         TypedModuleId::ObjectState,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                        SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
                             scrypto_encode(id).unwrap(),
                         )),
                     ))
@@ -544,7 +544,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         .get_substate(&SubstateId(
             NodeId::GlobalObject(resource_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            ResourceManagerOffset::ResourceManager.into(),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());

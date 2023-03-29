@@ -7,7 +7,7 @@ use crate::types::*;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{types::*, ClientSubstateApi};
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -32,8 +32,8 @@ impl BucketInfoSubstate {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::Info),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &BucketInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -51,8 +51,8 @@ impl FungibleBucket {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
@@ -66,8 +66,8 @@ impl FungibleBucket {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedFungible),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
@@ -91,11 +91,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -118,11 +115,8 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         substate_ref.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -142,11 +136,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked = locked.amount();
 
@@ -183,11 +174,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let max_locked = locked.amount();
@@ -212,8 +200,8 @@ impl NonFungibleBucket {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
@@ -227,8 +215,8 @@ impl NonFungibleBucket {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
@@ -252,8 +240,8 @@ impl NonFungibleBucket {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
@@ -270,8 +258,8 @@ impl NonFungibleBucket {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            receiver,
+            BucketOffset::Bucket.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
@@ -288,11 +276,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidNonFungibleResource =
             api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
@@ -312,11 +297,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidNonFungibleResource =
             api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref
@@ -339,11 +321,8 @@ impl NonFungibleBucket {
             return Ok(());
         }
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidNonFungibleResource =
             api.kernel_get_substate_ref_mut(handle)?;
         substate_ref.put(resource).map_err(|e| {
@@ -364,11 +343,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
@@ -417,11 +393,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         // Take from liquid if needed
@@ -461,11 +434,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, BucketOffset::Bucket.into(), LockFlags::MUTABLE)?;
         let locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();

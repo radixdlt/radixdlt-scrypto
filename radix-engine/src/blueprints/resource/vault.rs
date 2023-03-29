@@ -8,7 +8,7 @@ use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{types::*, ClientSubstateApi};
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -35,11 +35,8 @@ impl VaultInfoSubstate {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::Info),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -54,11 +51,8 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -69,11 +63,8 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedFungible),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -95,11 +86,8 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
@@ -127,11 +115,8 @@ impl FungibleVault {
 
         let event = DepositResourceEvent::Amount(resource.amount());
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         substate_ref.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
@@ -154,11 +139,8 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked = locked.amount();
 
@@ -193,11 +175,8 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let max_locked = locked.amount();
@@ -221,11 +200,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -236,11 +212,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -261,11 +234,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let ids = substate_ref.ids().clone();
         api.sys_drop_lock(handle)?;
@@ -279,11 +249,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::read_only())?;
         let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let ids = substate_ref.ids();
         api.sys_drop_lock(handle)?;
@@ -298,11 +265,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidNonFungibleResource =
             api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
@@ -325,11 +289,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidNonFungibleResource =
             api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref
@@ -357,11 +318,8 @@ impl NonFungibleVault {
 
         let event = DepositResourceEvent::Ids(resource.ids().clone());
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let substate_ref: &mut LiquidNonFungibleResource =
             api.kernel_get_substate_ref_mut(handle)?;
         substate_ref.put(resource).map_err(|e| {
@@ -385,11 +343,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
@@ -436,11 +391,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         // Take from liquid if needed
@@ -478,11 +430,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, VaultOffset::Vault.into(), LockFlags::MUTABLE)?;
         let locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
@@ -751,8 +700,8 @@ impl VaultBlueprint {
 
         // Lock the substate (with special flags)
         let vault_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            receiver,
+            VaultOffset::Vault.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 

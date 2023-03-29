@@ -27,7 +27,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::PackageSchema;
-use transaction::data::to_address;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
@@ -76,7 +75,7 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Object(btreemap!(
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
+                WorktopOffset::Worktop.into() => RuntimeSubstate::Worktop(WorktopSubstate::new())
             )),
             btreemap!(
                 TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
@@ -406,8 +405,7 @@ impl TransactionProcessorBlueprint {
                     key,
                     value,
                 } => {
-                    let address = to_address(entity_address);
-                    let receiver = address.into();
+                    let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
                         TypedModuleId::Metadata,
@@ -432,8 +430,7 @@ impl TransactionProcessorBlueprint {
                     entity_address,
                     key,
                 } => {
-                    let address = to_address(entity_address);
-                    let receiver = address.into();
+                    let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
                         TypedModuleId::Metadata,
@@ -535,8 +532,7 @@ impl TransactionProcessorBlueprint {
                     key,
                     rule,
                 } => {
-                    let address = to_address(entity_address);
-                    let receiver = address.into();
+                    let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
                         TypedModuleId::AccessRules,
@@ -681,7 +677,7 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            let (package_address, blueprint) = api.get_object_type_info(*owned_node)?;
+            let (package_address, blueprint) = api.get_object_type_info(owned_node)?;
             match (package_address, blueprint.as_str()) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(owned_node.clone().into());

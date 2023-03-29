@@ -220,11 +220,8 @@ impl ClockNativePackage {
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, ClockOffset::Clock.into(), LockFlags::MUTABLE)?;
         let current_time_rounded_to_minutes_substate: &mut ClockSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
         current_time_rounded_to_minutes_substate.current_time_rounded_to_minutes_ms =
@@ -248,8 +245,8 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
-                    receiver.clone(),
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    receiver,
+                    ClockOffset::Clock.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;
@@ -276,8 +273,8 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
-                    receiver.clone(),
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    receiver,
+                    ClockOffset::Clock.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;

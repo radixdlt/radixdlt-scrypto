@@ -439,10 +439,11 @@ impl AccountNativePackage {
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).unwrap();
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -452,8 +453,7 @@ impl AccountNativePackage {
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = NodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle = api.sys_lock_substate(node_id, &substate_key, LockFlags::read_only())?;
             handle
         };
 
@@ -532,10 +532,11 @@ impl AccountNativePackage {
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).unwrap();
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?;
 
@@ -545,8 +546,7 @@ impl AccountNativePackage {
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = NodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+            let handle = api.sys_lock_substate(node_id, &substate_key, LockFlags::MUTABLE)?;
             handle
         };
 
@@ -595,8 +595,8 @@ impl AccountNativePackage {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -607,6 +607,7 @@ impl AccountNativePackage {
         for bucket in input.buckets {
             let resource_address = bucket.sys_resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+            let substate_key = SubstateKey::from_vec(encoded_key).unwrap();
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
@@ -614,8 +615,7 @@ impl AccountNativePackage {
                 let kv_store_id = account.vaults.key_value_store_id();
 
                 let node_id = NodeId::KeyValueStore(kv_store_id);
-                let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                let handle = api.sys_lock_substate(node_id, &substate_key, LockFlags::MUTABLE)?;
                 handle
             };
 
@@ -665,8 +665,8 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -676,8 +676,8 @@ impl AccountNativePackage {
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = NodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+            let substate_key = SubstateKey::from(encoded_key).unwrap();
+            let handle = api.sys_lock_substate(node_id, substate_key, LockFlags::read_only())?;
             handle
         };
 

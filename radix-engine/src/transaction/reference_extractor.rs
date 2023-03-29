@@ -1,10 +1,9 @@
 use crate::types::*;
-use transaction::data::to_address;
 use transaction::model::*;
 
 pub fn extract_refs_from_manifest(
     instructions: &[Instruction],
-) -> (BTreeSet<GlobalAddress>, BTreeSet<InternalRef>) {
+) -> (BTreeSet<GlobalAddress>, BTreeSet<Reference>) {
     let mut global_references = BTreeSet::new();
     let mut local_references = BTreeSet::new();
 
@@ -25,7 +24,7 @@ pub fn extract_refs_from_manifest(
 pub fn extract_refs_from_instruction(
     instruction: &Instruction,
     global_references: &mut BTreeSet<GlobalAddress>,
-    local_references: &mut BTreeSet<InternalRef>,
+    local_references: &mut BTreeSet<Reference>,
 ) {
     match instruction {
         Instruction::CallFunction {
@@ -74,20 +73,20 @@ pub fn extract_refs_from_instruction(
             value,
             ..
         } => {
-            global_references.insert(to_address(entity_address.clone()).into());
+            global_references.insert(entity_address.into());
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(value).unwrap()).unwrap();
             extract_refs_from_value(&value, global_references, local_references);
         }
         Instruction::RemoveMetadata { entity_address, .. }
         | Instruction::SetMethodAccessRule { entity_address, .. } => {
-            global_references.insert(to_address(entity_address.clone()).into());
+            global_references.insert(entity_address.into());
         }
         Instruction::RecallResource { vault_id, .. } => {
             // TODO: This needs to be cleaned up
             // TODO: How does this relate to newly created vaults in the transaction frame?
             // TODO: Will probably want different spacing for refed vs. owned nodes
-            local_references.insert(InternalRef(vault_id.clone()));
+            local_references.insert(Reference(vault_id.clone()));
         }
 
         Instruction::SetPackageRoyaltyConfig {
@@ -155,7 +154,7 @@ pub fn extract_refs_from_instruction(
 pub fn extract_refs_from_value(
     value: &ManifestValue,
     global_references: &mut BTreeSet<GlobalAddress>,
-    local_references: &mut BTreeSet<InternalRef>,
+    local_references: &mut BTreeSet<Reference>,
 ) {
     match value {
         Value::Bool { .. }
@@ -193,7 +192,7 @@ pub fn extract_refs_from_value(
         }
         Value::Custom { value } => match value {
             ManifestCustomValue::Address(a) => {
-                global_references.insert(to_address(a.clone()));
+                global_references.insert(a.into());
             }
             _ => {}
         },

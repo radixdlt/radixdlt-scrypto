@@ -12,7 +12,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::{NodeId, ResourceManagerOffset, SubstateOffset};
+use radix_engine_interface::types::{NodeId, ResourceManagerOffset};
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
 
@@ -34,7 +34,7 @@ pub struct NonFungibleResourceManagerSubstate {
     pub total_supply: Decimal,
     pub id_type: NonFungibleIdType,
     pub non_fungible_type_index: LocalTypeIndex,
-    pub non_fungible_table: KeyValueStoreId,
+    pub non_fungible_table: NodeId,
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
@@ -44,7 +44,7 @@ fn build_non_fungible_resource_manager_substate<Y>(
     supply: usize,
     non_fungible_schema: NonFungibleDataSchema,
     api: &mut Y,
-) -> Result<(NonFungibleResourceManagerSubstate, KeyValueStoreId), RuntimeError>
+) -> Result<(NonFungibleResourceManagerSubstate, NodeId), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -114,7 +114,7 @@ where
 fn build_non_fungible_bucket<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
-    nf_store_id: KeyValueStoreId,
+    nf_store_id: NodeId,
     entries: BTreeMap<NonFungibleLocalId, ScryptoValue>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
@@ -137,9 +137,7 @@ where
 
             let non_fungible_handle = api.sys_lock_substate(
                 NodeId::KeyValueStore(nf_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode(&non_fungible_local_id).unwrap(),
-                )),
+                &non_fungible_local_id.to_substate_key(),
                 LockFlags::MUTABLE,
             )?;
 
@@ -336,8 +334,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -406,9 +404,7 @@ impl NonFungibleResourceManagerBlueprint {
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.sys_lock_substate(
                 NodeId::KeyValueStore(nf_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode(&id).unwrap(),
-                )),
+                &id.to_substate_key(),
                 LockFlags::MUTABLE,
             )?;
 
@@ -451,8 +447,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -480,9 +476,7 @@ impl NonFungibleResourceManagerBlueprint {
         {
             let non_fungible_handle = api.sys_lock_substate(
                 NodeId::KeyValueStore(nf_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode(&id).unwrap(),
-                )),
+                &id.to_substate_key(),
                 LockFlags::MUTABLE,
             )?;
             api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
@@ -520,8 +514,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -554,9 +548,7 @@ impl NonFungibleResourceManagerBlueprint {
                 {
                     let non_fungible_handle = api.sys_lock_substate(
                         NodeId::KeyValueStore(nf_store_id),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                            scrypto_encode(&id).unwrap(),
-                        )),
+                        &id.to_substate_key(),
                         LockFlags::MUTABLE,
                     )?;
                     api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
@@ -599,8 +591,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -635,7 +627,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             NodeId::KeyValueStore(non_fungible_table_id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
+            &id.to_substate_key(),
             LockFlags::MUTABLE,
         )?;
 
@@ -670,8 +662,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -681,7 +673,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             NodeId::KeyValueStore(non_fungible_table_id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
+            &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
         let non_fungible: Option<ScryptoValue> =
@@ -700,8 +692,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -714,7 +706,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             NodeId::KeyValueStore(non_fungible_table_id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
+            &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
         let wrapper: Option<ScryptoValue> = api.sys_read_typed_substate(non_fungible_handle)?;
@@ -734,8 +726,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -770,8 +762,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -819,9 +811,7 @@ impl NonFungibleResourceManagerBlueprint {
                     for id in resource.into_ids() {
                         let non_fungible_handle = api.sys_lock_substate(
                             node_id,
-                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                scrypto_encode(&id).unwrap(),
-                            )),
+                            &id.to_substate_key(),
                             LockFlags::MUTABLE,
                         )?;
 
@@ -840,8 +830,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -882,8 +872,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -904,8 +894,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            receiver,
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: &NonFungibleResourceManagerSubstate =

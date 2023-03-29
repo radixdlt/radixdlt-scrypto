@@ -67,8 +67,8 @@ impl ValidatorBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.sys_lock_substate(receiver.clone(), offset.clone(), LockFlags::MUTABLE)?;
+        let offset = ValidatorOffset::Validator.into();
+        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
@@ -120,8 +120,8 @@ impl ValidatorBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.sys_lock_substate(receiver.clone(), offset.clone(), LockFlags::MUTABLE)?;
+        let offset = ValidatorOffset::Validator.into();
+        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
@@ -172,8 +172,8 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Validator(ValidatorOffset::Validator),
+            receiver,
+            ValidatorOffset::Validator.into(),
             LockFlags::read_only(),
         )?;
 
@@ -246,8 +246,8 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Validator(ValidatorOffset::Validator),
+            receiver,
+            ValidatorOffset::Validator.into(),
             LockFlags::read_only(),
         )?;
 
@@ -275,7 +275,7 @@ impl ValidatorBlueprint {
 
             let manager_handle = api.sys_lock_substate(
                 NodeId::GlobalObject(manager.into()),
-                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let epoch_manager: &EpochManagerSubstate =
@@ -339,8 +339,8 @@ impl ValidatorBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Validator(ValidatorOffset::Validator),
+            receiver,
+            ValidatorOffset::Validator.into(),
             LockFlags::read_only(),
         )?;
         let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
@@ -360,7 +360,7 @@ impl ValidatorBlueprint {
         let current_epoch = {
             let mgr_handle = api.sys_lock_substate(
                 NodeId::GlobalObject(manager.into()),
-                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let mgr_substate: &EpochManagerSubstate = api.kernel_get_substate_ref(mgr_handle)?;
@@ -408,8 +408,8 @@ impl ValidatorBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Validator(ValidatorOffset::Validator),
+            receiver,
+            ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
         )?;
         let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;

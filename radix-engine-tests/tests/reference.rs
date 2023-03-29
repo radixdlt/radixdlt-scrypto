@@ -29,7 +29,7 @@ fn verify_no_internal_ref_can_be_stored_in_track() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::InternalRefNotAllowed))
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::ReferenceNotAllowed))
         )
     });
 }

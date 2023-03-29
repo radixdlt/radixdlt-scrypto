@@ -145,8 +145,8 @@ pub enum KernelError {
     DropNodeFailure(NodeId),
 
     // Substate Constraints
-    InvalidOffset(SubstateOffset),
-    InvalidOwnership(SubstateOffset, PackageAddress, String),
+    InvalidOffset(SubstateKey),
+    InvalidOwnership(SubstateKey, PackageAddress, String),
     InvalidId(NodeId),
 
     // Actor Constraints
@@ -161,7 +161,7 @@ pub enum KernelError {
         mode: ExecutionMode,
         actor: Actor,
         node_id: NodeId,
-        offset: SubstateOffset,
+        substate_key: SubstateKey,
         flags: LockFlags,
     },
 }
@@ -177,7 +177,7 @@ impl CanBeAbortion for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
-    OffsetDoesNotExist(NodeId, SubstateOffset),
+    OffsetDoesNotExist(NodeId, SubstateKey),
     RENodeNotVisible(NodeId),
     RENodeNotOwned(NodeId),
     MovingLockedRENode(NodeId),

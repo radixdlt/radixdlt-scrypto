@@ -72,7 +72,7 @@ pub enum GeneratorError {
     InvalidPreciseDecimal(String),
     InvalidHash(String),
     InvalidNodeId(String),
-    InvalidKeyValueStoreId(String),
+    InvalidNodeId(String),
     InvalidVaultId(String),
     InvalidNonFungibleLocalId(String),
     InvalidNonFungibleGlobalId,

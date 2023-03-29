@@ -4,7 +4,6 @@ use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::{PreExecutionError, Track};
-use crate::ledger::{CommittableSubstateDatabase, SubstateDatabase};
 use crate::system::kernel_modules::costing::*;
 use crate::system::kernel_modules::execution_trace::calculate_resource_changes;
 use crate::transaction::*;
@@ -18,6 +17,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_engine_stores::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 

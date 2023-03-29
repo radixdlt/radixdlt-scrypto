@@ -35,6 +35,7 @@ pub enum PackageError {
         actual: Option<String>,
     },
     InvalidEventSchema,
+    InvalidMetadataKey(String),
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -111,11 +112,11 @@ where
 
     // Prepare node init.
     let node_init = RENodeInit::GlobalObject(btreemap!(
-        SubstateOffset::Package(PackageOffset::Info) => info.into(),
-        SubstateOffset::Package(PackageOffset::CodeType) => code_type.into(),
-        SubstateOffset::Package(PackageOffset::Code) => code.into(),
-        SubstateOffset::Package(PackageOffset::Royalty) => royalty.into(),
-        SubstateOffset::Package(PackageOffset::FunctionAccessRules) => function_access_rules.into(),
+        PackageOffset::Package.into() => info.into(),
+        PackageOffset::Package.into() => code_type.into(),
+        PackageOffset::Package.into() => code.into(),
+        PackageOffset::Package.into() => royalty.into(),
+        PackageOffset::Package.into() => function_access_rules.into(),
     ));
 
     // Prepare node modules.
@@ -135,9 +136,11 @@ where
                 .into_iter()
                 .map(|(key, value)| {
                     (
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                            scrypto_encode(&key).unwrap(),
-                        )),
+                        SubstateKey::from_vec(scrypto_encode(&key).unwrap()).ok_or(
+                            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                                PackageError::InvalidMetadataKey(key),
+                            )),
+                        ),
                         RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
                     )
                 })
@@ -429,11 +432,8 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Package(PackageOffset::Royalty),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, PackageOffset::Package.into(), LockFlags::MUTABLE)?;
 
         let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -453,11 +453,8 @@ impl PackageNativePackage {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Package(PackageOffset::Royalty),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, PackageOffset::Package.into(), LockFlags::MUTABLE)?;
 
         let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let bucket = match substate.royalty_vault.clone() {

@@ -256,7 +256,7 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 address.into(),
                 TypedModuleId::Metadata,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(key).unwrap(),
                 )),
             ))
@@ -282,7 +282,7 @@ impl TestRunner {
         if let Some(output) = self.substate_db.get_substate(&SubstateId(
             NodeId::GlobalObject(component_address.into()),
             TypedModuleId::Royalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            RoyaltyOffset::Royalty.into(),
         )) {
             output
                 .substate
@@ -293,7 +293,7 @@ impl TestRunner {
                         .get_substate(&SubstateId(
                             NodeId::Object(vault.vault_id()),
                             TypedModuleId::ObjectState,
-                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                            VaultOffset::Vault.into(),
                         ))
                         .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
                 })
@@ -306,7 +306,7 @@ impl TestRunner {
         if let Some(output) = self.substate_db.get_substate(&SubstateId(
             NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::Package(PackageOffset::Royalty),
+            PackageOffset::Package.into(),
         )) {
             output
                 .substate
@@ -317,7 +317,7 @@ impl TestRunner {
                         .get_substate(&SubstateId(
                             NodeId::Object(vault.vault_id()),
                             TypedModuleId::ObjectState,
-                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                            VaultOffset::Vault.into(),
                         ))
                         .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
                 })
@@ -366,7 +366,7 @@ impl TestRunner {
         if let Some(output) = self.substate_db().get_substate(&SubstateId(
             NodeId::Object(vault_id),
             TypedModuleId::ObjectState,
-            SubstateOffset::Vault(VaultOffset::Info),
+            VaultOffset::Vault.into(),
         )) {
             if output.substate.vault_info().resource_type.is_fungible() {
                 self.inspect_fungible_vault(vault_id)
@@ -384,7 +384,7 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 NodeId::Object(vault_id),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                VaultOffset::Vault.into(),
             ))
             .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
     }
@@ -397,7 +397,7 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 NodeId::Object(vault_id),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                VaultOffset::Vault.into(),
             ))
             .map(|mut output| {
                 output
@@ -471,7 +471,7 @@ impl TestRunner {
         let substate_id = SubstateId(
             NodeId::GlobalObject(system_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::Validator(ValidatorOffset::Validator),
+            ValidatorOffset::Validator.into(),
         );
         let substate: ValidatorSubstate = self
             .substate_db()
@@ -487,7 +487,7 @@ impl TestRunner {
         let substate_id = SubstateId(
             NodeId::GlobalObject(EPOCH_MANAGER.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+            EpochManagerOffset::EpochManager.into(),
         );
         let substate: ValidatorSetSubstate = self
             .substate_db()
@@ -1164,7 +1164,7 @@ impl TestRunner {
                             .get_substate(&SubstateId(
                                 *node_id,
                                 TypedModuleId::TypeInfo,
-                                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                                TypeInfoOffset::TypeInfo.into(),
                             ))
                             .unwrap()
                             .substate
@@ -1203,7 +1203,7 @@ impl TestRunner {
         let substate_id = SubstateId(
             NodeId::GlobalObject(GlobalAddress::Package(package_address)),
             TypedModuleId::ObjectState,
-            SubstateOffset::Package(PackageOffset::Info),
+            PackageOffset::Package.into(),
         );
         (
             local_type_index,

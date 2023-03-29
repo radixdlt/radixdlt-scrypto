@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
-use radix_engine_interface::types::{ComponentOffset, KeyValueStoreOffset, NodeId, SubstateOffset};
+use radix_engine_interface::types::{ComponentOffset, KeyValueStoreOffset, NodeId, SubstateKey};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
@@ -428,17 +428,14 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn decode_from_buffer(
-        offset: &SubstateOffset,
-        buffer: &[u8],
-    ) -> Result<Self, RuntimeError> {
+    pub fn decode_from_buffer(offset: &SubstateKey, buffer: &[u8]) -> Result<Self, RuntimeError> {
         let substate = match offset {
-            SubstateOffset::Component(ComponentOffset::State0) => {
+            ComponentOffset::Component => {
                 let substate =
                     scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+            SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
                     scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)

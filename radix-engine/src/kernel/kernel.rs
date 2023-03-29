@@ -35,7 +35,7 @@ use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::{LockHandle, NodeId, ProofOffset, SubstateId, SubstateOffset};
+use radix_engine_interface::types::{LockHandle, NodeId, ProofOffset, SubstateId, SubstateKey};
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -166,7 +166,7 @@ where
 
                 let node_id = self.kernel_allocate_node_id(EntityType::Object)?;
                 let node = RENodeInit::Object(btreemap!(
-                    SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
+                    AccountOffset::Account.into() => RuntimeSubstate::Account(account_substate)
                 ));
                 self.kernel_create_node(node_id, node, node_modules)?;
                 node_id
@@ -251,7 +251,7 @@ where
         &mut self,
         node_id: NodeId,
         _module_id: TypedModuleId,
-        _offset: &SubstateOffset,
+        _offset: &SubstateKey,
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
@@ -463,7 +463,7 @@ where
                 match node_id {
                     NodeId::GlobalObject(GlobalAddress::Resource(..)) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                            let offset = TypeInfoOffset::TypeInfo.into();
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
@@ -489,7 +489,7 @@ where
                                 continue;
                             } else {
                                 if self.current_frame.get_node_visibility(node_id).is_none() {
-                                    let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                                    let offset = TypeInfoOffset::TypeInfo.into();
                                     self.track
                                         .acquire_lock(
                                             SubstateId(
@@ -533,7 +533,7 @@ where
                         }
 
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                            let offset = TypeInfoOffset::TypeInfo.into();
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
@@ -552,7 +552,7 @@ where
                     }
                     NodeId::Object(..) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                            let offset = TypeInfoOffset::TypeInfo.into();
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
@@ -742,7 +742,7 @@ where
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(bucket_id),
             TypedModuleId::ObjectState,
-            &SubstateOffset::Bucket(BucketOffset::Info),
+            &BucketOffset::Bucket.into(),
         ) {
             let info: &BucketInfoSubstate = substate.into();
             let info = info.clone();
@@ -754,7 +754,7 @@ where
                         .get_substate(
                             &NodeId::Object(bucket_id),
                             TypedModuleId::ObjectState,
-                            &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                            &BucketOffset::Bucket.into(),
                         )
                         .unwrap();
                     let liquid: &LiquidFungibleResource = substate.into();
@@ -771,7 +771,7 @@ where
                         .get_substate(
                             &NodeId::Object(bucket_id),
                             TypedModuleId::ObjectState,
-                            &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                            &BucketOffset::Bucket.into(),
                         )
                         .unwrap();
                     let liquid: &LiquidNonFungibleResource = substate.into();
@@ -792,7 +792,7 @@ where
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(proof_id),
             TypedModuleId::ObjectState,
-            &SubstateOffset::Proof(ProofOffset::Info),
+            &ProofOffset::Proof.into(),
         ) {
             let info: &ProofInfoSubstate = substate.into();
             let info = info.clone();
@@ -804,7 +804,7 @@ where
                         .get_substate(
                             &NodeId::Object(proof_id),
                             TypedModuleId::ObjectState,
-                            &SubstateOffset::Proof(ProofOffset::Fungible),
+                            &ProofOffset::Proof.into(),
                         )
                         .unwrap();
                     let proof: &FungibleProof = substate.into();
@@ -822,7 +822,7 @@ where
                         .get_substate(
                             &NodeId::Object(proof_id),
                             TypedModuleId::ObjectState,
-                            &SubstateOffset::Proof(ProofOffset::NonFungible),
+                            &ProofOffset::Proof.into(),
                         )
                         .unwrap();
                     let proof: &NonFungibleProof = substate.into();
@@ -849,7 +849,7 @@ where
         &mut self,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        offset: SubstateOffset,
+        substate_key: SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, &offset, &flags)?;

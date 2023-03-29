@@ -152,7 +152,7 @@ impl ExecutableInvocation for MethodInvocation {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(fn_identifier.package_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    PackageOffset::Package.into(),
                     LockFlags::read_only(),
                 )?;
                 let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -231,7 +231,7 @@ impl ExecutableInvocation for FunctionInvocation {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(self.fn_identifier.package_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    PackageOffset::Package.into(),
                     LockFlags::read_only(),
                 )?;
                 let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -331,7 +331,7 @@ impl Executor for ScryptoExecutor {
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject(self.fn_identifier.package_address.into()),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::Info),
+                PackageOffset::Package.into(),
                 LockFlags::read_only(),
             )?;
             api.kernel_drop_lock(handle)?;
@@ -341,7 +341,7 @@ impl Executor for ScryptoExecutor {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(self.fn_identifier.package_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    PackageOffset::Package.into(),
                     LockFlags::read_only(),
                 )?;
                 let package_info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -373,7 +373,7 @@ impl Executor for ScryptoExecutor {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(self.fn_identifier.package_address.into()),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    PackageOffset::Package.into(),
                     LockFlags::read_only(),
                 )?;
                 let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -386,7 +386,7 @@ impl Executor for ScryptoExecutor {
                     let handle = api.kernel_lock_substate(
                         &NodeId::GlobalObject(self.fn_identifier.package_address.into()),
                         TypedModuleId::ObjectState,
-                        SubstateOffset::Package(PackageOffset::Code),
+                        PackageOffset::Package.into(),
                         LockFlags::read_only(),
                     )?;
                     let code: &PackageCodeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -407,7 +407,7 @@ impl Executor for ScryptoExecutor {
                         let handle = api.kernel_lock_substate(
                             &NodeId::GlobalObject(self.fn_identifier.package_address.into()),
                             TypedModuleId::ObjectState,
-                            SubstateOffset::Package(PackageOffset::Code),
+                            PackageOffset::Package.into(),
                             LockFlags::read_only(),
                         )?;
                         let wasm_instance = api.kernel_create_wasm_instance(

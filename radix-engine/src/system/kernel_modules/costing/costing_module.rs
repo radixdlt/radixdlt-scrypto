@@ -157,7 +157,7 @@ impl KernelModule for CostingModule {
         let handle = api.kernel_lock_substate(
             &NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::Package(PackageOffset::Royalty),
+            PackageOffset::Package.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
@@ -191,7 +191,7 @@ impl KernelModule for CostingModule {
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject(component_address.clone().into()),
                 TypedModuleId::Royalty,
-                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                RoyaltyOffset::Royalty.into(),
                 LockFlags::read_only(),
             )?;
             let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
@@ -205,7 +205,7 @@ impl KernelModule for CostingModule {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(component_address.clone().into()),
                     TypedModuleId::Royalty,
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    RoyaltyOffset::Royalty.into(),
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate: &mut ComponentRoyaltyAccumulatorSubstate =
@@ -261,7 +261,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _node_id: &NodeId,
         _module_id: &TypedModuleId,
-        _offset: &SubstateOffset,
+        _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(

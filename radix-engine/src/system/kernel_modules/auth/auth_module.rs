@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
-use radix_engine_interface::types::{NodeId, SubstateOffset, VaultOffset};
+use radix_engine_interface::types::{NodeId, SubstateKey, VaultOffset};
 use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -93,7 +93,7 @@ impl AuthModule {
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject(identifier.package_address.into()),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::FunctionAccessRules),
+                PackageOffset::Package.into(),
                 LockFlags::read_only(),
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
@@ -162,7 +162,7 @@ impl AuthModule {
                             let handle = api.kernel_lock_substate(
                                 &node_id,
                                 TypedModuleId::ObjectState,
-                                SubstateOffset::Vault(VaultOffset::Info),
+                                VaultOffset::Vault.into(),
                                 LockFlags::read_only(),
                             )?;
                             let substate_ref: &VaultInfoSubstate =
@@ -185,7 +185,7 @@ impl AuthModule {
                                 let handle = api.kernel_lock_substate(
                                     &NodeId::GlobalObject(resource_address.into()),
                                     TypedModuleId::AccessRules1,
-                                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                                    AccessRulesOffset::AccessRules.into(),
                                     LockFlags::read_only(),
                                 )?;
 
@@ -274,7 +274,7 @@ impl AuthModule {
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject(package_address.into()),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::Info),
+                PackageOffset::Package.into(),
                 LockFlags::read_only(),
             )?;
             let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -296,7 +296,7 @@ impl AuthModule {
         };
 
         let state = {
-            let offset = SubstateOffset::Component(ComponentOffset::State0);
+            let offset = ComponentOffset::Component.into();
             let handle = api.kernel_lock_substate(
                 receiver,
                 TypedModuleId::ObjectState,
@@ -312,7 +312,7 @@ impl AuthModule {
         let handle = api.kernel_lock_substate(
             receiver,
             module_id,
-            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+            AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
@@ -334,7 +334,7 @@ impl AuthModule {
         let handle = api.kernel_lock_substate(
             receiver,
             module_id,
-            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+            AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
@@ -434,7 +434,7 @@ impl KernelModule for AuthModule {
             .auth
             .auth_zone_stack
             .last()
-            .map(|x| InternalRef(x.clone().into()));
+            .map(|x| Reference(x.clone().into()));
         let auth_zone = AuthZone::new(
             vec![],
             virtual_resources,
@@ -449,7 +449,7 @@ impl KernelModule for AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             RENodeInit::Object(btreemap!(
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => RuntimeSubstate::AuthZone(auth_zone)
+                AuthZoneOffset::AuthZone.into() => RuntimeSubstate::AuthZone(auth_zone)
             )),
             btreemap!(
                 TypedModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {

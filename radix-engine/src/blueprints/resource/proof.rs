@@ -3,7 +3,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{types::*, ClientSubstateApi};
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
@@ -46,11 +46,8 @@ impl ProofInfoSubstate {
         receiver: &NodeId,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Proof(ProofOffset::Info),
-            LockFlags::read_only(),
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, ProofOffset::Proof.into(), LockFlags::read_only())?;
         let substate_ref: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -210,11 +207,8 @@ impl ProofBlueprint {
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
-            let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::Fungible),
-                LockFlags::read_only(),
-            )?;
+            let handle =
+                api.sys_lock_substate(receiver, ProofOffset::Proof.into(), LockFlags::read_only())?;
             let substate_ref: &FungibleProof = api.kernel_get_substate_ref(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
@@ -231,11 +225,8 @@ impl ProofBlueprint {
 
             NodeId::Object(proof_id)
         } else {
-            let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
-                LockFlags::read_only(),
-            )?;
+            let handle =
+                api.sys_lock_substate(receiver, ProofOffset::Proof.into(), LockFlags::read_only())?;
             let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
@@ -271,21 +262,15 @@ impl ProofBlueprint {
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
-            let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::Fungible),
-                LockFlags::read_only(),
-            )?;
+            let handle =
+                api.sys_lock_substate(receiver, ProofOffset::Proof.into(), LockFlags::read_only())?;
             let substate_ref: &FungibleProof = api.kernel_get_substate_ref(handle)?;
             let amount = substate_ref.amount();
             api.sys_drop_lock(handle)?;
             amount
         } else {
-            let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
-                LockFlags::read_only(),
-            )?;
+            let handle =
+                api.sys_lock_substate(receiver, ProofOffset::Proof.into(), LockFlags::read_only())?;
             let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
             let amount = substate_ref.amount();
             api.sys_drop_lock(handle)?;
@@ -312,11 +297,8 @@ impl ProofBlueprint {
                 ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
             ))
         } else {
-            let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
-                LockFlags::read_only(),
-            )?;
+            let handle =
+                api.sys_lock_substate(receiver, ProofOffset::Proof.into(), LockFlags::read_only())?;
             let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
             let ids = substate_ref.non_fungible_local_ids().clone();
             api.sys_drop_lock(handle)?;
@@ -357,29 +339,20 @@ impl ProofBlueprint {
         let mut heap_node = api.kernel_drop_node(&NodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
-            .remove(&(
-                TypedModuleId::ObjectState,
-                SubstateOffset::Proof(ProofOffset::Info),
-            ))
+            .remove(&(TypedModuleId::ObjectState, ProofOffset::Proof.into()))
             .unwrap()
             .into();
         if proof_info.resource_type.is_fungible() {
             let proof: FungibleProof = heap_node
                 .substates
-                .remove(&(
-                    TypedModuleId::ObjectState,
-                    SubstateOffset::Proof(ProofOffset::Fungible),
-                ))
+                .remove(&(TypedModuleId::ObjectState, ProofOffset::Proof.into()))
                 .unwrap()
                 .into();
             proof.drop_proof(api)?;
         } else {
             let proof: NonFungibleProof = heap_node
                 .substates
-                .remove(&(
-                    TypedModuleId::ObjectState,
-                    SubstateOffset::Proof(ProofOffset::NonFungible),
-                ))
+                .remove(&(TypedModuleId::ObjectState, ProofOffset::Proof.into()))
                 .unwrap()
                 .into();
             proof.drop_proof(api)?;

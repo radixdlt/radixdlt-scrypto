@@ -7,8 +7,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::kernel::interpreters::ScryptoInterpreter;
-use crate::ledger::*;
+use crate::kernel::interpreters::ScryptoInterpreter; 
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -578,7 +577,7 @@ where
         .get_substate(
             &NodeId::GlobalObject(RADIX_TOKEN.into()),
             TypedModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            TypeInfoOffset::TypeInfo.into(),
         )
         .is_none()
     {

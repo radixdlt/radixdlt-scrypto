@@ -17,7 +17,7 @@ use radix_engine_interface::api::*;
 pub struct LockInfo {
     pub node_id: NodeId,
     pub module_id: TypedModuleId,
-    pub offset: SubstateOffset,
+    pub substate_key: SubstateKey,
     pub flags: LockFlags,
 }
 
@@ -46,7 +46,7 @@ pub trait KernelSubstateApi {
         &mut self,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        offset: SubstateOffset,
+        substate_key: SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
 

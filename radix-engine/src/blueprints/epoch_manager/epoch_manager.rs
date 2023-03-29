@@ -214,8 +214,8 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            receiver,
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -232,8 +232,8 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
+        let offset = EpochManagerOffset::EpochManager.into();
+        let mgr_handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
         let epoch_manager: &mut EpochManagerSubstate =
             api.kernel_get_substate_ref_mut(mgr_handle)?;
 
@@ -247,8 +247,8 @@ impl EpochManagerBlueprint {
         }
 
         if round >= epoch_manager.rounds_per_epoch {
-            let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
+            let offset = EpochManagerOffset::EpochManager.into();
+            let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
             let preparing_validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
             let prepared_epoch = preparing_validator_set.epoch;
@@ -261,8 +261,8 @@ impl EpochManagerBlueprint {
             epoch_manager.round = 0;
 
             let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+                receiver,
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::MUTABLE,
             )?;
             let validator_set: &mut ValidatorSetSubstate =
@@ -295,8 +295,8 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            receiver,
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -315,8 +315,8 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            receiver,
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
         let epoch_manager: &EpochManagerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -342,8 +342,8 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
+            receiver,
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
         let validator_set: &mut ValidatorSetSubstate = api.kernel_get_substate_ref_mut(handle)?;

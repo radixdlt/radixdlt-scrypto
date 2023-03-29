@@ -31,8 +31,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -59,8 +59,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -84,8 +84,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -125,8 +125,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::read_only(),
         )?;
 
@@ -166,8 +166,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -207,8 +207,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
         let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
@@ -236,8 +236,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
         let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
@@ -260,8 +260,8 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            receiver,
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 

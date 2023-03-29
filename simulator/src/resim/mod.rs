@@ -299,7 +299,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
         .get_substate(&SubstateId(
             NodeId::GlobalObject(package_address.into()),
             TypedModuleId::ObjectState,
-            SubstateOffset::Package(PackageOffset::Info),
+            PackageOffset::Package.into(),
         ))
         .ok_or(Error::PackageNotFound(package_address))?;
 
@@ -332,7 +332,7 @@ pub fn get_blueprint(
         .get_substate(&SubstateId(
             NodeId::GlobalObject(component_address.into()),
             TypedModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            TypeInfoOffset::TypeInfo.into(),
         ))
         .ok_or(Error::ComponentNotFound(component_address))?;
     let type_info = output.substate.type_info();
