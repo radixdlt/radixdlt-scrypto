@@ -24,37 +24,28 @@ pub enum RENodeModuleInit {
 }
 
 impl RENodeModuleInit {
-    pub fn to_substates(self) -> IndexMap<SubstateOffset, RuntimeSubstate> {
-        let mut substates = index_map_new();
+    pub fn to_substates(self) -> BTreeMap<SubstateOffset, RuntimeSubstate> {
         match self {
-            RENodeModuleInit::Metadata(metadata_substates) => {
-                substates.extend(metadata_substates);
-            }
-            RENodeModuleInit::MethodAccessRules(access_rules) => {
-                substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                    access_rules.into(),
-                );
-            }
-            RENodeModuleInit::TypeInfo(type_info) => {
-                substates.insert(
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    type_info.into(),
-                );
-            }
-            RENodeModuleInit::ComponentRoyalty(config, accumulator) => {
-                substates.insert(
+            RENodeModuleInit::Metadata(metadata_substates) => metadata_substates,
+            RENodeModuleInit::MethodAccessRules(access_rules) => BTreeMap::from([(
+                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                access_rules.into(),
+            )]),
+            RENodeModuleInit::TypeInfo(type_info) => BTreeMap::from([(
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                type_info.into(),
+            )]),
+            RENodeModuleInit::ComponentRoyalty(config, accumulator) => BTreeMap::from([
+                (
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                     config.into(),
-                );
-                substates.insert(
+                ),
+                (
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
-                );
-            }
+                ),
+            ]),
         }
-
-        substates
     }
 }
 
