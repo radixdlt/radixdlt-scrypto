@@ -387,11 +387,13 @@ impl KernelModule for AuthModule {
             }
             Actor::VirtualLazyLoad { .. } => return Ok(()),
         };
+        let barrier_crossings_required = 0;
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
 
         // Authenticate
         if !Authentication::verify_method_auth(
+            barrier_crossings_required,
             barrier_crossings_allowed,
             auth_zone_id,
             &authorization,

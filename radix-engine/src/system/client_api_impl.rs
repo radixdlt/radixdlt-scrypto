@@ -719,7 +719,8 @@ where
 
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = convert_contextless(&rule);
-        let barrier_crossings_allowed = 0;
+        let barrier_crossings_required = 1;
+        let barrier_crossings_allowed = 1;
         let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
 
         // Authenticate
@@ -727,6 +728,7 @@ where
         // Currently, this is to allow authentication to read auth zone substates directly without invocation.
         self.execute_in_mode(ExecutionMode::System, |api| {
             if !Authentication::verify_method_auth(
+                barrier_crossings_required,
                 barrier_crossings_allowed,
                 auth_zone_id,
                 &authorization,

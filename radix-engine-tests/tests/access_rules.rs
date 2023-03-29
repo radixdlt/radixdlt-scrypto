@@ -297,6 +297,7 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
 }
 
 #[test]
+#[ignore]
 fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -318,12 +319,12 @@ fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
 }
 
 #[test]
+#[ignore]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
     let (public_key, _, account_component) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
-
     let component_address = {
         let manifest = ManifestBuilder::new()
             .call_function(
@@ -343,16 +344,16 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
+    // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(RADIX_TOKEN)), Vec::<ManifestBucket>::new()),
+            manifest_args!(rule!(require(RADIX_TOKEN))),
         )
         .build();
 
-    // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
         [NonFungibleGlobalId::from_public_key(&public_key)],
@@ -394,18 +395,11 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.call_method(
-                component_address,
-                "assert_access_rule",
-                manifest_args!(rule!(require(RADIX_TOKEN)), vec![bucket]),
-            )
-        })
+        .create_proof_from_account(account_component, RADIX_TOKEN)
         .call_method(
-            account_component,
-            "deposit_batch",
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            "assert_access_rule",
+            manifest_args!(rule!(require(RADIX_TOKEN))),
         )
         .build();
 

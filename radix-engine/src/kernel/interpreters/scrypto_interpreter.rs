@@ -109,11 +109,32 @@ impl ExecutableInvocation for MethodInvocation {
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
 
-        let blueprint = match self.identifier.1 {
+        let (blueprint, global_address) = match self.identifier.1 {
             NodeModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
-                    TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+                    TypeInfoSubstate::Object { blueprint, global } => {
+                        let global_address = if global {
+                            let address: Address = self.identifier.0.into();
+                            Some(address)
+                        } else {
+                            // See if we have a parent
+                            let global_address =
+                                api.kernel_get_current_actor().and_then(|a| match a {
+                                    Actor::Method { global_address, .. } => global_address,
+                                    _ => {
+                                        if let RENodeId::GlobalObject(address) = self.identifier.0 {
+                                            Some(address)
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                });
+                            global_address
+                        };
+
+                        (blueprint, global_address)
+                    }
 
                     TypeInfoSubstate::KeyValueStore(..) => {
                         return Err(RuntimeError::InterpreterError(
@@ -124,28 +145,25 @@ impl ExecutableInvocation for MethodInvocation {
             }
             NodeModuleId::Metadata => {
                 // TODO: Check if type has metadata
-                Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT)
+                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
             }
             NodeModuleId::ComponentRoyalty => {
                 // TODO: Check if type has royalty
-                Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+                (
+                    Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                    None,
+                )
             }
             NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                 // TODO: Check if type has access rules
-                Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
+                (
+                    Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                    None,
+                )
             }
             _ => todo!(),
         };
-        let global_address = api.kernel_get_current_actor().and_then(|a| match a {
-            Actor::Method { global_address, .. } => global_address,
-            _ => {
-                if let RENodeId::GlobalObject(address) = self.identifier.0 {
-                    Some(address)
-                } else {
-                    None
-                }
-            }
-        });
+
         let actor = Actor::method(global_address, self.identifier.clone(), blueprint.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
