@@ -1,7 +1,6 @@
 use crate::math::*;
 use crate::*;
 use sbor::rust::prelude::*;
-use sbor::*;
 
 pub const FUNGIBLE_VAULT_BLUEPRINT: &str = "FungibleVault";
 
