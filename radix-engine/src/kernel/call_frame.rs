@@ -1,6 +1,6 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
-use crate::system::node::{ModuleInit, NodeInit};
+use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -66,8 +66,8 @@ pub struct SubstateLock {
     pub node_id: NodeId,
     pub module_id: TypedModuleId,
     pub substate_key: SubstateKey,
-    pub temp_references: IndexSet<NodeId>,
-    pub substate_owned_nodes: Vec<NodeId>,
+    pub initial_references: IndexSet<NodeId>,
+    pub initial_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
     pub track_handle: Option<u32>,
 }
@@ -137,20 +137,19 @@ impl CallFrame {
         module_id: TypedModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
-        self.check_node_visibility(&node_id)?;
-        if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
-            let substate_id = SubstateId(node_id.clone(), module_id, offset.clone());
-            if heap.contains_node(&node_id) {
-                if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                    return Err(RuntimeError::KernelError(KernelError::TrackError(
-                        Box::new(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id)),
-                    )));
-                }
-            } else {
-                track
-                    .acquire_lock(substate_id, flags)
-                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
+    ) -> Result<LockHandle, CallFrameAcquireLockError> {
+        // Check node visibility
+        self.get_node_visibility(node_id)
+            .ok_or(CallFrameAcquireLockError::NodeNotInCallFrame(
+                node_id.clone(),
+            ))?;
+
+        // Lock and read the substate
+        let mut track_handle = None;
+        let substate_value = if heap.contains_node(node_id) {
+            // TODO: make Heap more like Track?
+            if flags.contains(LockFlags::UNMODIFIED_BASE) {
+                return Err(CallFrameAcquireLockError::LockUnmodifiedBaseOnHeapNode);
             }
             heap.get_substate(node_id, module_id, substate_key)
                 .ok_or(CallFrameAcquireLockError::SubstateNotFound)?
@@ -162,11 +161,10 @@ impl CallFrame {
             track.get_substate(handle)
         };
 
-        let substate_ref = self.get_substate(heap, track, node_id, module_id, &offset)?;
-        let (references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
-
-        // Expand references
-        let mut temp_references = index_set_new();
+        // Infer references and owns within the substate
+        let references = substate_value.references();
+        let owned_nodes = substate_value.owned_node_ids();
+        let mut initial_references = index_set_new();
         for node_id in references {
             // TODO: fix this ugly condition
             if EntityType::is_global_node(&node_id) {
@@ -310,17 +308,9 @@ impl CallFrame {
             *counter -= 1;
         }
 
-        let flags = substate_lock.flags;
-
-        if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
-            if !heap.contains_node(&node_id) {
-                track
-                    .release_lock(
-                        SubstateId(node_id.clone(), module_id, offset.clone()),
-                        flags.contains(LockFlags::FORCE_WRITE),
-                    )
-                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
-            }
+        // Release track lock
+        if let Some(handle) = substate_lock.track_handle {
+            track.release_lock(handle);
         }
 
         Ok(())
@@ -339,58 +329,22 @@ impl CallFrame {
         let mut frame = Self {
             depth: 0,
             actor: None,
-            immortal_node_refs: NonIterMap::new(),
-            temp_node_refs: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
+            immortal_node_refs: HashMap::new(),
+            temp_node_refs: HashMap::new(),
+            owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
-            locks: index_map_new(),
+            locks: HashMap::new(),
         };
 
         // Add well-known global refs to current frame
-        frame.add_ref(
-            NodeId::GlobalObject(RADIX_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(SYSTEM_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(PACKAGE_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(EPOCH_MANAGER.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(CLOCK.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        frame.add_ref(
-            NodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
-            RENodeVisibilityOrigin::Normal,
-        );
+        frame.add_ref(RADIX_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(SYSTEM_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(ECDSA_SECP256K1_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(EDDSA_ED25519_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(PACKAGE_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(EPOCH_MANAGER.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(CLOCK.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(FAUCET_PACKAGE.into(), RENodeVisibilityOrigin::Normal);
 
         frame
     }
@@ -399,9 +353,9 @@ impl CallFrame {
         parent: &mut CallFrame,
         actor: Actor,
         call_frame_update: CallFrameUpdate,
-    ) -> Result<Self, RuntimeError> {
-        let mut owned_heap_nodes = index_map_new();
-        let mut next_node_refs = NonIterMap::new();
+    ) -> Result<Self, FrameUpdateError> {
+        let mut owned_heap_nodes = HashMap::new();
+        let mut next_node_refs = HashMap::new();
 
         for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(&node_id)?;
@@ -419,10 +373,10 @@ impl CallFrame {
             depth: parent.depth + 1,
             actor: Some(actor),
             immortal_node_refs: next_node_refs,
-            temp_node_refs: NonIterMap::new(),
+            temp_node_refs: HashMap::new(),
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
-            locks: index_map_new(),
+            locks: HashMap::new(),
         };
 
         Ok(frame)
@@ -546,8 +500,8 @@ impl CallFrame {
         if push_to_store {
             for ((module_id, substate_key), substate) in substates {
                 track
-                    .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
+                    .insert_substate(SubstateId(node_id, module_id, substate_key), substate)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
             }
 
             self.add_ref(node_id, RENodeVisibilityOrigin::Normal);

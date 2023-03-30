@@ -4,7 +4,7 @@ use crate::types::*;
 use crate::{
     errors::RuntimeError,
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
-    system::node::{ModuleInit, NodeInit},
+    system::node_init::{ModuleInit, NodeInit},
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{

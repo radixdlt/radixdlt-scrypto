@@ -17,8 +17,8 @@ use crate::system::kernel_modules::transaction_limits::{
 };
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::kernel_modules::virtualization::VirtualizationModule;
-use crate::system::node::ModuleInit;
-use crate::system::node::RENodeInit;
+use crate::system::node_init::ModuleInit;
+use crate::system::node_init::NodeInit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;

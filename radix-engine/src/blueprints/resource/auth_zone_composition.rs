@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node::NodeInit;
+use crate::system::node_init::NodeInit;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;

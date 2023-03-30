@@ -15,7 +15,7 @@ use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::node::{ModuleInit, NodeInit};
+use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};

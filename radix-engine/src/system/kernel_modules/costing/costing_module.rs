@@ -4,11 +4,11 @@ use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node::ModuleInit;
+use crate::system::node_init::ModuleInit;
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
-    system::node::NodeInit,
+    system::node_init::NodeInit,
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
