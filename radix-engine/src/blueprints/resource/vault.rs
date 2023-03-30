@@ -556,22 +556,6 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub fn unlock_amount<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultUnlockAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        FungibleVault::unlock_amount(receiver, input.amount, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 
     pub fn unlock_non_fungibles<Y>(
         receiver: &RENodeId,

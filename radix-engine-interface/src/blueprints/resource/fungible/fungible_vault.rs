@@ -22,3 +22,12 @@ pub struct FungibleVaultLockFungibleAmountInput {
 }
 
 pub type FungibleVaultLockFungibleAmountOutput = ();
+
+pub const FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT: &str = "unlock_fungible_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct FungibleVaultUnlockFungibleAmountInput {
+    pub amount: Decimal,
+}
+
+pub type FungibleVaultUnlockFungibleAmountOutput = ();

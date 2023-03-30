@@ -258,4 +258,17 @@ impl FungibleVaultBlueprint {
         FungibleVault::lock_amount(receiver, amount, api)?;
         Ok(())
     }
+
+    pub fn unlock_amount<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        FungibleVault::unlock_amount(receiver, amount, api)?;
+
+        Ok(())
+    }
 }

@@ -489,12 +489,12 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+                FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultUnlockAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultUnlockAmountOutput>(),
-                    export_name: VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+                    input: aggregator.add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(),
+                    export_name: FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 },
             );
 
@@ -640,12 +640,12 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultUnlockAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultUnlockAmountOutput>(),
-                export_name: VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(),
+                export_name: FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1713,6 +1713,18 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::lock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: FungibleVaultUnlockFungibleAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::unlock_amount(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             VAULT_LOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -1721,14 +1733,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::lock_non_fungibles(receiver, input, api)
             }
-            VAULT_UNLOCK_AMOUNT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                VaultBlueprint::unlock_amount(receiver, input, api)
-            }
             VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
