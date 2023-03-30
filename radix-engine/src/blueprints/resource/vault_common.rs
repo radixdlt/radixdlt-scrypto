@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
 use crate::errors::ApplicationError;
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::types::*;
@@ -21,32 +21,9 @@ pub enum VaultError {
     LockFeeInsufficientBalance,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct VaultInfoSubstate {
-    pub resource_address: ResourceAddress,
-    pub resource_type: ResourceType,
-}
+pub struct VaultUtil;
 
-impl VaultInfoSubstate {
-    pub fn of<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Self, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
-    {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::Info),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
-        let info = substate_ref.clone();
-        api.sys_drop_lock(handle)?;
-        Ok(info)
-    }
-}
-
-pub struct VaultBlueprint;
-
-impl VaultBlueprint {
+impl VaultUtil {
     pub fn is_vault_blueprint(blueprint: &Blueprint) -> bool {
         blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
             && (blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)

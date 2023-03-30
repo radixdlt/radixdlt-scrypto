@@ -1,4 +1,4 @@
-use crate::blueprints::resource::VaultBlueprint;
+use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -483,7 +483,7 @@ impl ExecutionTraceModule {
                 blueprint,
                 ident,
                 ..
-            } if VaultBlueprint::is_vault_blueprint(blueprint) && ident.eq(VAULT_PUT_IDENT) => {
+            } if VaultUtil::is_vault_blueprint(blueprint) && ident.eq(VAULT_PUT_IDENT) => {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
             Actor::Method {
@@ -491,7 +491,7 @@ impl ExecutionTraceModule {
                 blueprint,
                 ident,
                 ..
-            } if VaultBlueprint::is_vault_blueprint(blueprint)
+            } if VaultUtil::is_vault_blueprint(blueprint)
                 && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(&current_actor, vault_id)
@@ -513,7 +513,7 @@ impl ExecutionTraceModule {
                 blueprint,
                 ident,
                 ..
-            }) if VaultBlueprint::is_vault_blueprint(blueprint) && ident.eq(VAULT_TAKE_IDENT) => {
+            }) if VaultUtil::is_vault_blueprint(blueprint) && ident.eq(VAULT_TAKE_IDENT) => {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
             Some(Actor::VirtualLazyLoad { .. }) => return,

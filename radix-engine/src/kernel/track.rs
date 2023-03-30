@@ -1,4 +1,5 @@
-use crate::blueprints::resource::VaultBlueprint;
+use crate::blueprints::resource::LocalRef::Vault;
+use crate::blueprints::resource::VaultUtil;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::ledger::*;
@@ -20,11 +21,12 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::{FUNGIBLE_VAULT_BLUEPRINT, LiquidFungibleResource, NON_FUNGIBLE_VAULT_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
+};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
-use crate::blueprints::resource::LocalRef::Vault;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -877,7 +879,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .clone();
 
         if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
-            VaultBlueprint::is_vault_blueprint(&blueprint)
+            VaultUtil::is_vault_blueprint(&blueprint)
         } else {
             false
         }
@@ -898,15 +900,14 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
 
         let blueprint_name = match type_info {
             TypeInfoSubstate::Object {
-                blueprint: Blueprint {
-                    package_address,
-                    blueprint_name,
-                },
+                blueprint:
+                    Blueprint {
+                        package_address,
+                        blueprint_name,
+                    },
                 ..
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => {
-                blueprint_name
-            }
-            _ => panic!("Unexpected object")
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => blueprint_name,
+            _ => panic!("Unexpected object"),
         };
 
         match blueprint_name.as_str() {
@@ -917,7 +918,8 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                         NodeModuleId::SELF,
                         SubstateOffset::Vault(VaultOffset::Info),
                     ))
-                    .fungible_vault_info().resource_address;
+                    .fungible_vault_info()
+                    .resource_address;
 
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =
@@ -935,12 +937,15 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
-                            .vault_liquid_fungible()
-                            .amount()
+                        .vault_liquid_fungible()
+                        .amount()
                     };
                     let new_balance = substate.vault_liquid_fungible().amount();
 
-                    Some((resource_address, BalanceChange::Fungible(new_balance - old_balance)))
+                    Some((
+                        resource_address,
+                        BalanceChange::Fungible(new_balance - old_balance),
+                    ))
                 } else {
                     None
                 }
@@ -952,7 +957,8 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                         NodeModuleId::SELF,
                         SubstateOffset::Vault(VaultOffset::Info),
                     ))
-                    .vault_info().resource_address;
+                    .vault_info()
+                    .resource_address;
 
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =
@@ -970,9 +976,9 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                         ))
-                            .vault_liquid_non_fungible()
-                            .ids()
-                            .clone()
+                        .vault_liquid_non_fungible()
+                        .ids()
+                        .clone()
                     };
                     let mut new_balance = substate.vault_liquid_non_fungible().ids().clone();
 
@@ -981,15 +987,18 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                     new_balance.retain(|x| !intersection.contains(x));
                     old_balance.retain(|x| !intersection.contains(x));
 
-                    Some((resource_address, BalanceChange::NonFungible {
-                        added: new_balance,
-                        removed: old_balance,
-                    }))
+                    Some((
+                        resource_address,
+                        BalanceChange::NonFungible {
+                            added: new_balance,
+                            removed: old_balance,
+                        },
+                    ))
                 } else {
                     None
                 }
             }
-            _ => panic!("Unxpected")
+            _ => panic!("Unxpected"),
         }
     }
 

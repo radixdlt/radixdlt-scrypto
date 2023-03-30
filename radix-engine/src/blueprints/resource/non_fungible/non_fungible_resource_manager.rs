@@ -1,4 +1,3 @@
-use crate::blueprints::resource::vault::VaultInfoSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -838,9 +837,9 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let id_type = resource_manager.id_type;
-        let info = VaultInfoSubstate {
+        let info = NonFungibleVaultInfoSubstate {
             resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
+            id_type,
         };
         let vault_id = api.new_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,

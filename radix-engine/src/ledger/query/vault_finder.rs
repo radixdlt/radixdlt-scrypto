@@ -1,8 +1,8 @@
+use crate::blueprints::resource::FungibleVaultInfoSubstate;
 use crate::types::*;
-use crate::{blueprints::resource::VaultInfoSubstate, ledger::StateTreeVisitor};
+use crate::{blueprints::resource::NonFungibleVaultInfoSubstate, ledger::StateTreeVisitor};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::vec::Vec;
-use crate::blueprints::resource::FungibleVaultInfoSubstate;
 
 pub struct VaultFinder {
     vaults: Vec<ObjectId>,
@@ -37,7 +37,7 @@ impl StateTreeVisitor for VaultFinder {
     fn visit_non_fungible_vault(
         &mut self,
         vault_id: ObjectId,
-        info: &VaultInfoSubstate,
+        info: &NonFungibleVaultInfoSubstate,
         _resource: &LiquidNonFungibleResource,
     ) {
         if self.resource_address.eq(&info.resource_address) {

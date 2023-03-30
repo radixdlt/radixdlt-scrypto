@@ -370,24 +370,22 @@ impl TestRunner {
         )) {
             match output.substate.type_info() {
                 TypeInfoSubstate::Object {
-                    blueprint: Blueprint {
-                        package_address,
-                        blueprint_name,
-                    },
+                    blueprint:
+                        Blueprint {
+                            package_address,
+                            blueprint_name,
+                        },
                     ..
                 } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => {
                     match blueprint_name.as_str() {
-                        FUNGIBLE_VAULT_BLUEPRINT => {
-                            self.inspect_fungible_vault(vault_id)
-                        }
-                        NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                            self.inspect_non_fungible_vault(vault_id)
-                                .map(|ids| ids.len().into())
-                        }
-                        _ => None
+                        FUNGIBLE_VAULT_BLUEPRINT => self.inspect_fungible_vault(vault_id),
+                        NON_FUNGIBLE_VAULT_BLUEPRINT => self
+                            .inspect_non_fungible_vault(vault_id)
+                            .map(|ids| ids.len().into()),
+                        _ => None,
                     }
                 }
-                _ => None
+                _ => None,
             }
         } else {
             None

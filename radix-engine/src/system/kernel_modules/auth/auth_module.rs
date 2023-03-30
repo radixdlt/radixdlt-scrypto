@@ -4,8 +4,8 @@ use super::Authentication;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
-use crate::blueprints::resource::{FungibleVaultInfoSubstate, VaultInfoSubstate};
-use crate::blueprints::resource::{AuthZone, VaultBlueprint};
+use crate::blueprints::resource::{AuthZone, VaultUtil};
+use crate::blueprints::resource::{FungibleVaultInfoSubstate, NonFungibleVaultInfoSubstate};
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -158,7 +158,7 @@ impl AuthModule {
             (RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
                 let blueprint = api.get_object_type_info(node_id)?;
-                if VaultBlueprint::is_vault_blueprint(&blueprint) {
+                if VaultUtil::is_vault_blueprint(&blueprint) {
                     let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
                         RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                     )?;
@@ -175,7 +175,7 @@ impl AuthModule {
                                 api.kernel_get_substate_ref(handle)?;
                             substate_ref.resource_address
                         } else {
-                            let substate_ref: &VaultInfoSubstate =
+                            let substate_ref: &NonFungibleVaultInfoSubstate =
                                 api.kernel_get_substate_ref(handle)?;
                             substate_ref.resource_address
                         };
