@@ -14,3 +14,11 @@ pub struct NonFungibleVaultTakeNonFungiblesInput {
 }
 
 pub type NonFungibleVaultTakeNonFungiblesOutput = Bucket;
+
+
+pub const NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {}
+
+pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;

@@ -66,13 +66,6 @@ pub struct VaultGetResourceAddressInput {}
 
 pub type VaultGetResourceAddressOutput = ResourceAddress;
 
-pub const VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultGetNonFungibleLocalIdsInput {}
-
-pub type VaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
-
 pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

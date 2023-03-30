@@ -531,32 +531,6 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&info.resource_address))
     }
 
-    pub fn get_non_fungible_local_ids<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let _input: VaultGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if info.resource_type.is_fungible() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
-            ));
-        } else {
-            let mut ids = NonFungibleVault::liquid_non_fungible_local_ids(receiver, api)?;
-            ids.extend(NonFungibleVault::locked_non_fungible_local_ids(
-                receiver, api,
-            )?);
-            Ok(IndexedScryptoValue::from_typed(&ids))
-        }
-    }
-
     pub fn recall_non_fungibles<Y>(
         receiver: &RENodeId,
         input: &IndexedScryptoValue,

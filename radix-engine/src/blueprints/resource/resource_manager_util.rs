@@ -172,7 +172,7 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT),
+        MethodKey::new(NodeModuleId::SELF, NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT),
         AllowAll,
         DenyAll,
     );

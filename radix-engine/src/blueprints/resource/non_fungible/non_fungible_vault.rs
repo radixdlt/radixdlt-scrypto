@@ -118,6 +118,19 @@ impl NonFungibleVaultBlueprint {
         Ok(amount)
     }
 
+    pub fn get_non_fungible_local_ids<Y>(
+        receiver: &RENodeId,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let mut ids = NonFungibleVault::liquid_non_fungible_local_ids(receiver, api)?;
+        ids.extend(NonFungibleVault::locked_non_fungible_local_ids(
+            receiver, api,
+        )?);
+        Ok(ids)
+    }
 
     pub fn recall<Y>(
         receiver: &RENodeId,

@@ -162,8 +162,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 &RENodeId::Object(self.0),
-                VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&VaultGetNonFungibleLocalIdsInput {}).unwrap(),
+                NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

@@ -592,14 +592,14 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator
-                    .add_child_type_and_descendents::<VaultGetNonFungibleLocalIdsInput>(),
+                    .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<VaultGetNonFungibleLocalIdsOutput>(),
-                export_name: VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                    .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1634,13 +1634,17 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::get_resource_address(receiver, input, api)
             }
-            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::get_non_fungible_local_ids(receiver, input, api)
+                let _input: NonFungibleVaultGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
