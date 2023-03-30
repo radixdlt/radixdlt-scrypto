@@ -1051,6 +1051,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
+ "radix-engine-stores",
  "sbor",
  "serde_json",
  "strum",

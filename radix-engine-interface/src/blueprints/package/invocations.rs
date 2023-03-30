@@ -24,7 +24,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedInput {
-    pub package_address: Option<[u8; 26]>, // TODO: Clean this up
+    pub package_address: Option<[u8; 27]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,

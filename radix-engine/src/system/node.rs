@@ -27,15 +27,14 @@ impl ModuleInit {
     pub fn to_substates(self) -> BTreeMap<SubstateKey, RuntimeSubstate> {
         match self {
             ModuleInit::Metadata(metadata_substates) => metadata_substates,
-            ModuleInit::MethodAccessRules(access_rules) => BTreeMap::from([(
-                SubstateKey::AccessRules(AccessRulesOffset::AccessRules),
-                access_rules.into(),
-            )]),
+            ModuleInit::AccessRules(access_rules) => {
+                BTreeMap::from([(&AccessRulesOffset::AccessRules.into(), access_rules.into())])
+            }
             ModuleInit::TypeInfo(type_info) => BTreeMap::from([(
                 SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo),
                 type_info.into(),
             )]),
-            ModuleInit::ComponentRoyalty(config, accumulator) => BTreeMap::from([
+            ModuleInit::Royalty(config, accumulator) => BTreeMap::from([
                 (
                     SubstateKey::Royalty(RoyaltyOffset::RoyaltyConfig),
                     config.into(),

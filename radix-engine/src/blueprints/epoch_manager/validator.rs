@@ -649,9 +649,9 @@ impl ValidatorCreator {
         api.globalize_with_address(
             validator_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.0.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;
@@ -697,9 +697,9 @@ impl ValidatorCreator {
         api.globalize_with_address(
             validator_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.0.id(),
-                TypedModuleId::Metadata => metadata.id(),
-                TypedModuleId::Royalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0.0,
+                TypedModuleId::Metadata => metadata.0,
+                TypedModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;

@@ -40,6 +40,7 @@ pub enum PackageError {
     },
     InvalidEventSchema,
     InvalidSystemFunction,
+    InvalidMetadataKey(String),
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -154,7 +155,7 @@ where
     node_modules.insert(TypedModuleId::Metadata, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
         TypedModuleId::Royalty,
-        ModuleInit::ComponentRoyalty(
+        ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
             },
@@ -170,18 +171,18 @@ where
             .substates
             .remove(&(
                 TypedModuleId::ObjectState,
-                SubstateKey::AccessRules(AccessRulesOffset::AccessRules),
+                &AccessRulesOffset::AccessRules.into(),
             ))
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.into();
         node_modules.insert(
             TypedModuleId::AccessRules,
-            ModuleInit::MethodAccessRules(access_rules),
+            ModuleInit::AccessRules(access_rules),
         );
     } else {
         node_modules.insert(
             TypedModuleId::AccessRules,
-            ModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
+            ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
             }),
         );
@@ -399,7 +400,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_native<Y>(
-        package_address: Option<[u8; 26]>, // TODO: Clean this up
+        package_address: Option<[u8; 27]>, // TODO: Clean this up
         native_package_code_id: u8,
         schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
@@ -475,7 +476,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_wasm_advanced<Y>(
-        package_address: Option<[u8; 26]>, // TODO: Clean this up
+        package_address: Option<[u8; 27]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -501,7 +502,7 @@ impl PackageNativePackage {
     }
 
     fn publish_wasm_internal<Y>(
-        package_address: Option<[u8; 26]>, // TODO: Clean this up
+        package_address: Option<[u8; 27]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,

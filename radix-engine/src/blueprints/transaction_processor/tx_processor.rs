@@ -213,7 +213,7 @@ impl TransactionProcessorBlueprint {
                     // the former will drop all named proofs before clearing the auth zone.
 
                     for (_, real_id) in processor.proof_id_mapping.drain(..) {
-                        let proof = Proof(real_id);
+                        let proof = Proof(Own(real_id));
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     ComponentAuthZone::sys_clear(api)?;

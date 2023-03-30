@@ -200,11 +200,8 @@ impl IdentityBlueprint {
         let access_rules = SecurifiedIdentity::create_advanced(config, api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
-        let address = api.globalize(NodeId::Object(object.id()), modules)?;
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+        let address = api.globalize(object.0, modules)?;
         Ok(address)
     }
 
@@ -215,11 +212,8 @@ impl IdentityBlueprint {
         let (access_rules, bucket) = SecurifiedIdentity::create_securified(api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
-        let address = api.globalize(NodeId::Object(object.id()), modules)?;
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+        let address = api.globalize(object.0, modules)?;
         Ok((address, bucket))
     }
 
@@ -280,6 +274,6 @@ impl IdentityBlueprint {
             TypedModuleId::Royalty => royalty,
         );
 
-        Ok((Own::Object(object_id), modules))
+        Ok((Own(object_id), modules))
     }
 }

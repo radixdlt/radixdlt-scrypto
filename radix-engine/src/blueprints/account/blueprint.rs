@@ -127,12 +127,9 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(config, api)?;
         let modules = Self::create_modules(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(NodeId::Object(account.id()), modules)?;
+        let address = api.globalize(account.0, modules)?;
 
         Ok(address)
     }
@@ -144,12 +141,9 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
         let modules = Self::create_modules(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(NodeId::Object(account.id()), modules)?;
+        let address = api.globalize(account.0, modules)?;
 
         Ok((address, bucket))
     }
@@ -165,7 +159,7 @@ impl AccountBlueprint {
                 api.new_key_value_store(KeyValueStoreSchema::new::<ResourceAddress, Own>(false))?;
 
             let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id),
+                vaults: Own(kv_store_id),
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
@@ -173,7 +167,7 @@ impl AccountBlueprint {
             )?
         };
 
-        Ok(Own::Object(account_id))
+        Ok(Own(account_id))
     }
 
     fn lock_fee_internal<Y>(
@@ -191,15 +185,18 @@ impl AccountBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateKey::Account(AccountOffset::Account),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let handle =
-                api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::read_only())?;
+            let handle = api.sys_lock_substate(
+                account.vaults.as_node_id(),
+                &substate_key,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
@@ -210,7 +207,7 @@ impl AccountBlueprint {
 
             match entry {
                 Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!")),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
@@ -260,15 +257,18 @@ impl AccountBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateKey::Account(AccountOffset::Account),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let handle =
-                api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::MUTABLE)?;
+            let handle = api.sys_lock_substate(
+                account.vaults.as_node_id(),
+                &substate_key,
+                LockFlags::MUTABLE,
+            )?;
             handle
         };
 
@@ -280,11 +280,11 @@ impl AccountBlueprint {
 
             match entry {
                 Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!"),
                 Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
+                    let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                     let entry: &mut Option<ScryptoValue> =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
@@ -314,7 +314,7 @@ impl AccountBlueprint {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateKey::Account(AccountOffset::Account),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -330,8 +330,11 @@ impl AccountBlueprint {
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
                 let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-                let handle =
-                    api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::MUTABLE)?;
+                let handle = api.sys_lock_substate(
+                    account.vaults.as_node_id(),
+                    &substate_key,
+                    LockFlags::MUTABLE,
+                )?;
                 handle
             };
 
@@ -343,11 +346,11 @@ impl AccountBlueprint {
 
                 match entry {
                     Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
+                        .map(|own| Vault(own))
                         .expect("Impossible Case!"),
                     Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
+                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                         let entry: &mut Option<ScryptoValue> =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
@@ -383,15 +386,18 @@ impl AccountBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateKey::Account(AccountOffset::Account),
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let handle =
-                api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::read_only())?;
+            let handle = api.sys_lock_substate(
+                account.vaults.as_node_id(),
+                &substate_key,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
@@ -402,7 +408,7 @@ impl AccountBlueprint {
 
             match entry {
                 Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!")),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
