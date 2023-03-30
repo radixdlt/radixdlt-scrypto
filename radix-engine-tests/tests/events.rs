@@ -55,13 +55,15 @@ fn scrypto_cant_emit_unregistered_event() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|runtime_error| {
-        matches!(
-            runtime_error,
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::SchemaNotFoundError { .. },
-            )),
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::EventError(err)) => {
+            if let EventError::SchemaNotFoundError { .. } = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 

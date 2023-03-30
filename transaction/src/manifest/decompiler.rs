@@ -63,8 +63,8 @@ impl From<fmt::Error> for DecompileError {
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
-    pub bucket_names: HashMap<ManifestBucket, String>,
-    pub proof_names: HashMap<ManifestProof, String>,
+    pub bucket_names: NonIterMap<ManifestBucket, String>,
+    pub proof_names: NonIterMap<ManifestProof, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
@@ -72,8 +72,8 @@ impl<'a> DecompilationContext<'a> {
         Self {
             bech32_encoder: Some(bech32_encoder),
             id_allocator: ManifestIdAllocator::new(),
-            bucket_names: HashMap::<ManifestBucket, String>::new(),
-            proof_names: HashMap::<ManifestProof, String>::new(),
+            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
+            proof_names: NonIterMap::<ManifestProof, String>::new(),
         }
     }
 
@@ -81,8 +81,8 @@ impl<'a> DecompilationContext<'a> {
         Self {
             bech32_encoder,
             id_allocator: ManifestIdAllocator::new(),
-            bucket_names: HashMap::<ManifestBucket, String>::new(),
-            proof_names: HashMap::<ManifestProof, String>::new(),
+            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
+            proof_names: NonIterMap::<ManifestProof, String>::new(),
         }
     }
 

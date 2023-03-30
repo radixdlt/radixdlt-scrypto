@@ -161,7 +161,7 @@ function generate_input() {
 
         pushd ..
         # Collect input data
-        RUST_MIN_STACK=4194304 cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
+        cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
         popd
         if [ $mode = "raw" ] ; then
             mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
