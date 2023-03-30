@@ -86,6 +86,10 @@ if [ $cmd = "run" ] ; then
     echo "Running $cpus AFL instances for $duration seconds"
     mkdir -p afl
 
+    # Remove dead screen sessions.
+    # Such sessions might remain if the previous run was cancelled.
+    screen -wipe || true
+
     for (( i=0; i<$cpus; i++ )) ; do
         if [ $i -eq 0 ] ; then
             name=${target}_main_$i
