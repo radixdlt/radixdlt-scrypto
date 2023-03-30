@@ -192,7 +192,7 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_AMOUNT_IDENT),
+        MethodKey::new(NodeModuleId::SELF, FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );

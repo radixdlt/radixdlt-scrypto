@@ -538,22 +538,6 @@ impl VaultBlueprint {
 
     // FIXME: set up auth
 
-    pub fn lock_amount<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultLockAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        FungibleVault::lock_amount(receiver, input.amount, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 
     pub fn lock_non_fungibles<Y>(
         receiver: &RENodeId,

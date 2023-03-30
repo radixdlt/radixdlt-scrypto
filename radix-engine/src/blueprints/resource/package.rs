@@ -480,12 +480,12 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                VAULT_LOCK_AMOUNT_IDENT.to_string(),
+                FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultLockAmountInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultLockAmountOutput>(),
-                    export_name: VAULT_LOCK_AMOUNT_IDENT.to_string(),
+                    input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>(),
+                    export_name: FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -628,15 +628,6 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<NonFungibleVaultCreateProofByIdsInput>(),
                 output: aggregator.add_child_type_and_descendents::<NonFungibleVaultCreateProofByIdsOutput>(),
                 export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            VAULT_LOCK_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultLockAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultLockAmountOutput>(),
-                export_name: VAULT_LOCK_AMOUNT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1710,13 +1701,17 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_LOCK_AMOUNT_IDENT => {
+            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::lock_amount(receiver, input, api)
+                let input: FungibleVaultLockFungibleAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::lock_amount(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_LOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

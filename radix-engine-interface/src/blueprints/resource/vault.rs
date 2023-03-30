@@ -73,15 +73,6 @@ pub struct VaultCreateProofByAmountInput {
 
 pub type VaultCreateProofByAmountOutput = Proof;
 
-pub const VAULT_LOCK_AMOUNT_IDENT: &str = "Vault_lock_amount";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultLockAmountInput {
-    pub amount: Decimal,
-}
-
-pub type VaultLockAmountOutput = ();
-
 pub const VAULT_UNLOCK_AMOUNT_IDENT: &str = "Vault_unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
