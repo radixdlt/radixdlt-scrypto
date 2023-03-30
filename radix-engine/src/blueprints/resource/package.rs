@@ -401,10 +401,6 @@ impl ResourceManagerNativePackage {
             substates.push(aggregator.add_child_type_and_descendents::<VaultInfoSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
