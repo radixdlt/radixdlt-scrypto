@@ -15,26 +15,26 @@ use super::track::{Track, TrackError};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
     pub nodes_to_move: Vec<RENodeId>,
-    pub node_refs_to_copy: HashSet<RENodeId>,
+    pub node_refs_to_copy: IndexSet<RENodeId>,
 }
 
 impl CallFrameUpdate {
     pub fn empty() -> Self {
         CallFrameUpdate {
             nodes_to_move: Vec::new(),
-            node_refs_to_copy: HashSet::new(),
+            node_refs_to_copy: index_set_new(),
         }
     }
 
     pub fn move_node(node_id: RENodeId) -> Self {
         CallFrameUpdate {
             nodes_to_move: vec![node_id],
-            node_refs_to_copy: HashSet::new(),
+            node_refs_to_copy: index_set_new(),
         }
     }
 
     pub fn copy_ref(node_id: RENodeId) -> Self {
-        let mut node_refs_to_copy = HashSet::new();
+        let mut node_refs_to_copy = index_set_new();
         node_refs_to_copy.insert(node_id);
         CallFrameUpdate {
             nodes_to_move: vec![],
@@ -65,7 +65,7 @@ pub struct SubstateLock {
     pub node_id: RENodeId,
     pub module_id: NodeModuleId,
     pub offset: SubstateOffset,
-    pub temp_references: HashSet<RENodeId>,
+    pub temp_references: IndexSet<RENodeId>,
     pub substate_owned_nodes: Vec<RENodeId>,
     pub flags: LockFlags,
 }
@@ -96,17 +96,17 @@ pub struct CallFrame {
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
     /// - Global node refs obtained through substate locking.
-    immortal_node_refs: HashMap<RENodeId, RENodeRefData>,
+    immortal_node_refs: NonIterMap<RENodeId, RENodeRefData>,
 
     /// Node refs obtained through substate locking, which will be dropped upon unlocking.
-    temp_node_refs: HashMap<RENodeId, u32>,
+    temp_node_refs: NonIterMap<RENodeId, u32>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
-    owned_root_nodes: HashMap<RENodeId, u32>,
+    owned_root_nodes: IndexMap<RENodeId, u32>,
 
     next_lock_handle: LockHandle,
-    locks: HashMap<LockHandle, SubstateLock>,
+    locks: IndexMap<LockHandle, SubstateLock>,
 }
 
 impl CallFrame {
@@ -125,13 +125,13 @@ impl CallFrame {
             if heap.contains_node(&node_id) {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
                     return Err(RuntimeError::KernelError(KernelError::TrackError(
-                        TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id),
+                        Box::new(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id)),
                     )));
                 }
             } else {
                 track
                     .acquire_lock(substate_id, flags)
-                    .map_err(KernelError::TrackError)?;
+                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
         }
 
@@ -139,7 +139,7 @@ impl CallFrame {
         let (references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
         // Expand references
-        let mut temp_references = HashSet::new();
+        let mut temp_references = index_set_new();
         for node_id in references {
             // TODO: fix this ugly condition
             if matches!(node_id, RENodeId::GlobalObject(_)) {
@@ -284,7 +284,7 @@ impl CallFrame {
                         SubstateId(node_id.clone(), module_id, offset.clone()),
                         flags.contains(LockFlags::FORCE_WRITE),
                     )
-                    .map_err(KernelError::TrackError)?;
+                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
         }
 
@@ -315,11 +315,11 @@ impl CallFrame {
         let mut frame = Self {
             depth: 0,
             actor: None,
-            immortal_node_refs: HashMap::new(),
-            temp_node_refs: HashMap::new(),
-            owned_root_nodes: HashMap::new(),
+            immortal_node_refs: NonIterMap::new(),
+            temp_node_refs: NonIterMap::new(),
+            owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
-            locks: HashMap::new(),
+            locks: index_map_new(),
         };
 
         // Add well-known global refs to current frame
@@ -376,8 +376,8 @@ impl CallFrame {
         actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
-        let mut owned_heap_nodes = HashMap::new();
-        let mut next_node_refs = HashMap::new();
+        let mut owned_heap_nodes = index_map_new();
+        let mut next_node_refs = NonIterMap::new();
 
         for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(&node_id)?;
@@ -393,10 +393,10 @@ impl CallFrame {
             depth: parent.depth + 1,
             actor: Some(actor),
             immortal_node_refs: next_node_refs,
-            temp_node_refs: HashMap::new(),
+            temp_node_refs: NonIterMap::new(),
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
-            locks: HashMap::new(),
+            locks: index_map_new(),
         };
 
         Ok(frame)
@@ -517,7 +517,7 @@ impl CallFrame {
             for ((module_id, offset), substate) in substates {
                 track
                     .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
+                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
 
             self.add_ref(node_id, RENodeVisibilityOrigin::Normal);

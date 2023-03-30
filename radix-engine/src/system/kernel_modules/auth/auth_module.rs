@@ -36,8 +36,10 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized(Actor, MethodAuthorization),
+    Unauthorized(Box<Unauthorized>),
 }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct Unauthorized(pub Actor, pub MethodAuthorization);
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
@@ -400,7 +402,7 @@ impl KernelModule for AuthModule {
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(callee.clone(), authorization),
+                AuthError::Unauthorized(Box::new(Unauthorized(callee.clone(), authorization))),
             )));
         }
 

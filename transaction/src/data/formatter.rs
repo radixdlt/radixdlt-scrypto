@@ -4,7 +4,7 @@ use radix_engine_interface::data::manifest::{
 };
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::{address::Bech32Encoder, blueprints::resource::NonFungibleGlobalId};
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::NonIterMap;
 use sbor::rust::fmt;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -12,8 +12,8 @@ use utils::ContextualDisplay;
 #[derive(Clone, Copy, Debug)]
 pub struct ManifestValueDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
-    pub bucket_names: Option<&'a HashMap<ManifestBucket, String>>,
-    pub proof_names: Option<&'a HashMap<ManifestProof, String>>,
+    pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
+    pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
 }
 
 impl<'a> ManifestValueDisplayContext<'a> {
@@ -35,8 +35,8 @@ impl<'a> ManifestValueDisplayContext<'a> {
 
     pub fn with_bech32_and_names(
         bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_names: &'a HashMap<ManifestBucket, String>,
-        proof_names: &'a HashMap<ManifestProof, String>,
+        bucket_names: &'a NonIterMap<ManifestBucket, String>,
+        proof_names: &'a NonIterMap<ManifestProof, String>,
     ) -> Self {
         Self {
             bech32_encoder,

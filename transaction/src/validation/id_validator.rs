@@ -20,16 +20,16 @@ pub enum ProofKind {
 
 pub struct ManifestValidator {
     id_allocator: ManifestIdAllocator,
-    bucket_ids: HashMap<ManifestBucket, usize>,
-    proof_ids: HashMap<ManifestProof, ProofKind>,
+    bucket_ids: NonIterMap<ManifestBucket, usize>,
+    proof_ids: NonIterMap<ManifestProof, ProofKind>,
 }
 
 impl ManifestValidator {
     pub fn new() -> Self {
         Self {
             id_allocator: ManifestIdAllocator::new(),
-            bucket_ids: HashMap::new(),
-            proof_ids: HashMap::new(),
+            bucket_ids: NonIterMap::new(),
+            proof_ids: NonIterMap::new(),
         }
     }
 

@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::time::TimeComparisonOperator;
+use sbor::rust::boxed::Box;
 
 use super::{
     AccessControllerError, AccessControllerSubstate, PrimaryOperationState, PrimaryRoleState,
@@ -468,8 +469,8 @@ fn validate_recovery_proposal(
         Ok(())
     } else {
         Err(AccessControllerError::RecoveryProposalMismatch {
-            expected: expected.clone(),
-            found: actual.clone(),
+            expected: Box::new(expected.clone()),
+            found: Box::new(actual.clone()),
         })
     }
 }

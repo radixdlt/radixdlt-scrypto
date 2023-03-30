@@ -31,7 +31,7 @@ test_packages \
     examples/no-std"
 
 echo "Testing CLIs..."
-(cd simulator; RUST_MIN_STACK=4194304 cargo test)
+(cd simulator; cargo test)
 test_cli \
     "./tests/resim.sh \
     ./tests/scrypto.sh \
@@ -41,5 +41,7 @@ echo "Running benchmark..."
 test_benchmark  \
     "sbor-tests \
     radix-engine-tests"
+
+./check_stack_usage.sh
 
 echo "Congrats! All tests passed."
