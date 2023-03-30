@@ -260,7 +260,7 @@ where
                 ),
                 FUNGIBLE_VAULT_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::FungibleVaultInfo(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
                     )),

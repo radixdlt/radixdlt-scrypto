@@ -10,9 +10,36 @@ use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct FungibleVaultInfoSubstate {
+    pub resource_address: ResourceAddress,
+    pub divisibility: u8,
+}
+
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {
+    fn check_amount(amount: &Decimal, divisibility: u8) -> bool {
+        !amount.is_negative()
+            && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
+            == BnumI256::from(0)
+    }
+
+    fn get_info<Y>(receiver: &RENodeId, api: &mut Y) -> Result<FungibleVaultInfoSubstate, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let info: &FungibleVaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let info = info.clone();
+        api.sys_drop_lock(handle)?;
+        Ok(info)
+    }
+
     pub fn take<Y>(
         receiver: &RENodeId,
         amount: &Decimal,
@@ -21,9 +48,10 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let info = Self::get_info(receiver, api)?;
+
         // Check amount
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if !info.resource_type.check_amount(*amount) {
+        if !Self::check_amount(amount, info.divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -38,7 +66,9 @@ impl FungibleVaultBlueprint {
             vec![
                 scrypto_encode(&BucketInfoSubstate {
                     resource_address: info.resource_address,
-                    resource_type: info.resource_type,
+                    resource_type: ResourceType::Fungible {
+                        divisibility: info.divisibility,
+                    },
                 })
                 .unwrap(),
                 scrypto_encode(&taken).unwrap(),
@@ -59,11 +89,13 @@ impl FungibleVaultBlueprint {
         let other_bucket: DroppedBucket = api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
 
         // Check resource address
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if info.resource_address != other_bucket.info.resource_address {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::MismatchingResource),
-            ));
+        {
+            let info = Self::get_info(receiver, api)?;
+            if info.resource_address != other_bucket.info.resource_address {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::MismatchingResource),
+                ));
+            }
         }
 
         // Put
@@ -96,16 +128,18 @@ impl FungibleVaultBlueprint {
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Check resource address
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if info.resource_address != RADIX_TOKEN {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
-            ));
-        }
-        if !info.resource_type.check_amount(amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
-            ));
+        {
+            let info = Self::get_info(receiver, api)?;
+            if info.resource_address != RADIX_TOKEN {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
+                ));
+            }
+            if !Self::check_amount(&amount, info.divisibility) {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::InvalidAmount),
+                ));
+            }
         }
 
         // Lock the substate (with special flags)
@@ -157,8 +191,9 @@ impl FungibleVaultBlueprint {
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if !info.resource_type.check_amount(amount) {
+        let info = Self::get_info(receiver, api)?;
+
+        if !Self::check_amount(&amount, info.divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -170,7 +205,9 @@ impl FungibleVaultBlueprint {
             vec![
                 scrypto_encode(&BucketInfoSubstate {
                     resource_address: info.resource_address,
-                    resource_type: info.resource_type,
+                    resource_type: ResourceType::Fungible {
+                        divisibility: info.divisibility,
+                    },
                 })
                     .unwrap(),
                 scrypto_encode(&taken).unwrap(),
@@ -191,13 +228,13 @@ impl FungibleVaultBlueprint {
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = VaultInfoSubstate::of(receiver, api)?;
         let amount = FungibleVault::liquid_amount(receiver, api)?
             + FungibleVault::locked_amount(receiver, api)?;
 
+        let info = Self::get_info(receiver, api)?;
         let proof_info = ProofInfoSubstate {
             resource_address: info.resource_address,
-            resource_type: info.resource_type,
+            resource_type: ResourceType::Fungible { divisibility: info.divisibility },
             restricted: false,
         };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
@@ -222,8 +259,8 @@ impl FungibleVaultBlueprint {
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if !info.resource_type.check_amount(amount) {
+        let info = Self::get_info(receiver, api)?;
+        if !Self::check_amount(&amount, info.divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -231,7 +268,9 @@ impl FungibleVaultBlueprint {
 
         let proof_info = ProofInfoSubstate {
             resource_address: info.resource_address,
-            resource_type: info.resource_type,
+            resource_type: ResourceType::Fungible {
+                divisibility: info.divisibility,
+            },
             restricted: false,
         };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
@@ -285,7 +324,7 @@ impl FungibleVaultBlueprint {
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = VaultInfoSubstate::of(receiver, api)?;
+        let info = Self::get_info(receiver, api)?;
         Ok(info.resource_address)
     }
 }

@@ -37,6 +37,7 @@ pub enum PersistedSubstate {
     FunctionAccessRules(FunctionAccessRulesSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
+    FungibleVaultInfo(FungibleVaultInfoSubstate),
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
@@ -58,6 +59,14 @@ pub enum PersistedSubstate {
 }
 
 impl PersistedSubstate {
+    pub fn fungible_vault_info(&self) -> &FungibleVaultInfoSubstate {
+        if let PersistedSubstate::FungibleVaultInfo(vault) = self {
+            vault
+        } else {
+            panic!("Not a fungible vault info");
+        }
+    }
+
     pub fn vault_info(&self) -> &VaultInfoSubstate {
         if let PersistedSubstate::VaultInfo(vault) = self {
             vault
@@ -155,6 +164,16 @@ impl PersistedSubstate {
     }
 }
 
+impl Into<FungibleVaultInfoSubstate> for PersistedSubstate {
+    fn into(self) -> FungibleVaultInfoSubstate {
+        if let PersistedSubstate::FungibleVaultInfo(vault) = self {
+            vault
+        } else {
+            panic!("Not a fungible vault");
+        }
+    }
+}
+
 impl Into<VaultInfoSubstate> for PersistedSubstate {
     fn into(self) -> VaultInfoSubstate {
         if let PersistedSubstate::VaultInfo(vault) = self {
@@ -206,6 +225,7 @@ impl PersistedSubstate {
             PersistedSubstate::FunctionAccessRules(value) => {
                 RuntimeSubstate::FunctionAccessRules(value)
             }
+            PersistedSubstate::FungibleVaultInfo(value) => RuntimeSubstate::FungibleVaultInfo(value),
             PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
             PersistedSubstate::VaultLiquidFungible(value) => {
                 RuntimeSubstate::VaultLiquidFungible(value)
@@ -261,6 +281,7 @@ pub enum RuntimeSubstate {
 
     // TODO: we may want to move some of the static info into `TypeInfo`
     // And split the "Blueprint" into fungible and non-fungible.
+    FungibleVaultInfo(FungibleVaultInfoSubstate),
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
@@ -323,6 +344,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
             }
+            RuntimeSubstate::FungibleVaultInfo(value) => PersistedSubstate::FungibleVaultInfo(value.clone()),
             RuntimeSubstate::VaultInfo(value) => PersistedSubstate::VaultInfo(value.clone()),
             RuntimeSubstate::VaultLiquidFungible(value) => {
                 PersistedSubstate::VaultLiquidFungible(value.clone())
@@ -387,6 +409,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
             }
+            RuntimeSubstate::FungibleVaultInfo(value) => PersistedSubstate::FungibleVaultInfo(value),
             RuntimeSubstate::VaultInfo(value) => PersistedSubstate::VaultInfo(value),
             RuntimeSubstate::VaultLiquidFungible(value) => {
                 PersistedSubstate::VaultLiquidFungible(value)
@@ -483,6 +506,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageCodeType(value) => SubstateRefMut::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => SubstateRefMut::PackageCode(value),
             RuntimeSubstate::PackageRoyalty(value) => SubstateRefMut::PackageRoyalty(value),
+            RuntimeSubstate::FungibleVaultInfo(value) => SubstateRefMut::FungibleVaultInfo(value),
             RuntimeSubstate::VaultInfo(value) => SubstateRefMut::VaultInfo(value),
             RuntimeSubstate::VaultLiquidFungible(value) => {
                 SubstateRefMut::VaultLiquidFungible(value)
@@ -546,6 +570,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::PackageCode(value) => SubstateRef::PackageCode(value),
             RuntimeSubstate::PackageRoyalty(value) => SubstateRef::PackageRoyalty(value),
+            RuntimeSubstate::FungibleVaultInfo(value) => SubstateRef::FungibleVaultInfo(value),
             RuntimeSubstate::VaultInfo(value) => SubstateRef::VaultInfo(value),
             RuntimeSubstate::VaultLiquidFungible(value) => SubstateRef::VaultLiquidFungible(value),
             RuntimeSubstate::VaultLiquidNonFungible(value) => {
@@ -984,6 +1009,7 @@ pub enum SubstateRef<'a> {
     PackageCodeType(&'a PackageCodeTypeSubstate),
     PackageCode(&'a PackageCodeSubstate),
     PackageRoyalty(&'a PackageRoyaltySubstate),
+    FungibleVaultInfo(&'a FungibleVaultInfoSubstate),
     VaultInfo(&'a VaultInfoSubstate),
     VaultLiquidFungible(&'a LiquidFungibleResource),
     VaultLiquidNonFungible(&'a LiquidNonFungibleResource),
@@ -1007,6 +1033,15 @@ pub enum SubstateRef<'a> {
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a FungibleVaultInfoSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::FungibleVaultInfo(value) => value,
+            _ => panic!("Not a FungibleVaultInfo"),
+        }
+    }
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1308,6 +1343,11 @@ impl<'a> SubstateRef<'a> {
                     .collect();
                 (HashSet::new(), nodes)
             }
+            SubstateRef::FungibleVaultInfo(vault) => {
+                let mut references = HashSet::new();
+                references.insert(RENodeId::GlobalObject(vault.resource_address.into()));
+                (references, Vec::new())
+            }
             SubstateRef::VaultInfo(vault) => {
                 let mut references = HashSet::new();
                 references.insert(RENodeId::GlobalObject(vault.resource_address.into()));
@@ -1443,6 +1483,7 @@ pub enum SubstateRefMut<'a> {
     PackageRoyalty(&'a mut PackageRoyaltySubstate),
     PackageAccessRules(&'a mut FunctionAccessRulesSubstate),
     KeyValueStoreEntry(&'a mut Option<ScryptoValue>),
+    FungibleVaultInfo(&'a mut FungibleVaultInfoSubstate),
     VaultInfo(&'a mut VaultInfoSubstate),
     VaultLiquidFungible(&'a mut LiquidFungibleResource),
     VaultLiquidNonFungible(&'a mut LiquidNonFungibleResource),

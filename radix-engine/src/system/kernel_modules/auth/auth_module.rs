@@ -4,7 +4,7 @@ use super::Authentication;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
-use crate::blueprints::resource::VaultInfoSubstate;
+use crate::blueprints::resource::{FungibleVaultInfoSubstate, VaultInfoSubstate};
 use crate::blueprints::resource::{AuthZone, VaultBlueprint};
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -170,9 +170,16 @@ impl AuthModule {
                             SubstateOffset::Vault(VaultOffset::Info),
                             LockFlags::read_only(),
                         )?;
-                        let substate_ref: &VaultInfoSubstate =
-                            api.kernel_get_substate_ref(handle)?;
-                        let resource_address = substate_ref.resource_address;
+                        let resource_address = if blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
+                            let substate_ref: &FungibleVaultInfoSubstate =
+                                api.kernel_get_substate_ref(handle)?;
+                            substate_ref.resource_address
+                        } else {
+                            let substate_ref: &VaultInfoSubstate =
+                                api.kernel_get_substate_ref(handle)?;
+                            substate_ref.resource_address
+                        };
+
                         api.kernel_drop_lock(handle)?;
                         resource_address
                     };

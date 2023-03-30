@@ -1,11 +1,9 @@
-use crate::blueprints::resource::{VaultBlueprint, VaultInfoSubstate};
+use crate::blueprints::resource::{FungibleVaultInfoSubstate, VaultBlueprint, VaultInfoSubstate};
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
-};
+use radix_engine_interface::blueprints::resource::{FUNGIBLE_VAULT_BLUEPRINT, LiquidFungibleResource, LiquidNonFungibleResource, NON_FUNGIBLE_VAULT_BLUEPRINT, ResourceType};
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -28,7 +26,7 @@ pub trait StateTreeVisitor {
     fn visit_fungible_vault(
         &mut self,
         _vault_id: ObjectId,
-        _info: &VaultInfoSubstate,
+        _info: &FungibleVaultInfoSubstate,
         _resource: &LiquidFungibleResource,
     ) {
     }
@@ -121,9 +119,9 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::Info),
                         )) {
-                            let info: VaultInfoSubstate = output_value.substate.into();
-                            match &info.resource_type {
-                                ResourceType::Fungible { .. } => {
+                            match blueprint.blueprint_name.as_str() {
+                                FUNGIBLE_VAULT_BLUEPRINT => {
+                                    let info: FungibleVaultInfoSubstate = output_value.substate.into();
                                     let liquid: LiquidFungibleResource = self
                                         .substate_store
                                         .get_substate(&SubstateId(
@@ -141,7 +139,8 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                         &liquid,
                                     );
                                 }
-                                ResourceType::NonFungible { .. } => {
+                                NON_FUNGIBLE_VAULT_BLUEPRINT => {
+                                    let info: VaultInfoSubstate = output_value.substate.into();
                                     let liquid: LiquidNonFungibleResource = self
                                         .substate_store
                                         .get_substate(&SubstateId(
@@ -159,6 +158,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                         &liquid,
                                     );
                                 }
+                                _ => panic!("Unexpected vault blueprint")
                             }
                         } else {
                             return Err(StateTreeTraverserError::RENodeNotFound(node_id));

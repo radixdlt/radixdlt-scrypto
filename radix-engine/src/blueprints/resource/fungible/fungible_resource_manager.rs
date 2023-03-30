@@ -16,6 +16,8 @@ use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
+
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FungibleResourceManagerError {
@@ -347,9 +349,9 @@ impl FungibleResourceManagerBlueprint {
         let resource_manager: &FungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let divisibility = resource_manager.divisibility;
-        let info = VaultInfoSubstate {
+        let info = FungibleVaultInfoSubstate {
             resource_address,
-            resource_type: ResourceType::Fungible { divisibility },
+            divisibility,
         };
         let vault_id = api.new_object(
             FUNGIBLE_VAULT_BLUEPRINT,

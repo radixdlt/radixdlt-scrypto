@@ -20,10 +20,11 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_interface::blueprints::resource::{FUNGIBLE_VAULT_BLUEPRINT, LiquidFungibleResource, NON_FUNGIBLE_VAULT_BLUEPRINT};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
+use crate::blueprints::resource::LocalRef::Vault;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -886,78 +887,110 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
         &self,
         node_id: &RENodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
-        let vault_info = self
+        let type_info = self
             .fetch_substate(&SubstateId(
                 *node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Info),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ))
-            .vault_info()
+            .type_info()
             .clone();
 
-        if vault_info.resource_type.is_fungible() {
-            // If there is an update to the liquid resource
-            if let Some((substate, old_version)) =
-                self.fetch_substate_from_state_updates(&SubstateId(
-                    *node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                ))
-            {
-                let old_balance = if old_version.is_none() {
-                    Decimal::ZERO
-                } else {
-                    self.fetch_substate_from_store(&SubstateId(
+        let blueprint_name = match type_info {
+            TypeInfoSubstate::Object {
+                blueprint: Blueprint {
+                    package_address,
+                    blueprint_name,
+                },
+                ..
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => {
+                blueprint_name
+            }
+            _ => panic!("Unexpected object")
+        };
+
+        match blueprint_name.as_str() {
+            FUNGIBLE_VAULT_BLUEPRINT => {
+                let resource_address = self
+                    .fetch_substate(&SubstateId(
+                        *node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::Info),
+                    ))
+                    .fungible_vault_info().resource_address;
+
+                // If there is an update to the liquid resource
+                if let Some((substate, old_version)) =
+                    self.fetch_substate_from_state_updates(&SubstateId(
                         *node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::Vault(VaultOffset::LiquidFungible),
                     ))
-                    .vault_liquid_fungible()
-                    .amount()
-                };
-                let new_balance = substate.vault_liquid_fungible().amount();
+                {
+                    let old_balance = if old_version.is_none() {
+                        Decimal::ZERO
+                    } else {
+                        self.fetch_substate_from_store(&SubstateId(
+                            *node_id,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))
+                            .vault_liquid_fungible()
+                            .amount()
+                    };
+                    let new_balance = substate.vault_liquid_fungible().amount();
 
-                Some(BalanceChange::Fungible(new_balance - old_balance))
-            } else {
-                None
-            }
-        } else {
-            // If there is an update to the liquid resource
-            if let Some((substate, old_version)) =
-                self.fetch_substate_from_state_updates(&SubstateId(
-                    *node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                ))
-            {
-                let mut old_balance = if old_version.is_none() {
-                    BTreeSet::new()
+                    Some((resource_address, BalanceChange::Fungible(new_balance - old_balance)))
                 } else {
-                    self.fetch_substate_from_store(&SubstateId(
+                    None
+                }
+            }
+            NON_FUNGIBLE_VAULT_BLUEPRINT => {
+                let resource_address = self
+                    .fetch_substate(&SubstateId(
+                        *node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::Info),
+                    ))
+                    .vault_info().resource_address;
+
+                // If there is an update to the liquid resource
+                if let Some((substate, old_version)) =
+                    self.fetch_substate_from_state_updates(&SubstateId(
                         *node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                     ))
-                    .vault_liquid_non_fungible()
-                    .ids()
-                    .clone()
-                };
-                let mut new_balance = substate.vault_liquid_non_fungible().ids().clone();
+                {
+                    let mut old_balance = if old_version.is_none() {
+                        BTreeSet::new()
+                    } else {
+                        self.fetch_substate_from_store(&SubstateId(
+                            *node_id,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                        ))
+                            .vault_liquid_non_fungible()
+                            .ids()
+                            .clone()
+                    };
+                    let mut new_balance = substate.vault_liquid_non_fungible().ids().clone();
 
-                let intersection: HashSet<NonFungibleLocalId> =
-                    new_balance.intersection(&old_balance).cloned().collect();
-                new_balance.retain(|x| !intersection.contains(x));
-                old_balance.retain(|x| !intersection.contains(x));
+                    let intersection: HashSet<NonFungibleLocalId> =
+                        new_balance.intersection(&old_balance).cloned().collect();
+                    new_balance.retain(|x| !intersection.contains(x));
+                    old_balance.retain(|x| !intersection.contains(x));
 
-                Some(BalanceChange::NonFungible {
-                    added: new_balance,
-                    removed: old_balance,
-                })
-            } else {
-                None
+                    Some((resource_address, BalanceChange::NonFungible {
+                        added: new_balance,
+                        removed: old_balance,
+                    }))
+                } else {
+                    None
+                }
             }
+            _ => panic!("Unxpected")
         }
-        .map(|x| (vault_info.resource_address, x))
     }
 
     fn fetch_substate(&self, substate_id: &SubstateId) -> PersistedSubstate {
