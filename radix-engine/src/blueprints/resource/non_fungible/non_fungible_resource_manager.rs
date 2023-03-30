@@ -843,7 +843,7 @@ impl NonFungibleResourceManagerBlueprint {
             resource_type: ResourceType::NonFungible { id_type },
         };
         let vault_id = api.new_object(
-            VAULT_BLUEPRINT,
+            NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),

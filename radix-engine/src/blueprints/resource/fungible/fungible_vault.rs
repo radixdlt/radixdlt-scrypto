@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, InterpreterError};
+use crate::errors::ApplicationError;
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
@@ -214,7 +214,6 @@ impl FungibleVaultBlueprint {
 
         Ok(Proof(proof_id))
     }
-
 
     pub fn create_proof_by_amount<Y>(
         receiver: &RENodeId,

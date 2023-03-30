@@ -1095,7 +1095,7 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
                 FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
-                VAULT_BLUEPRINT.to_string() => vault_schema,
+                NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_schema,
                 BUCKET_BLUEPRINT.to_string() => bucket_schema,
                 PROOF_BLUEPRINT.to_string() => proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,

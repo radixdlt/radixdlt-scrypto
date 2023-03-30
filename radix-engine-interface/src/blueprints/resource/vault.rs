@@ -8,8 +8,6 @@ use crate::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
-pub const VAULT_BLUEPRINT: &str = "Vault";
-
 pub const VAULT_PUT_IDENT: &str = "put";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
@@ -45,15 +43,7 @@ pub struct VaultTakeNonFungiblesInput {
 
 pub type VaultTakeNonFungiblesOutput = Bucket;
 
-pub const FUNGIBLE_VAULT_LOCK_FEE_IDENT: &str = "lock_fee";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct FungibleVaultLockFeeInput {
-    pub amount: Decimal,
-    pub contingent: bool,
-}
-
-pub type FungibleVaultLockFeeOutput = ();
 
 pub const VAULT_RECALL_IDENT: &str = "recall";
 
