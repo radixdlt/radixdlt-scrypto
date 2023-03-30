@@ -45,15 +45,15 @@ pub struct VaultTakeNonFungiblesInput {
 
 pub type VaultTakeNonFungiblesOutput = Bucket;
 
-pub const VAULT_LOCK_FEE_IDENT: &str = "lock_fee";
+pub const FUNGIBLE_VAULT_LOCK_FEE_IDENT: &str = "lock_fee";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultLockFeeInput {
+pub struct FungibleVaultLockFeeInput {
     pub amount: Decimal,
     pub contingent: bool,
 }
 
-pub type VaultLockFeeOutput = ();
+pub type FungibleVaultLockFeeOutput = ();
 
 pub const VAULT_RECALL_IDENT: &str = "recall";
 

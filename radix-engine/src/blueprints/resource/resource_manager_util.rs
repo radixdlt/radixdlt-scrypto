@@ -151,7 +151,7 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT),
+        MethodKey::new(NodeModuleId::SELF, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
         "withdraw",
         DenyAll,
     );

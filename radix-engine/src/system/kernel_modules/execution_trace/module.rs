@@ -492,7 +492,7 @@ impl ExecutionTraceModule {
                 ident,
                 ..
             } if VaultBlueprint::is_vault_blueprint(blueprint)
-                && ident.eq(VAULT_LOCK_FEE_IDENT) =>
+                && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(&current_actor, vault_id)
             }

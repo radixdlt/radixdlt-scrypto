@@ -167,8 +167,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            VAULT_LOCK_FEE_IDENT,
-            scrypto_encode(&VaultLockFeeInput {
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&FungibleVaultLockFeeInput {
                 amount,
                 contingent: false,
             })
@@ -187,8 +187,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            VAULT_LOCK_FEE_IDENT,
-            scrypto_encode(&VaultLockFeeInput {
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&FungibleVaultLockFeeInput {
                 amount,
                 contingent: true,
             })

@@ -32,6 +32,8 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
 const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
 const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
 const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
+const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
+const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -51,6 +53,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
 
 pub struct ResourceManagerNativePackage;
 
@@ -429,12 +433,12 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                VAULT_LOCK_FEE_IDENT.to_string(),
+                FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultLockFeeInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultLockFeeOutput>(),
-                    export_name: VAULT_LOCK_FEE_IDENT.to_string(),
+                    input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeOutput>(),
+                    export_name: FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -443,7 +447,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
-                    export_name: VAULT_RECALL_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -463,7 +467,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    export_name: VAULT_CREATE_PROOF_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -527,15 +531,6 @@ impl ResourceManagerNativePackage {
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            VAULT_LOCK_FEE_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultLockFeeInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultLockFeeOutput>(),
-                export_name: VAULT_LOCK_FEE_IDENT.to_string(),
-            },
-        );
-        functions.insert(
             VAULT_TAKE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -559,7 +554,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                 output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
-                export_name: VAULT_RECALL_IDENT.to_string(),
+                export_name: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -617,7 +612,7 @@ impl ResourceManagerNativePackage {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                export_name: VAULT_CREATE_PROOF_IDENT.to_string(),
+                export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1508,13 +1503,16 @@ impl ResourceManagerNativePackage {
                     NonFungibleResourceManagerBlueprint::get_non_fungible(receiver, input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_LOCK_FEE_IDENT => {
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::lock_fee(receiver, input, api)
+                let input: FungibleVaultLockFeeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                FungibleVaultBlueprint::lock_fee(receiver, input.amount, input.contingent, api)
             }
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
@@ -1548,13 +1546,29 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::take_non_fungibles(receiver, input, api)
             }
-            VAULT_RECALL_IDENT => {
+            FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::recall(receiver, input, api)
+                let input: VaultRecallInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::recall(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: VaultRecallInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::recall(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_RECALL_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
@@ -1628,13 +1642,29 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::get_non_fungible_local_ids(receiver, input, api)
             }
-            VAULT_CREATE_PROOF_IDENT => {
+            FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::create_proof(receiver, input, api)
+                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::create_proof(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::create_proof(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_CREATE_PROOF_BY_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

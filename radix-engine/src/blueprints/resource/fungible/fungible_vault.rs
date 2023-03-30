@@ -87,4 +87,132 @@ impl FungibleVaultBlueprint {
 
         Ok(amount)
     }
+
+    pub fn lock_fee<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        contingent: bool,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // Check resource address
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        if info.resource_address != RADIX_TOKEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
+            ));
+        }
+        if !info.resource_type.check_amount(amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
+        // Lock the substate (with special flags)
+        let vault_handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
+        )?;
+
+        // Take by amount
+        let fee = {
+            let vault: &mut LiquidFungibleResource =
+                api.kernel_get_substate_ref_mut(vault_handle)?;
+
+            // Take fee from the vault
+            vault.take_by_amount(amount).map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::LockFeeInsufficientBalance,
+                ))
+            })?
+        };
+
+        // Credit cost units
+        let changes = api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
+
+        // Keep changes
+        {
+            let vault: &mut LiquidFungibleResource =
+                api.kernel_get_substate_ref_mut(vault_handle)?;
+            vault.put(changes).expect("Failed to put fee changes");
+        }
+
+        // Emitting an event once the fee has been locked
+        Runtime::emit_event(
+            api,
+            LockFeeEvent {
+                amount,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn recall<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        if !info.resource_type.check_amount(amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
+        let taken = FungibleVault::take(receiver, amount, api)?;
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address: info.resource_address,
+                    resource_type: info.resource_type,
+                })
+                    .unwrap(),
+                scrypto_encode(&taken).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+        Ok(Bucket(bucket_id))
+    }
+
+    pub fn create_proof<Y>(
+        receiver: &RENodeId,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        let amount = FungibleVault::liquid_amount(receiver, api)?
+            + FungibleVault::locked_amount(receiver, api)?;
+
+        let proof_info = ProofInfoSubstate {
+            resource_address: info.resource_address,
+            resource_type: info.resource_type,
+            restricted: false,
+        };
+        let proof = FungibleVault::lock_amount(receiver, amount, api)?;
+
+        let proof_id = api.new_object(
+            PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&proof).unwrap(),
+                scrypto_encode(&NonFungibleProof::default()).unwrap(),
+            ],
+        )?;
+
+        Ok(Proof(proof_id))
+    }
 }

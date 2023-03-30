@@ -86,4 +86,72 @@ impl NonFungibleVaultBlueprint {
 
         Ok(amount)
     }
+
+
+    pub fn recall<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        if !info.resource_type.check_amount(amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
+        let taken = NonFungibleVault::take(receiver, amount, api)?;
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address: info.resource_address,
+                    resource_type: info.resource_type,
+                })
+                    .unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&taken).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+
+        Ok(Bucket(bucket_id))
+    }
+
+
+    pub fn create_proof<Y>(
+        receiver: &RENodeId,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        let amount = NonFungibleVault::liquid_amount(receiver, api)?
+            + NonFungibleVault::locked_amount(receiver, api)?;
+
+        let proof_info = ProofInfoSubstate {
+            resource_address: info.resource_address,
+            resource_type: info.resource_type,
+            restricted: false,
+        };
+        let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
+
+        let proof_id = api.new_object(
+            PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&FungibleProof::default()).unwrap(),
+                scrypto_encode(&proof).unwrap(),
+            ],
+        )?;
+
+        Ok(Proof(proof_id))
+    }
 }
