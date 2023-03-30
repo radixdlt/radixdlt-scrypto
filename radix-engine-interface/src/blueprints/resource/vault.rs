@@ -34,17 +34,6 @@ pub struct VaultTakeInput {
 
 pub type VaultTakeOutput = Bucket;
 
-pub const VAULT_TAKE_NON_FUNGIBLES_IDENT: &str = "take_non_fungibles";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultTakeNonFungiblesInput {
-    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-}
-
-pub type VaultTakeNonFungiblesOutput = Bucket;
-
-
-
 pub const VAULT_RECALL_IDENT: &str = "recall";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

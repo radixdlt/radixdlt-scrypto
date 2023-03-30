@@ -86,8 +86,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            VAULT_TAKE_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&VaultTakeNonFungiblesInput {
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
                 non_fungible_local_ids,
             })
             .unwrap(),

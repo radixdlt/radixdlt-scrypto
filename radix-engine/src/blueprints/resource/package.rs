@@ -536,12 +536,12 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultTakeNonFungiblesInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultTakeNonFungiblesOutput>(),
-                export_name: VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1534,13 +1534,17 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::take(receiver, &input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_TAKE_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::take_non_fungibles(receiver, input, api)
+                let input: NonFungibleVaultTakeNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::take_non_fungibles(receiver, input.non_fungible_local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;

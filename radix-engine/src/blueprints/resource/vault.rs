@@ -514,49 +514,6 @@ impl VaultBlueprint {
                 || blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
     }
 
-    pub fn take_non_fungibles<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultTakeNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let info = VaultInfoSubstate::of(receiver, api)?;
-
-        if info.resource_type.is_fungible() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
-            ));
-        } else {
-            // Take
-            let taken =
-                NonFungibleVault::take_non_fungibles(receiver, &input.non_fungible_local_ids, api)?;
-
-            // Create node
-            let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    })
-                    .unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&taken).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
-        }
-    }
-
     pub fn get_resource_address<Y>(
         receiver: &RENodeId,
         input: &IndexedScryptoValue,
