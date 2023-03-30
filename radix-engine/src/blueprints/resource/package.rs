@@ -35,6 +35,7 @@ const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str = "create_proof_by_amount_FungibleVault";
+const FUNGIBLE_VAULT_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_FungibleVault";
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -57,6 +58,7 @@ const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleV
 const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str = "create_proof_by_amount_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_NonFungibleVault";
 
 pub struct ResourceManagerNativePackage;
 
@@ -456,7 +458,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<VaultGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultGetResourceAddressOutput>(),
-                    export_name: VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -588,7 +590,7 @@ impl ResourceManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<VaultGetResourceAddressInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<VaultGetResourceAddressOutput>(),
-                export_name: VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                export_name: NON_FUNGIBLE_VAULT_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1612,13 +1614,29 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::get_amount(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_GET_RESOURCE_ADDRESS_IDENT => {
+            FUNGIBLE_VAULT_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::get_resource_address(receiver, input, api)
+                let _input: VaultGetResourceAddressInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::get_resource_address(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: VaultGetResourceAddressInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::get_resource_address(receiver, input, api)
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

@@ -513,21 +513,4 @@ impl VaultBlueprint {
             && (blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 || blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
     }
-
-    pub fn get_resource_address<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let _input: VaultGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let info = VaultInfoSubstate::of(receiver, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&info.resource_address))
-    }
 }

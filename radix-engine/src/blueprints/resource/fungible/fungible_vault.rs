@@ -277,4 +277,15 @@ impl FungibleVaultBlueprint {
 
         Ok(())
     }
+
+    pub fn get_resource_address<Y>(
+        receiver: &RENodeId,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        Ok(info.resource_address)
+    }
 }
