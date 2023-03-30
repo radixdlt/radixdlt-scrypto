@@ -27,6 +27,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use resources_tracker_macro::trace_resources;
 
+#[trace_resources]
 fn validate_input(
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
@@ -62,6 +63,7 @@ fn validate_input(
     Ok(function_schema.export_name.clone())
 }
 
+#[trace_resources]
 fn validate_output(
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
@@ -292,7 +294,7 @@ pub struct ScryptoExecutor {
 impl Executor for ScryptoExecutor {
     type Output = IndexedScryptoValue;
 
-    #[trace_resources(log={self.fn_identifier.ident.to_string()})]
+    #[trace_resources(log={self.fn_identifier.ident.to_string()}, log={self.fn_identifier.package_address.to_hex()})]
     fn execute<Y, W>(
         &self,
         args: &IndexedScryptoValue,

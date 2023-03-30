@@ -185,7 +185,10 @@ impl TestRunner {
     pub fn builder() -> TestRunnerBuilder {
         TestRunnerBuilder {
             custom_genesis: None,
+            #[cfg(not(feature = "resource_tracker"))]
             trace: true,
+            #[cfg(feature = "resource_tracker")]
+            trace: false,
             state_hashing: false,
         }
     }
