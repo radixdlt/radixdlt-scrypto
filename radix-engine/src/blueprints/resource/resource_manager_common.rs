@@ -248,6 +248,7 @@ where
 {
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::sys_new(resman_access_rules, api)?.0;
+
     let vault_access_rules = AccessRules::sys_new(vault_access_rules, api)?.0;
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;

@@ -186,6 +186,7 @@ where
             NodeModuleId::AccessRules,
             RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
+                child_blueprint_rules: BTreeMap::new(),
             }),
         );
     }
