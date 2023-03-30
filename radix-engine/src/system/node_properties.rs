@@ -1,4 +1,4 @@
-use crate::errors::{KernelError, RuntimeError};
+use crate::errors::{InvalidOwnership, KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
@@ -117,33 +117,37 @@ impl VisibilityProperties {
                         } if is_native_package(*package_address) => true,
                         // Scrypto
                         _ => match &actor.identifier {
-                            ActorIdentifier::Function(..) => match (node_id, offset) {
-                                // READ package code & abi
-                                (
-                                    NodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                )
-                                | (
-                                    NodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                )
-                                | (
-                                    NodeId::GlobalObject(_),
-                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                ) => read_only,
-                                // READ global substates
-                                (
-                                    NodeId::Object(_),
-                                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                                ) => read_only,
-                                // READ/WRITE KVStore entry
-                                (
-                                    NodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                // Otherwise, false
-                                _ => false,
-                            },
+                            ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
+                                match (node_id, offset) {
+                                    // READ package code & abi
+                                    (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalObject(_),
+                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                    ) => read_only,
+                                    // READ global substates
+                                    (
+                                        RENodeId::Object(_),
+                                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                                    ) => read_only,
+                                    // READ/WRITE KVStore entry
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    // Otherwise, false
+                                    _ => false,
+                                }
+                            }
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
                                 MethodIdentifier(NodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
@@ -223,13 +227,17 @@ impl VisibilityProperties {
 
                         // Scrypto
                         _ => match &actor.identifier {
-                            ActorIdentifier::Function(..) => match (node_id, offset) {
-                                (
-                                    NodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                _ => false,
-                            },
+                            ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
+                                match (node_id, offset) {
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    _ => false,
+                                }
+                            }
 
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
                                 MethodIdentifier(NodeId::Object(component_address), ..) => {
@@ -309,17 +317,21 @@ impl SubstateProperties {
             (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match offset {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    package_address,
-                    blueprint_name.to_string(),
+                    Box::new(InvalidOwnership(
+                        offset.clone(),
+                        package_address,
+                        blueprint_name.to_string(),
+                    )),
                 ))),
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    package_address,
-                    blueprint_name.to_string(),
+                    Box::new(InvalidOwnership(
+                        offset.clone(),
+                        package_address,
+                        blueprint_name.to_string(),
+                    )),
                 ))),
             },
             _ => Ok(()),

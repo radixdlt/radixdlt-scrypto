@@ -7,6 +7,7 @@ use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TransactionManifest;
+use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
@@ -206,7 +207,7 @@ fn test_radiswap() {
         + 90000 /* DropNode */
         + 25340 /* Invoke */
         + 200500 /* LockSubstate */
-        + 2645710 /* ReadSubstate */
+        + 2649960 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
         + 1654715 /* RunWasm */
@@ -316,7 +317,7 @@ fn test_flash_loan() {
         + 147500 /* DropNode */
         + 44790 /* Invoke */
         + 316500 /* LockSubstate */
-        + 6669130 /* ReadSubstate */
+        + 6678690 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
         + 1416040 /* RunWasm */
@@ -346,7 +347,7 @@ fn test_publish_large_package() {
     ));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             PackageSchema::default(),
             BTreeMap::new(),
@@ -467,6 +468,6 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // No assertion here - this is just a sanity-test
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
     receipt.expect_commit_failure();
 }

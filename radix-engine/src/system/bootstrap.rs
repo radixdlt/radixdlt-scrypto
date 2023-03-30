@@ -63,10 +63,9 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
-                dependent_resources: vec![],
+                dependent_resources: vec![PACKAGE_TOKEN, PACKAGE_OWNER_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             }),
@@ -88,7 +87,6 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             }),
@@ -111,7 +109,6 @@ pub fn create_genesis(
                 dependent_resources: vec![RADIX_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             }),
@@ -133,7 +130,6 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             }),
@@ -155,7 +151,6 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
@@ -213,10 +208,57 @@ pub fn create_genesis(
         });
     }
 
+    // Package Owner Token
+    {
+        // TODO: Integrate this into package instantiation to remove circular depedendency
+        let mut access_rules = BTreeMap::new();
+        let local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&PACKAGE_PACKAGE).unwrap()).unwrap();
+        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = PACKAGE_OWNER_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type: NonFungibleIdType::UUID,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                metadata: btreemap!(),
+                access_rules,
+                resource_address,
+            }),
+        });
+    }
+
     // Identity Package
     {
-        pre_allocated_ids.insert(NodeId::GlobalObject(IDENTITY_PACKAGE.into()));
-        let package_address = IDENTITY_PACKAGE.into();
+        // TODO: Integrate this into package instantiation to remove circular depedendency
+        let mut access_rules = BTreeMap::new();
+        let local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap();
+        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = IDENTITY_OWNER_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type: NonFungibleIdType::UUID,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                metadata: btreemap!(),
+                access_rules,
+                resource_address,
+            }),
+        });
+
+        pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_PACKAGE.into()));
+        let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -224,11 +266,15 @@ pub fn create_genesis(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: IdentityNativePackage::schema(),
-                dependent_resources: vec![],
+                dependent_resources: vec![
+                    ECDSA_SECP256K1_TOKEN,
+                    EDDSA_ED25519_TOKEN,
+                    IDENTITY_OWNER_TOKEN,
+                    PACKAGE_TOKEN,
+                ],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
@@ -248,7 +294,6 @@ pub fn create_genesis(
                 schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
@@ -270,7 +315,6 @@ pub fn create_genesis(
                 schema: ClockNativePackage::schema(),
                 native_package_code_id: CLOCK_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
@@ -281,8 +325,28 @@ pub fn create_genesis(
 
     // Account Package
     {
-        pre_allocated_ids.insert(NodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
-        let package_address = ACCOUNT_PACKAGE.into();
+        // TODO: Integrate this into package instantiation to remove circular depedendency
+        let mut access_rules = BTreeMap::new();
+        let global_id = NonFungibleGlobalId::package_actor(ACCOUNT_PACKAGE);
+        access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = ACCOUNT_OWNER_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type: NonFungibleIdType::UUID,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                metadata: btreemap!(),
+                access_rules,
+                resource_address,
+            }),
+        });
+
+        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
+        let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -292,8 +356,12 @@ pub fn create_genesis(
                 schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
-                dependent_resources: vec![],
+                dependent_resources: vec![
+                    ECDSA_SECP256K1_TOKEN,
+                    EDDSA_ED25519_TOKEN,
+                    ACCOUNT_OWNER_TOKEN,
+                    PACKAGE_TOKEN,
+                ],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
@@ -313,7 +381,6 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
                 dependent_resources: vec![PACKAGE_TOKEN],
                 dependent_components: vec![CLOCK],
@@ -335,7 +402,6 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: TransactionProcessorNativePackage::schema(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
@@ -408,6 +474,7 @@ pub fn create_genesis(
         });
     }
 
+    // Faucet Package
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
@@ -416,8 +483,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishWasmInput {
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),

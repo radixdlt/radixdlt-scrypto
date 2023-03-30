@@ -23,26 +23,29 @@ pub enum ModuleInit {
     ),
 }
 
-impl ModuleInit {
-    pub fn to_substates(self) -> HashMap<SubstateKey, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateKey, RuntimeSubstate>::new();
+impl RENodeModuleInit {
+    pub fn to_substates(self) -> BTreeMap<SubstateOffset, RuntimeSubstate> {
         match self {
-            ModuleInit::Metadata(metadata_substates) => {
-                substates.extend(metadata_substates);
-            }
-            ModuleInit::AccessRules(access_rules) => {
-                substates.insert(AccessRulesOffset::AccessRules.into(), access_rules.into());
-            }
-            ModuleInit::TypeInfo(type_info) => {
-                substates.insert(TypeInfoOffset::TypeInfo.into(), type_info.into());
-            }
-            ModuleInit::Royalty(config, accumulator) => {
-                substates.insert(RoyaltyOffset::RoyaltyConfig.into(), config.into());
-                substates.insert(RoyaltyOffset::RoyaltyAccumulator.into(), accumulator.into());
-            }
+            RENodeModuleInit::Metadata(metadata_substates) => metadata_substates,
+            RENodeModuleInit::MethodAccessRules(access_rules) => BTreeMap::from([(
+                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                access_rules.into(),
+            )]),
+            RENodeModuleInit::TypeInfo(type_info) => BTreeMap::from([(
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                type_info.into(),
+            )]),
+            RENodeModuleInit::ComponentRoyalty(config, accumulator) => BTreeMap::from([
+                (
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                    config.into(),
+                ),
+                (
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    accumulator.into(),
+                ),
+            ]),
         }
-
-        substates
     }
 }
 
@@ -53,16 +56,13 @@ pub enum NodeInit {
     KeyValueStore,
 }
 
-impl NodeInit {
-    pub fn to_substates(self) -> HashMap<SubstateKey, RuntimeSubstate> {
-        let mut substates = HashMap::<SubstateKey, RuntimeSubstate>::new();
+impl RENodeInit {
+    pub fn to_substates(self) -> BTreeMap<SubstateOffset, RuntimeSubstate> {
         match self {
-            NodeInit::GlobalObject(object_substates) | NodeInit::Object(object_substates) => {
-                substates.extend(object_substates);
+            RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
+                object_substates
             }
-            NodeInit::KeyValueStore => {}
-        };
-
-        substates
+            RENodeInit::KeyValueStore => BTreeMap::new(),
+        }
     }
 }

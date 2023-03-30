@@ -53,7 +53,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("${non_fungible_local_id}"),
-        Tuple("Hello World", Decimal("12"))
+        Tuple(Tuple("Hello World", Decimal("12")))
     );
 
 # Depositing the entirety of the initial supply of the newly created resource into our account 

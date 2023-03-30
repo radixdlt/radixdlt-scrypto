@@ -12,7 +12,19 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmInput {
-    pub package_address: Option<[u8; 27]>, // TODO: Clean this up
+    pub code: Vec<u8>,
+    pub schema: PackageSchema,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+    pub metadata: BTreeMap<String, String>,
+}
+
+pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
+
+pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct PackagePublishWasmAdvancedInput {
+    pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -20,7 +32,7 @@ pub struct PackagePublishWasmInput {
     pub access_rules: AccessRulesConfig,
 }
 
-pub type PackagePublishWasmOutput = PackageAddress;
+pub type PackagePublishWasmAdvancedOutput = PackageAddress;
 
 pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
@@ -32,8 +44,6 @@ pub struct PackagePublishNativeInput {
     pub dependent_resources: Vec<ResourceAddress>,
     pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: AccessRulesConfig,
-
     pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,
 }

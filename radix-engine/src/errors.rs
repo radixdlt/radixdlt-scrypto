@@ -135,33 +135,43 @@ pub enum KernelError {
 
     // RENode
     ContainsDuplicatedOwns,
-    StoredNodeRemoved(NodeId),
-    RENodeGlobalizeTypeNotAllowed(NodeId),
+    StoredNodeRemoved(RENodeId),
+    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    TrackError(Box<TrackError>),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     BlobNotFound(Hash),
     DropNodeFailure(NodeId),
 
     // Substate Constraints
-    InvalidOffset(SubstateKey),
-    InvalidOwnership(SubstateKey, PackageAddress, String),
-    InvalidId(NodeId),
+    InvalidOffset(SubstateOffset),
+    InvalidOwnership(Box<InvalidOwnership>),
+    InvalidId(RENodeId),
 
     // Actor Constraints
-    InvalidDropNodeAccess {
-        mode: ExecutionMode,
-        actor: Actor,
-        node_id: NodeId,
-        package_address: PackageAddress,
-        blueprint_name: String,
-    },
-    InvalidSubstateAccess {
-        mode: ExecutionMode,
-        actor: Actor,
-        node_id: NodeId,
-        substate_key: SubstateKey,
-        flags: LockFlags,
-    },
+    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidSubstateAccess(Box<InvalidSubstateAccess>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidOwnership(pub SubstateOffset, pub PackageAddress, pub String);
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidDropNodeAccess {
+    pub mode: ExecutionMode,
+    pub actor: Actor,
+    pub node_id: RENodeId,
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidSubstateAccess {
+    pub mode: ExecutionMode,
+    pub actor: Actor,
+    pub node_id: RENodeId,
+    pub offset: SubstateOffset,
+    pub flags: LockFlags,
 }
 
 impl CanBeAbortion for KernelError {
@@ -175,11 +185,15 @@ impl CanBeAbortion for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
-    OffsetDoesNotExist(NodeId, SubstateKey),
-    RENodeNotVisible(NodeId),
-    RENodeNotOwned(NodeId),
-    MovingLockedRENode(NodeId),
+    OffsetDoesNotExist(Box<OffsetDoesNotExist>),
+    RENodeNotVisible(RENodeId),
+    RENodeNotOwned(RENodeId),
+    MovingLockedRENode(RENodeId),
+    FailedToMoveSubstateToTrack(Box<TrackError>),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct OffsetDoesNotExist(pub RENodeId, pub SubstateOffset);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
@@ -190,15 +204,10 @@ pub enum SystemError {
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
-    InvalidModuleSet(NodeId, BTreeSet<TypedModuleId>),
+    InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
-    InvalidModuleType {
-        expected_package: PackageAddress,
-        expected_blueprint: String,
-        actual_package: PackageAddress,
-        actual_blueprint: String,
-    },
-    SubstateValidationError(SubstateValidationError),
+    InvalidModuleType(Box<InvalidModuleType>),
+    SubstateValidationError(Box<SubstateValidationError>),
     AssertAccessRuleFailed,
 }
 
@@ -211,6 +220,7 @@ pub enum SubstateValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
+    InvalidSystemCall,
     CallMethodOnKeyValueStore,
 
     NativeUnexpectedReceiver(String),
@@ -235,6 +245,17 @@ pub enum ModuleError {
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidModuleType {
+    pub expected_package: PackageAddress,
+    pub expected_blueprint: String,
+    pub actual_package: PackageAddress,
+    pub actual_blueprint: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidModuleSet(pub RENodeId, pub BTreeSet<NodeModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
@@ -345,7 +366,7 @@ pub enum ApplicationError {
 
     AccessControllerError(AccessControllerError),
 
-    EventError(EventError),
+    EventError(Box<EventError>),
 
     MetadataError(MetadataPanicError),
 }

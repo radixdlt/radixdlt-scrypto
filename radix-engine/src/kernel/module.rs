@@ -141,6 +141,16 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
+    fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
+        _node_id: RENodeId,
+        _module_id: NodeModuleId,
+        _offset: &SubstateOffset,
+        _api: &mut Y,
+    ) -> Result<bool, RuntimeError> {
+        Ok(false)
+    }
+
+    #[inline(always)]
     fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _lock_handle: LockHandle,

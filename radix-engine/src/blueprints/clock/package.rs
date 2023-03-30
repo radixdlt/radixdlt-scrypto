@@ -2,7 +2,7 @@ use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -80,6 +80,7 @@ impl ClockNativePackage {
                     schema,
                     substates,
                     functions,
+                    virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
                 }
             ),
@@ -166,27 +167,18 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 

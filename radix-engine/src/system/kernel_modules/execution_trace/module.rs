@@ -183,9 +183,16 @@ pub struct ExecutionTrace {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct ApplicationFnIdentifier {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub ident: String,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum Origin {
-    ScryptoFunction(FnIdentifier),
-    ScryptoMethod(FnIdentifier),
+    ScryptoFunction(ApplicationFnIdentifier),
+    ScryptoMethod(ApplicationFnIdentifier),
     CreateNode,
     DropNode,
 }
@@ -429,10 +436,36 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match callee.identifier {
-                ActorIdentifier::Method(..) => Origin::ScryptoMethod(callee.fn_identifier.clone()),
-                ActorIdentifier::Function(..) => {
-                    Origin::ScryptoFunction(callee.fn_identifier.clone())
+            let origin = {
+                let Actor {
+                    fn_identifier:
+                        FnIdentifier {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                        },
+                    identifier: receiver,
+                } = callee;
+
+                match ident {
+                    FnIdent::Application(ident) => match receiver {
+                        ActorIdentifier::Method(..) => {
+                            Origin::ScryptoMethod(ApplicationFnIdentifier {
+                                package_address: *package_address,
+                                blueprint_name: blueprint_name.to_string(),
+                                ident: ident.to_string(),
+                            })
+                        }
+                        ActorIdentifier::Function(..) => {
+                            Origin::ScryptoFunction(ApplicationFnIdentifier {
+                                package_address: *package_address,
+                                blueprint_name: blueprint_name.to_string(),
+                                ident: ident.to_string(),
+                            })
+                        }
+                        _ => panic!("Should not get here"),
+                    },
+                    FnIdent::System(..) => return,
                 }
             };
             let instruction_index = self.instruction_index();
@@ -452,7 +485,7 @@ impl ExecutionTraceModule {
                     FnIdentifier {
                         package_address,
                         blueprint_name,
-                        ident,
+                        ident: FnIdent::Application(ident),
                     },
                 identifier: ActorIdentifier::Method(MethodIdentifier(vault_id, ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -466,7 +499,7 @@ impl ExecutionTraceModule {
                     FnIdentifier {
                         package_address,
                         blueprint_name,
-                        ident,
+                        ident: FnIdent::Application(ident),
                     },
                 identifier: ActorIdentifier::Method(MethodIdentifier(vault_id, ..)),
             } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -492,7 +525,7 @@ impl ExecutionTraceModule {
                     FnIdentifier {
                         package_address,
                         blueprint_name,
-                        ident,
+                        ident: FnIdent::Application(ident),
                     },
                 identifier: ActorIdentifier::Method(MethodIdentifier(vault_id, ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -501,6 +534,14 @@ impl ExecutionTraceModule {
             {
                 self.handle_vault_take_output(&resource_summary, caller, vault_id)
             }
+            Some(Actor {
+                fn_identifier:
+                    FnIdentifier {
+                        ident: FnIdent::System(..),
+                        ..
+                    },
+                ..
+            }) => return,
             _ => {}
         }
 

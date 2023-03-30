@@ -134,7 +134,7 @@ impl KernelModule for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (fn_identifier, optional_component) = {
+        let (package_address, blueprint_name, ident, optional_component) = {
             let Actor {
                 identifier,
                 fn_identifier,
@@ -147,13 +147,22 @@ impl KernelModule for CostingModule {
                 _ => None,
             };
 
-            (fn_identifier, maybe_component)
+            let ident = match &fn_identifier.ident {
+                FnIdent::Application(ident) => ident,
+                FnIdent::System(..) => return Ok(()),
+            };
+
+            (
+                fn_identifier.package_address,
+                &fn_identifier.blueprint_name,
+                ident,
+                maybe_component,
+            )
         };
 
         //===========================
         // Apply package royalty
         //===========================
-        let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
             package_address.as_node_id(),
             TypedModuleId::ObjectState,
@@ -163,8 +172,8 @@ impl KernelModule for CostingModule {
         let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_charge = substate
             .blueprint_royalty_configs
-            .get(&fn_identifier.blueprint_name)
-            .map(|x| x.get_rule(&fn_identifier.ident).clone())
+            .get(blueprint_name)
+            .map(|x| x.get_rule(ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {
             let vault_id = if let Some(vault) = substate.royalty_vault {
@@ -195,10 +204,7 @@ impl KernelModule for CostingModule {
                 LockFlags::read_only(),
             )?;
             let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
-            let royalty_charge = substate
-                .royalty_config
-                .get_rule(&fn_identifier.ident)
-                .clone();
+            let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
             if royalty_charge > 0 {

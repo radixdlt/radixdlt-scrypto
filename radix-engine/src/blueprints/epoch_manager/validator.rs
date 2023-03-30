@@ -1,9 +1,9 @@
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
+use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -11,7 +11,6 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -464,10 +463,7 @@ impl ValidatorBlueprint {
             TypedModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                key: MethodKey::new(
-                    TypedModuleId::ObjectState,
-                    VALIDATOR_STAKE_IDENT.to_string(),
-                ),
+                key: MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT),
                 rule,
             })
             .unwrap(),
@@ -481,6 +477,29 @@ impl ValidatorBlueprint {
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
+    }
+}
+
+struct SecurifiedValidator;
+
+impl SecurifiedAccessRules for SecurifiedValidator {
+    const SECURIFY_IDENT: Option<&'static str> = None;
+    const OWNER_GROUP_NAME: &'static str = "owner";
+    const OWNER_TOKEN: ResourceAddress = VALIDATOR_OWNER_TOKEN;
+
+    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
+        let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
+        vec![
+            (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
+            (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
+            (
+                VALIDATOR_STAKE_IDENT,
+                MethodType::Custom(
+                    AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+                    AccessRuleEntry::AccessRule(rule!(require(non_fungible_global_id))),
+                ),
+            ),
+        ]
     }
 }
 
@@ -587,88 +606,13 @@ impl ValidatorCreator {
         Ok(unstake_resource_manager.0)
     }
 
-    fn build_access_rules(owner_access_rule: AccessRule) -> AccessRulesConfig {
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_group_access_rule_and_mutability(
-            "owner".to_string(),
-            owner_access_rule,
-            AccessRule::DenyAll,
-        );
-        access_rules.set_method_access_rule_to_group(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
-            "owner".to_string(),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_REGISTER_IDENT.to_string(),
-            ),
-            "owner".to_string(),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_UNREGISTER_IDENT.to_string(),
-            ),
-            "owner".to_string(),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_UPDATE_KEY_IDENT.to_string(),
-            ),
-            "owner".to_string(),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
-            ),
-            "owner".to_string(),
-        );
-
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
-        access_rules.set_group_and_mutability(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_STAKE_IDENT.to_string(),
-            ),
-            "owner".to_string(),
-            rule!(require(non_fungible_global_id)),
-        );
-
-        access_rules.set_method_access_rule(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_GET_IDENT.to_string()),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_UNSTAKE_IDENT.to_string(),
-            ),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                VALIDATOR_CLAIM_XRD_IDENT.to_string(),
-            ),
-            rule!(allow_all),
-        );
-
-        access_rules
-    }
-
     pub fn create_with_initial_stake<Y>(
         manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
         initial_stake: Bucket,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -698,30 +642,28 @@ impl ValidatorCreator {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = Self::build_access_rules(owner_access_rule);
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             validator_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.0,
-                TypedModuleId::Metadata => metadata.0,
-                TypedModuleId::Royalty => royalty.0,
+                NodeModuleId::AccessRules => access_rules.0.id(),
+                NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             address.into(),
         )?;
-        Ok((address.into(), liquidity_bucket))
+        Ok((address.into(), liquidity_bucket, owner_token_bucket))
     }
 
     pub fn create<Y>(
         manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<ComponentAddress, RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -748,20 +690,19 @@ impl ValidatorCreator {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = Self::build_access_rules(owner_access_rule);
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             validator_id,
             btreemap!(
-                TypedModuleId::AccessRules => access_rules.0,
-                TypedModuleId::Metadata => metadata.0,
-                TypedModuleId::Royalty => royalty.0,
+                NodeModuleId::AccessRules => access_rules.0.id(),
+                NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             address.into(),
         )?;
-        Ok(address.into())
+        Ok((address.into(), owner_token_bucket))
     }
 }

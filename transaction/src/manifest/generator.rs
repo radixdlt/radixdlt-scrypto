@@ -9,16 +9,18 @@ use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateGlobalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT,
+    AccountCreateAdvancedInput, AccountCreateInput, ACCOUNT_BLUEPRINT,
+    ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+    IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
+    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, FungibleResourceManagerCreateInput,
+    AccessRulesConfig, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -409,8 +411,19 @@ pub fn generate_instruction(
             schema,
             royalty_config,
             metadata,
-            access_rules,
         } => Instruction::PublishPackage {
+            code: generate_blob(code, blobs)?,
+            schema: generate_blob(schema, blobs)?,
+            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::PublishPackageAdvanced {
+            code,
+            schema,
+            royalty_config,
+            metadata,
+            access_rules,
+        } => Instruction::PublishPackageAdvanced {
             code: generate_blob(code, blobs)?,
             schema: generate_blob(schema, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
@@ -580,12 +593,7 @@ pub fn generate_instruction(
                         bech32_decoder,
                         blobs,
                     )?,
-                    entries: generate_non_fungible_mint_params(
-                        initial_supply,
-                        resolver,
-                        bech32_decoder,
-                        blobs,
-                    )?,
+                    entries: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
                 },
             ),
         },
@@ -616,30 +624,38 @@ pub fn generate_instruction(
         ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateIdentity { access_rule } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentity {} => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput {
-                access_rule: generate_typed_value::<AccessRule>(
-                    access_rule,
+            args: to_manifest_value(&IdentityCreateInput {}),
+        },
+        ast::Instruction::CreateIdentityAdvanced { config } => Instruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateAdvancedInput {
+                config: generate_typed_value::<AccessRulesConfig>(
+                    config,
                     resolver,
                     bech32_decoder,
                     blobs,
                 )?,
             }),
         },
-        ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
+
+        ast::Instruction::CreateAccount {} => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateGlobalInput {
-                withdraw_rule: generate_typed_value(
-                    withdraw_rule,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateInput {}),
+        },
+        ast::Instruction::CreateAccountAdvanced { config } => Instruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateAdvancedInput {
+                config: generate_typed_value(config, resolver, bech32_decoder, blobs)?,
             }),
         },
     })
@@ -973,46 +989,6 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
-/// This function generates the mint parameters of a non fungible resource from an array which has
-/// the following structure:
-///
-/// Map<NonFungibleLocalId, Tuple>
-/// - Every key is a NonFungibleLocalId
-/// - Every value is a Tuple of length 2
-///    - [0] Tuple (immutable data)
-///    - [1] Tuple (mutable data)
-fn generate_non_fungible_mint_params(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue,)>, GeneratorError> {
-    match value {
-        ast::Value::Map(key_type, _value_type, elements) => {
-            if key_type != &ast::Type::NonFungibleLocalId {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::NonFungibleLocalId,
-                    actual: key_type.clone(),
-                });
-            };
-            if elements.len() % 2 != 0 {
-                return Err(GeneratorError::OddNumberOfElements);
-            }
-
-            let mut mint_params = BTreeMap::new();
-            for i in 0..elements.len() / 2 {
-                let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
-                let non_fungible =
-                    generate_value(&elements[i * 2 + 1], None, resolver, bech32_decoder, blobs)?;
-                mint_params.insert(non_fungible_local_id, (non_fungible,));
-            }
-
-            Ok(mint_params)
-        }
-        v => invalid_type!(v, ast::Type::Array)?,
-    }
-}
-
 pub fn generate_value(
     value: &ast::Value,
     expected_type: Option<ManifestValueKind>,
@@ -1244,14 +1220,14 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::api::types::NonFungibleData;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRulesConfig, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::types::{ComponentAddress, PackageAddress, ResourceAddress};
-    use radix_engine_interface::{dec, pdec};
+    use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1473,8 +1449,8 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
-            Instruction::PublishPackage {
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
+            Instruction::PublishPackageAdvanced {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
                         .unwrap()
@@ -1523,10 +1499,46 @@ mod tests {
         );
     }
 
+    #[derive(ScryptoSbor)]
+    struct MyNonFungibleData {
+        name: String,
+        description: String,
+        stored_number: Decimal,
+    }
+
+    // Because we can't import the derive trait
+    impl NonFungibleData for MyNonFungibleData {
+        const MUTABLE_FIELDS: &'static [&'static str] = &["description", "stored_number"];
+    }
+
+    #[test]
+    fn test_generate_non_fungible_instruction_with_specific_data() {
+        // This test is mostly to assist with generating manifest instructions for the testing harness
+        println!(
+            "{}",
+            crate::manifest::decompile(
+                &[Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
+                        ),
+                        metadata: BTreeMap::new(),
+                        access_rules: BTreeMap::new(),
+                    }),
+                }],
+                &NetworkDefinition::simulator()
+            )
+            .unwrap()
+        );
+    }
+
     #[test]
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));"##,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),

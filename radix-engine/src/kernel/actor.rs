@@ -3,9 +3,11 @@ use crate::types::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ActorIdentifier {
     Method(MethodIdentifier),
-    Function(FnIdentifier),
+    Function(FunctionIdentifier),
+    VirtualLazyLoad,
 }
 
+// TODO: This structure along with ActorIdentifier needs to be cleaned up
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Actor {
     pub fn_identifier: FnIdentifier,
@@ -20,11 +22,11 @@ impl Actor {
         }
     }
 
-    pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
+    pub fn function<I: Into<FnIdentifier>>(identifier: I, function: FunctionIdentifier) -> Self {
         let fn_identifier = identifier.into();
         Self {
             fn_identifier: fn_identifier.clone(),
-            identifier: ActorIdentifier::Function(fn_identifier),
+            identifier: ActorIdentifier::Function(function),
         }
     }
 }

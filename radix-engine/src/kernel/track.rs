@@ -115,3 +115,14 @@ impl<'s> SubstateStore for Track<'s> {
         todo!()
     }
 }
+
+/// Removes the `left.intersection(right)` from both `left` and `right`, in place, without
+/// computing (or allocating) the intersection itself.
+/// Implementation note: since Rust has no "iterator with delete" capabilities, the implementation
+/// uses a (normally frowned-upon) side-effect of a lambda inside `.retain()`.
+/// Performance note: since the `BTreeSet`s are inherently sorted, the implementation _could_ have
+/// an `O(n+m)` runtime (i.e. traversing 2 iterators). However, it would then contain significantly
+/// more bugs than the `O(n * log(m))` one-liner below.
+fn remove_intersection<T: Ord>(left: &mut BTreeSet<T>, right: &mut BTreeSet<T>) {
+    left.retain(|id| !right.remove(id));
+}

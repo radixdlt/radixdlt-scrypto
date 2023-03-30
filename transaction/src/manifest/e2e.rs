@@ -1,10 +1,15 @@
 #[cfg(test)]
 mod tests {
+    use crate::builder::ManifestBuilder;
     use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
     use crate::manifest::*;
     use crate::model::{TransactionHeader, TransactionIntent};
+    use radix_engine_common::data::scrypto::model::{NonFungibleIdType, NonFungibleLocalId};
+    use radix_engine_common::{ManifestSbor, ScryptoSbor};
+    use radix_engine_interface::blueprints::resource::AccessRule;
     use radix_engine_interface::network::NetworkDefinition;
     use sbor::rust::collections::*;
+    use scrypto_derive::NonFungibleData;
 
     #[test]
     fn test_publish_package() {
@@ -23,12 +28,12 @@ CALL_METHOD
     Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
     "lock_fee"
     Decimal("10");
-PUBLISH_PACKAGE
+PUBLISH_PACKAGE_ADVANCED
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(1u8), Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(2u8), "get"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(2u8), "set"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Map<String, Enum>(), Enum(1u8));
+    Tuple(Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 "##,
         );
     }
@@ -526,8 +531,9 @@ ASSERT_ACCESS_RULE
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_ACCOUNT
-    Enum(0u8);
+CREATE_ACCOUNT_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+CREATE_ACCOUNT;
 "##,
         );
     }
@@ -542,8 +548,9 @@ CREATE_ACCOUNT
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_IDENTITY
-    Enum(0u8);
+CREATE_IDENTITY_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+CREATE_IDENTITY;
 "##,
         );
     }
@@ -689,4 +696,30 @@ CREATE_ACCESS_CONTROLLER
         }
         manifest
     }
+
+    #[test]
+    pub fn decompilation_of_create_non_fungible_resource_with_initial_supply_is_invertible() {
+        // Arrange
+        let manifest = ManifestBuilder::new()
+            .create_non_fungible_resource(
+                NonFungibleIdType::Integer,
+                BTreeMap::new(),
+                BTreeMap::<_, (_, AccessRule)>::new(),
+                Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
+            )
+            .build();
+
+        // Act
+        let inverted_manifest = {
+            let network = NetworkDefinition::simulator();
+            let decompiled = decompile(&manifest.instructions, &network).unwrap();
+            compile(&decompiled, &network, vec![]).unwrap()
+        };
+
+        // Assert
+        assert_eq!(manifest, inverted_manifest);
+    }
+
+    #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
+    struct EmptyStruct {}
 }

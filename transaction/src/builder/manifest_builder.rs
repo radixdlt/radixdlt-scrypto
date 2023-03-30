@@ -9,7 +9,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
     VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+    IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
+    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -373,12 +374,22 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateAdvancedInput { config }),
+        });
+        self
+    }
+
+    pub fn create_identity(&mut self) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput { access_rule }),
+            args: to_manifest_value(&IdentityCreateInput {}),
         });
         self
     }
@@ -544,7 +555,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(
+    pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
@@ -559,12 +570,30 @@ impl ManifestBuilder {
         let schema_hash = hash(&schema);
         self.blobs.insert(schema_hash, schema);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
             schema: ManifestBlobRef(schema_hash.0),
             royalty_config,
             metadata,
             access_rules,
+        });
+        self
+    }
+
+    /// Publishes a package with an owner badge.
+    pub fn publish_package(&mut self, code: Vec<u8>, schema: PackageSchema) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let schema = scrypto_encode(&schema).unwrap();
+        let schema_hash = hash(&schema);
+        self.blobs.insert(schema_hash, schema);
+
+        self.add_instruction(Instruction::PublishPackage {
+            code: ManifestBlobRef(code_hash.0),
+            schema: ManifestBlobRef(schema_hash.0),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
         });
         self
     }
@@ -583,7 +612,7 @@ impl ManifestBuilder {
         let schema_hash = hash(&schema);
         self.blobs.insert(schema_hash, schema);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
             schema: ManifestBlobRef(schema_hash.0),
             royalty_config: BTreeMap::new(),
@@ -773,14 +802,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: AccessRule) -> &mut Self {
+    pub fn new_account_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateGlobalInput {
-                withdraw_rule: withdraw_auth,
-            }),
+            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateAdvancedInput { config }),
         })
         .0
     }

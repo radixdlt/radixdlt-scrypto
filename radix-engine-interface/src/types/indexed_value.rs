@@ -1,8 +1,6 @@
 use core::cell::RefCell;
-use core::convert::Infallible;
+use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::*;
-use radix_engine_common::types::*;
-use sbor::path::SborPathBuf;
 use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
@@ -16,8 +14,8 @@ use super::ScryptoValueDisplayContext;
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    references: HashSet<NodeId>,
-    owned_nodes: Vec<NodeId>,
+    references: IndexSet<RENodeId>,
+    owned_nodes: Vec<RENodeId>,
     scrypto_value: RefCell<Option<ScryptoValue>>,
 }
 
@@ -29,8 +27,8 @@ impl IndexedScryptoValue {
             Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let mut references = HashSet::<NodeId>::new();
-        let mut owned_nodes = Vec::<NodeId>::new();
+        let mut references = index_set_new::<RENodeId>();
+        let mut owned_nodes = Vec::<RENodeId>::new();
         loop {
             let event = traverser.next_event();
             match event.event {
@@ -121,7 +119,7 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn references(&self) -> &HashSet<NodeId> {
+    pub fn references(&self) -> &IndexSet<RENodeId> {
         &self.references
     }
 
@@ -129,7 +127,7 @@ impl IndexedScryptoValue {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, Vec<NodeId>, HashSet<NodeId>) {
+    pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, IndexSet<RENodeId>) {
         (self.bytes, self.owned_nodes, self.references)
     }
 }
@@ -159,43 +157,5 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_scrypto_value(f, &self.as_scrypto_value(), context)
-    }
-}
-
-pub struct ScryptoValueVisitor {
-    pub references: HashSet<NodeId>,
-    pub owned_nodes: Vec<NodeId>,
-}
-
-impl ScryptoValueVisitor {
-    pub fn new() -> Self {
-        Self {
-            references: HashSet::new(),
-            owned_nodes: Vec::new(),
-        }
-    }
-}
-
-impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVisitor {
-    type Err = Infallible;
-
-    fn visit(
-        &mut self,
-        _path: &mut SborPathBuf,
-        value: &ScryptoCustomValue,
-    ) -> Result<(), Self::Err> {
-        match value {
-            ScryptoCustomValue::Reference(value) => {
-                self.references.insert(value.clone().into());
-            }
-            ScryptoCustomValue::Own(value) => self.owned_nodes.push(value.clone().into()),
-
-            ScryptoCustomValue::Decimal(_)
-            | ScryptoCustomValue::PreciseDecimal(_)
-            | ScryptoCustomValue::NonFungibleLocalId(_) => {
-                // no-op
-            }
-        }
-        Ok(())
     }
 }

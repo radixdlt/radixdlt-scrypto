@@ -431,8 +431,16 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new().new_account(withdraw_auth).build();
+    pub fn new_account_advanced(
+        &mut self,
+        withdraw_auth: AccessRule,
+        mutability: AccessRule,
+    ) -> ComponentAddress {
+        let access_rules_config = AccessRulesConfig::new().default(withdraw_auth, mutability);
+
+        let manifest = ManifestBuilder::new()
+            .new_account_advanced(access_rules_config)
+            .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 
@@ -514,7 +522,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_with_auth_rule(withdraw_auth);
+        let account = self.new_account_advanced(withdraw_auth.clone(), withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
 
@@ -531,6 +539,46 @@ impl TestRunner {
         } else {
             self.new_allocated_account()
         }
+    }
+
+    pub fn new_identity(
+        &mut self,
+        pk: EcdsaSecp256k1PublicKey,
+        is_virtual: bool,
+    ) -> ComponentAddress {
+        if is_virtual {
+            ComponentAddress::virtual_identity_from_public_key(&pk)
+        } else {
+            let owner_id = NonFungibleGlobalId::from_public_key(&pk);
+            let config = AccessRulesConfig::new()
+                .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 10.into())
+                .create_identity_advanced(config)
+                .build();
+            let receipt = self.execute_manifest(manifest, vec![]);
+            receipt.expect_commit_success();
+            let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+            component_address
+        }
+    }
+
+    pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .create_identity()
+            .call_method(
+                account,
+                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        component_address
     }
 
     pub fn new_validator_with_pub_key(
@@ -562,7 +610,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package(code, schema, royalty_config, metadata, access_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, access_rules)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1355,6 +1403,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                     export_name: format!("{}_{}", blueprint_name, function_name),
                 }
             ),
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         },
     );

@@ -19,7 +19,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &NodeId(resource_address.into()),
+            resource_address.as_node_id(),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;

@@ -7,7 +7,7 @@ edition = "2021"
 sbor = { path = "../sbor", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
 native-sdk = { path = "../native-sdk", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
@@ -37,14 +37,16 @@ wasmi = {  git = "https://github.com/radixdlt/wasmi.git", branch = "v0.23.0_stor
 wasmer = { version = "2.2.1", optional = true }
 wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 
+serde_json = { version = "1.0.81", optional = true, default-features = false }
+
 [dev-dependencies]
 wabt = { version = "0.10.0" }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-stores/std", "utils/std", "moka"]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "utils/alloc", "lru/hashbrown"]
+default = ["std", "serde"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka", "serde_json?/std"]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
@@ -55,6 +57,8 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 
 # Use moka for caching
 moka = ["dep:moka"]
+
+serde = ["dep:serde_json", "sbor/serde", "radix-engine-interface/serde", "radix-engine-common/serde"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

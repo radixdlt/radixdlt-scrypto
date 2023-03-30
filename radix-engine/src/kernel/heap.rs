@@ -8,7 +8,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_stores::interface::SubstateStore;
 
 pub struct Heap {
-    nodes: HashMap<NodeId, HeapNode>,
+    nodes: NonIterMap<NodeId, HeapNode>,
 }
 
 pub enum MoveNodeToStoreError {
@@ -18,7 +18,7 @@ pub enum MoveNodeToStoreError {
 impl Heap {
     pub fn new() -> Self {
         Self {
-            nodes: HashMap::new(),
+            nodes: NonIterMap::new(),
         }
     }
 

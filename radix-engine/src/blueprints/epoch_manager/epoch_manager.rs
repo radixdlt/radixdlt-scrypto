@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::account::Account;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket};
@@ -92,27 +92,21 @@ impl EpochManagerBlueprint {
         let mut validators = BTreeMap::new();
 
         for (key, validator_init) in validator_set {
-            let (owner_token_bucket, local_id) =
-                owner_resman.mint_non_fungible_single_uuid((), api)?;
-            let global_id = NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
-
-            let validator_account = Account(validator_init.validator_account_address);
-            validator_account.deposit(owner_token_bucket, api)?;
-
             let stake = validator_init.initial_stake.sys_amount(api)?;
-            let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
-                address,
-                key,
-                rule!(require(global_id)),
-                validator_init.initial_stake,
-                true,
-                api,
-            )?;
+            let (address, lp_bucket, owner_token_bucket) =
+                ValidatorCreator::create_with_initial_stake(
+                    address,
+                    key,
+                    validator_init.initial_stake,
+                    true,
+                    api,
+                )?;
+
             let validator = Validator { key, stake };
             validators.insert(address, validator);
 
-            let staker_account = Account(validator_init.stake_account_address);
-            staker_account.deposit(lp_bucket, api)?;
+            Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
+            Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
         }
 
         let epoch_manager_id = {
@@ -154,45 +148,30 @@ impl EpochManagerBlueprint {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_NEXT_ROUND_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
             rule!(allow_all),
         );
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT),
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                TypedModuleId::ObjectState,
-                EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            ),
+            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
@@ -322,12 +301,8 @@ impl EpochManagerBlueprint {
         let epoch_manager: &EpochManagerSubstate = api.kernel_get_substate_ref(handle)?;
         let manager = epoch_manager.address;
 
-        let owner_resman = ResourceManager(epoch_manager.validator_owner_resource);
-        let (owner_token_bucket, local_id) = owner_resman.mint_non_fungible_single_uuid((), api)?;
-        let global_id = NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
-
-        let validator_address =
-            ValidatorCreator::create(manager, key, rule!(require(global_id)), false, api)?;
+        let (validator_address, owner_token_bucket) =
+            ValidatorCreator::create(manager, key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
     }

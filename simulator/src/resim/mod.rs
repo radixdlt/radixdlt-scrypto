@@ -59,10 +59,14 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
@@ -176,12 +180,18 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &ExecutionConfig::standard().with_trace(trace),
         &transaction.get_executable(initial_proofs),
     );
-    drop(substate_db);
 
     if print_receipt {
-        writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
-            .map_err(Error::IOError)?;
+        let encoder = Bech32Encoder::for_simulator();
+        let display_context = TransactionReceiptDisplayContextBuilder::new()
+            .encoder(&encoder)
+            .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
+                get_event_schema(&substate_store, event_type_identifier)
+            })
+            .build();
+        writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
+    drop(substate_store);
 
     process_receipt(receipt)
 }
@@ -237,12 +247,18 @@ pub fn handle_manifest<O: std::io::Write>(
                 &ExecutionConfig::standard().with_trace(trace),
                 &transaction.get_executable(initial_proofs),
             );
-            drop(substate_db);
 
             if print_receipt {
-                writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
-                    .map_err(Error::IOError)?;
+                let encoder = Bech32Encoder::for_simulator();
+                let display_context = TransactionReceiptDisplayContextBuilder::new()
+                    .encoder(&encoder)
+                    .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
+                        get_event_schema(&substate_store, event_type_identifier)
+                    })
+                    .build();
+                writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
+            drop(substate_store);
 
             process_receipt(receipt).map(Option::Some)
         }
@@ -345,4 +361,84 @@ pub fn get_blueprint(
         } => Ok((*package_address, blueprint_name.to_string())),
         _ => panic!("Unexpected"),
     }
+}
+
+pub fn get_event_schema<S: ReadableSubstateStore>(
+    substate_store: &S,
+    event_type_identifier: &EventTypeIdentifier,
+) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+    let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
+        EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
+            match node_module {
+                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                    ACCESS_RULES_PACKAGE,
+                    ACCESS_RULES_BLUEPRINT.into(),
+                    *local_type_index,
+                ),
+                NodeModuleId::ComponentRoyalty => (
+                    ROYALTY_PACKAGE,
+                    COMPONENT_ROYALTY_BLUEPRINT.into(),
+                    *local_type_index,
+                ),
+                NodeModuleId::Metadata => (
+                    METADATA_PACKAGE,
+                    METADATA_BLUEPRINT.into(),
+                    *local_type_index,
+                ),
+                NodeModuleId::SELF => {
+                    let type_info = substate_store
+                        .get_substate(&SubstateId(
+                            *node_id,
+                            NodeModuleId::TypeInfo,
+                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                        ))
+                        .unwrap()
+                        .substate
+                        .type_info()
+                        .clone();
+
+                    match type_info {
+                        TypeInfoSubstate::Object {
+                            package_address,
+                            blueprint_name,
+                            ..
+                        } => (package_address, blueprint_name, *local_type_index),
+                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                    }
+                }
+                NodeModuleId::TypeInfo => return None,
+            }
+        }
+        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
+            let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+                return None
+            };
+            (
+                *package_address,
+                blueprint_name.to_owned(),
+                *local_type_index,
+            )
+        }
+    };
+
+    let substate_id = SubstateId(
+        RENodeId::GlobalObject(Address::Package(package_address)),
+        NodeModuleId::SELF,
+        SubstateOffset::Package(PackageOffset::Info),
+    );
+
+    Some((
+        local_type_index,
+        substate_store
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .package_info()
+            .schema
+            .blueprints
+            .get(&blueprint_name)
+            .unwrap()
+            .schema
+            .clone(),
+    ))
 }

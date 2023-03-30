@@ -34,14 +34,17 @@ mod multi_threaded_test {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
+        let config = AccessRulesConfig::new().default(
+            rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
+            AccessRule::DenyAll,
+        );
+
         // Create two accounts
         let accounts = (0..2)
             .map(|_| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(FAUCET_COMPONENT, 100.into())
-                    .new_account(rule!(require(NonFungibleGlobalId::from_public_key(
-                        &public_key
-                    ))))
+                    .new_account_advanced(config.clone())
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,

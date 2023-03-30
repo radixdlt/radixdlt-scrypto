@@ -35,9 +35,11 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    VisibilityError(NodeId),
-    Unauthorized(ActorIdentifier, MethodAuthorization),
+    VisibilityError(RENodeId),
+    Unauthorized(Box<Unauthorized>),
 }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct Unauthorized(pub Option<ActorIdentifier>, pub MethodAuthorization);
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
@@ -75,14 +77,12 @@ impl AuthModule {
     }
 
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
-        identifier: &FnIdentifier,
+        identifier: &FunctionIdentifier,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = if identifier.package_address.eq(&PACKAGE_PACKAGE) {
+        let auth = if identifier.0.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
-            if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                && identifier.ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
-            {
+            if identifier.1.eq(PACKAGE_BLUEPRINT) && identifier.2.eq(PACKAGE_PUBLISH_NATIVE_IDENT) {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
                     HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
@@ -91,17 +91,14 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                &NodeId::GlobalObject(identifier.package_address.into()),
-                TypedModuleId::ObjectState,
-                PackageOffset::Package.into(),
+                &RENodeId::GlobalObject(identifier.0.into()),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let function_key = FnKey::new(
-                identifier.blueprint_name.to_string(),
-                identifier.ident.to_string(),
-            );
+            let function_key = FnKey::new(identifier.1.to_string(), identifier.2.to_string());
             let access_rule = package_access_rules
                 .access_rules
                 .get(&function_key)
@@ -125,23 +122,33 @@ impl AuthModule {
                 ) =>
             {
                 match ident.as_str() {
+                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT => {
+                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule_and_mutability(
+                            node_id, *module_id, args, api,
+                        )?
+                    }
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::set_method_access_rule_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule(
                             node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::set_method_mutability_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_method_mutability(
+                            node_id, *module_id, args, api,
+                        )?
+                    }
+                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT => {
+                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule_and_mutability(
                             node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::set_group_access_rule_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule(
                             node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::set_group_mutability_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_group_mutability(
                             node_id, *module_id, args, api,
                         )?
                     }
@@ -200,8 +207,8 @@ impl AuthModule {
                                     && (method_key.ident.eq(VAULT_RECALL_IDENT)
                                         || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                                 {
-                                    let access_rule = substate.access_rules.get_group("recall");
-                                    let authorization = convert_contextless(access_rule);
+                                    let access_rule = substate.access_rules.get_group_access_rule("recall");
+                                    let authorization = convert_contextless(&access_rule);
                                     authorization
                                 } else {
                                     return Err(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -317,8 +324,8 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get(&key);
-        let authorization = convert(&blueprint_schema.schema, index, &state, method_auth);
+        let method_auth = access_rules.access_rules.get_access_rule(&key);
+        let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
 
@@ -339,10 +346,10 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get(&key);
+        let method_auth = access_rules.access_rules.get_access_rule(&key);
 
         // TODO: Remove
-        let authorization = convert_contextless(method_auth);
+        let authorization = convert_contextless(&method_auth);
 
         api.kernel_drop_lock(handle)?;
 
@@ -378,6 +385,7 @@ impl KernelModule for AuthModule {
         let authorization = match &callee.identifier {
             ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
+            ActorIdentifier::VirtualLazyLoad => return Ok(()),
         };
         let barrier_crossings_allowed = if Self::is_barrier(&Some(callee.clone())) {
             0
@@ -394,7 +402,10 @@ impl KernelModule for AuthModule {
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(callee.identifier.clone(), authorization),
+                AuthError::Unauthorized(Box::new(Unauthorized(
+                    Some(callee.identifier.clone()),
+                    authorization,
+                ))),
             )));
         }
 

@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataEntry, MetadataValue, METADATA_SET_IDENT,
 };
+use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +16,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),
@@ -54,15 +55,13 @@ fn can_set_package_metadata_with_owner() {
     let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(
-            code,
-            single_function_package_schema("Test", "f"),
-            owner_badge_addr,
+        .publish_package(code, single_function_package_schema("Test", "f"))
+        .call_method(
+            account,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -71,7 +70,7 @@ fn can_set_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(account, owner_badge_resource)
+        .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_metadata(
             GlobalAddress::Package(package_address),
             "name".to_string(),
@@ -100,15 +99,13 @@ fn can_lock_package_metadata_with_owner() {
     let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(
-            code,
-            single_function_package_schema("Test", "f"),
-            owner_badge_addr,
+        .publish_package(code, single_function_package_schema("Test", "f"))
+        .call_method(
+            account,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -117,10 +114,10 @@ fn can_lock_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(account, owner_badge_resource)
+        .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_method_access_rule(
-            GlobalAddress::Package(package_address),
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            Address::Package(package_address),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
             AccessRule::DenyAll,
         )
         .build();
@@ -133,7 +130,7 @@ fn can_lock_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(account, owner_badge_resource)
+        .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_metadata(
             GlobalAddress::Package(package_address),
             "name".to_string(),

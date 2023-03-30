@@ -993,6 +993,7 @@ mod tests {
                         export_name: "Test_f".to_string(),
                     }
                 ),
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
             },
         );
