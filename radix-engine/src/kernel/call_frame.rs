@@ -523,7 +523,7 @@ impl CallFrame {
                 substates,
                 //child_nodes,
             };
-            heap.create_node(node_id, heap_root_node);
+            heap.insert_node(node_id, heap_root_node);
             self.owned_root_nodes.insert(node_id, 0u32);
         }
 
