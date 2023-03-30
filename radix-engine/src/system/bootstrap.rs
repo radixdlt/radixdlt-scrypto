@@ -218,7 +218,7 @@ pub fn create_genesis(
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_OWNER_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -243,7 +243,7 @@ pub fn create_genesis(
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = IDENTITY_OWNER_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -257,7 +257,7 @@ pub fn create_genesis(
             }),
         });
 
-        pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(IDENTITY_PACKAGE.into()));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -331,7 +331,7 @@ pub fn create_genesis(
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ACCOUNT_OWNER_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -345,7 +345,7 @@ pub fn create_genesis(
             }),
         });
 
-        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
+        pre_allocated_ids.insert(NodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,

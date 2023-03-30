@@ -11,7 +11,7 @@ use radix_engine_interface::schema::{
 
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use radix_engine_interface::api::types::ClientCostingReason;
+use radix_engine_interface::types::ClientCostingReason;
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
 const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";

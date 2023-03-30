@@ -35,7 +35,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    VisibilityError(RENodeId),
+    VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -91,9 +91,9 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(identifier.0.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::FunctionAccessRules),
+                &NodeId::GlobalObject(identifier.0.into()),
+                TypedModuleId::ObjectState,
+                SubstateKey::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =

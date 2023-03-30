@@ -17,14 +17,14 @@ pub struct VirtualizationModule;
 
 impl KernelModule for VirtualizationModule {
     fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
-        node_id: RENodeId,
-        _module_id: NodeModuleId,
-        _offset: &SubstateOffset,
+        node_id: NodeId,
+        _module_id: TypedModuleId,
+        _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::GlobalObject(Address::Component(component_address)) => {
+            NodeId::GlobalObject(Address::Component(component_address)) => {
                 // Lazy create component if missing
                 let (package, blueprint, virtual_func_id, id) = match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(id) => (
@@ -63,7 +63,7 @@ impl KernelModule for VirtualizationModule {
                     }))?
                     .into();
 
-                let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
+                let (object_id, modules): (Own, BTreeMap<TypedModuleId, Own>) =
                     scrypto_decode(&rtn).unwrap();
                 let modules = modules
                     .into_iter()
@@ -71,7 +71,7 @@ impl KernelModule for VirtualizationModule {
                     .collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;
                 api.globalize_with_address(
-                    RENodeId::Object(object_id.id()),
+                    NodeId::Object(object_id.id()),
                     modules,
                     node_id.into(),
                 )?;

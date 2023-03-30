@@ -58,7 +58,7 @@ impl AccountBlueprint {
     fn create_modules<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
+    ) -> Result<BTreeMap<TypedModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -66,9 +66,9 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            NodeModuleId::AccessRules => access_rules.0,
-            NodeModuleId::Metadata => metadata,
-            NodeModuleId::ComponentRoyalty => royalty,
+            TypedModuleId::AccessRules => access_rules.0,
+            TypedModuleId::Metadata => metadata,
+            TypedModuleId::Royalty => royalty,
         );
 
         Ok(modules)
@@ -110,7 +110,7 @@ impl AccountBlueprint {
         Ok((account, modules))
     }
 
-    pub fn securify<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -120,7 +120,7 @@ impl AccountBlueprint {
     pub fn create_advanced<Y>(
         config: AccessRulesConfig,
         api: &mut Y,
-    ) -> Result<Address, RuntimeError>
+    ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -132,12 +132,12 @@ impl AccountBlueprint {
             .map(|(id, own)| (id, own.id()))
             .collect();
 
-        let address = api.globalize(RENodeId::Object(account.id()), modules)?;
+        let address = api.globalize(NodeId::Object(account.id()), modules)?;
 
         Ok(address)
     }
 
-    pub fn create<Y>(api: &mut Y) -> Result<(Address, Bucket), RuntimeError>
+    pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -149,7 +149,7 @@ impl AccountBlueprint {
             .map(|(id, own)| (id, own.id()))
             .collect();
 
-        let address = api.globalize(RENodeId::Object(account.id()), modules)?;
+        let address = api.globalize(NodeId::Object(account.id()), modules)?;
 
         Ok((address, bucket))
     }
@@ -177,7 +177,7 @@ impl AccountBlueprint {
     }
 
     fn lock_fee_internal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -187,21 +187,19 @@ impl AccountBlueprint {
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            SubstateKey::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::read_only())?;
             handle
         };
 
@@ -232,11 +230,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn lock_fee<Y>(
-        receiver: &RENodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn lock_fee<Y>(receiver: &NodeId, amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -245,7 +239,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_contingent_fee<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -256,27 +250,25 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn deposit<Y>(receiver: &RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn deposit<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            SubstateKey::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+            let handle =
+                api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::MUTABLE)?;
             handle
         };
 
@@ -313,7 +305,7 @@ impl AccountBlueprint {
     }
 
     pub fn deposit_batch<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -321,8 +313,8 @@ impl AccountBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            SubstateKey::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -333,15 +325,13 @@ impl AccountBlueprint {
         for bucket in buckets {
             let resource_address = bucket.sys_resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+            let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
                 let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-                let kv_store_id = account.vaults.key_value_store_id();
-
-                let node_id = RENodeId::KeyValueStore(kv_store_id);
-                let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                let handle =
+                    api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::MUTABLE)?;
                 handle
             };
 
@@ -379,7 +369,7 @@ impl AccountBlueprint {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -389,21 +379,19 @@ impl AccountBlueprint {
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            SubstateKey::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle =
+                api.sys_lock_substate(&account.vaults, &substate_key, LockFlags::read_only())?;
             handle
         };
 
@@ -431,7 +419,7 @@ impl AccountBlueprint {
     }
 
     pub fn withdraw<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -450,7 +438,7 @@ impl AccountBlueprint {
     }
 
     pub fn withdraw_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -469,7 +457,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_fee_and_withdraw<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -491,7 +479,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
@@ -513,7 +501,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -531,7 +519,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -550,7 +538,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof_by_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

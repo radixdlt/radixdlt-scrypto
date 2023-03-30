@@ -78,7 +78,7 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let output = ScryptoEnv
-            .call_method(resource_address.as_node_id(), method.as_ref(), args)
+            .call_method(component_address.as_node_id(), method.as_ref(), args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }

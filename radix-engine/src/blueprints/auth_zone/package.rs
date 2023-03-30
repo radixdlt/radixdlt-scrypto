@@ -2,12 +2,12 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::ClientCostingReason;
+use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
@@ -137,7 +137,7 @@ impl AuthZoneNativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<RENodeId>,
+        receiver: Option<NodeId>,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -228,7 +228,7 @@ pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -241,7 +241,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
@@ -260,7 +260,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn push<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -273,7 +273,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
@@ -286,7 +286,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -299,7 +299,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
@@ -315,7 +315,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -328,7 +328,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -341,7 +341,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
 
@@ -362,7 +362,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -375,7 +375,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -388,7 +388,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
@@ -409,7 +409,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -422,7 +422,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -435,7 +435,7 @@ impl AuthZoneBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
@@ -453,7 +453,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear_signature_proofs<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -466,7 +466,7 @@ impl AuthZoneBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
@@ -478,7 +478,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -491,7 +491,7 @@ impl AuthZoneBlueprint {
 
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
@@ -505,7 +505,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn assert_access_rule<Y>(
-        receiver: RENodeId,
+        receiver: NodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -518,7 +518,7 @@ impl AuthZoneBlueprint {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            SubstateKey::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
         let auth_zone_stack_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;

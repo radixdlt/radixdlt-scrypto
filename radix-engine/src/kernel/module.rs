@@ -142,9 +142,9 @@ pub trait KernelModule {
 
     #[inline(always)]
     fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
-        _node_id: RENodeId,
-        _module_id: NodeModuleId,
-        _offset: &SubstateOffset,
+        _node_id: NodeId,
+        _module_id: TypedModuleId,
+        _offset: &SubstateKey,
         _api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Ok(false)

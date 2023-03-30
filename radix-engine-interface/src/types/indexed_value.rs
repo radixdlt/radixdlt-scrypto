@@ -1,6 +1,6 @@
 use core::cell::RefCell;
-use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::*;
+use radix_engine_common::types::*;
 use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
@@ -14,8 +14,8 @@ use super::ScryptoValueDisplayContext;
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    references: IndexSet<RENodeId>,
-    owned_nodes: Vec<RENodeId>,
+    references: IndexSet<NodeId>,
+    owned_nodes: Vec<NodeId>,
     scrypto_value: RefCell<Option<ScryptoValue>>,
 }
 
@@ -27,8 +27,8 @@ impl IndexedScryptoValue {
             Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let mut references = index_set_new::<RENodeId>();
-        let mut owned_nodes = Vec::<RENodeId>::new();
+        let mut references = index_set_new::<NodeId>();
+        let mut owned_nodes = Vec::<NodeId>::new();
         loop {
             let event = traverser.next_event();
             match event.event {
@@ -119,7 +119,7 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn references(&self) -> &IndexSet<RENodeId> {
+    pub fn references(&self) -> &IndexSet<NodeId> {
         &self.references
     }
 
@@ -127,7 +127,7 @@ impl IndexedScryptoValue {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, IndexSet<RENodeId>) {
+    pub fn unpack(self) -> (Vec<u8>, Vec<NodeId>, IndexSet<NodeId>) {
         (self.bytes, self.owned_nodes, self.references)
     }
 }

@@ -1,6 +1,6 @@
-use crate::api::types::*;
 use crate::blueprints::resource::MethodKey;
-use crate::data::scrypto::model::*;
+use crate::types::*;
+use crate::types::*;
 use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
@@ -43,7 +43,7 @@ impl FunctionIdentifier {
     }
 
     pub fn size(&self) -> usize {
-        self.1.len() + self.2.len() + self.0.size()
+        self.1.len() + self.2.len() + self.0.as_ref().len()
     }
 }
 

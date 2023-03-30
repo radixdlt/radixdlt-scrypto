@@ -463,7 +463,7 @@ impl ValidatorBlueprint {
             TypedModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                key: MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT),
+                key: MethodKey::new(TypedModuleId::ObjectState, VALIDATOR_STAKE_IDENT),
                 rule,
             })
             .unwrap(),
@@ -649,9 +649,9 @@ impl ValidatorCreator {
         api.globalize_with_address(
             validator_id,
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.0.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
             address.into(),
         )?;
@@ -697,9 +697,9 @@ impl ValidatorCreator {
         api.globalize_with_address(
             validator_id,
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.0.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                TypedModuleId::AccessRules => access_rules.0.id(),
+                TypedModuleId::Metadata => metadata.id(),
+                TypedModuleId::Royalty => royalty.id(),
             ),
             address.into(),
         )?;

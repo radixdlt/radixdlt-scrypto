@@ -226,16 +226,16 @@ impl ExecutableInvocation for FunctionInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if self.identifier.0.eq(&PACKAGE_PACKAGE) {
-                node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+                node_refs_to_copy.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
             } else if self.identifier.0.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
                 // Required for bootstrap.
                 // Can be removed once the auto reference copying logic is moved to a kernel module.
                 // Will just disable the module for genesis.
             } else {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(self.identifier.0.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    &NodeId::GlobalObject(self.identifier.0.into()),
+                    TypedModuleId::ObjectState,
+                    SubstateKey::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
                 let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -257,7 +257,7 @@ impl ExecutableInvocation for FunctionInvocation {
             }
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(self.identifier.0.into()));
+            node_refs_to_copy.insert(NodeId::GlobalObject(self.identifier.0.into()));
         }
 
         let resolved = ResolvedInvocation {
@@ -350,9 +350,9 @@ impl Executor for ScryptoExecutor {
             };
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(self.package_address.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
+                &NodeId::GlobalObject(self.package_address.into()),
+                TypedModuleId::ObjectState,
+                SubstateKey::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             );
             if let Ok(handle) = handle {
@@ -388,9 +388,9 @@ impl Executor for ScryptoExecutor {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(self.package_address.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
+                &NodeId::GlobalObject(self.package_address.into()),
+                TypedModuleId::ObjectState,
+                SubstateKey::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
             api.kernel_drop_lock(handle)?;
@@ -398,9 +398,9 @@ impl Executor for ScryptoExecutor {
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(self.package_address.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    &NodeId::GlobalObject(self.package_address.into()),
+                    TypedModuleId::ObjectState,
+                    SubstateKey::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
                 let package_info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
@@ -441,9 +441,9 @@ impl Executor for ScryptoExecutor {
             // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(self.package_address.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    &NodeId::GlobalObject(self.package_address.into()),
+                    TypedModuleId::ObjectState,
+                    SubstateKey::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
                 let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -454,9 +454,9 @@ impl Executor for ScryptoExecutor {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        &RENodeId::GlobalObject(self.package_address.into()),
-                        NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::Code),
+                        &NodeId::GlobalObject(self.package_address.into()),
+                        TypedModuleId::ObjectState,
+                        SubstateKey::Package(PackageOffset::Code),
                         LockFlags::read_only(),
                     )?;
                     let code: &PackageCodeSubstate = api.kernel_get_substate_ref(handle)?;
@@ -475,9 +475,9 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
-                            &RENodeId::GlobalObject(self.package_address.into()),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Package(PackageOffset::Code),
+                            &NodeId::GlobalObject(self.package_address.into()),
+                            TypedModuleId::ObjectState,
+                            SubstateKey::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
                         let wasm_instance =

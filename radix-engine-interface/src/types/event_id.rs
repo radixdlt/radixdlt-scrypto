@@ -1,6 +1,7 @@
 use super::TypedModuleId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
+use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::LocalTypeIndex;
@@ -37,18 +38,15 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
             Self::Function(node_id, node_module_id, blueprint_name) => {
                 write!(
                     f,
-                    "Function {{ node_id: {}, node_module_id: {:?}, blueprint_name: {} }}",
-                    node_id.display(*context),
-                    node_module_id,
-                    blueprint_name
+                    "Function {{ node_id: {:?}, node_module_id: {:?}, blueprint_name: {} }}",
+                    node_id, node_module_id, blueprint_name
                 )
             }
             Self::Method(node_id, node_module_id) => {
                 write!(
                     f,
-                    "Method {{ node_id: {}, node_module_id: {:?} }}",
-                    node_id.display(*context),
-                    node_module_id,
+                    "Method {{ node_id: {:?}, node_module_id: {:?} }}",
+                    node_id, node_module_id,
                 )
             }
         }

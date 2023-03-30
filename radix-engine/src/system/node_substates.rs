@@ -1293,7 +1293,7 @@ impl<'a> SubstateRef<'a> {
     }
 
     // TODO: remove this method
-    pub fn references_and_owned_nodes(&self) -> (IndexSet<RENodeId>, Vec<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (IndexSet<NodeId>, Vec<NodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {
                 let nodes = worktop
@@ -1305,12 +1305,12 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::VaultInfo(vault) => {
                 let mut references = index_set_new();
-                references.insert(RENodeId::GlobalObject(vault.resource_address.into()));
+                references.insert(NodeId::GlobalObject(vault.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::ProofInfo(proof) => {
                 let mut references = index_set_new();
-                references.insert(RENodeId::GlobalObject(proof.resource_address.into()));
+                references.insert(NodeId::GlobalObject(proof.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::FungibleProof(proof) => {
@@ -1329,7 +1329,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::BucketInfo(bucket) => {
                 let mut references = index_set_new();
-                references.insert(RENodeId::GlobalObject(bucket.resource_address.into()));
+                references.insert(NodeId::GlobalObject(bucket.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
@@ -1382,7 +1382,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.controlled_asset));
+                owned_nodes.push(NodeId::Object(substate.controlled_asset));
                 (index_set_new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
@@ -1408,9 +1408,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Account(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::KeyValueStore(
-                    substate.vaults.key_value_store_id(),
-                ));
+                owned_nodes.push(NodeId::KeyValueStore(substate.vaults.key_value_store_id()));
                 (index_set_new(), owned_nodes)
             }
             SubstateRef::AuthZone(substate) => {

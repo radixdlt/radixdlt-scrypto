@@ -795,9 +795,9 @@ where
                     TypedModuleId::Royalty => {
                         Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
                     }
-                    NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
-                    NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                    TypedModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
+                    TypedModuleId::ObjectState => self.get_object_type_info(node_id),
+                    TypedModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },

@@ -610,8 +610,8 @@ impl TransactionProcessorBlueprint {
 }
 
 struct TransactionProcessor<'blob> {
-    proof_id_mapping: IndexMap<ManifestProof, ObjectId>,
-    bucket_id_mapping: NonIterMap<ManifestBucket, ObjectId>,
+    proof_id_mapping: IndexMap<ManifestProof, NodeId>,
+    bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>,
 }

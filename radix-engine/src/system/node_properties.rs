@@ -50,7 +50,7 @@ impl VisibilityProperties {
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
-        offset: SubstateOffset,
+        substate_key: SubstateKey,
         flags: LockFlags,
     ) -> bool {
         let read_only = flags == LockFlags::read_only();
@@ -58,55 +58,53 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
+                SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 _ => false, // Protect ourselves!
             },
             (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => read_only,
-                SubstateOffset::Package(PackageOffset::CodeType) => read_only,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Bucket(BucketOffset::Info) => read_only,
+                SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo) => read_only,
+                SubstateKey::Package(PackageOffset::CodeType) => read_only,
+                SubstateKey::Package(PackageOffset::Info) => read_only,
+                SubstateKey::Bucket(BucketOffset::Info) => read_only,
                 _ => false,
             },
             (ExecutionMode::AutoDrop, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
+                SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
-                SubstateOffset::Bucket(BucketOffset::Info) => true,
-                SubstateOffset::Proof(ProofOffset::Info) => true,
-                SubstateOffset::Proof(..) => true,
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
+                SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo) => true,
+                SubstateKey::Bucket(BucketOffset::Info) => true,
+                SubstateKey::Proof(ProofOffset::Info) => true,
+                SubstateKey::Proof(..) => true,
+                SubstateKey::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
             (ExecutionMode::System, offset) => match offset {
-                SubstateOffset::AuthZone(_) => read_only,
+                SubstateKey::AuthZone(_) => read_only,
                 _ => false,
             },
             (ExecutionMode::KernelModule, offset) => match offset {
                 // TODO: refine based on specific module
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                    read_only
-                }
-                SubstateOffset::Vault(..) => true,
-                SubstateOffset::Bucket(..) => read_only,
-                SubstateOffset::Proof(..) => true,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Package(PackageOffset::CodeType) => read_only,
-                SubstateOffset::Package(PackageOffset::Code) => read_only,
-                SubstateOffset::Package(PackageOffset::Royalty) => true,
-                SubstateOffset::Package(PackageOffset::FunctionAccessRules) => true,
-                SubstateOffset::Component(ComponentOffset::State0) => read_only,
-                SubstateOffset::TypeInfo(_) => read_only,
-                SubstateOffset::AccessRules(_) => read_only,
-                SubstateOffset::AuthZone(_) => read_only,
-                SubstateOffset::Royalty(_) => true,
+                SubstateKey::ResourceManager(ResourceManagerOffset::ResourceManager) => read_only,
+                SubstateKey::Vault(..) => true,
+                SubstateKey::Bucket(..) => read_only,
+                SubstateKey::Proof(..) => true,
+                SubstateKey::Package(PackageOffset::Info) => read_only,
+                SubstateKey::Package(PackageOffset::CodeType) => read_only,
+                SubstateKey::Package(PackageOffset::Code) => read_only,
+                SubstateKey::Package(PackageOffset::Royalty) => true,
+                SubstateKey::Package(PackageOffset::FunctionAccessRules) => true,
+                SubstateKey::Component(ComponentOffset::State0) => read_only,
+                SubstateKey::TypeInfo(_) => read_only,
+                SubstateKey::AccessRules(_) => read_only,
+                SubstateKey::AuthZone(_) => read_only,
+                SubstateKey::Royalty(_) => true,
                 _ => false,
             },
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(offset, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)) {
+                    if matches!(offset, SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo)) {
                         return true;
                     }
 
@@ -121,28 +119,26 @@ impl VisibilityProperties {
                                 match (node_id, offset) {
                                     // READ package code & abi
                                     (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                        NodeId::GlobalObject(_),
+                                        SubstateKey::Package(PackageOffset::Info), // TODO: Remove
                                     )
                                     | (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                        NodeId::GlobalObject(_),
+                                        SubstateKey::Package(PackageOffset::CodeType), // TODO: Remove
                                     )
                                     | (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                        NodeId::GlobalObject(_),
+                                        SubstateKey::Package(PackageOffset::Code), // TODO: Remove
                                     ) => read_only,
                                     // READ global substates
                                     (
-                                        RENodeId::Object(_),
-                                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                                        NodeId::Object(_),
+                                        SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo),
                                     ) => read_only,
                                     // READ/WRITE KVStore entry
                                     (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
+                                        NodeId::KeyValueStore(_),
+                                        SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                     ) => true,
                                     // Otherwise, false
                                     _ => false,
@@ -154,27 +150,27 @@ impl VisibilityProperties {
                                         // READ package code & abi
                                         (
                                             NodeId::GlobalObject(_),
-                                            SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                            SubstateKey::Package(PackageOffset::Info), // TODO: Remove
                                         )
                                         | (
                                             NodeId::GlobalObject(_),
-                                            SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                            SubstateKey::Package(PackageOffset::CodeType), // TODO: Remove
                                         )
                                         | (
                                             NodeId::GlobalObject(_),
-                                            SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                            SubstateKey::Package(PackageOffset::Code), // TODO: Remove
                                         ) => read_only,
                                         // READ/WRITE KVStore entry
                                         (
                                             NodeId::KeyValueStore(_),
-                                            SubstateOffset::KeyValueStore(
-                                                KeyValueStoreOffset::Entry(..),
-                                            ),
+                                            SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
+                                                ..,
+                                            )),
                                         ) => true,
                                         // READ/WRITE component application state
                                         (
                                             NodeId::Object(addr),
-                                            SubstateOffset::Component(ComponentOffset::State0),
+                                            SubstateKey::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         // Otherwise, false
                                         _ => false,
@@ -189,27 +185,25 @@ impl VisibilityProperties {
                                     // READ package code & abi
                                     (
                                         NodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                        SubstateKey::Package(PackageOffset::Info), // TODO: Remove
                                     )
                                     | (
                                         NodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                        SubstateKey::Package(PackageOffset::CodeType), // TODO: Remove
                                     )
                                     | (
                                         NodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                        SubstateKey::Package(PackageOffset::Code), // TODO: Remove
                                     ) => read_only,
                                     // READ/WRITE KVStore entry
                                     (
                                         NodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
+                                        SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                     ) => true,
                                     // READ/WRITE component application state
                                     (
                                         NodeId::GlobalObject(GlobalAddress::Component(addr)),
-                                        SubstateOffset::Component(ComponentOffset::State0),
+                                        SubstateKey::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     // Otherwise, false
                                     _ => false,
@@ -230,10 +224,8 @@ impl VisibilityProperties {
                             ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
                                 match (node_id, offset) {
                                     (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
+                                        NodeId::KeyValueStore(_),
+                                        SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                     ) => true,
                                     _ => false,
                                 }
@@ -244,13 +236,13 @@ impl VisibilityProperties {
                                     match (node_id, offset) {
                                         (
                                             NodeId::KeyValueStore(_),
-                                            SubstateOffset::KeyValueStore(
-                                                KeyValueStoreOffset::Entry(..),
-                                            ),
+                                            SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
+                                                ..,
+                                            )),
                                         ) => true,
                                         (
                                             NodeId::Object(addr),
-                                            SubstateOffset::Component(ComponentOffset::State0),
+                                            SubstateKey::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         _ => false,
                                     }
@@ -263,13 +255,11 @@ impl VisibilityProperties {
                                 ) => match (node_id, offset) {
                                     (
                                         NodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
+                                        SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                     ) => true,
                                     (
                                         NodeId::GlobalObject(GlobalAddress::Component(addr)),
-                                        SubstateOffset::Component(ComponentOffset::State0),
+                                        SubstateKey::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     _ => false,
                                 },
@@ -286,36 +276,36 @@ impl VisibilityProperties {
 pub struct SubstateProperties;
 
 impl SubstateProperties {
-    pub fn is_persisted(offset: &SubstateOffset) -> bool {
+    pub fn is_persisted(offset: &SubstateKey) -> bool {
         match offset {
-            SubstateOffset::Component(..) => true,
-            SubstateOffset::Royalty(..) => true,
-            SubstateOffset::AccessRules(..) => true,
-            SubstateOffset::Package(..) => true,
-            SubstateOffset::ResourceManager(..) => true,
-            SubstateOffset::KeyValueStore(..) => true,
-            SubstateOffset::Vault(..) => true,
-            SubstateOffset::EpochManager(..) => true,
-            SubstateOffset::Validator(..) => true,
-            SubstateOffset::Bucket(..) => false,
-            SubstateOffset::Proof(..) => false,
-            SubstateOffset::Worktop(..) => false,
-            SubstateOffset::AuthZone(..) => false,
-            SubstateOffset::Clock(..) => true,
-            SubstateOffset::Account(..) => true,
-            SubstateOffset::AccessController(..) => true,
-            SubstateOffset::TypeInfo(..) => true,
+            SubstateKey::Component(..) => true,
+            SubstateKey::Royalty(..) => true,
+            SubstateKey::AccessRules(..) => true,
+            SubstateKey::Package(..) => true,
+            SubstateKey::ResourceManager(..) => true,
+            SubstateKey::KeyValueStore(..) => true,
+            SubstateKey::Vault(..) => true,
+            SubstateKey::EpochManager(..) => true,
+            SubstateKey::Validator(..) => true,
+            SubstateKey::Bucket(..) => false,
+            SubstateKey::Proof(..) => false,
+            SubstateKey::Worktop(..) => false,
+            SubstateKey::AuthZone(..) => false,
+            SubstateKey::Clock(..) => true,
+            SubstateKey::Account(..) => true,
+            SubstateKey::AccessController(..) => true,
+            SubstateKey::TypeInfo(..) => true,
         }
     }
 
     pub fn verify_can_own(
-        offset: &SubstateOffset,
+        offset: &SubstateKey,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<(), RuntimeError> {
         match (package_address, blueprint_name) {
             (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match offset {
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
+                SubstateKey::Worktop(WorktopOffset::Worktop) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     Box::new(InvalidOwnership(
                         offset.clone(),
@@ -325,7 +315,7 @@ impl SubstateProperties {
                 ))),
             },
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => Ok(()),
+                SubstateKey::AuthZone(AuthZoneOffset::AuthZone) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     Box::new(InvalidOwnership(
                         offset.clone(),

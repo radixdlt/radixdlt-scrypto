@@ -23,25 +23,25 @@ pub enum ModuleInit {
     ),
 }
 
-impl RENodeModuleInit {
-    pub fn to_substates(self) -> BTreeMap<SubstateOffset, RuntimeSubstate> {
+impl ModuleInit {
+    pub fn to_substates(self) -> BTreeMap<SubstateKey, RuntimeSubstate> {
         match self {
-            RENodeModuleInit::Metadata(metadata_substates) => metadata_substates,
-            RENodeModuleInit::MethodAccessRules(access_rules) => BTreeMap::from([(
-                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+            ModuleInit::Metadata(metadata_substates) => metadata_substates,
+            ModuleInit::MethodAccessRules(access_rules) => BTreeMap::from([(
+                SubstateKey::AccessRules(AccessRulesOffset::AccessRules),
                 access_rules.into(),
             )]),
-            RENodeModuleInit::TypeInfo(type_info) => BTreeMap::from([(
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ModuleInit::TypeInfo(type_info) => BTreeMap::from([(
+                SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo),
                 type_info.into(),
             )]),
-            RENodeModuleInit::ComponentRoyalty(config, accumulator) => BTreeMap::from([
+            ModuleInit::ComponentRoyalty(config, accumulator) => BTreeMap::from([
                 (
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                    SubstateKey::Royalty(RoyaltyOffset::RoyaltyConfig),
                     config.into(),
                 ),
                 (
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    SubstateKey::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
                 ),
             ]),
@@ -57,7 +57,7 @@ pub enum NodeInit {
 }
 
 impl RENodeInit {
-    pub fn to_substates(self) -> BTreeMap<SubstateOffset, RuntimeSubstate> {
+    pub fn to_substates(self) -> BTreeMap<SubstateKey, RuntimeSubstate> {
         match self {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 object_substates

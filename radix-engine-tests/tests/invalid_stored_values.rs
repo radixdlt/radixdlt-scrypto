@@ -25,7 +25,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::InvalidOwnership(invalid_ownership)) => {
             if let InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
+                SubstateKey::Component(ComponentOffset::State0),
                 RESOURCE_MANAGER_PACKAGE,
                 ..,
             ) = **invalid_ownership
@@ -61,7 +61,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::InvalidOwnership(invalid_ownership)) => {
             if let InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
+                SubstateKey::Component(ComponentOffset::State0),
                 RESOURCE_MANAGER_PACKAGE,
                 ..,
             ) = **invalid_ownership

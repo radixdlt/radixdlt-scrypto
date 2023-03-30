@@ -17,8 +17,8 @@ use crate::system::kernel_modules::transaction_limits::{
 };
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::kernel_modules::virtualization::VirtualizationModule;
+use crate::system::node::ModuleInit;
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -658,9 +658,9 @@ impl KernelModule for KernelModuleMixer {
     }
 
     fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
-        node_id: RENodeId,
-        module_id: NodeModuleId,
-        offset: &SubstateOffset,
+        node_id: NodeId,
+        module_id: TypedModuleId,
+        offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)

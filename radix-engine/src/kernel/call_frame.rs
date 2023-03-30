@@ -15,8 +15,8 @@ use super::track::Track;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
-    pub nodes_to_move: Vec<RENodeId>,
-    pub node_refs_to_copy: IndexSet<RENodeId>,
+    pub nodes_to_move: Vec<NodeId>,
+    pub node_refs_to_copy: IndexSet<NodeId>,
 }
 
 impl CallFrameUpdate {
@@ -34,7 +34,7 @@ impl CallFrameUpdate {
         }
     }
 
-    pub fn copy_ref(node_id: RENodeId) -> Self {
+    pub fn copy_ref(node_id: NodeId) -> Self {
         let mut node_refs_to_copy = index_set_new();
         node_refs_to_copy.insert(node_id);
         CallFrameUpdate {
@@ -63,11 +63,11 @@ pub enum RENodeVisibilityOrigin {
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
-    pub node_id: RENodeId,
-    pub module_id: NodeModuleId,
-    pub offset: SubstateOffset,
-    pub temp_references: IndexSet<RENodeId>,
-    pub substate_owned_nodes: Vec<RENodeId>,
+    pub node_id: NodeId,
+    pub module_id: TypedModuleId,
+    pub substate_key: SubstateKey,
+    pub temp_references: IndexSet<NodeId>,
+    pub substate_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
     pub track_handle: Option<u32>,
 }
@@ -98,14 +98,14 @@ pub struct CallFrame {
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
     /// - Global node refs obtained through substate locking.
-    immortal_node_refs: NonIterMap<RENodeId, RENodeRefData>,
+    immortal_node_refs: NonIterMap<NodeId, RENodeRefData>,
 
     /// Node refs obtained through substate locking, which will be dropped upon unlocking.
-    temp_node_refs: NonIterMap<RENodeId, u32>,
+    temp_node_refs: NonIterMap<NodeId, u32>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
-    owned_root_nodes: IndexMap<RENodeId, u32>,
+    owned_root_nodes: IndexMap<NodeId, u32>,
 
     next_lock_handle: LockHandle,
     locks: IndexMap<LockHandle, SubstateLock>,
@@ -139,7 +139,7 @@ impl CallFrame {
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         self.check_node_visibility(&node_id)?;
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))) {
+        if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
             let substate_id = SubstateId(node_id.clone(), module_id, offset.clone());
             if heap.contains_node(&node_id) {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -312,7 +312,7 @@ impl CallFrame {
 
         let flags = substate_lock.flags;
 
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))) {
+        if !(matches!(offset, SubstateKey::KeyValueStore(..))) {
             if !heap.contains_node(&node_id) {
                 track
                     .release_lock(
@@ -348,47 +348,47 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(
-            RENodeId::GlobalObject(RADIX_TOKEN.into()),
+            NodeId::GlobalObject(RADIX_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(SYSTEM_TOKEN.into()),
+            NodeId::GlobalObject(SYSTEM_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
+            NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
+            NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(PACKAGE_TOKEN.into()),
+            NodeId::GlobalObject(PACKAGE_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()),
+            NodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()),
+            NodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()),
+            NodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+            NodeId::GlobalObject(EPOCH_MANAGER.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(CLOCK.into()),
+            NodeId::GlobalObject(CLOCK.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
+            NodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

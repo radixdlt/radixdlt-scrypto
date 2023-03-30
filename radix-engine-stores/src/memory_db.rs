@@ -5,13 +5,10 @@ use radix_engine_interface::types::*;
 use sbor::rust::ops::Bound::Included;
 use sbor::rust::prelude::*;
 
-/// A substate store that stores all serialized substates in host memory.
 #[derive(Debug, PartialEq, Eq)]
-pub struct SerializedInMemorySubstateStore {
-    /// A hashmap from SBOR-encoded `SubstateId`s to SBOR-encoded `OutputValue`s.
-    /// This structure does not preserve deterministic ordering, but it is only used for test
-    /// purposes (where it actually puts the Engine's determinism under test).
-    substates: HashMap<Vec<u8>, Vec<u8>>,
+pub struct InMemorySubstateStore {
+    configs: BTreeMap<ModuleId, ModuleConfig>,
+    substates: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
 impl InMemorySubstateStore {

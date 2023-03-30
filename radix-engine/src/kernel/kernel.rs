@@ -108,9 +108,9 @@ where
         (self.module, new_result)
     }
 
-    fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, &node_id),
+            NodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, &node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id.clone(),
             ))),
@@ -270,7 +270,7 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::GlobalObject(Address::Component(
+                    NodeId::GlobalObject(Address::Component(
                         ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                         | ComponentAddress::EddsaEd25519VirtualAccount(..)
                         | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
@@ -281,7 +281,7 @@ where
                             .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         continue;
                     }
-                    RENodeId::GlobalObject(Address::Package(package_address))
+                    NodeId::GlobalObject(Address::Package(package_address))
                         if is_native_package(*package_address) =>
                     {
                         // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
@@ -296,17 +296,17 @@ where
                     continue;
                 }
 
-                let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                let offset = SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo);
                 self.track
                     .acquire_lock(
-                        SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                        SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
                         LockFlags::read_only(),
                     )
                     .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                 let substate_ref =
                     self.track
-                        .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
+                        .get_substate(node_id, TypedModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
                     TypeInfoSubstate::Object {
@@ -334,7 +334,7 @@ where
                 }
 
                 self.track
-                    .release_lock(SubstateId(*node_id, NodeModuleId::TypeInfo, offset), false)
+                    .release_lock(SubstateId(*node_id, TypedModuleId::TypeInfo, offset), false)
                     .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
             }
         }
@@ -418,7 +418,7 @@ where
         Ok(node_id)
     }
 
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         self.id_allocator.allocate_virtual_node_id(node_id);
 
         Ok(())

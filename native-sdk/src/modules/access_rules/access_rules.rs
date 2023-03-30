@@ -4,7 +4,6 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
 };
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey,
@@ -12,6 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::{NodeId, TypedModuleId};
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::ToString;
 
@@ -39,21 +39,21 @@ impl AccessRules {
 }
 
 impl AccessRulesObject for AccessRules {
-    fn self_id(&self) -> (RENodeId, NodeModuleId) {
-        (RENodeId::Object(self.0.id()), NodeModuleId::SELF)
+    fn self_id(&self) -> (NodeId, TypedModuleId) {
+        (self.0 .0, TypedModuleId::ObjectState)
     }
 }
 
-pub struct AttachedAccessRules(pub RENodeId);
+pub struct AttachedAccessRules(pub NodeId);
 
 impl AccessRulesObject for AttachedAccessRules {
-    fn self_id(&self) -> (RENodeId, NodeModuleId) {
-        (self.0, NodeModuleId::AccessRules)
+    fn self_id(&self) -> (NodeId, TypedModuleId) {
+        (self.0, TypedModuleId::AccessRules)
     }
 }
 
 pub trait AccessRulesObject {
-    fn self_id(&self) -> (RENodeId, NodeModuleId);
+    fn self_id(&self) -> (NodeId, TypedModuleId);
 
     fn set_method_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
         &self,

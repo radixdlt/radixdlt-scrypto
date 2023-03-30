@@ -1220,13 +1220,13 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::api::types::NonFungibleData;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRulesConfig, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
+    use radix_engine_interface::types::NonFungibleData;
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]

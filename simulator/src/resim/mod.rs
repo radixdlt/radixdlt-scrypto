@@ -370,27 +370,27 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                NodeModuleId::ComponentRoyalty => (
+                TypedModuleId::Royalty => (
                     ROYALTY_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                NodeModuleId::Metadata => (
+                TypedModuleId::Metadata => (
                     METADATA_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                NodeModuleId::SELF => {
+                TypedModuleId::ObjectState => {
                     let type_info = substate_store
                         .get_substate(&SubstateId(
                             *node_id,
-                            NodeModuleId::TypeInfo,
-                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                            TypedModuleId::TypeInfo,
+                            SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo),
                         ))
                         .unwrap()
                         .substate
@@ -406,11 +406,11 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                NodeModuleId::TypeInfo => return None,
+                TypedModuleId::TypeInfo => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
-            let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+            let NodeId::GlobalObject(Address::Package(package_address)) = node_id else {
                 return None
             };
             (
@@ -422,9 +422,9 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
     };
 
     let substate_id = SubstateId(
-        RENodeId::GlobalObject(Address::Package(package_address)),
-        NodeModuleId::SELF,
-        SubstateOffset::Package(PackageOffset::Info),
+        NodeId::GlobalObject(Address::Package(package_address)),
+        TypedModuleId::ObjectState,
+        SubstateKey::Package(PackageOffset::Info),
     );
 
     Some((

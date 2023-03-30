@@ -135,8 +135,8 @@ pub enum KernelError {
 
     // RENode
     ContainsDuplicatedOwns,
-    StoredNodeRemoved(RENodeId),
-    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    StoredNodeRemoved(NodeId),
+    RENodeGlobalizeTypeNotAllowed(NodeId),
     TrackError(Box<TrackError>),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
@@ -144,9 +144,9 @@ pub enum KernelError {
     DropNodeFailure(NodeId),
 
     // Substate Constraints
-    InvalidOffset(SubstateOffset),
+    InvalidOffset(SubstateKey),
     InvalidOwnership(Box<InvalidOwnership>),
-    InvalidId(RENodeId),
+    InvalidId(NodeId),
 
     // Actor Constraints
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
@@ -154,13 +154,13 @@ pub enum KernelError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidOwnership(pub SubstateOffset, pub PackageAddress, pub String);
+pub struct InvalidOwnership(pub SubstateKey, pub PackageAddress, pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropNodeAccess {
     pub mode: ExecutionMode,
     pub actor: Actor,
-    pub node_id: RENodeId,
+    pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
 }
@@ -169,8 +169,8 @@ pub struct InvalidDropNodeAccess {
 pub struct InvalidSubstateAccess {
     pub mode: ExecutionMode,
     pub actor: Actor,
-    pub node_id: RENodeId,
-    pub offset: SubstateOffset,
+    pub node_id: NodeId,
+    pub substate_key: SubstateKey,
     pub flags: LockFlags,
 }
 
@@ -186,14 +186,14 @@ impl CanBeAbortion for KernelError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     OffsetDoesNotExist(Box<OffsetDoesNotExist>),
-    RENodeNotVisible(RENodeId),
-    RENodeNotOwned(RENodeId),
-    MovingLockedRENode(RENodeId),
+    RENodeNotVisible(NodeId),
+    RENodeNotOwned(NodeId),
+    MovingLockedRENode(NodeId),
     FailedToMoveSubstateToTrack(Box<TrackError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct OffsetDoesNotExist(pub RENodeId, pub SubstateOffset);
+pub struct OffsetDoesNotExist(pub NodeId, pub SubstateKey);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
@@ -255,7 +255,7 @@ pub struct InvalidModuleType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub RENodeId, pub BTreeSet<NodeModuleId>);
+pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<TypedModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {

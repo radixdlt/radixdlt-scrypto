@@ -6,17 +6,19 @@ pub const RADIX_TOKEN: ResourceAddress = resource_address(EntityType::GlobalFung
 pub const ECDSA_SECP256K1_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 0);
 pub const EDDSA_ED25519_TOKEN: ResourceAddress =
-    vanity_address!(EntityType::NonFungibleResource, 1);
-pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 2);
-pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 3);
+    resource_address(EntityType::GlobalNonFungibleResource, 1);
+pub const SYSTEM_TOKEN: ResourceAddress =
+    resource_address(EntityType::GlobalNonFungibleResource, 2);
+pub const PACKAGE_TOKEN: ResourceAddress =
+    resource_address(EntityType::GlobalNonFungibleResource, 3);
 pub const PACKAGE_OWNER_TOKEN: ResourceAddress =
-    vanity_address!(EntityType::NonFungibleResource, 4);
+    resource_address(EntityType::GlobalNonFungibleResource, 4);
 pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
-    vanity_address!(EntityType::NonFungibleResource, 5);
+    resource_address(EntityType::GlobalNonFungibleResource, 5);
 pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
-    vanity_address!(EntityType::NonFungibleResource, 6);
+    resource_address(EntityType::GlobalNonFungibleResource, 6);
 pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
-    vanity_address!(EntityType::NonFungibleResource, 7);
+    resource_address(EntityType::GlobalNonFungibleResource, 7);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 0);

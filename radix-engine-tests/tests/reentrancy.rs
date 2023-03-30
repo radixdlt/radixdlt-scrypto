@@ -38,9 +38,9 @@ fn mut_reentrancy_should_not_be_possible() {
         RuntimeError::KernelError(KernelError::TrackError(err)) => {
             if let TrackError::SubstateLocked(
                 SubstateId(
-                    RENodeId::GlobalObject(..),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State0),
+                    NodeId::GlobalObject(..),
+                    TypedModuleId::ObjectState,
+                    SubstateKey::Component(ComponentOffset::State0),
                 ),
                 LockState::Write,
             ) = **err
@@ -119,9 +119,9 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
         RuntimeError::KernelError(KernelError::TrackError(err)) => {
             if let TrackError::SubstateLocked(
                 SubstateId(
-                    RENodeId::GlobalObject(..),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State0),
+                    NodeId::GlobalObject(..),
+                    TypedModuleId::ObjectState,
+                    SubstateKey::Component(ComponentOffset::State0),
                 ),
                 LockState::Read(1),
             ) = **err

@@ -148,26 +148,35 @@ impl EpochManagerBlueprint {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+            MethodKey::new(TypedModuleId::ObjectState, EPOCH_MANAGER_NEXT_ROUND_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
+            MethodKey::new(
+                TypedModuleId::ObjectState,
+                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+            ),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
+            MethodKey::new(
+                TypedModuleId::ObjectState,
+                EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+            ),
             rule!(allow_all),
         );
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT),
+            MethodKey::new(
+                TypedModuleId::ObjectState,
+                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+            ),
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
+            MethodKey::new(TypedModuleId::ObjectState, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 

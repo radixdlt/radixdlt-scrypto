@@ -153,24 +153,8 @@ where
     }
     node_modules.insert(TypedModuleId::Metadata, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
-        NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(
-            metadata
-                .into_iter()
-                .map(|(key, value)| {
-                    (
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                            scrypto_encode(&key).unwrap(),
-                        )),
-                        RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
-                    )
-                })
-                .collect(),
-        ),
-    );
-    node_modules.insert(
-        NodeModuleId::ComponentRoyalty,
-        RENodeModuleInit::ComponentRoyalty(
+        TypedModuleId::Royalty,
+        ModuleInit::ComponentRoyalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
             },
@@ -181,23 +165,23 @@ where
     );
 
     if let Some(access_rules) = access_rules {
-        let mut node = api.kernel_drop_node(&RENodeId::Object(access_rules.0.id()))?;
+        let mut node = api.kernel_drop_node(&NodeId::Object(access_rules.0.id()))?;
         let access_rules = node
             .substates
             .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                TypedModuleId::ObjectState,
+                SubstateKey::AccessRules(AccessRulesOffset::AccessRules),
             ))
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.into();
         node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::MethodAccessRules(access_rules),
+            TypedModuleId::AccessRules,
+            ModuleInit::MethodAccessRules(access_rules),
         );
     } else {
         node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
+            TypedModuleId::AccessRules,
+            ModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
             }),
         );

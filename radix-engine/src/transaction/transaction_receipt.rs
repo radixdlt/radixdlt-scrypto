@@ -7,9 +7,9 @@ use crate::system::kernel_modules::execution_trace::{
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
+use radix_engine_interface::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::StateUpdates;
 use utils::ContextualDisplay;
