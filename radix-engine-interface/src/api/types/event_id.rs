@@ -54,3 +54,12 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
         }
     }
 }
+
+impl EventTypeIdentifier {
+    pub fn node_id(&self) -> RENodeId {
+        match self.0 {
+            Emitter::Function(node_id, ..) => node_id,
+            Emitter::Method(node_id, ..) => node_id,
+        }
+    }
+}
