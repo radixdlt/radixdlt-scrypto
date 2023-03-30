@@ -622,12 +622,12 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultCreateProofByIdsInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultCreateProofByIdsOutput>(),
-                export_name: VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<NonFungibleVaultCreateProofByIdsInput>(),
+                output: aggregator.add_child_type_and_descendents::<NonFungibleVaultCreateProofByIdsOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1698,13 +1698,17 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::create_proof_by_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_CREATE_PROOF_BY_IDS_IDENT => {
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::create_proof_by_ids(receiver, input, api)
+                let input: NonFungibleVaultCreateProofByIdsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_LOCK_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

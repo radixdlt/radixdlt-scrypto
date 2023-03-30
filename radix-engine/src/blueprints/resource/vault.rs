@@ -531,42 +531,6 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&info.resource_address))
     }
 
-    pub fn create_proof_by_ids<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultCreateProofByIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let info = VaultInfoSubstate::of(receiver, api)?;
-
-        if info.resource_type.is_fungible() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
-            ));
-        } else {
-            let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: false,
-            };
-            let proof = NonFungibleVault::lock_non_fungibles(receiver, input.ids, api)?;
-            let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&FungibleProof::default()).unwrap(),
-                    scrypto_encode(&proof).unwrap(),
-                ],
-            )?;
-            Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
-        }
-    }
 
     //===================
     // Protected method

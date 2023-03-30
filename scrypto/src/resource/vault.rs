@@ -198,8 +198,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 &RENodeId::Object(self.0),
-                VAULT_CREATE_PROOF_BY_IDS_IDENT,
-                scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
+                NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT,
+                scrypto_encode(&NonFungibleVaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

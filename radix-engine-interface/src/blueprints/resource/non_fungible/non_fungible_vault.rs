@@ -3,6 +3,7 @@ use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use crate::*;
 use sbor::rust::prelude::*;
+use crate::blueprints::resource::Proof;
 
 pub const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";
 
@@ -32,3 +33,12 @@ pub struct NonFungibleVaultRecallNonFungiblesInput {
 }
 
 pub type NonFungibleVaultRecallNonFungiblesOutput = Bucket;
+
+pub const NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultCreateProofByIdsInput {
+    pub ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleVaultCreateProofByIdsOutput = Proof;

@@ -150,8 +150,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            VAULT_CREATE_PROOF_BY_IDS_IDENT,
-            scrypto_encode(&VaultCreateProofByIdsInput { ids }).unwrap(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT,
+            scrypto_encode(&NonFungibleVaultCreateProofByIdsInput { ids }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
