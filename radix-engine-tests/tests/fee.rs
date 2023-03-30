@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
+use utils::ContextualDisplay;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
 where
@@ -63,7 +64,7 @@ fn should_be_aborted_when_loan_repaid() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
     receipt.expect_commit_failure();
 }
 
@@ -145,13 +146,18 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             )
             .build()
     });
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnNewSubstate(..))
-            ))
-        )
+
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            KernelError::TrackError(err),
+        )) => {
+            if let TrackError::LockUnmodifiedBaseOnNewSubstate(..) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 
@@ -182,13 +188,17 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
             .build()
     });
 
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..))
-            ))
-        )
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            KernelError::TrackError(err),
+        )) => {
+            if let TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 

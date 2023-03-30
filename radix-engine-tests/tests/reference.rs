@@ -26,10 +26,10 @@ fn verify_no_internal_ref_can_be_stored_in_track() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::InternalRefNotAllowed))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::TrackError(err)) => {
+            return TrackError::InternalRefNotAllowed == **err
+        }
+        _ => false,
     });
 }

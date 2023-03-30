@@ -1,7 +1,10 @@
 use crate::api::types::{NodeModuleId, RENodeId};
 use crate::ScryptoSbor;
+use radix_engine_common::address::AddressDisplayContext;
+use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::LocalTypeIndex;
+use utils::ContextualDisplay;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
 ///
@@ -20,4 +23,34 @@ pub enum Emitter {
     Function(RENodeId, NodeModuleId, String),
     // (Node id, module id)
     Method(RENodeId, NodeModuleId),
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        match self {
+            Self::Function(node_id, node_module_id, blueprint_name) => {
+                write!(
+                    f,
+                    "Function {{ node_id: {}, node_module_id: {:?}, blueprint_name: {} }}",
+                    node_id.display(*context),
+                    node_module_id,
+                    blueprint_name
+                )
+            }
+            Self::Method(node_id, node_module_id) => {
+                write!(
+                    f,
+                    "Method {{ node_id: {}, node_module_id: {:?} }}",
+                    node_id.display(*context),
+                    node_module_id,
+                )
+            }
+        }
+    }
 }
