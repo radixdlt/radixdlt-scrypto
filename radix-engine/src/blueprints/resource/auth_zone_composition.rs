@@ -353,7 +353,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                     &container_id.to_re_node_id(),
                     match container_id {
                         LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-                        LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                        LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     },
                     scrypto_args!(&ids),
                 )?;

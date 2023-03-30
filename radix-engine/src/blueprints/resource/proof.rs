@@ -159,7 +159,7 @@ impl NonFungibleProof {
                 &container_id.to_re_node_id(),
                 match container_id {
                     LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-                    LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                 },
                 scrypto_args!(locked_ids),
             )?;
@@ -176,7 +176,7 @@ impl NonFungibleProof {
                 &container_id.to_re_node_id(),
                 match container_id {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
-                    LocalRef::Vault(_) => VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                 },
                 scrypto_args!(locked_ids),
             )?;

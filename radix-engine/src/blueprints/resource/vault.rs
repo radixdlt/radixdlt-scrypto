@@ -530,47 +530,4 @@ impl VaultBlueprint {
 
         Ok(IndexedScryptoValue::from_typed(&info.resource_address))
     }
-
-
-    //===================
-    // Protected method
-    //===================
-
-    // FIXME: set up auth
-
-
-    pub fn lock_non_fungibles<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultLockNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        NonFungibleVault::lock_non_fungibles(receiver, input.local_ids, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-
-
-    pub fn unlock_non_fungibles<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultUnlockNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        NonFungibleVault::unlock_non_fungibles(receiver, input.local_ids, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 }

@@ -42,3 +42,21 @@ pub struct NonFungibleVaultCreateProofByIdsInput {
 }
 
 pub type NonFungibleVaultCreateProofByIdsOutput = Proof;
+
+pub const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "lock_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultLockNonFungiblesInput {
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleVaultLockNonFungiblesOutput = ();
+
+pub const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "unlock_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultUnlockNonFungiblesInput {
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleVaultUnlockNonFungiblesOutput = ();

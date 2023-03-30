@@ -247,6 +247,12 @@ impl FungibleVaultBlueprint {
         Ok(Proof(proof_id))
     }
 
+    //===================
+    // Protected method
+    //===================
+
+    // FIXME: set up auth
+
     pub fn lock_amount<Y>(
         receiver: &RENodeId,
         amount: Decimal,

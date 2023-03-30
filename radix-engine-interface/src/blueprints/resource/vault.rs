@@ -73,24 +73,6 @@ pub struct VaultCreateProofByAmountInput {
 
 pub type VaultCreateProofByAmountOutput = Proof;
 
-pub const VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "Vault_lock_non_fungibles";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultLockNonFungiblesInput {
-    pub local_ids: BTreeSet<NonFungibleLocalId>,
-}
-
-pub type VaultLockNonFungiblesOutput = ();
-
-pub const VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Vault_unlock_non_fungibles";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultUnlockNonFungiblesInput {
-    pub local_ids: BTreeSet<NonFungibleLocalId>,
-}
-
-pub type VaultUnlockNonFungiblesOutput = ();
-
 //========
 // Stub
 //========

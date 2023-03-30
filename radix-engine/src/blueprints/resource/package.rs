@@ -631,31 +631,22 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultLockNonFungiblesInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultLockNonFungiblesOutput>(),
-                export_name: VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
         functions.insert(
-            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(),
-                export_name: FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultUnlockNonFungiblesInput>(),
+                input: aggregator.add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<VaultUnlockNonFungiblesOutput>(),
-                export_name: VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
 
@@ -1725,22 +1716,30 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::unlock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_LOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::lock_non_fungibles(receiver, input, api)
+                let input: NonFungibleVaultLockNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::lock_non_fungibles(receiver, input.local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::unlock_non_fungibles(receiver, input, api)
+                let input: NonFungibleVaultUnlockNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(receiver, input.local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PROOF_DROP_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

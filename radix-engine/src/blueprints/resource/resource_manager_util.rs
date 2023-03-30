@@ -197,7 +197,7 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_NON_FUNGIBLES_IDENT),
+        MethodKey::new(NodeModuleId::SELF, NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT),
         AllowAll,
         DenyAll,
     );
@@ -207,7 +207,7 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_UNLOCK_NON_FUNGIBLES_IDENT),
+        MethodKey::new(NodeModuleId::SELF, NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT),
         AllowAll,
         DenyAll,
     );

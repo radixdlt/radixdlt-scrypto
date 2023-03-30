@@ -290,4 +290,35 @@ impl NonFungibleVaultBlueprint {
         )?;
         Ok(Proof(proof_id))
     }
+
+    //===================
+    // Protected method
+    //===================
+
+    // FIXME: set up auth
+
+    pub fn lock_non_fungibles<Y>(
+        receiver: &RENodeId,
+        local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        NonFungibleVault::lock_non_fungibles(receiver, local_ids, api)?;
+        Ok(())
+    }
+
+    pub fn unlock_non_fungibles<Y>(
+        receiver: &RENodeId,
+        local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        NonFungibleVault::unlock_non_fungibles(receiver, local_ids, api)?;
+
+        Ok(())
+    }
 }
