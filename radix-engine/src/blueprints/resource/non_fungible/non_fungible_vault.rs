@@ -168,6 +168,37 @@ impl NonFungibleVaultBlueprint {
         Ok(Bucket(bucket_id))
     }
 
+    pub fn recall_non_fungibles<Y>(
+        receiver: &RENodeId,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        let taken =
+            NonFungibleVault::take_non_fungibles(receiver, &non_fungible_local_ids, api)?;
+
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address: info.resource_address,
+                    resource_type: info.resource_type,
+                })
+                    .unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&taken).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Runtime::emit_event(api, RecallResourceEvent::Ids(non_fungible_local_ids))?;
+
+        Ok(Bucket(bucket_id))
+    }
 
     pub fn create_proof<Y>(
         receiver: &RENodeId,

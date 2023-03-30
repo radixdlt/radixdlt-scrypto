@@ -22,3 +22,13 @@ pub const NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_f
 pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {}
 
 pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+
+
+pub const NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultRecallNonFungiblesInput {
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleVaultRecallNonFungiblesOutput = Bucket;

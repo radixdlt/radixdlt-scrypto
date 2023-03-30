@@ -554,13 +554,13 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultRecallNonFungiblesInput>(),
+                input: aggregator.add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<VaultRecallNonFungiblesOutput>(),
-                export_name: VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+                    .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -1570,13 +1570,17 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::recall(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VAULT_RECALL_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                VaultBlueprint::recall_non_fungibles(receiver, input, api)
+                let input: NonFungibleVaultRecallNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(receiver, input.non_fungible_local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;

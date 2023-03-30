@@ -201,7 +201,7 @@ impl AuthModule {
                             // TODO: any visible vault?
                             let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF)
                                 && (method_key.ident.eq(VAULT_RECALL_IDENT)
-                                || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
+                                || method_key.ident.eq(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT))
                             {
                                 let access_rule = substate.access_rules.get_group_access_rule("recall");
                                 let authorization = convert_contextless(&access_rule);

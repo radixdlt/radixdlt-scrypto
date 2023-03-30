@@ -43,15 +43,6 @@ pub struct VaultRecallInput {
 
 pub type VaultRecallOutput = Bucket;
 
-pub const VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultRecallNonFungiblesInput {
-    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-}
-
-pub type VaultRecallNonFungiblesOutput = Bucket;
-
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
