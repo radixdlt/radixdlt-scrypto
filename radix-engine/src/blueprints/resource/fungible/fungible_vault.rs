@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -287,5 +287,172 @@ impl FungibleVaultBlueprint {
     {
         let info = VaultInfoSubstate::of(receiver, api)?;
         Ok(info.resource_address)
+    }
+}
+
+pub struct FungibleVault;
+
+impl FungibleVault {
+    pub fn liquid_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
+    }
+
+    pub fn locked_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LockedFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
+    }
+
+    pub fn is_locked<Y>(receiver: &RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        Ok(!Self::locked_amount(receiver, api)?.is_zero())
+    }
+
+    pub fn take<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<LiquidFungibleResource, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
+        api.sys_drop_lock(handle)?;
+
+        Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
+
+        Ok(taken)
+    }
+
+    pub fn put<Y>(
+        receiver: &RENodeId,
+        resource: LiquidFungibleResource,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        if resource.is_empty() {
+            return Ok(());
+        }
+
+        let event = DepositResourceEvent::Amount(resource.amount());
+
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
+        api.sys_drop_lock(handle)?;
+
+        Runtime::emit_event(api, event)?;
+
+        Ok(())
+    }
+
+    // protected method
+    pub fn lock_amount<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<FungibleProof, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LockedFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let max_locked = locked.amount();
+
+        // Take from liquid if needed
+        if amount > max_locked {
+            let delta = amount - max_locked;
+            FungibleVault::take(receiver, delta, api)?;
+        }
+
+        // Increase lock count
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+        locked.amounts.entry(amount).or_default().add_assign(1);
+
+        // Issue proof
+        Ok(FungibleProof::new(
+            amount,
+            btreemap!(
+                LocalRef::Vault(receiver.clone().into()) => amount
+            ),
+        )
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
+            })?)
+    }
+
+    // protected method
+    pub fn unlock_amount<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::Vault(VaultOffset::LockedFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+
+        let max_locked = locked.amount();
+        let cnt = locked
+            .amounts
+            .remove(&amount)
+            .expect("Attempted to unlock an amount that is not locked");
+        if cnt > 1 {
+            locked.amounts.insert(amount, cnt - 1);
+        }
+
+        let delta = max_locked - locked.amount();
+        FungibleVault::put(receiver, LiquidFungibleResource::new(delta), api)
     }
 }

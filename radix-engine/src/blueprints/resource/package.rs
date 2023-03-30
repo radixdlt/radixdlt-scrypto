@@ -1,4 +1,3 @@
-use crate::blueprints::resource::vault::VaultBlueprint;
 use crate::blueprints::resource::*;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
@@ -1635,7 +1634,7 @@ impl ResourceManagerNativePackage {
                 let _input: VaultGetResourceAddressInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::get_resource_address(receiver, input, api)
+                let rtn = NonFungibleVaultBlueprint::get_resource_address(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
