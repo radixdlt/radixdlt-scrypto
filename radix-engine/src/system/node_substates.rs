@@ -38,7 +38,7 @@ pub enum PersistedSubstate {
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
     FungibleVaultInfo(FungibleVaultInfoSubstate),
-    VaultInfo(NonFungibleVaultInfoSubstate),
+    NonFungibleVaultInfo(NonFungibleVaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
     VaultLockedFungible(LockedFungibleResource),
@@ -67,8 +67,8 @@ impl PersistedSubstate {
         }
     }
 
-    pub fn vault_info(&self) -> &NonFungibleVaultInfoSubstate {
-        if let PersistedSubstate::VaultInfo(vault) = self {
+    pub fn non_fungible_vault_info(&self) -> &NonFungibleVaultInfoSubstate {
+        if let PersistedSubstate::NonFungibleVaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault info");
@@ -108,7 +108,7 @@ impl PersistedSubstate {
     }
 
     pub fn vault_info_mut(&mut self) -> &mut NonFungibleVaultInfoSubstate {
-        if let PersistedSubstate::VaultInfo(vault) = self {
+        if let PersistedSubstate::NonFungibleVaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault info");
@@ -164,6 +164,16 @@ impl PersistedSubstate {
     }
 }
 
+impl Into<TypeInfoSubstate> for PersistedSubstate {
+    fn into(self) -> TypeInfoSubstate {
+        if let PersistedSubstate::TypeInfo(type_info) = self {
+            type_info
+        } else {
+            panic!("Not type info");
+        }
+    }
+}
+
 impl Into<FungibleVaultInfoSubstate> for PersistedSubstate {
     fn into(self) -> FungibleVaultInfoSubstate {
         if let PersistedSubstate::FungibleVaultInfo(vault) = self {
@@ -176,7 +186,7 @@ impl Into<FungibleVaultInfoSubstate> for PersistedSubstate {
 
 impl Into<NonFungibleVaultInfoSubstate> for PersistedSubstate {
     fn into(self) -> NonFungibleVaultInfoSubstate {
-        if let PersistedSubstate::VaultInfo(vault) = self {
+        if let PersistedSubstate::NonFungibleVaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -228,7 +238,9 @@ impl PersistedSubstate {
             PersistedSubstate::FungibleVaultInfo(value) => {
                 RuntimeSubstate::FungibleVaultInfo(value)
             }
-            PersistedSubstate::VaultInfo(value) => RuntimeSubstate::NonFungibleVaultInfo(value),
+            PersistedSubstate::NonFungibleVaultInfo(value) => {
+                RuntimeSubstate::NonFungibleVaultInfo(value)
+            }
             PersistedSubstate::VaultLiquidFungible(value) => {
                 RuntimeSubstate::VaultLiquidFungible(value)
             }
@@ -350,7 +362,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::FungibleVaultInfo(value.clone())
             }
             RuntimeSubstate::NonFungibleVaultInfo(value) => {
-                PersistedSubstate::VaultInfo(value.clone())
+                PersistedSubstate::NonFungibleVaultInfo(value.clone())
             }
             RuntimeSubstate::VaultLiquidFungible(value) => {
                 PersistedSubstate::VaultLiquidFungible(value.clone())
@@ -418,7 +430,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::FungibleVaultInfo(value) => {
                 PersistedSubstate::FungibleVaultInfo(value)
             }
-            RuntimeSubstate::NonFungibleVaultInfo(value) => PersistedSubstate::VaultInfo(value),
+            RuntimeSubstate::NonFungibleVaultInfo(value) => {
+                PersistedSubstate::NonFungibleVaultInfo(value)
+            }
             RuntimeSubstate::VaultLiquidFungible(value) => {
                 PersistedSubstate::VaultLiquidFungible(value)
             }

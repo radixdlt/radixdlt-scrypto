@@ -1,4 +1,3 @@
-use crate::blueprints::resource::LocalRef::Vault;
 use crate::blueprints::resource::VaultUtil;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
@@ -957,7 +956,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                         NodeModuleId::SELF,
                         SubstateOffset::Vault(VaultOffset::Info),
                     ))
-                    .vault_info()
+                    .non_fungible_vault_info()
                     .resource_address;
 
                 // If there is an update to the liquid resource

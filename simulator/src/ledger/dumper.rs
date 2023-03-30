@@ -11,7 +11,7 @@ use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::{
-    AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource,
+    AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource, FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
@@ -380,18 +380,35 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         // READ vault info
-        let vault_info: VaultInfoSubstate = substate_store
+        let type_info: TypeInfoSubstate = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::Object(*vault_id),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.into())
+            .unwrap();
+
+        let blueprint = match type_info {
+            TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+            TypeInfoSubstate::KeyValueStore(..) => panic!("Unexpected type"),
+        };
+
+        let substate = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Object(*vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Info),
             ))
             .map(|s| s.substate)
-            .map(|s| s.into())
             .unwrap();
 
-        // READ resource manager
-        let resource_address = vault_info.resource_address;
+        let resource_address = if blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
+            substate.fungible_vault_info().resource_address
+        } else {
+            substate.non_fungible_vault_info().resource_address
+        };
 
         let name_metadata: Option<Option<ScryptoValue>> = substate_store
             .get_substate(&SubstateId(
@@ -442,7 +459,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         .unwrap_or(String::new());
 
         // DUMP resource
-        let amount = if vault_info.resource_type.is_fungible() {
+        let amount = if blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
             let vault: LiquidFungibleResource = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
@@ -476,7 +493,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         );
 
         // DUMP non-fungibles
-        if !vault_info.resource_type.is_fungible() {
+        if !blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
             let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(resource_address.into()),
