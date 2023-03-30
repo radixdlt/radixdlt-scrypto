@@ -1,3 +1,4 @@
+use super::NodeId;
 use strum::FromRepr;
 
 //=========================================================================
@@ -32,6 +33,20 @@ pub enum EntityType {
 }
 
 impl EntityType {
+    pub fn is_global_node(node_id: &NodeId) -> bool {
+        match EntityType::from_repr(node_id.as_ref()[0]) {
+            Some(t) => t.is_global(),
+            None => false,
+        }
+    }
+
+    pub fn is_kv_store(node_id: &NodeId) -> bool {
+        match EntityType::from_repr(node_id.as_ref()[0]) {
+            Some(t) => t == EntityType::InternalKeyValueStore,
+            None => false,
+        }
+    }
+
     pub fn is_global(&self) -> bool {
         match self {
             EntityType::GlobalPackage

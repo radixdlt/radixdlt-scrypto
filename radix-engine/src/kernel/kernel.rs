@@ -738,7 +738,7 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: NodeId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(bucket_id),
             TypedModuleId::ObjectState,
@@ -788,7 +788,7 @@ where
         }
     }
 
-    fn kernel_read_proof(&mut self, proof_id: NodeId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(proof_id),
             TypedModuleId::ObjectState,

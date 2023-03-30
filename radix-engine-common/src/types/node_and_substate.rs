@@ -8,7 +8,7 @@ use sbor::rust::prelude::*;
 //=========================================================================
 
 /// The unique identifier of a (stored) node.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct NodeId(pub [u8; Self::LENGTH]);
 
@@ -84,6 +84,14 @@ impl From<Own> for NodeId {
 impl From<Reference> for NodeId {
     fn from(value: Reference) -> Self {
         Self(value.0.into())
+    }
+}
+
+impl Debug for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("NodeId")
+            .field(&hex::encode(&self.0))
+            .finish()
     }
 }
 
