@@ -27,7 +27,7 @@ impl AccessRules {
                 ACCESS_RULES_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput { access_rules }).unwrap(),
+                scrypto_encode(&AccessRulesCreateInput { access_rules, child_blueprint_rules: btreemap!() }).unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();

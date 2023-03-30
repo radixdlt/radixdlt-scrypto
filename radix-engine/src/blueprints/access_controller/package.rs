@@ -431,7 +431,12 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), api)?.0;
+        let access_rules = AccessRules::sys_new(
+            access_rules_from_rule_set(input.rule_set),
+            btreemap!(),
+            api,
+        )?.0;
+
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 

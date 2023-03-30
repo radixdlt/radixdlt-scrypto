@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
     AccessRulesSetMethodAccessRuleAndMutabilityInput, ACCESS_RULES_BLUEPRINT,
@@ -20,6 +21,7 @@ pub struct AccessRules(pub Own);
 impl AccessRules {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(
         access_rules: AccessRulesConfig,
+        child_blueprint_rules: BTreeMap<String, AccessRulesConfig>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -29,7 +31,10 @@ impl AccessRules {
             ACCESS_RULES_PACKAGE,
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
-            scrypto_encode(&AccessRulesCreateInput { access_rules }).unwrap(),
+            scrypto_encode(&AccessRulesCreateInput {
+                access_rules,
+                child_blueprint_rules,
+            }).unwrap(),
         )?;
 
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
