@@ -1,4 +1,5 @@
 name: Fuzzing
+run-name: Fuzzing input=${{ github.event.inputs.fuzz_input_mode }} duration=${{ github.event.inputs.duration_hours }}h branch=${{ github.ref_name }}
 
 on:
   workflow_dispatch:
