@@ -1,4 +1,3 @@
-use crate::blueprints::resource;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -204,6 +203,40 @@ impl FungibleVaultBlueprint {
         };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
 
+        let proof_id = api.new_object(
+            PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&proof).unwrap(),
+                scrypto_encode(&NonFungibleProof::default()).unwrap(),
+            ],
+        )?;
+
+        Ok(Proof(proof_id))
+    }
+
+
+    pub fn create_proof_by_amount<Y>(
+        receiver: &RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let info = VaultInfoSubstate::of(receiver, api)?;
+        if !info.resource_type.check_amount(amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
+        let proof_info = ProofInfoSubstate {
+            resource_address: info.resource_address,
+            resource_type: info.resource_type,
+            restricted: false,
+        };
+        let proof = FungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
             PROOF_BLUEPRINT,
             vec![

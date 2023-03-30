@@ -643,66 +643,6 @@ impl VaultBlueprint {
         }
     }
 
-
-    pub fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: VaultCreateProofByAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let info = VaultInfoSubstate::of(receiver, api)?;
-        if !info.resource_type.check_amount(input.amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
-            ));
-        }
-
-        let node_id = if info.resource_type.is_fungible() {
-            let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: false,
-            };
-            let proof = FungibleVault::lock_amount(receiver, input.amount, api)?;
-            let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&proof).unwrap(),
-                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
-                ],
-            )?;
-
-            RENodeId::Object(proof_id)
-        } else {
-            let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: false,
-            };
-            let proof = NonFungibleVault::lock_amount(receiver, input.amount, api)?;
-            let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&FungibleProof::default()).unwrap(),
-                    scrypto_encode(&proof).unwrap(),
-                ],
-            )?;
-
-            RENodeId::Object(proof_id)
-        };
-
-        let proof_id = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
-    }
-
     pub fn create_proof_by_ids<Y>(
         receiver: &RENodeId,
         input: &IndexedScryptoValue,
