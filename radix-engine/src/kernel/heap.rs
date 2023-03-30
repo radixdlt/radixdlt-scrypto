@@ -22,14 +22,16 @@ impl Heap {
         }
     }
 
+    /// Checks if the given node is in this heap.
     pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
     }
 
+    /// Reads a substate
     pub fn get_substate(
         &self,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
@@ -38,10 +40,11 @@ impl Heap {
             .and_then(|module| module.get(substate_key))
     }
 
+    /// Inserts or overwrites a substate
     pub fn put_substate(
         &mut self,
         node_id: NodeId,
-        module_id: TypedModuleId,
+        module_id: ModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
@@ -58,18 +61,10 @@ impl Heap {
         self.nodes.insert(node_id, node);
     }
 
-    /// Moves nodes to track.
-    ///
-    /// Panics if any of the nodes is not found.
-    pub fn move_nodes_to_store(&mut self, track: &mut Track, nodes: &[NodeId]) {
-        for node_id in nodes {
-            self.move_node_to_store(track, node_id);
-        }
-    }
-
     /// Moves node to track.
     ///
-    /// Panics if the node is not found.
+    /// # Panics
+    /// - If the node is not found.
     pub fn move_node_to_store(&mut self, track: &mut Track, node_id: &NodeId) {
         let node = self
             .nodes
@@ -77,8 +72,9 @@ impl Heap {
             .unwrap_or_else(|| panic!("Heap does not contain {:?}", node_id));
         for (module_id, module) in node.substates {
             for (substate_key, substate_value) in module {
-                let owned_nodes = substate_value.owned_node_ids();
-                self.move_nodes_to_store(track, owned_nodes.as_ref());
+                for node in substate_value.owned_node_ids() {
+                    self.move_node_to_store(track, node);
+                }
                 track.insert_substate(
                     node_id.clone(),
                     module_id.into(),
@@ -91,7 +87,8 @@ impl Heap {
 
     /// Removes node.
     ///
-    /// Panics if the node is not found.
+    /// # Panics
+    /// - If the node is not found.
     pub fn remove_node(&mut self, node_id: &NodeId) -> HeapNode {
         self.nodes
             .remove(node_id)
@@ -101,7 +98,7 @@ impl Heap {
 
 #[derive(Debug, Default)]
 pub struct HeapNode {
-    pub substates: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+    pub substates: BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
 }
 
 pub struct DroppedBucket {

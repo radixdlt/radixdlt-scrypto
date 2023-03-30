@@ -4,9 +4,6 @@ use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::{
-    PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
-};
 use crate::transaction::BalanceChange;
 use crate::transaction::RejectResult;
 use crate::transaction::StateUpdateSummary;
@@ -41,7 +38,7 @@ impl LockState {
 #[derive(Debug)]
 pub enum ExistingMetaState {
     Loaded,
-    Updated(Option<PersistedSubstate>),
+    Updated(Option<IndexedScryptoValue>),
 }
 
 #[derive(Debug)]
@@ -55,7 +52,7 @@ pub enum SubstateMetaState {
 
 #[derive(Debug)]
 pub struct LoadedSubstate {
-    substate: RuntimeSubstate,
+    substate: IndexedScryptoValue,
     lock_state: LockState,
     metastate: SubstateMetaState,
 }

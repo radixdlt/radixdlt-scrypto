@@ -7,8 +7,6 @@ use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
-use crate::system::node_substates::SubstateRef;
-use crate::system::node_substates::SubstateRefMut;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -16,7 +14,7 @@ use radix_engine_interface::api::*;
 
 pub struct LockInfo {
     pub node_id: NodeId,
-    pub module_id: TypedModuleId,
+    pub module_id: ModuleId,
     pub substate_key: SubstateKey,
     pub flags: LockFlags,
 }
@@ -39,7 +37,7 @@ pub trait KernelNodeApi {
         &mut self,
         node_id: NodeId,
         init: NodeInit,
-        node_module_init: BTreeMap<TypedModuleId, ModuleInit>,
+        node_module_init: BTreeMap<ModuleId, ModuleInit>,
     ) -> Result<(), RuntimeError>;
 }
 
@@ -48,37 +46,25 @@ pub trait KernelSubstateApi {
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
 
-    /// Drops a lock
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
-    /// Get a non-mutable reference to a locked substate
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
-    fn kernel_get_substate_ref<'a, 'b, S>(
-        &'b mut self,
+    fn kernel_write_substate(
+        &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&'a S, RuntimeError>
-    where
-        &'a S: From<SubstateRef<'a>>,
-        'b: 'a;
-
-    fn kernel_get_substate_ref_mut<'a, 'b, S>(
-        &'b mut self,
-        lock_handle: LockHandle,
-    ) -> Result<&'a mut S, RuntimeError>
-    where
-        &'a mut S: From<SubstateRefMut<'a>>,
-        'b: 'a;
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError>;
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
