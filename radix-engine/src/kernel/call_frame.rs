@@ -1,4 +1,3 @@
-use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -68,7 +67,7 @@ pub struct SubstateLock {
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
-    pub track_lock_handle: Option<u32>,
+    pub store_handle: Option<u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,30 +109,27 @@ pub struct CallFrame {
     locks: IndexMap<LockHandle, SubstateLock>,
 }
 
-pub enum FrameAcquireLockError {
+pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound,
     TrackAcquireLockError(AcquireLockError),
 }
 
-pub enum FrameDropLockError {
+pub enum UpdateSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
     RefNotFound(NodeId),
-    MoveError(FrameMoveError),
+    MoveError(MoveError),
     CantDropNodeInStore(NodeId),
-    DisallowedNodeOwn(NodeId),
+    CantOwn(NodeId),
+    CantPutLocalRefToStore(NodeId),
 }
 
-pub enum FrameMoveError {
+pub enum MoveError {
     OwnNotFound(NodeId),
     RefNotFound(NodeId),
-    NodeLocked(NodeId),
-}
-
-pub enum FrameCreateNodeError {
-    MoveError(FrameMoveError),
+    CantMoveLockedNode(NodeId),
 }
 
 impl CallFrame {
@@ -145,25 +141,25 @@ impl CallFrame {
         module_id: TypedModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<LockHandle, FrameAcquireLockError> {
+    ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
-            .ok_or(FrameAcquireLockError::NodeNotInCallFrame(node_id.clone()))?;
+            .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
-        let mut track_lock_handle = None;
+        let mut store_handle = None;
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Track?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                return Err(FrameAcquireLockError::LockUnmodifiedBaseOnHeapNode);
+                return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
             heap.get_substate(node_id, module_id.into(), substate_key)
-                .ok_or(FrameAcquireLockError::SubstateNotFound)?
+                .ok_or(LockSubstateError::SubstateNotFound)?
         } else {
             let handle = track
                 .acquire_lock(node_id, module_id.into(), substate_key, flags)
-                .map_err(FrameAcquireLockError::TrackAcquireLockError)?;
-            track_lock_handle = Some(handle);
+                .map_err(LockSubstateError::TrackAcquireLockError)?;
+            store_handle = Some(handle);
             track.get_substate(handle)
         };
 
@@ -207,7 +203,7 @@ impl CallFrame {
                 initial_references,
                 initial_owned_nodes: owned_nodes.clone(),
                 flags,
-                track_lock_handle,
+                store_handle,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -225,18 +221,18 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s>,
         lock_handle: LockHandle,
-    ) -> Result<(), FrameDropLockError> {
+    ) -> Result<(), UpdateSubstateError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or(FrameDropLockError::LockNotFound(lock_handle))?;
+            .ok_or(UpdateSubstateError::LockNotFound(lock_handle))?;
 
         let node_id = &substate_lock.node_id;
         let module_id = substate_lock.module_id;
         let substate_key = &substate_lock.substate_key;
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
-            let substate = if let Some(handle) = substate_lock.track_lock_handle {
+            let substate = if let Some(handle) = substate_lock.store_handle {
                 track.get_substate(handle)
             } else {
                 heap.get_substate(node_id, module_id.into(), substate_key)
@@ -249,21 +245,21 @@ impl CallFrame {
             let mut new_children: IndexSet<NodeId> = index_set_new();
             for own in owned_nodes {
                 if !new_children.insert(own.clone()) {
-                    return Err(FrameDropLockError::ContainsDuplicatedOwns);
+                    return Err(UpdateSubstateError::ContainsDuplicatedOwns);
                 }
             }
 
             // Check references exist
             for reference in references {
                 self.get_node_visibility(reference)
-                    .ok_or(FrameDropLockError::RefNotFound(reference.clone()))?;
+                    .ok_or(UpdateSubstateError::RefNotFound(reference.clone()))?;
             }
 
             for old_child in &substate_lock.initial_owned_nodes {
                 if !new_children.remove(old_child) {
                     // TODO: revisit logic here!
                     if heap.contains_node(&substate_lock.node_id) {
-                        return Err(FrameDropLockError::CantDropNodeInStore(old_child.clone()));
+                        return Err(UpdateSubstateError::CantDropNodeInStore(old_child.clone()));
                     }
 
                     // Owned nodes discarded by the substate go back to the call frame,
@@ -274,12 +270,12 @@ impl CallFrame {
 
             for child_id in &new_children {
                 self.take_node_internal(child_id)
-                    .map_err(FrameDropLockError::MoveError)?;
+                    .map_err(UpdateSubstateError::MoveError)?;
 
                 // TODO: Move this check into system layer
                 if let Some(info) = heap.get_substate(
                     child_id,
-                    TypedModuleId::TypeInfo,
+                    TypedModuleId::TypeInfo.into(),
                     &TypeInfoOffset::TypeInfo.into(),
                 ) {
                     let type_info: TypeInfoSubstate = info.as_typed().unwrap();
@@ -290,11 +286,11 @@ impl CallFrame {
                             ..
                         } => {
                             if !NodeProperties::can_own(
-                                &substate_key,
                                 package_address,
                                 blueprint_name.as_str(),
+                                &substate_key,
                             ) {
-                                return Err(FrameDropLockError::DisallowedNodeOwn(*child_id));
+                                return Err(UpdateSubstateError::CantOwn(*child_id));
                             }
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
@@ -304,7 +300,7 @@ impl CallFrame {
 
             if !heap.contains_node(&node_id) {
                 for child in &new_children {
-                    heap.move_node_to_store(track, child);
+                    Self::move_node_to_store(heap, track, child);
                 }
             }
         }
@@ -323,7 +319,7 @@ impl CallFrame {
         }
 
         // Release track lock
-        if let Some(handle) = substate_lock.track_lock_handle {
+        if let Some(handle) = substate_lock.store_handle {
             track.release_lock(handle);
         }
 
@@ -367,7 +363,7 @@ impl CallFrame {
         parent: &mut CallFrame,
         actor: Actor,
         call_frame_update: CallFrameUpdate,
-    ) -> Result<Self, FrameMoveError> {
+    ) -> Result<Self, MoveError> {
         let mut owned_heap_nodes = index_map_new();
         let mut next_node_refs = NonIterMap::new();
 
@@ -379,7 +375,7 @@ impl CallFrame {
         for node_id in call_frame_update.node_refs_to_copy {
             let visibility = parent
                 .get_node_visibility(&node_id)
-                .ok_or(FrameMoveError::RefNotFound(node_id))?;
+                .ok_or(MoveError::RefNotFound(node_id))?;
             next_node_refs.insert(node_id, RENodeRefData::new(visibility));
         }
 
@@ -400,7 +396,7 @@ impl CallFrame {
         from: &mut CallFrame,
         to: &mut CallFrame,
         update: CallFrameUpdate,
-    ) -> Result<(), FrameMoveError> {
+    ) -> Result<(), MoveError> {
         for node_id in update.nodes_to_move {
             // move re nodes to upstream call frame.
             from.take_node_internal(&node_id)?;
@@ -412,7 +408,7 @@ impl CallFrame {
             let ref_data = from
                 .immortal_node_refs
                 .get(&node_id)
-                .ok_or(FrameMoveError::RefNotFound(node_id))?;
+                .ok_or(MoveError::RefNotFound(node_id))?;
 
             to.immortal_node_refs
                 .entry(node_id)
@@ -431,7 +427,7 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         track: &mut Track<'s>,
-    ) -> Result<(), FrameDropLockError> {
+    ) -> Result<(), UpdateSubstateError> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
@@ -441,16 +437,16 @@ impl CallFrame {
         Ok(())
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), FrameMoveError> {
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), MoveError> {
         match self.owned_root_nodes.remove(node_id) {
             None => {
-                return Err(FrameMoveError::OwnNotFound(node_id.clone()));
+                return Err(MoveError::OwnNotFound(node_id.clone()));
             }
             Some(lock_count) => {
                 if lock_count == 0 {
                     Ok(())
                 } else {
-                    Err(FrameMoveError::NodeLocked(node_id.clone()))
+                    Err(MoveError::CantMoveLockedNode(node_id.clone()))
                 }
             }
         }
@@ -464,7 +460,7 @@ impl CallFrame {
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
-    ) -> Result<(), FrameCreateNodeError> {
+    ) -> Result<(), UpdateSubstateError> {
         let mut substates = BTreeMap::new();
         substates.insert(TypedModuleId::ObjectState, node_init.to_substates());
         for (module_id, module_init) in node_modules {
@@ -478,12 +474,12 @@ impl CallFrame {
 
                 for child_id in substate_value.owned_node_ids() {
                     self.take_node_internal(&child_id)
-                        .map_err(FrameCreateNodeError::MoveError)?;
+                        .map_err(UpdateSubstateError::MoveError)?;
 
-                    // TODO: Move this logic into system layer
+                    // TODO: Move this check into system layer
                     if let Some(info) = heap.get_substate(
-                        &child_id,
-                        TypedModuleId::TypeInfo,
+                        child_id,
+                        TypedModuleId::TypeInfo.into(),
                         &TypeInfoOffset::TypeInfo.into(),
                     ) {
                         let type_info: TypeInfoSubstate = info.as_typed().unwrap();
@@ -493,28 +489,36 @@ impl CallFrame {
                                 blueprint_name,
                                 ..
                             } => {
-                                NodeProperties::can_own(
-                                    &substate_key,
-                                    *package_address,
+                                if !NodeProperties::can_own(
+                                    package_address,
                                     blueprint_name.as_str(),
-                                )?;
+                                    &substate_key,
+                                ) {
+                                    return Err(UpdateSubstateError::CantOwn(*child_id));
+                                }
                             }
                             TypeInfoSubstate::KeyValueStore(..) => {}
                         }
                     }
 
                     if push_to_store {
-                        heap.move_node_to_store(track, child_id)?;
+                        Self::move_node_to_store(heap, track, child_id);
                     }
                 }
             }
         }
 
         if push_to_store {
-            for ((module_id, substate_key), substate) in substates {
-                track
-                    .insert_substate(SubstateId(node_id, module_id, substate_key), substate)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
+            for (module_id, module) in substates {
+                for (substate_key, substate_value) in module {
+                    for reference in substate_value.references() {
+                        if !EntityType::is_global_node(reference) {
+                            return Err(UpdateSubstateError::CantPutLocalRefToStore(*reference));
+                        }
+                    }
+
+                    track.insert_substate(node_id, module_id.into(), substate_key, substate_value);
+                }
             }
 
             self.add_ref(node_id, RENodeVisibilityOrigin::Normal);
@@ -545,7 +549,7 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<HeapNode, FrameMoveError> {
+    ) -> Result<HeapNode, MoveError> {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id);
         for (_, module) in &node.substates {
@@ -567,6 +571,37 @@ impl CallFrame {
             }
         }
         Ok(node)
+    }
+
+    pub fn move_node_to_store(
+        heap: &mut Heap,
+        track: &mut Track,
+        node_id: &NodeId,
+    ) -> Result<(), UpdateSubstateError> {
+        let node = heap.remove_node(node_id);
+
+        for (module_id, module) in node.substates {
+            for (substate_key, substate_value) in module {
+                for reference in substate_value.references() {
+                    if !EntityType::is_global_node(reference) {
+                        return Err(UpdateSubstateError::CantPutLocalRefToStore(*reference));
+                    }
+                }
+
+                track.insert_substate(
+                    node_id.clone(),
+                    module_id.into(),
+                    substate_key,
+                    substate_value,
+                );
+
+                for node in substate_value.owned_node_ids() {
+                    Self::move_node_to_store(heap, track, node);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<RENodeVisibilityOrigin> {

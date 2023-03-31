@@ -1,11 +1,9 @@
-use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_stores::interface::SubstateStore;
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, HeapNode>,
@@ -31,7 +29,7 @@ impl Heap {
     pub fn get_substate(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: TypedModuleId,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
@@ -44,7 +42,7 @@ impl Heap {
     pub fn put_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleId,
+        module_id: TypedModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
@@ -57,32 +55,9 @@ impl Heap {
             .insert(substate_key, substate_value);
     }
 
+    /// Inserts a new node to heap.
     pub fn insert_node(&mut self, node_id: NodeId, node: HeapNode) {
         self.nodes.insert(node_id, node);
-    }
-
-    /// Moves node to track.
-    ///
-    /// # Panics
-    /// - If the node is not found.
-    pub fn move_node_to_store(&mut self, track: &mut Track, node_id: &NodeId) {
-        let node = self
-            .nodes
-            .remove(&node_id)
-            .unwrap_or_else(|| panic!("Heap does not contain {:?}", node_id));
-        for (module_id, module) in node.substates {
-            for (substate_key, substate_value) in module {
-                for node in substate_value.owned_node_ids() {
-                    self.move_node_to_store(track, node);
-                }
-                track.insert_substate(
-                    node_id.clone(),
-                    module_id.into(),
-                    substate_key,
-                    substate_value,
-                );
-            }
-        }
     }
 
     /// Removes node.
@@ -98,7 +73,7 @@ impl Heap {
 
 #[derive(Debug, Default)]
 pub struct HeapNode {
-    pub substates: BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+    pub substates: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
 }
 
 pub struct DroppedBucket {
@@ -122,10 +97,7 @@ impl DroppedBucket {
 
 impl Into<DroppedBucket> for HeapNode {
     fn into(mut self) -> DroppedBucket {
-        let module = self
-            .substates
-            .remove(&TypedModuleId::ObjectState.into())
-            .unwrap();
+        let module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
 
         let info: BucketInfoSubstate = module
             .remove(&BucketOffset::Info.into())
@@ -163,10 +135,7 @@ pub enum DroppedProofResource {
 
 impl Into<DroppedProof> for HeapNode {
     fn into(mut self) -> DroppedProof {
-        let module = self
-            .substates
-            .remove(&TypedModuleId::ObjectState.into())
-            .unwrap();
+        let module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
 
         let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())
