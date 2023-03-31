@@ -476,10 +476,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_get_node_info(
-        &self,
-        node_id: RENodeId,
-    ) -> Option<(RENodeVisibilityOrigin, bool)> {
+    fn kernel_get_node_info(&self, node_id: RENodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
         let info = self.current_frame.get_node_visibility(&node_id)?;
         Some(info)
     }

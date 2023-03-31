@@ -635,7 +635,10 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+    pub fn get_node_visibility(
+        &self,
+        node_id: &RENodeId,
+    ) -> Option<(RENodeVisibilityOrigin, bool)> {
         if self.owned_root_nodes.contains_key(node_id) {
             Some((RENodeVisibilityOrigin::Normal, true))
         } else if let Some(_) = self.temp_node_refs.get(node_id) {

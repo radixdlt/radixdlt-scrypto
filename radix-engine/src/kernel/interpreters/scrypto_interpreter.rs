@@ -123,14 +123,15 @@ impl ExecutableInvocation for MethodInvocation {
                             // TODO: Cleanup, this is a rather crude way of trying to figure out
                             // TODO: whether the node reference is a child of the current parent
                             // TODO: this should be cleaned up once call_frame is refactored
-                            let (visibility, on_heap) = api.kernel_get_node_info(self.identifier.0).unwrap();
+                            let (visibility, on_heap) =
+                                api.kernel_get_node_info(self.identifier.0).unwrap();
                             match (visibility, on_heap) {
                                 (RENodeVisibilityOrigin::Normal, false) => {
                                     api.kernel_get_current_actor().and_then(|a| match a {
                                         Actor::Method { global_address, .. } => global_address,
                                         _ => None,
                                     })
-                                },
+                                }
                                 _ => None,
                             }
                         };

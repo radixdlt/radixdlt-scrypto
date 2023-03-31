@@ -55,7 +55,10 @@ mod my_component {
             address
         }
 
-        pub fn get_address_in_local_of_parent_method(&self, to_call: ComponentAddress) -> ComponentAddress {
+        pub fn get_address_in_local_of_parent_method(
+            &self,
+            to_call: ComponentAddress,
+        ) -> ComponentAddress {
             Self::get_address_in_local(to_call)
         }
 

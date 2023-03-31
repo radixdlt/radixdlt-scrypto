@@ -288,11 +288,9 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 #[test]
-#[ignore]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
     let component_address = {
         let manifest = ManifestBuilder::new()
@@ -304,10 +302,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -315,7 +310,6 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
         .call_method(
             component_address,
             "assert_access_rule",
@@ -323,10 +317,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {

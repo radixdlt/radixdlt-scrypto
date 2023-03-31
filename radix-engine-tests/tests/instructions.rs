@@ -1,10 +1,10 @@
+use radix_engine::errors::ModuleError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::{
     blueprints::transaction_processor::TransactionProcessorError,
     errors::{ApplicationError, RuntimeError},
     types::*,
 };
-use radix_engine::errors::ModuleError;
-use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine_interface::blueprints::resource::{AccessRule, FromPublicKey};
 use scrypto::prelude::{require, require_amount};
 use scrypto_unit::*;
@@ -72,9 +72,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let rule = rule!(require(NonFungibleGlobalId::from_public_key(
-            &public_key
-        )));
+    let rule = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
     let other_account = test_runner.new_account_advanced(rule.clone(), AccessRule::DenyAll);
 
     // Act
