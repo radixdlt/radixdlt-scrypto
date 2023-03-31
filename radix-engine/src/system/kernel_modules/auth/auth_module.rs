@@ -132,7 +132,6 @@ impl AuthModule {
                             .ok_or(RuntimeError::CallFrameError(
                                 CallFrameError::RENodeNotVisible(node_id),
                             ))?;
-
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = Self::method_authorization_stateless(
                         ref_type,
