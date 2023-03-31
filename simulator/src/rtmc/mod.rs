@@ -1,6 +1,5 @@
 use clap::Parser;
-use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::node::{NetworkDefinition, ParseNetworkError};
+use radix_engine::types::*;
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::compile;
@@ -51,7 +50,7 @@ pub fn run() -> Result<(), Error> {
     let transaction = compile(&content, &network, blobs).map_err(Error::CompileError)?;
     std::fs::write(
         args.output,
-        scrypto_encode(&transaction).map_err(Error::EncodeError)?,
+        manifest_encode(&transaction).map_err(Error::EncodeError)?,
     )
     .map_err(Error::IoError)?;
 

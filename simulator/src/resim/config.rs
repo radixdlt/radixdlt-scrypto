@@ -2,13 +2,12 @@ use std::fs;
 use std::path::PathBuf;
 
 use radix_engine::types::*;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 use crate::resim::*;
 use std::env;
 
 /// Simulator configurations.
-#[derive(Debug, Clone, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct Configs {
     pub default_account: Option<ComponentAddress>,
     pub default_private_key: Option<String>,
@@ -41,7 +40,7 @@ pub fn get_configs() -> Result<Configs, Error> {
     let path = get_configs_path()?;
     if path.exists() {
         scrypto_decode(&fs::read(path).map_err(Error::IOError)?.as_ref())
-            .map_err(Error::ConfigDecodingError)
+            .map_err(Error::SborDecodeError)
     } else {
         Ok(Configs::default())
     }

@@ -1,3 +1,5 @@
+use radix_engine_interface::schema::PackageSchema;
+
 use crate::types::*;
 use crate::wasm::*;
 
@@ -22,11 +24,7 @@ impl Default for WasmValidator {
 }
 
 impl WasmValidator {
-    pub fn validate(
-        &self,
-        code: &[u8],
-        blueprints: &BTreeMap<String, BlueprintAbi>,
-    ) -> Result<(), PrepareError> {
+    pub fn validate(&self, code: &[u8], schema: &PackageSchema) -> Result<(), PrepareError> {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with
         // some mocked parameters and reject it if fails to do so.
@@ -41,7 +39,7 @@ impl WasmValidator {
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?
             .enforce_function_limit(self.max_number_of_functions)?
             .enforce_global_limit(self.max_number_of_globals)?
-            .enforce_export_constraints(blueprints)?
+            .enforce_export_constraints(schema)?
             .inject_instruction_metering(parameters.instruction_cost_rules())?
             .inject_stack_metering(parameters.max_stack_size())?
             .ensure_instantiatable()?

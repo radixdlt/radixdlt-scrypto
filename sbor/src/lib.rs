@@ -25,6 +25,8 @@ pub mod encoder;
 pub mod path;
 /// A facade of Rust types.
 pub mod rust;
+/// SBOR structured payload traversal.
+pub mod traversal;
 
 /// SBOR Schema
 pub mod schema;
@@ -33,12 +35,15 @@ pub mod value;
 /// SBOR value kinds - ie the types of value that are supported.
 pub mod value_kind;
 
+#[cfg(feature = "serde")]
+pub mod serde_serialization;
+
 pub use basic::*;
 pub use categorize::Categorize;
 pub(crate) use categorize::{categorize_generic, categorize_simple};
 pub use constants::*;
 pub use decode::Decode;
-pub use decoder::{DecodeError, Decoder, VecDecoder};
+pub use decoder::{BorrowingDecoder, DecodeError, Decoder, VecDecoder};
 pub use encode::Encode;
 pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};

@@ -1,0 +1,52 @@
+[workspace]
+members = [
+    "access_rules",
+    "arguments",
+    "balance_changes",
+    "bucket",
+    "component",
+    "core",
+    "clock",
+    "data_access",
+    "deep_sbor",
+    "epoch_manager",
+    "execution_trace",
+    "external_blueprint_caller",
+    "fee",
+    "kernel",
+    "kv_store",
+    "leaks",
+    "local_component",
+    "local_recursion",
+    "metadata_component",
+    "module",
+    "non_fungible",
+    "package",
+    "package_schema",
+    "package_token",
+    "proof",
+    "recursion",
+    "reentrancy",
+    "reference",
+    "resource",
+    "resource_creator",
+    "stored_external_component",
+    "stored_resource",
+    "stored_values",
+    "vault",
+    "royalty",
+    "royalty-auth",
+    "transaction_limits",
+    "transaction_runtime",
+    "events",
+    "events_invalid",
+    "logger"
+]
+
+[profile.release]
+opt-level = 's'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = "debuginfo"    # Strip debug info.
+overflow-checks = true # Panic in the case of an overflow.

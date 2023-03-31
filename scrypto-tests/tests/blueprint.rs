@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(unused_imports)]
 
 use scrypto::prelude::*;
 
@@ -42,17 +43,20 @@ mod simple {
     }
 }
 
-#[allow(unused_imports)]
-mod wrapper {
+#[blueprint]
+mod empty_with_use_statements {
+    use radix_engine_common::data::scrypto::model::ComponentAddress;
+
+    struct EmptyWithUse {}
+
+    impl EmptyWithUse {}
+}
+
+#[blueprint]
+mod empty_with_use_super {
     use super::*;
 
-    #[blueprint]
-    mod empty_with_use_statements {
-        use sbor::BasicValue;
-        use scrypto::model::ComponentAddress;
+    struct EmptyWithUseSuper {}
 
-        struct Empty1 {}
-
-        impl Empty1 {}
-    }
+    impl EmptyWithUseSuper {}
 }

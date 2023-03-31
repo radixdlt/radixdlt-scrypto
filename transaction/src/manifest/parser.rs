@@ -137,6 +137,7 @@ impl Parser {
                 proof: self.parse_value()?,
             },
             TokenKind::DropAllProofs => Instruction::DropAllProofs,
+            TokenKind::ClearSignatureProofs => Instruction::ClearSignatureProofs,
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
@@ -163,15 +164,10 @@ impl Parser {
 
             TokenKind::PublishPackage => Instruction::PublishPackage {
                 code: self.parse_value()?,
-                abi: self.parse_value()?,
+                schema: self.parse_value()?,
                 royalty_config: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-            },
-            TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
-                code: self.parse_value()?,
-                abi: self.parse_value()?,
-                owner_badge: self.parse_value()?,
             },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
@@ -184,6 +180,10 @@ impl Parser {
                 entity_address: self.parse_value()?,
                 key: self.parse_value()?,
                 value: self.parse_value()?,
+            },
+            TokenKind::RemoveMetadata => Instruction::RemoveMetadata {
+                entity_address: self.parse_value()?,
+                key: self.parse_value()?,
             },
             TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
                 package_address: self.parse_value()?,
@@ -201,7 +201,6 @@ impl Parser {
             },
             TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
                 entity_address: self.parse_value()?,
-                index: self.parse_value()?,
                 key: self.parse_value()?,
                 rule: self.parse_value()?,
             },
@@ -211,37 +210,37 @@ impl Parser {
             },
             TokenKind::MintNonFungible => Instruction::MintNonFungible {
                 resource_address: self.parse_value()?,
-                entries: self.parse_value()?,
+                args: self.parse_value()?,
             },
             TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
                 resource_address: self.parse_value()?,
-                entries: self.parse_value()?,
+                args: self.parse_value()?,
             },
             TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource {
                 divisibility: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-                initial_supply: self.parse_value()?,
             },
-            TokenKind::CreateFungibleResourceWithOwner => {
-                Instruction::CreateFungibleResourceWithOwner {
+            TokenKind::CreateFungibleResourceWithInitialSupply => {
+                Instruction::CreateFungibleResourceWithInitialSupply {
                     divisibility: self.parse_value()?,
                     metadata: self.parse_value()?,
-                    owner_badge: self.parse_value()?,
+                    access_rules: self.parse_value()?,
                     initial_supply: self.parse_value()?,
                 }
             }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
                 id_type: self.parse_value()?,
+                schema: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
-                initial_supply: self.parse_value()?,
             },
-            TokenKind::CreateNonFungibleResourceWithOwner => {
-                Instruction::CreateNonFungibleResourceWithOwner {
+            TokenKind::CreateNonFungibleResourceWithInitialSupply => {
+                Instruction::CreateNonFungibleResourceWithInitialSupply {
                     id_type: self.parse_value()?,
+                    schema: self.parse_value()?,
                     metadata: self.parse_value()?,
-                    owner_badge: self.parse_value()?,
+                    access_rules: self.parse_value()?,
                     initial_supply: self.parse_value()?,
                 }
             }
@@ -251,9 +250,7 @@ impl Parser {
             },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 controlled_asset: self.parse_value()?,
-                primary_role: self.parse_value()?,
-                recovery_role: self.parse_value()?,
-                confirmation_role: self.parse_value()?,
+                rule_set: self.parse_value()?,
                 timed_recovery_delay_in_minutes: self.parse_value()?,
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {
@@ -261,6 +258,9 @@ impl Parser {
             },
             TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
                 access_rule: self.parse_value()?,
+            },
+            TokenKind::CreateAccount => Instruction::CreateAccount {
+                withdraw_rule: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -296,36 +296,24 @@ impl Parser {
             // ==============
             // Aliases
             // ==============
-            TokenKind::Some |
-            TokenKind::None |
-            TokenKind::Ok |
-            TokenKind::Err |
-            TokenKind::Bytes | TokenKind::NonFungibleGlobalId => self.parse_alias(),
+            TokenKind::Some
+            | TokenKind::None
+            | TokenKind::Ok
+            | TokenKind::Err
+            | TokenKind::Bytes
+            | TokenKind::NonFungibleGlobalId => self.parse_alias(),
 
             // ==============
             // Custom Types
             // ==============
-
-            /* Global address */
-            TokenKind::PackageAddress |
-            TokenKind::ComponentAddress |
-            TokenKind::ResourceAddress |
-            /* RE types */
-            TokenKind::Own |
-            TokenKind::Blob |
-            /* TX types */
-            TokenKind::Bucket |
-            TokenKind::Proof |
-            TokenKind::Expression |
-            /* Uninterpreted */
-            TokenKind::Hash |
-            TokenKind::EcdsaSecp256k1PublicKey |
-            TokenKind::EcdsaSecp256k1Signature |
-            TokenKind::EddsaEd25519PublicKey |
-            TokenKind::EddsaEd25519Signature |
-            TokenKind::Decimal |
-            TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleLocalId => self.parse_scrypto_types(),
+            TokenKind::Address
+            | TokenKind::Bucket
+            | TokenKind::Proof
+            | TokenKind::Expression
+            | TokenKind::Blob
+            | TokenKind::Decimal
+            | TokenKind::PreciseDecimal
+            | TokenKind::NonFungibleLocalId => self.parse_custom_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -389,39 +377,14 @@ impl Parser {
         }
     }
 
-    pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
+    pub fn parse_custom_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            // RE interpreted types
-            TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
-            TokenKind::ComponentAddress => {
-                Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
-            }
-            TokenKind::ResourceAddress => {
-                Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
-            }
-            TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
-
-            // TX interpreted types
+            TokenKind::Address => Ok(Value::Address(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
-
-            // Uninterpreted
-            TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
-            TokenKind::EcdsaSecp256k1PublicKey => Ok(Value::EcdsaSecp256k1PublicKey(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EcdsaSecp256k1Signature => Ok(Value::EcdsaSecp256k1Signature(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EddsaEd25519PublicKey => Ok(Value::EddsaEd25519PublicKey(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EddsaEd25519Signature => Ok(Value::EddsaEd25519Signature(
-                self.parse_values_one()?.into(),
-            )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
             TokenKind::NonFungibleLocalId => {
@@ -507,24 +470,12 @@ impl Parser {
             TokenKind::Bytes => Ok(Type::Bytes),
             TokenKind::NonFungibleGlobalId => Ok(Type::NonFungibleGlobalId),
 
-            // RE interpreted types
-            TokenKind::PackageAddress => Ok(Type::PackageAddress),
-            TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
-            TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::Own => Ok(Type::Own),
-
-            // TX interpreted types
+            // Custom types
+            TokenKind::Address => Ok(Type::Address),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
             TokenKind::Expression => Ok(Type::Expression),
             TokenKind::Blob => Ok(Type::Blob),
-
-            // Uninterpreted
-            TokenKind::Hash => Ok(Type::Hash),
-            TokenKind::EcdsaSecp256k1PublicKey => Ok(Type::EcdsaSecp256k1PublicKey),
-            TokenKind::EcdsaSecp256k1Signature => Ok(Type::EcdsaSecp256k1Signature),
-            TokenKind::EddsaEd25519PublicKey => Ok(Type::EddsaEd25519PublicKey),
-            TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
             TokenKind::NonFungibleLocalId => Ok(Type::NonFungibleLocalId),
@@ -638,14 +589,11 @@ mod tests {
             r#"Enum(0u8>"#,
             ParserError::UnexpectedToken(Token {
                 kind: TokenKind::GreaterThan,
-                span: Span {
-                    start: (1, 10),
-                    end: (1, 10)
-                }
+                span: Span { start: 8, end: 9 }
             })
         );
         parse_value_error!(
-            r#"PackageAddress("abc", "def")"#,
+            r#"Address("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
                 actual: 2,
                 expected: 1

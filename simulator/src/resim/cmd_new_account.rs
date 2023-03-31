@@ -1,7 +1,13 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::resource::{
+    require, FromPublicKey, NonFungibleDataSchema,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
+    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+};
+use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
 use utils::ContextualDisplay;
@@ -25,6 +31,9 @@ pub struct NewAccount {
     trace: bool,
 }
 
+#[derive(ScryptoSbor, ManifestSbor)]
+struct EmptyStruct;
+
 impl NewAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
@@ -34,10 +43,7 @@ impl NewAccount {
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(&withdraw_auth, bucket_id)
-            })
+            .new_account(withdraw_auth)
             .build();
 
         let receipt = handle_manifest(
@@ -52,13 +58,56 @@ impl NewAccount {
 
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-        if let Some(receipt) = receipt {
-            let commit_result = receipt.result.expect_commit();
+        if let Some(ref receipt) = receipt {
+            let commit_result = receipt.expect_commit(true);
             commit_result
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
 
-            let account = commit_result.entity_changes.new_component_addresses[0];
+            let account = commit_result.new_component_addresses()[0];
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 100.into())
+                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                .add_instruction(Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                        .to_string(),
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: btreemap!(
+                            "name".to_owned() => "Owner Badge".to_owned()
+                        ),
+                        access_rules: btreemap!(
+                            ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
+                        ),
+                        entries: btreemap!(
+                            NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}) ,),
+                        ),
+                    }),
+                })
+                .0
+                .call_method(
+                    account,
+                    "deposit_batch",
+                    manifest_args!(ManifestExpression::EntireWorktop),
+                )
+                .build();
+            let receipt = handle_manifest(
+                manifest,
+                &Some("".to_string()), // explicit empty signer public keys
+                &self.network,
+                &None,
+                self.trace,
+                false,
+                out,
+            )?
+            .unwrap();
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+            let owner_badge =
+                NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1));
+
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
@@ -74,6 +123,14 @@ impl NewAccount {
                 hex::encode(private_key.to_bytes()).green()
             )
             .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "Owner badge: {}",
+                owner_badge
+                    .to_canonical_string(&Bech32Encoder::for_simulator())
+                    .green()
+            )
+            .map_err(Error::IOError)?;
 
             let mut configs = get_configs()?;
             if configs.default_account.is_none()
@@ -82,21 +139,7 @@ impl NewAccount {
             {
                 configs.default_account = Some(account);
                 configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
-                set_configs(&configs)?;
-
-                let nf_global_id = NewSimpleBadge {
-                    symbol: None,
-                    name: Some("Owner badge".to_string()),
-                    description: None,
-                    url: None,
-                    icon_url: None,
-                    network: None,
-                    manifest: None,
-                    signing_keys: None,
-                    trace: false,
-                }
-                .run(out)?;
-                configs.default_owner_badge = Some(nf_global_id.unwrap());
+                configs.default_owner_badge = Some(owner_badge);
                 set_configs(&configs)?;
 
                 writeln!(
@@ -116,6 +159,7 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
         }
+
         Ok(())
     }
 }

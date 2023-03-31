@@ -1,6 +1,11 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::{modules::auth::AuthAddresses, time::UtcDateTime};
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::blueprints::clock::{
+    ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
+};
+use radix_engine_interface::time::UtcDateTime;
+use transaction::model::Instruction;
 
 use crate::resim::*;
 
@@ -17,12 +22,13 @@ pub struct SetCurrentTime {
 
 impl SetCurrentTime {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+        let instructions = vec![Instruction::CallMethod {
+            component_address: CLOCK,
+            method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&ClockSetCurrentTimeInput {
                 current_time_ms: self.date_time.to_instant().seconds_since_unix_epoch * 1000,
-                receiver: CLOCK,
             }),
-        ))];
+        }];
 
         let blobs = vec![];
         let initial_proofs = vec![

@@ -13,27 +13,21 @@ test_crates_features \
     "sbor" \
     "--release"
 
-echo "Testing sbor with indexmap..."
-test_crates_features \
-    "sbor" \
-    "--features indexmap"
-
 echo "Testing radix engine with wasmer..."
 test_crates_features \
-    "radix-engine" \
+    "radix-engine \
+    radix-engine-tests" \
     "--features wasmer"
 
 echo "Testing crates with no_std..."
 test_crates_features \
     "sbor \
     sbor-tests \
-    scrypto-abi \
+    scrypto-schema \
     scrypto-tests \
-    radix-engine" \
-    "--no-default-features --features alloc"
-
-test_crates_features \
+    radix-engine \
+    radix-engine-tests" \
     "scrypto" \
-    "--no-default-features --features alloc,prelude"
+    "--no-default-features --features alloc"
 
 echo "Congrats! All extra tests passed."

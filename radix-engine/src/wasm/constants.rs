@@ -1,33 +1,55 @@
-pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0;
+use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
+
+pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0x10;
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
-pub const INVOKE_METHOD_FUNCTION_ID: usize = 1;
-pub const INVOKE_METHOD_FUNCTION_NAME: &str = "invoke_method";
-pub const INVOKE_FUNCTION_ID: usize = 2;
-pub const INVOKE_FUNCTION_NAME: &str = "invoke";
-pub const CREATE_NODE_FUNCTION_ID: usize = 3;
-pub const CREATE_NODE_FUNCTION_NAME: &str = "create_node";
-pub const GET_VISIBLE_NODES_FUNCTION_ID: usize = 4;
-pub const GET_VISIBLE_NODES_FUNCTION_NAME: &str = "get_visible_nodes";
-pub const DROP_NODE_FUNCTION_ID: usize = 5;
-pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
-pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 6;
-pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
-pub const READ_SUBSTATE_FUNCTION_ID: usize = 7;
-pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
-pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 8;
-pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
-pub const UNLOCK_SUBSTATE_FUNCTION_ID: usize = 9;
-pub const UNLOCK_SUBSTATE_FUNCTION_NAME: &str = "unlock_substate";
-pub const GET_ACTOR_FUNCTION_ID: usize = 10;
-pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
-pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 11;
+pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
+
+pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
+pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
+pub const NEW_KEY_VALUE_STORE_FUNCTION_ID: usize = 0x31;
+pub const NEW_KEY_VALUE_STORE_FUNCTION_NAME: &str = "new_key_value_store";
+pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x32;
+pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize_object";
+pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
+pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
+pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
+pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
+pub const GET_OBJECT_TYPE_INFO_FUNCTION_ID: usize = 0x35;
+pub const GET_OBJECT_TYPE_INFO_FUNCTION_NAME: &str = "get_object_type_info";
+pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x36;
+pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
+pub const DROP_OBJECT_FUNCTION_ID: usize = 0x37;
+pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
+
+pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;
+pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
+pub const READ_SUBSTATE_FUNCTION_ID: usize = 0x41;
+pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
+pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 0x42;
+pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
+pub const DROP_LOCK_FUNCTION_ID: usize = 0x43;
+pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
+
+pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
+pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
+pub const LOG_FUNCTION_ID: usize = 0x51;
+pub const LOG_FUNCTION_NAME: &str = "log_message";
+pub const GET_TRANSACTION_HASH_FUNCTION_ID: usize = 0x52;
+pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
+pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
+pub const GENERATE_UUID_FUNCTION_NAME: &str = "generate_uuid";
+pub const GET_ACTOR_FUNCTION_ID: usize = 0x54;
+pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";
 
-/// The maximum initial memory size: `64 Pages * 64 KiB per Page = 4 MiB`
-pub const DEFAULT_MAX_INITIAL_MEMORY_SIZE_PAGES: u32 = 64;
+pub const WASM_MEMORY_PAGE_SIZE: u32 = 64 * 1024;
+
+/// The maximum initial memory size calculated basing on Wasm call frame size: 4MiB
+pub const DEFAULT_MAX_INITIAL_MEMORY_SIZE_PAGES: u32 =
+    DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME as u32 / WASM_MEMORY_PAGE_SIZE;
 
 /// The maximum initial table size
 pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;

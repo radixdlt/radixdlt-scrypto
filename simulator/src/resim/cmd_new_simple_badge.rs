@@ -1,15 +1,20 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::model::NonFungibleGlobalId;
-use radix_engine_interface::node::*;
+use radix_engine_interface::blueprints::resource::{
+    NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+};
+use radix_engine_interface::blueprints::resource::{
+    ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+};
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 use crate::resim::*;
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(ManifestSbor, ScryptoSbor)]
 struct EmptyStruct;
 
 /// Create a non-fungible badge with fixed supply
@@ -76,33 +81,30 @@ impl NewSimpleBadge {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let mut resource_auth = BTreeMap::new();
-        resource_auth.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        let mut initial_supply = BTreeMap::new();
-        initial_supply.insert(NonFungibleLocalId::integer(1), EmptyStruct {});
-
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Integer,
-                metadata: metadata,
-                access_rules: resource_auth,
-                initial_supply: Some(BTreeMap::from([(
-                    NonFungibleLocalId::integer(1),
-                    (
-                        scrypto_encode(&EmptyStruct).unwrap(),
-                        scrypto_encode(&EmptyStruct).unwrap(),
+            .add_instruction(Instruction::CallFunction {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                    id_type: NonFungibleIdType::Integer,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    metadata,
+                    access_rules: btreemap!(
+                        ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                     ),
-                )])),
+                    entries: btreemap!(
+                        NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}) ,),
+                    ),
+                }),
             })
             .0
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = handle_manifest(
@@ -117,10 +119,7 @@ impl NewSimpleBadge {
         .unwrap();
 
         if let Some(receipt) = receipt {
-            let resource_address = receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0];
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
             let bech32_encoder = Bech32Encoder::new(&network_definition);
             writeln!(

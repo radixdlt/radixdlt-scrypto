@@ -38,7 +38,26 @@ pub const MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
 pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
 
 /// The default max call depth, used by transaction executor.
-pub const DEFAULT_MAX_CALL_DEPTH: usize = 10;
+pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
 
 /// The default cost unit price.
 pub const DEFAULT_COST_UNIT_PRICE: u128 = 100_000_000_000u128;
+
+/// The default maximum WASM memory per transaction (multiple WASM instances up to call depth).
+pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
+
+/// The default maximum WASM memory per WASM call frame.
+pub const DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME: usize = 4 * 1024 * 1024;
+
+/// The default maximum substates reads count per transaction.
+pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 20_000;
+
+/// The default maximum substates writes count per transaction.
+pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 5_000;
+
+/// The default maximum substate read and write size.
+/// TODO: Apply this limit in create_node too
+pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 4 * 1024 * 1024;
+
+/// The default maximum invoke input args size.
+pub const DEFAULT_MAX_INVOKE_INPUT_SIZE: usize = 4 * 1024 * 1024;

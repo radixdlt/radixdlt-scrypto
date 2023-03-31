@@ -48,24 +48,24 @@ impl Transfer {
         let mut manifest_builder = &mut ManifestBuilder::new();
         for resource_specifier in proofs {
             manifest_builder = manifest_builder.borrow_mut(|builder| {
-                add_create_proof_instruction_from_account_with_resource_specifier(
+                create_proof_from_account(
                     builder,
                     &bech32_decoder,
                     default_account,
                     resource_specifier,
                 )
-                .map_err(Error::FailedToBuildArgs)?;
+                .map_err(Error::FailedToBuildArguments)?;
                 Ok(builder)
             })?;
         }
 
         let manifest = manifest_builder
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .withdraw_from_account_by_amount(default_account, self.amount, self.resource_address.0)
+            .withdraw_from_account(default_account, self.resource_address.0, self.amount)
             .call_method(
                 self.recipient.0,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         handle_manifest(

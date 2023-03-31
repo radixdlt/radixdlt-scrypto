@@ -1,6 +1,6 @@
 [package]
 name = "native-sdk"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dependencies]
@@ -14,3 +14,7 @@ utils = { path = "../utils", default-features = false }
 default = ["std"]
 std = ["sbor/std", "radix-engine-interface/std", "radix-engine-derive/std", "utils/std"]
 alloc = ["sbor/alloc", "radix-engine-interface/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+bench = false

@@ -2,43 +2,43 @@
 extern crate bencher;
 use bencher::Bencher;
 use sbor::{basic_decode, basic_encode};
+use sbor_tests::adapter;
 
-mod adapter;
 mod data;
 
-const SIMPLE_REAPT: usize = 32;
+const REPEAT: usize = 1000;
 
 fn encode_simple_json(b: &mut Bencher) {
-    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let t = data::get_simple_dataset(REPEAT);
     b.iter(|| adapter::json_encode(&t));
 }
 
 fn encode_simple_bincode(b: &mut Bencher) {
-    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let t = data::get_simple_dataset(REPEAT);
     b.iter(|| adapter::bincode_encode(&t));
 }
 
 fn encode_simple_sbor(b: &mut Bencher) {
-    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let t = data::get_simple_dataset(REPEAT);
     b.iter(|| basic_encode(&t));
 }
 
 fn decode_simple_json(b: &mut Bencher) {
-    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let t = data::get_simple_dataset(REPEAT);
     let bytes = adapter::json_encode(&t);
-    b.iter(|| adapter::json_decode::<data::simple::SimpleStruct>(&bytes));
+    b.iter(|| adapter::json_decode::<data::SimpleStruct>(&bytes));
 }
 
 fn decode_simple_bincode(b: &mut Bencher) {
-    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let t = data::get_simple_dataset(REPEAT);
     let bytes = adapter::bincode_encode(&t);
-    b.iter(|| adapter::bincode_decode::<data::simple::SimpleStruct>(&bytes));
+    b.iter(|| adapter::bincode_decode::<data::SimpleStruct>(&bytes));
 }
 
 fn decode_simple_sbor(b: &mut Bencher) {
-    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let t = data::get_simple_dataset(REPEAT);
     let bytes = basic_encode(&t).unwrap();
-    b.iter(|| basic_decode::<data::simple::SimpleStruct>(&bytes));
+    b.iter(|| basic_decode::<data::SimpleStruct>(&bytes));
 }
 
 benchmark_group!(

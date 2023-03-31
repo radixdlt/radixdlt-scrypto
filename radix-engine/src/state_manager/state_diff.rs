@@ -1,21 +1,29 @@
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 use crate::types::*;
-use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::hash;
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
-    pub down_substates: Vec<OutputId>,
+    pub down_substates: BTreeSet<OutputId>,
 }
 
 impl StateDiff {
     pub fn new() -> Self {
         Self {
             up_substates: BTreeMap::new(),
-            down_substates: Vec::new(),
+            down_substates: BTreeSet::new(),
         }
+    }
+
+    /// Merges the changes from the given other diff into this one in a naive way, by simply
+    /// extending the tracked up/down substate collections (i.e. without resolving any potential
+    /// up->down or down->up interactions coming from the other diff).
+    pub fn extend(&mut self, other: StateDiff) {
+        let mut other = other;
+        self.up_substates.extend(other.up_substates);
+        self.down_substates.append(&mut other.down_substates);
     }
 
     /// Applies the state changes to some substate store.
@@ -59,7 +67,7 @@ impl StateDiff {
     pub fn up_substate_offsets(&self) -> BTreeMap<&SubstateOffset, usize> {
         let mut counter = BTreeMap::new();
         for s in &self.up_substates {
-            *counter.entry(&s.0 .1).or_default() += 1;
+            *counter.entry(&s.0 .2).or_default() += 1;
         }
         counter
     }
@@ -67,7 +75,7 @@ impl StateDiff {
     pub fn down_substate_offsets(&self) -> BTreeMap<&SubstateOffset, usize> {
         let mut counter = BTreeMap::new();
         for s in &self.down_substates {
-            *counter.entry(&s.substate_id.1).or_default() += 1;
+            *counter.entry(&s.substate_id.2).or_default() += 1;
         }
         counter
     }

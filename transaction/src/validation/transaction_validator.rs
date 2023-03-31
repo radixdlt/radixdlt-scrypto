@@ -1,16 +1,17 @@
 use radix_engine_constants::*;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::blueprints::transaction_processor::RuntimeValidation;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{Hash, PublicKey};
-use radix_engine_interface::data::*;
-use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_interface::data::manifest::*;
 
-pub trait TransactionValidator<T: ScryptoDecode> {
+pub trait TransactionValidator<T: ManifestDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],
@@ -19,7 +20,7 @@ pub trait TransactionValidator<T: ScryptoDecode> {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let transaction = scrypto_decode(transaction)
+        let transaction = manifest_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Ok(transaction)
@@ -86,14 +87,14 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let header = &intent.header;
 
         Ok(Executable::new(
-            InstructionList::Basic(&intent.manifest.instructions),
+            intent.manifest.instructions.clone(),
             &intent.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
                 payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthAddresses::signer_set(&signer_keys),
-                    virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                    virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
                     cost_unit_limit: header.cost_unit_limit,
@@ -131,10 +132,10 @@ impl NotarizedTransactionValidator {
         self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
         let initial_proofs = AuthAddresses::signer_set(&preview_intent.signer_public_keys);
 
-        let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
+        let mut virtual_resources = BTreeSet::new();
         if flags.assume_all_signature_proofs {
-            virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
-            virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
+            virtual_resources.insert(ECDSA_SECP256K1_TOKEN);
+            virtual_resources.insert(EDDSA_ED25519_TOKEN);
         }
 
         let header = &intent.header;
@@ -150,14 +151,14 @@ impl NotarizedTransactionValidator {
         };
 
         Ok(Executable::new(
-            InstructionList::Basic(&manifest.instructions),
+            manifest.instructions.clone(),
             &manifest.blobs,
             ExecutionContext {
                 transaction_hash,
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
-                    virtualizable_proofs_resource_addresses,
+                    virtual_resources,
                 },
                 fee_payment,
                 runtime_validations: vec![
@@ -198,115 +199,102 @@ impl NotarizedTransactionValidator {
         manifest: &TransactionManifest,
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
-        let mut id_validator = ManifestIdValidator::new();
+        let mut id_validator = ManifestValidator::new();
         for inst in &manifest.instructions {
             match inst {
-                BasicInstruction::TakeFromWorktop { .. } => {
+                Instruction::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::TakeFromWorktopByAmount { .. } => {
+                Instruction::TakeFromWorktopByAmount { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::TakeFromWorktopByIds { .. } => {
+                Instruction::TakeFromWorktopByIds { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::ReturnToWorktop { bucket_id } => {
+                Instruction::ReturnToWorktop { bucket_id } => {
                     id_validator
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::AssertWorktopContains { .. } => {}
-                BasicInstruction::AssertWorktopContainsByAmount { .. } => {}
-                BasicInstruction::AssertWorktopContainsByIds { .. } => {}
-                BasicInstruction::PopFromAuthZone => {
+                Instruction::AssertWorktopContains { .. } => {}
+                Instruction::AssertWorktopContainsByAmount { .. } => {}
+                Instruction::AssertWorktopContainsByIds { .. } => {}
+                Instruction::PopFromAuthZone => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::PushToAuthZone { proof_id } => {
+                Instruction::PushToAuthZone { proof_id } => {
                     id_validator
                         .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::ClearAuthZone => {}
-                BasicInstruction::CreateProofFromAuthZone { .. } => {
+                Instruction::ClearAuthZone => {}
+                Instruction::CreateProofFromAuthZone { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CreateProofFromAuthZoneByAmount { .. } => {
+                Instruction::CreateProofFromAuthZoneByAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CreateProofFromAuthZoneByIds { .. } => {
+                Instruction::CreateProofFromAuthZoneByIds { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CreateProofFromBucket { bucket_id } => {
+                Instruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CloneProof { proof_id } => {
+                Instruction::CloneProof { proof_id } => {
                     id_validator
                         .clone_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::DropProof { proof_id } => {
+                Instruction::DropProof { proof_id } => {
                     id_validator
                         .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::DropAllProofs => {
+                Instruction::DropAllProofs => {
                     id_validator
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CallFunction { args, .. }
-                | BasicInstruction::CallMethod { args, .. } => {
+                Instruction::ClearSignatureProofs => {}
+                Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                BasicInstruction::PublishPackage { .. } => {}
-                BasicInstruction::PublishPackageWithOwner { .. } => {}
-                BasicInstruction::BurnResource { bucket_id } => {
+                Instruction::PublishPackage { .. } => {}
+                Instruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::CreateAccessController {
-                    controlled_asset, ..
-                } => {
-                    id_validator
-                        .drop_bucket(controlled_asset)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                BasicInstruction::RecallResource { .. }
-                | BasicInstruction::SetMetadata { .. }
-                | BasicInstruction::SetPackageRoyaltyConfig { .. }
-                | BasicInstruction::SetComponentRoyaltyConfig { .. }
-                | BasicInstruction::ClaimPackageRoyalty { .. }
-                | BasicInstruction::ClaimComponentRoyalty { .. }
-                | BasicInstruction::SetMethodAccessRule { .. }
-                | BasicInstruction::MintFungible { .. }
-                | BasicInstruction::MintNonFungible { .. }
-                | BasicInstruction::MintUuidNonFungible { .. }
-                | BasicInstruction::CreateFungibleResource { .. }
-                | BasicInstruction::CreateFungibleResourceWithOwner { .. }
-                | BasicInstruction::CreateNonFungibleResource { .. }
-                | BasicInstruction::CreateNonFungibleResourceWithOwner { .. }
-                | BasicInstruction::CreateValidator { .. }
-                | BasicInstruction::CreateIdentity { .. }
-                | BasicInstruction::AssertAccessRule { .. } => {}
+                Instruction::RecallResource { .. }
+                | Instruction::SetMetadata { .. }
+                | Instruction::RemoveMetadata { .. }
+                | Instruction::SetPackageRoyaltyConfig { .. }
+                | Instruction::SetComponentRoyaltyConfig { .. }
+                | Instruction::ClaimPackageRoyalty { .. }
+                | Instruction::ClaimComponentRoyalty { .. }
+                | Instruction::SetMethodAccessRule { .. }
+                | Instruction::MintFungible { .. }
+                | Instruction::MintNonFungible { .. }
+                | Instruction::MintUuidNonFungible { .. }
+                | Instruction::AssertAccessRule { .. } => {}
             }
         }
 
@@ -394,23 +382,12 @@ impl NotarizedTransactionValidator {
     }
 
     pub fn validate_call_args(
-        args: &[u8],
-        id_validator: &mut ManifestIdValidator,
+        value: &ManifestValue,
+        id_validator: &mut ManifestValidator,
     ) -> Result<(), CallDataValidationError> {
-        let indexed_args =
-            IndexedScryptoValue::from_slice(args).map_err(CallDataValidationError::DecodeError)?;
-
         id_validator
-            .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
+            .process_call_data(&value)
             .map_err(CallDataValidationError::IdValidationError)?;
-
-        if let Ok(node_ids) = indexed_args.owned_node_ids() {
-            if !node_ids.is_empty() {
-                return Err(CallDataValidationError::OwnNotAllowed);
-            }
-        } else {
-            return Err(CallDataValidationError::OwnNotAllowed);
-        }
 
         Ok(())
     }
@@ -418,11 +395,12 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::node::NetworkDefinition;
+    use radix_engine_interface::network::NetworkDefinition;
 
     use super::*;
     use crate::{
-        builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaSecp256k1PrivateKey,
+        builder::ManifestBuilder, builder::TransactionBuilder,
+        ecdsa_secp256k1::EcdsaSecp256k1PrivateKey,
     };
 
     macro_rules! assert_invalid_tx {

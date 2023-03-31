@@ -1,13 +1,13 @@
+use crate::blueprints::resource::VaultInfoSubstate;
 use crate::ledger::{
     QueryableSubstateStore, ReadableSubstateStore, StateTreeTraverser, StateTreeTraverserError,
     StateTreeVisitor,
 };
-use crate::model::VaultSubstate;
 use crate::types::hash_map::Entry;
-use crate::types::HashMap;
-use radix_engine_interface::api::types::{RENodeId, VaultId};
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::ResourceAddress;
+use crate::types::*;
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource,
+};
 
 pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
     substate_store: &'s S,
@@ -44,21 +44,55 @@ impl Accounting {
         }
     }
 
-    pub fn add_vault(&mut self, vault: &VaultSubstate) {
-        match self.balances.entry(vault.0.resource_address()) {
+    pub fn add_fungible_vault(
+        &mut self,
+        info: &VaultInfoSubstate,
+        resource: &LiquidFungibleResource,
+    ) {
+        match self.balances.entry(info.resource_address) {
             Entry::Occupied(mut e) => {
-                let new_amount = vault.0.amount() + *e.get();
+                let new_amount = resource.amount() + *e.get();
                 e.insert(new_amount);
             }
             Entry::Vacant(e) => {
-                e.insert(vault.0.amount());
+                e.insert(resource.amount());
+            }
+        }
+    }
+
+    pub fn add_non_fungible_vault(
+        &mut self,
+        info: &VaultInfoSubstate,
+        resource: &LiquidNonFungibleResource,
+    ) {
+        match self.balances.entry(info.resource_address) {
+            Entry::Occupied(mut e) => {
+                let new_amount = resource.amount() + *e.get();
+                e.insert(new_amount);
+            }
+            Entry::Vacant(e) => {
+                e.insert(resource.amount());
             }
         }
     }
 }
 
 impl StateTreeVisitor for Accounting {
-    fn visit_vault(&mut self, _parent_id: VaultId, vault: &VaultSubstate) {
-        self.add_vault(vault);
+    fn visit_fungible_vault(
+        &mut self,
+        _vault_id: ObjectId,
+        info: &VaultInfoSubstate,
+        resource: &LiquidFungibleResource,
+    ) {
+        self.add_fungible_vault(info, resource);
+    }
+
+    fn visit_non_fungible_vault(
+        &mut self,
+        _vault_id: ObjectId,
+        info: &VaultInfoSubstate,
+        resource: &LiquidNonFungibleResource,
+    ) {
+        self.add_non_fungible_vault(info, resource);
     }
 }

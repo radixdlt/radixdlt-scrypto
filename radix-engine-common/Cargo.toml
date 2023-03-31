@@ -1,0 +1,51 @@
+[package]
+name = "radix-engine-common"
+version = "0.9.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../sbor", default-features = false }
+utils = { path = "../utils", default-features = false }
+radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
+
+hex = { version = "0.4.3", default-features = false }
+num-traits = { version = "0.2.15", default-features = false }
+num-integer = { version = "0.1.45", default-features = false }
+num-bigint = { version = "0.4.3", default-features = false }
+bnum = { version = "0.4.0", default-features = false, features = ["numtraits"] }
+bech32 = { version = "0.9.0", default-features = false }
+paste = { version = "1.0.7"}
+serde = { version = "1.0.144", default-features = false, optional = true }
+serde_with = { version = "2.0.1", optional = true }
+blake2 = { version = "0.10.6", default-features = false }
+lazy_static = "1.4.0"
+
+[dev-dependencies]
+serde_json = { version = "1.0.81", default-features = false }
+criterion = { version = "0.3", features = ["html_reports"] }
+# This is for math benchmarks for comparison purposes.
+# Fast alternative to bigint but unfortunately not cross-compiled to WASM
+rug = { version = "1.18" }
+num-integer = { version = "0.1.45", default-features = false }
+ethnum = {version = "1.3.2", default-features = false }
+
+[[bench]]
+name = "math"
+harness = false
+
+[[bench]]
+name = "schema"
+harness = false
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std", "serde"]
+std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "blake2/std"]
+alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
+
+# Enable serde derives
+serde = ["utils/serde", "sbor/serde", "serde/derive", "hex/serde", "serde_with"]
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+bench = false

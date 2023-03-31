@@ -1,4 +1,4 @@
-use radix_engine_interface::data::types::*;
+use radix_engine_interface::data::manifest::model::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,7 +26,7 @@ impl From<EncodeError> for SignatureValidationError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ManifestIdAllocationError {
     OutOfID,
 }
@@ -43,7 +43,6 @@ pub enum ManifestIdValidationError {
 pub enum CallDataValidationError {
     DecodeError(DecodeError),
     IdValidationError(ManifestIdValidationError),
-    OwnNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

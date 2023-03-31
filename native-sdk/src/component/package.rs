@@ -1,7 +1,10 @@
-use radix_engine_interface::api::EngineApi;
-use radix_engine_interface::api::Invokable;
-use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::model::*;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::{
+    PackageSetRoyaltyConfigInput, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+};
+use radix_engine_interface::data::scrypto::model::PackageAddress;
+use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -13,15 +16,17 @@ impl BorrowedPackage {
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &self,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<&Self, E>
     where
-        Y: EngineApi<E> + Invokable<PackageSetRoyaltyConfigInvocation, E>,
+        Y: ClientApi<E>,
     {
-        sys_calls.invoke(PackageSetRoyaltyConfigInvocation {
-            receiver: self.0,
-            royalty_config,
-        })?;
+        api.call_module_method(
+            RENodeId::GlobalObject(self.0.into()),
+            NodeModuleId::SELF,
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+            scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
+        )?;
 
         Ok(self)
     }

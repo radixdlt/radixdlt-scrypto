@@ -374,18 +374,22 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
 
     fn visit_array(
         &mut self,
-        path: &mut SborPathBuf,
-        element_value_kind: &ValueKind<X>,
-        elements: &[Value<X, Y>],
-    ) -> Result<(), Self::Err>;
+        _path: &mut SborPathBuf,
+        _element_value_kind: &ValueKind<X>,
+        _elements: &[Value<X, Y>],
+    ) -> Result<(), Self::Err> {
+        Ok(())
+    }
 
     fn visit_map(
         &mut self,
-        path: &mut SborPathBuf,
-        key_value_kind: &ValueKind<X>,
-        value_value_kind: &ValueKind<X>,
-        entries: &[(Value<X, Y>, Value<X, Y>)],
-    ) -> Result<(), Self::Err>;
+        _path: &mut SborPathBuf,
+        _key_value_kind: &ValueKind<X>,
+        _value_value_kind: &ValueKind<X>,
+        _entries: &[(Value<X, Y>, Value<X, Y>)],
+    ) -> Result<(), Self::Err> {
+        Ok(())
+    }
 
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
 }
@@ -570,40 +574,40 @@ mod tests {
 
     #[test]
     pub fn test_max_depth_array_decode_behaviour() {
-        let allowable_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
+        let allowable_payload = encode_array_of_depth(BASIC_SBOR_V1_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
+        let forbidden_payload = encode_array_of_depth(BASIC_SBOR_V1_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_struct_decode_behaviour() {
-        let allowable_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
+        let allowable_payload = encode_struct_of_depth(BASIC_SBOR_V1_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
+        let forbidden_payload = encode_struct_of_depth(BASIC_SBOR_V1_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_tuple_decode_behaviour() {
-        let allowable_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
+        let allowable_payload = encode_tuple_of_depth(BASIC_SBOR_V1_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
+        let forbidden_payload = encode_tuple_of_depth(BASIC_SBOR_V1_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
-    pub fn encode_array_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
+    pub fn encode_array_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf);
+        let mut encoder = BasicEncoder::new(&mut buf, 256);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         encoder.write_value_kind(ValueKind::Array)?;
         // Encodes depth - 1 array bodies
@@ -618,9 +622,9 @@ mod tests {
         Ok(buf)
     }
 
-    pub fn encode_struct_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
+    pub fn encode_struct_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf);
+        let mut encoder = BasicEncoder::new(&mut buf, 256);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
@@ -634,9 +638,9 @@ mod tests {
         Ok(buf)
     }
 
-    pub fn encode_tuple_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
+    pub fn encode_tuple_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf);
+        let mut encoder = BasicEncoder::new(&mut buf, 256);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {

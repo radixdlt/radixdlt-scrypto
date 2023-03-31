@@ -1,11 +1,19 @@
 #![allow(unused_must_use)]
 use colored::*;
+use radix_engine::blueprints::resource::*;
 use radix_engine::ledger::*;
-use radix_engine::model::*;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::address::AddressDisplayContext;
+use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::blueprints::package::PackageCodeSubstate;
+use radix_engine_interface::blueprints::resource::{
+    AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource,
+};
+use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
 
@@ -27,23 +35,14 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-
-    let global: Option<GlobalAddressSubstate> = substate_store
+    let package: Option<PackageCodeSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(package_address.into()),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Code),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let package: Option<PackageInfoSubstate> = global.and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                SubstateOffset::Package(PackageOffset::Info),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
     let package = package.ok_or(DisplayError::PackageNotFound)?;
 
     writeln!(
@@ -61,6 +60,14 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     Ok(())
 }
 
+struct ComponentStateDump {
+    pub raw_state: Option<IndexedScryptoValue>,
+    pub owned_vaults: Option<HashSet<ObjectId>>,
+    pub package_address: Option<PackageAddress>, // Native components have no package address.
+    pub blueprint_name: String,                  // All components have a blueprint, native or not.
+    pub access_rules: Option<AccessRulesConfig>, // Virtual Components don't have access rules.
+}
+
 /// Dump a component into console.
 pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
@@ -69,90 +76,61 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-    let component_id = substate_store
-        .get_substate(&SubstateId(
-            node_id,
-            SubstateOffset::Global(GlobalOffset::Global),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().global().node_deref())
-        .ok_or(DisplayError::ComponentNotFound)?;
-
-    let component_info: Option<ComponentInfoSubstate> = substate_store
-        .get_substate(&SubstateId(
-            component_id,
-            SubstateOffset::Component(ComponentOffset::Info),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().into());
-    match component_info {
-        Some(c) => {
-            writeln!(
-                output,
-                "{}: {}",
-                "Component".green().bold(),
-                component_address.display(&bech32_encoder),
-            );
-
-            writeln!(
-                output,
-                "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
-                "Blueprint".green().bold(),
-                c.package_address.display(&bech32_encoder),
-                c.blueprint_name
-            );
-
-            let substate: AccessRulesChainSubstate = substate_store
+    // Some branching logic is needed here to deal well with native components. Only `Normal`
+    // components have a `TypeInfoSubstate`. Other components require some special handling.
+    let component_state_dump = match component_address {
+        ComponentAddress::Normal(..) => {
+            let type_info_substate: TypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
-                    component_id,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::TypeInfo,
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
-                .unwrap();
-
-            writeln!(output, "{}", "Access Rules".green().bold());
-            for (_, auth) in substate.access_rules_chain.iter().identify_last() {
-                for (last, (k, v)) in auth.get_all_method_auth().iter().identify_last() {
-                    writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
-                }
-                writeln!(output, "Default: {:?}", auth.get_default());
-            }
-
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().method_access_rules().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
-                    component_id,
-                    SubstateOffset::Component(ComponentOffset::State),
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Component(ComponentOffset::State0),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .unwrap();
 
-            let state_data = IndexedScryptoValue::from_slice(&state.raw).unwrap();
-            let value_display_context =
-                ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
-            writeln!(
-                output,
-                "{}: {}",
-                "State".green().bold(),
-                state_data.display(value_display_context)
-            );
+            let raw_state = IndexedScryptoValue::from_scrypto_value(state.0);
+            let (package_address, blueprint_name) = match type_info_substate {
+                TypeInfoSubstate::Object {
+                    package_address,
+                    blueprint_name,
+                    ..
+                } => (package_address, blueprint_name),
+                _ => panic!("Unexpected"),
+            };
+            let access_rules = access_rules_chain_substate.access_rules;
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<VaultId> = state_data
+            let mut vaults_found: HashSet<ObjectId> = raw_state
                 .owned_node_ids()
-                .unwrap()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
-                    RENodeId::Vault(vault_id) => Some(vault_id),
+                    RENodeId::Object(vault_id) => Some(vault_id),
                     _ => None,
                 })
                 .collect();
-            let mut queue: VecDeque<KeyValueStoreId> = state_data
+            let mut queue: VecDeque<KeyValueStoreId> = raw_state
                 .owned_node_ids()
-                .unwrap()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
@@ -160,6 +138,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     _ => None,
                 })
                 .collect();
+
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
@@ -168,11 +147,180 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 vaults_found.extend(vaults);
             }
 
-            // Dump resources
-            dump_resources(&vaults_found, substate_store, output)
+            ComponentStateDump {
+                raw_state: Some(raw_state),
+                blueprint_name,
+                package_address: Some(package_address),
+                access_rules: Some(access_rules),
+                owned_vaults: Some(vaults_found),
+            }
         }
-        None => Err(DisplayError::ComponentNotFound),
+        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+        | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
+            // Just an account with no vaults.
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some(HashSet::new()),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Account".into(),
+                access_rules: None,
+            }
+        }
+        ComponentAddress::Account(..) => {
+            let account_substate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Account(AccountOffset::Account),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().account().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().method_access_rules().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+
+            // Getting the vaults in the key-value store of the account
+            let vaults = dump_kv_store(
+                component_address,
+                &account_substate.vaults.key_value_store_id(),
+                substate_store,
+                output,
+            )
+            .map(|(_, vault_ids)| vault_ids)?
+            .into_iter()
+            .collect();
+
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some(vaults),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Account".into(),
+                access_rules: Some(access_rules_chain_substate.access_rules),
+            }
+        }
+        ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+        | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some(HashSet::new()),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Identity".into(),
+                access_rules: None,
+            }
+        }
+        ComponentAddress::Identity(..) => {
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().method_access_rules().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: None,
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "Identity".into(),
+                access_rules: Some(access_rules_chain_substate.access_rules),
+            }
+        }
+        ComponentAddress::AccessController(..) => {
+            let access_controller_substate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::Metadata,
+                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().access_controller().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+            let access_rules_chain_substate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(component_address.into()),
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().method_access_rules().clone())
+                .ok_or(DisplayError::ComponentNotFound)?;
+
+            ComponentStateDump {
+                raw_state: None,
+                owned_vaults: Some([access_controller_substate.controlled_asset].into()),
+                package_address: None, // No package address for native components (yet).
+                blueprint_name: "AccessController".into(),
+                access_rules: Some(access_rules_chain_substate.access_rules),
+            }
+        }
+        // For the time being, the above component types are the only "dump-able" ones. We should
+        // add more as we go.
+        _ => Err(DisplayError::ComponentNotFound)?,
+    };
+
+    writeln!(
+        output,
+        "{}: {}",
+        "Component".green().bold(),
+        component_address.display(&bech32_encoder),
+    );
+
+    if let Some(package_address) = component_state_dump.package_address {
+        writeln!(
+            output,
+            "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
+            "Blueprint".green().bold(),
+            package_address.display(&bech32_encoder),
+            component_state_dump.blueprint_name
+        );
+    } else {
+        writeln!(
+            output,
+            "{}: {{ Native Package, blueprint_name: \"{}\" }}",
+            "Blueprint".green().bold(),
+            component_state_dump.blueprint_name
+        );
     }
+
+    if let Some(access_rules) = component_state_dump.access_rules {
+        writeln!(output, "{}", "Access Rules".green().bold());
+        for (k, v) in access_rules.get_all_method_auth().iter() {
+            writeln!(output, "{} {:?} => {:?}", list_item_prefix(false), k, v);
+        }
+        writeln!(
+            output,
+            "{} {} => {:?}",
+            list_item_prefix(true),
+            "Default",
+            access_rules.get_default()
+        );
+    }
+
+    if let Some(raw_state) = component_state_dump.raw_state {
+        let value_display_context =
+            ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
+        writeln!(
+            output,
+            "{}: {}",
+            "State".green().bold(),
+            raw_state.display(value_display_context)
+        );
+    }
+
+    if let Some(vaults) = component_state_dump.owned_vaults {
+        dump_resources(&vaults, substate_store, output);
+    }
+
+    Ok(())
 }
 
 fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
@@ -180,25 +328,24 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     kv_store_id: &KeyValueStoreId,
     substate_store: &T,
     output: &mut O,
-) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
+) -> Result<(Vec<KeyValueStoreId>, Vec<ObjectId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let mut owned_kv_stores = Vec::new();
     let mut owned_vaults = Vec::new();
     let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
-        "{}: {:?}{:?}",
+        "{}: {}, {}",
         "Key Value Store".green().bold(),
-        component_address,
-        kv_store_id
+        component_address.to_string(AddressDisplayContext::with_encoder(&bech32_encoder)),
+        hex::encode(kv_store_id)
     );
-    for (last, (k, v)) in map.iter().identify_last() {
-        let key = IndexedScryptoValue::from_slice(k).unwrap();
-        let substate = v.clone().to_runtime();
-        if let Some(v) = &substate.kv_store_entry().0 {
-            let value = IndexedScryptoValue::from_slice(&v).unwrap();
+    for (last, (key, substate)) in map.iter().identify_last() {
+        let substate = substate.clone().to_runtime();
+        if let Option::Some(value) = &substate.kv_store_entry() {
+            let key: ScryptoValue = scrypto_decode(&key).unwrap();
             let value_display_context =
-                ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
+                ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -206,15 +353,20 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            for owned_node in value.owned_node_ids().unwrap() {
-                match owned_node {
-                    RENodeId::Vault(vault_id) => {
-                        owned_vaults.push(vault_id);
+
+            if let Some(substate) = substate.kv_store_entry() {
+                let (_, own, _) =
+                    IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
+                for owned_node in own {
+                    match owned_node {
+                        RENodeId::Object(vault_id) => {
+                            owned_vaults.push(vault_id);
+                        }
+                        RENodeId::KeyValueStore(kv_store_id) => {
+                            owned_kv_stores.push(kv_store_id);
+                        }
+                        _ => {}
                     }
-                    RENodeId::KeyValueStore(kv_store_id) => {
-                        owned_kv_stores.push(kv_store_id);
-                    }
-                    _ => {}
                 }
             }
         }
@@ -223,7 +375,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
-    vaults: &HashSet<VaultId>,
+    vaults: &HashSet<ObjectId>,
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
@@ -231,91 +383,149 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: VaultSubstate = substate_store
+        // READ vault info
+        let vault_info: VaultInfoSubstate = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Vault(*vault_id),
-                SubstateOffset::Vault(VaultOffset::Vault),
+                RENodeId::Object(*vault_id),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Info),
             ))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
-        let amount = vault.0.amount();
-        let resource_address = vault.0.resource_address();
-        let global: Option<GlobalAddressSubstate> = substate_store
+
+        // READ resource manager
+        let resource_address = vault_info.resource_address;
+
+        let name_metadata: Option<Option<ScryptoValue>> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                SubstateOffset::Global(GlobalOffset::Global),
+                RENodeId::GlobalObject(resource_address.into()),
+                NodeModuleId::Metadata,
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode("name").unwrap(),
+                )),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
-        let resource_manager: Option<ResourceManagerSubstate> =
-            global.as_ref().and_then(|global| {
-                substate_store
-                    .get_substate(&SubstateId(
-                        global.node_deref(),
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                    ))
-                    .map(|s| s.substate)
-                    .map(|s| s.to_runtime().into())
-            });
-        let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-        let metadata: Option<MetadataSubstate> = global.and_then(|global| {
-            substate_store
+        let name_metadata = match name_metadata {
+            Some(Option::Some(scrypto_value)) => {
+                let entry: MetadataEntry =
+                    scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
+                match entry {
+                    MetadataEntry::Value(MetadataValue::String(value)) => Some(value),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+        .map(|name| format!(", name: \"{}\"", name))
+        .unwrap_or(String::new());
+
+        let symbol_metadata: Option<Option<ScryptoValue>> = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::GlobalObject(resource_address.into()),
+                NodeModuleId::Metadata,
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode("symbol").unwrap(),
+                )),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into());
+        let symbol_metadata = match symbol_metadata {
+            Some(Option::Some(scrypto_value)) => {
+                let entry: MetadataEntry =
+                    scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
+                match entry {
+                    MetadataEntry::Value(MetadataValue::String(value)) => Some(value),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+        .map(|name| format!(", symbol: \"{}\"", name))
+        .unwrap_or(String::new());
+
+        // DUMP resource
+        let amount = if vault_info.resource_type.is_fungible() {
+            let vault: LiquidFungibleResource = substate_store
                 .get_substate(&SubstateId(
-                    global.node_deref(),
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    RENodeId::Object(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-        });
-        let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
+                .map(|s| s.into())
+                .unwrap();
+            vault.amount()
+        } else {
+            let vault: LiquidNonFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Object(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+            vault.amount()
+        };
         writeln!(
             output,
-            "{} {{ amount: {}, resource address: {}{}{} }}",
+            "{} {{ amount: {}, resource address: {}, {:?}{:?} }}",
             list_item_prefix(last),
             amount,
             resource_address.display(&bech32_encoder),
-            metadata
-                .metadata
-                .get("name")
-                .map(|name| format!(", name: \"{}\"", name))
-                .unwrap_or(String::new()),
-            metadata
-                .metadata
-                .get("symbol")
-                .map(|symbol| format!(", symbol: \"{}\"", symbol))
-                .unwrap_or(String::new()),
+            name_metadata,
+            symbol_metadata,
         );
-        if matches!(
-            resource_manager.resource_type,
-            ResourceType::NonFungible { .. }
-        ) {
-            let ids = vault.0.ids();
+
+        // DUMP non-fungibles
+        if !vault_info.resource_type.is_fungible() {
+            let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(resource_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into());
+            let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+
+            let vault: LiquidNonFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Object(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+
+            let ids = vault.ids();
+            let non_fungible_id = resource_manager.non_fungible_table;
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: NonFungibleSubstate = substate_store
+                let non_fungible: Option<ScryptoValue> = substate_store
                     .get_substate(&SubstateId(
-                        RENodeId::NonFungibleStore(resource_manager.nf_store_id.unwrap()),
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
+                        RENodeId::KeyValueStore(non_fungible_id),
+                        NodeModuleId::SELF,
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                            scrypto_encode(id).unwrap(),
+                        )),
                     ))
                     .map(|s| s.substate.to_runtime())
                     .map(|s| s.into())
                     .unwrap();
-                if let Some(non_fungible) = non_fungible.0 {
+                if let Option::Some(value) = non_fungible {
                     let id = IndexedScryptoValue::from_typed(id);
-                    let immutable_data =
-                        IndexedScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
-                    let mutable_data =
-                        IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
-                        ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
+                        ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
                     writeln!(
                         output,
-                        "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        "{}  {} NonFungible {{ id: {}, data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
                         id.display(value_display_context),
-                        immutable_data.display(value_display_context),
-                        mutable_data.display(value_display_context)
+                        value.display(value_display_context),
                     );
                 }
             }
@@ -330,55 +540,16 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let global: Option<GlobalAddressSubstate> = substate_store
+    let resource_manager: Option<FungibleResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(resource_address.into()),
+            NodeModuleId::SELF,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let resource_manager: Option<ResourceManagerSubstate> = global.as_ref().and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-    let metadata: Option<MetadataSubstate> = global.and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
-    let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
 
-    writeln!(
-        output,
-        "{}: {:?}",
-        "Resource Type".green().bold(),
-        resource_manager.resource_type
-    );
-    writeln!(
-        output,
-        "{}: {}",
-        "Metadata".green().bold(),
-        metadata.metadata.len()
-    );
-    for (last, e) in metadata.metadata.iter().identify_last() {
-        writeln!(
-            output,
-            "{} {}: {}",
-            list_item_prefix(last),
-            e.0.green().bold(),
-            e.1
-        );
-    }
     writeln!(
         output,
         "{}: {}",

@@ -44,7 +44,7 @@ radix-engine-stores/Cargo.lock
 scrypto/Cargo.lock
 scrypto-unit/Cargo.lock
 scrypto-derive/Cargo.lock
-scrypto-abi/Cargo.lock
+scrypto-schema/Cargo.lock
 scrypto-tests/Cargo.lock
 transaction/Cargo.lock
 sbor/Cargo.lock
@@ -60,6 +60,7 @@ sbor-tests/Cargo.lock
 
 # Flamegraph profiles
 flamegraph.svg
+perf.data
 
 # IntelliJ
 .idea/

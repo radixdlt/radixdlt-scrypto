@@ -1,10 +1,10 @@
 [package]
 name = "scrypto-tests"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dev-dependencies]
-scrypto = { path = "../scrypto", default-features = false, features=["prelude"]}
+scrypto = { path = "../scrypto", default-features = false}
 sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }

@@ -1,7 +1,7 @@
 mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
-mod cmd_export_abi;
+mod cmd_export_schema;
 mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
@@ -26,7 +26,7 @@ mod error;
 pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
-pub use cmd_export_abi::*;
+pub use cmd_export_schema::*;
 pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
@@ -53,32 +53,36 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::model::*;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_constants::*;
-use radix_engine_interface::abi;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
 use transaction::model::Instruction;
 use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -99,7 +103,7 @@ impl ResimCli {
 pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
-    ExportAbi(ExportAbi),
+    ExportSchema(ExportSchema),
     GenerateKeyPair(GenerateKeyPair),
     Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
@@ -128,7 +132,7 @@ pub fn run() -> Result<(), Error> {
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(&mut out),
         Command::CallMethod(cmd) => cmd.run(&mut out),
-        Command::ExportAbi(cmd) => cmd.run(&mut out),
+        Command::ExportSchema(cmd) => cmd.run(&mut out),
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
@@ -173,15 +177,21 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &mut substate_store,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
-        &ExecutionConfig::with_tracing(trace),
+        &ExecutionConfig::standard().with_trace(trace),
         &transaction.get_executable(initial_proofs),
     );
-    drop(substate_store);
 
     if print_receipt {
-        writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
-            .map_err(Error::IOError)?;
+        let encoder = Bech32Encoder::for_simulator();
+        let display_context = TransactionReceiptDisplayContextBuilder::new()
+            .encoder(&encoder)
+            .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
+                get_event_schema(&substate_store, event_type_identifier)
+            })
+            .build();
+        writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
+    drop(substate_store);
 
     process_receipt(receipt)
 }
@@ -234,15 +244,21 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::with_tracing(trace),
+                &ExecutionConfig::standard().with_trace(trace),
                 &transaction.get_executable(initial_proofs),
             );
-            drop(substate_store);
 
             if print_receipt {
-                writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
-                    .map_err(Error::IOError)?;
+                let encoder = Bech32Encoder::for_simulator();
+                let display_context = TransactionReceiptDisplayContextBuilder::new()
+                    .encoder(&encoder)
+                    .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
+                        get_event_schema(&substate_store, event_type_identifier)
+                    })
+                    .build();
+                writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
+            drop(substate_store);
 
             process_receipt(receipt).map(Option::Some)
         }
@@ -250,29 +266,21 @@ pub fn handle_manifest<O: std::io::Write>(
 }
 
 pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt, Error> {
-    match receipt.result {
+    match &receipt.result {
         TransactionResult::Commit(commit) => {
             let mut configs = get_configs()?;
             configs.nonce = get_nonce()? + 1;
             set_configs(&configs)?;
 
-            match commit.outcome {
-                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error)),
-                TransactionOutcome::Success(output) => Ok(TransactionReceipt {
-                    execution: receipt.execution,
-                    result: TransactionResult::Commit(CommitResult {
-                        outcome: TransactionOutcome::Success(output),
-                        state_updates: commit.state_updates,
-                        entity_changes: commit.entity_changes,
-                        resource_changes: commit.resource_changes,
-                        application_logs: commit.application_logs,
-                        next_epoch: commit.next_epoch,
-                    }),
-                }),
+            match &commit.outcome {
+                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error.clone())),
+                TransactionOutcome::Success(_) => Ok(receipt),
             }
         }
-        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
-        TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason)),
+        TransactionResult::Reject(rejection) => {
+            Err(Error::TransactionRejected(rejection.error.clone()))
+        }
+        TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason.clone())),
     }
 }
 
@@ -299,21 +307,138 @@ pub fn get_signing_keys(
     Ok(private_keys)
 }
 
-pub fn export_abi(
-    package_address: PackageAddress,
-    blueprint_name: &str,
-) -> Result<abi::BlueprintAbi, Error> {
+pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
-    radix_engine::model::export_abi(&mut substate_store, package_address, blueprint_name)
-        .map_err(Error::AbiExportError)
+    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+
+    let output = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalObject(package_address.into()),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+        ))
+        .ok_or(Error::PackageNotFound(package_address))?;
+
+    let schema = output.substate.package_info().schema.clone();
+    Ok(schema)
 }
 
-pub fn export_abi_by_component(
+pub fn export_blueprint_schema(
+    package_address: PackageAddress,
+    blueprint_name: &str,
+) -> Result<BlueprintSchema, Error> {
+    let schema = export_package_schema(package_address)?
+        .blueprints
+        .get(blueprint_name)
+        .cloned()
+        .ok_or(Error::BlueprintNotFound(
+            package_address,
+            blueprint_name.to_string(),
+        ))?;
+    Ok(schema)
+}
+
+pub fn get_blueprint(
     component_address: ComponentAddress,
-) -> Result<abi::BlueprintAbi, Error> {
+) -> Result<(PackageAddress, String), Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
-    radix_engine::model::export_abi_by_component(&mut substate_store, component_address)
-        .map_err(Error::AbiExportError)
+    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+
+    let output = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalObject(component_address.into()),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+        ))
+        .ok_or(Error::ComponentNotFound(component_address))?;
+    let type_info = output.substate.type_info();
+
+    match type_info {
+        TypeInfoSubstate::Object {
+            package_address,
+            blueprint_name,
+            ..
+        } => Ok((*package_address, blueprint_name.to_string())),
+        _ => panic!("Unexpected"),
+    }
+}
+
+pub fn get_event_schema<S: ReadableSubstateStore>(
+    substate_store: &S,
+    event_type_identifier: &EventTypeIdentifier,
+) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+    let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
+        EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
+            match node_module {
+                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                    ACCESS_RULES_PACKAGE,
+                    ACCESS_RULES_BLUEPRINT.into(),
+                    *local_type_index,
+                ),
+                NodeModuleId::ComponentRoyalty => (
+                    ROYALTY_PACKAGE,
+                    COMPONENT_ROYALTY_BLUEPRINT.into(),
+                    *local_type_index,
+                ),
+                NodeModuleId::Metadata => (
+                    METADATA_PACKAGE,
+                    METADATA_BLUEPRINT.into(),
+                    *local_type_index,
+                ),
+                NodeModuleId::SELF => {
+                    let type_info = substate_store
+                        .get_substate(&SubstateId(
+                            *node_id,
+                            NodeModuleId::TypeInfo,
+                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                        ))
+                        .unwrap()
+                        .substate
+                        .type_info()
+                        .clone();
+
+                    match type_info {
+                        TypeInfoSubstate::Object {
+                            package_address,
+                            blueprint_name,
+                            ..
+                        } => (package_address, blueprint_name, *local_type_index),
+                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                    }
+                }
+                NodeModuleId::TypeInfo => return None,
+            }
+        }
+        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
+            let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+                return None
+            };
+            (
+                *package_address,
+                blueprint_name.to_owned(),
+                *local_type_index,
+            )
+        }
+    };
+
+    let substate_id = SubstateId(
+        RENodeId::GlobalObject(Address::Package(package_address)),
+        NodeModuleId::SELF,
+        SubstateOffset::Package(PackageOffset::Info),
+    );
+
+    Some((
+        local_type_index,
+        substate_store
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .package_info()
+            .schema
+            .blueprints
+            .get(&blueprint_name)
+            .unwrap()
+            .schema
+            .clone(),
+    ))
 }

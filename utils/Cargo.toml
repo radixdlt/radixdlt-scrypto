@@ -1,14 +1,22 @@
 [package]
 name = "utils"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0.144", default-features = false, optional = true }
+hashbrown = { version = "0.13.2", optional = true }
+
+# INDEXMAP:
+# The v1 version doesn't play well with no-std (or CLion) due to the autocfg build.rs - https://github.com/bluss/indexmap/blob/indexmap-1.x/build.rs
+# Instead, we need the std feature https://github.com/bluss/indexmap/issues/135 which is coming in v2 (not yet out), so pull a fixed revision from github
+indexmap = { git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520eab01325b305c08f3773e66c", default-features = false }
 
 [features]
 default = ["std"]
-std = ["sbor/std"]
-alloc = ["sbor/alloc"]
-serde = ["sbor/serde", "serde/derive"]
+std = ["indexmap/std"]
+alloc = ["hashbrown"]
+serde = ["serde/derive"]
+
+[lib]
+bench = false

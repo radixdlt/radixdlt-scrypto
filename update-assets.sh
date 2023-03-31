@@ -10,27 +10,37 @@ scrypto="scrypto"
 
 cd "$(dirname "$0")/assets/blueprints"
 
-echo "Building packages..."
-(cd account; $scrypto build)
+echo "Building faucet..."
 (cd faucet; $scrypto build)
-
-echo "Publishing artifacts..."
-npx wasm-opt@1.3 \
-  -Os -g \
-  --strip-debug --strip-dwarf --strip-producers \
-  -o ../account.wasm \
-  ./target/wasm32-unknown-unknown/release/account.wasm
-cp \
-  ./target/wasm32-unknown-unknown/release/account.abi \
-  ../account.abi
-
 npx wasm-opt@1.3 \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ../faucet.wasm \
   ./target/wasm32-unknown-unknown/release/faucet.wasm
 cp \
-  ./target/wasm32-unknown-unknown/release/faucet.abi \
-  ../faucet.abi
+  ./target/wasm32-unknown-unknown/release/faucet.schema \
+  ../faucet.schema
+
+echo "Building radiswap..."
+(cd radiswap; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../radiswap.wasm \
+  ./target/wasm32-unknown-unknown/release/radiswap.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/radiswap.schema \
+  ../radiswap.schema
+
+echo "Building flash_loan..."
+(cd flash_loan; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../flash_loan.wasm \
+  ./target/wasm32-unknown-unknown/release/flash_loan.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/flash_loan.schema \
+  ../flash_loan.schema
 
 echo "Done!"

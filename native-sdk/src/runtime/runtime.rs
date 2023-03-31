@@ -1,34 +1,55 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
-use radix_engine_interface::model::*;
-use radix_engine_interface::time::{Instant, TimeComparisonOperator};
-use sbor::rust::fmt::Debug;
+use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::time::*;
+use radix_engine_interface::traits::ScryptoEvent;
+use sbor::rust::prelude::*;
 
 #[derive(Debug)]
 pub struct Runtime {}
 
 impl Runtime {
-    pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
+    /// Emits an application event
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+        api: &mut Y,
+        event: T,
+    ) -> Result<(), E>
     where
-        Y: Invokable<EpochManagerGetCurrentEpochInvocation, E>,
+        Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.invoke(EpochManagerGetCurrentEpochInvocation {
-            receiver: EPOCH_MANAGER,
-        })
+        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
+    }
+
+    pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
+    where
+        Y: ClientObjectApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        let rtn = api.call_method(
+            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+            scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
     where
-        Y: Invokable<ClockGetCurrentTimeInvocation, E>,
+        Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.invoke(ClockGetCurrentTimeInvocation {
-            receiver: CLOCK,
-            precision,
-        })
+        let rtn = api.call_method(
+            RENodeId::GlobalObject(CLOCK.into()),
+            CLOCK_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn sys_compare_against_current_time<Y, E>(
@@ -38,31 +59,29 @@ impl Runtime {
         operator: TimeComparisonOperator,
     ) -> Result<bool, E>
     where
-        Y: Invokable<ClockCompareCurrentTimeInvocation, E>,
+        Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.invoke(ClockCompareCurrentTimeInvocation {
-            receiver: CLOCK,
-            precision,
-            instant,
-            operator,
-        })
+        let rtn = api.call_method(
+            RENodeId::GlobalObject(CLOCK.into()),
+            CLOCK_COMPARE_CURRENT_TIME_IDENT,
+            scrypto_encode(&ClockCompareCurrentTimeInput {
+                precision,
+                instant,
+                operator,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     /// Generates a UUID.
     pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
     where
-        Y: EngineApi<E> + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let visible_node_ids = api.sys_get_visible_nodes()?;
-        let node_id = visible_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
-            .expect("TransactionHash does not exist");
-
-        api.invoke(TransactionRuntimeGenerateUuidInvocation {
-            receiver: node_id.into(),
-        })
+        api.generate_uuid()
     }
 }

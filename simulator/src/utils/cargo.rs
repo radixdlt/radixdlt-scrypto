@@ -7,9 +7,8 @@ use std::process::Command;
 use std::process::ExitStatus;
 
 use cargo_toml::Manifest;
-use radix_engine::model::extract_abi;
-use radix_engine::model::ExtractAbiError;
 use radix_engine::types::*;
+use radix_engine::utils::*;
 
 #[derive(Debug)]
 pub enum BuildError {
@@ -25,9 +24,9 @@ pub enum BuildError {
 
     CargoFailure(ExitStatus),
 
-    AbiExtractionError(ExtractAbiError),
+    SchemaExtractionError(ExtractSchemaError),
 
-    AbiEncodeError(sbor::EncodeError),
+    SchemaEncodeError(sbor::EncodeError),
 
     InvalidManifestFile(PathBuf),
 }
@@ -56,14 +55,14 @@ fn run_cargo_build(
     manifest_path: impl AsRef<OsStr>,
     target_path: impl AsRef<OsStr>,
     trace: bool,
-    no_abi_gen: bool,
+    no_schema_gen: bool,
 ) -> Result<(), BuildError> {
     let mut features = Vec::<String>::new();
     if trace {
         features.push("scrypto/trace".to_owned());
     }
-    if no_abi_gen {
-        features.push("scrypto/no-abi-gen".to_owned());
+    if no_schema_gen {
+        features.push("scrypto/no-schema".to_owned());
     }
     if !features.is_empty() {
         features.insert(0, "--features".to_owned());
@@ -132,7 +131,7 @@ pub fn build_package<P: AsRef<Path>>(
     }
 
     // Use the scrypto directory as a target, even if the scrypto crate is part of a workspace
-    // This allows us to find where the WASM and ABI ends up deterministically.
+    // This allows us to find where the WASM and SCHEMA ends up deterministically.
     let target_path = if force_local_target {
         let mut target_path = base_path.clone();
         target_path.push("target");
@@ -146,7 +145,7 @@ pub fn build_package<P: AsRef<Path>>(
     out_path.push("wasm32-unknown-unknown");
     out_path.push("release");
 
-    // Build with ABI
+    // Build with SCHEMA
     run_cargo_build(&manifest_path, &target_path, trace, false)?;
 
     // Find the binary paths
@@ -165,22 +164,22 @@ pub fn build_package<P: AsRef<Path>>(
     bin_path.push(wasm_name.ok_or(BuildError::InvalidManifestFile(manifest_path.clone()))?);
 
     let wasm_path = bin_path.with_extension("wasm");
-    let abi_path = bin_path.with_extension("abi");
+    let schema_path = bin_path.with_extension("schema");
 
-    // Extract ABI
+    // Extract SCHEMA
     let wasm =
         fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
-    let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
+    let schema = extract_schema(&wasm).map_err(BuildError::SchemaExtractionError)?;
     fs::write(
-        &abi_path,
-        scrypto_encode(&abi).map_err(BuildError::AbiEncodeError)?,
+        &schema_path,
+        scrypto_encode(&schema).map_err(BuildError::SchemaEncodeError)?,
     )
-    .map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
+    .map_err(|err| BuildError::IOErrorAtPath(err, schema_path.clone()))?;
 
-    // Build without ABI
+    // Build without SCHEMA
     run_cargo_build(&manifest_path, &target_path, trace, true)?;
 
-    Ok((wasm_path, abi_path))
+    Ok((wasm_path, schema_path))
 }
 
 /// Runs tests within a package.

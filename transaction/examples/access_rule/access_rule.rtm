@@ -1,5 +1,4 @@
 SET_METHOD_ACCESS_RULE
-    ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
-    0u32
-    Enum("AccessRuleKey::Scrypto", "test")
+    Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn")
+    Tuple(Enum("NodeModuleId::SELF"), "test")
     Enum("AccessRule::AllowAll");

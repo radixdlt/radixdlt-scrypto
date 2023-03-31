@@ -1,12 +1,12 @@
-use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
+use super::{ExecutionContext, FeePayment, Instruction};
 use crate::model::{AuthZoneParams, Executable};
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::model::NonFungibleGlobalId;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
     pub pre_allocated_ids: BTreeSet<RENodeId>,
@@ -24,11 +24,11 @@ impl SystemTransaction {
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs,
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            virtual_resources: BTreeSet::new(),
         };
 
         Executable::new(
-            InstructionList::Any(&self.instructions),
+            self.instructions.clone(),
             &self.blobs,
             ExecutionContext {
                 transaction_hash,

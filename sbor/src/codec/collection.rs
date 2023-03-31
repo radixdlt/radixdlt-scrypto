@@ -8,12 +8,10 @@ use crate::*;
 categorize_generic!(Vec<T>, <T>, ValueKind::Array);
 categorize_generic!(BTreeSet<T>, <T>, ValueKind::Array);
 categorize_generic!(HashSet<T>, <T>, ValueKind::Array);
-#[cfg(feature = "indexmap")]
 categorize_generic!(IndexSet<T>, <T>, ValueKind::Array);
 
 categorize_generic!(BTreeMap<K, V>, <K, V>, ValueKind::Map);
 categorize_generic!(HashMap<K, V>, <K, V>, ValueKind::Map);
-#[cfg(feature = "indexmap")]
 categorize_generic!(IndexMap<K, V>, <K, V>, ValueKind::Map);
 
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for Vec<T> {
@@ -68,7 +66,6 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Ord + 
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Hash> Encode<X, E>
     for IndexSet<T>
 {
@@ -140,11 +137,10 @@ impl<
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<
         X: CustomValueKind,
         E: Encoder<X>,
-        K: Encode<X, E> + Categorize<X> + Ord + Hash,
+        K: Encode<X, E> + Categorize<X> + Hash + Eq + PartialEq,
         V: Encode<X, E> + Categorize<X>,
     > Encode<X, E> for IndexMap<K, V>
 {
@@ -158,11 +154,9 @@ impl<
         encoder.write_value_kind(K::value_kind())?;
         encoder.write_value_kind(V::value_kind())?;
         encoder.write_size(self.len())?;
-        let mut keys: Vec<&K> = self.keys().collect();
-        keys.sort();
-        for key in keys {
+        for (key, value) in self.iter() {
             encoder.encode_deeper_body(key)?;
-            encoder.encode_deeper_body(self.get(key).unwrap())?;
+            encoder.encode_deeper_body(value)?;
         }
         Ok(())
     }
@@ -224,7 +218,6 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash + Eq> Decode<X, D>
     for IndexSet<T>
 {
@@ -298,7 +291,6 @@ impl<
     }
 }
 
-#[cfg(feature = "indexmap")]
 impl<
         X: CustomValueKind,
         D: Decoder<X>,
@@ -338,10 +330,10 @@ mod schema {
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData::new(
-                TypeMetadata::named_no_child_names("Set"),
                 TypeKind::Array {
                     element_type: T::TYPE_ID,
                 },
+                TypeMetadata::unnamed(),
             ))
         }
 
@@ -351,7 +343,6 @@ mod schema {
     }
 
     wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
-    #[cfg(feature = "indexmap")]
     wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
 
     impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
@@ -361,11 +352,11 @@ mod schema {
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData::new(
-                TypeMetadata::named_no_child_names("Map"),
                 TypeKind::Map {
                     key_type: K::TYPE_ID,
                     value_type: V::TYPE_ID,
                 },
+                TypeMetadata::unnamed(),
             ))
         }
 
@@ -376,6 +367,5 @@ mod schema {
     }
 
     wrapped_double_generic_describe!(K, V, HashMap<K, V>, BTreeMap<K, V>);
-    #[cfg(feature = "indexmap")]
     wrapped_double_generic_describe!(K, V, IndexMap<K, V>, BTreeMap<K, V>);
 }

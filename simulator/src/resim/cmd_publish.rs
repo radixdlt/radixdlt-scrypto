@@ -1,8 +1,12 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::blueprints::package::PackageCodeSubstate;
+use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -42,48 +46,38 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
+        let (code_path, schema_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false, false).map_err(Error::BuildError)?
         } else {
             let code_path = self.path.clone();
-            let abi_path = code_path.with_extension("abi");
-            (code_path, abi_path)
+            let schema_path = code_path.with_extension("schema");
+            (code_path, schema_path)
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let abi = scrypto_decode(
-            &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
+        let schema = scrypto_decode(
+            &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
         )
-        .map_err(Error::DataError)?;
+        .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
             let mut substate_store =
                 RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-            let global: GlobalAddressSubstate = substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::Global(GlobalAddress::Package(package_address.0)),
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ))
-                .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-                .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
-                global.node_deref(),
-                SubstateOffset::Package(PackageOffset::Info),
+                RENodeId::GlobalObject(package_address.0.into()),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::Code),
             );
 
             let previous_version = substate_store
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = PackageInfoSubstate {
-                code,
-                blueprint_abis: abi,
-            };
+            let validated_package = PackageCodeSubstate { code };
             let output_value = OutputValue {
-                substate: PersistedSubstate::PackageInfo(validated_package),
+                substate: PersistedSubstate::PackageCode(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 
@@ -91,11 +85,33 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_store.put_substate(
                 SubstateId(
-                    global.node_deref(),
+                    RENodeId::GlobalObject(package_address.0.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::Code),
+                ),
+                output_value,
+            );
+
+            let package_info = PackageInfoSubstate {
+                schema,
+                dependent_resources: BTreeSet::new(),
+                dependent_components: BTreeSet::new(),
+            };
+
+            let output_value = OutputValue {
+                substate: PersistedSubstate::PackageInfo(package_info),
+                version: previous_version.unwrap_or(0),
+            };
+
+            substate_store.put_substate(
+                SubstateId(
+                    RENodeId::GlobalObject(package_address.0.into()),
+                    NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),
                 output_value,
             );
+
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let owner_badge_non_fungible_global_id = self
@@ -106,7 +122,7 @@ impl Publish {
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_with_owner(code, abi, owner_badge_non_fungible_global_id)
+                .publish_package_with_owner(code, schema, owner_badge_non_fungible_global_id)
                 .build();
 
             let receipt = handle_manifest(
@@ -122,7 +138,7 @@ impl Publish {
                 writeln!(
                     out,
                     "Success! New Package: {}",
-                    receipt.expect_commit().entity_changes.new_package_addresses[0]
+                    receipt.expect_commit(true).new_package_addresses()[0]
                         .display(&Bech32Encoder::for_simulator())
                         .to_string()
                         .green()

@@ -1,11 +1,13 @@
 use sbor::rust::str::FromStr;
 
+/// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
+/// byte-based / UTF-8 index.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
-    /// The start of the span, inclusive
-    pub start: (usize, usize),
+    /// The start of the span, exclusive
+    pub start: usize,
     /// The end of the span, inclusive
-    pub end: (usize, usize),
+    pub end: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,27 +61,11 @@ pub enum TokenKind {
     // ==============
     // SBOR custom types
     // ==============
-
-    /* RE global address types */
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
-
-    /* RE interpreted types */
-    Own,
-    Blob,
-
-    /* TX interpreted types */
+    Address,
     Bucket,
     Proof,
     Expression,
-
-    /* Uninterpreted */
-    Hash,
-    EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PublicKey,
-    EddsaEd25519Signature,
+    Blob,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
@@ -110,13 +96,14 @@ pub enum TokenKind {
     CloneProof,
     DropProof,
     DropAllProofs,
+    ClearSignatureProofs,
     CallFunction,
     CallMethod,
     PublishPackage,
-    PublishPackageWithOwner,
     BurnResource,
     RecallResource,
     SetMetadata,
+    RemoveMetadata,
     SetPackageRoyaltyConfig,
     SetComponentRoyaltyConfig,
     ClaimPackageRoyalty,
@@ -126,13 +113,14 @@ pub enum TokenKind {
     MintNonFungible,
     MintUuidNonFungible,
     CreateFungibleResource,
-    CreateFungibleResourceWithOwner,
+    CreateFungibleResourceWithInitialSupply,
     CreateNonFungibleResource,
-    CreateNonFungibleResourceWithOwner,
+    CreateNonFungibleResourceWithInitialSupply,
     CreateValidator,
     CreateAccessController,
     CreateIdentity,
     AssertAccessRule,
+    CreateAccount,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -306,7 +294,7 @@ impl Lexer {
             },
             _ => Err(self.unexpected_char()),
         }
-        .map(|kind| self.new_token(kind, start))
+        .map(|kind| self.new_token(kind, start, self.current))
     }
 
     fn parse_int<T: FromStr>(
@@ -360,7 +348,7 @@ impl Lexer {
         }
         self.advance()?;
 
-        Ok(self.new_token(TokenKind::StringLiteral(s), start))
+        Ok(self.new_token(TokenKind::StringLiteral(s), start, self.current))
     }
 
     fn read_utf16_unit(&mut self) -> Result<u32, LexerError> {
@@ -414,22 +402,11 @@ impl Lexer {
             "Bytes" => Ok(TokenKind::Bytes),
             "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
 
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
-
-            "Own" => Ok(TokenKind::Own),
-            "Blob" => Ok(TokenKind::Blob),
-
+            "Address" => Ok(TokenKind::Address),
             "Bucket" => Ok(TokenKind::Bucket),
             "Proof" => Ok(TokenKind::Proof),
             "Expression" => Ok(TokenKind::Expression),
-
-            "Hash" => Ok(TokenKind::Hash),
-            "EcdsaSecp256k1PublicKey" => Ok(TokenKind::EcdsaSecp256k1PublicKey),
-            "EcdsaSecp256k1Signature" => Ok(TokenKind::EcdsaSecp256k1Signature),
-            "EddsaEd25519PublicKey" => Ok(TokenKind::EddsaEd25519PublicKey),
-            "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
+            "Blob" => Ok(TokenKind::Blob),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
@@ -453,13 +430,14 @@ impl Lexer {
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
+            "CLEAR_SIGNATURE_PROOFS" => Ok(TokenKind::ClearSignatureProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
-            "PUBLISH_PACKAGE_WITH_OWNER" => Ok(TokenKind::PublishPackageWithOwner),
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
+            "REMOVE_METADATA" => Ok(TokenKind::RemoveMetadata),
             "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
             "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
@@ -469,19 +447,22 @@ impl Lexer {
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
             "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
+            "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
+                Ok(TokenKind::CreateFungibleResourceWithInitialSupply)
+            }
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
-            "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
-            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
-                Ok(TokenKind::CreateNonFungibleResourceWithOwner)
+            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
+                Ok(TokenKind::CreateNonFungibleResourceWithInitialSupply)
             }
             "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
             "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
             "ASSERT_ACCESS_RULE" => Ok(TokenKind::AssertAccessRule),
+            "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
             "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
-        .map(|kind| self.new_token(kind, start))
+        .map(|kind| self.new_token(kind, start, self.current))
     }
 
     fn tokenize_punctuation(&mut self) -> Result<Token, LexerError> {
@@ -499,31 +480,13 @@ impl Lexer {
             }
         };
 
-        Ok(self.new_token(token_kind, start))
+        Ok(self.new_token(token_kind, start, self.current))
     }
 
-    fn index_to_coordinate(&self, index_inclusive: usize) -> (usize, usize) {
-        // better to track this dynamically, instead of computing for each token
-        let mut row = 1;
-        let mut col = 1;
-        for i in 0..index_inclusive + 1 {
-            if self.text[i] == '\n' {
-                row += 1;
-                col = 1;
-            } else {
-                col += 1;
-            }
-        }
-        (row, col)
-    }
-
-    fn new_token(&self, kind: TokenKind, start: usize) -> Token {
+    fn new_token(&self, kind: TokenKind, start: usize, end: usize) -> Token {
         Token {
             kind,
-            span: Span {
-                start: self.index_to_coordinate(start),
-                end: self.index_to_coordinate(self.current - 1),
-            },
+            span: Span { start, end },
         }
     }
 

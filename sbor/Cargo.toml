@@ -1,27 +1,30 @@
 [package]
 name = "sbor"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dependencies]
+utils = { path = "../utils", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 sbor-derive = { path = "../sbor-derive" }
-hashbrown = { version = "0.13.2", optional = true }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+lazy_static = "1.4.0"
 
-# INDEXMAP:
-# The v1 version doesn't play well with no-std (or CLion) due to the autocfg build.rs - https://github.com/bluss/indexmap/blob/indexmap-1.x/build.rs
-# Instead, we need the std feature https://github.com/bluss/indexmap/issues/135 which is coming in v2 (not yet out), so pull a fixed revision from github
-indexmap = { git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520eab01325b305c08f3773e66c", default-features = false, optional = true }
+[dev-dependencies]
+serde_json = { version = "1.0.81", default-features = false }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["serde?/std", "indexmap?/std"]
-alloc = ["hashbrown", "serde?/alloc"]
+std = ["utils/std", "serde?/std", "serde_json/std", "hex/std"]
+alloc = ["utils/alloc", "serde?/alloc", "lazy_static/spin_no_std", "serde_json/alloc", "hex/alloc"]
 
 # Enable serde derives for SBOR value and type models
-serde = ["dep:serde"]
+serde = ["dep:serde", "utils/serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
+
+[lib]
+bench = false

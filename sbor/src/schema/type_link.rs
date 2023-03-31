@@ -1,12 +1,13 @@
+use sbor::rust::fmt::Debug;
 use sbor::*;
 
 /// Marker trait for a link between [`TypeKind`]s:
 /// - [`GlobalTypeId`]: A global identifier for a type (a well known id, or type hash)
 /// - [`LocalTypeIndex`]: A link in the context of a schema (a well known id, or a local index)
-pub trait SchemaTypeLink: Clone + PartialEq + Eq {}
+pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq {}
 
 /// This is a global identifier for a type.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum GlobalTypeId {
     /// This takes a well_known type index.
     ///
@@ -100,8 +101,9 @@ const fn capture_dependent_type_ids(
     capture_dependent_type_ids(buffer, next + 1, dependencies)
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum LocalTypeIndex {
     /// This takes a well_known type index
     WellKnown(u8),
@@ -109,3 +111,9 @@ pub enum LocalTypeIndex {
     SchemaLocalIndex(usize),
 }
 impl SchemaTypeLink for LocalTypeIndex {}
+
+impl LocalTypeIndex {
+    pub fn any() -> Self {
+        Self::WellKnown(basic_well_known_types::ANY_ID)
+    }
+}

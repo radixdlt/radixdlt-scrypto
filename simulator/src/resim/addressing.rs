@@ -1,11 +1,13 @@
-use radix_engine_interface::rule;
+use radix_engine::types::{
+    AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId,
+    PackageAddress, ResourceAddress,
+};
+use radix_engine_interface::{
+    blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
+    rule,
+};
 use sbor::rust::fmt;
 use std::str::FromStr;
-
-use radix_engine::types::{
-    require, AccessRule, AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress,
-    NonFungibleGlobalId, PackageAddress, ParseNonFungibleGlobalIdError, ResourceAddress,
-};
 use utils::ContextualDisplay;
 
 #[derive(Clone)]
@@ -204,7 +206,7 @@ impl FromStr for SimulatorResourceOrNonFungibleGlobalId {
     type Err = ParseSimulatorResourceOrNonFungibleGlobalIdError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
-        if address.contains(":") {
+        if address.contains(':') {
             SimulatorNonFungibleGlobalId::from_str(address)
                 .map_err(ParseSimulatorResourceOrNonFungibleGlobalIdError::from)
                 .map(Self::NonFungibleGlobalId)

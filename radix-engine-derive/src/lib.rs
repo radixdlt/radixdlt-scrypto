@@ -1,24 +1,81 @@
-mod categorize;
-mod decode;
-mod describe;
-mod encode;
-mod legacy_describe;
-mod non_fungible_data;
+mod manifest_categorize;
+mod manifest_decode;
+mod manifest_encode;
+mod manifest_sbor;
+mod scrypto_categorize;
+mod scrypto_decode;
+mod scrypto_describe;
+mod scrypto_encode;
+mod scrypto_event;
 mod scrypto_sbor;
 
 use proc_macro::TokenStream;
 
-/// Derive code that describes this data structure.
+/// Derives code for encoding a struct or enum with Manifest value model.
 ///
-/// Note that this derive doesn't work with recursive type, such as
+/// # Example
+///
 /// ```ignore
-/// struct A {
-///     array: Vec<A>
+/// use manifest::prelude::*;
+///
+/// #[derive(ManifestEncode)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
 /// }
 /// ```
-#[proc_macro_derive(LegacyDescribe, attributes(legacy_skip))]
-pub fn legacy_describe(input: TokenStream) -> TokenStream {
-    legacy_describe::handle_describe(proc_macro2::TokenStream::from(input))
+#[proc_macro_derive(ManifestEncode, attributes(sbor))]
+pub fn manifest_encode(input: TokenStream) -> TokenStream {
+    manifest_encode::handle_manifest_encode(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derives code for decoding a struct or enum with Manifest value model.
+///
+/// # Example
+///
+/// ```ignore
+/// use manifest::prelude::*;
+///
+/// #[derive(ManifestDecode)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ManifestDecode, attributes(sbor))]
+pub fn manifest_decode(input: TokenStream) -> TokenStream {
+    manifest_decode::handle_manifest_decode(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derives code for categorizing a struct or enum with Manifest value model.
+///
+/// # Example
+///
+/// ```ignore
+/// use manifest::prelude::*;
+///
+/// #[derive(ManifestCategorize)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ManifestCategorize, attributes(sbor))]
+pub fn manifest_categorize(input: TokenStream) -> TokenStream {
+    manifest_categorize::handle_manifest_categorize(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that implements `ManifestCategorize`, `ManifestEncode` and `ManifestDecode` traits for this struct or enum.
+///
+#[proc_macro_derive(ManifestSbor, attributes(sbor))]
+pub fn manifest_sbor(input: TokenStream) -> TokenStream {
+    manifest_sbor::handle_manifest_sbor(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -37,8 +94,8 @@ pub fn legacy_describe(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_derive(ScryptoEncode, attributes(sbor))]
-pub fn encode(input: TokenStream) -> TokenStream {
-    encode::handle_encode(proc_macro2::TokenStream::from(input))
+pub fn scrypto_encode(input: TokenStream) -> TokenStream {
+    scrypto_encode::handle_scrypto_encode(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -57,8 +114,8 @@ pub fn encode(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_derive(ScryptoDecode, attributes(sbor))]
-pub fn decode(input: TokenStream) -> TokenStream {
-    decode::handle_decode(proc_macro2::TokenStream::from(input))
+pub fn scrypto_decode(input: TokenStream) -> TokenStream {
+    scrypto_decode::handle_scrypto_decode(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -77,8 +134,8 @@ pub fn decode(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_derive(ScryptoCategorize, attributes(sbor))]
-pub fn categorize(input: TokenStream) -> TokenStream {
-    categorize::handle_categorize(proc_macro2::TokenStream::from(input))
+pub fn scrypto_categorize(input: TokenStream) -> TokenStream {
+    scrypto_categorize::handle_scrypto_categorize(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -97,8 +154,8 @@ pub fn categorize(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_derive(ScryptoDescribe, attributes(sbor))]
-pub fn describe(input: TokenStream) -> TokenStream {
-    describe::handle_describe(proc_macro2::TokenStream::from(input))
+pub fn scrypto_describe(input: TokenStream) -> TokenStream {
+    scrypto_describe::handle_scrypto_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -112,23 +169,22 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that describe a non-fungible data structure.
+/// Derive code for implementing the required logic to mark a type as being an event.
 ///
 /// # Example
 ///
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// #[derive(NonFungibleData)]
+/// #[derive(ScryptoEvent)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
-///     #[mutable]
 ///     pub field_2: String,
 /// }
 /// ```
-#[proc_macro_derive(NonFungibleData, attributes(mutable))]
-pub fn non_fungible_data(input: TokenStream) -> TokenStream {
-    non_fungible_data::handle_non_fungible_data(proc_macro2::TokenStream::from(input))
+#[proc_macro_derive(ScryptoEvent)]
+pub fn scrypto_event(input: TokenStream) -> TokenStream {
+    scrypto_event::handle_scrypto_event(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

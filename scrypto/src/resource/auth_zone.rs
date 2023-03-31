@@ -1,8 +1,11 @@
-use core::fmt::Debug;
+use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{EngineApi, Invokable};
+use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -16,45 +19,55 @@ pub struct ComponentAuthZone {}
 impl ComponentAuthZone {
     pub fn push<P: Into<Proof>>(proof: P) {
         let mut env = ScryptoEnv;
-        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
 
         let proof: Proof = proof.into();
 
-        env.invoke(AuthZonePushInvocation {
-            receiver: node_id.into(),
-            proof,
-        })
+        env.call_method(
+            RENodeId::AuthZoneStack,
+            AUTH_ZONE_PUSH_IDENT,
+            scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
+        )
         .unwrap();
     }
 
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZonePopInvocation {
-            receiver: node_id.into(),
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                RENodeId::AuthZoneStack,
+                AUTH_ZONE_POP_IDENT,
+                scrypto_encode(&AuthZonePopInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofInvocation {
-            receiver: node_id.into(),
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                RENodeId::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_IDENT,
+                scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofByAmountInvocation {
-            receiver: node_id.into(),
-            amount,
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                RENodeId::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+                scrypto_encode(&AuthZoneCreateProofByAmountInput {
+                    resource_address,
+                    amount,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof_by_ids(
@@ -62,33 +75,27 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneCreateProofByIdsInvocation {
-            receiver: node_id.into(),
-            ids: ids.clone(),
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                RENodeId::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
+                scrypto_encode(&AuthZoneCreateProofByIdsInput {
+                    resource_address,
+                    ids: ids.clone(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        let node_id = Self::auth_zone_node_id(&mut env).expect("Auth Zone doesn't exist");
-        env.invoke(AuthZoneAssertAccessRuleInvocation {
-            receiver: node_id.into(),
-            access_rule,
-        })
-        .unwrap()
-    }
-
-    fn auth_zone_node_id<Y, E>(api: &mut Y) -> Option<RENodeId>
-    where
-        Y: EngineApi<E>,
-        E: Debug,
-    {
-        let owned_node_ids = api.sys_get_visible_nodes().unwrap();
-        owned_node_ids
-            .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+        env.call_method(
+            RENodeId::AuthZoneStack,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+        )
+        .unwrap();
     }
 }

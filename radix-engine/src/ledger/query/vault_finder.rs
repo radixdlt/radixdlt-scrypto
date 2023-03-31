@@ -1,11 +1,10 @@
-use crate::ledger::StateTreeVisitor;
-use crate::model::VaultSubstate;
-use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::model::ResourceAddress;
+use crate::types::*;
+use crate::{blueprints::resource::VaultInfoSubstate, ledger::StateTreeVisitor};
+use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::vec::Vec;
 
 pub struct VaultFinder {
-    vaults: Vec<VaultId>,
+    vaults: Vec<ObjectId>,
     resource_address: ResourceAddress,
 }
 
@@ -17,14 +16,30 @@ impl VaultFinder {
         }
     }
 
-    pub fn to_vaults(self) -> Vec<VaultId> {
+    pub fn to_vaults(self) -> Vec<ObjectId> {
         self.vaults
     }
 }
 
 impl StateTreeVisitor for VaultFinder {
-    fn visit_vault(&mut self, vault_id: VaultId, vault: &VaultSubstate) {
-        if self.resource_address.eq(&vault.0.resource_address()) {
+    fn visit_fungible_vault(
+        &mut self,
+        vault_id: ObjectId,
+        info: &VaultInfoSubstate,
+        _resource: &LiquidFungibleResource,
+    ) {
+        if self.resource_address.eq(&info.resource_address) {
+            self.vaults.push(vault_id);
+        }
+    }
+
+    fn visit_non_fungible_vault(
+        &mut self,
+        vault_id: ObjectId,
+        info: &VaultInfoSubstate,
+        _resource: &LiquidNonFungibleResource,
+    ) {
+        if self.resource_address.eq(&info.resource_address) {
             self.vaults.push(vault_id);
         }
     }

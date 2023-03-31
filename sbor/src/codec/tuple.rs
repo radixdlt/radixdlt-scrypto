@@ -120,9 +120,13 @@ mod schema {
                 const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Tuple", &[$($name::TYPE_ID),*]);
 
                 fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-                    Some(TypeData::named_tuple("Tuple", crate::rust::vec![
-                        $($name::TYPE_ID,)*
-                    ]))
+                    Some(TypeData::unnamed(
+                        TypeKind::Tuple {
+                            field_types: crate::rust::vec![
+                                $($name::TYPE_ID,)*
+                            ]
+                        }
+                    ))
                 }
 
                 #[allow(unused_variables)] // For the unit case

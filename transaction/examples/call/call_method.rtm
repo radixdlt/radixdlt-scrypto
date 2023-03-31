@@ -1,0 +1,5 @@
+CALL_METHOD
+    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    "complicated_method"
+    Decimal("1")
+    PreciseDecimal("2");

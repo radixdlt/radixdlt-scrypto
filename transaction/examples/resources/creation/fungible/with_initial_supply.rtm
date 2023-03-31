@@ -9,13 +9,13 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
 # default resource behavior where it can be withdrawn and deposited by anybody.
-CREATE_FUNGIBLE_RESOURCE
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, String>(
         "name", "MyResource",                                        # Resource Name
@@ -52,11 +52,11 @@ CREATE_FUNGIBLE_RESOURCE
         Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")),
         Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))
     )
-    Some(Decimal("${initial_supply}"));
+    Decimal("${initial_supply}");
 
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.
 CALL_METHOD
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");

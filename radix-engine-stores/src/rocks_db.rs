@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine::{ledger::*, wasm::WasmEngine};
-use radix_engine_interface::{api::types::RENodeId, data::ScryptoDecode};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::data::scrypto::ScryptoDecode;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
 pub struct RadixEngineDB {
@@ -29,30 +30,32 @@ impl RadixEngineDB {
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([0; 26]))),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(PackageAddress::Normal([0; 26]).into()),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([255; 26]))),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(PackageAddress::Normal([255; 26]).into()),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-        substate_ids
-            .into_iter()
-            .map(|id| {
-                if let SubstateId(
-                    RENodeId::Global(GlobalAddress::Package(package_address)),
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ) = id
-                {
-                    package_address
-                } else {
-                    panic!("Expected a package global substate id.")
-                }
-            })
-            .collect()
+
+        let mut addresses = Vec::new();
+        for substate_id in substate_ids {
+            if let SubstateId(
+                RENodeId::GlobalObject(Address::Package(package_address)),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ) = substate_id
+            {
+                addresses.push(package_address);
+            }
+        }
+
+        addresses
     }
 
     fn list_components_helper(
@@ -61,30 +64,31 @@ impl RadixEngineDB {
         end: ComponentAddress,
     ) -> Vec<ComponentAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Global(GlobalAddress::Component(start)),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(Address::Component(start)),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Global(GlobalAddress::Component(end)),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(Address::Component(end)),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-        substate_ids
-            .into_iter()
-            .map(|id| {
-                if let SubstateId(
-                    RENodeId::Global(GlobalAddress::Component(component_address)),
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ) = id
-                {
-                    component_address
-                } else {
-                    panic!("Expected a component global substate id.")
-                }
-            })
-            .collect()
+        let mut addresses = Vec::new();
+        for substate_id in substate_ids {
+            if let SubstateId(
+                RENodeId::GlobalObject(Address::Component(component_address)),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ) = substate_id
+            {
+                addresses.push(component_address);
+            }
+        }
+
+        addresses
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {
@@ -102,30 +106,31 @@ impl RadixEngineDB {
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([0; 26]))),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(ResourceAddress::Fungible([0; 26]).into()),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([255; 26]))),
-            SubstateOffset::Global(GlobalOffset::Global),
+            RENodeId::GlobalObject(ResourceAddress::NonFungible([255; 26]).into()),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-        substate_ids
-            .into_iter()
-            .map(|id| {
-                if let SubstateId(
-                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ) = id
-                {
-                    resource_address
-                } else {
-                    panic!("Expected a resource manager global substate id.")
-                }
-            })
-            .collect()
+        let mut addresses = Vec::new();
+        for substate_id in substate_ids {
+            if let SubstateId(
+                RENodeId::GlobalObject(Address::Resource(resource_address)),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ) = substate_id
+            {
+                addresses.push(resource_address);
+            }
+        }
+
+        addresses
     }
 
     fn list_items<T: ScryptoDecode>(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<T> {
@@ -167,36 +172,22 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let unit = scrypto_encode(&()).unwrap();
-        let id = scrypto_encode(&SubstateId(
-            RENodeId::KeyValueStore(kv_store_id.clone()),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                scrypto_encode(&unit).unwrap(),
-            )),
-        ))
-        .unwrap();
-
-        let mut iter = self
-            .db
-            .iterator(IteratorMode::From(&id, Direction::Forward));
+        let mut iter = self.db.iterator(IteratorMode::Start);
         let mut items = HashMap::new();
         while let Some(kv) = iter.next() {
             let (key, value) = kv.unwrap();
-            let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                NodeModuleId::SELF,
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
             ) = substate_id
             {
+                let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
                 if id == *kv_store_id {
-                    items.insert(key, substate.substate)
-                } else {
-                    break;
+                    items.insert(entry_id, substate.substate);
                 }
-            } else {
-                break;
-            };
+            }
         }
         items
     }

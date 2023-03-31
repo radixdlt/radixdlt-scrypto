@@ -1,22 +1,33 @@
 [package]
 name = "transaction"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
+utils = { path = "../utils", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants", default-features = false }
-utils = { path = "../utils", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
+
 hex = { version = "0.4.3", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}
 secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
 serde = { version = "1.0.144", default-features = false, optional = true }
 lazy_static = "1.4.0"
 
+[dev-dependencies]
+scrypto = { path = "../scrypto" }
+scrypto-derive = { path = "../scrypto-derive" }
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "radix-engine-interface/std", "hex/std", "ed25519-dalek/std", "secp256k1/std", "utils/std"]
-alloc = ["sbor/alloc", "radix-engine-interface/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "utils/alloc"]
+std = ["sbor/std", "utils/std", "radix-engine-interface/std", "radix-engine-common/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
+alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std"]
 serde = ["serde/derive"]
+
+dump_manifest_to_file = []
+
+[lib]
+bench = false

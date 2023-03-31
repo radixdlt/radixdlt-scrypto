@@ -23,7 +23,7 @@ mod proofs {
                 .mint_initial_supply(100);
 
             // Creating the access rules for the component and instantiating an new component
-            let access_rules: AccessRules = AccessRules::new()
+            let access_rules: AccessRulesConfig = AccessRulesConfig::new()
                 .method(
                     "organizational_authenticated_method",
                     organizational_access_rule,
@@ -31,11 +31,10 @@ mod proofs {
                 )
                 .default(rule!(deny_all), rule!(deny_all));
 
-            let mut local_component = Self {}.instantiate();
-            local_component.add_access_check(access_rules);
+            let local_component = Self {}.instantiate();
 
             (
-                local_component.globalize(),
+                local_component.globalize_with_access_rules(access_rules),
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }

@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "account",
     "faucet",
+    "radiswap",
+    "flash_loan"
 ]
 
 [profile.release]

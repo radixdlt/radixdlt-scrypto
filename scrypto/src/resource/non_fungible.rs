@@ -1,20 +1,9 @@
-use radix_engine_interface::model::*;
+use radix_engine_interface::api::types::NonFungibleData;
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::*;
 use sbor::rust::marker::PhantomData;
-
-use crate::borrow_resource_manager;
-use crate::resource::*;
-
-pub trait ScryptoNonFungibleLocalId {
-    /// Creates a non-fungible ID from some uuid.
-    fn random() -> Self;
-}
-
-impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
-    fn random() -> Self {
-        let uuid = crate::runtime::Runtime::generate_uuid();
-        Self::uuid(uuid).unwrap()
-    }
-}
+use scrypto::borrow_resource_manager;
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]
@@ -52,11 +41,5 @@ impl<T: NonFungibleData> NonFungible<T> {
     pub fn data(&self) -> T {
         borrow_resource_manager!(self.resource_address().clone())
             .get_non_fungible_data(self.local_id())
-    }
-
-    /// Updates the associated data of this unit.
-    pub fn update_data(&self, new_data: T) {
-        borrow_resource_manager!(self.resource_address().clone())
-            .update_non_fungible_data(self.local_id(), new_data);
     }
 }

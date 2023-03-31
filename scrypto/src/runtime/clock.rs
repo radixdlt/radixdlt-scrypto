@@ -1,6 +1,11 @@
-use radix_engine_interface::api::Invokable;
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::clock::{
+    ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision,
+    CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT,
+};
 use radix_engine_interface::constants::CLOCK;
-use radix_engine_interface::model::*;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -18,11 +23,14 @@ impl Clock {
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
         let mut env = ScryptoEnv;
-        env.invoke(ClockGetCurrentTimeInvocation {
-            receiver: CLOCK,
-            precision: precision,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                RENodeId::GlobalObject(CLOCK.into()),
+                CLOCK_GET_CURRENT_TIME_IDENT,
+                scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Returns true if current time, rounded down to a given precision,
@@ -58,12 +66,19 @@ impl Clock {
         operator: TimeComparisonOperator,
     ) -> bool {
         let mut env = ScryptoEnv;
-        env.invoke(ClockCompareCurrentTimeInvocation {
-            receiver: CLOCK,
-            instant: instant,
-            precision: precision,
-            operator: operator,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                RENodeId::GlobalObject(CLOCK.into()),
+                CLOCK_COMPARE_CURRENT_TIME_IDENT,
+                scrypto_encode(&ClockCompareCurrentTimeInput {
+                    instant,
+                    precision,
+                    operator,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
     }
 }

@@ -1,7 +1,7 @@
-use crate::engine::ScryptoInterpreter;
+use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
-use crate::model::PersistedSubstate;
+use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
@@ -75,17 +75,18 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<sbor::rust::vec::Vec<u8>, PersistedSubstate> {
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
         self.substates
             .iter()
-            .filter_map(|(key, value)| {
+            .filter_map(|(substate_id, substate_value)| {
                 if let SubstateId(
                     RENodeId::KeyValueStore(id),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                ) = key
+                    NodeModuleId::SELF,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
+                ) = substate_id
                 {
                     if id == kv_store_id {
-                        Some((key.clone(), value.substate.clone()))
+                        Some((entry_id.clone(), substate_value.substate.clone()))
                     } else {
                         None
                     }

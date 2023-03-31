@@ -1,6 +1,4 @@
-use crate::model::PersistedSubstate;
-use crate::types::*;
-use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
+use crate::{system::node_substates::PersistedSubstate, types::*};
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
@@ -9,14 +7,14 @@ pub trait QueryableSubstateStore {
     ) -> HashMap<Vec<u8>, PersistedSubstate>;
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub struct OutputId {
     pub substate_id: SubstateId,
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct OutputValue {
     pub substate: PersistedSubstate,
     pub version: u32,

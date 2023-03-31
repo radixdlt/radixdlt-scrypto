@@ -1,11 +1,9 @@
 [package]
 name = "scrypto"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 
 [dependencies]
-sha2 = { version = "0.10.2", default-features = false }
-sha3 = { version = "0.10.1", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
@@ -13,7 +11,7 @@ bech32 = { version = "0.9.0", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
 sbor = { path = "../sbor", default-features = false }
-scrypto-abi = { path = "../scrypto-abi", default-features = false }
+scrypto-schema = { path = "../scrypto-schema", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }
 utils = { path = "../utils", default-features = false }
 paste = { version = "1.0.7"}
@@ -22,19 +20,18 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "prelude"]
-std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std", "strum/std", "radix-engine-interface/std", "radix-engine-derive/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "radix-engine-interface/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+default = ["std"]
+std = ["hex/std", "sbor/std", "scrypto-schema/std", "scrypto-derive/std", "strum/std", "radix-engine-interface/std", "radix-engine-derive/std", "utils/std"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-schema/alloc", "scrypto-derive/alloc", "radix-engine-interface/alloc", "radix-engine-derive/alloc", "utils/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
 
 # Enable serde derives
-serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive", "radix-engine-interface/serde"]
+serde = ["sbor/serde", "scrypto-schema/serde", "serde/derive", "radix-engine-interface/serde"]
 
-# Enable prelude.
-# Note that prelude introduces duplicated symbols which may confuse rustc suggestions.
-prelude = []
+# Disable schema gen in the output WASM.
+no-schema = ["scrypto-derive/no-schema"]
 
-# Disable ABI gen in the output WASM.
-no-abi-gen = ["scrypto-derive/no-abi-gen"]
+[lib]
+bench = false

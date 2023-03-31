@@ -1,13 +1,12 @@
+use crate::model::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::model::*;
+use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
 
-use crate::model::*;
-
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(ManifestSbor)]
 pub struct TestTransaction {
     nonce: u64,
     cost_unit_limit: u32,
@@ -27,19 +26,19 @@ impl TestTransaction {
         &'a self,
         initial_proofs: Vec<NonFungibleGlobalId>,
     ) -> Executable<'a> {
-        let payload = scrypto_encode(self).unwrap();
+        let payload = manifest_encode(self).unwrap();
         let payload_size = payload.len();
         let transaction_hash = hash(payload);
 
         Executable::new(
-            InstructionList::Basic(&self.manifest.instructions),
+            self.manifest.instructions.clone(),
             &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
                 payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
-                    virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                    virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
                     cost_unit_limit: self.cost_unit_limit,

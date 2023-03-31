@@ -1,8 +1,7 @@
 use super::InstrumentedCode;
-use crate::model::InvokeError;
+use crate::errors::InvokeError;
+use crate::types::*;
 use crate::wasm::errors::*;
-use radix_engine_interface::api::types::LockHandle;
-use radix_engine_interface::api::wasm::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 
@@ -16,26 +15,51 @@ pub trait WasmRuntime {
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 
-    fn invoke_method(
+    fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn call_function(
+        &mut self,
+        package_address: Vec<u8>,
+        blueprint_ident: Vec<u8>,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn new_object(
+        &mut self,
+        blueprint_ident: Vec<u8>,
+        app_states: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn globalize_object(
+        &mut self,
+        component_id: Vec<u8>,
+        access_rules: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn get_type_info(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn lock_substate(
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
-        mutable: bool,
+        flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 
     fn read_substate(
@@ -49,11 +73,32 @@ pub trait WasmRuntime {
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn unlock_substate(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn update_wasm_memory_usage(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn emit_event(
+        &mut self,
+        event_name: Vec<u8>,
+        event: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn log_message(
+        &mut self,
+        level: Vec<u8>,
+        message: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.
@@ -71,6 +116,9 @@ pub trait WasmInstance {
         args: Vec<Buffer>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
+
+    /// Retruns memory consumed by this instance during invoke_export() call
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.

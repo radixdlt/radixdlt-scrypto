@@ -1,0 +1,157 @@
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataEntry, MetadataValue, METADATA_SET_IDENT,
+};
+use radix_engine_interface::blueprints::resource::*;
+use scrypto_unit::*;
+use transaction::builder::ManifestBuilder;
+
+#[test]
+fn cannot_set_package_metadata_with_no_owner() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .publish_package(
+            code,
+            single_function_package_schema("Test", "f"),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRulesConfig::new(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .set_metadata(
+            Address::Package(package_address),
+            "name".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+        )
+    });
+    let value = test_runner.get_metadata(package_address.into(), "name");
+    assert_eq!(value, None);
+}
+
+#[test]
+fn can_set_package_metadata_with_owner() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let (public_key, _, account) = test_runner.new_account(false);
+    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .publish_package_with_owner(
+            code,
+            single_function_package_schema("Test", "f"),
+            owner_badge_addr,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, owner_badge_resource)
+        .set_metadata(
+            Address::Package(package_address),
+            "name".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let value = test_runner
+        .get_metadata(package_address.into(), "name")
+        .expect("Should exist");
+    assert_eq!(
+        value,
+        MetadataEntry::Value(MetadataValue::String("best package ever!".to_string()))
+    );
+}
+
+#[test]
+fn can_lock_package_metadata_with_owner() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let (public_key, _, account) = test_runner.new_account(false);
+    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .publish_package_with_owner(
+            code,
+            single_function_package_schema("Test", "f"),
+            owner_badge_addr,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, owner_badge_resource)
+        .set_method_access_rule(
+            Address::Package(package_address),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRule::DenyAll,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account(account, owner_badge_resource)
+        .set_metadata(
+            Address::Package(package_address),
+            "name".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+        )
+    });
+    let value = test_runner.get_metadata(package_address.into(), "name");
+    assert_eq!(value, None);
+}

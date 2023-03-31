@@ -6,16 +6,17 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// Radix Engine implementation.
-pub mod engine;
-/// Radix Engine fee model.
-pub mod fee;
-/// Radix Engine state abstraction.
+/// Radix Engine kernel, defining state, ownership and (low-level) invocation semantics.
+pub mod kernel;
+/// Radix Engine ledge state abstraction.
 pub mod ledger;
-/// Radix Engine models.
-pub mod model;
+/// Radix Engine system, defining packages (a.k.a. classes), components (a.k.a. objects) and invocation semantics.
+pub mod system;
 /// Radix Engine transaction interface.
 pub mod transaction;
+
+/// Native blueprints (to be moved to individual crates)
+pub mod blueprints;
 
 /// State manager for the Radix Engine
 pub mod state_manager;
@@ -25,3 +26,7 @@ pub mod wasm;
 
 /// Scrypto/SBOR types required by Radix Engine.
 pub mod types;
+
+pub mod errors;
+
+pub mod utils;

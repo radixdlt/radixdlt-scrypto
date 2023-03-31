@@ -27,6 +27,17 @@ if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
     exit 1
 fi
 
+# Test - show account
+account_dump=`$resim show $account`
+if [[ ${account_dump} != *"XRD"* ]];then
+    echo "XRD not present!"
+    exit 1
+fi
+if [[ ${account_dump} != *"Owner Badge"* ]];then
+    echo "Owner badge not present!"
+    exit 1
+fi
+
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`
 
@@ -36,12 +47,10 @@ token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print 
 # Test - transfer non fungible
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
-# The below line looks like this: U32#1,resource_address
-# You can put multiple ids into a bucket like so: resource_address:id1,id2,id3
 $resim call-method $account2 deposit "$non_fungible_global_id"
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
-$resim mint 777 $token_address --proofs 1,$minter_badge
+$resim mint 777 $token_address --proofs $minter_badge:1
 $resim transfer 111 $token_address $account2
 
 # Test - publish, call-function and call-method and non-fungibles
@@ -50,8 +59,8 @@ package=`$resim publish ../examples/hello-world --owner-badge $owner_badge | awk
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 
-# Test - export abi
-$resim export-abi $package Hello
+# Test - export schema
+$resim export-schema $package target/temp.schema
 
 # Test - dump component state
 $resim show $package
@@ -91,13 +100,9 @@ admin_badge=`echo $resources | cut -d " " -f2`
 superadmin_badge=`echo $resources | cut -d " " -f3`
 token=`echo $resources | cut -d " " -f4`
 
-$resim call-method $component organizational_authenticated_method --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
-$resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
-$resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
-
-# Test - publishing a large package
-$resim publish ./tests/large_package.wasm --owner-badge $owner_badge
-$resim publish ./tests/large_package.wasm
+$resim call-method $component organizational_authenticated_method --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
+$resim transfer 2 $token $account2 --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
+$resim mint 100000 $token --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2

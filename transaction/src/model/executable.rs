@@ -1,20 +1,21 @@
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_common::data::scrypto::model::ResourceAddress;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
+use radix_engine_interface::blueprints::transaction_processor::RuntimeValidationRequest;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::{Categorize, Decode, Encode};
 
 use crate::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AuthZoneParams {
     pub initial_proofs: Vec<NonFungibleGlobalId>,
-    pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
+    pub virtual_resources: BTreeSet<ResourceAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
     pub pre_allocated_ids: BTreeSet<RENodeId>,
@@ -24,7 +25,7 @@ pub struct ExecutionContext {
     pub runtime_validations: Vec<RuntimeValidationRequest>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum FeePayment {
     User {
         cost_unit_limit: u32,
@@ -34,58 +35,15 @@ pub enum FeePayment {
 }
 
 #[derive(Debug)]
-pub enum InstructionList<'a> {
-    Basic(&'a [BasicInstruction]),
-    Any(&'a [Instruction]),
-    AnyOwned(Vec<Instruction>),
-}
-
-#[derive(Debug)]
 pub struct Executable<'a> {
-    instructions: InstructionList<'a>,
+    instructions: Vec<Instruction>,
     blobs: &'a [Vec<u8>],
-    context: ExecutionContext,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct RuntimeValidationRequest {
-    /// The validation to perform
-    pub validation: RuntimeValidation,
-    /// This option is intended for preview uses cases
-    /// In these cases, we still want to do the look ups to give equivalent cost unit spend, but may wish to ignore the result
-    pub skip_assertion: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum RuntimeValidation {
-    /// To ensure we don't commit a duplicate intent hash
-    IntentHashUniqueness { intent_hash: Hash },
-    /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
-    WithinEpochRange {
-        start_epoch_inclusive: u64,
-        end_epoch_exclusive: u64,
-    },
-}
-
-impl RuntimeValidation {
-    pub fn enforced(self) -> RuntimeValidationRequest {
-        RuntimeValidationRequest {
-            validation: self,
-            skip_assertion: false,
-        }
-    }
-
-    pub fn with_skipped_assertion_if(self, skip_assertion: bool) -> RuntimeValidationRequest {
-        RuntimeValidationRequest {
-            validation: self,
-            skip_assertion,
-        }
-    }
+    pub context: ExecutionContext,
 }
 
 impl<'a> Executable<'a> {
     pub fn new(
-        instructions: InstructionList<'a>,
+        instructions: Vec<Instruction>,
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
@@ -96,7 +54,7 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn new_no_blobs(instructions: InstructionList<'a>, context: ExecutionContext) -> Self {
+    pub fn new_no_blobs(instructions: Vec<Instruction>, context: ExecutionContext) -> Self {
         Self {
             instructions,
             blobs: &[],
@@ -112,7 +70,7 @@ impl<'a> Executable<'a> {
         &self.context.fee_payment
     }
 
-    pub fn instructions(&self) -> &InstructionList {
+    pub fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 

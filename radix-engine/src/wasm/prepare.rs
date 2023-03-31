@@ -3,6 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
+use radix_engine_interface::schema::PackageSchema;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -12,8 +13,7 @@ use wasmi_validation::{validate_module, PlainValidator};
 use crate::types::*;
 use crate::wasm::{constants::*, errors::*, PrepareError};
 
-use super::WasmiEnvModule;
-
+use super::WasmiModule;
 #[derive(Debug, PartialEq)]
 pub struct WasmModule {
     module: Module,
@@ -185,9 +185,15 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        CONSUME_BUFFER_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
-                        INVOKE_METHOD_FUNCTION_NAME => {
+                        CALL_METHOD_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -199,50 +205,48 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                         ValueType::I32,
+                                        ValueType::I32,
                                     ],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
-                        INVOKE_FUNCTION_NAME => {
+                        CALL_FUNCTION_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
-                        CREATE_NODE_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-                            }
-                        }
-                        GET_VISIBLE_NODES_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
-                            }
-                        }
-                        DROP_NODE_FUNCTION_NAME => {
+                        DROP_OBJECT_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -252,6 +256,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        DROP_OBJECT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         LOCK_SUBSTATE_FUNCTION_NAME => {
@@ -270,6 +280,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        LOCK_SUBSTATE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         READ_SUBSTATE_FUNCTION_NAME => {
@@ -282,6 +298,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        READ_SUBSTATE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         WRITE_SUBSTATE_FUNCTION_NAME => {
@@ -294,9 +316,15 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        WRITE_SUBSTATE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
-                        UNLOCK_SUBSTATE_FUNCTION_NAME => {
+                        DROP_LOCK_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -306,9 +334,175 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        DROP_LOCK_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         GET_ACTOR_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_ACTOR_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        NEW_OBJECT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        NEW_OBJECT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GLOBALIZE_OBJECT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GLOBALIZE_OBJECT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        NEW_KEY_VALUE_STORE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        EMIT_EVENT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        LOG_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GET_TRANSACTION_HASH_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                            }
+                        }
+                        GENERATE_UUID_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -434,21 +628,18 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints(
-        self,
-        blueprints: &BTreeMap<String, BlueprintAbi>,
-    ) -> Result<Self, PrepareError> {
+    pub fn enforce_export_constraints(self, schema: &PackageSchema) -> Result<Self, PrepareError> {
         let exports = self
             .module
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
-        for (_, blueprint_abi) in blueprints {
-            for func in &blueprint_abi.fns {
+        for (_, blueprint_schema) in &schema.blueprints {
+            for func in blueprint_schema.functions.values() {
                 let func_name = &func.export_name;
                 if !exports.entries().iter().any(|x| {
                     x.field().eq(func_name) && {
                         if let Internal::Function(func_index) = x.internal() {
-                            if func.mutability.is_some() {
+                            if func.receiver.is_some() {
                                 Self::function_matches(
                                     &self.module,
                                     *func_index as usize,
@@ -511,15 +702,10 @@ impl WasmModule {
 
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
+        let code = parity_wasm::serialize(self.module.clone())
+            .map_err(|_| PrepareError::SerializationError)?;
 
-        wasmi::ModuleInstance::new(
-            &wasmi::Module::from_parity_wasm_module(self.module.clone())
-                .expect("Failed to convert WASM module from parity to wasmi"),
-            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
-        )
-        .map_err(|_| PrepareError::NotInstantiatable)?;
-
-        Ok(self)
+        WasmiModule::new(&code[..]).map(|_| self)
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
@@ -598,7 +784,8 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use scrypto::abi;
+    use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
+    use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -626,7 +813,7 @@ mod tests {
         assert_invalid_wasm!(
             r#"
             (module
-                (func (param f64)   
+                (func (param f64)
                 )
             )
             "#,
@@ -752,34 +939,35 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut blueprint_abis = BTreeMap::new();
-        blueprint_abis.insert(
+        let mut package_schema = PackageSchema::default();
+        package_schema.blueprints.insert(
             "Test".to_string(),
-            BlueprintAbi {
-                structure: scrypto::abi::Type::Tuple {
-                    element_types: vec![],
+            BlueprintSchema {
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
                 },
-                fns: vec![abi::Fn {
-                    ident: "f".to_string(),
-                    mutability: Option::None,
-                    input: scrypto::abi::Type::Struct {
-                        name: "Any".to_string(),
-                        fields: scrypto::abi::Fields::Named { named: vec![] },
-                    },
-                    output: scrypto::abi::Type::Tuple {
-                        element_types: vec![],
-                    },
-                    export_name: "Test_f".to_string(),
-                }],
+                substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                functions: btreemap!(
+                    "f".to_string() => FunctionSchema {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(UNIT_ID),
+                        export_name: "Test_f".to_string(),
+                    }
+                ),
+                event_schema: [].into(),
             },
         );
+
         assert_invalid_wasm!(
             r#"
             (module
             )
             "#,
             PrepareError::NoExportSection,
-            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+            |x| WasmModule::enforce_export_constraints(x, &package_schema)
         );
         // symbol not found
         assert_invalid_wasm!(
@@ -793,7 +981,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+            |x| WasmModule::enforce_export_constraints(x, &package_schema)
         );
         // signature does not match
         assert_invalid_wasm!(
@@ -807,7 +995,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+            |x| WasmModule::enforce_export_constraints(x, &package_schema)
         );
     }
 }
