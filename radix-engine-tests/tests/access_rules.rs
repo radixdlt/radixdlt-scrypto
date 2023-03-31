@@ -288,53 +288,6 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 #[test]
-fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, _account_component) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .assert_access_rule(rule!(require(RADIX_TOKEN)))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|error: &RuntimeError| {
-        matches!(
-            error,
-            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
-        )
-    })
-}
-
-#[test]
-#[ignore]
-fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account_component, RADIX_TOKEN)
-        .assert_access_rule(rule!(require(RADIX_TOKEN)))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 #[ignore]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange

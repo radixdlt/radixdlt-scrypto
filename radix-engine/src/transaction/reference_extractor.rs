@@ -159,8 +159,7 @@ pub fn extract_refs_from_instruction(
         | Instruction::DropProof { .. }
         | Instruction::DropAllProofs { .. }
         | Instruction::ClearSignatureProofs { .. }
-        | Instruction::BurnResource { .. }
-        | Instruction::AssertAccessRule { .. } => {}
+        | Instruction::BurnResource { .. } => {}
     }
 }
 

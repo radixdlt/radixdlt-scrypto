@@ -262,9 +262,6 @@ impl Parser {
             TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
                 config: self.parse_value()?,
             },
-            TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
-                access_rule: self.parse_value()?,
-            },
             TokenKind::CreateAccount => Instruction::CreateAccount {},
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {
                 config: self.parse_value()?,
