@@ -1,12 +1,13 @@
 name: Fuzzing
+run-name: Fuzzing input=${{ github.event.inputs.fuzz_input_mode }} duration=${{ github.event.inputs.duration_hours }}h branch=${{ github.ref_name }}
 
 on:
   workflow_dispatch:
     inputs:
-      duration:
-        description: 'Fuzzing duration [s]'
+      duration_hours:
+        description: 'Fuzzing duration [h]'
         required: true
-        default: 3600
+        default: 6
       timeout:
         description: 'AFL timeout [ms]'
         required: true
@@ -16,9 +17,13 @@ on:
         description: 'Fuzz input data generation mode'
         required: true
         options:
-          - raw
-          - unique
           - minimize
+          - unique
+          - raw
+      watch_interval:
+        description: 'Check fuzzing status interval [s]'
+        required: true
+        default: 300
 
 env:
   CARGO_TERM_COLOR: always
@@ -26,13 +31,9 @@ env:
 jobs:
   transaction:
     name: Fuzz transaction (AFL)
-    runs-on: k8s-linux-runner
-    env:
-      # Temporarily set below flags to workaround lack of RW access /proc filesystem,
-      # which is required by below command
-      #   ./fuzz.sh afl machine-init
-      AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES: 1
-      AFL_SKIP_CPUFREQ: 1
+    runs-on: fuzzing
+    # set timeout to 7days
+    timeout-minutes: 10080
 
     steps:
     - uses: actions/checkout@v2
@@ -42,7 +43,7 @@ jobs:
 
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install parallel screen -y
+        sudo apt-get install parallel screen build-essential llvm cmake -y
 
     - name: Install nextest
       uses: taiki-e/install-action@nextest
@@ -57,7 +58,7 @@ jobs:
       working-directory: fuzz-tests
       run: |
         ./install_afl.sh
-        #./fuzz.sh afl machine-init
+        ./fuzz.sh afl machine-init
 
     - name: Build AFL
       working-directory: fuzz-tests
@@ -72,19 +73,25 @@ jobs:
     - name: Start AFL
       working-directory: fuzz-tests
       run: |
-        ./afl.sh run ${{ github.event.inputs.duration }} all ${{ github.event.inputs.timeout }}
+        # scale=0 - get rid of fractional part
+        # dividing by 1 because 'scale' works only for division ;)
+        # Using floating arithmetics to allow providing fractions of hours (for test purposes)
+        SECONDS=$(echo "scale=0; ${{ github.event.inputs.duration_hours }} * 60 * 60 / 1" | bc)
+        ./afl.sh run $SECONDS all ${{ github.event.inputs.timeout }}
 
     - name: Watch AFL
       working-directory: fuzz-tests
       run: |
-        ./afl.sh watch 60
+        ./afl.sh watch ${{ github.event.inputs.watch_interval }}
 
     - name: Generate summary
       working-directory: fuzz-tests
       run: |
         COMMIT=$(git rev-parse --short HEAD)
         echo -e \
-        "## Repo:\n \
+        "## Input params:\n \
+        ${{ toJSON(github.event.inputs) }}\n \
+        ## Repo:\n \
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
         ## Status:\n \
         \n\`\`\`\n \
