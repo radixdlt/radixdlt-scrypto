@@ -154,7 +154,7 @@ impl ExecutableInvocation for MethodInvocation {
                     None,
                 )
             }
-            NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+            NodeModuleId::AccessRules => {
                 // TODO: Check if type has access rules
                 (
                     Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),

@@ -30,6 +30,12 @@ pub enum ObjectKey {
     ChildBlueprint(String),
 }
 
+impl ObjectKey {
+    pub fn child_blueprint(name: &str) -> Self {
+        ObjectKey::ChildBlueprint(name.to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
     pub node_module_id: NodeModuleId,

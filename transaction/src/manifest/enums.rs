@@ -86,8 +86,7 @@ lazy_static! {
                 TypeInfo = 1;
                 Metadata = 2;
                 AccessRules = 3;
-                AccessRules1 = 4;
-                ComponentRoyalty = 5;
+                ComponentRoyalty = 4;
             }
         );
 

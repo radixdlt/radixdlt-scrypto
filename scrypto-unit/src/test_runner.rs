@@ -1204,7 +1204,7 @@ impl TestRunner {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                    NodeModuleId::AccessRules => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),

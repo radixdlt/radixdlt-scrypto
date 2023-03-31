@@ -411,7 +411,6 @@ where
             NodeModuleId::Metadata,
             NodeModuleId::ComponentRoyalty,
             NodeModuleId::AccessRules,
-            NodeModuleId::AccessRules1
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
@@ -457,7 +456,7 @@ where
                 NodeModuleId::SELF | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                NodeModuleId::AccessRules => {
                     let node_id = RENodeId::Object(object_id);
                     let blueprint = self.get_object_type_info(node_id)?;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
@@ -803,7 +802,7 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => Ok(Blueprint::new(
+                    NodeModuleId::AccessRules => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),

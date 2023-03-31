@@ -37,9 +37,13 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized(Box<Unauthorized>),
+    ChildBlueprintDoesNotExist,
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct Unauthorized(pub Actor, pub MethodAuthorization);
+pub struct Unauthorized {
+    pub callee: Actor,
+    pub authorization: MethodAuthorization,
+}
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
@@ -116,13 +120,8 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = match (node_id, module_id, ident) {
-            (node_id, module_id, ident)
-                if matches!(
-                    module_id,
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1
-                ) =>
-            {
-                AccessRulesNativePackage::authorization(node_id, module_id, ident, args, api)?
+            (node_id, module_id, ident) if matches!(module_id, NodeModuleId::AccessRules) => {
+                AccessRulesNativePackage::authorization(node_id, ident, args, api)?
             }
 
             (RENodeId::Object(object_id), ..) => {
@@ -160,14 +159,14 @@ impl AuthModule {
                     let auth = match visibility {
                         RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
                             &RENodeId::GlobalObject(resource_address.into()),
-                            NodeModuleId::AccessRules1,
+                            ObjectKey::ChildBlueprint(blueprint.blueprint_name),
                             method_key,
                             api,
                         )?,
                         RENodeVisibilityOrigin::DirectAccess => {
                             let handle = api.kernel_lock_substate(
                                 &RENodeId::GlobalObject(resource_address.into()),
-                                NodeModuleId::AccessRules1,
+                                NodeModuleId::AccessRules,
                                 SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                 LockFlags::read_only(),
                             )?;
@@ -183,8 +182,11 @@ impl AuthModule {
                                         .ident
                                         .eq(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT))
                             {
-                                let access_rule =
-                                    substate.access_rules.get_group_access_rule("recall");
+                                let access_rules = substate
+                                    .child_blueprint_rules
+                                    .get(blueprint.blueprint_name.as_str())
+                                    .unwrap();
+                                let access_rule = access_rules.get_group_access_rule("recall");
                                 let authorization = convert_contextless(&access_rule);
                                 authorization
                             } else {
@@ -214,16 +216,11 @@ impl AuthModule {
                     RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
-                    Self::method_authorization_stateful(
-                        &node_id,
-                        NodeModuleId::AccessRules,
-                        method_key,
-                        api,
-                    )?
+                    Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(
                         &node_id,
-                        NodeModuleId::AccessRules,
+                        ObjectKey::SELF,
                         method_key,
                         api,
                     )?
@@ -238,8 +235,8 @@ impl AuthModule {
 
     fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
         receiver: &RENodeId,
-        module_id: NodeModuleId,
-        key: MethodKey,
+        object_key: ObjectKey,
+        method_key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let (blueprint_schema, index) = {
@@ -267,7 +264,9 @@ impl AuthModule {
             let index = match schema.substates.get(0) {
                 Some(index) => index.clone(),
                 None => {
-                    return Self::method_authorization_stateless(receiver, module_id, key, api);
+                    return Self::method_authorization_stateless(
+                        receiver, object_key, method_key, api,
+                    );
                 }
             };
 
@@ -291,13 +290,13 @@ impl AuthModule {
 
         let handle = api.kernel_lock_substate(
             receiver,
-            module_id,
+            NodeModuleId::AccessRules,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get_access_rule(&key);
+        let method_auth = access_rules.access_rules.get_access_rule(&method_key);
         let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
@@ -307,19 +306,30 @@ impl AuthModule {
 
     fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
         receiver: &RENodeId,
-        module_id: NodeModuleId,
+        object_key: ObjectKey,
         key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            module_id,
+            NodeModuleId::AccessRules,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get_access_rule(&key);
+        let method_auth = match object_key {
+            ObjectKey::SELF => access_rules.access_rules.get_access_rule(&key),
+            ObjectKey::ChildBlueprint(blueprint_name) => {
+                let child_rules = access_rules
+                    .child_blueprint_rules
+                    .get(&blueprint_name)
+                    .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
+                        AuthError::ChildBlueprintDoesNotExist,
+                    )))?;
+                child_rules.get_access_rule(&key)
+            }
+        };
 
         // TODO: Remove
         let authorization = convert_contextless(&method_auth);
@@ -380,7 +390,10 @@ impl KernelModule for AuthModule {
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(Box::new(Unauthorized(callee.clone(), authorization))),
+                AuthError::Unauthorized(Box::new(Unauthorized {
+                    callee: callee.clone(),
+                    authorization,
+                })),
             )));
         }
 
