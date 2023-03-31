@@ -1,7 +1,6 @@
 use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::address::EntityType;
-use resources_tracker_macro::trace_resources;
 
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::resource::{
     BUCKET_BLUEPRINT, PROOF_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::constants::*;
-use resources_tracker_macro::trace_resources;
 
 pub struct VisibilityProperties;
 
