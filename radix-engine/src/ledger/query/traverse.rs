@@ -1,5 +1,5 @@
 use crate::blueprints::resource::{
-    FungibleVaultInfoSubstate, NonFungibleVaultInfoSubstate, VaultUtil,
+    NonFungibleVaultInfoSubstate, VaultUtil,
 };
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_modules::type_info::{TypeInfoSubstate};
@@ -31,7 +31,7 @@ pub trait StateTreeVisitor {
     fn visit_fungible_vault(
         &mut self,
         _vault_id: ObjectId,
-        _info: &FungibleVaultInfoSubstate,
+        _address: &ResourceAddress,
         _resource: &LiquidFungibleResource,
     ) {
     }
@@ -116,7 +116,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let type_substate: TypeInfoSubstate = runtime_substate.into();
 
                 match type_substate {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, type_parent, .. })
                         if VaultUtil::is_vault_blueprint(&blueprint) =>
                     {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
@@ -126,8 +126,6 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                         )) {
                             match blueprint.blueprint_name.as_str() {
                                 FUNGIBLE_VAULT_BLUEPRINT => {
-                                    let info: FungibleVaultInfoSubstate =
-                                        output_value.substate.into();
                                     let liquid: LiquidFungibleResource = self
                                         .substate_store
                                         .get_substate(&SubstateId(
@@ -141,7 +139,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
 
                                     self.visitor.visit_fungible_vault(
                                         node_id.into(),
-                                        &info,
+                                        &type_parent.unwrap().into(),
                                         &liquid,
                                     );
                                 }

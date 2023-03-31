@@ -897,28 +897,22 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .type_info()
             .clone();
 
-        let blueprint_name = match type_info {
+        let (blueprint_name, address) = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint:
                     Blueprint {
                         package_address,
                         blueprint_name,
                     },
+                type_parent: Some(address),
                 ..
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => blueprint_name,
+            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => (blueprint_name, address),
             _ => panic!("Unexpected object"),
         };
 
         match blueprint_name.as_str() {
             FUNGIBLE_VAULT_BLUEPRINT => {
-                let resource_address = self
-                    .fetch_substate(&SubstateId(
-                        *node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::Info),
-                    ))
-                    .fungible_vault_info()
-                    .resource_address;
+                let resource_address: ResourceAddress = address.into();
 
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =

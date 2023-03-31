@@ -346,8 +346,7 @@ impl FungibleResourceManagerBlueprint {
         let resource_manager: &FungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let divisibility = resource_manager.divisibility;
-        let info = FungibleVaultInfoSubstate {
-            resource_address,
+        let info = FungibleVaultDivisibilitySubstate {
             divisibility,
         };
         let vault_id = api.new_object(

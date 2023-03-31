@@ -204,6 +204,7 @@ impl Vault {
     where
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
+        
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
             VAULT_GET_RESOURCE_ADDRESS_IDENT,
