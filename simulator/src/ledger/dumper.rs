@@ -62,7 +62,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 
 struct ComponentStateDump {
     pub raw_state: Option<IndexedScryptoValue>,
-    pub owned_vaults: Option<HashSet<ObjectId>>,
+    pub owned_vaults: Option<IndexSet<ObjectId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
     pub access_rules: Option<AccessRulesConfig>, // Virtual Components don't have access rules.
@@ -120,7 +120,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let access_rules = access_rules_chain_substate.access_rules;
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<ObjectId> = raw_state
+            let mut vaults_found: IndexSet<ObjectId> = raw_state
                 .owned_node_ids()
                 .iter()
                 .cloned()
@@ -160,7 +160,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             // Just an account with no vaults.
             ComponentStateDump {
                 raw_state: None,
-                owned_vaults: Some(HashSet::new()),
+                owned_vaults: Some(index_set_new()),
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Account".into(),
                 access_rules: None,
@@ -209,7 +209,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         | ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
             ComponentStateDump {
                 raw_state: None,
-                owned_vaults: Some(HashSet::new()),
+                owned_vaults: Some(index_set_new()),
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Identity".into(),
                 access_rules: None,
@@ -375,7 +375,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
-    vaults: &HashSet<ObjectId>,
+    vaults: &IndexSet<ObjectId>,
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {

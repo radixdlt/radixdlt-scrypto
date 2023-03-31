@@ -16,6 +16,7 @@ use crate::system::kernel_modules::transaction_limits::{
     TransactionLimitsConfig, TransactionLimitsModule,
 };
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::system::kernel_modules::virtualization::VirtualizationModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::transaction::ExecutionConfig;
@@ -56,6 +57,7 @@ pub struct KernelModuleMixer {
     pub execution_trace: ExecutionTraceModule,
     pub transaction_limits: TransactionLimitsModule,
     pub events: EventsModule,
+    pub virtualization: VirtualizationModule,
 }
 
 impl KernelModuleMixer {
@@ -117,6 +119,7 @@ impl KernelModuleMixer {
                 execution_config.execution_trace.unwrap_or(0),
             ),
             events: EventsModule::default(),
+            virtualization: VirtualizationModule,
         }
     }
 }
@@ -649,6 +652,16 @@ impl KernelModule for KernelModuleMixer {
             EventsModule::before_lock_substate(api, node_id, module_id, offset, flags)?;
         }
         Ok(())
+    }
+
+    #[trace_resources]
+    fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
+        node_id: RENodeId,
+        module_id: NodeModuleId,
+        offset: &SubstateOffset,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError> {
+        VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
     }
 
     #[trace_resources]

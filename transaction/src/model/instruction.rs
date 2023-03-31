@@ -105,6 +105,13 @@ pub enum Instruction {
         schema: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+    },
+
+    PublishPackageAdvanced {
+        code: ManifestBlobRef,
+        schema: ManifestBlobRef,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRulesConfig,
     },
 

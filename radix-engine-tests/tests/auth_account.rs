@@ -12,7 +12,7 @@ fn test_auth_rule(
     should_succeed: bool,
 ) {
     // Arrange
-    let account = test_runner.new_account_with_auth_rule(auth_rule.clone());
+    let account = test_runner.new_account_advanced(auth_rule.clone(), AccessRule::DenyAll);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
@@ -220,7 +220,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let xrd_auth = rule!(require(RADIX_TOKEN));
-    let account = test_runner.new_account_with_auth_rule(xrd_auth);
+    let account = test_runner.new_account_advanced(xrd_auth, AccessRule::DenyAll);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
@@ -254,7 +254,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), RADIX_TOKEN));
-    let account = test_runner.new_account_with_auth_rule(xrd_auth);
+    let account = test_runner.new_account_advanced(xrd_auth, AccessRule::DenyAll);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
@@ -288,7 +288,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
-    let account = test_runner.new_account_with_auth_rule(xrd_auth);
+    let account = test_runner.new_account_advanced(xrd_auth, AccessRule::DenyAll);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act

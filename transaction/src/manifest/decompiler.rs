@@ -6,9 +6,13 @@ use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT};
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
-use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
+use radix_engine_interface::blueprints::identity::{
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -59,8 +63,8 @@ impl From<fmt::Error> for DecompileError {
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
-    pub bucket_names: HashMap<ManifestBucket, String>,
-    pub proof_names: HashMap<ManifestProof, String>,
+    pub bucket_names: NonIterMap<ManifestBucket, String>,
+    pub proof_names: NonIterMap<ManifestProof, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
@@ -68,8 +72,8 @@ impl<'a> DecompilationContext<'a> {
         Self {
             bech32_encoder: Some(bech32_encoder),
             id_allocator: ManifestIdAllocator::new(),
-            bucket_names: HashMap::<ManifestBucket, String>::new(),
-            proof_names: HashMap::<ManifestProof, String>::new(),
+            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
+            proof_names: NonIterMap::<ManifestProof, String>::new(),
         }
     }
 
@@ -77,8 +81,8 @@ impl<'a> DecompilationContext<'a> {
         Self {
             bech32_encoder,
             id_allocator: ManifestIdAllocator::new(),
-            bucket_names: HashMap::<ManifestBucket, String>::new(),
-            proof_names: HashMap::<ManifestProof, String>::new(),
+            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
+            proof_names: NonIterMap::<ManifestProof, String>::new(),
         }
     }
 
@@ -350,8 +354,14 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT) => {
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
+                    write!(f, "CREATE_ACCOUNT_ADVANCED")?;
+                }
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT) => {
                     write!(f, "CREATE_ACCOUNT")?;
+                }
+                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT) => {
+                    write!(f, "CREATE_IDENTITY_ADVANCED")?;
                 }
                 (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => {
                     write!(f, "CREATE_IDENTITY")?;
@@ -431,9 +441,22 @@ pub fn decompile_instruction<F: fmt::Write>(
             schema,
             royalty_config,
             metadata,
-            access_rules,
         } => {
             f.write_str("PUBLISH_PACKAGE")?;
+            format_typed_value(f, context, code)?;
+            format_typed_value(f, context, schema)?;
+            format_typed_value(f, context, royalty_config)?;
+            format_typed_value(f, context, metadata)?;
+            f.write_str(";")?;
+        }
+        Instruction::PublishPackageAdvanced {
+            code,
+            schema,
+            royalty_config,
+            metadata,
+            access_rules,
+        } => {
+            f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
             format_typed_value(f, context, code)?;
             format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;

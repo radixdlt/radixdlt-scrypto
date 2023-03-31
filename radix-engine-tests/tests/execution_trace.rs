@@ -1,5 +1,5 @@
 use radix_engine::system::kernel_modules::execution_trace::{
-    ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
+    ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
@@ -203,7 +203,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let Origin::ScryptoMethod(FnIdentifier {
+        if let Origin::ScryptoMethod(ApplicationFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -223,7 +223,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -250,7 +250,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
@@ -273,7 +273,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
@@ -296,7 +296,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoFunction(FnIdentifier {
+            Origin::ScryptoFunction(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: PROOF_BLUEPRINT.to_string(),
                 ident: PROOF_DROP_IDENT.to_string()
@@ -319,7 +319,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -343,7 +343,7 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
@@ -352,7 +352,7 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let Origin::ScryptoFunction(FnIdentifier {
+        if let Origin::ScryptoFunction(ApplicationFnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin

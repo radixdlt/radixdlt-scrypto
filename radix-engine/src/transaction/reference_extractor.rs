@@ -62,7 +62,10 @@ pub fn extract_refs_from_instruction(
             global_references.insert(resource_address.clone().into());
             extract_refs_from_value(&args, global_references, local_references);
         }
-        Instruction::PublishPackage { access_rules, .. } => {
+        Instruction::PublishPackage { .. } => {
+            global_references.insert(PACKAGE_PACKAGE.clone().into());
+        }
+        Instruction::PublishPackageAdvanced { access_rules, .. } => {
             global_references.insert(PACKAGE_PACKAGE.clone().into());
             // TODO: Remove and cleanup
             let value: ManifestValue =
@@ -79,9 +82,18 @@ pub fn extract_refs_from_instruction(
             let value: ManifestValue = manifest_decode(&manifest_encode(value).unwrap()).unwrap();
             extract_refs_from_value(&value, global_references, local_references);
         }
-        Instruction::RemoveMetadata { entity_address, .. }
-        | Instruction::SetMethodAccessRule { entity_address, .. } => {
+        Instruction::RemoveMetadata { entity_address, .. } => {
             global_references.insert(to_address(entity_address.clone()).into());
+        }
+        Instruction::SetMethodAccessRule {
+            entity_address,
+            rule,
+            ..
+        } => {
+            global_references.insert(to_address(entity_address.clone()).into());
+            // TODO: Remove and cleanup
+            let value: ManifestValue = manifest_decode(&manifest_encode(rule).unwrap()).unwrap();
+            extract_refs_from_value(&value, global_references, local_references);
         }
         Instruction::RecallResource { vault_id, .. } => {
             // TODO: This needs to be cleaned up

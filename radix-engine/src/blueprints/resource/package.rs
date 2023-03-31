@@ -176,6 +176,7 @@ impl ResourceManagerNativePackage {
                 schema,
                 substates,
                 functions,
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema,
             }
         };
@@ -380,6 +381,7 @@ impl ResourceManagerNativePackage {
                 schema,
                 substates,
                 functions,
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema,
             }
         };
@@ -559,6 +561,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema,
         };
 
@@ -698,6 +701,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         };
 
@@ -763,6 +767,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         };
 
@@ -863,6 +868,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         };
 
@@ -956,6 +962,7 @@ impl ResourceManagerNativePackage {
             substates,
             functions,
             event_schema: btreemap!(),
+            virtual_lazy_load_functions: btreemap!(),
         };
 
         PackageSchema {

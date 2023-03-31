@@ -34,18 +34,23 @@ fn mut_reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::TrackError(err)) => {
+            if let TrackError::SubstateLocked(
                 SubstateId(
                     RENodeId::GlobalObject(..),
                     NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State0)
+                    SubstateOffset::Component(ComponentOffset::State0),
                 ),
-                LockState::Write
-            )))
-        )
+                LockState::Write,
+            ) = **err
+            {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 
@@ -110,17 +115,22 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::TrackError(err)) => {
+            if let TrackError::SubstateLocked(
                 SubstateId(
                     RENodeId::GlobalObject(..),
                     NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State0)
+                    SubstateOffset::Component(ComponentOffset::State0),
                 ),
                 LockState::Read(1),
-            )))
-        )
+            ) = **err
+            {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }

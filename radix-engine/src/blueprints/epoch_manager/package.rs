@@ -100,6 +100,7 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema,
         };
 
@@ -192,6 +193,7 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema,
         };
 
