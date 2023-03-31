@@ -719,11 +719,7 @@ impl WasmiModule {
             GLOBALIZE_OBJECT_FUNCTION_NAME,
             host_globalize_object
         );
-        linker_define!(
-            linker,
-            GET_OBJECT_INFO_FUNCTION_NAME,
-            host_get_object_info
-        );
+        linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

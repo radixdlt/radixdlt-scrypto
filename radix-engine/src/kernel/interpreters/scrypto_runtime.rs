@@ -242,7 +242,10 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn get_object_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_object_info(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let type_info = self.api.get_object_info(node_id)?;

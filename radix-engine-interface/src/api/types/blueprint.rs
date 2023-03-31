@@ -1,8 +1,8 @@
+use crate::data::scrypto::model::Address;
 use crate::ScryptoSbor;
 use radix_engine_common::data::scrypto::model::PackageAddress;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use crate::data::scrypto::model::Address;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {

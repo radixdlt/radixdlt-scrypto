@@ -391,7 +391,11 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .unwrap();
 
         let (blueprint, address) = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, type_parent: Some(address), .. }) => (blueprint, address),
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint,
+                type_parent: Some(address),
+                ..
+            }) => (blueprint, address),
             _ => panic!("Unexpected type"),
         };
         let resource_address: ResourceAddress = address.into();

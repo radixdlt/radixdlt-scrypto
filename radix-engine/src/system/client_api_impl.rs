@@ -52,7 +52,10 @@ where
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             let info = self.get_object_info(node_id)?;
             if !matches!(
-                (info.blueprint.package_address, info.blueprint.blueprint_name.as_str()),
+                (
+                    info.blueprint.package_address,
+                    info.blueprint.blueprint_name.as_str()
+                ),
                 (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
             ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
@@ -174,12 +177,13 @@ where
             match actor {
                 Actor::Method {
                     global_address: Some(address),
-                    blueprint, ..
-                } if parent.eq(blueprint.blueprint_name.as_str()) => {
-                    Some(address)
-                }
+                    blueprint,
+                    ..
+                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
                 _ => {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidChildObjectCreation));
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidChildObjectCreation,
+                    ));
                 }
             }
         } else {
@@ -389,7 +393,9 @@ where
             RENodeId::Object(..) => {
                 let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let blueprint = match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint, global, .. }) if !global => blueprint,
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) if !global => blueprint,
                     _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
                 };
 
@@ -458,7 +464,9 @@ where
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
 
         match type_info_substate {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => *global = true,
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
+                *global = true
+            }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 

@@ -1,7 +1,7 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::{TypeInfoSubstate};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -323,14 +323,8 @@ impl CallFrame {
         };
 
         // Add well-known global refs to current frame
-        frame.add_ref(
-            RENodeId::GlobalObject(RADIX_TOKEN.into()),
-            RefType::Normal,
-        );
-        frame.add_ref(
-            RENodeId::GlobalObject(SYSTEM_TOKEN.into()),
-            RefType::Normal,
-        );
+        frame.add_ref(RENodeId::GlobalObject(RADIX_TOKEN.into()), RefType::Normal);
+        frame.add_ref(RENodeId::GlobalObject(SYSTEM_TOKEN.into()), RefType::Normal);
         frame.add_ref(
             RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RefType::Normal,
@@ -359,10 +353,7 @@ impl CallFrame {
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             RefType::Normal,
         );
-        frame.add_ref(
-            RENodeId::GlobalObject(CLOCK.into()),
-            RefType::Normal,
-        );
+        frame.add_ref(RENodeId::GlobalObject(CLOCK.into()), RefType::Normal);
         frame.add_ref(
             RENodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
             RefType::Normal,
@@ -647,10 +638,7 @@ impl CallFrame {
         }
     }
 
-    pub fn check_node_visibility(
-        &self,
-        node_id: &RENodeId,
-    ) -> Result<RefType, CallFrameError> {
+    pub fn check_node_visibility(&self, node_id: &RENodeId) -> Result<RefType, CallFrameError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }

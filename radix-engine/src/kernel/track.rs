@@ -6,7 +6,7 @@ use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::node_modules::type_info::{TypeInfoSubstate};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -909,11 +909,10 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => (blueprint_name, address),
             _ => panic!("Unexpected object"),
         };
+        let resource_address: ResourceAddress = address.into();
 
         match blueprint_name.as_str() {
             FUNGIBLE_VAULT_BLUEPRINT => {
-                let resource_address: ResourceAddress = address.into();
-
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =
                     self.fetch_substate_from_state_updates(&SubstateId(
@@ -944,15 +943,6 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 }
             }
             NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                let resource_address = self
-                    .fetch_substate(&SubstateId(
-                        *node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::Info),
-                    ))
-                    .non_fungible_vault_info()
-                    .resource_address;
-
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =
                     self.fetch_substate_from_state_updates(&SubstateId(

@@ -17,7 +17,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::{TypeInfoBlueprint};
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -206,7 +206,10 @@ impl AuthModule {
                 None => {
                     return Self::method_authorization_stateless(
                         RefType::Normal,
-                        receiver, object_key, method_key, api,
+                        receiver,
+                        object_key,
+                        method_key,
+                        api,
                     );
                 }
             };
@@ -237,7 +240,9 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get_access_rule(false, &method_key);
+        let method_auth = access_rules
+            .access_rules
+            .get_access_rule(false, &method_key);
         let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
@@ -263,7 +268,9 @@ impl AuthModule {
         let is_direct_access = matches!(ref_type, RefType::DirectAccess);
 
         let method_auth = match object_key {
-            ObjectKey::SELF => access_rules.access_rules.get_access_rule(is_direct_access, &key),
+            ObjectKey::SELF => access_rules
+                .access_rules
+                .get_access_rule(is_direct_access, &key),
             ObjectKey::ChildBlueprint(blueprint_name) => {
                 let child_rules = access_rules
                     .child_blueprint_rules

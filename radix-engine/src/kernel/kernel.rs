@@ -17,7 +17,7 @@ use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::{TypeInfoSubstate};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -126,7 +126,10 @@ where
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
                 if let Ok(info) = api.get_object_info(node_id) {
-                    match (info.blueprint.package_address, info.blueprint.blueprint_name.as_str()) {
+                    match (
+                        info.blueprint.package_address,
+                        info.blueprint.blueprint_name.as_str(),
+                    ) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
                                 RESOURCE_MANAGER_PACKAGE,
@@ -281,16 +284,14 @@ where
                         | ComponentAddress::EddsaEd25519VirtualIdentity(..),
                     )) => {
                         // For virtual accounts and native packages, create a reference directly
-                        self.current_frame
-                            .add_ref(*node_id, RefType::Normal);
+                        self.current_frame.add_ref(*node_id, RefType::Normal);
                         continue;
                     }
                     RENodeId::GlobalObject(Address::Package(package_address))
                         if is_native_package(*package_address) =>
                     {
                         // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                        self.current_frame
-                            .add_ref(*node_id, RefType::Normal);
+                        self.current_frame.add_ref(*node_id, RefType::Normal);
                         continue;
                     }
                     _ => {}
@@ -313,13 +314,13 @@ where
                         .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint, global, .. }) => {
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) => {
                         if *global {
-                            self.current_frame
-                                .add_ref(*node_id, RefType::Normal);
+                            self.current_frame.add_ref(*node_id, RefType::Normal);
                         } else if VaultUtil::is_vault_blueprint(blueprint) {
-                            self.current_frame
-                                .add_ref(*node_id, RefType::DirectAccess);
+                            self.current_frame.add_ref(*node_id, RefType::DirectAccess);
                         } else {
                             return Err(RuntimeError::KernelError(
                                 KernelError::InvalidDirectAccess,
@@ -474,10 +475,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_get_node_visibility_origin(
-        &self,
-        node_id: RENodeId,
-    ) -> Option<RefType> {
+    fn kernel_get_node_visibility_origin(&self, node_id: RENodeId) -> Option<RefType> {
         let visibility = self.current_frame.get_node_visibility(&node_id)?;
         Some(visibility)
     }
@@ -498,10 +496,8 @@ where
                     global_address: Some(address),
                     ..
                 } => {
-                    self.current_frame.add_ref(
-                        RENodeId::GlobalObject(*address),
-                        RefType::Normal,
-                    );
+                    self.current_frame
+                        .add_ref(RENodeId::GlobalObject(*address), RefType::Normal);
                 }
                 _ => {}
             }
@@ -710,8 +706,7 @@ where
                             .map_err(|_| err)
                         {
                             Ok(_) => {
-                                self.current_frame
-                                    .add_ref(node_id, RefType::Normal);
+                                self.current_frame.add_ref(node_id, RefType::Normal);
                                 self.current_frame.acquire_lock(
                                     &mut self.heap,
                                     &mut self.track,

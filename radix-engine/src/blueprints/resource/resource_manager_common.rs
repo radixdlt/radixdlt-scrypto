@@ -163,7 +163,10 @@ fn build_access_rules(
         "recall",
     );
     vault_access_rules.set_direct_access_group(
-        MethodKey::new(NodeModuleId::SELF, NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT),
+        MethodKey::new(
+            NodeModuleId::SELF,
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
+        ),
         "recall",
     );
 

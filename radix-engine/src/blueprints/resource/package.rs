@@ -300,9 +300,11 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
+                        ),
                     output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
+                        ),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
                 },
             );
@@ -399,8 +401,9 @@ impl ResourceManagerNativePackage {
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates
-                .push(aggregator.add_child_type_and_descendents::<FungibleVaultDivisibilitySubstate>());
+            substates.push(
+                aggregator.add_child_type_and_descendents::<FungibleVaultDivisibilitySubstate>(),
+            );
             substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
@@ -489,7 +492,8 @@ impl ResourceManagerNativePackage {
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(),
+                        .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(
+                        ),
                     export_name: FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 },
             );
@@ -516,13 +520,16 @@ impl ResourceManagerNativePackage {
             }
         };
 
-
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleVaultInfoSubstate>());
-            substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            substates.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            substates.push(
+                aggregator.add_child_type_and_descendents::<NonFungibleVaultIdTypeSubstate>(),
+            );
+            substates
+                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -559,9 +566,11 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesInput>(),
+                        .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesInput>(
+                        ),
                     output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(
+                        ),
                     export_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -607,7 +616,8 @@ impl ResourceManagerNativePackage {
                 VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofByAmountOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
@@ -640,9 +650,11 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(),
+                        .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(
+                        ),
                     output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
+                        ),
                     export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );

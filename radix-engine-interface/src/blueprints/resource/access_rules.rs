@@ -253,12 +253,9 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, mutability.into());
     }
 
-    pub fn set_direct_access_group(
-        &mut self,
-        key: MethodKey,
-        group: &str,
-    ) {
-        self.direct_method_auth.insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
+    pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
+        self.direct_method_auth
+            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
     }
 
     pub fn set_method_access_rule_to_group(&mut self, key: MethodKey, group: String) {
