@@ -507,6 +507,11 @@ where
                 }
                 _ => {}
             }
+            let package_address = actor.blueprint().package_address;
+            self.current_frame.add_ref(
+                RENodeId::GlobalObject(package_address.into()),
+                RENodeVisibilityOrigin::Normal,
+            );
         }
 
         actor

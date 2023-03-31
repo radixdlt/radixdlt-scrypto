@@ -77,7 +77,7 @@ pub trait WasmRuntime {
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

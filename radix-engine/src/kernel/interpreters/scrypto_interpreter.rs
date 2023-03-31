@@ -195,9 +195,6 @@ impl ExecutableInvocation for MethodInvocation {
                     _ => {}
                 }
             }
-
-            // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(blueprint.package_address.into()));
         }
 
         let executor = ScryptoExecutor {
@@ -276,11 +273,6 @@ impl ExecutableInvocation for FunctionInvocation {
                     _ => {}
                 }
             }
-
-            // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(
-                self.identifier.0.package_address.into(),
-            ));
         }
 
         let resolved = ResolvedInvocation {

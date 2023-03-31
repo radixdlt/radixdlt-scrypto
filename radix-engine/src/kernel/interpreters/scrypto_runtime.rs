@@ -213,7 +213,7 @@ where
         self.allocate_buffer(buffer)
     }
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let actor = self.api.get_blueprint()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
@@ -400,7 +400,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
