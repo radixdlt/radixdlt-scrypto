@@ -10,7 +10,7 @@ use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -50,9 +50,9 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            let blueprint = self.get_object_type_info(node_id)?;
+            let info = self.get_object_info(node_id)?;
             if !matches!(
-                (blueprint.package_address, blueprint.blueprint_name.as_str()),
+                (info.blueprint.package_address, info.blueprint.blueprint_name.as_str()),
                 (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
             ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
@@ -476,7 +476,7 @@ where
                 }
                 NodeModuleId::AccessRules => {
                     let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -503,7 +503,7 @@ where
                 }
                 NodeModuleId::Metadata => {
                     let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -530,7 +530,7 @@ where
                 }
                 NodeModuleId::ComponentRoyalty => {
                     let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -619,16 +619,16 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
-    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<Blueprint, RuntimeError> {
+    fn get_object_info(&mut self, node_id: RENodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
+        let object_info = match type_info {
+            TypeInfoSubstate::Object(info) => info,
             TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
 
-        Ok(blueprint)
+        Ok(object_info)
     }
 
     fn get_key_value_store_info(
@@ -831,7 +831,7 @@ where
                     NodeModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    NodeModuleId::SELF => self.get_object_type_info(node_id),
+                    NodeModuleId::SELF => self.get_object_info(node_id).map(|i| i.blueprint),
                     NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),

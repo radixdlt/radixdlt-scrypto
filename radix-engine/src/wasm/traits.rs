@@ -48,7 +48,7 @@ pub trait WasmRuntime {
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_type_info(
+    fn get_object_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

@@ -9,7 +9,7 @@ use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoSubstate};
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::{

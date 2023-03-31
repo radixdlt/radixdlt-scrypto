@@ -18,7 +18,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint};
+use crate::system::node_modules::type_info::{TypeInfoBlueprint};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -126,8 +126,8 @@ impl AuthModule {
 
             (RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
-                let blueprint = api.get_object_type_info(node_id)?;
-                if VaultUtil::is_vault_blueprint(&blueprint) {
+                let info = api.get_object_info(node_id)?;
+                if VaultUtil::is_vault_blueprint(&info.blueprint) {
                     let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
                         RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                     )?;
@@ -140,7 +140,7 @@ impl AuthModule {
                             LockFlags::read_only(),
                         )?;
                         let resource_address =
-                            if blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
+                            if info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
                                 let substate_ref: &FungibleVaultInfoSubstate =
                                     api.kernel_get_substate_ref(handle)?;
                                 substate_ref.resource_address
@@ -159,7 +159,7 @@ impl AuthModule {
                     let auth = match visibility {
                         RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
                             &RENodeId::GlobalObject(parent.into()),
-                            ObjectKey::ChildBlueprint(blueprint.blueprint_name),
+                            ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
                             method_key,
                             api,
                         )?,
@@ -184,7 +184,7 @@ impl AuthModule {
                             {
                                 let access_rules = substate
                                     .child_blueprint_rules
-                                    .get(blueprint.blueprint_name.as_str())
+                                    .get(info.blueprint.blueprint_name.as_str())
                                     .unwrap();
                                 let access_rule = access_rules.get_group_access_rule("recall");
                                 let authorization = convert_contextless(&access_rule);

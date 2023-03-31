@@ -4,7 +4,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -27,8 +27,8 @@ impl NodeMoveModule {
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Object(..) => {
-                let blueprint = api.get_object_type_info(node_id)?;
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                let info = api.get_object_info(node_id)?;
+                match (info.blueprint.package_address, info.blueprint.blueprint_name.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                         if matches!(callee, Actor::Function { .. })
                             && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)

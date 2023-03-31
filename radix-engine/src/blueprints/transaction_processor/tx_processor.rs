@@ -5,7 +5,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -719,8 +719,8 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            let blueprint = api.get_object_type_info(*owned_node)?;
-            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+            let info = api.get_object_info(*owned_node)?;
+            match (info.blueprint.package_address, info.blueprint.blueprint_name.as_str()) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(owned_node.clone().into());
                     worktop.sys_put(bucket, api)?;

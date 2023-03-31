@@ -17,7 +17,7 @@ use crate::kernel::kernel_api::{
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;

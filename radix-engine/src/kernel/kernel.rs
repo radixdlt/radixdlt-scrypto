@@ -17,7 +17,7 @@ use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoSubstate};
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -125,8 +125,8 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok(blueprint) = api.get_object_type_info(node_id) {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                if let Ok(info) = api.get_object_info(node_id) {
+                    match (info.blueprint.package_address, info.blueprint.blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
                                 RESOURCE_MANAGER_PACKAGE,
@@ -380,20 +380,20 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let blueprint = self.get_object_type_info(node_id.clone())?;
+            let info = self.get_object_info(node_id.clone())?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
-                blueprint.package_address,
-                blueprint.blueprint_name.as_str(),
+                info.blueprint.package_address,
+                info.blueprint.blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        package_address: blueprint.package_address,
-                        blueprint_name: blueprint.blueprint_name,
+                        package_address: info.blueprint.package_address,
+                        blueprint_name: info.blueprint.blueprint_name,
                     })),
                 ));
             }

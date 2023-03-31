@@ -6,7 +6,7 @@ use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoSubstate};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
