@@ -11,7 +11,6 @@ use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateId, Subst
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;
 use super::track::{Track, TrackError};
-use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
@@ -111,7 +110,6 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-    #[trace_resources(info = "CallFrame")]
     pub fn acquire_lock<'s>(
         &mut self,
         heap: &mut Heap,
@@ -188,7 +186,6 @@ impl CallFrame {
         Ok(lock_handle)
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn drop_lock<'s>(
         &mut self,
         heap: &mut Heap,
@@ -298,7 +295,6 @@ impl CallFrame {
         Ok(())
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn get_lock_info(&self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
         let substate_lock = self
             .locks
@@ -319,7 +315,6 @@ impl CallFrame {
             .ok_or(KernelError::LockDoesNotExist(lock_handle))
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn new_root() -> Self {
         let mut frame = Self {
             depth: 0,
@@ -368,7 +363,6 @@ impl CallFrame {
         frame
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
         actor: Actor,
@@ -400,7 +394,6 @@ impl CallFrame {
         Ok(frame)
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn update_upstream(
         from: &mut CallFrame,
         to: &mut CallFrame,
@@ -432,7 +425,6 @@ impl CallFrame {
         Ok(())
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn drop_all_locks<'s>(
         &mut self,
         heap: &mut Heap,
@@ -462,7 +454,6 @@ impl CallFrame {
         }
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn create_node<'f, 's>(
         &mut self,
         node_id: RENodeId,
@@ -539,19 +530,16 @@ impl CallFrame {
         Ok(())
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn add_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibilityOrigin) {
         self.immortal_node_refs
             .insert(node_id, RENodeRefData::new(visibility));
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
     /// Removes node from call frame and re-owns any children
-    #[trace_resources(info = "CallFrame")]
     pub fn remove_node(
         &mut self,
         heap: &mut Heap,
@@ -594,7 +582,6 @@ impl CallFrame {
         Ok(substate_ref)
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn get_ref<'f, 's>(
         &mut self,
         lock_handle: LockHandle,
@@ -613,7 +600,6 @@ impl CallFrame {
         self.get_substate(heap, track, node_id, *module_id, &offset)
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn get_ref_mut<'f, 's>(
         &'f mut self,
         lock_handle: LockHandle,
@@ -645,7 +631,6 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RENodeVisibilityOrigin> {
         if self.owned_root_nodes.contains_key(node_id) {
             Some(RENodeVisibilityOrigin::Normal)
@@ -658,7 +643,6 @@ impl CallFrame {
         }
     }
 
-    #[trace_resources(info = "CallFrame")]
     pub fn check_node_visibility(
         &self,
         node_id: &RENodeId,
