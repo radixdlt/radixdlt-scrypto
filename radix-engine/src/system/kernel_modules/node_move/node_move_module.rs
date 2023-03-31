@@ -4,7 +4,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -41,7 +41,7 @@ impl NodeMoveModule {
                         let mut changed_to_restricted = true;
                         if let Actor::Method { node_id, .. } = callee {
                             let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-                            if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+                            if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
                                 if blueprint.eq(&Blueprint::new(
                                     &RESOURCE_MANAGER_PACKAGE,
                                     AUTH_ZONE_BLUEPRINT,

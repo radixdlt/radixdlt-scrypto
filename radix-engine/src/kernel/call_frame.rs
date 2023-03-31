@@ -1,7 +1,7 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -246,7 +246,7 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => {
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                             SubstateProperties::verify_can_own(
                                 &offset,
                                 blueprint.package_address,
@@ -496,7 +496,7 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => {
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                             SubstateProperties::verify_can_own(
                                 &offset,
                                 blueprint.package_address,

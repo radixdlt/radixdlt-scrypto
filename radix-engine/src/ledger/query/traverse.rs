@@ -2,7 +2,7 @@ use crate::blueprints::resource::{
     FungibleVaultInfoSubstate, NonFungibleVaultInfoSubstate, VaultUtil,
 };
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -116,7 +116,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let type_substate: TypeInfoSubstate = runtime_substate.into();
 
                 match type_substate {
-                    TypeInfoSubstate::Object { blueprint, .. }
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                         if VaultUtil::is_vault_blueprint(&blueprint) =>
                     {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(

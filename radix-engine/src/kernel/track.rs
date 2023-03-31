@@ -6,7 +6,7 @@ use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -877,7 +877,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .type_info()
             .clone();
 
-        if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+        if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
             VaultUtil::is_vault_blueprint(&blueprint)
         } else {
             false
@@ -898,14 +898,14 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .clone();
 
         let blueprint_name = match type_info {
-            TypeInfoSubstate::Object {
+            TypeInfoSubstate::Object(ObjectInfo {
                 blueprint:
                     Blueprint {
                         package_address,
                         blueprint_name,
                     },
                 ..
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => blueprint_name,
+            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => blueprint_name,
             _ => panic!("Unexpected object"),
         };
 

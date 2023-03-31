@@ -17,7 +17,7 @@ use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -313,7 +313,7 @@ where
                         .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object { blueprint, global, .. } => {
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, global, .. }) => {
                         if *global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);

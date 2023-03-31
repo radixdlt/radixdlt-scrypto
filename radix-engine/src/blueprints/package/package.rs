@@ -7,7 +7,7 @@ use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
@@ -135,11 +135,11 @@ where
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
             parent: None,
-        }),
+        })),
     );
     node_modules.insert(
         NodeModuleId::Metadata,

@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, LockFlags};
@@ -100,11 +100,11 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
                     parent: None,
-                })
+                }))
             ),
         )?;
         let proof_id = node_id.into();
@@ -141,11 +141,11 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
                     parent: None,
-                })
+                }))
             ),
         )?;
         let proof_id = node_id.into();
@@ -182,11 +182,11 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
                     parent: None,
-                })
+                }))
             ),
         )?;
         let proof_id = node_id.into();

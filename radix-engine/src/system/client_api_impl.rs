@@ -10,7 +10,7 @@ use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -366,11 +366,11 @@ where
             node_init,
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
-                    TypeInfoSubstate::Object {
+                    TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address, blueprint_ident),
                         global: false,
                         parent,
-                    }
+                    })
                 ),
             ),
         )?;
@@ -389,7 +389,7 @@ where
             RENodeId::Object(..) => {
                 let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let blueprint = match type_info {
-                    TypeInfoSubstate::Object { blueprint, global, .. } if !global => blueprint,
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, global, .. }) if !global => blueprint,
                     _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
                 };
 
@@ -458,7 +458,7 @@ where
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
 
         match type_info_substate {
-            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => *global = true,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
@@ -622,7 +622,7 @@ where
     fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<Blueprint, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
             TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }

@@ -14,7 +14,7 @@ use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
@@ -369,14 +369,14 @@ impl TestRunner {
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         )) {
             match output.substate.type_info() {
-                TypeInfoSubstate::Object {
+                TypeInfoSubstate::Object(ObjectInfo {
                     blueprint:
                         Blueprint {
                             package_address,
                             blueprint_name,
                         },
                     ..
-                } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => {
+                }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => {
                     match blueprint_name.as_str() {
                         FUNGIBLE_VAULT_BLUEPRINT => self.inspect_fungible_vault(vault_id),
                         NON_FUNGIBLE_VAULT_BLUEPRINT => self
@@ -1233,7 +1233,7 @@ impl TestRunner {
                             .clone();
 
                         match type_info {
-                            TypeInfoSubstate::Object { blueprint, .. } => (
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                                 blueprint.package_address,
                                 blueprint.blueprint_name,
                                 *local_type_index,

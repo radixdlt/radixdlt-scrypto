@@ -17,7 +17,7 @@ use crate::kernel::kernel_api::{
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
@@ -113,7 +113,7 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
-                    TypeInfoSubstate::Object { blueprint, global, .. } => {
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, global, .. }) => {
                         let global_address = if global {
                             let address: Address = self.identifier.0.into();
                             Some(address)

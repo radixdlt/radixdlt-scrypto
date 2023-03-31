@@ -18,7 +18,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoBlueprint};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -242,7 +242,7 @@ impl AuthModule {
         let (blueprint_schema, index) = {
             let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
             let blueprint = match type_info {
-                TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
                 TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::SystemError(SystemError::NotAnObject))
                 }
@@ -468,11 +468,11 @@ impl KernelModule for AuthModule {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => RuntimeSubstate::AuthZone(auth_zone)
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     parent: None,
-                })
+                }))
             ),
         )?;
 

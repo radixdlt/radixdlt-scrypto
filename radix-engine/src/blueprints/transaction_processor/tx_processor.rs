@@ -5,7 +5,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::{ObjectInfo, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -79,11 +79,11 @@ impl TransactionProcessorBlueprint {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                     global: false,
                     parent: None,
-                })
+                }))
             ),
         )?;
         let worktop = Worktop(worktop_node_id.into());
