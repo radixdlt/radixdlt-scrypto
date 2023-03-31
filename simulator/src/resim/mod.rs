@@ -352,7 +352,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let type_info = output.substate.type_info();
 
     match type_info {
-        TypeInfoSubstate::Object { blueprint, .. } => Ok(blueprint.clone()),
+        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -392,7 +392,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                         .clone();
 
                     match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => (
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                             blueprint.package_address,
                             blueprint.blueprint_name,
                             *local_type_index,

@@ -50,13 +50,6 @@ pub struct VaultGetAmountInput {}
 
 pub type VaultGetAmountOutput = Decimal;
 
-pub const VAULT_GET_RESOURCE_ADDRESS_IDENT: &str = "get_resource_address";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultGetResourceAddressInput {}
-
-pub type VaultGetResourceAddressOutput = ResourceAddress;
-
 pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

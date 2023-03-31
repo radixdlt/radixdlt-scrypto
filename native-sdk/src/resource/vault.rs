@@ -196,21 +196,4 @@ impl Vault {
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
-
-    pub fn sys_resource_address<Y, E: Debug + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, E>
-    where
-        Y: ClientSubstateApi<E> + ClientObjectApi<E>,
-    {
-        
-        let rtn = api.call_method(
-            &RENodeId::Object(self.0),
-            VAULT_GET_RESOURCE_ADDRESS_IDENT,
-            scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
 }

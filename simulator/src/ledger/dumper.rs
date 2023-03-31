@@ -110,7 +110,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             let raw_state = IndexedScryptoValue::from_scrypto_value(state.0);
             let blueprint = match type_info_substate {
-                TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
                 _ => panic!("Unexpected"),
             };
             let access_rules = access_rules_chain_substate.access_rules;
@@ -392,7 +392,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         let (blueprint, address) = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, type_parent: Some(address), .. }) => (blueprint, address),
-            TypeInfoSubstate::KeyValueStore(..) => panic!("Unexpected type"),
+            _ => panic!("Unexpected type"),
         };
         let resource_address: ResourceAddress = address.into();
 

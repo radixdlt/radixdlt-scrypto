@@ -357,17 +357,6 @@ impl NonFungibleVaultBlueprint {
 
         Ok(())
     }
-
-    pub fn get_resource_address<Y>(
-        receiver: &RENodeId,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let info = Self::get_info(receiver, api)?;
-        Ok(info.resource_address)
-    }
 }
 
 pub struct NonFungibleVault;

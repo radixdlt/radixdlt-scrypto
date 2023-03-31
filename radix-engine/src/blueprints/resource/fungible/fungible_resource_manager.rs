@@ -337,7 +337,6 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),

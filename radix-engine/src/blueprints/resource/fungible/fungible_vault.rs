@@ -317,17 +317,6 @@ impl FungibleVaultBlueprint {
 
         Ok(())
     }
-
-    pub fn get_resource_address<Y>(
-        receiver: &RENodeId,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let resource_address: ResourceAddress = api.get_object_info(*receiver)?.type_parent.unwrap().into();
-        Ok(resource_address)
-    }
 }
 
 pub struct FungibleVault;

@@ -147,14 +147,8 @@ impl ScryptoVault for Vault {
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                &RENodeId::Object(self.0),
-                VAULT_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        let info = env.get_object_info(RENodeId::Object(self.0)).unwrap();
+        info.type_parent.unwrap().into()
     }
 
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {

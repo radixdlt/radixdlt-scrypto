@@ -202,19 +202,19 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        92500 /* CreateNode */
-        + 190500 /* DropLock */
-        + 90000 /* DropNode */
-        + 25340 /* Invoke */
-        + 193000 /* LockSubstate */
-        + 2569870 /* ReadSubstate */
-        + 137500 /* RunNative */
+        90000 /* CreateNode */
+        + 185500 /* DropLock */
+        + 87500 /* DropNode */
+        + 24610 /* Invoke */
+        + 188000 /* LockSubstate */
+        + 2616610 /* ReadSubstate */
+        + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1642570 /* RunWasm */
+        + 1665260 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 22000, /* WriteSubstate */
+        + 21500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
