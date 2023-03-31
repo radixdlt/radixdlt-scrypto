@@ -25,6 +25,12 @@ impl FnKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum ObjectKey {
+    SELF,
+    ChildBlueprint(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
     pub node_module_id: NodeModuleId,
     pub ident: String,

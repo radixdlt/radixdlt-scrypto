@@ -122,39 +122,7 @@ impl AuthModule {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1
                 ) =>
             {
-                match ident {
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule_and_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_method_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule_and_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_group_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    _ => MethodAuthorization::AllowAll,
-                }
+                AccessRulesNativePackage::authorization(node_id, module_id, ident, args, api)?
             }
 
             (RENodeId::Object(object_id), ..) => {
