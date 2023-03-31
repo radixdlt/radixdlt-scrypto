@@ -162,7 +162,7 @@ impl AuthModule {
                 let blueprint = api.get_object_type_info(node_id)?;
                 match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
-                        let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
+                        let (visibility, _) = api.kernel_get_node_info(node_id).ok_or(
                             RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                         )?;
 
