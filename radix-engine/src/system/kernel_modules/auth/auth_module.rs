@@ -136,6 +136,14 @@ impl AuthModule {
 
                     // TODO: Revisit what the correct abstraction is for visibility in the auth module
                     let method_key = MethodKey::new(*module_id, ident);
+                    let auth = Self::method_authorization_stateless(
+                        visibility,
+                        &RENodeId::GlobalObject(parent.into()),
+                        ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
+                        method_key,
+                        api,
+                    )?;
+                    /*
                     let auth = match visibility {
                         RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
                             visibility,
@@ -181,6 +189,7 @@ impl AuthModule {
                             auth
                         }
                     };
+                     */
 
                     auth
                 } else {

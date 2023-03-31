@@ -135,11 +135,6 @@ fn build_access_rules(
         withdraw_access_rule,
         withdraw_mutability,
     );
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "recall",
-        recall_access_rule,
-        recall_mutability,
-    );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT),
         "withdraw",
@@ -157,6 +152,19 @@ fn build_access_rules(
         MethodKey::new(NodeModuleId::SELF, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
         "withdraw",
         DenyAll,
+    );
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "recall",
+        recall_access_rule,
+        recall_mutability,
+    );
+    vault_access_rules.set_direct_access_group(
+        MethodKey::new(NodeModuleId::SELF, VAULT_RECALL_IDENT),
+        "recall",
+    );
+    vault_access_rules.set_direct_access_group(
+        MethodKey::new(NodeModuleId::SELF, NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT),
+        "recall",
     );
 
     vault_access_rules.set_method_access_rule_and_mutability(
