@@ -388,7 +388,7 @@ impl WasmerModule {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .get_actor()
+                .get_blueprint()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

@@ -333,7 +333,7 @@ fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<
 fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.get_actor().map(|buffer| buffer.0)
+    runtime.get_blueprint().map(|buffer| buffer.0)
 }
 
 fn get_auth_zone(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {

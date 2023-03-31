@@ -127,13 +127,15 @@ impl AuthModule {
                 let node_id = RENodeId::Object(*object_id);
                 let info = api.get_object_info(node_id)?;
                 if let Some(parent) = info.type_parent {
-                    let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
-                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
-                    )?;
+                    let (ref_type, _) =
+                        api.kernel_get_node_info(node_id)
+                            .ok_or(RuntimeError::CallFrameError(
+                                CallFrameError::RENodeNotVisible(node_id),
+                            ))?;
 
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = Self::method_authorization_stateless(
-                        visibility,
+                        ref_type,
                         &RENodeId::GlobalObject(parent.into()),
                         ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
                         method_key,
