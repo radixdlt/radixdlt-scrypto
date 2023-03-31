@@ -746,7 +746,13 @@ where
                 .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
         let ret = substate_ref.to_scrypto_value();
 
-        KernelModuleMixer::on_read_substate(self, lock_handle, ret.as_slice().len())?;
+        // TODO: Design special package code loading cost rule
+        let size = match substate_ref {
+            SubstateRef::PackageCode(..) => 0,
+            _ => ret.as_slice().len(),
+        };
+
+        KernelModuleMixer::on_read_substate(self, lock_handle, size)?;
 
         Ok(ret)
     }
@@ -780,12 +786,6 @@ where
         &'a mut S: From<SubstateRefMut<'a>>,
         'b: 'a,
     {
-        // A little hacky: this post sys call is called before the sys call happens due to
-        // a mutable borrow conflict for substate ref.
-        // Some modules (specifically: ExecutionTraceModule) require that all
-        // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop() so that it's actually
-        // after the sys call processing, not before.
         KernelModuleMixer::on_write_substate(
             self,
             lock_handle,
@@ -809,20 +809,12 @@ where
         package_address: PackageAddress,
         handle: LockHandle,
     ) -> Result<W::WasmInstance, RuntimeError> {
-        let substate_ref = self
-            .current_frame
-            .get_ref(handle, &mut self.heap, &mut self.track)?;
-        let code: &PackageCodeSubstate = substate_ref.into();
-        let code_size = code.code().len();
+        let package_code: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
+        let code = package_code.code.clone();
 
-        let instance = self
+        Ok(self
             .scrypto_interpreter
-            .create_instance(package_address, &code.code);
-
-        // TODO: move before create_instance() call
-        KernelModuleMixer::on_read_substate(self, handle, code_size)?;
-
-        Ok(instance)
+            .create_instance(package_address, &code))
     }
 }
 

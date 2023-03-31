@@ -165,3 +165,40 @@ Please follow the convention below for commit messages:
 *  Use the imperative mood in the subject line
 *  Wrap the body at 72 characters
 *  Use the body to explain what and why vs. how, separating paragraphs with an empty line.
+
+### Deterministic execution
+
+Since the Radix Engine is used in a consensus-driven environment, all results of a particular
+transaction (e.g. final state changes and emitted events) must always be exactly the same, no matter
+where and when the transaction is executed.
+
+However, some wide-spread programming concepts and data structures are inherently non-deterministic,
+so - by convention - we choose to **not** use them at all (rather than to analyze their potential
+impact on non-deterministic results on a per-usage basis).
+
+Apart from some obvious "things to avoid" (like, using a random value, or a wall-clock), please
+observe the detailed rules below:
+
+#### HashMap and HashSet usage
+
+We explicitly **ban** the plain `HashMap` and `HashSet` usage from production code, including macro
+definitions (i.e. these very structs may only be used in tests and test utilities).
+
+However, hash-based structures are useful and have wonderful runtime characteristics, and actually
+only introduce non-deterministic behaviors when iterated over. Hence, we provide the following
+ways to use them:
+
+- Inside **macro definitions**, **use the tree-based replacements** (`BTreeMap` and `BTreeSet`).
+  - The reasoning is: macros are evaluated during compilation, so we do not need O(1) runtime
+    performance, and we prefer to avoid pulling in dependencies to other alternatives.
+- If you do **not need to iterate** over the collection (e.g. use a `HashMap` only in a "put + get"
+  manner), then **use our custom wrapper** `NonIterMap`, which exposes the deterministic part of the
+  `HashMap`'s API (i.e. excludes iteration).
+- If elements of the iterated collection have some well-defined, intuitive natural ordering, then
+  **use the tree-based replacements** (`BTreeMap` and `BTreeSet`).
+- If you need to iterate over the collection in some **custom order** (e.g. order of insertion), or 
+  if you do not care about the order at all, then **use the indexed alternative**, `IndexMap` (we
+  export it from an external library).
+  - It is essentially a `Vec`, with a `HashMap` on the side (for O(1) access), so it can accommodate
+    arbitrary (re-)ordering of elements (having methods like `.move_index(from, to)` and
+    `sort_by()`).
