@@ -39,7 +39,6 @@ impl IdAllocator {
         Ok(())
     }
 
-    #[trace_resources]
     pub fn take_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.last_mut().expect("No frame found");
         let frame_allocated = ids.remove(&node_id);

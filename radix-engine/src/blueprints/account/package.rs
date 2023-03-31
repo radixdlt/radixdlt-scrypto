@@ -334,7 +334,6 @@ impl AccountNativePackage {
         }
     }
 
-    #[trace_resources]
     fn create_global<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
