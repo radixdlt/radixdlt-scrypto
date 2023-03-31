@@ -1,11 +1,13 @@
 use sbor::rust::str::FromStr;
 
+/// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
+/// byte-based / UTF-8 index.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
-    /// The start of the span, inclusive
-    pub start: (usize, usize),
+    /// The start of the span, exclusive
+    pub start: usize,
     /// The end of the span, inclusive
-    pub end: (usize, usize),
+    pub end: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -295,7 +297,7 @@ impl Lexer {
             },
             _ => Err(self.unexpected_char()),
         }
-        .map(|kind| self.new_token(kind, start))
+        .map(|kind| self.new_token(kind, start, self.current))
     }
 
     fn parse_int<T: FromStr>(
@@ -349,7 +351,7 @@ impl Lexer {
         }
         self.advance()?;
 
-        Ok(self.new_token(TokenKind::StringLiteral(s), start))
+        Ok(self.new_token(TokenKind::StringLiteral(s), start, self.current))
     }
 
     fn read_utf16_unit(&mut self) -> Result<u32, LexerError> {
@@ -466,7 +468,7 @@ impl Lexer {
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
-        .map(|kind| self.new_token(kind, start))
+        .map(|kind| self.new_token(kind, start, self.current))
     }
 
     fn tokenize_punctuation(&mut self) -> Result<Token, LexerError> {
@@ -484,31 +486,13 @@ impl Lexer {
             }
         };
 
-        Ok(self.new_token(token_kind, start))
+        Ok(self.new_token(token_kind, start, self.current))
     }
 
-    fn index_to_coordinate(&self, index_inclusive: usize) -> (usize, usize) {
-        // better to track this dynamically, instead of computing for each token
-        let mut row = 1;
-        let mut col = 1;
-        for i in 0..index_inclusive + 1 {
-            if self.text[i] == '\n' {
-                row += 1;
-                col = 1;
-            } else {
-                col += 1;
-            }
-        }
-        (row, col)
-    }
-
-    fn new_token(&self, kind: TokenKind, start: usize) -> Token {
+    fn new_token(&self, kind: TokenKind, start: usize, end: usize) -> Token {
         Token {
             kind,
-            span: Span {
-                start: self.index_to_coordinate(start),
-                end: self.index_to_coordinate(self.current - 1),
-            },
+            span: Span { start, end },
         }
     }
 

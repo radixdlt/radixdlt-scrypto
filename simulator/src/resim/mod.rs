@@ -393,10 +393,9 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
 
                     match type_info {
                         TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
+                            blueprint,
                             ..
-                        } => (package_address, blueprint_name, *local_type_index),
+                        } => (blueprint.package_address, blueprint.blueprint_name, *local_type_index),
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
