@@ -11,7 +11,6 @@ use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::{

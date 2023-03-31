@@ -33,7 +33,7 @@ impl BucketInfoSubstate {
     {
         let handle =
             api.sys_lock_substate(receiver, &BucketOffset::Info.into(), LockFlags::read_only())?;
-        let substate_ref: &BucketInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: BucketInfoSubstate = api.kernel_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
         Ok(info)
@@ -52,7 +52,7 @@ impl FungibleBucket {
             &BucketOffset::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LiquidFungibleResource = api.kernel_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
@@ -67,7 +67,7 @@ impl FungibleBucket {
             &BucketOffset::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LockedFungibleResource = api.kernel_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
@@ -213,7 +213,7 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
@@ -228,7 +228,7 @@ impl NonFungibleBucket {
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.kernel_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
@@ -253,7 +253,7 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
         let ids = substate_ref.ids().clone();
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -271,7 +271,7 @@ impl NonFungibleBucket {
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.kernel_read_substate_typed(handle)?;
         let ids = substate_ref.ids();
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -290,8 +290,7 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleResource =
-            api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
@@ -314,8 +313,7 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleResource =
-            api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
         let taken = substate_ref
             .take_by_ids(ids)
             .map_err(BucketError::ResourceError)
@@ -341,8 +339,7 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleResource =
-            api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
         substate_ref.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),

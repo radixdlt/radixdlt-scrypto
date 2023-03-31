@@ -20,7 +20,6 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -96,8 +95,7 @@ impl AuthModule {
                 SubstateKey::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
-            let package_access_rules: &FunctionAccessRulesSubstate =
-                api.kernel_get_substate_ref(handle)?;
+            let package_access_rules: FunctionAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
             let function_key = FnKey::new(identifier.1.to_string(), identifier.2.to_string());
             let access_rule = package_access_rules
                 .access_rules
@@ -172,8 +170,7 @@ impl AuthModule {
                                 VaultOffset::Vault.into(),
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref: &VaultInfoSubstate =
-                                api.kernel_get_substate_ref(handle)?;
+                            let substate_ref: VaultInfoSubstate = api.kernel_read_substate_typed(handle)?;
                             let resource_address = substate_ref.resource_address;
                             api.kernel_drop_lock(handle)?;
                             resource_address
@@ -196,8 +193,7 @@ impl AuthModule {
                                     LockFlags::read_only(),
                                 )?;
 
-                                let substate: &MethodAccessRulesSubstate =
-                                    api.kernel_get_substate_ref(handle)?;
+                                let substate: MethodAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
 
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
@@ -284,7 +280,7 @@ impl AuthModule {
                 PackageOffset::Package.into(),
                 LockFlags::read_only(),
             )?;
-            let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+            let package: PackageInfoSubstate = api.kernel_read_substate_typed(handle)?;
             let schema = package
                 .schema
                 .blueprints
@@ -310,7 +306,7 @@ impl AuthModule {
                 offset,
                 LockFlags::read_only(),
             )?;
-            let state: &ComponentStateSubstate = api.kernel_get_substate_ref(handle)?;
+            let state: ComponentStateSubstate = api.kernel_read_substate_typed(handle)?;
             let state = IndexedScryptoValue::from_scrypto_value(state.0.clone());
             api.kernel_drop_lock(handle)?;
             state
@@ -322,7 +318,7 @@ impl AuthModule {
             AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
-        let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
+        let access_rules: MethodAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
 
         let method_auth = access_rules.access_rules.get_access_rule(&key);
         let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
@@ -344,7 +340,7 @@ impl AuthModule {
             AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
-        let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
+        let access_rules: MethodAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
 
         let method_auth = access_rules.access_rules.get_access_rule(&key);
 

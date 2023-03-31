@@ -203,7 +203,7 @@ impl KernelModule for CostingModule {
                 RoyaltyOffset::Royalty.into(),
                 LockFlags::read_only(),
             )?;
-            let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
+            let substate: ComponentRoyaltyConfigSubstate = api.kernel_read_substate_typed(handle)?;
             let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
@@ -214,8 +214,7 @@ impl KernelModule for CostingModule {
                     RoyaltyOffset::Royalty.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate: &mut ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_get_substate_ref_mut(handle)?;
+                let mut substate: mut ComponentRoyaltyAccumulatorSubstate = api.kernel_read_substate_typed_mut(handle)?;
                 let vault_id = if let Some(vault) = substate.royalty_vault {
                     vault.id()
                 } else {

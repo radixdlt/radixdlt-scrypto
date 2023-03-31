@@ -201,8 +201,7 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         let bucket_id = {
-            let resource_manager: &mut FungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref_mut(resman_handle)?;
+            let resource_manager: mut FungibleResourceManagerSubstate = api.kernel_read_substate_typed_mut(resman_handle)?;
             let divisibility = resource_manager.divisibility;
             let resource_type = ResourceType::Fungible { divisibility };
 
@@ -280,8 +279,7 @@ impl FungibleResourceManagerBlueprint {
                 // Check if resource matches
                 // TODO: Move this check into actor check
                 {
-                    let resource_manager: &mut FungibleResourceManagerSubstate =
-                        api.kernel_get_substate_ref_mut(resman_handle)?;
+                    let resource_manager: mut FungibleResourceManagerSubstate = api.kernel_read_substate_typed_mut(resman_handle)?;
                     if dropped_bucket.info.resource_address != resource_manager.resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::ResourceManagerError(
@@ -318,8 +316,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &FungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: FungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let divisibility = resource_manager.divisibility;
         let bucket_id = api.new_object(
@@ -350,8 +347,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &FungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: FungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let divisibility = resource_manager.divisibility;
         let info = VaultInfoSubstate {
@@ -387,8 +383,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &FungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: FungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_type = ResourceType::Fungible {
             divisibility: resource_manager.divisibility,
         };
@@ -408,8 +403,7 @@ impl FungibleResourceManagerBlueprint {
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
-        let resource_manager: &FungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: FungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let total_supply = resource_manager.total_supply;
         Ok(total_supply)
     }

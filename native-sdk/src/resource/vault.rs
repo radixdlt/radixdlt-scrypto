@@ -3,7 +3,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;

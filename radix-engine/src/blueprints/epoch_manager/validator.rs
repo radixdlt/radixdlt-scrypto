@@ -82,11 +82,11 @@ impl ValidatorBlueprint {
 
         // Update EpochManager
         {
-            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+            let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
-                let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+                let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
                 let key = validator.key;
                 let validator_address = validator.address;
                 let manager = validator.manager;
@@ -178,7 +178,7 @@ impl ValidatorBlueprint {
 
         // Stake
         let lp_token_bucket = {
-            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+            let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
@@ -199,7 +199,7 @@ impl ValidatorBlueprint {
 
         // Update EpochManager
         {
-            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+            let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
             if validator.is_registered {
                 let receiver = validator.manager;
                 let key = validator.key;
@@ -252,7 +252,7 @@ impl ValidatorBlueprint {
 
         // Unstake
         let (unstake_bucket, _) = {
-            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+            let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
 
             let manager = validator.manager;
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
@@ -277,8 +277,7 @@ impl ValidatorBlueprint {
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let epoch_manager: &EpochManagerSubstate =
-                api.kernel_get_substate_ref(manager_handle)?;
+            let epoch_manager: EpochManagerSubstate = api.kernel_read_substate_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
             let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
             api.sys_drop_lock(manager_handle)?;
@@ -295,11 +294,11 @@ impl ValidatorBlueprint {
 
         // Update Epoch Manager
         {
-            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+            let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
-                let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+                let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
                 let manager = validator.manager;
                 let validator_address = validator.address;
                 let update = if stake_amount.is_zero() {
@@ -342,7 +341,7 @@ impl ValidatorBlueprint {
             &ValidatorOffset::Validator.into(),
             LockFlags::read_only(),
         )?;
-        let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
+        let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
         let manager = validator.manager;
@@ -362,7 +361,7 @@ impl ValidatorBlueprint {
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: &EpochManagerSubstate = api.kernel_get_substate_ref(mgr_handle)?;
+            let mgr_substate: EpochManagerSubstate = api.kernel_read_substate_typed(mgr_handle)?;
             let epoch = mgr_substate.epoch;
             api.sys_drop_lock(mgr_handle)?;
             epoch

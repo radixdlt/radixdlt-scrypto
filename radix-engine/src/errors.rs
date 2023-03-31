@@ -137,7 +137,6 @@ pub enum KernelError {
     ContainsDuplicatedOwns,
     StoredNodeRemoved(NodeId),
     RENodeGlobalizeTypeNotAllowed(NodeId),
-    TrackError(Box<TrackError>),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     BlobNotFound(Hash),
@@ -189,7 +188,6 @@ pub enum CallFrameError {
     RENodeNotVisible(NodeId),
     RENodeNotOwned(NodeId),
     MovingLockedRENode(NodeId),
-    FailedToMoveSubstateToTrack(Box<TrackError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -338,6 +336,7 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
+
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),

@@ -1,6 +1,5 @@
 use crate::blueprints::resource::MethodKey;
 use crate::types::*;
-use crate::types::*;
 use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;

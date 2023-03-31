@@ -32,7 +32,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &AddressDisplayContext<'a>,
+        _context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
             Self::Function(node_id, node_module_id, blueprint_name) => {

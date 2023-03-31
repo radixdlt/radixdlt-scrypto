@@ -8,7 +8,6 @@ use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;

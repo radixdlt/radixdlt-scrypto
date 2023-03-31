@@ -932,12 +932,12 @@ where
     let offset = AccessControllerOffset::AccessController.into();
     let handle = api.sys_lock_substate(receiver, &offset, LockFlags::read_only())?;
 
-    let access_controller_clone = {
-        let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
-        access_controller.clone()
+    let access_controller = {
+        let access_controller: AccessControllerSubstate = api.kernel_read_substate_typed(handle)?;
+        access_controller
     };
 
-    let rtn = access_controller_clone.transition(api, input)?;
+    let rtn = access_controller.transition(api, input)?;
 
     api.sys_drop_lock(handle)?;
 
@@ -956,17 +956,16 @@ where
     let offset = AccessControllerOffset::AccessController.into();
     let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
 
-    let mut access_controller_clone = {
-        let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
-        access_controller.clone()
+    let mut access_controller = {
+        let access_controller: AccessControllerSubstate = api.kernel_read_substate_typed(handle)?;
+        access_controller
     };
 
-    let rtn = access_controller_clone.transition_mut(api, input)?;
+    let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        let access_controller: &mut AccessControllerSubstate =
-            api.kernel_get_substate_ref_mut(handle)?;
-        *access_controller = access_controller_clone
+        api.kernel_write_substate_typed(handle, &access_controller)?;
+
     }
 
     api.sys_drop_lock(handle)?;

@@ -337,8 +337,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let (bucket_id, non_fungibles) = {
-            let resource_manager: &mut NonFungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref_mut(resman_handle)?;
+            let resource_manager: mut NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             if resource_manager.id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -390,8 +389,7 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         let (nf_store_id, resource_address) = {
-            let resource_manager: &NonFungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref(resman_handle)?;
+            let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
             (
                 resource_manager.non_fungible_table,
                 resource_manager.resource_address,
@@ -446,8 +444,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &mut NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref_mut(resman_handle)?;
+        let resource_manager: mut NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed_mut(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let nf_store_id = resource_manager.non_fungible_table;
         let id_type = resource_manager.id_type;
@@ -511,8 +508,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let (bucket_id, ids) = {
-            let resource_manager: &mut NonFungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref_mut(resman_handle)?;
+            let resource_manager: mut NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             let nf_store_id = resource_manager.non_fungible_table;
             let id_type = resource_manager.id_type;
@@ -587,8 +583,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
@@ -659,8 +654,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_handle = api.sys_lock_substate(
@@ -689,8 +683,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_global_id =
@@ -725,8 +718,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let id_type = resource_manager.id_type;
         let bucket_id = api.new_object(
@@ -784,8 +776,7 @@ impl NonFungibleResourceManagerBlueprint {
                 // Check if resource matches
                 // TODO: Move this check into actor check
                 {
-                    let resource_manager: &mut NonFungibleResourceManagerSubstate =
-                        api.kernel_get_substate_ref_mut(resman_handle)?;
+                    let resource_manager: mut NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed_mut(resman_handle)?;
                     if dropped_bucket.info.resource_address != resource_manager.resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
@@ -826,8 +817,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let id_type = resource_manager.id_type;
         let info = VaultInfoSubstate {
@@ -863,8 +853,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let resource_type = ResourceType::NonFungible {
             id_type: resource_manager.id_type,
         };
@@ -884,8 +873,7 @@ impl NonFungibleResourceManagerBlueprint {
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
-        let resource_manager: &NonFungibleResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_manager: NonFungibleResourceManagerSubstate = api.kernel_read_substate_typed(resman_handle)?;
         let total_supply = resource_manager.total_supply;
         Ok(total_supply)
     }

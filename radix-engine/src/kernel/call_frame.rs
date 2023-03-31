@@ -132,6 +132,10 @@ pub enum FrameMoveError {
     NodeLocked(NodeId),
 }
 
+pub enum FrameCreateNodeError {
+
+}
+
 impl CallFrame {
     pub fn acquire_lock<'s>(
         &mut self,
@@ -454,54 +458,52 @@ impl CallFrame {
     pub fn create_node<'f, 's>(
         &mut self,
         node_id: NodeId,
-        re_node: NodeInit,
+        node_init: NodeInit,
         node_modules: BTreeMap<ModuleId, ModuleInit>,
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), FrameCreateNodeError> {
         let mut substates = BTreeMap::new();
-        let self_substates = re_node.to_substates();
-        for (substate_key, substate) in self_substates {
-            substates.insert((TypedModuleId::ObjectState.into(), substate_key), substate);
-        }
-        for (node_module_id, module_init) in node_modules {
-            for (substate_key, substate) in module_init.to_substates() {
-                substates.insert((node_module_id, substate_key), substate);
-            }
+        substates.insert(TypedModuleId::ObjectState.into(), node_init.to_substates());
+        for (module_id, module_init) in node_modules {
+            substates.insert(module_id, module_init.to_substates());
         }
 
-        for ((_module_id, substate_key), substate) in &substates {
-            let substate_ref = substate.to_ref();
-            let (_, owned) = substate_ref.references_and_owned_nodes();
-            for child_id in owned {
-                self.take_node_internal(&child_id)?;
+        for (_module_id,  module) in &substates {
+            for (substate_key, substate_value) in module {
+                // FIXME this is huge mismatch between drop_lock and create_node
+                // We need to apply the same checks!
 
-                // TODO: Move this logic into system layer
-                if let Ok(info) = heap.get_substate(
-                    &child_id,
-                    ModuleId::TypeInfo,
-                    &TypeInfoOffset::TypeInfo.into(),
-                ) {
-                    let type_info: &TypeInfoSubstate = info.into();
-                    match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => {
-                            SubstateProperties::verify_can_own(
-                                &substate_key,
-                                *package_address,
-                                blueprint_name.as_str(),
-                            )?;
+                for child_id in substate_value.owned_node_ids() {
+                    self.take_node_internal(&child_id).map_err(FrameCreateNodeError::MoveError)?;
+
+                    // TODO: Move this logic into system layer
+                    if let Ok(info) = heap.get_substate(
+                        &child_id,
+                        ModuleId::TypeInfo,
+                        &TypeInfoOffset::TypeInfo.into(),
+                    ) {
+                        let type_info: &TypeInfoSubstate = info.into();
+                        match type_info {
+                            TypeInfoSubstate::Object {
+                                package_address,
+                                blueprint_name,
+                                ..
+                            } => {
+                                SubstateProperties::verify_can_own(
+                                    &substate_key,
+                                    *package_address,
+                                    blueprint_name.as_str(),
+                                )?;
+                            }
+                            TypeInfoSubstate::KeyValueStore(..) => {}
                         }
-                        TypeInfoSubstate::KeyValueStore(..) => {}
                     }
-                }
 
-                if push_to_store {
-                    heap.move_node_to_store(track, child_id)?;
+                    if push_to_store {
+                        heap.move_node_to_store(track, child_id)?;
+                    }
                 }
             }
         }

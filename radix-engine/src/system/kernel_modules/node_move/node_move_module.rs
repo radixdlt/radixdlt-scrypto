@@ -71,8 +71,7 @@ impl NodeMoveModule {
                             ProofOffset::Proof.into(),
                             LockFlags::MUTABLE,
                         )?;
-                        let proof: &mut ProofInfoSubstate =
-                            api.kernel_get_substate_ref_mut(handle)?;
+                        let proof: mut ProofInfoSubstate = api.kernel_read_substate_typed_mut(handle)?;
 
                         if proof.restricted {
                             return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(

@@ -27,8 +27,7 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use sbor::rust::collections::*;
-use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
 
