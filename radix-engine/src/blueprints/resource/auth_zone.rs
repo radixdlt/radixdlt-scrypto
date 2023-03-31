@@ -103,6 +103,7 @@ impl AuthZoneBlueprint {
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
+                    parent: None,
                 })
             ),
         )?;
@@ -143,6 +144,7 @@ impl AuthZoneBlueprint {
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
+                    parent: None,
                 })
             ),
         )?;
@@ -183,6 +185,7 @@ impl AuthZoneBlueprint {
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
+                    parent: None,
                 })
             ),
         )?;

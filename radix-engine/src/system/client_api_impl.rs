@@ -371,7 +371,7 @@ where
             RENodeId::Object(..) => {
                 let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let blueprint = match type_info {
-                    TypeInfoSubstate::Object { blueprint, global } if !global => blueprint,
+                    TypeInfoSubstate::Object { blueprint, global, .. } if !global => blueprint,
                     _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
                 };
 

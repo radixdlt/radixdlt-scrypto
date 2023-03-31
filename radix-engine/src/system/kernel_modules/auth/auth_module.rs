@@ -132,7 +132,7 @@ impl AuthModule {
                         RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                     )?;
 
-                    let resource_address = {
+                    let parent: Address = {
                         let handle = api.kernel_lock_substate(
                             &node_id,
                             NodeModuleId::SELF,
@@ -151,21 +151,21 @@ impl AuthModule {
                             };
 
                         api.kernel_drop_lock(handle)?;
-                        resource_address
+                        resource_address.into()
                     };
 
                     // TODO: Revisit what the correct abstraction is for visibility in the auth module
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = match visibility {
                         RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
-                            &RENodeId::GlobalObject(resource_address.into()),
+                            &RENodeId::GlobalObject(parent.into()),
                             ObjectKey::ChildBlueprint(blueprint.blueprint_name),
                             method_key,
                             api,
                         )?,
                         RENodeVisibilityOrigin::DirectAccess => {
                             let handle = api.kernel_lock_substate(
-                                &RENodeId::GlobalObject(resource_address.into()),
+                                &RENodeId::GlobalObject(parent.into()),
                                 NodeModuleId::AccessRules,
                                 SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                 LockFlags::read_only(),
@@ -470,7 +470,8 @@ impl KernelModule for AuthModule {
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                    global: false
+                    global: false,
+                    parent: None,
                 })
             ),
         )?;

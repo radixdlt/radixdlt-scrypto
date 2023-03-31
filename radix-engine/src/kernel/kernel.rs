@@ -313,7 +313,7 @@ where
                         .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object { blueprint, global } => {
+                    TypeInfoSubstate::Object { blueprint, global, .. } => {
                         if *global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);

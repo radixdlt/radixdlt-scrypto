@@ -137,6 +137,7 @@ where
         RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
+            parent: None,
         }),
     );
     node_modules.insert(

@@ -113,7 +113,7 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
-                    TypeInfoSubstate::Object { blueprint, global } => {
+                    TypeInfoSubstate::Object { blueprint, global, .. } => {
                         let global_address = if global {
                             let address: Address = self.identifier.0.into();
                             Some(address)
