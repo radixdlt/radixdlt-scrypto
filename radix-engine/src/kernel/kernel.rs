@@ -17,7 +17,7 @@ use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_properties::VisibilityProperties;
+use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -382,7 +382,7 @@ where
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
             let (package_address, blueprint_name) = self.get_object_type_info(node_id.clone())?;
-            if !VisibilityProperties::check_drop_node_visibility(
+            if !NodeProperties::can_be_dropped(
                 current_mode,
                 &actor,
                 package_address,
@@ -613,7 +613,7 @@ where
 
         // Authorization
         if let Some(actor) = &self.current_frame.actor {
-            if !VisibilityProperties::check_substate_access(
+            if !NodeProperties::can_be_read(
                 current_mode,
                 actor,
                 node_id,

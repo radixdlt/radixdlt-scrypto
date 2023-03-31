@@ -2,7 +2,7 @@ use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_properties::SubstateProperties;
+use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
@@ -122,7 +122,7 @@ pub enum FrameDropLockError {
     ContainsDuplicatedOwns,
     RefNotFound(NodeId),
     MoveError(FrameMoveError),
-    DisallowedNodeDrop(NodeId),
+    CantDropNodeInStore(NodeId),
     DisallowedNodeOwn(NodeId),
 }
 
@@ -133,7 +133,7 @@ pub enum FrameMoveError {
 }
 
 pub enum FrameCreateNodeError {
-
+    MoveError(FrameMoveError),
 }
 
 impl CallFrame {
@@ -262,8 +262,8 @@ impl CallFrame {
             for old_child in &substate_lock.initial_owned_nodes {
                 if !new_children.remove(old_child) {
                     // TODO: revisit logic here!
-                    if SubstateProperties::is_persisted(&substate_key) {
-                        return Err(FrameDropLockError::DisallowedNodeDrop(old_child.clone()));
+                    if heap.contains_node(&substate_lock.node_id) {
+                        return Err(FrameDropLockError::CantDropNodeInStore(old_child.clone()));
                     }
 
                     // Owned nodes discarded by the substate go back to the call frame,
@@ -289,7 +289,7 @@ impl CallFrame {
                             blueprint_name,
                             ..
                         } => {
-                            SubstateProperties::verify_can_own(
+                            NodeProperties::can_own(
                                 &substate_key,
                                 package_address,
                                 blueprint_name.as_str(),
@@ -470,28 +470,29 @@ impl CallFrame {
             substates.insert(module_id, module_init.to_substates());
         }
 
-        for (_module_id,  module) in &substates {
+        for (_module_id, module) in &substates {
             for (substate_key, substate_value) in module {
                 // FIXME this is huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
 
                 for child_id in substate_value.owned_node_ids() {
-                    self.take_node_internal(&child_id).map_err(FrameCreateNodeError::MoveError)?;
+                    self.take_node_internal(&child_id)
+                        .map_err(FrameCreateNodeError::MoveError)?;
 
                     // TODO: Move this logic into system layer
-                    if let Ok(info) = heap.get_substate(
+                    if let Some(info) = heap.get_substate(
                         &child_id,
-                        ModuleId::TypeInfo,
+                        TypedModuleId::TypeInfo.into(),
                         &TypeInfoOffset::TypeInfo.into(),
                     ) {
-                        let type_info: &TypeInfoSubstate = info.into();
+                        let type_info: TypeInfoSubstate = info.as_typed().unwrap();
                         match type_info {
                             TypeInfoSubstate::Object {
                                 package_address,
                                 blueprint_name,
                                 ..
                             } => {
-                                SubstateProperties::verify_can_own(
+                                NodeProperties::can_own(
                                     &substate_key,
                                     *package_address,
                                     blueprint_name.as_str(),
