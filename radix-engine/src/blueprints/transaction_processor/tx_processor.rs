@@ -593,15 +593,6 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::AssertAccessRule { access_rule } => {
-                    let rtn = Runtime::assert_access_rule(access_rule, api)?;
-
-                    let result = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
             };
             outputs.push(result);
         }

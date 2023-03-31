@@ -161,7 +161,7 @@ impl AuthModule {
                 let node_id = RENodeId::Object(*object_id);
                 let blueprint = api.get_object_type_info(node_id)?;
                 if VaultUtil::is_vault_blueprint(&blueprint) {
-                    let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
+                    let (visibility, _) = api.kernel_get_node_info(node_id).ok_or(
                         RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                     )?;
 

@@ -9,7 +9,7 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::{CallFrameUpdate, RENodeVisibilityOrigin};
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{
     KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
@@ -119,18 +119,21 @@ impl ExecutableInvocation for MethodInvocation {
                             Some(address)
                         } else {
                             // See if we have a parent
-                            let global_address =
-                                api.kernel_get_current_actor().and_then(|a| match a {
-                                    Actor::Method { global_address, .. } => global_address,
-                                    _ => {
-                                        if let RENodeId::GlobalObject(address) = self.identifier.0 {
-                                            Some(address)
-                                        } else {
-                                            None
-                                        }
-                                    }
-                                });
-                            global_address
+
+                            // TODO: Cleanup, this is a rather crude way of trying to figure out
+                            // TODO: whether the node reference is a child of the current parent
+                            // TODO: this should be cleaned up once call_frame is refactored
+                            let (visibility, on_heap) =
+                                api.kernel_get_node_info(self.identifier.0).unwrap();
+                            match (visibility, on_heap) {
+                                (RENodeVisibilityOrigin::Normal, false) => {
+                                    api.kernel_get_current_actor().and_then(|a| match a {
+                                        Actor::Method { global_address, .. } => global_address,
+                                        _ => None,
+                                    })
+                                }
+                                _ => None,
+                            }
                         };
 
                         (blueprint, global_address)
@@ -195,9 +198,6 @@ impl ExecutableInvocation for MethodInvocation {
                     _ => {}
                 }
             }
-
-            // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(blueprint.package_address.into()));
         }
 
         let executor = ScryptoExecutor {
@@ -276,11 +276,6 @@ impl ExecutableInvocation for FunctionInvocation {
                     _ => {}
                 }
             }
-
-            // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalObject(
-                self.identifier.0.package_address.into(),
-            ));
         }
 
         let resolved = ResolvedInvocation {

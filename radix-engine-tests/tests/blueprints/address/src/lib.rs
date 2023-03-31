@@ -40,6 +40,14 @@ mod my_component {
             Self { child, to_call }.instantiate().globalize()
         }
 
+        pub fn get_address_in_parent(&self) -> ComponentAddress {
+            Runtime::global_address()
+        }
+
+        pub fn get_address_in_owned(&self) -> ComponentAddress {
+            self.child.get_address()
+        }
+
         pub fn get_address_in_local(to_call: ComponentAddress) -> ComponentAddress {
             let child = ChildComponent::create(to_call);
             let address = child.get_address();
@@ -47,12 +55,11 @@ mod my_component {
             address
         }
 
-        pub fn get_address_in_parent(&self) -> ComponentAddress {
-            Runtime::global_address()
-        }
-
-        pub fn get_address_in_child(&self) -> ComponentAddress {
-            self.child.get_address()
+        pub fn get_address_in_local_of_parent_method(
+            &self,
+            to_call: ComponentAddress,
+        ) -> ComponentAddress {
+            Self::get_address_in_local(to_call)
         }
 
         pub fn call_other_component_with_wrong_address(&self) {
