@@ -78,6 +78,7 @@ impl From<String> for AccessRuleEntry {
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
+    direct_method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,
     default_auth: AccessRuleEntry,
@@ -89,6 +90,7 @@ pub struct AccessRulesConfig {
 impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
+            direct_method_auth: BTreeMap::new(),
             method_auth: BTreeMap::new(),
             grouped_auth: BTreeMap::new(),
             default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -129,8 +131,13 @@ impl AccessRulesConfig {
         self.default_auth = default_auth;
     }
 
-    pub fn get_access_rule(&self, key: &MethodKey) -> AccessRule {
-        match self.method_auth.get(key) {
+    pub fn get_access_rule(&self, is_direct_access: bool, key: &MethodKey) -> AccessRule {
+        let auth = if is_direct_access {
+            &self.direct_method_auth
+        } else {
+            &self.method_auth
+        };
+        match auth.get(key) {
             None => self.get_default(),
             Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule.clone(),
             Some(AccessRuleEntry::Group(group_key)) => self

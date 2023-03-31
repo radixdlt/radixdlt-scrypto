@@ -138,6 +138,7 @@ impl AuthModule {
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = match visibility {
                         RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
+                            visibility,
                             &RENodeId::GlobalObject(parent.into()),
                             ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
                             method_key,
@@ -199,6 +200,7 @@ impl AuthModule {
                     Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(
+                        RENodeVisibilityOrigin::Normal,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
@@ -245,6 +247,7 @@ impl AuthModule {
                 Some(index) => index.clone(),
                 None => {
                     return Self::method_authorization_stateless(
+                        RENodeVisibilityOrigin::Normal,
                         receiver, object_key, method_key, api,
                     );
                 }
@@ -276,7 +279,7 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get_access_rule(&method_key);
+        let method_auth = access_rules.access_rules.get_access_rule(false, &method_key);
         let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
@@ -285,6 +288,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
+        ref_type: RENodeVisibilityOrigin,
         receiver: &RENodeId,
         object_key: ObjectKey,
         key: MethodKey,
@@ -298,8 +302,10 @@ impl AuthModule {
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
+        let is_direct_access = matches!(ref_type, RENodeVisibilityOrigin::DirectAccess);
+
         let method_auth = match object_key {
-            ObjectKey::SELF => access_rules.access_rules.get_access_rule(&key),
+            ObjectKey::SELF => access_rules.access_rules.get_access_rule(is_direct_access, &key),
             ObjectKey::ChildBlueprint(blueprint_name) => {
                 let child_rules = access_rules
                     .child_blueprint_rules
@@ -307,7 +313,7 @@ impl AuthModule {
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
                         AuthError::ChildBlueprintDoesNotExist,
                     )))?;
-                child_rules.get_access_rule(&key)
+                child_rules.get_access_rule(is_direct_access, &key)
             }
         };
 
