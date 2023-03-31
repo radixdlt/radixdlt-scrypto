@@ -151,16 +151,43 @@ impl Into<DroppedBucket> for HeapNode {
     }
 }
 
-impl Into<ProofInfoSubstate> for HeapNode {
-    fn into(mut self) -> ProofInfoSubstate {
+pub struct DroppedProof {
+    pub info: ProofInfoSubstate,
+    pub resource: DroppedProofResource,
+}
+
+pub enum DroppedProofResource {
+    Fungible(FungibleProof),
+    NonFungible(NonFungibleProof),
+}
+
+impl Into<DroppedProof> for HeapNode {
+    fn into(mut self) -> DroppedProof {
         let module = self
             .substates
             .remove(&TypedModuleId::ObjectState.into())
             .unwrap();
 
-        module
+        let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())
             .map(|x| x.as_typed().unwrap())
-            .unwrap()
+            .unwrap();
+
+        let resource = match info.resource_type {
+            ResourceType::Fungible { .. } => DroppedProofResource::Fungible(
+                module
+                    .remove(&ProofOffset::Fungible.into())
+                    .map(|x| x.as_typed().unwrap())
+                    .unwrap(),
+            ),
+            ResourceType::NonFungible { .. } => DroppedProofResource::NonFungible(
+                module
+                    .remove(&ProofOffset::NonFungible.into())
+                    .map(|x| x.as_typed().unwrap())
+                    .unwrap(),
+            ),
+        };
+
+        DroppedProof { info, resource }
     }
 }

@@ -63,7 +63,7 @@ pub enum RENodeVisibilityOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub module_id: TypedModuleId,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
@@ -142,7 +142,7 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s>,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: TypedModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, FrameAcquireLockError> {
@@ -157,7 +157,7 @@ impl CallFrame {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(FrameAcquireLockError::LockUnmodifiedBaseOnHeapNode);
             }
-            heap.get_substate(node_id, module_id, substate_key)
+            heap.get_substate(node_id, module_id.into(), substate_key)
                 .ok_or(FrameAcquireLockError::SubstateNotFound)?
         } else {
             let handle = track
@@ -239,7 +239,7 @@ impl CallFrame {
             let substate = if let Some(handle) = substate_lock.track_lock_handle {
                 track.get_substate(handle)
             } else {
-                heap.get_substate(node_id, module_id, substate_key)
+                heap.get_substate(node_id, module_id.into(), substate_key)
                     .expect("Substate locked but missing")
             };
             let references = substate.references();
@@ -279,7 +279,7 @@ impl CallFrame {
                 // TODO: Move this check into system layer
                 if let Some(info) = heap.get_substate(
                     child_id,
-                    TypedModuleId::TypeInfo.into(),
+                    TypedModuleId::TypeInfo,
                     &TypeInfoOffset::TypeInfo.into(),
                 ) {
                     let type_info: TypeInfoSubstate = info.as_typed().unwrap();
@@ -289,12 +289,13 @@ impl CallFrame {
                             blueprint_name,
                             ..
                         } => {
-                            NodeProperties::can_own(
+                            if !NodeProperties::can_own(
                                 &substate_key,
                                 package_address,
                                 blueprint_name.as_str(),
-                            )
-                            .map_err(|_| FrameDropLockError::DisallowedNodeOwn(*child_id))?;
+                            ) {
+                                return Err(FrameDropLockError::DisallowedNodeOwn(*child_id));
+                            }
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
                     }
@@ -459,13 +460,13 @@ impl CallFrame {
         &mut self,
         node_id: NodeId,
         node_init: NodeInit,
-        node_modules: BTreeMap<ModuleId, ModuleInit>,
+        node_modules: BTreeMap<TypedModuleId, ModuleInit>,
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
     ) -> Result<(), FrameCreateNodeError> {
         let mut substates = BTreeMap::new();
-        substates.insert(TypedModuleId::ObjectState.into(), node_init.to_substates());
+        substates.insert(TypedModuleId::ObjectState, node_init.to_substates());
         for (module_id, module_init) in node_modules {
             substates.insert(module_id, module_init.to_substates());
         }
@@ -482,7 +483,7 @@ impl CallFrame {
                     // TODO: Move this logic into system layer
                     if let Some(info) = heap.get_substate(
                         &child_id,
-                        TypedModuleId::TypeInfo.into(),
+                        TypedModuleId::TypeInfo,
                         &TypeInfoOffset::TypeInfo.into(),
                     ) {
                         let type_info: TypeInfoSubstate = info.as_typed().unwrap();
