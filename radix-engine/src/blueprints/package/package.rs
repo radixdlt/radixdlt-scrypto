@@ -19,6 +19,7 @@ use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -252,6 +253,7 @@ impl PackageNativePackage {
         access_rules
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
