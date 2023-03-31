@@ -123,11 +123,11 @@ where
 
     // Prepare node init.
     let node_init = NodeInit::GlobalObject(btreemap!(
-        PackageOffset::Info.into() => info.into(),
-        PackageOffset::CodeType.into() => code_type.into(),
-        PackageOffset::Code.into() => code.into(),
-        PackageOffset::Royalty.into() => royalty.into(),
-        PackageOffset::FunctionAccessRules.into() => function_access_rules.into(),
+        PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type ),
+        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code ),
+        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty ),
+        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(& function_access_rules ),
     ));
 
     // Prepare node modules.
@@ -148,7 +148,7 @@ where
                     PackageError::InvalidMetadataKey(key),
                 )),
             )?,
-            RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
+            IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
     node_modules.insert(TypedModuleId::Metadata, ModuleInit::Metadata(metadata_init));
@@ -165,15 +165,14 @@ where
     );
 
     if let Some(access_rules) = access_rules {
-        let mut node = api.kernel_drop_node(&NodeId::Object(access_rules.0.id()))?;
+        let mut node = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node
             .substates
-            .remove(&(
-                TypedModuleId::ObjectState,
-                &AccessRulesOffset::AccessRules.into(),
-            ))
+            .remove(&TypedModuleId::ObjectState)
+            .unwrap()
+            .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
-        let access_rules: MethodAccessRulesSubstate = access_rules.into();
+        let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
         node_modules.insert(
             TypedModuleId::AccessRules,
             ModuleInit::AccessRules(access_rules),
@@ -195,7 +194,7 @@ where
 
     api.kernel_create_node(node_id, node_init, node_modules)?;
 
-    let package_address: PackageAddress = node_id.into();
+    let package_address = PackageAddress::new_unchecked(node_id.into());
     Ok(package_address)
 }
 
@@ -586,8 +585,9 @@ impl PackageNativePackage {
         let handle =
             api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
-        let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let mut substate: PackageRoyaltySubstate = api.kernel_read_substate_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
+        api.kernel_write_substate_typed(handle, &substate)?;
         api.kernel_drop_lock(handle)?;
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -607,11 +607,13 @@ impl PackageNativePackage {
         let handle =
             api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
-        let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let mut substate: PackageRoyaltySubstate = api.kernel_read_substate_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
             Some(vault) => Vault(vault).sys_take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
+        api.kernel_write_substate_typed(handle, &substate)?;
+
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 }

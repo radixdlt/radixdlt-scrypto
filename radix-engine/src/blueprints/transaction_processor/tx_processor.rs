@@ -6,7 +6,6 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
@@ -75,7 +74,7 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             NodeInit::Object(btreemap!(
-                WorktopOffset::Worktop.into() => RuntimeSubstate::Worktop(WorktopSubstate::new())
+                WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
             )),
             btreemap!(
                 TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {

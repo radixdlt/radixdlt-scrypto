@@ -102,7 +102,7 @@ impl NodeProperties {
     }
 
     /// Whether the substate can be written
-    pub fn can_be_written(
+    pub fn can_be_updated(
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,

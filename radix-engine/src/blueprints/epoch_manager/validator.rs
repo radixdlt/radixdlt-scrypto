@@ -70,23 +70,23 @@ impl ValidatorBlueprint {
         let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
 
         // Update state
-        {
-            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let validator = {
+            let mut validator:  ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
 
             if validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
             }
-
             validator.is_registered = true;
-        }
+
+            api.kernel_write_substate_typed(handle, &validator)?;
+            validator
+        };
 
         // Update EpochManager
         {
-            let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
-                let validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
                 let key = validator.key;
                 let validator_address = validator.address;
                 let manager = validator.manager;
@@ -123,17 +123,20 @@ impl ValidatorBlueprint {
         let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
 
         // Update state
-        {
-            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
+       let validator = {
+            let mut validator:  ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
+
             if !validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
             }
             validator.is_registered = false;
-        }
+
+            api.kernel_write_substate_typed(handle, &validator)?;
+            validator
+        };
 
         // Update EpochManager
         {
-            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
@@ -410,11 +413,12 @@ impl ValidatorBlueprint {
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let mut validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
         validator.key = input.key;
         let key = validator.key;
         let manager = validator.manager;
         let validator_address = validator.address;
+        api.kernel_write_substate_typed(handle, &validator)?;
 
         // Update Epoch Manager
         {

@@ -211,7 +211,7 @@ impl KernelModule for CostingModule {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
                     TypedModuleId::Royalty,
-                    RoyaltyOffset::Royalty.into(),
+                    RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate: mut ComponentRoyaltyAccumulatorSubstate = api.kernel_read_substate_typed_mut(handle)?;
