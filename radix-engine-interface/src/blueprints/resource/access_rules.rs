@@ -179,10 +179,6 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, method_auth.into());
     }
 
-    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
-        self.grouped_auth_mutability.insert(key, method_auth);
-    }
-
     pub fn get_default(&self) -> AccessRule {
         match &self.default_auth {
             AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
@@ -203,6 +199,10 @@ impl AccessRulesConfig {
 
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {
         self.grouped_auth.insert(group_key, access_rule);
+    }
+
+    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
+        self.grouped_auth_mutability.insert(key, method_auth);
     }
 
     pub fn set_group_access_rule_and_mutability(

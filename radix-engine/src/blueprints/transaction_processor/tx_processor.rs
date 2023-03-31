@@ -578,7 +578,8 @@ impl TransactionProcessorBlueprint {
                         NodeModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            key: key.clone(),
+                            object_key: ObjectKey::SELF,
+                            method_key: key.clone(),
                             rule: AccessRuleEntry::AccessRule(rule.clone()),
                         })
                         .unwrap(),

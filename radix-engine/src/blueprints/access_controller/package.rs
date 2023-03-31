@@ -431,11 +431,8 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = AccessRules::sys_new(
-            access_rules_from_rule_set(input.rule_set),
-            btreemap!(),
-            api,
-        )?.0;
+        let access_rules =
+            AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), btreemap!(), api)?.0;
 
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
@@ -990,6 +987,7 @@ where
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                object_key: ObjectKey::SELF,
                 name: group_name.into(),
                 rule: access_rule.clone(),
             })
@@ -1004,7 +1002,8 @@ where
                     NodeModuleId::AccessRules,
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                     scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                        key: method_key.clone(),
+                        object_key: ObjectKey::SELF,
+                        method_key: method_key.clone(),
                         rule: AccessRuleEntry::AccessRule(access_rule.clone()),
                     })
                     .unwrap(),

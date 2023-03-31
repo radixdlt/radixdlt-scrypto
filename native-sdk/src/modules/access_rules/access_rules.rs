@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
     AccessRulesSetMethodAccessRuleAndMutabilityInput, ACCESS_RULES_BLUEPRINT,
@@ -7,12 +6,15 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
+};
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::ToString;
+use std::collections::BTreeMap;
 
 pub struct AccessRules(pub Own);
 
@@ -32,7 +34,8 @@ impl AccessRules {
             scrypto_encode(&AccessRulesCreateInput {
                 access_rules,
                 child_blueprint_rules,
-            }).unwrap(),
+            })
+            .unwrap(),
         )?;
 
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
@@ -71,6 +74,7 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
+                object_key: ObjectKey::SELF,
                 method_key,
                 rule,
                 mutability,
@@ -94,6 +98,7 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {
+                object_key: ObjectKey::SELF,
                 name: name.to_string(),
                 rule,
                 mutability,

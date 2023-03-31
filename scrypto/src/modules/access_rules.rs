@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey,
+    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -27,7 +27,11 @@ impl AccessRules {
                 ACCESS_RULES_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput { access_rules, child_blueprint_rules: btreemap!() }).unwrap(),
+                scrypto_encode(&AccessRulesCreateInput {
+                    access_rules,
+                    child_blueprint_rules: btreemap!(),
+                })
+                .unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
@@ -47,7 +51,8 @@ impl AttachedAccessRules {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::SELF, method_name),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::SELF, method_name),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -63,7 +68,8 @@ impl AttachedAccessRules {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::SELF, method_name),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::SELF, method_name),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),

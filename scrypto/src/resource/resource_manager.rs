@@ -36,6 +36,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    object_key: ObjectKey::SELF,
                     name: "mint".to_string(),
                     rule: access_rule,
                 })
@@ -51,7 +52,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -66,6 +68,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    object_key: ObjectKey::SELF,
                     name: "withdraw".to_string(),
                     rule: access_rule,
                 })
@@ -81,7 +84,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -96,6 +100,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    object_key: ObjectKey::SELF,
                     name: "recall".to_string(),
                     rule: access_rule,
                 })
@@ -111,7 +116,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -126,7 +132,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(
                         NodeModuleId::SELF,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
@@ -144,6 +151,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                    object_key: ObjectKey::SELF,
                     name: "mint".to_string(),
                     mutability: AccessRule::DenyAll,
                 })
@@ -159,7 +167,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
@@ -174,7 +183,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
@@ -189,7 +199,8 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(
                         NodeModuleId::SELF,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
@@ -206,6 +217,7 @@ impl ResourceManager {
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                object_key: ObjectKey::SELF,
                 name: "withdraw".to_string(),
                 mutability: AccessRule::DenyAll,
             })
@@ -219,7 +231,8 @@ impl ResourceManager {
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
+                object_key: ObjectKey::SELF,
+                method_key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
                 mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             })
             .unwrap(),
@@ -232,6 +245,7 @@ impl ResourceManager {
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                object_key: ObjectKey::SELF,
                 name: "recall".to_string(),
                 mutability: AccessRule::DenyAll,
             })
