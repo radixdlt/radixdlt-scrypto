@@ -54,7 +54,7 @@ pub enum RENodeLocation {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RENodeVisibilityOrigin {
+pub enum RefType {
     Normal,
     DirectAccess,
 }
@@ -72,12 +72,12 @@ pub struct SubstateLock {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RENodeRefData {
-    visibility: RENodeVisibilityOrigin,
+    ref_type: RefType,
 }
 
 impl RENodeRefData {
-    fn new(visibility: RENodeVisibilityOrigin) -> Self {
-        RENodeRefData { visibility }
+    fn new(ref_type: RefType) -> Self {
+        RENodeRefData { ref_type }
     }
 }
 
@@ -147,7 +147,7 @@ impl CallFrame {
                 self.immortal_node_refs.insert(
                     node_id,
                     RENodeRefData {
-                        visibility: RENodeVisibilityOrigin::Normal,
+                        ref_type: RefType::Normal,
                     },
                 );
             } else {
@@ -325,47 +325,47 @@ impl CallFrame {
         // Add well-known global refs to current frame
         frame.add_ref(
             RENodeId::GlobalObject(RADIX_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(SYSTEM_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(PACKAGE_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(PACKAGE_OWNER_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(IDENTITY_OWNER_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(CLOCK.into()),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
         frame.add_ref(
             RENodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
-            RENodeVisibilityOrigin::Normal,
+            RefType::Normal,
         );
 
         frame
@@ -423,8 +423,8 @@ impl CallFrame {
             to.immortal_node_refs
                 .entry(node_id)
                 .and_modify(|e| {
-                    if e.visibility == RENodeVisibilityOrigin::DirectAccess {
-                        e.visibility = ref_data.visibility
+                    if e.ref_type == RefType::DirectAccess {
+                        e.ref_type = ref_data.ref_type
                     }
                 })
                 .or_insert(ref_data.clone());
@@ -520,7 +520,7 @@ impl CallFrame {
                     .map_err(|e| KernelError::TrackError(Box::new(e)))?;
             }
 
-            self.add_ref(node_id, RENodeVisibilityOrigin::Normal);
+            self.add_ref(node_id, RefType::Normal);
         } else {
             // Insert node into heap
             let heap_root_node = HeapRENode {
@@ -534,7 +534,7 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn add_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibilityOrigin) {
+    pub fn add_ref(&mut self, node_id: RENodeId, visibility: RefType) {
         self.immortal_node_refs
             .insert(node_id, RENodeRefData::new(visibility));
     }
@@ -557,7 +557,7 @@ impl CallFrame {
                 self.immortal_node_refs.insert(
                     node_ref,
                     RENodeRefData {
-                        visibility: RENodeVisibilityOrigin::Normal,
+                        ref_type: RefType::Normal,
                     },
                 );
             }
@@ -635,13 +635,13 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RENodeVisibilityOrigin> {
+    pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RefType> {
         if self.owned_root_nodes.contains_key(node_id) {
-            Some(RENodeVisibilityOrigin::Normal)
+            Some(RefType::Normal)
         } else if let Some(_) = self.temp_node_refs.get(node_id) {
-            Some(RENodeVisibilityOrigin::Normal)
+            Some(RefType::Normal)
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
-            Some(ref_data.visibility)
+            Some(ref_data.ref_type)
         } else {
             None
         }
@@ -650,7 +650,7 @@ impl CallFrame {
     pub fn check_node_visibility(
         &self,
         node_id: &RENodeId,
-    ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
+    ) -> Result<RefType, CallFrameError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }

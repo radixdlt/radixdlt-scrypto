@@ -1423,7 +1423,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::TypeInfo(substate) => {
                 let mut references = index_set_new();
                 match substate {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint, parent, .. }) => {
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, type_parent: parent, .. }) => {
                         references.insert(RENodeId::GlobalObject(blueprint.package_address.into()));
                         if let Some(parent) = parent {
                             references.insert(RENodeId::GlobalObject(parent.clone()));

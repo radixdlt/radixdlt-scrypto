@@ -1,5 +1,5 @@
 use super::actor::ExecutionMode;
-use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, RefType};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -282,7 +282,7 @@ where
                     )) => {
                         // For virtual accounts and native packages, create a reference directly
                         self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            .add_ref(*node_id, RefType::Normal);
                         continue;
                     }
                     RENodeId::GlobalObject(Address::Package(package_address))
@@ -290,7 +290,7 @@ where
                     {
                         // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
                         self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            .add_ref(*node_id, RefType::Normal);
                         continue;
                     }
                     _ => {}
@@ -316,10 +316,10 @@ where
                     TypeInfoSubstate::Object(ObjectInfo { blueprint, global, .. }) => {
                         if *global {
                             self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                .add_ref(*node_id, RefType::Normal);
                         } else if VaultUtil::is_vault_blueprint(blueprint) {
                             self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                                .add_ref(*node_id, RefType::DirectAccess);
                         } else {
                             return Err(RuntimeError::KernelError(
                                 KernelError::InvalidDirectAccess,
@@ -477,7 +477,7 @@ where
     fn kernel_get_node_visibility_origin(
         &self,
         node_id: RENodeId,
-    ) -> Option<RENodeVisibilityOrigin> {
+    ) -> Option<RefType> {
         let visibility = self.current_frame.get_node_visibility(&node_id)?;
         Some(visibility)
     }
@@ -500,7 +500,7 @@ where
                 } => {
                     self.current_frame.add_ref(
                         RENodeId::GlobalObject(*address),
-                        RENodeVisibilityOrigin::Normal,
+                        RefType::Normal,
                     );
                 }
                 _ => {}
@@ -711,7 +711,7 @@ where
                         {
                             Ok(_) => {
                                 self.current_frame
-                                    .add_ref(node_id, RENodeVisibilityOrigin::Normal);
+                                    .add_ref(node_id, RefType::Normal);
                                 self.current_frame.acquire_lock(
                                     &mut self.heap,
                                     &mut self.track,

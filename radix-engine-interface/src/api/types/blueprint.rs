@@ -8,7 +8,7 @@ use crate::data::scrypto::model::Address;
 pub struct ObjectInfo {
     pub blueprint: Blueprint,
     pub global: bool,
-    pub parent: Option<Address>,
+    pub type_parent: Option<Address>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

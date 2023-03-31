@@ -82,7 +82,7 @@ impl TransactionProcessorBlueprint {
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                     global: false,
-                    parent: None,
+                    type_parent: None,
                 }))
             ),
         )?;

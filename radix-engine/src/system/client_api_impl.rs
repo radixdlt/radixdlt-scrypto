@@ -170,7 +170,7 @@ where
                     )),
                 ))?;
 
-        let parent = if let Some(parent) = &schema.parent {
+        let type_parent = if let Some(parent) = &schema.parent {
             match actor {
                 Actor::Method {
                     global_address: Some(address),
@@ -369,7 +369,7 @@ where
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address, blueprint_ident),
                         global: false,
-                        parent,
+                        type_parent,
                     })
                 ),
             ),
