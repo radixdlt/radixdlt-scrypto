@@ -132,27 +132,7 @@ impl AuthModule {
                         RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                     )?;
 
-                    let parent: Address = {
-                        let handle = api.kernel_lock_substate(
-                            &node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let resource_address =
-                            if info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
-                                let substate_ref: &FungibleVaultInfoSubstate =
-                                    api.kernel_get_substate_ref(handle)?;
-                                substate_ref.resource_address
-                            } else {
-                                let substate_ref: &NonFungibleVaultInfoSubstate =
-                                    api.kernel_get_substate_ref(handle)?;
-                                substate_ref.resource_address
-                            };
-
-                        api.kernel_drop_lock(handle)?;
-                        resource_address.into()
-                    };
+                    let parent = info.parent.unwrap();
 
                     // TODO: Revisit what the correct abstraction is for visibility in the auth module
                     let method_key = MethodKey::new(*module_id, ident);
