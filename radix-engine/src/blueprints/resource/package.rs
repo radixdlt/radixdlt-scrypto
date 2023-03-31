@@ -188,6 +188,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
+                parent: None,
                 schema,
                 substates,
                 functions,
@@ -391,6 +392,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
+                parent: None,
                 schema,
                 substates,
                 functions,
@@ -522,6 +524,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintSchema {
+                parent: None,
                 schema,
                 substates,
                 functions,
@@ -684,6 +687,7 @@ impl ResourceManagerNativePackage {
         let schema = generate_full_schema(aggregator);
 
         let vault_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,
@@ -824,6 +828,7 @@ impl ResourceManagerNativePackage {
         );
         let schema = generate_full_schema(aggregator);
         let bucket_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,
@@ -890,6 +895,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let proof_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,
@@ -991,6 +997,7 @@ impl ResourceManagerNativePackage {
         );
         let schema = generate_full_schema(aggregator);
         let worktop_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,
@@ -1084,6 +1091,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let auth_zone_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,

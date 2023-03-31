@@ -40,6 +40,7 @@ pub enum PackageError {
     },
     InvalidEventSchema,
     InvalidSystemFunction,
+    InvalidTypeParent,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -266,6 +267,7 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -523,11 +525,18 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            virtual_lazy_load_functions: system_functions,
+            parent,
+            virtual_lazy_load_functions,
             ..
         } in schema.blueprints.values()
         {
-            if !system_functions.is_empty() {
+            if parent.is_some() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::InvalidTypeParent),
+                ));
+            }
+
+            if !virtual_lazy_load_functions.is_empty() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::InvalidSystemFunction),
                 ));

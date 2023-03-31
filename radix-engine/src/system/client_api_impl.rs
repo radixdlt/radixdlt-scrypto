@@ -149,12 +149,9 @@ where
         blueprint_ident: &str,
         mut app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, RuntimeError> {
-        let package_address = self
-            .kernel_get_current_actor()
-            .unwrap()
-            .package_address()
-            .clone();
+        let actor = self.kernel_get_current_actor().unwrap();
 
+        let package_address = actor.package_address().clone();
         let handle = self.kernel_lock_substate(
             &RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -172,6 +169,23 @@ where
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
                     )),
                 ))?;
+
+        let parent = if let Some(parent) = &schema.parent {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    blueprint, ..
+                } if parent.eq(blueprint.blueprint_name.as_str()) => {
+                    Some(address)
+                }
+                _ => {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidChildObjectCreation));
+                }
+            }
+        } else {
+            None
+        };
+
         if schema.substates.len() != app_states.len() {
             return Err(RuntimeError::SystemError(
                 SystemError::SubstateValidationError(Box::new(
@@ -352,7 +366,11 @@ where
             node_init,
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
-                    TypeInfoSubstate::new(Blueprint::new(&package_address, blueprint_ident), false)
+                    TypeInfoSubstate::Object {
+                        blueprint: Blueprint::new(&package_address, blueprint_ident),
+                        global: false,
+                        parent,
+                    }
                 ),
             ),
         )?;

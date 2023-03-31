@@ -70,6 +70,7 @@ impl IdentityNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
