@@ -629,7 +629,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources]
+    #[trace_resources(log=*node_id)]
     fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
@@ -860,7 +860,7 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log={*node_id}, log=module_id, log=offset)]
+    #[trace_resources(log=*node_id, log=module_id, log=offset)]
     fn kernel_lock_substate(
         &mut self,
         node_id: &RENodeId,
