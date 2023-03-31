@@ -4,7 +4,6 @@ use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use resources_tracker_macro::trace_resources;
 use sbor::rust::cmp::min;
 use strum::EnumCount;
 
@@ -218,7 +217,6 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    #[trace_resources(log=cost_units)]
     fn consume_execution_internal(
         &mut self,
         cost_units: u32,
@@ -262,7 +260,6 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    #[trace_resources]
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
         for i in 0..CostingReason::COUNT {
