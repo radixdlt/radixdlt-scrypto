@@ -290,12 +290,13 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
-        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+        let mut substate: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
+        let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
+        api.kernel_write_substate_typed(handle, &substate);
         api.sys_drop_lock(handle)?;
         Ok(taken)
     }
@@ -313,11 +314,12 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
-        let taken = substate_ref
+        let mut substate: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
+        let taken = substate
             .take_by_ids(ids)
             .map_err(BucketError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
+        api.kernel_write_substate_typed(handle, &substate);
         api.sys_drop_lock(handle)?;
         Ok(taken)
     }
@@ -339,12 +341,13 @@ impl NonFungibleBucket {
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
-        substate_ref.put(resource).map_err(|e| {
+        let mut substate: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
+        substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
+        api.kernel_write_substate_typed(handle, &substate);
         api.sys_drop_lock(handle)?;
         Ok(())
     }

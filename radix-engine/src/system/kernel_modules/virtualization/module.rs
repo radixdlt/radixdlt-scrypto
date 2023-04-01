@@ -26,28 +26,24 @@ impl KernelModule for VirtualizationModule {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
             NodeId::GlobalObject(Address::Component(component_address)) => {
                 // Lazy create component if missing
-                let (package, blueprint, virtual_func_id, id) = match component_address {
+                let (blueprint, virtual_func_id, id) = match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(id) => (
-                        ACCOUNT_PACKAGE,
-                        ACCOUNT_BLUEPRINT,
+                        Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
                         id,
                     ),
                     ComponentAddress::EddsaEd25519VirtualAccount(id) => (
-                        ACCOUNT_PACKAGE,
-                        ACCOUNT_BLUEPRINT,
+                        Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
                         id,
                     ),
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(id) => (
-                        IDENTITY_PACKAGE,
-                        IDENTITY_BLUEPRINT,
+                        Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
                         id,
                     ),
                     ComponentAddress::EddsaEd25519VirtualIdentity(id) => (
-                        IDENTITY_PACKAGE,
-                        IDENTITY_BLUEPRINT,
+                        Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
                         id,
                     ),
@@ -56,9 +52,8 @@ impl KernelModule for VirtualizationModule {
 
                 let rtn: Vec<u8> = api
                     .kernel_invoke(Box::new(VirtualLazyLoadInvocation {
-                        package_address: package,
-                        blueprint_name: blueprint.to_string(),
-                        virtual_func_id: virtual_func_id,
+                        blueprint,
+                        virtual_func_id,
                         args: id,
                     }))?
                     .into();

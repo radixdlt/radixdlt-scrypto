@@ -621,9 +621,6 @@ pub fn generate_instruction(
                 )?
             ),
         },
-        ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
-            access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
-        },
         ast::Instruction::CreateIdentity {} => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),

@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -847,7 +847,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bitflags",
  "colored",
@@ -870,7 +870,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-common"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bech32",
  "blake2",
@@ -890,11 +890,11 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-constants"
-version = "0.9.0"
+version = "0.10.0"
 
 [[package]]
 name = "radix-engine-derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -904,7 +904,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bitflags",
  "hex",
@@ -918,7 +918,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-stores"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "itertools",
  "radix-engine",
@@ -1017,7 +1017,7 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1029,7 +1029,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1037,9 +1037,10 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "const-sha1",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",
@@ -1068,7 +1069,7 @@ checksum = "1792db035ce95be60c3f8853017b3999209281c24e2ba5bc8e59bf97a0c590c1"
 
 [[package]]
 name = "scrypto"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bech32",
  "hex",
@@ -1087,7 +1088,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1099,7 +1100,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-schema"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -1108,7 +1109,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-unit"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "radix-engine",
  "radix-engine-constants",
@@ -1390,7 +1391,7 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -1444,7 +1445,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

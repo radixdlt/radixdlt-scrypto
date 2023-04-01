@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
-use radix_engine_interface::types::ClientCostingReason;
+use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
 const IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME: &str = "create_virtual_eddsa_25519";
@@ -80,6 +80,7 @@ impl IdentityNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&NodeId>,

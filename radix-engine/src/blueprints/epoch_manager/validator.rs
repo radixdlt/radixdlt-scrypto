@@ -71,7 +71,7 @@ impl ValidatorBlueprint {
 
         // Update state
         let validator = {
-            let mut validator:  ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
+            let mut validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
 
             if validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
@@ -123,8 +123,8 @@ impl ValidatorBlueprint {
         let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
 
         // Update state
-       let validator = {
-            let mut validator:  ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
+        let validator = {
+            let mut validator: ValidatorSubstate = api.kernel_read_substate_typed(handle)?;
 
             if !validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
@@ -280,7 +280,8 @@ impl ValidatorBlueprint {
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let epoch_manager: EpochManagerSubstate = api.kernel_read_substate_typed(manager_handle)?;
+            let epoch_manager: EpochManagerSubstate =
+                api.kernel_read_substate_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
             let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
             api.sys_drop_lock(manager_handle)?;

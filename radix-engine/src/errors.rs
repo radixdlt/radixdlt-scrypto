@@ -195,6 +195,7 @@ pub struct OffsetDoesNotExist(pub NodeId, pub SubstateKey);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    GlobalAddressDoesNotExist,
     NotAnObject,
     NotAKeyValueStore,
     InvalidSubstateWrite,
@@ -226,7 +227,7 @@ pub enum InterpreterError {
     NativeExportDoesNotExist(String),
     NativeInvalidCodeId(u8),
 
-    ScryptoBlueprintNotFound(PackageAddress, String),
+    ScryptoBlueprintNotFound(Blueprint),
     ScryptoFunctionNotFound(String),
     ScryptoReceiverNotMatch(String),
     ScryptoInputSchemaNotMatch(String, String),
@@ -246,10 +247,8 @@ pub enum ModuleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidModuleType {
-    pub expected_package: PackageAddress,
-    pub expected_blueprint: String,
-    pub actual_package: PackageAddress,
-    pub actual_blueprint: String,
+    pub expected_blueprint: Blueprint,
+    pub actual_blueprint: Blueprint,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -336,7 +335,6 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
-
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),

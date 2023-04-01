@@ -38,6 +38,7 @@ impl Authentication {
     }
 
     fn auth_zone_stack_matches<P, Y>(
+        barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
         api: &mut Y,
@@ -47,6 +48,7 @@ impl Authentication {
         Y: KernelSubstateApi + ClientObjectApi<RuntimeError>,
         P: Fn(&AuthZone, usize, &mut Y) -> Result<bool, RuntimeError>,
     {
+        let mut remaining_barrier_crossings_required = barrier_crossings_required;
         let mut remaining_barrier_crossings_allowed = barrier_crossings_allowed;
         let mut current_auth_zone_id = auth_zone_id;
         let mut rev_index = 0;
@@ -64,10 +66,13 @@ impl Authentication {
             let auth_zone = auth_zone.clone();
             handles.push(handle);
 
-            // Check
-            if check(&auth_zone, rev_index, api)? {
-                pass = true;
-                break;
+            if remaining_barrier_crossings_required == 0 {
+                // Check
+                if check(&auth_zone, rev_index, api)? {
+                    pass = true;
+                    break;
+                }
+                rev_index += 1;
             }
 
             // Progress
@@ -76,13 +81,17 @@ impl Authentication {
                     break;
                 }
                 remaining_barrier_crossings_allowed -= 1;
+
+                if remaining_barrier_crossings_required > 0 {
+                    remaining_barrier_crossings_required -= 1;
+                }
             }
+
             if let Some(id) = auth_zone.parent {
                 current_auth_zone_id = id.into();
             } else {
                 break;
             }
-            rev_index += 1;
         }
 
         for handle in handles {
@@ -93,6 +102,7 @@ impl Authentication {
     }
 
     fn auth_zone_stack_has_amount<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+        barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
         resource_rule: &HardResourceOrNonFungible,
@@ -100,6 +110,7 @@ impl Authentication {
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
+            barrier_crossings_required,
             barrier_crossings_allowed,
             auth_zone_id,
             api,
@@ -117,12 +128,14 @@ impl Authentication {
     }
 
     fn auth_zone_stack_matches_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+        barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
         resource_rule: &HardResourceOrNonFungible,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
+            barrier_crossings_required,
             barrier_crossings_allowed,
             auth_zone_id,
             api,
@@ -165,6 +178,7 @@ impl Authentication {
     }
 
     pub fn verify_proof_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+        barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
         proof_rule: &HardProofRule,
@@ -173,6 +187,7 @@ impl Authentication {
         match proof_rule {
             HardProofRule::Require(resource) => {
                 if Self::auth_zone_stack_matches_rule(
+                    barrier_crossings_required,
                     barrier_crossings_allowed,
                     auth_zone_id,
                     resource,
@@ -185,6 +200,7 @@ impl Authentication {
             }
             HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
                 if Self::auth_zone_stack_has_amount(
+                    barrier_crossings_required,
                     barrier_crossings_allowed,
                     auth_zone_id,
                     resource,
@@ -199,6 +215,7 @@ impl Authentication {
             HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
                     if !Self::auth_zone_stack_matches_rule(
+                        barrier_crossings_required,
                         barrier_crossings_allowed,
                         auth_zone_id,
                         resource,
@@ -213,6 +230,7 @@ impl Authentication {
             HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
+                        barrier_crossings_required,
                         barrier_crossings_allowed,
                         auth_zone_id,
                         resource,
@@ -231,6 +249,7 @@ impl Authentication {
                 let mut left = count.clone();
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
+                        barrier_crossings_required,
                         barrier_crossings_allowed,
                         auth_zone_id,
                         resource,
@@ -249,18 +268,29 @@ impl Authentication {
     }
 
     pub fn verify_auth_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+        barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
         auth_rule: &HardAuthRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
-            HardAuthRule::ProofRule(rule) => {
-                Self::verify_proof_rule(barrier_crossings_allowed, auth_zone_id, rule, api)
-            }
+            HardAuthRule::ProofRule(rule) => Self::verify_proof_rule(
+                barrier_crossings_required,
+                barrier_crossings_allowed,
+                auth_zone_id,
+                rule,
+                api,
+            ),
             HardAuthRule::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(barrier_crossings_allowed, auth_zone_id, r, api)? {
+                    if Self::verify_auth_rule(
+                        barrier_crossings_required,
+                        barrier_crossings_allowed,
+                        auth_zone_id,
+                        r,
+                        api,
+                    )? {
                         return Ok(true);
                     }
                 }
@@ -268,7 +298,13 @@ impl Authentication {
             }
             HardAuthRule::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(barrier_crossings_allowed, auth_zone_id, r, api)? {
+                    if !Self::verify_auth_rule(
+                        barrier_crossings_required,
+                        barrier_crossings_allowed,
+                        auth_zone_id,
+                        r,
+                        api,
+                    )? {
                         return Ok(false);
                     }
                 }
@@ -279,15 +315,20 @@ impl Authentication {
     }
 
     pub fn verify_method_auth<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+        barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
         method_auth: &MethodAuthorization,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
-            MethodAuthorization::Protected(rule) => {
-                Self::verify_auth_rule(barrier_crossings_allowed, auth_zone_id, rule, api)
-            }
+            MethodAuthorization::Protected(rule) => Self::verify_auth_rule(
+                barrier_crossings_required,
+                barrier_crossings_allowed,
+                auth_zone_id,
+                rule,
+                api,
+            ),
             MethodAuthorization::AllowAll => Ok(true),
             MethodAuthorization::DenyAll => Ok(false),
         }

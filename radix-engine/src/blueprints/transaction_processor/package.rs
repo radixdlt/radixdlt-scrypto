@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
-use radix_engine_interface::types::ClientCostingReason;
+use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
 
@@ -48,6 +48,7 @@ impl TransactionProcessorNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&NodeId>,

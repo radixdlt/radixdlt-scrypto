@@ -300,12 +300,13 @@ impl NonFungibleVault {
             &VaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
-        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+        let mut substate: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
+        let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
             )))
         })?;
+        api.kernel_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
 
         Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
@@ -326,11 +327,12 @@ impl NonFungibleVault {
             &VaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
-        let taken = substate_ref
+        let mut substate: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
+        let taken = substate
             .take_by_ids(ids)
             .map_err(VaultError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e)))?;
+        api.kernel_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
 
         Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
@@ -357,12 +359,13 @@ impl NonFungibleVault {
             &VaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: mut LiquidNonFungibleResource = api.kernel_read_substate_typed_mut(handle)?;
-        substate_ref.put(resource).map_err(|e| {
+        let mut substate: LiquidNonFungibleResource = api.kernel_read_substate_typed(handle)?;
+        substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
             )))
         })?;
+        api.kernel_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
 
         Runtime::emit_event(api, event)?;
@@ -749,14 +752,17 @@ impl VaultBlueprint {
 
         // Take by amount
         let fee = {
-            let vault: mut LiquidFungibleResource = api.kernel_read_substate_typed_mut(vault_handle)?;
+            let mut vault: LiquidFungibleResource = api.kernel_read_substate_typed(vault_handle)?;
 
             // Take fee from the vault
-            vault.take_by_amount(input.amount).map_err(|_| {
+            let fee = vault.take_by_amount(input.amount).map_err(|_| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
                     VaultError::LockFeeInsufficientBalance,
                 ))
-            })?
+            })?;
+
+            api.kernel_write_substate_typed(vault_handle, &vault)?;
+            fee
         };
 
         // Credit cost units
@@ -764,8 +770,9 @@ impl VaultBlueprint {
 
         // Keep changes
         {
-            let vault: mut LiquidFungibleResource = api.kernel_read_substate_typed_mut(vault_handle)?;
+            let mut vault: LiquidFungibleResource = api.kernel_read_substate_typed(vault_handle)?;
             vault.put(changes).expect("Failed to put fee changes");
+            api.kernel_write_substate_typed(vault_handle, &vault)?;
         }
 
         // Emitting an event once the fee has been locked

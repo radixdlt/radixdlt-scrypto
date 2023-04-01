@@ -118,7 +118,7 @@ impl WorktopBlueprint {
                 &WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut worktop: mut WorktopSubstate = api.kernel_read_substate_typed_mut(worktop_handle)?;
+            let mut worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
             let existing_bucket = Bucket(worktop.resources.get(&resource_address).cloned().ok_or(
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
                     WorktopError::InsufficientBalance,
@@ -132,8 +132,8 @@ impl WorktopBlueprint {
                 ))
             } else if existing_amount == amount {
                 // Move
-                worktop = api.kernel_get_substate_ref_mut(worktop_handle)?;
                 worktop.resources.remove(&resource_address);
+                api.kernel_write_substate_typed(worktop_handle, &worktop);
                 api.sys_drop_lock(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
             } else {
@@ -168,7 +168,7 @@ impl WorktopBlueprint {
                 &WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut worktop: mut WorktopSubstate = api.kernel_read_substate_typed_mut(worktop_handle)?;
+            let mut worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
             let existing_bucket = Bucket(worktop.resources.get(&resource_address).cloned().ok_or(
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
                     WorktopError::InsufficientBalance,
@@ -184,6 +184,7 @@ impl WorktopBlueprint {
                 // Move
                 worktop = api.kernel_get_substate_ref_mut(worktop_handle)?;
                 worktop.resources.remove(&resource_address);
+                api.kernel_write_substate_typed(worktop_handle, &worktop);
                 api.sys_drop_lock(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
             } else {

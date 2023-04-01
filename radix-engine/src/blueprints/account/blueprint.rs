@@ -202,7 +202,8 @@ impl AccountBlueprint {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: Option<ScryptoValue> = api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
+            let entry: Option<ScryptoValue> =
+                api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
 
             match entry {
                 Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
@@ -274,7 +275,8 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let entry: Option<ScryptoValue> = api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
+            let entry: Option<ScryptoValue> =
+                api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
 
             match entry {
                 Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
@@ -284,8 +286,11 @@ impl AccountBlueprint {
                     let vault = Vault::sys_new(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
-                    api.kernel_write_substate_typed(kv_store_entry_lock_handle, &Some(encoded_value.to_scrypto_value()))?;
-                     vault
+                    api.kernel_write_substate_typed(
+                        kv_store_entry_lock_handle,
+                        &Some(encoded_value.to_scrypto_value()),
+                    )?;
+                    vault
                 }
             }
         };
@@ -337,7 +342,8 @@ impl AccountBlueprint {
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let entry: Option<ScryptoValue> = api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
+                let entry: Option<ScryptoValue> =
+                    api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
 
                 match entry {
                     Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
@@ -347,7 +353,10 @@ impl AccountBlueprint {
                         let vault = Vault::sys_new(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
-                        api.kernel_write_substate_typed(kv_store_entry_lock_handle, &Some(encoded_value.to_scrypto_value()))?;
+                        api.kernel_write_substate_typed(
+                            kv_store_entry_lock_handle,
+                            &Some(encoded_value.to_scrypto_value()),
+                        )?;
                         vault
                     }
                 }
@@ -396,7 +405,8 @@ impl AccountBlueprint {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: Option<ScryptoValue> = api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
+            let entry: Option<ScryptoValue> =
+                api.kernel_read_substate_typed(kv_store_entry_lock_handle)?;
 
             match entry {
                 Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())

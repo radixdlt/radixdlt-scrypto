@@ -21,11 +21,8 @@ impl NodeProperties {
             ExecutionMode::KernelModule => true,
             ExecutionMode::AutoDrop => {
                 if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint.eq(PROOF_BLUEPRINT) {
-                    actor
-                        .fn_identifier
-                        .package_address
-                        .eq(&RESOURCE_MANAGER_PACKAGE)
-                        && actor.fn_identifier.blueprint_name.eq(PROOF_BLUEPRINT)
+                    actor.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
+                        && actor.blueprint_name().eq(PROOF_BLUEPRINT)
                 } else {
                     false
                 }
@@ -36,7 +33,7 @@ impl NodeProperties {
                     (METADATA_PACKAGE, METADATA_BLUEPRINT)
                     | (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
                     | (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => true, // TODO: This is required for current implementation of globalize, maybe there's a better way
-                    _ => package_address.eq(&actor.fn_identifier.package_address),
+                    _ => package_address.eq(actor.package_address()),
                 }
             }
             _ => return false,

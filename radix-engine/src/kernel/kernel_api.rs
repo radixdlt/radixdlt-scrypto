@@ -1,8 +1,8 @@
-use super::actor::Actor;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapNode;
 use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
+use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node_init::ModuleInit;
@@ -112,13 +112,13 @@ pub trait KernelApi<W: WasmEngine, E>:
 pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
-    fn kernel_get_node_visibility_origin(&self, node_id: &NodeId)
-        -> Option<RENodeVisibilityOrigin>;
+    // TODO: Cleanup
+    fn kernel_get_node_info(&self, node_id: NodeId) -> Option<(RENodeVisibilityOrigin, bool)>;
 
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Remove
-    fn kernel_get_current_actor(&self) -> Option<Actor>;
+    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;

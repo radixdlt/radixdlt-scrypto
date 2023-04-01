@@ -6,11 +6,9 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::PackageAddress;
-use radix_engine_interface::types::{
-    FnIdentifier, Level, LockHandle, NodeId, SubstateKey, TypedModuleId,
-};
+use radix_engine_interface::types::{Blueprint, GlobalAddress};
+use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, TypedModuleId};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -138,10 +136,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_type_info(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<(PackageAddress, String), ClientApiError> {
+    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<Blueprint, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
         let bytes = copy_buffer(unsafe { get_object_type_info(node_id.as_ptr(), node_id.len()) });
@@ -229,8 +224,14 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_actor() });
+    fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+        let global_address = copy_buffer(unsafe { get_global_address() });
+
+        scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+        let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }

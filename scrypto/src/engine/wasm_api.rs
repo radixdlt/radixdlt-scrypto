@@ -123,7 +123,9 @@ extern "C" {
     // System API
     //===============
 
-    pub fn get_actor() -> Buffer;
+    pub fn get_global_address() -> Buffer;
+
+    pub fn get_blueprint() -> Buffer;
 
     pub fn get_auth_zone() -> Buffer;
 
@@ -263,7 +265,12 @@ pub unsafe fn drop_lock(_handle: u32) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_actor() -> Buffer {
+pub unsafe fn get_global_address() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_blueprint() -> Buffer {
     unreachable!()
 }
 

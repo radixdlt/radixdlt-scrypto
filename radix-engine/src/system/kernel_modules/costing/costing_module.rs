@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -134,45 +134,35 @@ impl KernelModule for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (package_address, blueprint_name, ident, optional_component) = {
-            let Actor {
-                identifier,
-                fn_identifier,
-            } = callee;
-            let maybe_component = match &identifier {
-                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
-                    NodeId::GlobalObject(GlobalAddress::Component(address)) => Some(address),
-                    _ => None,
+        let (blueprint, ident, optional_component) = {
+            let blueprint = callee.blueprint();
+            let (maybe_component, ident) = match &callee {
+                Actor::Method { node_id, ident, .. } => match node_id {
+                    NodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
+                    _ => (None, ident),
                 },
-                _ => None,
+                Actor::Function { ident, .. } => (None, ident),
+                Actor::VirtualLazyLoad { .. } => {
+                    return Ok(());
+                }
             };
 
-            let ident = match &fn_identifier.ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => return Ok(()),
-            };
-
-            (
-                fn_identifier.package_address,
-                &fn_identifier.blueprint_name,
-                ident,
-                maybe_component,
-            )
+            (blueprint, ident, maybe_component)
         };
 
         //===========================
         // Apply package royalty
         //===========================
         let handle = api.kernel_lock_substate(
-            package_address.as_node_id(),
-            TypedModuleId::ObjectState,
-            &PackageOffset::Royalty.into(),
+            &NodeId::GlobalObject(blueprint.package_address.into()),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
         )?;
         let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_charge = substate
             .blueprint_royalty_configs
-            .get(blueprint_name)
+            .get(blueprint.blueprint_name.as_str())
             .map(|x| x.get_rule(ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {
@@ -187,7 +177,7 @@ impl KernelModule for CostingModule {
             apply_royalty_cost(
                 api,
                 royalty_charge,
-                RoyaltyRecipient::Package(package_address),
+                RoyaltyRecipient::Package(blueprint.package_address),
                 vault_id,
             )?;
         }
@@ -203,7 +193,8 @@ impl KernelModule for CostingModule {
                 RoyaltyOffset::Royalty.into(),
                 LockFlags::read_only(),
             )?;
-            let substate: ComponentRoyaltyConfigSubstate = api.kernel_read_substate_typed(handle)?;
+            let substate: ComponentRoyaltyConfigSubstate =
+                api.kernel_read_substate_typed(handle)?;
             let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
@@ -211,24 +202,25 @@ impl KernelModule for CostingModule {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
                     TypedModuleId::Royalty,
-                    RoyaltyOffset::RoyaltyAccumulator.into(),
+                    &RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate: mut ComponentRoyaltyAccumulatorSubstate = api.kernel_read_substate_typed_mut(handle)?;
+                let mut substate: ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_read_substate_typed(handle)?;
                 let vault_id = if let Some(vault) = substate.royalty_vault {
-                    vault.id()
+                    vault
                 } else {
                     let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
-                    substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
                     substate.royalty_vault = Some(new_vault);
-                    new_vault.id()
+                    new_vault
                 };
                 apply_royalty_cost(
                     api,
                     royalty_charge,
                     RoyaltyRecipient::Component(component_address.clone()),
-                    vault_id,
+                    vault_id.into(),
                 )?;
+                api.kernel_write_substate_typed(handle, &substate);
                 api.kernel_drop_lock(handle)?;
             }
         }

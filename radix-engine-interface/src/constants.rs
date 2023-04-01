@@ -11,14 +11,16 @@ pub const SYSTEM_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 2);
 pub const PACKAGE_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 3);
-pub const PACKAGE_OWNER_TOKEN: ResourceAddress =
+pub const GLOBAL_OBJECT_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 4);
-pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
+pub const PACKAGE_OWNER_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 5);
-pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
+pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 6);
-pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
+pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 7);
+pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
+    resource_address(EntityType::GlobalNonFungibleResource, 8);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 0);

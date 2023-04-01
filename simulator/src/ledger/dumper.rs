@@ -109,12 +109,8 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap();
 
             let raw_state = IndexedScryptoValue::from_scrypto_value(state.0);
-            let (package_address, blueprint_name) = match type_info_substate {
-                TypeInfoSubstate::Object {
-                    package_address,
-                    blueprint_name,
-                    ..
-                } => (package_address, blueprint_name),
+            let blueprint = match type_info_substate {
+                TypeInfoSubstate::Object { blueprint, .. } => blueprint,
                 _ => panic!("Unexpected"),
             };
             let access_rules = access_rules_chain_substate.access_rules;
@@ -149,8 +145,8 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
 
             ComponentStateDump {
                 raw_state: Some(raw_state),
-                blueprint_name,
-                package_address: Some(package_address),
+                blueprint_name: blueprint.blueprint_name,
+                package_address: Some(blueprint.package_address),
                 access_rules: Some(access_rules),
                 owned_vaults: Some(vaults_found),
             }

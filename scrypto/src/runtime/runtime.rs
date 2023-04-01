@@ -1,6 +1,5 @@
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{ClientEventApi, ClientObjectApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -13,7 +12,6 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
-use radix_engine_interface::types::{FnIdentifier, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -36,21 +34,26 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
+    /// Returns the running entity.
+    pub fn blueprint() -> Blueprint {
+        ScryptoEnv.get_blueprint().unwrap()
+    }
+
+    pub fn global_address() -> ComponentAddress {
+        let address: GlobalAddress = ScryptoEnv.get_global_address().unwrap();
+        ComponentAddress::new_unchecked(address.into())
+    }
+
+    /// Returns the current package address.
+    pub fn package_address() -> PackageAddress {
+        Self::blueprint().package_address
+    }
+
     pub fn package_token() -> NonFungibleGlobalId {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
                 .unwrap();
         NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
-    }
-
-    /// Returns the running entity.
-    pub fn actor() -> FnIdentifier {
-        ScryptoEnv.get_fn_identifier().unwrap()
-    }
-
-    /// Returns the current package address.
-    pub fn package_address() -> PackageAddress {
-        Self::actor().package_address
     }
 
     /// Invokes a function on a blueprint.

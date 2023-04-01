@@ -280,18 +280,12 @@ impl CallFrame {
                 ) {
                     let type_info: TypeInfoSubstate = info.as_typed().unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => {
-                            if !NodeProperties::can_own(
-                                package_address,
-                                blueprint_name.as_str(),
-                                &substate_key,
-                            ) {
-                                return Err(UpdateSubstateError::CantOwn(*child_id));
-                            }
+                        TypeInfoSubstate::Object { blueprint, .. } => {
+                            SubstateProperties::verify_can_own(
+                                &offset,
+                                blueprint.package_address,
+                                blueprint.blueprint_name.as_str(),
+                            )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
                     }
@@ -472,32 +466,20 @@ impl CallFrame {
                 // FIXME this is huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
 
-                for child_id in substate_value.owned_node_ids() {
-                    self.take_node_internal(&child_id)
-                        .map_err(UpdateSubstateError::MoveError)?;
-
-                    // TODO: Move this check into system layer
-                    if let Some(info) = heap.get_substate(
-                        child_id,
-                        TypedModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                    ) {
-                        let type_info: TypeInfoSubstate = info.as_typed().unwrap();
-                        match type_info {
-                            TypeInfoSubstate::Object {
-                                package_address,
-                                blueprint_name,
-                                ..
-                            } => {
-                                if !NodeProperties::can_own(
-                                    package_address,
-                                    blueprint_name.as_str(),
-                                    &substate_key,
-                                ) {
-                                    return Err(UpdateSubstateError::CantOwn(*child_id));
-                                }
-                            }
-                            TypeInfoSubstate::KeyValueStore(..) => {}
+                // TODO: Move this logic into system layer
+                if let Ok(info) = heap.get_substate(
+                    &child_id,
+                    NodeModuleId::TypeInfo,
+                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ) {
+                    let type_info: &TypeInfoSubstate = info.into();
+                    match type_info {
+                        TypeInfoSubstate::Object { blueprint, .. } => {
+                            SubstateProperties::verify_can_own(
+                                &offset,
+                                blueprint.package_address,
+                                blueprint.blueprint_name.as_str(),
+                            )?;
                         }
                     }
 
@@ -604,15 +586,24 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<RENodeVisibilityOrigin> {
+    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
         if self.owned_root_nodes.contains_key(node_id) {
-            Some(RENodeVisibilityOrigin::Normal)
+            Some((RENodeVisibilityOrigin::Normal, true))
         } else if let Some(_) = self.temp_node_refs.get(node_id) {
-            Some(RENodeVisibilityOrigin::Normal)
+            Some((RENodeVisibilityOrigin::Normal, false))
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
-            Some(ref_data.visibility)
+            Some((ref_data.visibility, false))
         } else {
             None
         }
+    }
+
+    pub fn check_node_visibility(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
+        self.get_node_visibility(node_id)
+            .map(|e| e.0)
+            .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }
 }

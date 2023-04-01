@@ -1,4 +1,4 @@
-use super::actor::{Actor, ExecutionMode};
+use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapNode};
@@ -14,6 +14,7 @@ use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
+use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -24,6 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -64,6 +66,11 @@ where
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: KernelModuleMixer,
     ) -> Self {
+        #[cfg(feature = "resource_tracker")]
+        radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+            v.borrow_mut();
+        });
+
         Self {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
@@ -120,8 +127,8 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok((package_address, blueprint)) = api.get_object_type_info(node_id) {
-                    match (package_address, blueprint.as_str()) {
+                if let Ok(blueprint) = api.get_object_type_info(node_id) {
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
                                 RESOURCE_MANAGER_PACKAGE,
@@ -308,16 +315,12 @@ where
                         .get_substate(node_id, TypedModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        global,
-                    } => {
+                    TypeInfoSubstate::Object { blueprint, global } => {
                         if *global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && blueprint_name.eq(VAULT_BLUEPRINT)
+                        } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
                         {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
@@ -372,7 +375,8 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
+    #[trace_resources]
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -381,20 +385,20 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let (package_address, blueprint_name) = self.get_object_type_info(node_id.clone())?;
-            if !NodeProperties::can_be_dropped(
+            let blueprint = self.get_object_type_info(node_id.clone())?;
+            if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
-                package_address,
-                blueprint_name.as_str(),
+                blueprint.package_address,
+                blueprint.blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        package_address,
-                        blueprint_name,
+                        package_address: blueprint.package_address,
+                        blueprint_name: blueprint.blueprint_name,
                     })),
                 ));
             }
@@ -410,19 +414,25 @@ where
         Ok(node)
     }
 
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
+    #[trace_resources]
+    fn kernel_allocate_node_id(
+        &mut self,
+        node_type: AllocateEntityType,
+    ) -> Result<NodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
     }
 
+    #[trace_resources(log=node_id)]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         self.id_allocator.allocate_virtual_node_id(node_id);
 
         Ok(())
     }
 
+    #[trace_resources(log=node_id)]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
@@ -472,9 +482,10 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_get_node_visibility_origin(&self, node_id: NodeId) -> Option<RENodeVisibilityOrigin> {
-        let visibility = self.current_frame.get_node_visibility(&node_id)?;
-        Some(visibility)
+    #[trace_resources]
+    fn kernel_get_node_info(&self, node_id: NodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+        let info = self.current_frame.get_node_visibility(&node_id)?;
+        Some(info)
     }
 
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
@@ -485,11 +496,34 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> Option<Actor> {
-        self.current_frame.actor.clone()
+    #[trace_resources]
+    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
+        let actor = self.current_frame.actor.clone();
+        if let Some(actor) = &actor {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    ..
+                } => {
+                    self.current_frame.add_ref(
+                        NodeId::GlobalObject(*address),
+                        RENodeVisibilityOrigin::Normal,
+                    );
+                }
+                _ => {}
+            }
+            let package_address = actor.blueprint().package_address;
+            self.current_frame.add_ref(
+                NodeId::GlobalObject(package_address.into()),
+                RENodeVisibilityOrigin::Normal,
+            );
+        }
+
+        actor
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+    #[trace_resources]
+    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(bucket_id),
             TypedModuleId::ObjectState,
@@ -539,7 +573,8 @@ where
         }
     }
 
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+    #[trace_resources]
+    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(proof_id),
             TypedModuleId::ObjectState,
@@ -596,6 +631,7 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources(log={*node_id}, log=module_id, log=offset)]
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
@@ -613,13 +649,7 @@ where
 
         // Authorization
         if let Some(actor) = &self.current_frame.actor {
-            if !NodeProperties::can_be_read(
-                current_mode,
-                actor,
-                node_id,
-                offset.clone(),
-                flags,
-            ) {
+            if !NodeProperties::can_be_read(current_mode, actor, node_id, offset.clone(), flags) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                         mode: current_mode,
@@ -717,10 +747,12 @@ where
         Ok(lock_handle)
     }
 
+    #[trace_resources]
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
         self.current_frame.get_lock_info(lock_handle)
     }
 
+    #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
@@ -730,6 +762,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -757,6 +790,7 @@ where
         Ok(ret)
     }
 
+    #[trace_resources]
     fn kernel_get_substate_ref<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
@@ -778,6 +812,7 @@ where
         Ok(substate_ref.into())
     }
 
+    #[trace_resources]
     fn kernel_get_substate_ref_mut<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
@@ -804,6 +839,7 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_create_wasm_instance(
         &mut self,
         package_address: PackageAddress,
@@ -823,6 +859,7 @@ where
     W: WasmEngine,
     N: ExecutableInvocation,
 {
+    #[trace_resources]
     fn kernel_invoke(
         &mut self,
         invocation: Box<N>,

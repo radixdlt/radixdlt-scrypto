@@ -567,11 +567,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_manifest_value(f, args, &context.for_value_display())?;
             f.write_str(";")?;
         }
-        Instruction::AssertAccessRule { access_rule } => {
-            f.write_str("ASSERT_ACCESS_RULE")?;
-            format_typed_value(f, context, access_rule)?;
-            f.write_str(";")?;
-        }
     }
     Ok(())
 }

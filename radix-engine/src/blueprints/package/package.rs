@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
-use radix_engine_interface::types::ClientCostingReason;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -133,10 +133,9 @@ where
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        TypedModuleId::TypeInfo,
-        ModuleInit::TypeInfo(TypeInfoSubstate::Object {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        NodeModuleId::TypeInfo,
+        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+            blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
         }),
     );
@@ -289,6 +288,7 @@ impl PackageNativePackage {
         access_rules
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&NodeId>,

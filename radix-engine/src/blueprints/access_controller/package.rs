@@ -23,6 +23,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use resources_tracker_macro::trace_resources;
 use sbor::rust::vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -288,6 +289,7 @@ impl AccessControllerNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&NodeId>,
@@ -965,7 +967,6 @@ where
 
     {
         api.kernel_write_substate_typed(handle, &access_controller)?;
-
     }
 
     api.sys_drop_lock(handle)?;
