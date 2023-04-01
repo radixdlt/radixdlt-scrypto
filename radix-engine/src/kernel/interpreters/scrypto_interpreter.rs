@@ -26,6 +26,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
+use resources_tracker_macro::trace_resources;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,
@@ -94,6 +95,7 @@ fn validate_output(
 impl ExecutableInvocation for MethodInvocation {
     type Exec = ScryptoExecutor;
 
+    #[trace_resources(log={format!("{:?}",self.identifier.1)}, log={&self.identifier.2}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
@@ -207,6 +209,7 @@ impl ExecutableInvocation for MethodInvocation {
 impl ExecutableInvocation for FunctionInvocation {
     type Exec = ScryptoExecutor;
 
+    #[trace_resources(log={&self.fn_identifier.blueprint_name}, log={&self.fn_identifier.ident}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
@@ -329,6 +332,7 @@ pub struct ScryptoExecutor {
 impl Executor for ScryptoExecutor {
     type Output = IndexedScryptoValue;
 
+    #[trace_resources(log={self.fn_identifier.ident.to_string()}, log={self.fn_identifier.package_address.to_hex()})]
     fn execute<Y, W>(
         self,
         args: &IndexedScryptoValue,

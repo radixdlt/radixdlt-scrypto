@@ -28,6 +28,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -68,6 +69,11 @@ where
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: KernelModuleMixer,
     ) -> Self {
+        #[cfg(feature = "resource_tracker")]
+        radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+            v.borrow_mut();
+        });
+
         Self {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
@@ -376,6 +382,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
@@ -414,6 +421,7 @@ where
         Ok(node)
     }
 
+    #[trace_resources]
     fn kernel_allocate_node_id(
         &mut self,
         node_type: AllocateEntityType,
@@ -424,12 +432,14 @@ where
         Ok(node_id)
     }
 
+    #[trace_resources(log=node_id)]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.id_allocator.allocate_virtual_node_id(node_id);
 
         Ok(())
     }
 
+    #[trace_resources(log=node_id)]
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
@@ -479,6 +489,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_get_node_visibility_origin(
         &self,
         node_id: RENodeId,
@@ -495,10 +506,12 @@ where
         self.current_frame.depth
     }
 
+    #[trace_resources]
     fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.current_frame.actor.clone()
     }
 
+    #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &RENodeId::Object(bucket_id),
@@ -549,6 +562,7 @@ where
         }
     }
 
+    #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &RENodeId::Object(proof_id),
@@ -606,6 +620,7 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources(log={*node_id}, log=module_id, log=offset)]
     fn kernel_lock_substate(
         &mut self,
         node_id: &RENodeId,
@@ -727,10 +742,12 @@ where
         Ok(lock_handle)
     }
 
+    #[trace_resources]
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
         self.current_frame.get_lock_info(lock_handle)
     }
 
+    #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
@@ -740,6 +757,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -767,6 +785,7 @@ where
         Ok(ret)
     }
 
+    #[trace_resources]
     fn kernel_get_substate_ref<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
@@ -788,6 +807,7 @@ where
         Ok(substate_ref.into())
     }
 
+    #[trace_resources]
     fn kernel_get_substate_ref_mut<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
@@ -814,6 +834,7 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_create_wasm_instance(
         &mut self,
         package_address: PackageAddress,
@@ -833,6 +854,7 @@ where
     W: WasmEngine,
     N: ExecutableInvocation,
 {
+    #[trace_resources]
     fn kernel_invoke(
         &mut self,
         invocation: Box<N>,

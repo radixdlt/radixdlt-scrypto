@@ -10,6 +10,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use resources_tracker_macro::trace_resources;
 
 use super::*;
 
@@ -216,6 +217,7 @@ impl EpochManagerNativePackage {
         access_rules
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
