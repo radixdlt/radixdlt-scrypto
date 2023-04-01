@@ -16,6 +16,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 use radix_engine_interface::time::*;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ClockSubstate {
@@ -96,6 +97,7 @@ impl ClockNativePackage {
         access_rules
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
