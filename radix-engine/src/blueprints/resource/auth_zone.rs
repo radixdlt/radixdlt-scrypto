@@ -129,7 +129,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let composed_proof = {
-            let auth_zone: AuthZone = api.kernel_read_substate_typed(auth_zone_handle)?;
+            let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_amount(&proofs, input.resource_address, Some(input.amount), api)?
         };
@@ -168,7 +168,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let composed_proof = {
-            let auth_zone: AuthZone = api.kernel_read_substate_typed(auth_zone_handle)?;
+            let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_ids(&proofs, input.resource_address, Some(input.ids), api)?
         };

@@ -935,7 +935,7 @@ where
     let handle = api.sys_lock_substate(receiver, &offset, LockFlags::read_only())?;
 
     let access_controller = {
-        let access_controller: AccessControllerSubstate = api.kernel_read_substate_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.sys_read_substate_typed(handle)?;
         access_controller
     };
 
@@ -959,14 +959,14 @@ where
     let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
-        let access_controller: AccessControllerSubstate = api.kernel_read_substate_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.sys_read_substate_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        api.kernel_write_substate_typed(handle, &access_controller)?;
+        api.sys_write_substate_typed(handle, &access_controller)?;
     }
 
     api.sys_drop_lock(handle)?;

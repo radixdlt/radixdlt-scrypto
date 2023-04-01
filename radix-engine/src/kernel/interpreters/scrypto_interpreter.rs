@@ -182,7 +182,7 @@ impl ExecutableInvocation for MethodInvocation {
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
-                let code_type: PackageCodeTypeSubstate = api.kernel_read_substate_typed(handle)?;
+                let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
                 let code_type = code_type.clone();
                 api.kernel_drop_lock(handle)?;
 
@@ -260,7 +260,7 @@ impl ExecutableInvocation for FunctionInvocation {
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
-                let code_type: PackageCodeTypeSubstate = api.kernel_read_substate_typed(handle)?;
+                let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
                 let code_type = code_type.clone();
                 api.kernel_drop_lock(handle)?;
 
@@ -417,7 +417,7 @@ impl Executor for ScryptoExecutor {
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
-                let package_info: PackageInfoSubstate = api.kernel_read_substate_typed(handle)?;
+                let package_info: PackageInfoSubstate = api.sys_read_substate_typed(handle)?;
                 let schema = package_info
                     .schema
                     .blueprints
@@ -457,7 +457,7 @@ impl Executor for ScryptoExecutor {
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
-                let code_type: PackageCodeTypeSubstate = api.kernel_read_substate_typed(handle)?;
+                let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
                 let code_type = code_type.clone();
                 api.kernel_drop_lock(handle)?;
                 code_type
@@ -470,7 +470,7 @@ impl Executor for ScryptoExecutor {
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
                     )?;
-                    let code: PackageCodeSubstate = api.kernel_read_substate_typed(handle)?;
+                    let code: PackageCodeSubstate = api.sys_read_substate_typed(handle)?;
                     let native_package_code_id = code.code[0];
                     api.kernel_drop_lock(handle)?;
 

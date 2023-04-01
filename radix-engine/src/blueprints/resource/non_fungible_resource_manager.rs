@@ -338,7 +338,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let (bucket_id, non_fungibles) = {
             let mut resource_manager: NonFungibleResourceManagerSubstate =
-                api.kernel_read_substate_typed(resman_handle)?;
+                api.sys_read_substate_typed(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             if resource_manager.id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -387,14 +387,14 @@ impl NonFungibleResourceManagerBlueprint {
                 ],
             )?;
 
-            api.kernel_write_substate_typed(resman_handle, &resource_manager)?;
+            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
 
             (bucket_id, non_fungibles)
         };
 
         let (nf_store_id, resource_address) = {
             let resource_manager: NonFungibleResourceManagerSubstate =
-                api.kernel_read_substate_typed(resman_handle)?;
+                api.sys_read_substate_typed(resman_handle)?;
             (
                 resource_manager.non_fungible_table,
                 resource_manager.resource_address,
@@ -407,7 +407,7 @@ impl NonFungibleResourceManagerBlueprint {
 
             {
                 let cur_non_fungible: Option<ScryptoValue> =
-                    api.sys_read_typed_substate(non_fungible_handle)?;
+                    api.sys_read_substate_typed(non_fungible_handle)?;
 
                 if let Some(..) = cur_non_fungible {
                     return Err(RuntimeError::ApplicationError(
@@ -419,7 +419,7 @@ impl NonFungibleResourceManagerBlueprint {
                     ));
                 }
 
-                api.sys_write_typed_substate(non_fungible_handle, Some(non_fungible))?;
+                api.sys_write_substate_typed(non_fungible_handle, Some(non_fungible))?;
             }
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -450,7 +450,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let mut resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let nf_store_id = resource_manager.non_fungible_table;
         let id_type = resource_manager.id_type;
@@ -473,7 +473,7 @@ impl NonFungibleResourceManagerBlueprint {
         {
             let non_fungible_handle =
                 api.sys_lock_substate(&nf_store_id, &id.to_substate_key(), LockFlags::MUTABLE)?;
-            api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
+            api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
 
             api.sys_drop_lock(non_fungible_handle)?;
         }
@@ -496,7 +496,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
-        api.kernel_write_substate_typed(resman_handle, &resource_manager)?;
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
 
         Ok((Bucket(Own(bucket_id)), id))
     }
@@ -517,7 +517,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let (bucket_id, ids) = {
             let mut resource_manager: NonFungibleResourceManagerSubstate =
-                api.kernel_read_substate_typed(resman_handle)?;
+                api.sys_read_substate_typed(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             let nf_store_id = resource_manager.non_fungible_table;
             let id_type = resource_manager.id_type;
@@ -547,7 +547,7 @@ impl NonFungibleResourceManagerBlueprint {
                         &id.to_substate_key(),
                         LockFlags::MUTABLE,
                     )?;
-                    api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
+                    api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
 
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
@@ -568,7 +568,7 @@ impl NonFungibleResourceManagerBlueprint {
                 ],
             )?;
 
-            api.kernel_write_substate_typed(resman_handle, &resource_manager)?;
+            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
 
             (bucket_id, ids)
         };
@@ -595,7 +595,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
@@ -629,13 +629,13 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
-            api.sys_read_typed_substate(non_fungible_handle)?;
+            api.sys_read_substate_typed(non_fungible_handle)?;
 
         if let Some(ref mut non_fungible) = non_fungible_entry {
             let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
             *value = data;
 
-            api.sys_write_typed_substate(non_fungible_handle, &non_fungible_entry)?;
+            api.sys_write_substate_typed(non_fungible_handle, &non_fungible_entry)?;
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
@@ -667,7 +667,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_handle = api.sys_lock_substate(
@@ -676,7 +676,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let non_fungible: Option<ScryptoValue> =
-            api.sys_read_typed_substate(non_fungible_handle)?;
+            api.sys_read_substate_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
 
         Ok(exists)
@@ -697,7 +697,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_global_id =
@@ -708,7 +708,7 @@ impl NonFungibleResourceManagerBlueprint {
             &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
-        let wrapper: Option<ScryptoValue> = api.sys_read_typed_substate(non_fungible_handle)?;
+        let wrapper: Option<ScryptoValue> = api.sys_read_substate_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)
         } else {
@@ -733,7 +733,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let id_type = resource_manager.id_type;
         let bucket_id = api.new_object(
@@ -792,7 +792,7 @@ impl NonFungibleResourceManagerBlueprint {
                 // TODO: Move this check into actor check
                 {
                     let mut resource_manager: NonFungibleResourceManagerSubstate =
-                        api.kernel_read_substate_typed(resman_handle)?;
+                        api.sys_read_substate_typed(resman_handle)?;
                     if dropped_bucket.info.resource_address != resource_manager.resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
@@ -813,11 +813,11 @@ impl NonFungibleResourceManagerBlueprint {
                             LockFlags::MUTABLE,
                         )?;
 
-                        api.sys_write_typed_substate(non_fungible_handle, None::<ScryptoValue>)?;
+                        api.sys_write_substate_typed(non_fungible_handle, None::<ScryptoValue>)?;
                         api.sys_drop_lock(non_fungible_handle)?;
                     }
 
-                    api.kernel_write_substate_typed(resman_handle, &resource_manager)?;
+                    api.sys_write_substate_typed(resman_handle, &resource_manager)?;
                 }
             }
         }
@@ -836,7 +836,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let resource_address = resource_manager.resource_address;
         let id_type = resource_manager.id_type;
         let info = VaultInfoSubstate {
@@ -873,7 +873,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let resource_type = ResourceType::NonFungible {
             id_type: resource_manager.id_type,
         };
@@ -894,7 +894,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let resource_manager: NonFungibleResourceManagerSubstate =
-            api.kernel_read_substate_typed(resman_handle)?;
+            api.sys_read_substate_typed(resman_handle)?;
         let total_supply = resource_manager.total_supply;
         Ok(total_supply)
     }

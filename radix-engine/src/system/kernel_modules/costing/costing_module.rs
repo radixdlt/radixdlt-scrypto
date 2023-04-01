@@ -193,8 +193,7 @@ impl KernelModule for CostingModule {
                 RoyaltyOffset::Royalty.into(),
                 LockFlags::read_only(),
             )?;
-            let substate: ComponentRoyaltyConfigSubstate =
-                api.kernel_read_substate_typed(handle)?;
+            let substate: ComponentRoyaltyConfigSubstate = api.sys_read_substate_typed(handle)?;
             let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
@@ -206,7 +205,7 @@ impl KernelModule for CostingModule {
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate: ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_read_substate_typed(handle)?;
+                    api.sys_read_substate_typed(handle)?;
                 let vault_id = if let Some(vault) = substate.royalty_vault {
                     vault
                 } else {
@@ -220,7 +219,7 @@ impl KernelModule for CostingModule {
                     RoyaltyRecipient::Component(component_address.clone()),
                     vault_id.into(),
                 )?;
-                api.kernel_write_substate_typed(handle, &substate);
+                api.sys_write_substate_typed(handle, &substate);
                 api.kernel_drop_lock(handle)?;
             }
         }

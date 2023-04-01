@@ -48,7 +48,7 @@ impl ProofInfoSubstate {
     ) -> Result<Self, RuntimeError> {
         let handle =
             api.sys_lock_substate(receiver, &ProofOffset::Info.into(), LockFlags::read_only())?;
-        let substate_ref: ProofInfoSubstate = api.kernel_read_substate_typed(handle)?;
+        let substate_ref: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
         Ok(info)
@@ -212,7 +212,7 @@ impl ProofBlueprint {
                 &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: FungibleProof = api.kernel_read_substate_typed(handle)?;
+            let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
@@ -233,7 +233,7 @@ impl ProofBlueprint {
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: NonFungibleProof = api.kernel_read_substate_typed(handle)?;
+            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
@@ -272,7 +272,7 @@ impl ProofBlueprint {
                 &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: FungibleProof = api.kernel_read_substate_typed(handle)?;
+            let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
             let amount = substate_ref.amount();
             api.sys_drop_lock(handle)?;
             amount
@@ -282,7 +282,7 @@ impl ProofBlueprint {
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: NonFungibleProof = api.kernel_read_substate_typed(handle)?;
+            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
             let amount = substate_ref.amount();
             api.sys_drop_lock(handle)?;
             amount
@@ -313,7 +313,7 @@ impl ProofBlueprint {
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: NonFungibleProof = api.kernel_read_substate_typed(handle)?;
+            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
             let ids = substate_ref.non_fungible_local_ids().clone();
             api.sys_drop_lock(handle)?;
             Ok(IndexedScryptoValue::from_typed(&ids))

@@ -118,7 +118,7 @@ impl WorktopBlueprint {
                 &WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
+            let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
             let existing_bucket = Bucket(worktop.resources.get(&resource_address).cloned().ok_or(
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
                     WorktopError::InsufficientBalance,
@@ -133,7 +133,7 @@ impl WorktopBlueprint {
             } else if existing_amount == amount {
                 // Move
                 worktop.resources.remove(&resource_address);
-                api.kernel_write_substate_typed(worktop_handle, &worktop);
+                api.sys_write_substate_typed(worktop_handle, &worktop);
                 api.sys_drop_lock(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
             } else {
@@ -168,7 +168,7 @@ impl WorktopBlueprint {
                 &WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
+            let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
             let existing_bucket = Bucket(worktop.resources.get(&resource_address).cloned().ok_or(
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
                     WorktopError::InsufficientBalance,
@@ -184,7 +184,7 @@ impl WorktopBlueprint {
                 // Move
                 worktop = api.kernel_get_substate_ref_mut(worktop_handle)?;
                 worktop.resources.remove(&resource_address);
-                api.kernel_write_substate_typed(worktop_handle, &worktop);
+                api.sys_write_substate_typed(worktop_handle, &worktop);
                 api.sys_drop_lock(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
             } else {
@@ -238,7 +238,7 @@ impl WorktopBlueprint {
             &WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
-        let worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
+        let worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             Bucket(bucket).sys_amount(api)?
         } else {
@@ -270,7 +270,7 @@ impl WorktopBlueprint {
             &WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
-        let worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
+        let worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             Bucket(bucket).sys_amount(api)?
         } else {
@@ -302,7 +302,7 @@ impl WorktopBlueprint {
             &WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
-        let worktop: WorktopSubstate = api.kernel_read_substate_typed(worktop_handle)?;
+        let worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.clone());
             bucket.sys_non_fungible_local_ids(api)?

@@ -218,9 +218,9 @@ impl ClockNativePackage {
             &ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate: ClockSubstate = api.kernel_read_substate_typed(handle)?;
+        let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
         substate.current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
-        api.kernel_write_substate_typed(handle, &substate)?;
+        api.sys_write_substate_typed(handle, &substate)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -244,7 +244,7 @@ impl ClockNativePackage {
                     &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let substate: ClockSubstate = api.kernel_read_substate_typed(handle)?;
+                let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
@@ -272,7 +272,7 @@ impl ClockNativePackage {
                     &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let substate: ClockSubstate = api.kernel_read_substate_typed(handle)?;
+                let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );

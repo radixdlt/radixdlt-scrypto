@@ -1,4 +1,4 @@
-use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;

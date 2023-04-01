@@ -57,8 +57,7 @@ impl NodeMoveModule {
                             &ProofOffset::Info.into(),
                             LockFlags::MUTABLE,
                         )?;
-                        let mut proof: ProofInfoSubstate =
-                            api.kernel_read_substate_typed(handle)?;
+                        let mut proof: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
 
                         if proof.restricted {
                             return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
@@ -70,7 +69,7 @@ impl NodeMoveModule {
                             proof.change_to_restricted();
                         }
 
-                        api.kernel_write_substate_typed(handle, &proof);
+                        api.sys_write_substate_typed(handle, &proof);
                         api.kernel_drop_lock(handle)?;
                     }
                     _ => {}

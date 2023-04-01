@@ -42,7 +42,6 @@ pub trait KernelNodeApi {
 }
 
 pub trait KernelSubstateApi {
-    /// Locks a visible substate
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
@@ -60,29 +59,11 @@ pub trait KernelSubstateApi {
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
-    fn kernel_read_substate_typed<T: ScryptoDecode>(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<T, RuntimeError> {
-        let substate = self.kernel_read_substate(lock_handle)?;
-        substate
-            .as_typed()
-            .expect("Failed to decode substate into type")
-    }
-
     fn kernel_write_substate(
         &mut self,
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
-
-    fn kernel_write_substate_typed<T: ScryptoEncode>(
-        &mut self,
-        lock_handle: LockHandle,
-        value: &T,
-    ) -> Result<(), RuntimeError> {
-        self.kernel_write_substate(lock_handle, IndexedScryptoValue::from_typed(value))
-    }
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {

@@ -207,7 +207,7 @@ impl EpochManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let epoch_manager: EpochManagerSubstate = api.kernel_read_substate_typed(handle)?;
+        let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
 
         Ok(epoch_manager.epoch)
     }
@@ -225,7 +225,7 @@ impl EpochManagerBlueprint {
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut epoch_manager: EpochManagerSubstate = api.kernel_read_substate_typed(mgr_handle)?;
+        let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
 
         if round <= epoch_manager.round {
             return Err(RuntimeError::ApplicationError(
@@ -243,16 +243,16 @@ impl EpochManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut preparing_validator_set: ValidatorSetSubstate =
-                api.kernel_read_substate_typed(handle)?;
+                api.sys_read_substate_typed(handle)?;
             let prepared_epoch = preparing_validator_set.epoch;
             let next_validator_set = preparing_validator_set.validator_set.clone();
             preparing_validator_set.epoch = prepared_epoch + 1;
-            api.kernel_write_substate_typed(handle, &preparing_validator_set)?;
+            api.sys_write_substate_typed(handle, &preparing_validator_set)?;
             api.sys_drop_lock(handle)?;
 
             epoch_manager.epoch = prepared_epoch;
             epoch_manager.round = 0;
-            api.kernel_write_substate_typed(handle, &epoch_manager)?;
+            api.sys_write_substate_typed(handle, &epoch_manager)?;
             api.sys_drop_lock(mgr_handle)?;
 
             let handle = api.sys_lock_substate(
@@ -260,10 +260,10 @@ impl EpochManagerBlueprint {
                 &EpochManagerOffset::CurrentValidatorSet.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut validator_set: ValidatorSetSubstate = api.kernel_read_substate_typed(handle)?;
+            let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
             validator_set.epoch = prepared_epoch;
             validator_set.validator_set = next_validator_set.clone();
-            api.kernel_write_substate_typed(handle, &validator_set)?;
+            api.sys_write_substate_typed(handle, &validator_set)?;
             api.sys_drop_lock(handle)?;
 
             Runtime::emit_event(
@@ -296,9 +296,9 @@ impl EpochManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut epoch_manager: EpochManagerSubstate = api.kernel_read_substate_typed(handle)?;
+        let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
         epoch_manager.epoch = epoch;
-        api.kernel_write_substate_typed(handle, &epoch_manager)?;
+        api.sys_write_substate_typed(handle, &epoch_manager)?;
 
         Ok(())
     }
@@ -316,7 +316,7 @@ impl EpochManagerBlueprint {
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
-        let epoch_manager: EpochManagerSubstate = api.kernel_read_substate_typed(handle)?;
+        let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
         let manager = epoch_manager.address;
 
         let (validator_address, owner_token_bucket) =
@@ -339,7 +339,7 @@ impl EpochManagerBlueprint {
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_set: ValidatorSetSubstate = api.kernel_read_substate_typed(handle)?;
+        let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
         match update {
             UpdateValidator::Register(key, stake) => {
                 validator_set
@@ -350,7 +350,7 @@ impl EpochManagerBlueprint {
                 validator_set.validator_set.remove(&validator_address);
             }
         }
-        api.kernel_write_substate_typed(handle, &validator_set)?;
+        api.sys_write_substate_typed(handle, &validator_set)?;
 
         Ok(())
     }

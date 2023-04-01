@@ -172,7 +172,7 @@ impl AuthModule {
                                 VaultOffset::Vault.into(),
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref: VaultInfoSubstate = api.kernel_read_substate_typed(handle)?;
+                            let substate_ref: VaultInfoSubstate = api.sys_read_substate_typed(handle)?;
                             let resource_address = substate_ref.resource_address;
                             api.kernel_drop_lock(handle)?;
                             resource_address
@@ -195,7 +195,7 @@ impl AuthModule {
                                     LockFlags::read_only(),
                                 )?;
 
-                                let substate: MethodAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
+                                let substate: MethodAccessRulesSubstate = api.sys_read_substate_typed(handle)?;
 
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
@@ -278,7 +278,7 @@ impl AuthModule {
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
-            let package: PackageInfoSubstate = api.kernel_read_substate_typed(handle)?;
+            let package: PackageInfoSubstate = api.sys_read_substate_typed(handle)?;
             let schema = package
                 .schema
                 .blueprints
@@ -304,7 +304,7 @@ impl AuthModule {
                 offset,
                 LockFlags::read_only(),
             )?;
-            let state: ComponentStateSubstate = api.kernel_read_substate_typed(handle)?;
+            let state: ComponentStateSubstate = api.sys_read_substate_typed(handle)?;
             let state = IndexedScryptoValue::from_scrypto_value(state.0.clone());
             api.kernel_drop_lock(handle)?;
             state
@@ -316,7 +316,7 @@ impl AuthModule {
             AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
-        let access_rules: MethodAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
+        let access_rules: MethodAccessRulesSubstate = api.sys_read_substate_typed(handle)?;
 
         let method_auth = access_rules.access_rules.get_access_rule(&key);
         let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
@@ -338,7 +338,7 @@ impl AuthModule {
             AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
-        let access_rules: MethodAccessRulesSubstate = api.kernel_read_substate_typed(handle)?;
+        let access_rules: MethodAccessRulesSubstate = api.sys_read_substate_typed(handle)?;
 
         let method_auth = access_rules.access_rules.get_access_rule(&key);
 
