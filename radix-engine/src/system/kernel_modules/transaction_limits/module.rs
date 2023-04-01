@@ -1,11 +1,9 @@
+use crate::kernel::actor::Actor;
 use crate::types::*;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
-    kernel::{
-        actor::Actor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
-        module::KernelModule,
-    },
+    kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
 

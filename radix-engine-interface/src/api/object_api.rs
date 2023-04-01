@@ -13,7 +13,7 @@ pub trait ClientObjectApi<E> {
         app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, E>;
 
-    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<(PackageAddress, String), E>;
+    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<Blueprint, E>;
 
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, E>;
 

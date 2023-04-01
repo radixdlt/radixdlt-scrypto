@@ -875,13 +875,9 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .type_info()
             .clone();
 
-        if let TypeInfoSubstate::Object {
-            package_address,
-            blueprint_name,
-            ..
-        } = type_info
-        {
-            package_address == RESOURCE_MANAGER_PACKAGE && blueprint_name == VAULT_BLUEPRINT
+        if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+            blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                && blueprint.blueprint_name == VAULT_BLUEPRINT
         } else {
             false
         }

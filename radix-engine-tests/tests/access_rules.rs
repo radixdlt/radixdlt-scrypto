@@ -288,58 +288,10 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 #[test]
-fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, _account_component) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .assert_access_rule(rule!(require(RADIX_TOKEN)))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|error: &RuntimeError| {
-        matches!(
-            error,
-            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
-        )
-    })
-}
-
-#[test]
-fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account_component, RADIX_TOKEN)
-        .assert_access_rule(rule!(require(RADIX_TOKEN)))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
-
     let component_address = {
         let manifest = ManifestBuilder::new()
             .call_function(
@@ -350,29 +302,22 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
+    // Act
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(RADIX_TOKEN)), Vec::<ManifestBucket>::new()),
+            manifest_args!(rule!(require(RADIX_TOKEN))),
         )
         .build();
 
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
@@ -410,18 +355,11 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.call_method(
-                component_address,
-                "assert_access_rule",
-                manifest_args!(rule!(require(RADIX_TOKEN)), vec![bucket]),
-            )
-        })
+        .create_proof_from_account(account_component, RADIX_TOKEN)
         .call_method(
-            account_component,
-            "deposit_batch",
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            "assert_access_rule",
+            manifest_args!(rule!(require(RADIX_TOKEN))),
         )
         .build();
 

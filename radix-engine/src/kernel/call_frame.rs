@@ -246,15 +246,11 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => {
+                        TypeInfoSubstate::Object { blueprint, .. } => {
                             SubstateProperties::verify_can_own(
                                 &offset,
-                                *package_address,
-                                blueprint_name.as_str(),
+                                blueprint.package_address,
+                                blueprint.blueprint_name.as_str(),
                             )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
@@ -500,15 +496,11 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => {
+                        TypeInfoSubstate::Object { blueprint, .. } => {
                             SubstateProperties::verify_can_own(
                                 &offset,
-                                *package_address,
-                                blueprint_name.as_str(),
+                                blueprint.package_address,
+                                blueprint.blueprint_name.as_str(),
                             )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
@@ -643,13 +635,16 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RENodeVisibilityOrigin> {
+    pub fn get_node_visibility(
+        &self,
+        node_id: &RENodeId,
+    ) -> Option<(RENodeVisibilityOrigin, bool)> {
         if self.owned_root_nodes.contains_key(node_id) {
-            Some(RENodeVisibilityOrigin::Normal)
+            Some((RENodeVisibilityOrigin::Normal, true))
         } else if let Some(_) = self.temp_node_refs.get(node_id) {
-            Some(RENodeVisibilityOrigin::Normal)
+            Some((RENodeVisibilityOrigin::Normal, false))
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
-            Some(ref_data.visibility)
+            Some((ref_data.visibility, false))
         } else {
             None
         }
@@ -660,6 +655,7 @@ impl CallFrame {
         node_id: &RENodeId,
     ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
         self.get_node_visibility(node_id)
+            .map(|e| e.0)
             .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }
 }

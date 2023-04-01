@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -27,17 +27,11 @@ impl NodeMoveModule {
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Object(..) => {
-                let (package_address, blueprint) = api.get_object_type_info(node_id)?;
-                match (package_address, blueprint.as_str()) {
+                let blueprint = api.get_object_type_info(node_id)?;
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                        if let Actor {
-                            identifier:
-                                ActorIdentifier::Function(FunctionIdentifier(
-                                    RESOURCE_MANAGER_PACKAGE,
-                                    ..,
-                                )),
-                            ..
-                        } = callee
+                        if matches!(callee, Actor::Function { .. })
+                            && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
                         {
                             return Ok(());
                         }
@@ -45,21 +39,13 @@ impl NodeMoveModule {
                         // Change to restricted unless it's moved to auth zone.
                         // TODO: align with barrier design?
                         let mut changed_to_restricted = true;
-                        if let Actor {
-                            identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
-                            ..
-                        } = callee
-                        {
+                        if let Actor::Method { node_id, .. } = callee {
                             let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-                            if let TypeInfoSubstate::Object {
-                                package_address,
-                                blueprint_name,
-                                ..
-                            } = type_info
-                            {
-                                if package_address == RESOURCE_MANAGER_PACKAGE
-                                    && blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
-                                {
+                            if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+                                if blueprint.eq(&Blueprint::new(
+                                    &RESOURCE_MANAGER_PACKAGE,
+                                    AUTH_ZONE_BLUEPRINT,
+                                )) {
                                     changed_to_restricted = false;
                                 }
                             }

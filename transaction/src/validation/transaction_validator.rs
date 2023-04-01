@@ -294,8 +294,7 @@ impl NotarizedTransactionValidator {
                 | Instruction::SetMethodAccessRule { .. }
                 | Instruction::MintFungible { .. }
                 | Instruction::MintNonFungible { .. }
-                | Instruction::MintUuidNonFungible { .. }
-                | Instruction::AssertAccessRule { .. } => {}
+                | Instruction::MintUuidNonFungible { .. } => {}
             }
         }
 

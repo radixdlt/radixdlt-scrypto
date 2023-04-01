@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -134,37 +134,27 @@ impl KernelModule for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (package_address, blueprint_name, ident, optional_component) = {
-            let Actor {
-                identifier,
-                fn_identifier,
-            } = callee;
-            let maybe_component = match &identifier {
-                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
-                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
-                    _ => None,
+        let (blueprint, ident, optional_component) = {
+            let blueprint = callee.blueprint();
+            let (maybe_component, ident) = match &callee {
+                Actor::Method { node_id, ident, .. } => match node_id {
+                    RENodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
+                    _ => (None, ident),
                 },
-                _ => None,
+                Actor::Function { ident, .. } => (None, ident),
+                Actor::VirtualLazyLoad { .. } => {
+                    return Ok(());
+                }
             };
 
-            let ident = match &fn_identifier.ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => return Ok(()),
-            };
-
-            (
-                fn_identifier.package_address,
-                &fn_identifier.blueprint_name,
-                ident,
-                maybe_component,
-            )
+            (blueprint, ident, maybe_component)
         };
 
         //===========================
         // Apply package royalty
         //===========================
         let handle = api.kernel_lock_substate(
-            &RENodeId::GlobalObject(package_address.into()),
+            &RENodeId::GlobalObject(blueprint.package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
@@ -172,7 +162,7 @@ impl KernelModule for CostingModule {
         let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_charge = substate
             .blueprint_royalty_configs
-            .get(blueprint_name)
+            .get(blueprint.blueprint_name.as_str())
             .map(|x| x.get_rule(ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {
@@ -187,7 +177,7 @@ impl KernelModule for CostingModule {
             apply_royalty_cost(
                 api,
                 royalty_charge,
-                RoyaltyRecipient::Package(package_address),
+                RoyaltyRecipient::Package(blueprint.package_address),
                 vault_id,
             )?;
         }

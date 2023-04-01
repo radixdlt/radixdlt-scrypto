@@ -558,26 +558,6 @@ CALL_METHOD
     }
 
     #[test]
-    fn test_assert_access_rule() {
-        compile_and_decompile_with_inversion_test(
-            "assert_access_rule",
-            &apply_replacements_to_manifest(
-                include_str!("../../examples/access_rule/assert_access_rule.rtm").to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-            vec![],
-            r##"
-CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
-    "lock_fee"
-    Decimal("10");
-ASSERT_ACCESS_RULE
-    Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))));
-"##,
-        );
-    }
-
-    #[test]
     fn test_create_account() {
         compile_and_decompile_with_inversion_test(
             "create_account",

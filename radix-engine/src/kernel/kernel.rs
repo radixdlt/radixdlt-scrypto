@@ -1,4 +1,4 @@
-use super::actor::{Actor, ExecutionMode};
+use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};
@@ -14,6 +14,7 @@ use super::track::{Track, TrackError};
 use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
+use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -130,8 +131,8 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok((package_address, blueprint)) = api.get_object_type_info(node_id) {
-                    match (package_address, blueprint.as_str()) {
+                if let Ok(blueprint) = api.get_object_type_info(node_id) {
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
                                 RESOURCE_MANAGER_PACKAGE,
@@ -318,16 +319,12 @@ where
                         .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        global,
-                    } => {
+                    TypeInfoSubstate::Object { blueprint, global } => {
                         if *global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && blueprint_name.eq(VAULT_BLUEPRINT)
+                        } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
                         {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
@@ -392,20 +389,20 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let (package_address, blueprint_name) = self.get_object_type_info(node_id.clone())?;
+            let blueprint = self.get_object_type_info(node_id.clone())?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
-                package_address,
-                blueprint_name.as_str(),
+                blueprint.package_address,
+                blueprint.blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        package_address,
-                        blueprint_name,
+                        package_address: blueprint.package_address,
+                        blueprint_name: blueprint.blueprint_name,
                     })),
                 ));
             }
@@ -490,12 +487,9 @@ where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_get_node_visibility_origin(
-        &self,
-        node_id: RENodeId,
-    ) -> Option<RENodeVisibilityOrigin> {
-        let visibility = self.current_frame.get_node_visibility(&node_id)?;
-        Some(visibility)
+    fn kernel_get_node_info(&self, node_id: RENodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+        let info = self.current_frame.get_node_visibility(&node_id)?;
+        Some(info)
     }
 
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
@@ -507,8 +501,29 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_current_actor(&self) -> Option<Actor> {
-        self.current_frame.actor.clone()
+    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
+        let actor = self.current_frame.actor.clone();
+        if let Some(actor) = &actor {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    ..
+                } => {
+                    self.current_frame.add_ref(
+                        RENodeId::GlobalObject(*address),
+                        RENodeVisibilityOrigin::Normal,
+                    );
+                }
+                _ => {}
+            }
+            let package_address = actor.blueprint().package_address;
+            self.current_frame.add_ref(
+                RENodeId::GlobalObject(package_address.into()),
+                RENodeVisibilityOrigin::Normal,
+            );
+        }
+
+        actor
     }
 
     #[trace_resources]

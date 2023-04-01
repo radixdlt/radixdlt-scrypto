@@ -192,9 +192,30 @@ pub fn create_genesis(
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                metadata,
+                access_rules,
+                resource_address,
+            }),
+        });
+    }
+
+    // Object Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
+        let resource_address = GLOBAL_OBJECT_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(GLOBAL_OBJECT_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),

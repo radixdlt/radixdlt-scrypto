@@ -136,8 +136,7 @@ where
     node_modules.insert(
         NodeModuleId::TypeInfo,
         RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
         }),
     );

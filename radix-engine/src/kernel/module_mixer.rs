@@ -1,6 +1,6 @@
-use super::actor::Actor;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::AuthModule;

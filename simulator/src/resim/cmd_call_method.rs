@@ -61,7 +61,7 @@ impl CallMethod {
             })?;
         }
 
-        let (package_address, blueprint_name) = get_blueprint(self.component_address.0)?;
+        let blueprint = get_blueprint(self.component_address.0)?;
 
         let manifest = manifest_builder
             .lock_fee(FAUCET_COMPONENT, 100.into())
@@ -73,7 +73,7 @@ impl CallMethod {
                     &self.method_name,
                     self.arguments.clone(),
                     Some(default_account),
-                    &export_blueprint_schema(package_address, &blueprint_name)?,
+                    &export_blueprint_schema(blueprint.package_address, &blueprint.blueprint_name)?,
                 )
                 .map_err(Error::TransactionConstructionError)?;
                 Ok(builder)

@@ -134,10 +134,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_type_info(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<(PackageAddress, String), ClientApiError> {
+    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<Blueprint, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
         let bytes = copy_buffer(unsafe { get_object_type_info(node_id.as_ptr(), node_id.len()) });
@@ -226,8 +223,14 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_actor() });
+    fn get_global_address(&mut self) -> Result<Address, ClientApiError> {
+        let global_address = copy_buffer(unsafe { get_global_address() });
+
+        scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+        let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
