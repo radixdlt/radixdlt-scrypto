@@ -169,7 +169,7 @@ impl CallFrame {
         let mut initial_references = index_set_new();
         for node_id in references {
             // TODO: fix this ugly condition
-            if EntityType::is_global_node(&node_id) {
+            if node_id.is_global() {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
                     node_id.clone(),
@@ -469,7 +469,7 @@ impl CallFrame {
                 // TODO: Move this logic into system layer
                 if let Ok(info) = heap.get_substate(
                     &child_id,
-                    NodeModuleId::TypeInfo,
+                    TypedModuleId::TypeInfo,
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
@@ -494,7 +494,7 @@ impl CallFrame {
             for (module_id, module) in substates {
                 for (substate_key, substate_value) in module {
                     for reference in substate_value.references() {
-                        if !EntityType::is_global_node(reference) {
+                        if !reference.is_global() {
                             return Err(UpdateSubstateError::CantPutLocalRefToStore(*reference));
                         }
                     }
@@ -565,7 +565,7 @@ impl CallFrame {
         for (module_id, module) in node.substates {
             for (substate_key, substate_value) in module {
                 for reference in substate_value.references() {
-                    if !EntityType::is_global_node(reference) {
+                    if !reference.is_global() {
                         return Err(UpdateSubstateError::CantPutLocalRefToStore(*reference));
                     }
                 }

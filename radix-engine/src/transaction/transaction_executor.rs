@@ -3,7 +3,7 @@ use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::kernel::track::{PreExecutionError, Track};
+use crate::kernel::track::Track;
 use crate::system::kernel_modules::costing::*;
 use crate::system::kernel_modules::execution_trace::calculate_resource_changes;
 use crate::transaction::*;
@@ -263,8 +263,7 @@ where
             kernel.initialize().expect("Failed to initialize kernel");
 
             // Call TransactionProcessor::Run()
-            let (global_references, local_references) =
-                extract_refs_from_manifest(executable.instructions());
+            let references = extract_refs_from_manifest(executable.instructions());
             let invoke_result = kernel
                 .call_function(
                     TRANSACTION_PROCESSOR_PACKAGE,
@@ -277,8 +276,7 @@ where
                             manifest_encode(executable.instructions()).unwrap(),
                         ),
                         blobs: Cow::Borrowed(executable.blobs()),
-                        global_references,
-                        local_references,
+                        references,
                     })
                     .unwrap(),
                 )
@@ -404,7 +402,7 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(commit.state_updates.clone());
+        substate_db.commit(&commit.state_updates);
     }
     receipt
 }

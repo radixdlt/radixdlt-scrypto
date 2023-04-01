@@ -62,7 +62,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 
 struct ComponentStateDump {
     pub raw_state: Option<IndexedScryptoValue>,
-    pub owned_vaults: Option<IndexSet<ObjectId>>,
+    pub owned_vaults: Option<IndexSet<NodeId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
     pub access_rules: Option<AccessRulesConfig>, // Virtual Components don't have access rules.
@@ -116,7 +116,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
             let access_rules = access_rules_chain_substate.access_rules;
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: IndexSet<ObjectId> = raw_state
+            let mut vaults_found: IndexSet<NodeId> = raw_state
                 .owned_node_ids()
                 .iter()
                 .cloned()
@@ -371,7 +371,7 @@ fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
-    vaults: &IndexSet<ObjectId>,
+    vaults: &IndexSet<NodeId>,
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {

@@ -3,9 +3,9 @@ use crate::types::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Method {
-        global_address: Option<Address>,
+        global_address: Option<GlobalAddress>,
         node_id: NodeId,
-        module_id: NodeModuleId,
+        module_id: TypedModuleId,
         blueprint: Blueprint,
         ident: String,
     },

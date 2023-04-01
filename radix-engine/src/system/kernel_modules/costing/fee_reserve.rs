@@ -145,7 +145,7 @@ pub struct SystemLoanFeeReserve {
     execution_deferred: [u32; CostingReason::COUNT],
 
     /// Royalty costs
-    royalty_committed: BTreeMap<RoyaltyRecipient, (ObjectId, u128)>,
+    royalty_committed: BTreeMap<RoyaltyRecipient, (NodeId, u128)>,
     royalty_committed_sum: u32,
 
     /// Payments made during the execution of a transaction.
@@ -467,8 +467,8 @@ impl Default for SystemLoanFeeReserve {
 mod tests {
     use super::*;
 
-    const TEST_VAULT_ID: ObjectId = [0u8; OBJECT_ID_LENGTH];
-    const TEST_VAULT_ID_2: ObjectId = [1u8; OBJECT_ID_LENGTH];
+    const TEST_VAULT_ID: NodeId = NodeId([0u8; NodeId::LENGTH]);
+    const TEST_VAULT_ID_2: NodeId = NodeId([1u8; NodeId::LENGTH]);
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
         LiquidFungibleResource::new(amount.into())

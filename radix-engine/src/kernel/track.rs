@@ -63,6 +63,15 @@ pub struct Track<'s> {
     loaded_substates: IndexMap<(NodeId, ModuleId, SubstateKey), LoadedSubstate>,
 }
 
+impl<'s> Track<'s> {
+    pub fn new(substate_db: &'s dyn SubstateDatabase) -> Self {
+        Self {
+            substate_db,
+            loaded_substates: index_map_new(),
+        }
+    }
+}
+
 impl<'s> SubstateStore for Track<'s> {
     fn acquire_lock(
         &mut self,

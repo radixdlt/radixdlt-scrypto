@@ -25,6 +25,33 @@ impl NodeId {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
+
+    // TODO: gradually remove dependency on the following entity-type related methods
+
+    pub fn entity_type(&self) -> Option<EntityType> {
+        EntityType::from_repr(self.0[0])
+    }
+
+    pub fn is_global(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t.is_global(),
+            None => false,
+        }
+    }
+
+    pub fn is_global_component(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t == EntityType::GlobalComponent,
+            None => false,
+        }
+    }
+
+    pub fn is_internal_kv_store(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t == EntityType::InternalKeyValueStore,
+            None => false,
+        }
+    }
 }
 
 impl AsRef<[u8]> for NodeId {

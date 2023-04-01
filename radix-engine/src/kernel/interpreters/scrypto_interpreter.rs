@@ -112,7 +112,7 @@ impl ExecutableInvocation for MethodInvocation {
         node_refs_to_copy.insert(self.identifier.0);
 
         let (blueprint, global_address) = match self.identifier.1 {
-            NodeModuleId::SELF => {
+            TypedModuleId::ObjectState => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
                     TypeInfoSubstate::Object { blueprint, global } => {
@@ -177,8 +177,8 @@ impl ExecutableInvocation for MethodInvocation {
                 node_refs_to_copy.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
-                    &NodeId::GlobalObject(blueprint.package_address.into()),
-                    NodeModuleId::SELF,
+                    blueprint.package_address.as_node_id(),
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
@@ -256,7 +256,7 @@ impl ExecutableInvocation for FunctionInvocation {
             } else {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(self.identifier.0.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
@@ -361,7 +361,7 @@ impl Executor for ScryptoExecutor {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject(self.blueprint.package_address.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             );
@@ -403,7 +403,7 @@ impl Executor for ScryptoExecutor {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject(self.blueprint.package_address.into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -413,7 +413,7 @@ impl Executor for ScryptoExecutor {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(self.blueprint.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::Info),
                     LockFlags::read_only(),
                 )?;
@@ -453,7 +453,7 @@ impl Executor for ScryptoExecutor {
             let code_type = {
                 let handle = api.kernel_lock_substate(
                     &NodeId::GlobalObject(self.blueprint.package_address.into()),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
@@ -466,7 +466,7 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
                         &NodeId::GlobalObject(self.blueprint.package_address.into()),
-                        NodeModuleId::SELF,
+                        TypedModuleId::ObjectState,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
                     )?;
@@ -487,7 +487,7 @@ impl Executor for ScryptoExecutor {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
                             &NodeId::GlobalObject(self.blueprint.package_address.into()),
-                            NodeModuleId::SELF,
+                            TypedModuleId::ObjectState,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;

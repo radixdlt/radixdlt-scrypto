@@ -12,7 +12,7 @@ fn non_existing_vault_should_cause_error() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
-    let non_existing_vault_id = [0; OBJECT_ID_LENGTH];
+    let non_existing_vault_id = [0; NodeId::LENGTH];
 
     // Act
     let manifest = ManifestBuilder::new()

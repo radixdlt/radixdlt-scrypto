@@ -523,7 +523,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&mut self, bucket_id: NodeId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(bucket_id),
             TypedModuleId::ObjectState,
@@ -574,7 +574,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: NodeId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(proof_id),
             TypedModuleId::ObjectState,

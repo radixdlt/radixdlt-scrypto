@@ -60,7 +60,7 @@ where
                 module_id
             } else {
                 // TODO: Remove this
-                NodeModuleId::SELF
+                TypedModuleId::ObjectState
             };
 
         self.kernel_lock_substate(&node_id, module_id, substate_key, flags)
@@ -341,7 +341,7 @@ where
             node_id,
             node_init,
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::new(Blueprint::new(&package_address, blueprint_ident), false)
                 ),
             ),
@@ -442,7 +442,7 @@ where
                 TypedModuleId::ObjectState | TypedModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
                     let node_id = NodeId::Object(object_id);
                     let blueprint = self.get_object_type_info(node_id)?;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
@@ -468,7 +468,7 @@ where
 
                     module_init.insert(module_id, ModuleInit::AccessRules(access_rules));
                 }
-                NodeModuleId::Metadata => {
+                TypedModuleId::Metadata => {
                     let node_id = NodeId::Object(object_id);
                     let blueprint = self.get_object_type_info(node_id)?;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
@@ -492,7 +492,7 @@ where
 
                     module_init.insert(TypedModuleId::Metadata, ModuleInit::Metadata(substates));
                 }
-                NodeModuleId::ComponentRoyalty => {
+                TypedModuleId::ComponentRoyalty => {
                     let node_id = NodeId::Object(object_id);
                     let blueprint = self.get_object_type_info(node_id)?;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
@@ -776,19 +776,19 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => Ok(Blueprint::new(
+                    TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
-                    NodeModuleId::ComponentRoyalty => Ok(Blueprint::new(
+                    TypedModuleId::ComponentRoyalty => Ok(Blueprint::new(
                         &ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT,
                     )),
-                    NodeModuleId::Metadata => {
+                    TypedModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                    TypedModuleId::ObjectState => self.get_object_type_info(node_id),
+                    TypedModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
@@ -800,7 +800,7 @@ where
 
             let handle = self.kernel_lock_substate(
                 &NodeId::GlobalObject(Address::Package(blueprint.package_address)),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -845,7 +845,7 @@ where
             Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     NodeId::GlobalObject(Address::Package(blueprint.package_address)),
-                    NodeModuleId::SELF,
+                    TypedModuleId::ObjectState,
                     blueprint.blueprint_name.to_string(),
                 ),
                 *local_type_index,

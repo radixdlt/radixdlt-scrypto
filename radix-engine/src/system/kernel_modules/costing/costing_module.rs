@@ -137,10 +137,13 @@ impl KernelModule for CostingModule {
         let (blueprint, ident, optional_component) = {
             let blueprint = callee.blueprint();
             let (maybe_component, ident) = match &callee {
-                Actor::Method { node_id, ident, .. } => match node_id {
-                    NodeId::GlobalObject(Address::Component(address)) => (Some(address), ident),
-                    _ => (None, ident),
-                },
+                Actor::Method { node_id, ident, .. } => {
+                    if EntityType::is_global_component(node_id) {
+                        (Some(ComponentAddress::new_unchecked(node_id.into())), ident)
+                    } else {
+                        (None, ident)
+                    }
+                }
                 Actor::Function { ident, .. } => (None, ident),
                 Actor::VirtualLazyLoad { .. } => {
                     return Ok(());
@@ -154,12 +157,12 @@ impl KernelModule for CostingModule {
         // Apply package royalty
         //===========================
         let handle = api.kernel_lock_substate(
-            &NodeId::GlobalObject(blueprint.package_address.into()),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Royalty),
+            blueprint.package_address.as_node_id(),
+            TypedModuleId::ObjectState,
+            &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let mut substate: &mut PackageRoyaltySubstate = api.sys_read_substate(handle)?;
         let royalty_charge = substate
             .blueprint_royalty_configs
             .get(blueprint.blueprint_name.as_str())
@@ -181,7 +184,7 @@ impl KernelModule for CostingModule {
                 vault_id,
             )?;
         }
-        api.kernel_drop_lock(handle)?;
+        api.api.kernel_drop_lock(handle)?;
 
         //===========================
         // Apply component royalty

@@ -201,7 +201,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 Address::Component(test_runner.component_address),
-                MethodKey::new(NodeModuleId::SELF, "borrow_funds"),
+                MethodKey::new(TypedModuleId::ObjectState, "borrow_funds"),
                 to_rule,
             )
             .build(),

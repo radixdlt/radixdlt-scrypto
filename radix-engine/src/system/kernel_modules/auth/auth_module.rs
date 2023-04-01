@@ -90,7 +90,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 &NodeId::GlobalObject((blueprint.package_address).into()),
-                NodeModuleId::SELF,
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
@@ -109,7 +109,7 @@ impl AuthModule {
 
     fn method_auth<Y: KernelModuleApi<RuntimeError>>(
         node_id: &NodeId,
-        module_id: &NodeModuleId,
+        module_id: &TypedModuleId,
         ident: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -237,14 +237,14 @@ impl AuthModule {
                 {
                     Self::method_authorization_stateful(
                         &node_id,
-                        NodeModuleId::AccessRules,
+                        TypedModuleId::AccessRules,
                         method_key,
                         api,
                     )?
                 } else {
                     Self::method_authorization_stateless(
                         &node_id,
-                        NodeModuleId::AccessRules,
+                        TypedModuleId::AccessRules,
                         method_key,
                         api,
                     )?
@@ -273,8 +273,8 @@ impl AuthModule {
             };
 
             let handle = api.kernel_lock_substate(
-                &NodeId::GlobalObject(blueprint.package_address.into()),
-                NodeModuleId::SELF,
+                blueprint.package_address.as_node_id(),
+                TypedModuleId::ObjectState,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
@@ -469,14 +469,14 @@ impl KernelModule for AuthModule {
         );
 
         // Create node
-        let auth_zone_node_id = api.kernel_allocate_node_id(EntityType::Object)?;
+        let auth_zone_node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
         api.kernel_create_node(
             auth_zone_node_id,
             NodeInit::Object(btreemap!(
-                AuthZoneOffset::AuthZone.into() => RuntimeSubstate::AuthZone(auth_zone)
+                AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false
                 })
