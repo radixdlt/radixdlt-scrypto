@@ -10,7 +10,6 @@ use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
-use radix_engine_interface::types::*;
 use radix_engine_stores::interface::StateUpdates;
 use utils::ContextualDisplay;
 
@@ -118,26 +117,21 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
-                Emitter::Function(
-                    NodeId::GlobalObject(GlobalAddress::Package(EPOCH_MANAGER_PACKAGE)),
-                    TypedModuleId::ObjectState,
-                    ..,
-                )
-                | Emitter::Method(
-                    NodeId::GlobalObject(GlobalAddress::Component(ComponentAddress::EpochManager(
-                        ..,
-                    ))),
-                    TypedModuleId::ObjectState,
-                ),
+                Emitter::Function(node_id, TypedModuleId::ObjectState, ..)
+                | Emitter::Method(node_id, TypedModuleId::ObjectState),
                 ..,
             ) = event_type_id
             {
-                if let Ok(EpochChangeEvent {
-                    ref epoch,
-                    ref validators,
-                }) = scrypto_decode(&event_data)
+                if node_id == EPOCH_MANAGER_PACKAGE.as_node_id()
+                    || node_id.entity_type() == Some(EntityType::GlobalEpochManager)
                 {
-                    return Some((validators.clone(), *epoch));
+                    if let Ok(EpochChangeEvent {
+                        ref epoch,
+                        ref validators,
+                    }) = scrypto_decode(&event_data)
+                    {
+                        return Some((validators.clone(), *epoch));
+                    }
                 }
             }
         }

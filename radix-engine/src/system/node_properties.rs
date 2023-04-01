@@ -72,29 +72,19 @@ impl NodeProperties {
                 _ => false,
             },
             ExecutionMode::KernelModule => true,
-            ExecutionMode::Client => match &actor.fn_identifier {
-                // Native
-                FnIdentifier {
-                    package_address, ..
-                } if is_native_package(*package_address) => true,
-                // Scrypto
-                _ => match &actor.identifier {
-                    ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
-                        match module_id {
-                            TypedModuleId::TypeInfo => true,
-                            TypedModuleId::KeyValueStore => true,
-                            _ => false,
-                        }
-                    }
-                    ActorIdentifier::Method(MethodIdentifier(actor_node_id, ..)) => match module_id
-                    {
-                        TypedModuleId::TypeInfo => true,
-                        TypedModuleId::KeyValueStore => true,
-                        TypedModuleId::ObjectState if actor_node_id == node_id => true,
-                        _ => false,
-                    },
-                },
-            },
+            ExecutionMode::Client => {
+                if is_native_package(&actor.blueprint().package_address) {
+                    return true;
+                }
+
+                match actor {
+                    Actor::Method {
+                        node_id: actor_node_id,
+                        ..
+                    } if actor_node_id == node_id => true,
+                    _ => false,
+                }
+            }
         }
     }
 
@@ -123,25 +113,19 @@ impl NodeProperties {
                 _ => false,
             },
             ExecutionMode::KernelModule => true,
-            ExecutionMode::Client => match &actor.fn_identifier {
-                // Native
-                FnIdentifier {
-                    package_address, ..
-                } if is_native_package(*package_address) => true,
-                // Scrypto
-                _ => match &actor.identifier {
-                    ActorIdentifier::VirtualLazyLoad | ActorIdentifier::Function(..) => {
-                        match module_id {
-                            _ => false,
-                        }
-                    }
-                    ActorIdentifier::Method(MethodIdentifier(actor_node_id, ..)) => match module_id
-                    {
-                        TypedModuleId::ObjectState if actor_node_id == node_id => true,
-                        _ => false,
-                    },
-                },
-            },
+            ExecutionMode::Client => {
+                if is_native_package(&actor.blueprint().package_address) {
+                    return true;
+                }
+
+                match actor {
+                    Actor::Method {
+                        node_id: actor_node_id,
+                        ..
+                    } if actor_node_id == node_id => true,
+                    _ => false,
+                }
+            }
         }
     }
 

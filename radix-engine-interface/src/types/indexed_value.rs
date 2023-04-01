@@ -137,7 +137,7 @@ impl Into<Vec<u8>> for IndexedScryptoValue {
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        self.contextual_format(f, &ScryptoValueSerializationContext::no_context())
     }
 }
 
@@ -146,8 +146,8 @@ impl<'a> ContextualDisplay<ScryptoValueSerializationContext<'a>> for IndexedScry
 
     fn contextual_format<F: fmt::Write>(
         &self,
-        f: &mut F,
-        context: &ScryptoValueSerializationContext<'a>,
+        _f: &mut F,
+        _context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<(), Self::Error> {
         todo!()
     }
