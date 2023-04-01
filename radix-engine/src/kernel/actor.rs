@@ -47,7 +47,7 @@ impl Actor {
     }
 
     pub fn method(
-        global_address: Option<Address>,
+        global_address: Option<GlobalAddress>,
         method: MethodIdentifier,
         blueprint: Blueprint,
     ) -> Self {

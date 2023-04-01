@@ -130,9 +130,9 @@ impl NodeProperties {
     }
 
     pub fn can_own(
+        offset: &SubstateKey,
         package_address: PackageAddress,
         blueprint_name: &str,
-        offset: &SubstateKey,
     ) -> bool {
         true
     }

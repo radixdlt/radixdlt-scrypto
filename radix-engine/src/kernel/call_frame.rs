@@ -281,11 +281,13 @@ impl CallFrame {
                     let type_info: TypeInfoSubstate = info.as_typed().unwrap();
                     match type_info {
                         TypeInfoSubstate::Object { blueprint, .. } => {
-                            SubstateProperties::verify_can_own(
-                                &offset,
+                            if !NodeProperties::can_own(
+                                &substate_key,
                                 blueprint.package_address,
                                 blueprint.blueprint_name.as_str(),
-                            )?;
+                            ) {
+                                return Err(UpdateSubstateError::CantOwn(child_id.clone()));
+                            }
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
                     }
@@ -370,7 +372,7 @@ impl CallFrame {
             let visibility = parent
                 .get_node_visibility(&node_id)
                 .ok_or(MoveError::RefNotFound(node_id))?;
-            next_node_refs.insert(node_id, RENodeRefData::new(visibility));
+            next_node_refs.insert(node_id, RENodeRefData::new(visibility.0));
         }
 
         let frame = Self {
@@ -463,23 +465,31 @@ impl CallFrame {
 
         for (_module_id, module) in &substates {
             for (substate_key, substate_value) in module {
-                // FIXME this is huge mismatch between drop_lock and create_node
+                // FIXME there is a huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
 
-                // TODO: Move this logic into system layer
-                if let Ok(info) = heap.get_substate(
-                    &child_id,
-                    TypedModuleId::TypeInfo,
-                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                ) {
-                    let type_info: &TypeInfoSubstate = info.into();
-                    match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => {
-                            SubstateProperties::verify_can_own(
-                                &offset,
-                                blueprint.package_address,
-                                blueprint.blueprint_name.as_str(),
-                            )?;
+                for child_id in substate_value.owned_node_ids() {
+                    self.take_node_internal(child_id)
+                        .map_err(UpdateSubstateError::MoveError)?;
+
+                    // TODO: Move this check into system layer
+                    if let Some(info) = heap.get_substate(
+                        child_id,
+                        TypedModuleId::TypeInfo.into(),
+                        &TypeInfoOffset::TypeInfo.into(),
+                    ) {
+                        let type_info: TypeInfoSubstate = info.as_typed().unwrap();
+                        match type_info {
+                            TypeInfoSubstate::Object { blueprint, .. } => {
+                                if !NodeProperties::can_own(
+                                    &substate_key,
+                                    blueprint.package_address,
+                                    blueprint.blueprint_name.as_str(),
+                                ) {
+                                    return Err(UpdateSubstateError::CantOwn(child_id.clone()));
+                                }
+                            }
+                            TypeInfoSubstate::KeyValueStore(..) => {}
                         }
                     }
 
@@ -596,14 +606,5 @@ impl CallFrame {
         } else {
             None
         }
-    }
-
-    pub fn check_node_visibility(
-        &self,
-        node_id: &NodeId,
-    ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
-        self.get_node_visibility(node_id)
-            .map(|e| e.0)
-            .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }
 }
