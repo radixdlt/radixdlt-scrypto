@@ -93,12 +93,13 @@ impl FungibleBucket {
             &BucketOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
-        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+        let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
+        let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
+        api.sys_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
         Ok(taken)
     }
@@ -120,12 +121,13 @@ impl FungibleBucket {
             &BucketOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref.put(resource).map_err(|e| {
+        let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
+        substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
+        api.sys_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
         Ok(())
     }
@@ -144,7 +146,7 @@ impl FungibleBucket {
             &BucketOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -154,8 +156,9 @@ impl FungibleBucket {
         }
 
         // Increase lock count
-        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         locked.amounts.entry(amount).or_default().add_assign(1);
+
+        api.sys_write_substate_typed(handle, &locked)?;
 
         // Issue proof
         Ok(FungibleProof::new(
@@ -185,7 +188,7 @@ impl FungibleBucket {
             &BucketOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -195,6 +198,8 @@ impl FungibleBucket {
         if cnt > 1 {
             locked.amounts.insert(amount, cnt - 1);
         }
+
+        api.sys_write_substate_typed(handle, &locked)?;
 
         let delta = max_locked - locked.amount();
         FungibleBucket::put(receiver, LiquidFungibleResource::new(delta), api)
@@ -359,22 +364,21 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LockedNonFungible.into(),
+            &VaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount - max_locked;
-            let resource = NonFungibleBucket::take(receiver, delta, api)?;
+            let resource = NonFungibleVault::take(receiver, delta, api)?;
 
-            locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
             }
@@ -391,17 +395,17 @@ impl NonFungibleBucket {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
+        api.sys_write_substate_typed(handle, &locked)?;
+
         // Issue proof
         Ok(NonFungibleProof::new(
             ids_for_proof.clone(),
             btreemap!(
-                LocalRef::Bucket(receiver.clone().into()) => ids_for_proof
+                LocalRef::Vault(receiver.clone().into()) => ids_for_proof
             ),
         )
         .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
-                e,
-            )))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
         })?)
     }
 
@@ -412,14 +416,14 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LockedNonFungible.into(),
+            &VaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -427,25 +431,24 @@ impl NonFungibleBucket {
             .cloned()
             .filter(|id| !locked.ids.contains_key(id))
             .collect();
-        NonFungibleBucket::take_non_fungibles(receiver, &delta, api)?;
+        NonFungibleVault::take_non_fungibles(receiver, &delta, api)?;
 
         // Increase lock count
-        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         for id in &ids {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
+
+        api.sys_write_substate_typed(handle, &locked)?;
 
         // Issue proof
         Ok(NonFungibleProof::new(
             ids.clone(),
             btreemap!(
-                LocalRef::Bucket(receiver.clone().into()) => ids
+                LocalRef::Vault(receiver.clone().into()) => ids
             ),
         )
         .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
-                e,
-            )))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
         })?)
     }
 
@@ -456,14 +459,14 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LockedNonFungible.into(),
+            &VaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {
@@ -478,7 +481,9 @@ impl NonFungibleBucket {
             }
         }
 
-        NonFungibleBucket::put(
+        api.sys_write_substate_typed(handle, &locked)?;
+
+        NonFungibleVault::put(
             receiver,
             LiquidNonFungibleResource::new(liquid_non_fungibles),
             api,

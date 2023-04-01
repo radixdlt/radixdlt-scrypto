@@ -44,12 +44,15 @@ impl WorktopBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
+        // FIXME we must check the node type, before generic own schema validation is ready.
+
         let mut node = api.kernel_drop_node(input.worktop.as_node_id())?;
         let substate = node
             .substates
-            .remove(&(TypedModuleId::ObjectState, WorktopOffset::Worktop.into()))
+            .remove(&TypedModuleId::ObjectState)
+            .unwrap()
+            .remove(&WorktopOffset::Worktop.into())
             .unwrap();
-        // FIXME double check who's checking if the node is of the right blueprint.
         let worktop: WorktopSubstate = substate.as_typed().unwrap();
         for (_, bucket) in worktop.resources {
             let bucket = Bucket(bucket);
@@ -83,11 +86,12 @@ impl WorktopBlueprint {
                 &WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
-            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
+            let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
             if let Some(own) = worktop.resources.get(&resource_address).cloned() {
                 Bucket(own).sys_put(input.bucket, api)?;
             } else {
                 worktop.resources.insert(resource_address, input.bucket.0);
+                api.sys_write_substate_typed(worktop_handle, &worktop)?;
             }
             api.sys_drop_lock(worktop_handle)?;
             Ok(IndexedScryptoValue::from_typed(&()))
@@ -182,7 +186,7 @@ impl WorktopBlueprint {
                 ))
             } else if existing_non_fungibles.len() == ids.len() {
                 // Move
-                worktop = api.kernel_get_substate_ref_mut(worktop_handle)?;
+                worktop = api.sys_read_substate_typed(worktop_handle)?;
                 worktop.resources.remove(&resource_address);
                 api.sys_write_substate_typed(worktop_handle, &worktop);
                 api.sys_drop_lock(worktop_handle)?;
@@ -209,9 +213,10 @@ impl WorktopBlueprint {
 
         let worktop_handle =
             api.sys_lock_substate(receiver, &WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
+        let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         if let Some(bucket) = worktop.resources.remove(&input.resource_address) {
             // Move
+            api.sys_write_substate_typed(worktop_handle, &worktop);
             api.sys_drop_lock(worktop_handle)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
@@ -332,9 +337,10 @@ impl WorktopBlueprint {
 
         let worktop_handle =
             api.sys_lock_substate(receiver, &WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
+        let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
         worktop.resources.clear();
+        api.sys_write_substate_typed(worktop_handle, &worktop);
         api.sys_drop_lock(worktop_handle)?;
         Ok(IndexedScryptoValue::from_typed(&buckets))
     }

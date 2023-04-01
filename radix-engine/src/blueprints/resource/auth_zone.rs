@@ -36,12 +36,12 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let proof = {
-            let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            auth_zone.pop().ok_or(RuntimeError::ApplicationError(
-                ApplicationError::AuthZoneError(AuthZoneError::EmptyAuthZone),
-            ))?
-        };
+        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
+            ApplicationError::AuthZoneError(AuthZoneError::EmptyAuthZone),
+        ))?;
+
+        api.sys_write_substate_typed(auth_zone_handle, &auth_zone);
 
         Ok(IndexedScryptoValue::from_typed(&proof))
     }
@@ -64,8 +64,10 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         auth_zone.push(input.proof);
+
+        api.sys_write_substate_typed(auth_zone_handle, &auth_zone);
         api.sys_drop_lock(auth_zone_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -89,11 +91,11 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let composed_proof = {
-            let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
-            compose_proof_by_amount(&proofs, input.resource_address, None, api)?
-        };
+        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
+        let composed_proof = compose_proof_by_amount(&proofs, input.resource_address, None, api)?;
+
+        api.sys_write_substate_typed(auth_zone_handle, &auth_zone);
 
         let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
         api.kernel_create_node(
@@ -205,9 +207,10 @@ impl AuthZoneBlueprint {
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
-        let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
+        let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
         auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
+        api.sys_write_substate_typed(handle, &auth_zone);
         api.sys_drop_lock(handle)?;
 
         for proof in proofs {
@@ -234,8 +237,9 @@ impl AuthZoneBlueprint {
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
-        let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
+        let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
         auth_zone.clear_signature_proofs();
+        api.sys_write_substate_typed(handle, &auth_zone);
         api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -259,10 +263,10 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let proofs = {
-            let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            auth_zone.drain()
-        };
+        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let proofs = auth_zone.drain();
+
+        api.sys_write_substate_typed(auth_zone_handle, &auth_zone);
 
         Ok(IndexedScryptoValue::from_typed(&proofs))
     }

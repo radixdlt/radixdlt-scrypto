@@ -1,4 +1,5 @@
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -350,30 +351,14 @@ impl ProofBlueprint {
         })?;
         let proof = input.proof;
 
+        // FIXME: check type before schema check is ready! applicable to all functions!
+
         let mut heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
-        let proof_info: ProofInfoSubstate = heap_node
-            .substates
-            .remove(&(TypedModuleId::ObjectState, ProofOffset::Info.into()))
-            .unwrap()
-            .as_typed()
-            .unwrap();
-        if proof_info.resource_type.is_fungible() {
-            let proof: FungibleProof = heap_node
-                .substates
-                .remove(&(TypedModuleId::ObjectState, ProofOffset::Fungible.into()))
-                .unwrap()
-                .as_typed()
-                .unwrap();
-            proof.drop_proof(api)?;
-        } else {
-            let proof: NonFungibleProof = heap_node
-                .substates
-                .remove(&(TypedModuleId::ObjectState, ProofOffset::NonFungible.into()))
-                .unwrap()
-                .as_typed()
-                .unwrap();
-            proof.drop_proof(api)?;
-        }
+        let dropped_proof: DroppedProof = heap_node.into();
+        match dropped_proof.resource {
+            DroppedProofResource::Fungible(p) => p.drop_proof(api)?,
+            DroppedProofResource::NonFungible(p) => p.drop_proof(api)?,
+        };
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

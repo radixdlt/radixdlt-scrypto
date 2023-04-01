@@ -26,12 +26,12 @@ impl From<ComposedProof> for NodeInit {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof) => NodeInit::Object(btreemap!(
-                ProofOffset::Info.into() => RuntimeSubstate::ProofInfo(info),
-                ProofOffset::Fungible.into() => RuntimeSubstate::FungibleProof(proof),
+                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+                ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
             )),
             ComposedProof::NonFungible(info, proof) => NodeInit::Object(btreemap!(
-                ProofOffset::Info.into() => RuntimeSubstate::ProofInfo(info),
-                ProofOffset::NonFungible.into() => RuntimeSubstate::NonFungibleProof(proof),
+                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+                ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
             )),
         }
     }
