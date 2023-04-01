@@ -25,75 +25,61 @@ impl NodeMoveModule {
         callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        match node_id {
-            NodeId::Object(..) => {
-                let blueprint = api.get_object_type_info(&node_id)?;
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                        if matches!(callee, Actor::Function { .. })
-                            && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
-                        {
-                            return Ok(());
-                        }
-
-                        // Change to restricted unless it's moved to auth zone.
-                        // TODO: align with barrier design?
-                        let mut changed_to_restricted = true;
-                        if let Actor::Method { node_id, .. } = callee {
-                            let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-                            if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
-                                if blueprint.eq(&Blueprint::new(
-                                    &RESOURCE_MANAGER_PACKAGE,
-                                    AUTH_ZONE_BLUEPRINT,
-                                )) {
-                                    changed_to_restricted = false;
-                                }
-                            }
-                        }
-
-                        let handle = api.kernel_lock_substate(
-                            &node_id,
-                            TypedModuleId::ObjectState,
-                            &ProofOffset::Info.into(),
-                            LockFlags::MUTABLE,
-                        )?;
-                        let mut proof: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
-
-                        if proof.restricted {
-                            return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                                NodeMoveError::CantMoveDownstream(node_id),
-                            )));
-                        }
-
-                        if changed_to_restricted {
-                            proof.change_to_restricted();
-                        }
-
-                        api.sys_write_substate_typed(handle, &proof);
-                        api.kernel_drop_lock(handle)?;
-                    }
-                    _ => {}
+        let blueprint = api.get_object_type_info(&node_id)?;
+        match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                if matches!(callee, Actor::Function { .. })
+                    && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
+                {
+                    return Ok(());
                 }
-                Ok(())
-            }
 
-            NodeId::KeyValueStore(..) | NodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
-            )),
+                // Change to restricted unless it's moved to auth zone.
+                // TODO: align with barrier design?
+                let mut changed_to_restricted = true;
+                if let Actor::Method { node_id, .. } = callee {
+                    let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+                    if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+                        if blueprint.eq(&Blueprint::new(
+                            &RESOURCE_MANAGER_PACKAGE,
+                            AUTH_ZONE_BLUEPRINT,
+                        )) {
+                            changed_to_restricted = false;
+                        }
+                    }
+                }
+
+                let handle = api.kernel_lock_substate(
+                    &node_id,
+                    TypedModuleId::ObjectState,
+                    &ProofOffset::Info.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut proof: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
+
+                if proof.restricted {
+                    return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                        NodeMoveError::CantMoveDownstream(node_id),
+                    )));
+                }
+
+                if changed_to_restricted {
+                    proof.change_to_restricted();
+                }
+
+                api.sys_write_substate_typed(handle, &proof);
+                api.kernel_drop_lock(handle)?;
+            }
+            _ => {}
         }
+        Ok(())
     }
 
     fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        match node_id {
-            NodeId::Object(..) => Ok(()),
-
-            NodeId::KeyValueStore(..) | NodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
-            )),
-        }
+        Ok(())
     }
 }
 

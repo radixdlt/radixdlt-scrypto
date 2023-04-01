@@ -38,7 +38,7 @@ pub const ACCESS_RULES_PACKAGE: PackageAddress = package_address(EntityType::Glo
 
 // There should be no need of this function, but many of our configurations are depending on it.
 // Having it in a single place to avoid out-of-sync.
-pub fn is_native_package(address: &PackageAddress) -> bool {
+pub fn is_native_package(address: PackageAddress) -> bool {
     match address {
         PACKAGE_PACKAGE
         | RESOURCE_MANAGER_PACKAGE

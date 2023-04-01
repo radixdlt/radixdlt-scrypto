@@ -73,7 +73,7 @@ impl NodeProperties {
             },
             ExecutionMode::KernelModule => true,
             ExecutionMode::Client => {
-                if is_native_package(&actor.blueprint().package_address) {
+                if is_native_package(actor.blueprint().package_address) {
                     return true;
                 }
 
@@ -114,7 +114,7 @@ impl NodeProperties {
             },
             ExecutionMode::KernelModule => true,
             ExecutionMode::Client => {
-                if is_native_package(&actor.blueprint().package_address) {
+                if is_native_package(actor.blueprint().package_address) {
                     return true;
                 }
 

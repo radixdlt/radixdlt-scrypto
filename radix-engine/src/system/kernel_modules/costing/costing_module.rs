@@ -138,8 +138,11 @@ impl KernelModule for CostingModule {
             let blueprint = callee.blueprint();
             let (maybe_component, ident) = match &callee {
                 Actor::Method { node_id, ident, .. } => {
-                    if EntityType::is_global_component(node_id) {
-                        (Some(ComponentAddress::new_unchecked(node_id.into())), ident)
+                    if node_id.is_global_component() {
+                        (
+                            Some(ComponentAddress::new_unchecked(node_id.clone().into())),
+                            ident,
+                        )
                     } else {
                         (None, ident)
                     }
