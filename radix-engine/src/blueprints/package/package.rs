@@ -133,8 +133,8 @@ where
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        NodeModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+        TypedModuleId::TypeInfo,
+        ModuleInit::TypeInfo(TypeInfoSubstate::Object {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
         }),

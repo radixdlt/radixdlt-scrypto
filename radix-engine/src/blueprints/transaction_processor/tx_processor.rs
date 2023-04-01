@@ -77,7 +77,7 @@ impl TransactionProcessorBlueprint {
                 WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                     global: false,
                 })
@@ -704,7 +704,7 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            let blueprint = api.get_object_type_info(*owned_node)?;
+            let blueprint = api.get_object_type_info(owned_node)?;
             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
