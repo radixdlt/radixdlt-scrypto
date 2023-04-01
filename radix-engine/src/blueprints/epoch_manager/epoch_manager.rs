@@ -40,6 +40,11 @@ pub struct ValidatorSetSubstate {
     pub epoch: u64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct RegisteredValidatorsSubstate {
+    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
@@ -123,8 +128,7 @@ impl EpochManagerBlueprint {
                 validator_set: validators.clone(),
             };
 
-            let preparing_validator_set = ValidatorSetSubstate {
-                epoch: initial_epoch + 1,
+            let preparing_validator_set = RegisteredValidatorsSubstate {
                 validator_set: validators.clone(),
             };
 
@@ -228,18 +232,19 @@ impl EpochManagerBlueprint {
             ));
         }
 
+
         if round >= epoch_manager.rounds_per_epoch {
+            let next_epoch = epoch_manager.epoch + 1;
+
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
             let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
-            let preparing_validator_set: &mut ValidatorSetSubstate =
+            let preparing_validator_set: &mut RegisteredValidatorsSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
-            let prepared_epoch = preparing_validator_set.epoch;
             let next_validator_set = preparing_validator_set.validator_set.clone();
-            preparing_validator_set.epoch = prepared_epoch + 1;
 
             let epoch_manager: &mut EpochManagerSubstate =
                 api.kernel_get_substate_ref_mut(mgr_handle)?;
-            epoch_manager.epoch = prepared_epoch;
+            epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
 
             let handle = api.sys_lock_substate(
@@ -249,13 +254,13 @@ impl EpochManagerBlueprint {
             )?;
             let validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
-            validator_set.epoch = prepared_epoch;
+            validator_set.epoch = next_epoch;
             validator_set.validator_set = next_validator_set.clone();
 
             Runtime::emit_event(
                 api,
                 EpochChangeEvent {
-                    epoch: prepared_epoch,
+                    epoch: next_epoch,
                     validators: next_validator_set,
                 },
             )?;
@@ -324,15 +329,15 @@ impl EpochManagerBlueprint {
             SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
             LockFlags::MUTABLE,
         )?;
-        let validator_set: &mut ValidatorSetSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let preparing_validator_set: &mut RegisteredValidatorsSubstate = api.kernel_get_substate_ref_mut(handle)?;
         match update {
             UpdateValidator::Register(key, stake) => {
-                validator_set
+                preparing_validator_set
                     .validator_set
                     .insert(validator_address, Validator { key, stake });
             }
             UpdateValidator::Unregister => {
-                validator_set.validator_set.remove(&validator_address);
+                preparing_validator_set.validator_set.remove(&validator_address);
             }
         }
 
