@@ -45,6 +45,11 @@ pub struct RegisteredValidatorsSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct RegisteredValidatorsByStakeSubstate {
+    pub index: BTreeSet<(Decimal, ComponentAddress)>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
@@ -95,6 +100,7 @@ impl EpochManagerBlueprint {
         };
 
         let mut validators = BTreeMap::new();
+        let mut index = BTreeSet::new();
 
         for (key, validator_init) in validator_set {
             let stake = validator_init.initial_stake.sys_amount(api)?;
@@ -109,6 +115,7 @@ impl EpochManagerBlueprint {
 
             let validator = Validator { key, stake };
             validators.insert(address, validator);
+            index.insert((stake, address));
 
             Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
             Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
@@ -132,12 +139,17 @@ impl EpochManagerBlueprint {
                 validator_set: validators.clone(),
             };
 
+            let index = RegisteredValidatorsByStakeSubstate {
+                index,
+            };
+
             api.new_object(
                 EPOCH_MANAGER_BLUEPRINT,
                 vec![
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&preparing_validator_set).unwrap(),
+                    scrypto_encode(&index).unwrap(),
                 ],
             )?
         };
@@ -236,10 +248,9 @@ impl EpochManagerBlueprint {
         if round >= epoch_manager.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
 
-            let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::MUTABLE)?;
-            let preparing_validator_set: &mut RegisteredValidatorsSubstate =
-                api.kernel_get_substate_ref_mut(handle)?;
+            let offset = SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidators);
+            let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::read_only())?;
+            let preparing_validator_set: &RegisteredValidatorsSubstate = api.kernel_get_substate_ref(handle)?;
             let next_validator_set = preparing_validator_set.validator_set.clone();
 
             let epoch_manager: &mut EpochManagerSubstate =
@@ -326,10 +337,12 @@ impl EpochManagerBlueprint {
     {
         let handle = api.sys_lock_substate(
             receiver.clone(),
-            SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
+            SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidators),
             LockFlags::MUTABLE,
         )?;
         let preparing_validator_set: &mut RegisteredValidatorsSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let previous = preparing_validator_set.validator_set.get(&validator_address).cloned();
+
         match update {
             UpdateValidator::Register(key, stake) => {
                 preparing_validator_set
@@ -339,6 +352,22 @@ impl EpochManagerBlueprint {
             UpdateValidator::Unregister => {
                 preparing_validator_set.validator_set.remove(&validator_address);
             }
+        }
+
+        let handle = api.sys_lock_substate(
+            receiver.clone(),
+            SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidatorsByStake),
+            LockFlags::MUTABLE,
+        )?;
+        let index: &mut RegisteredValidatorsByStakeSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        if let Some(previous) = previous {
+            index.index.remove(&(previous.stake, validator_address));
+        }
+        match update {
+            UpdateValidator::Register(_key, stake) => {
+                index.index.insert((stake, validator_address));
+            }
+            UpdateValidator::Unregister => {}
         }
 
         Ok(())

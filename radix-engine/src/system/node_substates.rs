@@ -2,7 +2,7 @@ use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;
-use crate::blueprints::epoch_manager::{EpochManagerSubstate, RegisteredValidatorsSubstate};
+use crate::blueprints::epoch_manager::{EpochManagerSubstate, RegisteredValidatorsByStakeSubstate, RegisteredValidatorsSubstate};
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::blueprints::package::PackageCodeTypeSubstate;
@@ -25,6 +25,7 @@ use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 pub enum PersistedSubstate {
     EpochManager(EpochManagerSubstate),
     RegisteredValidators(RegisteredValidatorsSubstate),
+    RegisteredValidatorsByStake(RegisteredValidatorsByStakeSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(ClockSubstate),
@@ -220,6 +221,7 @@ impl PersistedSubstate {
         match self {
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::RegisteredValidators(value) => RuntimeSubstate::RegisteredValidators(value),
+            PersistedSubstate::RegisteredValidatorsByStake(value) => RuntimeSubstate::RegisteredValidatorsByStake(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -280,6 +282,7 @@ impl PersistedSubstate {
 pub enum RuntimeSubstate {
     EpochManager(EpochManagerSubstate),
     RegisteredValidators(RegisteredValidatorsSubstate),
+    RegisteredValidatorsByStake(RegisteredValidatorsByStakeSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(ClockSubstate),
@@ -334,6 +337,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::RegisteredValidators(value) => PersistedSubstate::RegisteredValidators(value.clone()),
+            RuntimeSubstate::RegisteredValidatorsByStake(value) => PersistedSubstate::RegisteredValidatorsByStake(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -412,6 +416,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::RegisteredValidators(value) => PersistedSubstate::RegisteredValidators(value),
+            RuntimeSubstate::RegisteredValidatorsByStake(value) => PersistedSubstate::RegisteredValidatorsByStake(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -509,6 +514,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::RegisteredValidators(value) => SubstateRefMut::RegisteredValidators(value),
+            RuntimeSubstate::RegisteredValidatorsByStake(value) => SubstateRefMut::RegisteredValidatorsByStake(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -579,6 +585,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::RegisteredValidators(value) => SubstateRef::RegisteredValidators(value),
+            RuntimeSubstate::RegisteredValidatorsByStake(value) => SubstateRef::RegisteredValidatorsByStake(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -1060,6 +1067,7 @@ pub enum SubstateRef<'a> {
     NonFungibleResourceManager(&'a NonFungibleResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     RegisteredValidators(&'a RegisteredValidatorsSubstate),
+    RegisteredValidatorsByStake(&'a RegisteredValidatorsByStakeSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a ClockSubstate),
@@ -1189,6 +1197,16 @@ impl<'a> From<SubstateRef<'a>> for &'a ValidatorSubstate {
         }
     }
 }
+
+impl<'a> From<SubstateRef<'a>> for &'a RegisteredValidatorsSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::RegisteredValidators(value) => value,
+            _ => panic!("Not a validator"),
+        }
+    }
+}
+
 
 impl<'a> From<SubstateRef<'a>> for &'a ComponentStateSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
@@ -1531,6 +1549,7 @@ pub enum SubstateRefMut<'a> {
     NonFungibleResourceManager(&'a mut NonFungibleResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     RegisteredValidators(&'a mut RegisteredValidatorsSubstate),
+    RegisteredValidatorsByStake(&'a mut RegisteredValidatorsByStakeSubstate),
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut ClockSubstate),
@@ -1647,6 +1666,15 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut RegisteredValidatorsSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::RegisteredValidators(value) => value,
+            _ => panic!("Not a validator set"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut RegisteredValidatorsByStakeSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::RegisteredValidatorsByStake(value) => value,
             _ => panic!("Not a validator set"),
         }
     }
