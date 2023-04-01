@@ -5,7 +5,6 @@ use crate::kernel::actor::Actor;
 use crate::system::node_init::{ModuleInit, NodeInit};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::*;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
@@ -43,7 +42,7 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
@@ -141,7 +140,7 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
-    fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
+    fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
         _node_id: NodeId,
         _module_id: TypedModuleId,
         _offset: &SubstateKey,

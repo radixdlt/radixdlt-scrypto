@@ -281,7 +281,7 @@ where
             },
             ACCESS_RULES_PACKAGE => (
                 NodeInit::Object(btreemap!(
-                    AccessRulesOffset::AccessRules.into() => RuntimeSubstate::MethodAccessRules(parser.decode_next())
+                    &AccessRulesOffset::AccessRules.into() => RuntimeSubstate::MethodAccessRules(parser.decode_next())
                 )),
                 EntityType::Object,
             ),
@@ -461,7 +461,7 @@ where
                         .substates
                         .remove(&(
                             TypedModuleId::ObjectState,
-                            AccessRulesOffset::AccessRules.into(),
+                            &AccessRulesOffset::AccessRules.into(),
                         ))
                         .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();

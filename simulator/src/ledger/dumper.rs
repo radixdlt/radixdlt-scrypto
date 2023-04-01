@@ -93,7 +93,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    AccessRulesOffset::AccessRules.into(),
+                    &AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -176,7 +176,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    AccessRulesOffset::AccessRules.into(),
+                    &AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -216,7 +216,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    AccessRulesOffset::AccessRules.into(),
+                    &AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
@@ -244,7 +244,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
                 .get_substate(&SubstateId(
                     NodeId::GlobalObject(component_address.into()),
                     TypedModuleId::AccessRules,
-                    AccessRulesOffset::AccessRules.into(),
+                    &AccessRulesOffset::AccessRules.into(),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())

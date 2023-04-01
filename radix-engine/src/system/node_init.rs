@@ -27,7 +27,7 @@ impl ModuleInit {
         match self {
             ModuleInit::Metadata(metadata_substates) => metadata_substates,
             ModuleInit::AccessRules(access_rules) => BTreeMap::from([(
-                AccessRulesOffset::AccessRules.into(),
+                &AccessRulesOffset::AccessRules.into(),
                 IndexedScryptoValue::from_typed(&access_rules),
             )]),
             ModuleInit::TypeInfo(type_info) => BTreeMap::from([(

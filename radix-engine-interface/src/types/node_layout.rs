@@ -8,7 +8,9 @@ use strum::FromRepr;
 //=========================================================================
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor, FromRepr)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor, FromRepr,
+)]
 pub enum TypedModuleId {
     TypeInfo,
     ObjectState,

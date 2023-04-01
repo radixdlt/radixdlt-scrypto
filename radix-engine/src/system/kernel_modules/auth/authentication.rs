@@ -62,7 +62,7 @@ impl Authentication {
                 &AuthZoneOffset::AuthZone.into(),
                 LockFlags::read_only(),
             )?;
-            let auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
+            let auth_zone: AuthZone = api.kernel_read_substate(handle)?.as_typed().unwrap();
             let auth_zone = auth_zone.clone();
             handles.push(handle);
 

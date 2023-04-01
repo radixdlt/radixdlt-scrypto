@@ -114,7 +114,7 @@ where
         (self.module, new_result)
     }
 
-    fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
             NodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, &node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
@@ -376,7 +376,7 @@ where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapRENode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
         // Change to kernel mode
@@ -415,12 +415,9 @@ where
     }
 
     #[trace_resources]
-    fn kernel_allocate_node_id(
-        &mut self,
-        node_type: AllocateEntityType,
-    ) -> Result<NodeId, RuntimeError> {
+    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         // TODO: Add costing
-        let node_id = self.id_allocator.allocate_node_id(node_type)?;
+        let node_id = self.id_allocator.allocate_node_id(entity_type)?;
 
         Ok(node_id)
     }
@@ -523,7 +520,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_read_bucket(&mut self, bucket_id: NodeId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(bucket_id),
             TypedModuleId::ObjectState,
@@ -574,7 +571,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_read_proof(&mut self, proof_id: NodeId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             &NodeId::Object(proof_id),
             TypedModuleId::ObjectState,
@@ -636,10 +633,10 @@ where
         &mut self,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        substate_key: SubstateKey,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, &offset, &flags)?;
+        KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, substate_key, &flags)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -766,7 +763,7 @@ where
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<&IndexedScryptoValue, RuntimeError> {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
@@ -790,48 +787,12 @@ where
         Ok(ret)
     }
 
-    #[trace_resources]
-    fn kernel_get_substate_ref<'a, 'b, S>(
-        &'b mut self,
+    fn kernel_write_substate(
+        &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&'a S, RuntimeError>
-    where
-        &'a S: From<SubstateRef<'a>>,
-        'b: 'a,
-    {
-        KernelModuleMixer::on_read_substate(
-            self,
-            lock_handle,
-            0, //  TODO: pass the right size
-        )?;
-
-        let substate_ref =
-            self.current_frame
-                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
-
-        Ok(substate_ref.into())
-    }
-
-    #[trace_resources]
-    fn kernel_get_substate_ref_mut<'a, 'b, S>(
-        &'b mut self,
-        lock_handle: LockHandle,
-    ) -> Result<&'a mut S, RuntimeError>
-    where
-        &'a mut S: From<SubstateRefMut<'a>>,
-        'b: 'a,
-    {
-        KernelModuleMixer::on_write_substate(
-            self,
-            lock_handle,
-            0, //  TODO: pass the right size
-        )?;
-
-        let substate_ref_mut =
-            self.current_frame
-                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
-
-        Ok(substate_ref_mut.into())
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        todo!()
     }
 }
 
@@ -845,12 +806,13 @@ where
         package_address: PackageAddress,
         handle: LockHandle,
     ) -> Result<W::WasmInstance, RuntimeError> {
-        let package_code: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
-        let code = package_code.code.clone();
+        // TODO: check if save to unwrap
+        let package_code: PackageCodeSubstate =
+            self.kernel_read_substate(handle)?.as_typed().unwrap();
 
         Ok(self
             .scrypto_interpreter
-            .create_instance(package_address, &code))
+            .create_instance(package_address, &package_code.code))
     }
 }
 

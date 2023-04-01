@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
-use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
@@ -20,7 +20,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -55,7 +55,8 @@ impl NodeMoveModule {
                     &ProofOffset::Info.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut proof: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
+                let mut proof: ProofInfoSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                 if proof.restricted {
                     return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
@@ -67,7 +68,7 @@ impl NodeMoveModule {
                     proof.change_to_restricted();
                 }
 
-                api.sys_write_substate_typed(handle, &proof);
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
                 api.kernel_drop_lock(handle)?;
             }
             _ => {}
@@ -84,7 +85,7 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,

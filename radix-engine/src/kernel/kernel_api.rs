@@ -111,6 +111,6 @@ pub trait KernelModuleApi<E>:
     + KernelSubstateApi
     + KernelInternalApi
     + KernelInvokeApi<VirtualLazyLoadInvocation, E>
-    + ClientObjectApi<E>
+    + ClientObjectApi<E> // This is to allow invocation for kernel modules
 {
 }

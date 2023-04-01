@@ -1,4 +1,4 @@
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -237,7 +237,7 @@ impl ResourceManager {
 
     pub fn new_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

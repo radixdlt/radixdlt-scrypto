@@ -16,7 +16,7 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -127,7 +127,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientObjectApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -165,7 +165,8 @@ impl KernelModule for CostingModule {
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: &mut PackageRoyaltySubstate = api.sys_read_substate(handle)?;
+        let mut substate: PackageRoyaltySubstate =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
         let royalty_charge = substate
             .blueprint_royalty_configs
             .get(blueprint.blueprint_name.as_str())
@@ -173,21 +174,21 @@ impl KernelModule for CostingModule {
             .unwrap_or(0);
         if royalty_charge > 0 {
             let vault_id = if let Some(vault) = substate.royalty_vault {
-                vault.id()
+                vault
             } else {
                 let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
-                substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
                 substate.royalty_vault = Some(new_vault);
-                new_vault.id()
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
+                new_vault
             };
             apply_royalty_cost(
                 api,
                 royalty_charge,
                 RoyaltyRecipient::Package(blueprint.package_address),
-                vault_id,
+                vault_id.0,
             )?;
         }
-        api.api.kernel_drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
 
         //===========================
         // Apply component royalty
@@ -196,10 +197,11 @@ impl KernelModule for CostingModule {
             let handle = api.kernel_lock_substate(
                 component_address.as_node_id(),
                 TypedModuleId::Royalty,
-                RoyaltyOffset::Royalty.into(),
+                &RoyaltyOffset::RoyaltyConfig.into(),
                 LockFlags::read_only(),
             )?;
-            let substate: ComponentRoyaltyConfigSubstate = api.sys_read_substate_typed(handle)?;
+            let substate: ComponentRoyaltyConfigSubstate =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
             let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
@@ -211,7 +213,7 @@ impl KernelModule for CostingModule {
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate: ComponentRoyaltyAccumulatorSubstate =
-                    api.sys_read_substate_typed(handle)?;
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
                 let vault_id = if let Some(vault) = substate.royalty_vault {
                     vault
                 } else {
@@ -225,7 +227,7 @@ impl KernelModule for CostingModule {
                     RoyaltyRecipient::Component(component_address.clone()),
                     vault_id.into(),
                 )?;
-                api.sys_write_substate_typed(handle, &substate);
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate));
                 api.kernel_drop_lock(handle)?;
             }
         }

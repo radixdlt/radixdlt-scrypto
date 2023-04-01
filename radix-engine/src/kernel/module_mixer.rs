@@ -23,7 +23,6 @@ use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::*;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
@@ -252,7 +251,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -673,7 +672,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
+    fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
         node_id: NodeId,
         module_id: TypedModuleId,
         offset: &SubstateKey,
