@@ -1,13 +1,14 @@
 use crate::*;
 use radix_engine_common::types::{ModuleId, SubstateKey};
 use sbor::rust::prelude::*;
+use strum::FromRepr;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor, FromRepr)]
 pub enum TypedModuleId {
     TypeInfo,
     ObjectState,

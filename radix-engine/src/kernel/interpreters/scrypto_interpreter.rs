@@ -117,8 +117,7 @@ impl ExecutableInvocation for MethodInvocation {
                 match type_info {
                     TypeInfoSubstate::Object { blueprint, global } => {
                         let global_address = if global {
-                            let address: Address = self.identifier.0.into();
-                            Some(address)
+                            Some(GlobalAddress::new_unchecked(self.identifier.0.into()))
                         } else {
                             // See if we have a parent
 
@@ -174,27 +173,27 @@ impl ExecutableInvocation for MethodInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-                node_refs_to_copy.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
+                node_refs_to_copy.insert(RADIX_TOKEN.into());
             } else {
                 let handle = api.kernel_lock_substate(
                     blueprint.package_address.as_node_id(),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
-                let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
+                let code_type: PackageCodeTypeSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
                 let code_type = code_type.clone();
                 api.kernel_drop_lock(handle)?;
 
                 match code_type {
                     PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(NodeId::GlobalObject(EPOCH_MANAGER.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(CLOCK.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(PACKAGE_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
+                        node_refs_to_copy.insert(EPOCH_MANAGER.into());
+                        node_refs_to_copy.insert(CLOCK.into());
+                        node_refs_to_copy.insert(RADIX_TOKEN.into());
+                        node_refs_to_copy.insert(PACKAGE_TOKEN.into());
+                        node_refs_to_copy.insert(ECDSA_SECP256K1_TOKEN.into());
+                        node_refs_to_copy.insert(EDDSA_ED25519_TOKEN.into());
                     }
                     _ => {}
                 }
@@ -243,7 +242,7 @@ impl ExecutableInvocation for FunctionInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if self.identifier.0.package_address.eq(&PACKAGE_PACKAGE) {
-                node_refs_to_copy.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
+                node_refs_to_copy.insert(RADIX_TOKEN.into());
             } else if self
                 .identifier
                 .0
@@ -255,24 +254,24 @@ impl ExecutableInvocation for FunctionInvocation {
                 // Will just disable the module for genesis.
             } else {
                 let handle = api.kernel_lock_substate(
-                    &NodeId::GlobalObject(self.identifier.0.package_address.into()),
+                    self.identifier.0.package_address.as_node_id(),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
-                let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
+                let code_type: PackageCodeTypeSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
                 let code_type = code_type.clone();
                 api.kernel_drop_lock(handle)?;
 
                 match code_type {
                     PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(NodeId::GlobalObject(EPOCH_MANAGER.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(CLOCK.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(RADIX_TOKEN.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(PACKAGE_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(NodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
-                        node_refs_to_copy.insert(NodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
+                        node_refs_to_copy.insert(EPOCH_MANAGER.into());
+                        node_refs_to_copy.insert(CLOCK.into());
+                        node_refs_to_copy.insert(RADIX_TOKEN.into());
+                        node_refs_to_copy.insert(PACKAGE_TOKEN.into());
+                        node_refs_to_copy.insert(ECDSA_SECP256K1_TOKEN.into());
+                        node_refs_to_copy.insert(EDDSA_ED25519_TOKEN.into());
                     }
                     _ => {}
                 }
@@ -360,9 +359,9 @@ impl Executor for ScryptoExecutor {
             };
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                &NodeId::GlobalObject(self.blueprint.package_address.into()),
+                self.blueprint.package_address.as_node_id(),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::Info),
+                &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             );
             if let Ok(handle) = handle {
@@ -402,9 +401,9 @@ impl Executor for ScryptoExecutor {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                &NodeId::GlobalObject(self.blueprint.package_address.into()),
+                self.blueprint.package_address.as_node_id(),
                 TypedModuleId::ObjectState,
-                SubstateOffset::Package(PackageOffset::Info),
+                &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
             api.kernel_drop_lock(handle)?;
@@ -412,9 +411,9 @@ impl Executor for ScryptoExecutor {
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
-                    &NodeId::GlobalObject(self.blueprint.package_address.into()),
+                    self.blueprint.package_address.as_node_id(),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    &PackageOffset::Info.into(),
                     LockFlags::read_only(),
                 )?;
                 let package_info: PackageInfoSubstate = api.sys_read_substate_typed(handle)?;
@@ -452,9 +451,9 @@ impl Executor for ScryptoExecutor {
             // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    &NodeId::GlobalObject(self.blueprint.package_address.into()),
+                    self.blueprint.package_address.as_node_id(),
                     TypedModuleId::ObjectState,
-                    SubstateOffset::Package(PackageOffset::CodeType),
+                    &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
                 let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
@@ -465,9 +464,9 @@ impl Executor for ScryptoExecutor {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        &NodeId::GlobalObject(self.blueprint.package_address.into()),
+                        self.blueprint.package_address.as_node_id(),
                         TypedModuleId::ObjectState,
-                        SubstateOffset::Package(PackageOffset::Code),
+                        &PackageOffset::Code.into(),
                         LockFlags::read_only(),
                     )?;
                     let code: PackageCodeSubstate = api.sys_read_substate_typed(handle)?;
@@ -486,9 +485,9 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
-                            &NodeId::GlobalObject(self.blueprint.package_address.into()),
+                            self.blueprint.package_address.as_node_id(),
                             TypedModuleId::ObjectState,
-                            SubstateOffset::Package(PackageOffset::Code),
+                            &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;
                         let wasm_instance = api

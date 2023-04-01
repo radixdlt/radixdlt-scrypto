@@ -76,7 +76,9 @@ where
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
-        let node_module_id = TypedModuleId::from_u32(module_id)
+        let node_module_id = u8::try_from(module_id)
+            .ok()
+            .and_then(|x| TypedModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =
@@ -169,16 +171,16 @@ where
     fn lock_substate(
         &mut self,
         node_id: Vec<u8>,
-        offset: Vec<u8>,
+        substate_key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let offset =
-            scrypto_decode::<SubstateKey>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
+        let substate_key = scrypto_decode::<SubstateKey>(&substate_key)
+            .map_err(WasmRuntimeError::InvalidOffset)?;
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.sys_lock_substate(node_id, substate_key, flags)?;
+        let handle = self.api.sys_lock_substate(&node_id, &substate_key, flags)?;
 
         Ok(handle)
     }
@@ -247,7 +249,7 @@ where
     fn get_type_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let type_info = self.api.get_object_type_info(node_id)?;
+        let type_info = self.api.get_object_type_info(&node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
