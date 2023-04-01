@@ -18,7 +18,13 @@ packages=$(cat Cargo.toml | \
     awk -F '"' '{print $2}')
 
 for package in $packages; do
-    cargo fmt -p $package --check --quiet ||
+    # Subdirectories requires --all param (https://github.com/rust-lang/rustfmt/issues/4432)
+    if [[ "$package" == */* ]]; then
+        all_param="--all"
+    else
+        all_param=""
+    fi
+    cargo fmt -p $package --check --quiet $all_param ||
         { echo "Code format check FAILED for $package"; failed=1; }
 done
 

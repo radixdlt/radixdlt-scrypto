@@ -63,6 +63,15 @@ target=$DFLT_TARGET
 cmd=${1:-watch}
 shift
 
+# Trying different power schedules, but keeping in mind that "fast" and "explore" are most effective ones,
+# thus they are duplicated.
+# The more CPU cores available, the more schedules possible to try.
+# More details on power schedules:
+#   https://github.com/AFLplusplus/AFLplusplus/blob/stable/docs/fuzzing_in_depth.md#c-using-multiple-cores
+#   https://github.com/AFLplusplus/AFLplusplus/blob/stable/docs/FAQ.md#what-are-power-schedules
+SCHEDULES_ARR=("fast" "explore" "fast" "explore" "exploit" "coe" "lin" "quad" "seek" "rare" "mmopt")
+SCHEDULES_LEN=${#SCHEDULES_ARR[@]}
+
 if [ $cmd = "run" ] ; then
     if [ $# -lt 1 ] ; then
         error "duration parameter is missing"
@@ -91,18 +100,22 @@ if [ $cmd = "run" ] ; then
     screen -wipe || true
 
     for (( i=0; i<$cpus; i++ )) ; do
+        power_schedule=${SCHEDULES_ARR[$(( i % SCHEDULES_LEN))]}
         if [ $i -eq 0 ] ; then
-            name=${target}_main_$i
+            name=${target}_${i}_${power_schedule}
             # main fuzzer
-            fuzzer="-M $name"
+            fuzz_args="-M $name "
         else
-            name=${target}_secondary_$i
+            name=${target}_${i}_${power_schedule}
             # secondary fuzzer
-            fuzzer="-S $name"
+            fuzz_args="-S $name "
         fi
+        fuzzer+="-p $power_schedule "
         # TODO: use different fuzzing variants per instance
+        fuzz_cmd="./fuzz.sh afl run -V $duration $fuzz_args -T $name -t $timeout"
+        echo -e "Starting screen session with:\n  $fuzz_cmd"
         screen -dmS afl_$name \
-            bash -c "{ ./fuzz.sh afl run -V $duration $fuzzer -T $name -t $timeout >afl/$name.log 2>afl/$name.err ; echo \$? > afl/$name.status; }"
+            bash -c "{ $fuzz_cmd >afl/$name.log 2>afl/$name.err ; echo \$? > afl/$name.status; }"
     done
     echo "Started below screen sessions with AFL instances"
     # adding 'true', because screen returns always error, when listing sessions.

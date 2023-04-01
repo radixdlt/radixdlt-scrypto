@@ -32,6 +32,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -685,6 +686,7 @@ impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources(log=units)]
     fn consume_cost_units(
         &mut self,
         units: u32,
