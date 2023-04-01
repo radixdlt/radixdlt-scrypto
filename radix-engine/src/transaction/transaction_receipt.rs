@@ -372,8 +372,8 @@ pub struct TransactionReceiptDisplayContext<'a> {
 }
 
 impl<'a> TransactionReceiptDisplayContext<'a> {
-    pub fn scrypto_value_display_context(&self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bench32(self.encoder)
+    pub fn scrypto_value_serialization_context(&self) -> ScryptoValueSerializationContext<'a> {
+        ScryptoValueSerializationContext::with_optional_bech32(self.encoder)
     }
 
     pub fn address_display_context(&self) -> AddressDisplayContext<'a> {
@@ -451,7 +451,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let result = &self.result;
-        let scrypto_value_display_context = context.scrypto_value_display_context();
+        let scrypto_value_serialization_context = context.scrypto_value_serialization_context();
         let address_display_context = context.address_display_context();
 
         write!(
@@ -551,7 +551,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         match output {
                             InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
                                 .expect("Impossible case! Instruction output can't be decoded")
-                                .to_string(scrypto_value_display_context),
+                                .to_string(scrypto_value_serialization_context),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
@@ -669,7 +669,7 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
             .0
             .display(receipt_context.address_display_context()),
         event_type_identifier.1,
-        event_data_value.display(receipt_context.scrypto_value_display_context())
+        event_data_value.display(receipt_context.scrypto_value_serialization_context())
     )?;
     Ok(())
 }
@@ -694,7 +694,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
         let serializable = payload.serializable(SerializationContext {
             mode: SerializationMode::Invertible,
             schema: &schema,
-            custom_context: receipt_context.scrypto_value_display_context(),
+            custom_context: receipt_context.scrypto_value_serialization_context(),
         });
         serde_json::to_string(&serializable).map_err(|_| fmt::Error)
     }?;

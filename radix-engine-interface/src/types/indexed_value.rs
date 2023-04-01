@@ -8,9 +8,6 @@ use sbor::traversal::TraversalEvent;
 use sbor::*;
 use utils::ContextualDisplay;
 
-use super::format_scrypto_value;
-use super::ScryptoValueDisplayContext;
-
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
@@ -140,22 +137,18 @@ impl Into<Vec<u8>> for IndexedScryptoValue {
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_scrypto_value(
-            f,
-            &self.as_scrypto_value(),
-            &ScryptoValueDisplayContext::no_context(),
-        )
+        todo!()
     }
 }
 
-impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoValue {
+impl<'a> ContextualDisplay<ScryptoValueSerializationContext<'a>> for IndexedScryptoValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ScryptoValueDisplayContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, &self.as_scrypto_value(), context)
+        todo!()
     }
 }
