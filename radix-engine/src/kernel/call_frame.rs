@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::SubstateProperties;
-use crate::system::node_substates::{SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateId, SubstateOffset};
@@ -628,17 +628,19 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn iterator<'f, 's>(
+    pub fn first_substates<'f, 's>(
         &mut self,
         node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-    ) {
-        let ref_mut = if heap.contains_node(node_id) {
+    ) -> Vec<(SubstateId, RuntimeSubstate)> {
+        if heap.contains_node(node_id) {
             panic!("Heap iterator supported");
         } else {
-            track.iter(node_id)
-        };
+            track.first_substates(node_id, module_id, count)
+        }
     }
 
     pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<(RefType, bool)> {

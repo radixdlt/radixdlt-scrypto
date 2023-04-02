@@ -7,7 +7,7 @@ use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_substates::SubstateRef;
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef};
 use crate::system::node_substates::SubstateRefMut;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -48,7 +48,7 @@ pub trait KernelNodeApi {
 
 
 pub trait KernelIterableMapApi {
-    fn new_iterator(&mut self, node_id: &RENodeId);
+    fn first(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
 }
 
 pub trait KernelSubstateApi {

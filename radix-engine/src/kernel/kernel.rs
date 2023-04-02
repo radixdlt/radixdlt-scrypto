@@ -19,7 +19,7 @@ use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
-use crate::system::node_substates::{SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -637,8 +637,8 @@ impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
     where
         W: WasmEngine,
 {
-    fn new_iterator(&mut self, node_id: &RENodeId) {
-        self.current_frame.iterator(node_id, &mut self.heap, &mut self.track);
+    fn first(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
+        self.current_frame.first_substates(node_id, module_id, count, &mut self.heap, &mut self.track)
     }
 }
 
