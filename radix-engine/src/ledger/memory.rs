@@ -14,13 +14,13 @@ pub struct TypedInMemorySubstateStore {
     /// A hashmap from IDs to values.
     /// This structure does not preserve deterministic ordering, but it is only used for test
     /// purposes (where it actually puts the Engine's determinism under test).
-    substates: HashMap<SubstateId, OutputValue>,
+    substates: BTreeMap<SubstateId, OutputValue>,
 }
 
 impl TypedInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            substates: HashMap::new(),
+            substates: BTreeMap::new(),
         }
     }
 
