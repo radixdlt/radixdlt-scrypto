@@ -129,6 +129,17 @@ pub enum UpdateSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ReadSubstateError {
+    LockNotFound(LockHandle),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum WriteSubstateError {
+    LockNotFound(LockHandle),
+    NoWritePermission,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MoveError {
     OwnNotFound(NodeId),
     RefNotFound(NodeId),
@@ -332,6 +343,63 @@ impl CallFrame {
             substate_key: substate_lock.substate_key.clone(),
             flags: substate_lock.flags,
         })
+    }
+
+    pub fn read_substate<'f, 's>(
+        &mut self,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s>,
+        lock_handle: LockHandle,
+    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+        let SubstateLock {
+            node_id,
+            module_id,
+            substate_key,
+            store_handle,
+            ..
+        } = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
+
+        if let Some(store_handle) = store_handle {
+            Ok(track.get_substate(*store_handle))
+        } else {
+            Ok(heap
+                .get_substate(node_id, *module_id, substate_key)
+                .expect("Substate missing in heap"))
+        }
+    }
+
+    pub fn write_substate<'f, 's>(
+        &mut self,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s>,
+        lock_handle: LockHandle,
+        substate: IndexedScryptoValue,
+    ) -> Result<(), WriteSubstateError> {
+        let SubstateLock {
+            node_id,
+            module_id,
+            substate_key,
+            store_handle,
+            flags,
+            ..
+        } = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
+
+        if !flags.contains(LockFlags::MUTABLE) {
+            return Err(WriteSubstateError::NoWritePermission);
+        }
+
+        if let Some(store_handle) = store_handle {
+            track.put_substate(*store_handle, substate);
+        } else {
+            heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
+        }
+        Ok(())
     }
 
     pub fn new_root() -> Self {

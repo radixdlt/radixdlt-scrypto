@@ -243,7 +243,9 @@ where
             let mut parent = self.prev_frame_stack.pop().unwrap();
 
             // Move resource
-            CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
+            CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)
+                .map_err(CallFrameError::MoveError)
+                .map_err(KernelError::CallFrameError)?;
 
             // drop proofs and check resource leak
             self.auto_drop_nodes_in_frame()?;
@@ -764,27 +766,20 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        // A little hacky: this post sys call is called before the sys call happens due to
-        // a mutable borrow conflict for substate ref.
-        // Some modules (specifically: ExecutionTraceModule) require that all
-        // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop() so that it's actually
-        // after the sys call processing, not before.
+        let len = self
+            .current_frame
+            .read_substate(&mut self.heap, &mut self.track, lock_handle)
+            .map_err(CallFrameError::ReadSubstateError)
+            .map_err(KernelError::CallFrameError)?
+            .as_slice()
+            .len();
 
-        let substate_ref =
-            self.current_frame
-                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
-        let ret = substate_ref.to_scrypto_value();
+        KernelModuleMixer::on_read_substate(self, lock_handle, len)?;
 
-        // TODO: Design special package code loading cost rule
-        let size = match substate_ref {
-            SubstateRef::PackageCode(..) => 0,
-            _ => ret.as_slice().len(),
-        };
-
-        KernelModuleMixer::on_read_substate(self, lock_handle, size)?;
-
-        Ok(ret)
+        Ok(self
+            .current_frame
+            .read_substate(&mut self.heap, &mut self.track, lock_handle)
+            .unwrap())
     }
 
     fn kernel_write_substate(
@@ -792,7 +787,13 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        todo!()
+        KernelModuleMixer::on_write_substate(self, lock_handle, value.as_slice().len())?;
+
+        self.current_frame
+            .write_substate(&mut self.heap, &mut self.track, lock_handle, value)
+            .map_err(CallFrameError::WriteSubstateError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
     }
 }
 

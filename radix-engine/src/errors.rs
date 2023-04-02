@@ -176,6 +176,8 @@ impl From<CallFrameError> for KernelError {
 pub enum CallFrameError {
     LockSubstateError(LockSubstateError),
     UpdateSubstateError(UpdateSubstateError),
+    ReadSubstateError(ReadSubstateError),
+    WriteSubstateError(WriteSubstateError),
     MoveError(MoveError),
 }
 
