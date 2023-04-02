@@ -1463,6 +1463,12 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
+            SubstateRef::RegisteredValidators(substate) => {
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::KeyValueStore(substate.validators.id()));
+
+                (index_set_new(), owned_nodes)
+            }
             SubstateRef::FungibleResourceManager(..) => (index_set_new(), Vec::new()),
             SubstateRef::NonFungibleResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();

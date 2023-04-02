@@ -15,6 +15,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
@@ -42,7 +43,7 @@ pub struct ValidatorSetSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct RegisteredValidatorsSubstate {
-    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+    pub validators: Own,//BTreeMap<ComponentAddress, Validator>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -102,6 +103,8 @@ impl EpochManagerBlueprint {
         let mut validators = BTreeMap::new();
         let mut index = BTreeMap::new();
 
+        let registered_validators = api.new_key_value_store(KeyValueStoreSchema::new::<ComponentAddress, Validator>(false))?;
+
         for (key, validator_init) in validator_set {
             let stake = validator_init.initial_stake.sys_amount(api)?;
             let (address, lp_bucket, owner_token_bucket) =
@@ -116,6 +119,15 @@ impl EpochManagerBlueprint {
             let validator = Validator { key, stake };
             validators.insert(address, validator);
             index.insert((stake, address), key);
+
+            let lock_handle = api.sys_lock_substate(
+                RENodeId::KeyValueStore(registered_validators),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&address).unwrap())),
+                LockFlags::MUTABLE,
+            )?;
+            let validator = Validator { key, stake };
+            api.sys_write_typed_substate(lock_handle, Some(validator))?;
+            api.sys_drop_lock(lock_handle)?;
 
             Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
             Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
@@ -136,7 +148,7 @@ impl EpochManagerBlueprint {
             };
 
             let preparing_validator_set = RegisteredValidatorsSubstate {
-                validator_set: validators.clone(),
+                validators: Own::KeyValueStore(registered_validators),
             };
 
             let index = RegisteredValidatorsByStakeSubstate {
@@ -346,17 +358,24 @@ impl EpochManagerBlueprint {
             SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidators),
             LockFlags::MUTABLE,
         )?;
-        let preparing_validator_set: &mut RegisteredValidatorsSubstate = api.kernel_get_substate_ref_mut(handle)?;
-        let previous = preparing_validator_set.validator_set.get(&validator_address).cloned();
+        let registered: &mut RegisteredValidatorsSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let kv_id = registered.validators.id();
+
+        let lock_handle = api.sys_lock_substate(
+            RENodeId::KeyValueStore(kv_id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&validator_address).unwrap())),
+            LockFlags::MUTABLE,
+        )?;
+        let previous: Option<Validator> = api.sys_read_typed_substate(lock_handle)?;
 
         match update {
             UpdateValidator::Register(key, stake) => {
-                preparing_validator_set
-                    .validator_set
-                    .insert(validator_address, Validator { key, stake });
+                api.sys_write_typed_substate(lock_handle, Some(Validator {
+                    key, stake,
+                }))?;
             }
             UpdateValidator::Unregister => {
-                preparing_validator_set.validator_set.remove(&validator_address);
+                api.sys_write_typed_substate(lock_handle, Option::<Validator>::None)?;
             }
         }
 
