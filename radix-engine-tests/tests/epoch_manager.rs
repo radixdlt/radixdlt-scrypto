@@ -42,10 +42,10 @@ fn genesis_epoch_has_correct_initial_validators() {
     let num_unstake_epochs = 1u64;
     let max_validators = 10u32;
     let mut validator_set_and_stake_owners = BTreeMap::new();
-    for k in 1u64..100u64 {
+    for k in 1u64..=100u64 {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k).unwrap().public_key();
         let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
-        validator_set_and_stake_owners.insert(pub_key, (Decimal::from(k), validator_account_address));
+        validator_set_and_stake_owners.insert(pub_key, (Decimal::from((k + 1) / 2), validator_account_address));
     }
     let genesis = create_genesis(
         validator_set_and_stake_owners,
@@ -61,6 +61,9 @@ fn genesis_epoch_has_correct_initial_validators() {
 
     // Assert
     assert_eq!(validators.len(), 10);
+    for (_, validator) in validators {
+        assert!(validator.stake >= Decimal::from(45u64) && validator.stake <= Decimal::from(50u64))
+    }
 }
 
 #[test]

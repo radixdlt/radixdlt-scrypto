@@ -61,6 +61,13 @@ pub enum EpochManagerError {
 pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
+    fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
+        let reverse_stake = Decimal::MAX - stake;
+        let mut index_key = reverse_stake.to_be_bytes();
+        index_key.extend(scrypto_encode(&address).unwrap());
+        index_key
+    }
+
     pub(crate) fn create<Y>(
         validator_token_address: [u8; 26], // TODO: Clean this up
         component_address: [u8; 26],       // TODO: Clean this up
@@ -135,14 +142,14 @@ impl EpochManagerBlueprint {
             }
 
             {
-                let entry_key = (stake, address);
+                let index_key = Self::to_index_key(stake, address);
                 let entry_value = (address, Validator {
                     key,
                     stake,
                 });
                 api.insert_into_iterable_map(
                     RENodeId::KeyValueStore(index_id),
-                    scrypto_encode(&entry_key).unwrap(),
+                    index_key,
                     scrypto_encode(&entry_value).unwrap(),
                 )?;
             }
@@ -418,22 +425,22 @@ impl EpochManagerBlueprint {
         };
 
         if let Some(previous) = previous {
-            let key = scrypto_encode(&(previous.stake, validator_address)).unwrap();
+            let index_key = Self::to_index_key(previous.stake, validator_address);
             api.remove_from_iterable_map(
                 index_node,
-                key
+                index_key,
             );
         }
         match update {
             UpdateValidator::Register(key, stake) => {
-                let entry_key = (stake, validator_address);
+                let index_key = Self::to_index_key(stake, validator_address);
                 let entry_value = (validator_address, Validator {
                     key, stake,
                 });
 
                 api.insert_into_iterable_map(
                     index_node,
-                    scrypto_encode(&entry_key).unwrap(),
+                    index_key,
                     scrypto_encode(&entry_value).unwrap(),
                 )?;
             }

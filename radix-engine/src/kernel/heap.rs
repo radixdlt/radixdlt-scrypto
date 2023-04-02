@@ -1,4 +1,5 @@
-use radix_engine_common::data::scrypto::ScryptoValue;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
+use radix_engine_common::data::scrypto::model::ComponentAddress;
 use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::{CallFrameError, OffsetDoesNotExist};
@@ -14,6 +15,7 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
+use crate::blueprints::epoch_manager::Validator;
 
 pub struct Heap {
     nodes: NonIterMap<RENodeId, HeapRENode>,
@@ -43,10 +45,23 @@ impl Heap {
 
         let mut items = Vec::new();
 
+        for ((node_module_id, offset), value) in node.substates.iter() {
+            if let NodeModuleId::SELF = node_module_id {
+                let (address, validator) = if let RuntimeSubstate::IterableEntry(value) = value {
+                    let value: (ComponentAddress, Validator) = scrypto_decode(&scrypto_encode(value).unwrap()).unwrap();
+                    value
+                } else {
+                    panic!("oops: {:?}", value);
+                };
+            }
+        }
+
         for ((node_module_id, offset), value) in node.substates.iter().take(count.try_into().unwrap()) {
             let substate_id = SubstateId(node_id.clone(), module_id.clone(), offset.clone());
             if let RuntimeSubstate::IterableEntry(value) = value {
                 items.push((substate_id, RuntimeSubstate::IterableEntry(value.clone())))
+            } else {
+                panic!("Unexpected");
             }
         }
 
