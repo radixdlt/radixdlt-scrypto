@@ -97,7 +97,7 @@ impl AuthZoneBlueprint {
 
         api.sys_write_substate_typed(auth_zone_handle, &auth_zone);
 
-        let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -136,7 +136,7 @@ impl AuthZoneBlueprint {
             compose_proof_by_amount(&proofs, input.resource_address, Some(input.amount), api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -175,7 +175,7 @@ impl AuthZoneBlueprint {
             compose_proof_by_ids(&proofs, input.resource_address, Some(input.ids), api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(EntityType::GlobalComponent)?;
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),

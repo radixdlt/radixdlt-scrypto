@@ -60,7 +60,7 @@ pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
-    EntityType::GlobalComponent as u8,
+    EntityType::GlobalGenericComponent as u8,
     236,
     50,
     10,

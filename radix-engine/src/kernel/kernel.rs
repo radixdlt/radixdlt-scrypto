@@ -25,6 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_stores::interface::SubstateStore;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -284,48 +285,39 @@ where
         // TODO: Move to higher layer
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
-                match node_id {
-                    NodeId::GlobalObject(Address::Component(
-                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                        | ComponentAddress::EddsaEd25519VirtualAccount(..)
-                        | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                        | ComponentAddress::EddsaEd25519VirtualIdentity(..),
-                    )) => {
-                        // For virtual accounts and native packages, create a reference directly
-                        self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        continue;
-                    }
-                    NodeId::GlobalObject(Address::Package(package_address))
-                        if is_native_package(*package_address) =>
-                    {
-                        // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                        self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        continue;
-                    }
-                    _ => {}
+                if node_id.is_global_virtual() {
+                    // For virtual accounts and native packages, create a reference directly
+                    self.current_frame
+                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                    continue;
+                } else if node_id.is_global_package()
+                    && is_native_package(PackageAddress::new_unchecked(node_id.0))
+                {
+                    // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
+                    self.current_frame
+                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                    continue;
                 }
 
                 if self.current_frame.get_node_visibility(node_id).is_some() {
                     continue;
                 }
 
-                let substate_key = SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo);
-                self.track
+                let handle = self
+                    .track
                     .acquire_lock(
-                        SubstateId(*node_id, TypedModuleId::TypeInfo, substate_key),
+                        node_id,
+                        TypedModuleId::TypeInfo.into(),
+                        &TypeInfoOffset::TypeInfo.into(),
                         LockFlags::read_only(),
                     )
                     .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-
-                let substate_ref =
-                    self.track
-                        .get_substate(node_id, TypedModuleId::TypeInfo, &substate_key);
-                let type_substate: &TypeInfoSubstate = substate_ref.into();
+                let substate_ref = self.track.get_substate(handle);
+                let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
+                self.track.release_lock(handle);
                 match type_substate {
                     TypeInfoSubstate::Object { blueprint, global } => {
-                        if *global {
+                        if global {
                             self.current_frame
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -343,13 +335,6 @@ where
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-
-                self.track
-                    .release_lock(
-                        SubstateId(*node_id, TypedModuleId::TypeInfo, substate_key),
-                        false,
-                    )
-                    .map_err(|_| KernelError::NodeNotFound(*node_id))?;
             }
         }
 

@@ -33,7 +33,7 @@ impl HrpSet {
             EntityType::GlobalAccessController => &self.access_controller,
             EntityType::GlobalAccount => &self.account,
             EntityType::GlobalIdentity => &self.identity,
-            EntityType::GlobalComponent => &self.component,
+            EntityType::GlobalGenericComponent => &self.component,
             EntityType::GlobalVirtualEcdsaAccount => &self.account,
             EntityType::GlobalVirtualEddsaAccount => &self.account,
             EntityType::GlobalVirtualEcdsaIdentity => &self.identity,
@@ -41,7 +41,7 @@ impl HrpSet {
             EntityType::InternalVault => &self.internal_vault,
             EntityType::InternalAccessController => &self.internal_access_controller,
             EntityType::InternalAccount => &self.internal_account,
-            EntityType::InternalComponent => &self.internal_component,
+            EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
         }
     }

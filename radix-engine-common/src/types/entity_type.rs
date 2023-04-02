@@ -17,7 +17,7 @@ pub enum EntityType {
     GlobalAccessController,
     GlobalAccount,
     GlobalIdentity,
-    GlobalComponent,
+    GlobalGenericComponent, // generic
 
     GlobalVirtualEcdsaAccount,
     GlobalVirtualEddsaAccount,
@@ -27,8 +27,8 @@ pub enum EntityType {
     InternalVault,
     InternalAccessController,
     InternalAccount,
-    InternalComponent,
     InternalKeyValueStore,
+    InternalGenericComponent, // generic
 }
 
 impl EntityType {
@@ -43,7 +43,7 @@ impl EntityType {
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity
-            | EntityType::GlobalComponent
+            | EntityType::GlobalGenericComponent
             | EntityType::GlobalVirtualEcdsaAccount
             | EntityType::GlobalVirtualEddsaAccount
             | EntityType::GlobalVirtualEcdsaIdentity
@@ -51,7 +51,7 @@ impl EntityType {
             EntityType::InternalVault
             | EntityType::InternalAccessController
             | EntityType::InternalAccount
-            | EntityType::InternalComponent
+            | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore => false,
         }
     }
@@ -68,7 +68,7 @@ impl EntityType {
         EntityType::GlobalAccessController |
         EntityType::GlobalAccount |
         EntityType::GlobalIdentity |
-        EntityType::GlobalComponent |
+        EntityType::GlobalGenericComponent |
         EntityType::GlobalVirtualEcdsaAccount |
         EntityType::GlobalVirtualEddsaAccount |
         EntityType::GlobalVirtualEcdsaIdentity |
@@ -79,7 +79,7 @@ impl EntityType {
         EntityType::InternalVault |
         EntityType::InternalAccessController |
         EntityType::InternalAccount |
-        EntityType::InternalComponent |
+        EntityType::InternalGenericComponent |
         EntityType::InternalKeyValueStore => false,
     }
     }
@@ -93,5 +93,19 @@ impl EntityType {
             self,
             EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
         )
+    }
+
+    pub fn is_global_virtual(&self) -> bool {
+        match self {
+            EntityType::GlobalVirtualEcdsaAccount
+            | EntityType::GlobalVirtualEddsaAccount
+            | EntityType::GlobalVirtualEcdsaIdentity
+            | EntityType::GlobalVirtualEddsaIdentity => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_internal_kv_store(&self) -> bool {
+        matches!(self, EntityType::InternalKeyValueStore)
     }
 }

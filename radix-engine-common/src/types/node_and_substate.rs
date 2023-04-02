@@ -41,14 +41,28 @@ impl NodeId {
 
     pub fn is_global_component(&self) -> bool {
         match self.entity_type() {
-            Some(t) => t == EntityType::GlobalComponent,
+            Some(t) => t.is_global_component(),
+            None => false,
+        }
+    }
+
+    pub fn is_global_package(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t.is_global_package(),
+            None => false,
+        }
+    }
+
+    pub fn is_global_virtual(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t.is_global_virtual(),
             None => false,
         }
     }
 
     pub fn is_internal_kv_store(&self) -> bool {
         match self.entity_type() {
-            Some(t) => t == EntityType::InternalKeyValueStore,
+            Some(t) => t.is_internal_kv_store(),
             None => false,
         }
     }

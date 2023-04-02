@@ -176,7 +176,7 @@ where
         }
         self.kernel_drop_lock(handle)?;
 
-        let node_id = self.kernel_allocate_node_id(EntityType::InternalComponent)?;
+        let node_id = self.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         let node_init = NodeInit::Object(
             object_states
                 .into_iter()
@@ -234,7 +234,7 @@ where
             }
             (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
             (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
-            _ => EntityType::GlobalComponent,
+            _ => EntityType::GlobalGenericComponent,
         };
 
         let global_node_id = self.kernel_allocate_node_id(entity_type)?;

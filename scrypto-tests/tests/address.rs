@@ -182,8 +182,8 @@ fn decode_matching_component_address_entity_id_succeeds() {
     let encoded_component_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::GlobalComponent),
-        generate_u8_array(EntityType::GlobalComponent as u8).to_base32(),
+            .get_entity_hrp(&EntityType::GlobalGenericComponent),
+        generate_u8_array(EntityType::GlobalGenericComponent as u8).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();
