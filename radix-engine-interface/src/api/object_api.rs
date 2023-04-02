@@ -9,20 +9,22 @@ use scrypto_schema::{IterableMapSchema, KeyValueStoreSchema};
 pub trait ClientIterableMapApi<E> {
     fn new_iterable_map(&mut self, schema: IterableMapSchema) -> Result<ObjectId, E>;
 
-    fn first(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
-    fn first_typed_substate<S: ScryptoDecode>(
+    fn first_typed_substate_in_iterable_map<S: ScryptoDecode>(
         &mut self,
         node_id: RENodeId,
         count: u32,
     ) -> Result<Vec<S>, E> {
-        let entries = self.first(node_id, count)?.into_iter().map(|buf| {
+        let entries = self.first_in_iterable_map(node_id, count)?.into_iter().map(|buf| {
             let typed_substate: S = scrypto_decode(&buf).unwrap();
             typed_substate
         }).collect();
 
         Ok(entries)
     }
+
+    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>);
 }
 
 pub trait ClientObjectApi<E> {
