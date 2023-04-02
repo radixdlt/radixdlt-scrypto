@@ -1,7 +1,7 @@
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine::system::node_substates::{PersistedSubstate, RuntimeSubstate};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 
@@ -35,7 +35,7 @@ impl ReadableSubstateStore for SerializedInMemorySubstateStore {
             .map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn iter(&self, node_id: &RENodeId, module_id: NodeModuleId) {
+    fn first(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
         todo!()
     }
 }

@@ -1,7 +1,7 @@
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
-use crate::system::node_substates::PersistedSubstate;
+use crate::system::node_substates::{PersistedSubstate, RuntimeSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
@@ -67,8 +67,16 @@ impl ReadableSubstateStore for TypedInMemorySubstateStore {
         self.substates.get(substate_id).cloned()
     }
 
-    fn iter(&self, node_id: &RENodeId, module_id: NodeModuleId) {
+    fn first(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
+        let mut items = Vec::new();
 
+        for (id, value) in &self.substates {
+            if id.0.eq(node_id) && id.1.eq(&module_id) {
+                items.push((id.clone(), value.substate.clone().to_runtime()));
+            }
+        }
+
+        items
     }
 }
 
