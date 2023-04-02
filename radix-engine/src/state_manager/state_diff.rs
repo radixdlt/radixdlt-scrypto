@@ -64,7 +64,6 @@ impl StateDiff {
                     version: 0u32, // TODO: Remove
                 }
             );
-            store.remove_substate(substate_id);
         }
 
         for substate_id in &self.removed_iterable_substates {

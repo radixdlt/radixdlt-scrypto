@@ -1413,6 +1413,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::PackageRoyalty(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::MethodAccessRules(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::IterableEntry(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
         }
     }
@@ -1497,6 +1498,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::RegisteredValidatorsByStake(substate) => {
                 let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::KeyValueStore(substate.index.id()));
 
                 (index_set_new(), owned_nodes)
             }

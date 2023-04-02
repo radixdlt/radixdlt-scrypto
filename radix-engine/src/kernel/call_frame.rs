@@ -651,13 +651,18 @@ impl CallFrame {
         value: Vec<u8>,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-    ) {
+    ) -> Result<(), RuntimeError> {
+        let value: ScryptoValue = scrypto_decode(&value).unwrap();
+
         if heap.contains_node(node_id) {
-            panic!("Heap iterator supported");
+            heap.insert_into_iterable(node_id, module_id, key, value)
+                .map_err(|e| RuntimeError::CallFrameError(e))?;
+
         } else {
-            let value: ScryptoValue = scrypto_decode(&value).unwrap();
             track.insert_into_iterable(node_id, module_id, key, value);
         }
+
+        Ok(())
     }
 
     pub fn remove_from_iterable<'f, 's>(

@@ -995,8 +995,8 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
         Ok(node_id.into())
     }
 
-    fn insert_into_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>, value: Vec<u8>) {
-        self.kernel_insert_into_iterable_map(&node_id, &NodeModuleId::SELF, key, value);
+    fn insert_into_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError> {
+        self.kernel_insert_into_iterable_map(&node_id, &NodeModuleId::SELF, key, value)
     }
 
     fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) {

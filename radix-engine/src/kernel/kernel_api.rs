@@ -48,7 +48,7 @@ pub trait KernelNodeApi {
 
 
 pub trait KernelIterableMapApi {
-    fn kernel_insert_into_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>, value: Vec<u8>);
+    fn kernel_insert_into_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError>;
 
     fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>);
 

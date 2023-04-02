@@ -1,3 +1,4 @@
+use radix_engine_common::data::scrypto::ScryptoValue;
 use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::{CallFrameError, OffsetDoesNotExist};
@@ -27,6 +28,26 @@ impl Heap {
 
     pub fn contains_node(&self, node_id: &RENodeId) -> bool {
         self.nodes.contains_key(node_id)
+    }
+
+    pub fn insert_into_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+        value: ScryptoValue,
+    ) -> Result<(), CallFrameError> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
+
+        node.substates.insert(
+            (module_id.clone(), SubstateOffset::IterableMap(key)),
+            RuntimeSubstate::IterableEntry(value),
+        );
+
+        Ok(())
     }
 
     pub fn get_substate(

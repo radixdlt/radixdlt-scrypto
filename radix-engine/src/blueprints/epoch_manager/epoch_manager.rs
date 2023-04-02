@@ -15,7 +15,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::{IterableMapSchema, KeyValueStoreSchema};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
@@ -48,7 +48,8 @@ pub struct RegisteredValidatorsSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct RegisteredValidatorsByStakeSubstate {
-    pub index: BTreeMap<(Decimal, ComponentAddress), EcdsaSecp256k1PublicKey>,
+    pub index: Own,
+    //pub index: BTreeMap<(Decimal, ComponentAddress), EcdsaSecp256k1PublicKey>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -101,9 +102,10 @@ impl EpochManagerBlueprint {
         };
 
         let mut validators = BTreeMap::new();
-        let mut index = BTreeMap::new();
 
         let registered_validators = api.new_key_value_store(KeyValueStoreSchema::new::<ComponentAddress, Validator>(false))?;
+
+        let index = api.new_iterable_map(IterableMapSchema::new::<(ComponentAddress, Validator)>())?;
 
         for (key, validator_init) in validator_set {
             let stake = validator_init.initial_stake.sys_amount(api)?;
@@ -118,16 +120,30 @@ impl EpochManagerBlueprint {
 
             let validator = Validator { key, stake };
             validators.insert(address, validator);
-            index.insert((stake, address), key);
 
-            let lock_handle = api.sys_lock_substate(
-                RENodeId::KeyValueStore(registered_validators),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&address).unwrap())),
-                LockFlags::MUTABLE,
-            )?;
-            let validator = Validator { key, stake };
-            api.sys_write_typed_substate(lock_handle, Some(validator))?;
-            api.sys_drop_lock(lock_handle)?;
+            {
+                let lock_handle = api.sys_lock_substate(
+                    RENodeId::KeyValueStore(registered_validators),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&address).unwrap())),
+                    LockFlags::MUTABLE,
+                )?;
+                let validator = Validator { key, stake };
+                api.sys_write_typed_substate(lock_handle, Some(validator))?;
+                api.sys_drop_lock(lock_handle)?;
+            }
+
+            {
+                let entry_key = (stake, address);
+                let entry_value = (address, Validator {
+                    key,
+                    stake,
+                });
+                api.insert_into_iterable_map(
+                    RENodeId::KeyValueStore(index),
+                    scrypto_encode(&entry_key).unwrap(),
+                    scrypto_encode(&entry_value).unwrap(),
+                )?;
+            }
 
             Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
             Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
@@ -152,7 +168,7 @@ impl EpochManagerBlueprint {
             };
 
             let index = RegisteredValidatorsByStakeSubstate {
-                index,
+                index: Own::KeyValueStore(index),
             };
 
             api.new_object(
@@ -262,14 +278,13 @@ impl EpochManagerBlueprint {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidatorsByStake);
             let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::read_only())?;
             let by_stake: &RegisteredValidatorsByStakeSubstate = api.kernel_get_substate_ref(handle)?;
+            let index_id = by_stake.index.id();
 
-            let mut next_validator_set = BTreeMap::new();
-            for ((stake, validator_address), key) in by_stake.index.iter().take(100) {
-                next_validator_set.insert(*validator_address, Validator {
-                    key: *key,
-                    stake: *stake,
-                });
-            }
+            let next_validator_set: Vec<(ComponentAddress, Validator)> = api.first_typed_in_iterable_map(
+                RENodeId::KeyValueStore(index_id),
+                100,
+            )?;
+            let next_validator_set: BTreeMap<ComponentAddress, Validator> = next_validator_set.into_iter().collect();
 
             let epoch_manager: &mut EpochManagerSubstate =
                 api.kernel_get_substate_ref_mut(mgr_handle)?;
@@ -379,18 +394,35 @@ impl EpochManagerBlueprint {
             }
         }
 
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidatorsByStake),
-            LockFlags::MUTABLE,
-        )?;
-        let index: &mut RegisteredValidatorsByStakeSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let index_node = {
+            let handle = api.sys_lock_substate(
+                receiver.clone(),
+                SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidatorsByStake),
+                LockFlags::MUTABLE,
+            )?;
+            let index: &mut RegisteredValidatorsByStakeSubstate = api.kernel_get_substate_ref_mut(handle)?;
+            RENodeId::KeyValueStore(index.index.id())
+        };
+
         if let Some(previous) = previous {
-            index.index.remove(&(previous.stake, validator_address));
+            let key = scrypto_encode(&(previous.stake, validator_address)).unwrap();
+            api.remove_from_iterable_map(
+                index_node,
+                key
+            );
         }
         match update {
             UpdateValidator::Register(key, stake) => {
-                index.index.insert((stake, validator_address), key);
+                let entry_key = (stake, validator_address);
+                let entry_value = (validator_address, Validator {
+                    key, stake,
+                });
+
+                api.insert_into_iterable_map(
+                    index_node,
+                    scrypto_encode(&entry_key).unwrap(),
+                    scrypto_encode(&entry_value).unwrap(),
+                )?;
             }
             UpdateValidator::Unregister => {}
         }
