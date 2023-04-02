@@ -68,6 +68,7 @@ fn next_round_without_supervisor_auth_fails() {
 #[test]
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
+    let initial_epoch = 1u64;
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
     let max_validators = 10u32;
@@ -75,7 +76,7 @@ fn next_round_with_validator_auth_succeeds() {
     let genesis = create_genesis(
         BTreeMap::new(),
         BTreeMap::new(),
-        1u64,
+        initial_epoch,
         max_validators,
         rounds_per_epoch,
         num_unstake_epochs,

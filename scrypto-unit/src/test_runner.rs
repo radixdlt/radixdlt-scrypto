@@ -142,7 +142,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
         let mut runner = TestRunner {
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_metering_config: WasmMeteringConfig::V0,
@@ -166,8 +166,14 @@ impl TestRunnerBuilder {
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
         );
-        receipt.expect_commit_success();
-        runner
+        let result = receipt.expect_commit_success();
+        let next_epoch = result.next_epoch().unwrap();
+        (runner, next_epoch.0)
+    }
+
+
+    pub fn build(self) -> TestRunner {
+        self.build_and_get_epoch().0
     }
 }
 
