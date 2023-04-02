@@ -254,6 +254,7 @@ impl CallFrame {
                             )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
+                        TypeInfoSubstate::IterableMap(..) => {}
                     }
                 }
             }
@@ -495,6 +496,7 @@ impl CallFrame {
                             )?;
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
+                        TypeInfoSubstate::IterableMap(..) => {}
                     }
                 }
 

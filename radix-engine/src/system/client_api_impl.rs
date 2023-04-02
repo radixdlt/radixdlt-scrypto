@@ -25,13 +25,14 @@ use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
+use radix_engine_interface::api::object_api::ClientIterableMapApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::{IterableMapSchema, KeyValueStoreSchema};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -636,24 +637,12 @@ where
             TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
+            TypeInfoSubstate::IterableMap(..) => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
         };
 
         Ok(object_info)
-    }
-
-    fn get_key_value_store_info(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<KeyValueStoreSchema, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
-        let schema = match type_info {
-            TypeInfoSubstate::Object { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            }
-            TypeInfoSubstate::KeyValueStore(schema) => schema,
-        };
-
-        Ok(schema)
     }
 
     fn new_key_value_store(
@@ -676,6 +665,22 @@ where
 
         Ok(node_id.into())
     }
+
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let schema = match type_info {
+            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::IterableMap(..) => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            }
+            TypeInfoSubstate::KeyValueStore(schema) => schema,
+        };
+
+        Ok(schema)
+    }
+
 
     fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.kernel_drop_node(&node_id)?;
@@ -967,6 +972,44 @@ where
             .kernel_get_module_state()
             .transaction_runtime
             .generate_uuid())
+    }
+}
+
+pub struct TempIterator {
+}
+
+impl Iterator for TempIterator {
+    type Item = ScryptoValue;
+    fn next(&mut self) -> Option<Self::Item> {
+        None
+    }
+}
+
+impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine
+{
+    type Iterator = TempIterator;
+
+    fn new_iterable_map(&mut self, schema: IterableMapSchema) -> Result<ObjectId, RuntimeError> {
+        schema
+            .schema
+            .validate()
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
+
+        let node_id = self.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
+
+        self.kernel_create_node(
+            node_id,
+            RENodeInit::KeyValueStore,
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::IterableMap(schema)),
+        ))?;
+
+        Ok(node_id.into())
+    }
+
+    fn new_iterator(&mut self, node_id: RENodeId) -> Result<Self::Iterator, RuntimeError> {
+        let iter = TempIterator {};
+        Ok(iter)
     }
 }
 

@@ -1460,6 +1460,7 @@ impl<'a> SubstateRef<'a> {
                         }
                     }
                     TypeInfoSubstate::KeyValueStore(..) => {}
+                    TypeInfoSubstate::IterableMap(..) => {}
                 }
                 (references, Vec::new())
             }

@@ -1242,6 +1242,7 @@ impl TestRunner {
                                 *local_type_index,
                             ),
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
+                            TypeInfoSubstate::IterableMap(..) => panic!("No event schema."),
                         }
                     }
                     NodeModuleId::TypeInfo => {

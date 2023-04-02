@@ -16,6 +16,7 @@ pub use kernel_modules::logger_api::ClientLoggerApi;
 pub use kernel_modules::transaction_limits_api::ClientTransactionLimitsApi;
 pub use kernel_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 pub use object_api::ClientObjectApi;
+use radix_engine_interface::api::object_api::ClientIterableMapApi;
 pub use substate_api::ClientSubstateApi;
 pub use substate_api::LockFlags;
 
@@ -25,6 +26,7 @@ pub use substate_api::LockFlags;
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientObjectApi<E>
+    + ClientIterableMapApi<E>
     + ClientSubstateApi<E>
     + ClientCostingApi<E>
     + ClientEventApi<E>

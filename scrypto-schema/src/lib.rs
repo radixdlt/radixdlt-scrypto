@@ -10,6 +10,24 @@ use sbor::rust::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct IterableMapSchema {
+    pub schema: ScryptoSchema,
+    pub value: LocalTypeIndex,
+}
+
+impl IterableMapSchema {
+    pub fn new<V: ScryptoDescribe>() -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let schema = generate_full_schema(aggregator);
+        Self {
+            schema,
+            value: value_type_index,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct KeyValueStoreSchema {
     pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,

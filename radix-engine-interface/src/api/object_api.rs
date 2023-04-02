@@ -1,9 +1,18 @@
+use radix_engine_common::data::scrypto::ScryptoValue;
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::KeyValueStoreSchema;
+use scrypto_schema::{IterableMapSchema, KeyValueStoreSchema};
+
+pub trait ClientIterableMapApi<E> {
+    type Iterator: Iterator<Item = ScryptoValue>;
+
+    fn new_iterable_map(&mut self, schema: IterableMapSchema) -> Result<ObjectId, E>;
+
+    fn new_iterator(&mut self, node_id: RENodeId) -> Result<Self::Iterator, E>;
+}
 
 pub trait ClientObjectApi<E> {
     // TODO: refine the interface

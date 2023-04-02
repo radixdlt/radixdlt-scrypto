@@ -148,6 +148,11 @@ impl ExecutableInvocation for MethodInvocation {
                             InterpreterError::CallMethodOnKeyValueStore,
                         ))
                     }
+                    TypeInfoSubstate::IterableMap(..) => {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::CallMethodOnKeyValueStore,
+                        ))
+                    }
                 }
             }
             NodeModuleId::Metadata => {

@@ -336,6 +336,9 @@ where
                     TypeInfoSubstate::KeyValueStore(..) => {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
+                    TypeInfoSubstate::IterableMap(..) => {
+                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                    }
                 }
 
                 self.track

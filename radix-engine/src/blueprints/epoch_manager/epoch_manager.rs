@@ -43,7 +43,7 @@ pub struct ValidatorSetSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct RegisteredValidatorsSubstate {
-    pub validators: Own,//BTreeMap<ComponentAddress, Validator>,
+    pub validators: Own,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

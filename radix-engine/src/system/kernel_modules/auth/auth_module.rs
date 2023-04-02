@@ -187,6 +187,9 @@ impl AuthModule {
                 TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::SystemError(SystemError::NotAnObject))
                 }
+                TypeInfoSubstate::IterableMap(..) => {
+                    return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+                }
             };
 
             let handle = api.kernel_lock_substate(

@@ -54,6 +54,7 @@ pub enum RENodeInit {
     GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     KeyValueStore,
+    IterableMap,
 }
 
 impl RENodeInit {
@@ -63,6 +64,7 @@ impl RENodeInit {
                 object_substates
             }
             RENodeInit::KeyValueStore => BTreeMap::new(),
+            RENodeInit::IterableMap => BTreeMap::new(),
         }
     }
 }
