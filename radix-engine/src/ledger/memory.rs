@@ -66,6 +66,10 @@ impl ReadableSubstateStore for TypedInMemorySubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substates.get(substate_id).cloned()
     }
+
+    fn iter(&self, node_id: &RENodeId, module_id: NodeModuleId) {
+
+    }
 }
 
 impl WriteableSubstateStore for TypedInMemorySubstateStore {

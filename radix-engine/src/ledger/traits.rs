@@ -25,6 +25,8 @@ pub struct OutputValue {
 
 pub trait ReadableSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
+
+    fn iter(&self, node_id: &RENodeId, module_id: NodeModuleId);
 }
 
 pub trait WriteableSubstateStore {

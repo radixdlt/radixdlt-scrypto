@@ -628,6 +628,19 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
+    pub fn iterator<'f, 's>(
+        &mut self,
+        node_id: &RENodeId,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s>,
+    ) {
+        let ref_mut = if heap.contains_node(node_id) {
+            panic!("Heap iterator supported");
+        } else {
+            track.iter(node_id)
+        };
+    }
+
     pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<(RefType, bool)> {
         if self.owned_root_nodes.contains_key(node_id) {
             Some((RefType::Normal, true))

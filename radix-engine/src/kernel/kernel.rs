@@ -31,6 +31,7 @@ use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use crate::kernel::kernel_api::KernelIterableMapApi;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -631,6 +632,16 @@ where
     }
 }
 
+
+impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
+    where
+        W: WasmEngine,
+{
+    fn new_iterator(&mut self, node_id: &RENodeId) {
+        self.current_frame.iterator(node_id, &mut self.heap, &mut self.track);
+    }
+}
+
 impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -898,6 +909,7 @@ where
         Ok(rtn)
     }
 }
+
 
 impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 

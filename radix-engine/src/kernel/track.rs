@@ -242,6 +242,29 @@ impl<'s> Track<'s> {
         runtime_substate.to_ref()
     }
 
+    pub fn iter(
+        &mut self,
+        node_id: &RENodeId,
+    ) -> SubstateRefMut {
+        todo!()
+        /*
+        let runtime_substate = match (node_id, module_id, offset) {
+            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                self.read_key_value_mut(node_id, module_id, offset)
+            }
+            _ => {
+                let substate_id = SubstateId(node_id.clone(), module_id, offset.clone());
+                &mut self
+                    .loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap_or_else(|| panic!("Substate {:?} was never locked", substate_id))
+                    .substate
+            }
+        };
+        runtime_substate.to_ref_mut()
+         */
+    }
+
     pub fn get_substate_mut(
         &mut self,
         node_id: &RENodeId,

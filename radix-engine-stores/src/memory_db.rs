@@ -34,6 +34,10 @@ impl ReadableSubstateStore for SerializedInMemorySubstateStore {
             .get(&scrypto_encode(substate_id).expect("Could not encode substate id"))
             .map(|b| scrypto_decode(&b).unwrap())
     }
+
+    fn iter(&self, node_id: &RENodeId, module_id: NodeModuleId) {
+        todo!()
+    }
 }
 
 impl WriteableSubstateStore for SerializedInMemorySubstateStore {

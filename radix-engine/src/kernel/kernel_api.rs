@@ -46,6 +46,11 @@ pub trait KernelNodeApi {
     ) -> Result<(), RuntimeError>;
 }
 
+
+pub trait KernelIterableMapApi {
+    fn new_iterator(&mut self, node_id: &RENodeId);
+}
+
 pub trait KernelSubstateApi {
     /// Locks a visible substate
     fn kernel_lock_substate(
@@ -100,6 +105,7 @@ pub trait KernelInvokeApi<I: Invocation, E> {
 pub trait KernelApi<W: WasmEngine, E>:
     KernelNodeApi
     + KernelSubstateApi
+    + KernelIterableMapApi
     + KernelWasmApi<W>
     + KernelInvokeApi<FunctionInvocation, E>
     + KernelInvokeApi<MethodInvocation, E>
