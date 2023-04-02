@@ -35,6 +35,35 @@ fn get_epoch_should_succeed() {
 }
 
 #[test]
+fn genesis_epoch_has_correct_initial_validators() {
+    // Arrange
+    let initial_epoch = 1u64;
+    let rounds_per_epoch = 5u64;
+    let num_unstake_epochs = 1u64;
+    let max_validators = 10u32;
+    let mut validator_set_and_stake_owners = BTreeMap::new();
+    for k in 1u64..100u64 {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k).unwrap().public_key();
+        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        validator_set_and_stake_owners.insert(pub_key, (Decimal::from(k), validator_account_address));
+    }
+    let genesis = create_genesis(
+        validator_set_and_stake_owners,
+        BTreeMap::new(),
+        initial_epoch,
+        max_validators,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+
+    // Act
+    let (_, validators) = TestRunner::builder().with_custom_genesis(genesis).build_and_get_epoch();
+
+    // Assert
+    assert_eq!(validators.len(), 10);
+}
+
+#[test]
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

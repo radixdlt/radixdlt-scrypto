@@ -1004,7 +1004,7 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
     }
 
     fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let first = self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::SELF, count);
+        let first = self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::SELF, count)?;
         let first = first.into_iter().map(|(_id, substate)| {
             let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
             bytes

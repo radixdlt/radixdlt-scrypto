@@ -107,7 +107,7 @@ impl EpochManagerBlueprint {
 
         let registered_validators = api.new_key_value_store(KeyValueStoreSchema::new::<ComponentAddress, Validator>(false))?;
 
-        let index = api.new_iterable_map(IterableMapSchema::new::<(ComponentAddress, Validator)>())?;
+        let index_id = api.new_iterable_map(IterableMapSchema::new::<(ComponentAddress, Validator)>())?;
 
         for (key, validator_init) in validator_set {
             let stake = validator_init.initial_stake.sys_amount(api)?;
@@ -141,7 +141,7 @@ impl EpochManagerBlueprint {
                     stake,
                 });
                 api.insert_into_iterable_map(
-                    RENodeId::KeyValueStore(index),
+                    RENodeId::KeyValueStore(index_id),
                     scrypto_encode(&entry_key).unwrap(),
                     scrypto_encode(&entry_value).unwrap(),
                 )?;
@@ -150,6 +150,26 @@ impl EpochManagerBlueprint {
             Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
             Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
         }
+
+        let current_validator_set = {
+            let next_validator_set: Vec<(ComponentAddress, Validator)> = api.first_typed_in_iterable_map(
+                RENodeId::KeyValueStore(index_id),
+                max_validators,
+            )?;
+            let next_validator_set: BTreeMap<ComponentAddress, Validator> = next_validator_set.into_iter().collect();
+            Runtime::emit_event(
+                api,
+                EpochChangeEvent {
+                    epoch: initial_epoch,
+                    validators: next_validator_set.clone(),
+                },
+            )?;
+
+            ValidatorSetSubstate {
+                epoch: initial_epoch,
+                validator_set: next_validator_set,
+            }
+        };
 
         let epoch_manager_id = {
             let epoch_manager = EpochManagerSubstate {
@@ -161,17 +181,13 @@ impl EpochManagerBlueprint {
                 rounds_per_epoch,
                 num_unstake_epochs,
             };
-            let current_validator_set = ValidatorSetSubstate {
-                epoch: initial_epoch,
-                validator_set: validators.clone(),
-            };
 
             let preparing_validator_set = RegisteredValidatorsSubstate {
                 validators: Own::KeyValueStore(registered_validators),
             };
 
             let index = RegisteredValidatorsByStakeSubstate {
-                index: Own::KeyValueStore(index),
+                index: Own::KeyValueStore(index_id),
             };
 
             api.new_object(
@@ -184,14 +200,6 @@ impl EpochManagerBlueprint {
                 ],
             )?
         };
-
-        Runtime::emit_event(
-            api,
-            EpochChangeEvent {
-                epoch: initial_epoch,
-                validators,
-            },
-        )?;
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(

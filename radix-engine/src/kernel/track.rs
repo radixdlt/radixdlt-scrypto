@@ -252,9 +252,10 @@ impl<'s> Track<'s> {
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         count: u32,
-    ) -> Vec<(SubstateId, RuntimeSubstate)> {
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
         // TODO: Loaded substates?
-        self.substate_store.first_in_iterable(node_id, *module_id, count)
+        let items = self.substate_store.first_in_iterable(node_id, *module_id, count);
+        Ok(items)
     }
 
     pub fn insert_into_iterable(

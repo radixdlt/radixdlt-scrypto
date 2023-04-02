@@ -30,6 +30,29 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
+    pub fn get_first_in_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, CallFrameError> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
+
+        let mut items = Vec::new();
+
+        for ((node_module_id, offset), value) in node.substates.iter().take(count.try_into().unwrap()) {
+            let substate_id = SubstateId(node_id.clone(), module_id.clone(), offset.clone());
+            if let RuntimeSubstate::IterableEntry(value) = value {
+                items.push((substate_id, RuntimeSubstate::IterableEntry(value.clone())))
+            }
+        }
+
+        Ok(items)
+    }
+
     pub fn insert_into_iterable(
         &mut self,
         node_id: &RENodeId,

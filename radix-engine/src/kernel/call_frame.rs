@@ -635,9 +635,10 @@ impl CallFrame {
         count: u32,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-    ) -> Vec<(SubstateId, RuntimeSubstate)> {
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
         if heap.contains_node(node_id) {
-            panic!("Heap iterator supported");
+            heap.get_first_in_iterable(node_id, module_id, count)
+                .map_err(|e| RuntimeError::CallFrameError(e))
         } else {
             track.get_first_in_iterable(node_id, module_id, count)
         }

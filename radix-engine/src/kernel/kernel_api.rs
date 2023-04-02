@@ -52,7 +52,7 @@ pub trait KernelIterableMapApi {
 
     fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>);
 
-    fn kernel_get_first_in_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
+    fn kernel_get_first_in_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError>;
 }
 
 pub trait KernelSubstateApi {
