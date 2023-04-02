@@ -16,7 +16,7 @@ use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::node_init::{ModuleInit, NodeInit};
+use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
@@ -398,7 +398,7 @@ where
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
             let blueprint = self.get_object_type_info(node_id)?;
-            if !VisibilityProperties::check_drop_node_visibility(
+            if !NodeProperties::can_be_dropped(
                 current_mode,
                 &actor,
                 blueprint.package_address,
@@ -448,7 +448,7 @@ where
         node_init: NodeInit,
         module_init: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::before_create_node(self, &node_id, &init, &module_init)?;
+        KernelModuleMixer::before_create_node(self, &node_id, &node_init, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;

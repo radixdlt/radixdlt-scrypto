@@ -3,7 +3,6 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -282,7 +281,7 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
+        _node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state()
             .execution_trace

@@ -4,7 +4,6 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node_init::ModuleInit;
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
@@ -239,7 +238,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
+        _node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(

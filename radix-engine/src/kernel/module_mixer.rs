@@ -17,7 +17,6 @@ use crate::system::kernel_modules::transaction_limits::{
 };
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::kernel_modules::virtualization::VirtualizationModule;
-use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
@@ -471,7 +470,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &NodeId,
         node_init: &NodeInit,
-        node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
+        node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {

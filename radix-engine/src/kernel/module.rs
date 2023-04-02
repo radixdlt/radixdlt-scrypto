@@ -2,7 +2,7 @@ use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::system::node_init::{ModuleInit, NodeInit};
+use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
@@ -98,7 +98,7 @@ pub trait KernelModule {
         _api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, ModuleInit>,
+        _node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
