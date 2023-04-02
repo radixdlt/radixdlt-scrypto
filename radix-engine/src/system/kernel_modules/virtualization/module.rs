@@ -45,11 +45,14 @@ impl KernelModule for VirtualizationModule {
                     _ => return Ok(false),
                 };
 
+                let mut args = [0u8; 26];
+                args.copy_from_slice(&node_id.as_ref()[1..]);
+
                 let rtn: Vec<u8> = api
                     .kernel_invoke(Box::new(VirtualLazyLoadInvocation {
                         blueprint,
                         virtual_func_id,
-                        args: node_id.into(),
+                        args,
                     }))?
                     .into();
 

@@ -302,17 +302,17 @@ where
                     continue;
                 }
 
-                let offset = SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo);
+                let substate_key = SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo);
                 self.track
                     .acquire_lock(
-                        SubstateId(*node_id, TypedModuleId::TypeInfo, offset.clone()),
+                        SubstateId(*node_id, TypedModuleId::TypeInfo, substate_key),
                         LockFlags::read_only(),
                     )
-                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                    .map_err(|_| KernelError::NodeNotFound(*node_id))?;
 
                 let substate_ref =
                     self.track
-                        .get_substate(node_id, TypedModuleId::TypeInfo, &offset);
+                        .get_substate(node_id, TypedModuleId::TypeInfo, &substate_key);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
                     TypeInfoSubstate::Object { blueprint, global } => {
@@ -336,8 +336,11 @@ where
                 }
 
                 self.track
-                    .release_lock(SubstateId(*node_id, TypedModuleId::TypeInfo, offset), false)
-                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                    .release_lock(
+                        SubstateId(*node_id, TypedModuleId::TypeInfo, substate_key),
+                        false,
+                    )
+                    .map_err(|_| KernelError::NodeNotFound(*node_id))?;
             }
         }
 
@@ -628,7 +631,7 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log={*node_id}, log=module_id, log=offset)]
+    #[trace_resources(log={*node_id}, log=module_id, log=substate_key)]
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
@@ -642,17 +645,24 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        // TODO: Check if valid offset for node_id
+        // TODO: Check if valid substate_key for node_id
 
         // Authorization
         if let Some(actor) = &self.current_frame.actor {
-            if !NodeProperties::can_be_read(current_mode, actor, node_id, offset.clone(), flags) {
+            if !NodeProperties::can_substate_be_locked(
+                current_mode,
+                actor,
+                node_id,
+                module_id,
+                substate_key,
+                flags,
+            ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        offset,
+                        substate_key: substate_key.clone(),
                         flags,
                     })),
                 ));
@@ -664,18 +674,21 @@ where
             &mut self.track,
             node_id,
             module_id,
-            offset.clone(),
+            substate_key,
             flags,
         );
 
         let lock_handle = match &maybe_lock_handle {
             Ok(lock_handle) => *lock_handle,
             Err(RuntimeError::KernelError(KernelError::TrackError(track_err))) => {
-                if let TrackError::NotFound(SubstateId(node_id, module_id, ref offset)) =
+                if let TrackError::NotFound(SubstateId(node_id, module_id, ref substate_key)) =
                     **track_err
                 {
                     let retry = KernelModuleMixer::on_substate_lock_fault(
-                        node_id, module_id, &offset, self,
+                        node_id,
+                        module_id,
+                        &substate_key,
+                        self,
                     )?;
                     if retry {
                         self.current_frame.acquire_lock(
@@ -683,7 +696,7 @@ where
                             &mut self.track,
                             &node_id,
                             module_id,
-                            offset.clone(),
+                            substate_key,
                             flags,
                         )?
                     } else {
@@ -706,13 +719,13 @@ where
                         let module_id = TypedModuleId::ObjectState;
                         self.track
                             .acquire_lock(
-                                SubstateId(node_id, module_id, substate_key.clone()),
+                                SubstateId(node_id, module_id, substate_key),
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
                         match self
                             .track
-                            .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
+                            .release_lock(SubstateId(node_id, module_id, substate_key), false)
                             .map_err(|_| err)
                         {
                             Ok(_) => {
@@ -723,7 +736,7 @@ where
                                     &mut self.track,
                                     &node_id,
                                     module_id,
-                                    offset.clone(),
+                                    substate_key,
                                     flags,
                                 )?
                             }
@@ -746,7 +759,11 @@ where
 
     #[trace_resources]
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
-        self.current_frame.get_lock_info(lock_handle)
+        self.current_frame
+            .get_lock_info(lock_handle)
+            .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
+                lock_handle,
+            )))
     }
 
     #[trace_resources]
@@ -754,7 +771,8 @@ where
         KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
         self.current_frame
-            .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
+            .drop_lock(&mut self.heap, &mut self.track, lock_handle)
+            .map_err(CallFrameError::UpdateSubstateError)?;
 
         Ok(())
     }

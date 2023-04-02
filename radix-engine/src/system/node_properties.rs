@@ -3,6 +3,7 @@ use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::{PROOF_BLUEPRINT, WORKTOP_BLUEPRINT};
 use radix_engine_interface::constants::*;
 
@@ -40,8 +41,23 @@ impl NodeProperties {
         }
     }
 
+    pub fn can_substate_be_locked(
+        mode: ExecutionMode,
+        actor: &Actor,
+        node_id: &NodeId,
+        module_id: TypedModuleId,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+    ) -> bool {
+        if flags.contains(LockFlags::MUTABLE) {
+            Self::can_substate_be_updated(mode, actor, node_id, module_id, substate_key)
+        } else {
+            Self::can_substate_be_read(mode, actor, node_id, module_id, substate_key)
+        }
+    }
+
     /// Whether the substate can be read
-    pub fn can_be_read(
+    pub fn can_substate_be_read(
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
@@ -89,7 +105,7 @@ impl NodeProperties {
     }
 
     /// Whether the substate can be written
-    pub fn can_be_updated(
+    pub fn can_substate_be_updated(
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,

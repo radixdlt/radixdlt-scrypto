@@ -487,7 +487,7 @@ impl KernelModule for AuthModule {
                 TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false
-                })
+                }).to_substates()
             ),
         )?;
 

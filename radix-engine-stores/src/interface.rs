@@ -53,7 +53,7 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
 }
 
 /// Error when acquiring a lock.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AcquireLockError {
     NotFound(NodeId, ModuleId, SubstateKey),
     SubstateLocked(NodeId, ModuleId, SubstateKey),

@@ -9,6 +9,7 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::actor::{Actor, ExecutionMode};
+use crate::kernel::call_frame::{LockSubstateError, MoveError, UpdateSubstateError};
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::events::EventError;
@@ -59,12 +60,10 @@ pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
 
-    /// An error occurred within call frame.
-    CallFrameError(CallFrameError),
-
+    /// An error occurred within the system, notably the ClientApi implementation.
     SystemError(SystemError),
 
-    /// An error occurred within an interpreter
+    /// TODO: merge with `ModuleError`/`ApplicationError`
     InterpreterError(InterpreterError),
 
     /// An error occurred within a kernel module.
@@ -77,12 +76,6 @@ pub enum RuntimeError {
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())
-    }
-}
-
-impl From<CallFrameError> for RuntimeError {
-    fn from(error: CallFrameError) -> Self {
-        RuntimeError::CallFrameError(error.into())
     }
 }
 
@@ -108,9 +101,8 @@ impl CanBeAbortion for RuntimeError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             RuntimeError::KernelError(err) => err.abortion(),
-            RuntimeError::CallFrameError(_) => None,
-            RuntimeError::InterpreterError(_) => None,
             RuntimeError::SystemError(_) => None,
+            RuntimeError::InterpreterError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
@@ -119,12 +111,15 @@ impl CanBeAbortion for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KernelError {
+    // Execution mode
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
-    // invocation
+    // Call frame
+    CallFrameError(CallFrameError),
+
+    /// Interpreter
+    InterpreterError(InterpreterError),
     WasmRuntimeError(WasmRuntimeError),
-    RENodeNotFound(NodeId),
-    InvalidDirectAccess,
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -134,26 +129,15 @@ pub enum KernelError {
     SborEncodeError(EncodeError),
 
     // RENode
-    ContainsDuplicatedOwns,
-    StoredNodeRemoved(NodeId),
-    RENodeGlobalizeTypeNotAllowed(NodeId),
+    InvalidDirectAccess,
+    NodeNotFound(NodeId),
     LockDoesNotExist(LockHandle),
-    LockNotMutable(LockHandle),
-    BlobNotFound(Hash),
     DropNodeFailure(NodeId),
-
-    // Substate Constraints
-    InvalidOffset(SubstateKey),
-    InvalidOwnership(Box<InvalidOwnership>),
-    InvalidId(NodeId),
 
     // Actor Constraints
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
     InvalidSubstateAccess(Box<InvalidSubstateAccess>),
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidOwnership(pub SubstateKey, pub PackageAddress, pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropNodeAccess {
@@ -184,14 +168,10 @@ impl CanBeAbortion for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
-    OffsetDoesNotExist(Box<OffsetDoesNotExist>),
-    RENodeNotVisible(NodeId),
-    RENodeNotOwned(NodeId),
-    MovingLockedRENode(NodeId),
+    LockSubstateError(LockSubstateError),
+    UpdateSubstateError(UpdateSubstateError),
+    MoveError(MoveError),
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct OffsetDoesNotExist(pub NodeId, pub SubstateKey);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
@@ -431,5 +411,23 @@ impl From<AuthZoneError> for ApplicationError {
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl From<LockSubstateError> for CallFrameError {
+    fn from(value: LockSubstateError) -> Self {
+        Self::LockSubstateError(value)
+    }
+}
+
+impl From<UpdateSubstateError> for CallFrameError {
+    fn from(value: UpdateSubstateError) -> Self {
+        Self::UpdateSubstateError(value)
+    }
+}
+
+impl From<MoveError> for CallFrameError {
+    fn from(value: MoveError) -> Self {
+        Self::MoveError(value)
     }
 }

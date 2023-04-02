@@ -130,7 +130,7 @@ impl Invocation for MethodInvocation {
 pub struct VirtualLazyLoadInvocation {
     pub blueprint: Blueprint,
     pub virtual_func_id: u8,
-    pub args: [u8; 27],
+    pub args: [u8; 26],
 }
 
 impl Invocation for VirtualLazyLoadInvocation {

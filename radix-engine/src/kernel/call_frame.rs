@@ -109,6 +109,7 @@ pub struct CallFrame {
     locks: IndexMap<LockHandle, SubstateLock>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
@@ -116,6 +117,7 @@ pub enum LockSubstateError {
     TrackAcquireLockError(AcquireLockError),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum UpdateSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
@@ -126,6 +128,7 @@ pub enum UpdateSubstateError {
     CantPutLocalRefToStore(NodeId),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MoveError {
     OwnNotFound(NodeId),
     RefNotFound(NodeId),
