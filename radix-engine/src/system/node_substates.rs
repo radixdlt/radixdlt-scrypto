@@ -1207,6 +1207,14 @@ impl<'a> From<SubstateRef<'a>> for &'a RegisteredValidatorsSubstate {
     }
 }
 
+impl<'a> From<SubstateRef<'a>> for &'a RegisteredValidatorsByStakeSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::RegisteredValidatorsByStake(value) => value,
+            _ => panic!("Not a validator"),
+        }
+    }
+}
 
 impl<'a> From<SubstateRef<'a>> for &'a ComponentStateSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
