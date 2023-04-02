@@ -32,6 +32,7 @@ pub struct EpochManagerCreateInput {
     pub component_address: [u8; 26],     // TODO: Clean this up
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
     pub initial_epoch: u64,
+    pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
 }
@@ -56,6 +57,7 @@ impl Clone for EpochManagerCreateInput {
             validator_owner_token: self.validator_owner_token,
             component_address: self.component_address,
             validator_set,
+            max_validators: self.max_validators,
             initial_epoch: self.initial_epoch,
             rounds_per_epoch: self.rounds_per_epoch,
             num_unstake_epochs: self.num_unstake_epochs,

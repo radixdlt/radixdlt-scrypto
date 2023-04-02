@@ -1,3 +1,4 @@
+use std::cmp::max;
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
@@ -42,6 +43,7 @@ pub fn create_genesis(
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
 ) -> SystemTransaction {
@@ -565,6 +567,7 @@ pub fn create_genesis(
                 component_address,
                 validators,
                 initial_epoch,
+                max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
@@ -644,6 +647,7 @@ where
         BTreeMap::new(),
         BTreeMap::new(),
         1u64,
+        100u32,
         1u64,
         1u64,
     )
@@ -655,6 +659,7 @@ pub fn bootstrap_with_validator_set<S, W>(
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
 ) -> Option<TransactionReceipt>
@@ -674,6 +679,7 @@ where
             validator_set_and_stake_owners,
             account_xrd_allocations,
             initial_epoch,
+            max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
         );
@@ -713,7 +719,14 @@ mod tests {
             (Decimal::one(), account_address),
         );
         let genesis_transaction =
-            create_genesis(initial_validator_set, BTreeMap::new(), 1u64, 1u64, 1u64);
+            create_genesis(
+                initial_validator_set,
+                BTreeMap::new(),
+                1u64,
+                100u32,
+                1u64,
+                1u64,
+            );
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -750,7 +763,14 @@ mod tests {
         let mut account_xrd_allocations = BTreeMap::new();
         account_xrd_allocations.insert(account_public_key, allocation_amount);
         let genesis_transaction =
-            create_genesis(BTreeMap::new(), account_xrd_allocations, 1u64, 1u64, 1u64);
+            create_genesis(
+                BTreeMap::new(),
+                account_xrd_allocations,
+                1u64,
+                100u32,
+                1u64,
+                1u64,
+            );
 
         let transaction_receipt = execute_transaction(
             &substate_store,

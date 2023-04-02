@@ -614,10 +614,12 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 fn epoch_manager_round_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
+
     let genesis = create_genesis(
         BTreeMap::new(),
         BTreeMap::new(),
         1u64,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -665,6 +667,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         BTreeMap::new(),
         BTreeMap::new(),
         1u64,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -710,6 +713,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
 fn validator_registration_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -719,6 +723,7 @@ fn validator_registration_emits_correct_event() {
         BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -765,6 +770,7 @@ fn validator_registration_emits_correct_event() {
 fn validator_unregistration_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -774,6 +780,7 @@ fn validator_unregistration_emits_correct_event() {
         BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -831,6 +838,7 @@ fn validator_unregistration_emits_correct_event() {
 fn validator_staking_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -840,6 +848,7 @@ fn validator_staking_emits_correct_event() {
         BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -958,6 +967,7 @@ fn validator_staking_emits_correct_event() {
 fn validator_unstake_emits_correct_events() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -973,6 +983,7 @@ fn validator_unstake_emits_correct_events() {
         validator_set_and_stake_owners,
         BTreeMap::new(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -1116,6 +1127,7 @@ fn validator_unstake_emits_correct_events() {
 fn validator_claim_xrd_emits_correct_events() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -1131,6 +1143,7 @@ fn validator_claim_xrd_emits_correct_events() {
         validator_set_and_stake_owners,
         BTreeMap::new(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -1261,12 +1274,14 @@ fn validator_claim_xrd_emits_correct_events() {
 fn validator_update_stake_delegation_status_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         BTreeMap::new(),
         BTreeMap::new(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );

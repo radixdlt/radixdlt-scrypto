@@ -24,7 +24,8 @@ pub struct EpochManagerSubstate {
     pub epoch: u64,
     pub round: u64,
 
-    // TODO: Move configuration to an immutable substate
+    // TODO: Move configuratioremovedn to an immutable substate
+    pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
 }
@@ -65,6 +66,7 @@ impl EpochManagerBlueprint {
         component_address: [u8; 26],       // TODO: Clean this up
         validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
         initial_epoch: u64,
+        max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
         api: &mut Y,
@@ -155,6 +157,7 @@ impl EpochManagerBlueprint {
                 validator_owner_resource: owner_resman.0,
                 epoch: initial_epoch,
                 round: 0,
+                max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs,
             };
@@ -263,6 +266,8 @@ impl EpochManagerBlueprint {
         let epoch_manager: &mut EpochManagerSubstate =
             api.kernel_get_substate_ref_mut(mgr_handle)?;
 
+        let max_validators = epoch_manager.max_validators;
+
         if round <= epoch_manager.round {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::EpochManagerError(EpochManagerError::InvalidRoundUpdate {
@@ -282,7 +287,7 @@ impl EpochManagerBlueprint {
 
             let next_validator_set: Vec<(ComponentAddress, Validator)> = api.first_typed_in_iterable_map(
                 RENodeId::KeyValueStore(index_id),
-                100,
+                max_validators,
             )?;
             let next_validator_set: BTreeMap<ComponentAddress, Validator> = next_validator_set.into_iter().collect();
 
