@@ -65,7 +65,7 @@ pub struct LoadedSubstate {
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
-    substates_removed: IndexSet<SubstateId>,
+    iterable_substates_removed: IndexSet<SubstateId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -87,7 +87,7 @@ impl<'s> Track<'s> {
         Self {
             substate_store,
             loaded_substates: index_map_new(),
-            substates_removed: index_set_new(),
+            iterable_substates_removed: index_set_new(),
         }
     }
 
@@ -260,7 +260,7 @@ impl<'s> Track<'s> {
         key: Vec<u8>,
     )  {
         let substate_id = SubstateId(*node_id, *module_id, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)));
-        self.substates_removed.insert(substate_id);
+        self.iterable_substates_removed.insert(substate_id);
     }
 
     pub fn get_substate_mut(
@@ -445,6 +445,7 @@ impl<'s> Track<'s> {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
+                    iterable_substates_removed: self.iterable_substates_removed.into_iter().collect(),
                 };
                 TransactionResult::Commit(finalizing_track.calculate_commit_result(
                     invoke_result,
@@ -529,6 +530,7 @@ fn determine_result_type(
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
+    iterable_substates_removed: IndexSet<SubstateId>,
 }
 
 impl<'s> FinalizingTrack<'s> {
@@ -605,7 +607,7 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: pay tips to the lead validator
 
         let state_update_summary = Self::summarize_update(self.substate_store, &state_updates);
-        let state_updates = Self::generate_diff(self.substate_store, state_updates);
+        let state_updates = Self::generate_diff(self.substate_store, state_updates, self.iterable_substates_removed);
 
         CommitResult {
             state_updates,
@@ -661,6 +663,7 @@ impl<'s> FinalizingTrack<'s> {
     pub fn generate_diff(
         substate_store: &dyn ReadableSubstateStore,
         state_updates: IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        iterable_substates_removed: IndexSet<SubstateId>,
     ) -> StateDiff {
         let mut diff = StateDiff::new();
 
@@ -679,6 +682,10 @@ impl<'s> FinalizingTrack<'s> {
                 version: next_version,
             };
             diff.up_substates.insert(substate_id.clone(), output_value);
+        }
+
+        for substate_id in iterable_substates_removed {
+            diff.removed_iterable_substates.insert(substate_id);
         }
 
         diff

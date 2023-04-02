@@ -32,6 +32,7 @@ pub trait ReadableSubstateStore {
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
+    fn remove_substate(&mut self, substate_id: &SubstateId);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

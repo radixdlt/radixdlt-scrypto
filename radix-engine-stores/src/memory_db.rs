@@ -47,6 +47,11 @@ impl WriteableSubstateStore for SerializedInMemorySubstateStore {
             scrypto_encode(&substate).expect("Could not encode substate"),
         );
     }
+
+    fn remove_substate(&mut self, substate_id: &SubstateId) {
+        let encoded = scrypto_encode(substate_id).unwrap();
+        self.substates.remove(&encoded);
+    }
 }
 
 impl QueryableSubstateStore for SerializedInMemorySubstateStore {

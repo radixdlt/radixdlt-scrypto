@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine::system::node_substates::{PersistedSubstate, RuntimeSubstate};
 use radix_engine::types::*;
 use radix_engine::{ledger::*, wasm::WasmEngine};
 use radix_engine_interface::api::types::RENodeId;
@@ -202,10 +202,11 @@ impl ReadableSubstateStore for RadixEngineDB {
     fn first_in_iterable(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
         // FIXME: Super hack!
         let start = SubstateId(node_id.clone(), module_id, SubstateOffset::Component(ComponentOffset::State0));
+        let start = scrypto_encode(&start).unwrap();
 
         let mut iter = self
             .db
-            .iterator(IteratorMode::From(start, Direction::Forward));
+            .iterator(IteratorMode::From(&start, Direction::Forward));
 
         let mut items = Vec::new();
         while let Some(kv) = iter.next() {
@@ -234,5 +235,10 @@ impl WriteableSubstateStore for RadixEngineDB {
             substate_id,
             scrypto_encode(&substate).expect("Could not encode substate for persistence"),
         );
+    }
+
+    fn remove_substate(&mut self, substate_id: &SubstateId) {
+        let key = scrypto_encode(substate_id).unwrap();
+        self.db.delete(key).unwrap();
     }
 }

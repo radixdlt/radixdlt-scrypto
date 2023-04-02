@@ -84,6 +84,10 @@ impl WriteableSubstateStore for TypedInMemorySubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.substates.insert(substate_id, substate);
     }
+
+    fn remove_substate(&mut self, substate_id: &SubstateId) {
+        self.substates.remove(substate_id);
+    }
 }
 
 impl QueryableSubstateStore for TypedInMemorySubstateStore {

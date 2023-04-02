@@ -7,6 +7,8 @@ use radix_engine_interface::crypto::hash;
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: BTreeSet<OutputId>,
+
+    pub removed_iterable_substates: BTreeSet<SubstateId>,
 }
 
 impl StateDiff {
@@ -14,6 +16,7 @@ impl StateDiff {
         Self {
             up_substates: BTreeMap::new(),
             down_substates: BTreeSet::new(),
+            removed_iterable_substates: BTreeSet::new(),
         }
     }
 
@@ -48,6 +51,10 @@ impl StateDiff {
             };
             receipt.up(output_id);
             store.put_substate(substate_id.clone(), output_value.clone());
+        }
+
+        for substate_id in &self.removed_iterable_substates {
+            store.remove_substate(substate_id);
         }
 
         receipt
