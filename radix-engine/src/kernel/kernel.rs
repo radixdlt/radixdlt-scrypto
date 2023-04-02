@@ -637,7 +637,7 @@ impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
     where
         W: WasmEngine,
 {
-    fn first(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
+    fn kernel_first(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
         self.current_frame.first_substates(node_id, module_id, count, &mut self.heap, &mut self.track)
     }
 }

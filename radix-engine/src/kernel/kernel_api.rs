@@ -48,7 +48,7 @@ pub trait KernelNodeApi {
 
 
 pub trait KernelIterableMapApi {
-    fn first(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
+    fn kernel_first(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
 }
 
 pub trait KernelSubstateApi {

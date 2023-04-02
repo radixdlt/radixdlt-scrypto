@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::ScryptoValue;
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode, ScryptoValue};
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
@@ -7,11 +7,22 @@ use sbor::rust::vec::Vec;
 use scrypto_schema::{IterableMapSchema, KeyValueStoreSchema};
 
 pub trait ClientIterableMapApi<E> {
-    type Iterator: Iterator<Item = ScryptoValue>;
-
     fn new_iterable_map(&mut self, schema: IterableMapSchema) -> Result<ObjectId, E>;
 
-    fn new_iterator(&mut self, node_id: RENodeId) -> Result<Self::Iterator, E>;
+    fn first(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+
+    fn first_typed_substate<S: ScryptoDecode>(
+        &mut self,
+        node_id: RENodeId,
+        count: u32,
+    ) -> Result<Vec<S>, E> {
+        let entries = self.first(node_id, count)?.into_iter().map(|buf| {
+            let typed_substate: S = scrypto_decode(&buf).unwrap();
+            typed_substate
+        }).collect();
+
+        Ok(entries)
+    }
 }
 
 pub trait ClientObjectApi<E> {

@@ -975,20 +975,8 @@ where
     }
 }
 
-pub struct TempIterator {
-}
-
-impl Iterator for TempIterator {
-    type Item = ScryptoValue;
-    fn next(&mut self) -> Option<Self::Item> {
-        None
-    }
-}
-
 impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine
 {
-    type Iterator = TempIterator;
-
     fn new_iterable_map(&mut self, schema: IterableMapSchema) -> Result<ObjectId, RuntimeError> {
         schema
             .schema
@@ -1007,9 +995,13 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
         Ok(node_id.into())
     }
 
-    fn new_iterator(&mut self, node_id: RENodeId) -> Result<Self::Iterator, RuntimeError> {
-        let iter = TempIterator {};
-        Ok(iter)
+    fn first(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let first = self.kernel_first(&node_id, &NodeModuleId::SELF, count);
+        let first = first.into_iter().map(|(_id, substate)| {
+            let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
+            bytes
+        }).collect();
+        Ok(first)
     }
 }
 
