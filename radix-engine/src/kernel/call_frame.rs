@@ -628,7 +628,7 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn iterable_first<'f, 's>(
+    pub fn get_first_in_iterable<'f, 's>(
         &mut self,
         node_id: &RENodeId,
         module_id: &NodeModuleId,
@@ -639,7 +639,7 @@ impl CallFrame {
         if heap.contains_node(node_id) {
             panic!("Heap iterator supported");
         } else {
-            track.first_substates(node_id, module_id, count)
+            track.get_first_in_iterable(node_id, module_id, count)
         }
     }
 
@@ -650,11 +650,11 @@ impl CallFrame {
         key: Vec<u8>,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-    ) -> Vec<(SubstateId, RuntimeSubstate)> {
+    ) {
         if heap.contains_node(node_id) {
             panic!("Heap iterator supported");
         } else {
-            todo!()
+            track.remove_from_iterable(node_id, module_id, key);
         }
     }
 

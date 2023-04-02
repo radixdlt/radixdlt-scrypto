@@ -65,6 +65,7 @@ pub struct LoadedSubstate {
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
+    substates_removed: IndexSet<SubstateId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -86,6 +87,7 @@ impl<'s> Track<'s> {
         Self {
             substate_store,
             loaded_substates: index_map_new(),
+            substates_removed: index_set_new(),
         }
     }
 
@@ -242,13 +244,23 @@ impl<'s> Track<'s> {
         runtime_substate.to_ref()
     }
 
-    pub fn first_substates(
+    pub fn get_first_in_iterable(
         &mut self,
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         count: u32,
     ) -> Vec<(SubstateId, RuntimeSubstate)> {
-        self.substate_store.first(node_id, *module_id, count)
+        self.substate_store.first_in_iterable(node_id, *module_id, count)
+    }
+
+    pub fn remove_from_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+    )  {
+        let substate_id = SubstateId(*node_id, *module_id, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)));
+        self.substates_removed.insert(substate_id);
     }
 
     pub fn get_substate_mut(

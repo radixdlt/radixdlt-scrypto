@@ -27,7 +27,7 @@ pub struct OutputValue {
 pub trait ReadableSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
 
-    fn first(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
+    fn first_in_iterable(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
 }
 
 pub trait WriteableSubstateStore {

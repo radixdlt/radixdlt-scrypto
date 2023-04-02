@@ -638,7 +638,7 @@ impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
         W: WasmEngine,
 {
     fn kernel_get_first_in_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
-        self.current_frame.iterable_first(node_id, module_id, count, &mut self.heap, &mut self.track)
+        self.current_frame.get_first_in_iterable(node_id, module_id, count, &mut self.heap, &mut self.track)
     }
 
     fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>) {

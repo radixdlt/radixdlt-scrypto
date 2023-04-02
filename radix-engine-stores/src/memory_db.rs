@@ -35,7 +35,7 @@ impl ReadableSubstateStore for SerializedInMemorySubstateStore {
             .map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn first(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
+    fn first_in_iterable(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
         todo!()
     }
 }
