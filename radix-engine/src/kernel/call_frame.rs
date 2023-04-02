@@ -1,5 +1,5 @@
 use crate::kernel::actor::Actor;
-use crate::system::node_init::{ModuleInit, NodeInit};
+use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
@@ -455,16 +455,14 @@ impl CallFrame {
         &mut self,
         node_id: NodeId,
         node_init: NodeInit,
-        node_modules: BTreeMap<TypedModuleId, ModuleInit>,
+        node_modules: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
     ) -> Result<(), UpdateSubstateError> {
         let mut substates = BTreeMap::new();
         substates.insert(TypedModuleId::ObjectState, node_init.to_substates());
-        for (module_id, module_init) in node_modules {
-            substates.insert(module_id, module_init.to_substates());
-        }
+        substates.extend(node_modules);
 
         for (_module_id, module) in &substates {
             for (substate_key, substate_value) in module {

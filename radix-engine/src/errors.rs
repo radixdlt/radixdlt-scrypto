@@ -166,6 +166,12 @@ impl CanBeAbortion for KernelError {
     }
 }
 
+impl From<CallFrameError> for KernelError {
+    fn from(value: CallFrameError) -> Self {
+        KernelError::CallFrameError(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     LockSubstateError(LockSubstateError),

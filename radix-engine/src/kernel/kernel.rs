@@ -115,11 +115,14 @@ where
     }
 
     fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            NodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, &node_id),
-            _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                node_id.clone(),
-            ))),
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| {
+            api.current_frame
+                .remove_node(&mut api.heap, &node_id)
+                .map_err(|e| {
+                    RuntimeError::KernelError(KernelError::CallFrameError(
+                        CallFrameError::MoveError(e),
+                    ))
+                })
         })
     }
 
@@ -127,7 +130,7 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok(blueprint) = api.get_object_type_info(node_id) {
+                if let Ok(blueprint) = api.get_object_type_info(&node_id) {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
@@ -135,7 +138,7 @@ where
                                 PROOF_BLUEPRINT,
                                 PROOF_DROP_IDENT,
                                 scrypto_encode(&ProofDropInput {
-                                    proof: Proof(node_id.into()),
+                                    proof: Proof(Own(node_id)),
                                 })
                                 .unwrap(),
                             )?;
@@ -192,7 +195,9 @@ where
                 &mut self.current_frame,
                 actor.clone(),
                 call_frame_update.clone(),
-            )?;
+            )
+            .map_err(CallFrameError::MoveError)
+            .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
@@ -208,7 +213,9 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
+                .drop_all_locks(&mut self.heap, &mut self.track)
+                .map_err(CallFrameError::UpdateSubstateError)
+                .map_err(KernelError::CallFrameError)?;
 
             // Run
             let (output, mut update) =
@@ -223,7 +230,9 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)?;
+                .drop_all_locks(&mut self.heap, &mut self.track)
+                .map_err(CallFrameError::UpdateSubstateError)
+                .map_err(KernelError::CallFrameError)?;
 
             (output, update)
         };
@@ -388,7 +397,7 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let blueprint = self.get_object_type_info(node_id.clone())?;
+            let blueprint = self.get_object_type_info(node_id)?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
@@ -445,29 +454,20 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        match (node_id, &init) {
-            (NodeId::GlobalObject(GlobalAddress::Component(..)), NodeInit::GlobalObject(..)) => {}
-            (NodeId::GlobalObject(GlobalAddress::Resource(..)), NodeInit::GlobalObject(..)) => {}
-            (NodeId::GlobalObject(GlobalAddress::Package(..)), NodeInit::GlobalObject(..)) => {}
-            (NodeId::Object(..), NodeInit::Object(..)) => {}
-            (NodeId::KeyValueStore(..), NodeInit::KeyValueStore) => {}
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
-        }
-
-        let push_to_store = match init {
-            NodeInit::GlobalObject(..) => true,
-            _ => false,
-        };
+        let push_to_store = node_id.is_global();
 
         self.id_allocator.take_node_id(node_id)?;
-        self.current_frame.create_node(
-            node_id,
-            init,
-            module_init,
-            &mut self.heap,
-            &mut self.track,
-            push_to_store,
-        )?;
+        self.current_frame
+            .create_node(
+                node_id,
+                node_init,
+                module_init,
+                &mut self.heap,
+                &mut self.track,
+                push_to_store,
+            )
+            .map_err(CallFrameError::UpdateSubstateError)
+            .map_err(KernelError::CallFrameError)?;
 
         // Restore current mode
         self.execution_mode = current_mode;
@@ -505,16 +505,14 @@ where
                     global_address: Some(address),
                     ..
                 } => {
-                    self.current_frame.add_ref(
-                        NodeId::GlobalObject(*address),
-                        RENodeVisibilityOrigin::Normal,
-                    );
+                    self.current_frame
+                        .add_ref(address.as_node_id().clone(), RENodeVisibilityOrigin::Normal);
                 }
                 _ => {}
             }
             let package_address = actor.blueprint().package_address;
             self.current_frame.add_ref(
-                NodeId::GlobalObject(package_address.into()),
+                package_address.as_node_id().clone(),
                 RENodeVisibilityOrigin::Normal,
             );
         }
@@ -524,25 +522,24 @@ where
 
     #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        if let Ok(substate) = self.heap.get_substate(
-            &NodeId::Object(bucket_id),
+        if let Some(substate) = self.heap.get_substate(
+            &bucket_id,
             TypedModuleId::ObjectState,
-            &BucketOffset::Bucket.into(),
+            &BucketOffset::Info.into(),
         ) {
-            let info: &BucketInfoSubstate = substate.into();
-            let info = info.clone();
+            let info: BucketInfoSubstate = substate.as_typed().unwrap();
 
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
                     let substate = self
                         .heap
                         .get_substate(
-                            &NodeId::Object(bucket_id),
+                            bucket_id,
                             TypedModuleId::ObjectState,
-                            &BucketOffset::Bucket.into(),
+                            &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
-                    let liquid: &LiquidFungibleResource = substate.into();
+                    let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
 
                     Some(BucketSnapshot::Fungible {
                         resource_address: info.resource_address,
@@ -554,12 +551,12 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            &NodeId::Object(bucket_id),
+                            bucket_id,
                             TypedModuleId::ObjectState,
-                            &BucketOffset::Bucket.into(),
+                            &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
-                    let liquid: &LiquidNonFungibleResource = substate.into();
+                    let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
 
                     Some(BucketSnapshot::NonFungible {
                         resource_address: info.resource_address,
@@ -575,25 +572,24 @@ where
 
     #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        if let Ok(substate) = self.heap.get_substate(
-            &NodeId::Object(proof_id),
+        if let Some(substate) = self.heap.get_substate(
+            proof_id,
             TypedModuleId::ObjectState,
-            &ProofOffset::Proof.into(),
+            &ProofOffset::Info.into(),
         ) {
-            let info: &ProofInfoSubstate = substate.into();
-            let info = info.clone();
+            let info: ProofInfoSubstate = substate.as_typed().unwrap();
 
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
                     let substate = self
                         .heap
                         .get_substate(
-                            &NodeId::Object(proof_id),
+                            proof_id,
                             TypedModuleId::ObjectState,
-                            &ProofOffset::Proof.into(),
+                            &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
-                    let proof: &FungibleProof = substate.into();
+                    let proof: FungibleProof = substate.as_typed().unwrap();
 
                     Some(ProofSnapshot::Fungible {
                         resource_address: info.resource_address,
@@ -606,12 +602,12 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            &NodeId::Object(proof_id),
+                            proof_id,
                             TypedModuleId::ObjectState,
-                            &ProofOffset::Proof.into(),
+                            &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
-                    let proof: &NonFungibleProof = substate.into();
+                    let proof: NonFungibleProof = substate.as_typed().unwrap();
 
                     Some(ProofSnapshot::NonFungible {
                         resource_address: info.resource_address,
@@ -772,7 +768,8 @@ where
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)
-            .map_err(CallFrameError::UpdateSubstateError)?;
+            .map_err(CallFrameError::UpdateSubstateError)
+            .map_err(KernelError::CallFrameError)?;
 
         Ok(())
     }
