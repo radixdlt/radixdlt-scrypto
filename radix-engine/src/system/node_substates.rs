@@ -58,6 +58,7 @@ pub enum PersistedSubstate {
 
     /* KVStore entry */
     KeyValueStoreEntry(Option<ScryptoValue>),
+    IterableEntry(ScryptoValue),
 }
 
 impl PersistedSubstate {
@@ -260,6 +261,9 @@ impl PersistedSubstate {
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
+            PersistedSubstate::IterableEntry(value) => {
+                RuntimeSubstate::IterableEntry(value)
+            }
             PersistedSubstate::Account(value) => RuntimeSubstate::Account(value),
             PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
 
@@ -330,6 +334,7 @@ pub enum RuntimeSubstate {
 
     /* KVStore entry */
     KeyValueStoreEntry(Option<ScryptoValue>),
+    IterableEntry(ScryptoValue),
 }
 
 impl RuntimeSubstate {
@@ -365,6 +370,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
+            }
+            RuntimeSubstate::IterableEntry(value) => {
+                PersistedSubstate::IterableEntry(value.clone())
             }
             RuntimeSubstate::FungibleVaultInfo(value) => {
                 PersistedSubstate::FungibleVaultInfo(value.clone())
@@ -437,6 +445,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
             }
+            RuntimeSubstate::IterableEntry(value) => {
+                PersistedSubstate::IterableEntry(value)
+            }
             RuntimeSubstate::FungibleVaultInfo(value) => {
                 PersistedSubstate::FungibleVaultInfo(value)
             }
@@ -492,13 +503,24 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State0) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
+                    scrypto_decode(buffer).map_err(|e| {
+                        KernelError::SborDecodeError(e)
+                    })?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
+                    scrypto_decode(buffer).map_err(|e| {
+                        KernelError::SborDecodeError(e)
+                    })?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
+            }
+            SubstateOffset::IterableMap(key) => {
+                let substate =
+                    scrypto_decode(buffer).map_err(|e| {
+                        KernelError::SborDecodeError(e)
+                    })?;
+                RuntimeSubstate::IterableEntry(substate)
             }
             offset => {
                 return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
@@ -573,6 +595,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::FungibleProof(value) => SubstateRefMut::FungibleProof(value),
             RuntimeSubstate::NonFungibleProof(value) => SubstateRefMut::NonFungibleProof(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
+            RuntimeSubstate::IterableEntry(value) => SubstateRefMut::IterableEntry(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
@@ -637,6 +660,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::FungibleProof(value) => SubstateRef::FungibleProof(value),
             RuntimeSubstate::NonFungibleProof(value) => SubstateRef::NonFungibleProof(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
+            RuntimeSubstate::IterableEntry(value) => SubstateRef::IterableEntry(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
@@ -1045,6 +1069,7 @@ pub enum SubstateRef<'a> {
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
     KeyValueStoreEntry(&'a Option<ScryptoValue>),
+    IterableEntry(&'a ScryptoValue),
     PackageInfo(&'a PackageInfoSubstate),
     PackageCodeType(&'a PackageCodeTypeSubstate),
     PackageCode(&'a PackageCodeSubstate),
@@ -1470,6 +1495,11 @@ impl<'a> SubstateRef<'a> {
 
                 (index_set_new(), owned_nodes)
             }
+            SubstateRef::RegisteredValidatorsByStake(substate) => {
+                let mut owned_nodes = Vec::new();
+
+                (index_set_new(), owned_nodes)
+            }
             SubstateRef::FungibleResourceManager(..) => (index_set_new(), Vec::new()),
             SubstateRef::NonFungibleResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();
@@ -1549,6 +1579,7 @@ pub enum SubstateRefMut<'a> {
     PackageRoyalty(&'a mut PackageRoyaltySubstate),
     PackageAccessRules(&'a mut FunctionAccessRulesSubstate),
     KeyValueStoreEntry(&'a mut Option<ScryptoValue>),
+    IterableEntry(&'a mut ScryptoValue),
     FungibleVaultInfo(&'a mut FungibleVaultDivisibilitySubstate),
     NonFungibleVaultInfo(&'a mut NonFungibleVaultIdTypeSubstate),
     VaultLiquidFungible(&'a mut LiquidFungibleResource),

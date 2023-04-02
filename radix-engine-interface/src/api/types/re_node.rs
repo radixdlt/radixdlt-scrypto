@@ -273,6 +273,7 @@ pub enum SubstateOffset {
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
+    IterableMap(Vec<u8>),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
     Validator(ValidatorOffset),

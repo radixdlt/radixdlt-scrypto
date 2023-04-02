@@ -250,6 +250,7 @@ impl<'s> Track<'s> {
         module_id: &NodeModuleId,
         count: u32,
     ) -> Vec<(SubstateId, RuntimeSubstate)> {
+        // TODO: Loaded substates?
         self.substate_store.first_in_iterable(node_id, *module_id, count)
     }
 
@@ -259,7 +260,7 @@ impl<'s> Track<'s> {
         module_id: &NodeModuleId,
         key: Vec<u8>,
     )  {
-        let substate_id = SubstateId(*node_id, *module_id, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)));
+        let substate_id = SubstateId(*node_id, *module_id, SubstateOffset::IterableMap(key));
         self.iterable_substates_removed.insert(substate_id);
     }
 

@@ -278,6 +278,7 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
+            SubstateOffset::IterableMap(..) => true,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRules(..) => true,
