@@ -80,7 +80,7 @@ impl TransactionProcessorBlueprint {
                 TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                     global: false,
-                })
+                }).to_substates()
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));

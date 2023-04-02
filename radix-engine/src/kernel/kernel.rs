@@ -433,8 +433,8 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        init: NodeInit,
-        module_init: BTreeMap<TypedModuleId, ModuleInit>,
+        node_init: NodeInit,
+        module_init: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         KernelModuleMixer::before_create_node(self, &node_id, &init, &module_init)?;
 

@@ -5,7 +5,6 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
-use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -33,11 +32,12 @@ pub trait KernelNodeApi {
     fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError>;
 
     /// Creates a new RENode
+    /// TODO: merge `node_init` and `module_init`?
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        init: NodeInit,
-        node_module_init: BTreeMap<TypedModuleId, ModuleInit>,
+        node_init: NodeInit,
+        module_init: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError>;
 }
 

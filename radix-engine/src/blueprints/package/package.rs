@@ -122,7 +122,7 @@ where
     // Can't use the ClientApi because of chicken-and-egg issue.
 
     // Prepare node init.
-    let node_init = NodeInit::GlobalObject(btreemap!(
+    let node_init = NodeInit::Object(btreemap!(
         PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
         PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type ),
         PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code ),
@@ -191,7 +191,14 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    api.kernel_create_node(node_id, node_init, node_modules)?;
+    api.kernel_create_node(
+        node_id,
+        node_init,
+        node_modules
+            .into_iter()
+            .map(|(k, v)| (k, v.to_substates()))
+            .collect(),
+    )?;
 
     let package_address = PackageAddress::new_unchecked(node_id.into());
     Ok(package_address)

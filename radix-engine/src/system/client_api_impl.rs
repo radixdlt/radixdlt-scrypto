@@ -9,13 +9,9 @@ use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -202,7 +198,7 @@ where
             btreemap!(
                 TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::new(Blueprint::new(&package_address, blueprint_ident), false)
-                ),
+                ).to_substates(),
             ),
         )?;
 
@@ -253,63 +249,58 @@ where
         modules: BTreeMap<TypedModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
+        // Check module configuration
         let module_ids = modules.keys().cloned().collect::<BTreeSet<TypedModuleId>>();
         let standard_object = btreeset!(
             TypedModuleId::Metadata,
             TypedModuleId::Royalty,
             TypedModuleId::AccessRules
         );
-        // TODO: remove
         let resource_manager_object = btreeset!(
             TypedModuleId::Metadata,
             TypedModuleId::Royalty,
             TypedModuleId::AccessRules,
             TypedModuleId::AccessRules1
-        );
+        ); // TODO: remove
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
                 Box::new(InvalidModuleSet(node_id, module_ids)),
             )));
         }
 
+        // Drop the node
         let node = self.kernel_drop_node(&node_id)?;
+        let mut node_substates = node.substates;
 
-        let mut module_substates = BTreeMap::new();
-        let mut component_substates = BTreeMap::new();
-        for ((node_module_id, substate_key), substate) in node.substates {
-            match node_module_id {
-                TypedModuleId::ObjectState => component_substates.insert(substate_key, substate),
-                _ => module_substates.insert((node_module_id, substate_key), substate),
-            };
-        }
-
-        let mut module_init = BTreeMap::new();
-
-        let type_info = module_substates
-            .remove(&(TypedModuleId::TypeInfo, TypeInfoOffset::TypeInfo.into()))
+        // Update the `global` flag of the type info substate.
+        let type_info_module = node_substates
+            .get(&TypedModuleId::TypeInfo)
+            .unwrap()
+            .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
-        let mut type_info_substate: TypeInfoSubstate = type_info.into();
-
-        match type_info_substate {
+        let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
+        match type_info {
             TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
+        node_substates
+            .get(&TypedModuleId::TypeInfo)
+            .unwrap()
+            .insert(
+                TypeInfoOffset::TypeInfo.into(),
+                IndexedScryptoValue::from_typed(&type_info),
+            );
 
-        module_init.insert(
-            TypedModuleId::TypeInfo,
-            ModuleInit::TypeInfo(type_info_substate),
-        );
-
-        // TODO: Check node type matches modules provided
-
-        for (module_id, object_id) in modules {
+        //  Drop the module nodes and move the substates to the designated module ID.
+        for (module_id, node_id) in modules {
             match module_id {
-                TypedModuleId::ObjectState | TypedModuleId::TypeInfo => {
+                TypedModuleId::ObjectState
+                | TypedModuleId::KeyValueStore
+                | TypedModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
-                    let node_id = NodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_type_info(&node_id)?;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -320,22 +311,12 @@ where
                         )));
                     }
 
-                    let mut node = self.kernel_drop_node(&NodeId::Object(object_id))?;
-
-                    let access_rules = node
-                        .substates
-                        .remove(&(
-                            TypedModuleId::ObjectState,
-                            &AccessRulesOffset::AccessRules.into(),
-                        ))
-                        .unwrap();
-                    let access_rules: MethodAccessRulesSubstate = access_rules.into();
-
-                    module_init.insert(module_id, ModuleInit::AccessRules(access_rules));
+                    let mut node = self.kernel_drop_node(&node_id)?;
+                    let access_rules = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
+                    node_substates.insert(module_id, access_rules);
                 }
                 TypedModuleId::Metadata => {
-                    let node_id = NodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_type_info(&node_id)?;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -347,19 +328,11 @@ where
                     }
 
                     let node = self.kernel_drop_node(&node_id)?;
-
-                    let mut substates = BTreeMap::new();
-                    for ((module_id, substate_key), substate) in node.substates {
-                        if let TypedModuleId::ObjectState = module_id {
-                            substates.insert(substate_key, substate);
-                        }
-                    }
-
-                    module_init.insert(TypedModuleId::Metadata, ModuleInit::Metadata(substates));
+                    let metadata = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
+                    node_substates.insert(module_id, metadata);
                 }
                 TypedModuleId::Royalty => {
-                    let node_id = NodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_type_info(&node_id)?;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -371,31 +344,16 @@ where
                     }
 
                     let mut node = self.kernel_drop_node(&node_id)?;
-
-                    let config = node
-                        .substates
-                        .remove(&(TypedModuleId::ObjectState, RoyaltyOffset::Royalty.into()))
-                        .unwrap();
-                    let config: ComponentRoyaltyConfigSubstate = config.into();
-                    let accumulator = node
-                        .substates
-                        .remove(&(TypedModuleId::ObjectState, RoyaltyOffset::Royalty.into()))
-                        .unwrap();
-                    let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
-
-                    module_init.insert(
-                        TypedModuleId::Royalty,
-                        ModuleInit::Royalty(config, accumulator),
-                    );
+                    let royalty = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
+                    node_substates.insert(module_id, royalty);
                 }
             }
         }
 
-        self.kernel_create_node(
-            address.into(),
-            NodeInit::Object(component_substates),
-            module_init,
-        )?;
+        // TODO: better interface to remove this
+        let node_init = node_substates.remove(&TypedModuleId::ObjectState).unwrap();
+
+        self.kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
 
         Ok(())
     }
@@ -481,8 +439,11 @@ where
             node_id,
             NodeInit::KeyValueStore,
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
-        ))?;
+                    TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
+                        TypeInfoSubstate::KeyValueStore(schema)
+                    ).to_substates(),
+            ),
+        )?;
 
         Ok(node_id.into())
     }
