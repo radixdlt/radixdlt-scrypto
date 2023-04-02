@@ -27,7 +27,7 @@ impl ModuleInit {
         match self {
             ModuleInit::Metadata(metadata_substates) => metadata_substates,
             ModuleInit::AccessRules(access_rules) => BTreeMap::from([(
-                &AccessRulesOffset::AccessRules.into(),
+                AccessRulesOffset::AccessRules.into(),
                 IndexedScryptoValue::from_typed(&access_rules),
             )]),
             ModuleInit::TypeInfo(type_info) => BTreeMap::from([(
@@ -50,7 +50,6 @@ impl ModuleInit {
 
 #[derive(Debug)]
 pub enum NodeInit {
-    GlobalObject(BTreeMap<SubstateKey, IndexedScryptoValue>),
     Object(BTreeMap<SubstateKey, IndexedScryptoValue>),
     KeyValueStore,
 }
@@ -58,9 +57,7 @@ pub enum NodeInit {
 impl NodeInit {
     pub fn to_substates(self) -> BTreeMap<SubstateKey, IndexedScryptoValue> {
         match self {
-            NodeInit::GlobalObject(object_states) | NodeInit::Object(object_states) => {
-                object_states
-            }
+            NodeInit::Object(object_states) => object_states,
             NodeInit::KeyValueStore => BTreeMap::new(),
         }
     }
