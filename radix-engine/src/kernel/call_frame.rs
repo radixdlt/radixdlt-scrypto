@@ -643,6 +643,23 @@ impl CallFrame {
         }
     }
 
+    pub fn insert_into_iterable<'f, 's>(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s>,
+    ) {
+        if heap.contains_node(node_id) {
+            panic!("Heap iterator supported");
+        } else {
+            let value: ScryptoValue = scrypto_decode(&value).unwrap();
+            track.insert_into_iterable(node_id, module_id, key, value);
+        }
+    }
+
     pub fn remove_from_iterable<'f, 's>(
         &mut self,
         node_id: &RENodeId,

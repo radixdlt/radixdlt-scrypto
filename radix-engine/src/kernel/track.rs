@@ -65,6 +65,8 @@ pub struct LoadedSubstate {
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
+
+    iterable_substates_added: IndexMap<SubstateId, ScryptoValue>,
     iterable_substates_removed: IndexSet<SubstateId>,
 }
 
@@ -87,6 +89,7 @@ impl<'s> Track<'s> {
         Self {
             substate_store,
             loaded_substates: index_map_new(),
+            iterable_substates_added: index_map_new(),
             iterable_substates_removed: index_set_new(),
         }
     }
@@ -254,6 +257,18 @@ impl<'s> Track<'s> {
         self.substate_store.first_in_iterable(node_id, *module_id, count)
     }
 
+    pub fn insert_into_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+        value: ScryptoValue,
+    )  {
+        let substate_id = SubstateId(*node_id, *module_id, SubstateOffset::IterableMap(key));
+        self.iterable_substates_removed.remove(&substate_id);
+        self.iterable_substates_added.insert(substate_id, value);
+    }
+
     pub fn remove_from_iterable(
         &mut self,
         node_id: &RENodeId,
@@ -261,6 +276,7 @@ impl<'s> Track<'s> {
         key: Vec<u8>,
     )  {
         let substate_id = SubstateId(*node_id, *module_id, SubstateOffset::IterableMap(key));
+        self.iterable_substates_added.remove(&substate_id);
         self.iterable_substates_removed.insert(substate_id);
     }
 
@@ -446,6 +462,7 @@ impl<'s> Track<'s> {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
+                    iterable_substates_added: self.iterable_substates_added.into_iter().collect(),
                     iterable_substates_removed: self.iterable_substates_removed.into_iter().collect(),
                 };
                 TransactionResult::Commit(finalizing_track.calculate_commit_result(
@@ -531,6 +548,7 @@ fn determine_result_type(
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
+    iterable_substates_added: IndexMap<SubstateId, ScryptoValue>,
     iterable_substates_removed: IndexSet<SubstateId>,
 }
 
@@ -608,7 +626,12 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: pay tips to the lead validator
 
         let state_update_summary = Self::summarize_update(self.substate_store, &state_updates);
-        let state_updates = Self::generate_diff(self.substate_store, state_updates, self.iterable_substates_removed);
+        let state_updates = Self::generate_diff(
+            self.substate_store,
+            state_updates,
+            self.iterable_substates_added,
+            self.iterable_substates_removed,
+        );
 
         CommitResult {
             state_updates,
@@ -664,6 +687,7 @@ impl<'s> FinalizingTrack<'s> {
     pub fn generate_diff(
         substate_store: &dyn ReadableSubstateStore,
         state_updates: IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        iterable_substates_added: IndexMap<SubstateId, ScryptoValue>,
         iterable_substates_removed: IndexSet<SubstateId>,
     ) -> StateDiff {
         let mut diff = StateDiff::new();
@@ -683,6 +707,10 @@ impl<'s> FinalizingTrack<'s> {
                 version: next_version,
             };
             diff.up_substates.insert(substate_id.clone(), output_value);
+        }
+
+        for (substate_id, value) in iterable_substates_added {
+            diff.added_iterable_substates.insert(substate_id, PersistedSubstate::IterableEntry(value));
         }
 
         for substate_id in iterable_substates_removed {

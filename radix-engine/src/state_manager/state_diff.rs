@@ -2,12 +2,14 @@ use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 use crate::types::*;
 use radix_engine_interface::crypto::hash;
+use crate::system::node_substates::{PersistedSubstate, RuntimeSubstate};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: BTreeSet<OutputId>,
 
+    pub added_iterable_substates: BTreeMap<SubstateId, PersistedSubstate>,
     pub removed_iterable_substates: BTreeSet<SubstateId>,
 }
 
@@ -16,6 +18,7 @@ impl StateDiff {
         Self {
             up_substates: BTreeMap::new(),
             down_substates: BTreeSet::new(),
+            added_iterable_substates: BTreeMap::new(),
             removed_iterable_substates: BTreeSet::new(),
         }
     }
@@ -51,6 +54,17 @@ impl StateDiff {
             };
             receipt.up(output_id);
             store.put_substate(substate_id.clone(), output_value.clone());
+        }
+
+        for (substate_id, value) in &self.added_iterable_substates {
+            store.put_substate(
+                substate_id.clone(),
+                OutputValue {
+                    substate: value.clone(),
+                    version: 0u32, // TODO: Remove
+                }
+            );
+            store.remove_substate(substate_id);
         }
 
         for substate_id in &self.removed_iterable_substates {
