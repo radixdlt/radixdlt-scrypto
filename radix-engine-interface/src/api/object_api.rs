@@ -18,9 +18,13 @@ pub trait ClientIterableMapApi<E> {
 
     fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) -> Result<(), E>;
 
-    fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    fn first_in_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        count: u32,
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
-    fn first_typed_in_iterable_map<S: ScryptoDecode>(
+    fn first_typed_values_in_iterable_map<S: ScryptoDecode>(
         &mut self,
         node_id: RENodeId,
         count: u32,
@@ -28,7 +32,7 @@ pub trait ClientIterableMapApi<E> {
         let entries = self
             .first_in_iterable_map(node_id, count)?
             .into_iter()
-            .map(|buf| {
+            .map(|(_key, buf)| {
                 let typed_substate: S = scrypto_decode(&buf).unwrap();
                 typed_substate
             })

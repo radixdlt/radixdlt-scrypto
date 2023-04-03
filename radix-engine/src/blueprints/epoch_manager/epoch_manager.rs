@@ -151,8 +151,11 @@ impl EpochManagerBlueprint {
         }
 
         let current_validator_set = {
-            let next_validator_set: Vec<(ComponentAddress, Validator)> =
-                api.first_typed_in_iterable_map(RENodeId::KeyValueStore(index_id), max_validators)?;
+            let next_validator_set: Vec<(ComponentAddress, Validator)> = api
+                .first_typed_values_in_iterable_map(
+                    RENodeId::KeyValueStore(index_id),
+                    max_validators,
+                )?;
             let next_validator_set: BTreeMap<ComponentAddress, Validator> =
                 next_validator_set.into_iter().collect();
             Runtime::emit_event(
@@ -284,8 +287,11 @@ impl EpochManagerBlueprint {
             let validators: &RegisteredValidatorsSubstate = api.kernel_get_substate_ref(handle)?;
             let index_id = validators.index.id();
 
-            let next_validator_set: Vec<(ComponentAddress, Validator)> =
-                api.first_typed_in_iterable_map(RENodeId::KeyValueStore(index_id), max_validators)?;
+            let next_validator_set: Vec<(ComponentAddress, Validator)> = api
+                .first_typed_values_in_iterable_map(
+                    RENodeId::KeyValueStore(index_id),
+                    max_validators,
+                )?;
             let next_validator_set: BTreeMap<ComponentAddress, Validator> =
                 next_validator_set.into_iter().collect();
 
