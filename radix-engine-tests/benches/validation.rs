@@ -41,16 +41,16 @@ fn bench_eddsa_ed25519_validation(c: &mut Criterion) {
 fn bench_transaction_validation(c: &mut Criterion) {
     let bech32_decoder: Bech32Decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
-    let account1 = bech32_decoder
-        .validate_and_decode_component_address(
-            "account_sim1pzmws3yehqas09l02g6420ht0md2pn4zg0q39rp0uums4cp5c0",
-        )
-        .unwrap();
-    let account2 = bech32_decoder
-        .validate_and_decode_component_address(
-            "account_sim1pqwe5ynx0dd7hnm5cpks962a8ra44ezdtlq0g95ee5qsu0vmhn",
-        )
-        .unwrap();
+    let account1 = ComponentAddress::try_from_bech32(
+        &bech32_decoder,
+        "account_sim1pzmws3yehqas09l02g6420ht0md2pn4zg0q39rp0uums4cp5c0",
+    )
+    .unwrap();
+    let account2 = ComponentAddress::try_from_bech32(
+        &bech32_decoder,
+        "account_sim1pqwe5ynx0dd7hnm5cpks962a8ra44ezdtlq0g95ee5qsu0vmhn",
+    )
+    .unwrap();
     let signer = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()

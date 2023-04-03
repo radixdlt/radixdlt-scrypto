@@ -1,7 +1,6 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::UpdateSubstateError;
+use radix_engine::kernel::call_frame::{MoveError, UpdateSubstateError};
 use radix_engine::types::*;
-use radix_engine_common::types::NodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -67,7 +66,9 @@ fn cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::RENodeNotVisible(_)
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
             ))
         )
     });
@@ -96,7 +97,9 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MovingLockedRENode(..)
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
             ))
         )
     });
@@ -334,7 +337,9 @@ fn cannot_directly_reference_vault_after_container_moved() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::RENodeNotVisible(NodeId::Object(_))
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
             ))
         )
     });
@@ -363,7 +368,9 @@ fn cannot_directly_reference_vault_after_container_stored() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::RENodeNotVisible(NodeId::Object(_))
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
             ))
         )
     });

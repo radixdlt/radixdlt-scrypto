@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
@@ -21,7 +22,8 @@ fn bench_transfer(c: &mut Criterion) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_db = InMemorySubstateDatabase::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

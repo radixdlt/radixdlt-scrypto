@@ -455,7 +455,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, TypedModuleId::ObjectState),
+                    Emitter::Method(_node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1018,7 +1018,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, TypedModuleId::ObjectState),
+                    Emitter::Method(_node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1174,7 +1174,7 @@ fn validator_unstake_emits_correct_events() {
                 ..,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
-                && *resource_address == validator_substate.unstake_nft =>
+                && node_id == validator_substate.unstake_nft.as_node_id() =>
                 true,
             _ => false,
         });
@@ -1191,7 +1191,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, TypedModuleId::ObjectState),
+                    Emitter::Method(_node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1351,7 +1351,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, TypedModuleId::ObjectState),
+                    Emitter::Method(_node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,

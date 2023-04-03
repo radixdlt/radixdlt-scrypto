@@ -1,8 +1,7 @@
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::UpdateSubstateError;
+use radix_engine::kernel::call_frame::{MoveError, UpdateSubstateError};
 use radix_engine::types::*;
-use radix_engine_common::types::NodeId;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -29,8 +28,11 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::UpdateSubstateError(UpdateSubstateError::)))
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
+            ))
         )
     });
 }
@@ -62,7 +64,11 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
+            ))
         )
     });
 }
@@ -89,7 +95,11 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
+            ))
         )
     });
 }
@@ -121,9 +131,11 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::RENodeNotOwned(
-                NodeId::Object(_)
-            )))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(_)
+                ))
+            ))
         )
     });
 }
@@ -172,10 +184,10 @@ fn invalid_double_ownership_of_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            Self::KernelError(KernelError::CallFrameError(
+            RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
-                    MoveError::OwnNotFound(NodeId::Object(_))
-                )),
+                    MoveError::OwnNotFound(_)
+                ))
             ))
         )
     });

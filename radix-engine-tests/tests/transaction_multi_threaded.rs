@@ -1,6 +1,7 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
     use radix_engine::kernel::interpreters::ScryptoInterpreter;
+    use radix_engine::system::bootstrap::bootstrap;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
@@ -28,7 +29,8 @@ mod multi_threaded_test {
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,
         };
-        let mut substate_db = InMemorySubstateDatabase::with_bootstrap(&scrypto_interpreter);
+        let mut substate_db = InMemorySubstateDatabase::standard();
+        bootstrap(&mut substate_db, &scrypto_interpreter);
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

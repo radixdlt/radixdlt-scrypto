@@ -1,4 +1,5 @@
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
@@ -30,12 +31,13 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut store = InMemorySubstateDatabase::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    bootstrap(&mut substate_db, &scrypto_interpreter);
     let execution_config = ExecutionConfig::default();
     let fee_reserve_config = FeeReserveConfig::default();
 
     execute_and_commit_transaction(
-        &mut store,
+        &mut substate_db,
         &mut scrypto_interpreter,
         &fee_reserve_config,
         &execution_config,

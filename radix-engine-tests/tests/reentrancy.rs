@@ -1,6 +1,6 @@
-use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::kernel::call_frame::{MoveError, UpdateSubstateError};
 use radix_engine::types::*;
-use radix_engine_common::types::NodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -33,23 +33,15 @@ fn mut_reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::TrackError(err)) => {
-            if let TrackError::SubstateLocked(
-                SubstateId(
-                    NodeId::GlobalObject(..),
-                    TypedModuleId::ObjectState,
-                    SubstateKey::Component(ComponentOffset::State0),
-                ),
-                LockState::Write,
-            ) = **err
-            {
-                return true;
-            } else {
-                return false;
-            }
-        }
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::CantMoveLockedNode(_)
+                ))
+            ))
+        )
     });
 }
 
@@ -114,22 +106,14 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::TrackError(err)) => {
-            if let TrackError::SubstateLocked(
-                SubstateId(
-                    NodeId::GlobalObject(..),
-                    TypedModuleId::ObjectState,
-                    SubstateKey::Component(ComponentOffset::State0),
-                ),
-                LockState::Read(1),
-            ) = **err
-            {
-                return true;
-            } else {
-                return false;
-            }
-        }
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::CantMoveLockedNode(_)
+                ))
+            ))
+        )
     });
 }
