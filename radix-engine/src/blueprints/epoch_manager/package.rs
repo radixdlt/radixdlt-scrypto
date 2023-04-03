@@ -22,7 +22,7 @@ impl EpochManagerNativePackage {
 
         let mut substates = Vec::new();
         substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSetSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<RegisteredValidatorsSubstate>());
 
         let mut functions = BTreeMap::new();

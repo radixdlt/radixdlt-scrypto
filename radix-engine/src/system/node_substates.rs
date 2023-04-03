@@ -3,7 +3,7 @@ use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::{EpochManagerSubstate, RegisteredValidatorsSubstate};
-use crate::blueprints::epoch_manager::ValidatorSetSubstate;
+use crate::blueprints::epoch_manager::CurrentValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::blueprints::resource::*;
@@ -25,7 +25,7 @@ use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 pub enum PersistedSubstate {
     EpochManager(EpochManagerSubstate),
     RegisteredValidators(RegisteredValidatorsSubstate),
-    ValidatorSet(ValidatorSetSubstate),
+    ValidatorSet(CurrentValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(ClockSubstate),
     ResourceManager(FungibleResourceManagerSubstate),
@@ -284,7 +284,7 @@ impl PersistedSubstate {
 pub enum RuntimeSubstate {
     EpochManager(EpochManagerSubstate),
     RegisteredValidators(RegisteredValidatorsSubstate),
-    ValidatorSet(ValidatorSetSubstate),
+    ValidatorSet(CurrentValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(ClockSubstate),
     ResourceManager(FungibleResourceManagerSubstate),
@@ -693,7 +693,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn validator_set(&self) -> &ValidatorSetSubstate {
+    pub fn validator_set(&self) -> &CurrentValidatorSetSubstate {
         if let RuntimeSubstate::ValidatorSet(validator_set) = self {
             validator_set
         } else {
@@ -738,7 +738,7 @@ impl Into<RuntimeSubstate> for EpochManagerSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for ValidatorSetSubstate {
+impl Into<RuntimeSubstate> for CurrentValidatorSetSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::ValidatorSet(self)
     }
@@ -1043,8 +1043,8 @@ impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ValidatorSetSubstate> for RuntimeSubstate {
-    fn into(self) -> ValidatorSetSubstate {
+impl Into<CurrentValidatorSetSubstate> for RuntimeSubstate {
+    fn into(self) -> CurrentValidatorSetSubstate {
         if let RuntimeSubstate::ValidatorSet(substate) = self {
             substate
         } else {
@@ -1085,7 +1085,7 @@ pub enum SubstateRef<'a> {
     NonFungibleResourceManager(&'a NonFungibleResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     RegisteredValidators(&'a RegisteredValidatorsSubstate),
-    ValidatorSet(&'a ValidatorSetSubstate),
+    ValidatorSet(&'a CurrentValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a ClockSubstate),
     MethodAccessRules(&'a MethodAccessRulesSubstate),
@@ -1575,7 +1575,7 @@ pub enum SubstateRefMut<'a> {
     NonFungibleResourceManager(&'a mut NonFungibleResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     RegisteredValidators(&'a mut RegisteredValidatorsSubstate),
-    ValidatorSet(&'a mut ValidatorSetSubstate),
+    ValidatorSet(&'a mut CurrentValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut ClockSubstate),
     MethodAccessRules(&'a mut MethodAccessRulesSubstate),
@@ -1696,7 +1696,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut RegisteredValidatorsSubstate {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSetSubstate {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut CurrentValidatorSetSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::ValidatorSet(value) => value,

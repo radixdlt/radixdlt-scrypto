@@ -35,7 +35,7 @@ pub struct Validator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ValidatorSetSubstate {
+pub struct CurrentValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
 }
 
@@ -161,7 +161,7 @@ impl EpochManagerBlueprint {
                 },
             )?;
 
-            ValidatorSetSubstate {
+            CurrentValidatorSetSubstate {
                 validator_set: next_validator_set,
             }
         };
@@ -298,7 +298,7 @@ impl EpochManagerBlueprint {
                 SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
                 LockFlags::MUTABLE,
             )?;
-            let validator_set: &mut ValidatorSetSubstate =
+            let validator_set: &mut CurrentValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
             validator_set.validator_set = next_validator_set.clone();
 

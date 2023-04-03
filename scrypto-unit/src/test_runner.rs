@@ -519,7 +519,7 @@ impl TestRunner {
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
-        let substate: ValidatorSetSubstate = self
+        let substate: CurrentValidatorSetSubstate = self
             .substate_store()
             .get_substate(&substate_id)
             .unwrap()
