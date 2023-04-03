@@ -191,12 +191,27 @@ impl Heap {
             .remove(&node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id))?;
         for (module_id, substates) in node.substates {
-            for (offset, substate) in substates {
-                let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
-                self.move_nodes_to_store(track, owned_nodes)?;
-                track
-                    .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                    .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
+            match module_id {
+                NodeModuleId::Iterable => {
+                    //track.insert_iterable(&node_id, &module_id);
+                    for (offset, substate) in substates {
+                        match (offset, substate) {
+                            (SubstateOffset::IterableMap(key), RuntimeSubstate::IterableEntry(value)) => {
+                                track.insert_into_iterable(&node_id, &module_id, key, value);
+                            },
+                            _ => panic!("Unexpected"),
+                        }
+                    }
+                }
+                _ => {
+                    for (offset, substate) in substates {
+                        let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
+                        self.move_nodes_to_store(track, owned_nodes)?;
+                        track
+                            .insert_substate(SubstateId(node_id, module_id, offset), substate)
+                            .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
+                    }
+                }
             }
         }
 
@@ -216,15 +231,9 @@ pub struct HeapRENode {
 }
 
 impl HeapRENode {
-    pub fn new(substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>) -> Self {
-        let mut heap_substates = BTreeMap::new();
-        for ((node_module_id, offset), substate) in substates {
-            heap_substates.entry(node_module_id).or_insert(BTreeMap::new())
-                .insert(offset, substate);
-        }
-
+    pub fn new(substates: BTreeMap<NodeModuleId, BTreeMap<SubstateOffset, RuntimeSubstate>>) -> Self {
         Self {
-            substates: heap_substates
+            substates
         }
     }
 }

@@ -468,53 +468,78 @@ impl CallFrame {
         push_to_store: bool,
     ) -> Result<(), RuntimeError> {
         let mut substates = BTreeMap::new();
-        let self_substates = re_node.to_substates();
-        for (offset, substate) in self_substates {
-            substates.insert((NodeModuleId::SELF, offset), substate);
-        }
-        for (node_module_id, module_init) in node_modules {
-            for (offset, substate) in module_init.to_substates() {
-                substates.insert((node_module_id, offset), substate);
+        {
+            let mut self_substates = BTreeMap::new();
+            for (offset, substate) in re_node.to_substates() {
+                self_substates.insert(offset, substate);
             }
+            substates.insert(NodeModuleId::SELF, self_substates);
         }
 
-        for ((_module_id, offset), substate) in &substates {
-            let substate_ref = substate.to_ref();
-            let (_, owned) = substate_ref.references_and_owned_nodes();
-            for child_id in owned {
-                self.take_node_internal(&child_id)?;
+        for (node_module_id, module_init) in node_modules {
+            let mut module_substates = BTreeMap::new();
+            for (offset, substate) in module_init.to_substates() {
+                module_substates.insert(offset, substate);
+            }
+            substates.insert(node_module_id, module_substates);
+        }
 
-                // TODO: Move this logic into system layer
-                if let Ok(info) = heap.get_substate(
-                    &child_id,
-                    NodeModuleId::TypeInfo,
-                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                ) {
-                    let type_info: &TypeInfoSubstate = info.into();
-                    match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                            SubstateProperties::verify_can_own(
-                                &offset,
-                                blueprint.package_address,
-                                blueprint.blueprint_name.as_str(),
-                            )?;
+        for (_module_id, module_substates) in &substates {
+            for (offset, substate) in module_substates {
+                let substate_ref = substate.to_ref();
+                let (_, owned) = substate_ref.references_and_owned_nodes();
+                for child_id in owned {
+                    self.take_node_internal(&child_id)?;
+
+                    // TODO: Move this logic into system layer
+                    if let Ok(info) = heap.get_substate(
+                        &child_id,
+                        NodeModuleId::TypeInfo,
+                        &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    ) {
+                        let type_info: &TypeInfoSubstate = info.into();
+                        match type_info {
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                                SubstateProperties::verify_can_own(
+                                    &offset,
+                                    blueprint.package_address,
+                                    blueprint.blueprint_name.as_str(),
+                                )?;
+                            }
+                            TypeInfoSubstate::KeyValueStore(..) => {}
+                            TypeInfoSubstate::IterableMap(..) => {}
                         }
-                        TypeInfoSubstate::KeyValueStore(..) => {}
-                        TypeInfoSubstate::IterableMap(..) => {}
                     }
-                }
 
-                if push_to_store {
-                    heap.move_node_to_store(track, child_id)?;
+                    if push_to_store {
+                        heap.move_node_to_store(track, child_id)?;
+                    }
                 }
             }
         }
 
         if push_to_store {
-            for ((module_id, offset), substate) in substates {
-                track
-                    .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                    .map_err(|e| KernelError::TrackError(Box::new(e)))?;
+            for (module_id, module_substates) in substates {
+                match module_id {
+                    NodeModuleId::Iterable => {
+                        //track.insert_iterable(&node_id, &module_id);
+                        for (offset, substate) in module_substates {
+                            match (offset, substate) {
+                                (SubstateOffset::IterableMap(key), RuntimeSubstate::IterableEntry(value)) => {
+                                    track.insert_into_iterable(&node_id, &module_id, key, value);
+                                },
+                                _ => panic!("Unexpected"),
+                            }
+                        }
+                    }
+                    _ => {
+                        for (offset, substate) in module_substates {
+                            track
+                                .insert_substate(SubstateId(node_id, module_id, offset), substate)
+                                .map_err(|e| KernelError::TrackError(Box::new(e)))?;
+                        }
+                    }
+                }
             }
 
             self.add_ref(node_id, RefType::Normal);

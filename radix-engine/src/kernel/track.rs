@@ -320,21 +320,14 @@ impl<'s> Track<'s> {
             return Err(TrackError::InternalRefNotAllowed);
         }
 
-        match substate {
-            RuntimeSubstate::IterableEntry(value) => {
-                self.iterable_substates_added.insert(substate_id, value);
-            }
-            _ => {
-                self.loaded_substates.insert(
-                    substate_id,
-                    LoadedSubstate {
-                        substate,
-                        lock_state: LockState::no_lock(),
-                        metastate: SubstateMetaState::New,
-                    },
-                );
-            }
-        }
+        self.loaded_substates.insert(
+            substate_id,
+            LoadedSubstate {
+                substate,
+                lock_state: LockState::no_lock(),
+                metastate: SubstateMetaState::New,
+            },
+        );
 
         Ok(())
     }
