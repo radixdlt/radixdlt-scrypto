@@ -522,7 +522,7 @@ impl CallFrame {
             for (module_id, module_substates) in substates {
                 match module_id {
                     NodeModuleId::Iterable => {
-                        //track.insert_iterable(&node_id, &module_id);
+                        track.insert_iterable(&node_id, &module_id);
                         for (offset, substate) in module_substates {
                             match (offset, substate) {
                                 (SubstateOffset::IterableMap(key), RuntimeSubstate::IterableEntry(value)) => {

@@ -22,7 +22,7 @@ pub struct EpochManagerSubstate {
     pub epoch: u64,
     pub round: u64,
 
-    // TODO: Move configuratioremovedn to an immutable substate
+    // TODO: Move configuration to an immutable substate
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,

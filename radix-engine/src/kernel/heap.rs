@@ -193,7 +193,7 @@ impl Heap {
         for (module_id, substates) in node.substates {
             match module_id {
                 NodeModuleId::Iterable => {
-                    //track.insert_iterable(&node_id, &module_id);
+                    track.insert_iterable(&node_id, &module_id);
                     for (offset, substate) in substates {
                         match (offset, substate) {
                             (SubstateOffset::IterableMap(key), RuntimeSubstate::IterableEntry(value)) => {

@@ -5,12 +5,22 @@ use radix_engine_interface::crypto::hash;
 use crate::system::node_substates::PersistedSubstate;
 
 #[derive(Debug, Clone, ScryptoSbor)]
+pub enum IterableSubstateDiff {
+    Insert(PersistedSubstate),
+    Remove,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum IterableNodeDiff {
+    New(BTreeMap<SubstateOffset, PersistedSubstate>),
+    Update(BTreeMap<SubstateOffset, IterableSubstateDiff>),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: BTreeSet<OutputId>,
-
-    pub added_iterable_substates: BTreeMap<SubstateId, PersistedSubstate>,
-    pub removed_iterable_substates: BTreeSet<SubstateId>,
+    pub iterable_nodes: BTreeMap<(RENodeId, NodeModuleId), IterableNodeDiff>,
 }
 
 impl StateDiff {
@@ -18,8 +28,7 @@ impl StateDiff {
         Self {
             up_substates: BTreeMap::new(),
             down_substates: BTreeSet::new(),
-            added_iterable_substates: BTreeMap::new(),
-            removed_iterable_substates: BTreeSet::new(),
+            iterable_nodes: BTreeMap::new(),
         }
     }
 
@@ -56,18 +65,42 @@ impl StateDiff {
             store.put_substate(substate_id.clone(), output_value.clone());
         }
 
-        for (substate_id, value) in &self.added_iterable_substates {
-            store.put_substate(
-                substate_id.clone(),
-                OutputValue {
-                    substate: value.clone(),
-                    version: 0u32, // TODO: Remove
+        for (node_module, node_diff) in &self.iterable_nodes {
+            match node_diff {
+                IterableNodeDiff::New(substates) => {
+                    for (offset, substate) in substates {
+                        let substate_id = SubstateId(node_module.0.clone(), node_module.1.clone(), offset.clone());
+                        store.put_substate(
+                            substate_id,
+                            OutputValue {
+                                substate: substate.clone(),
+                                version: 0u32, // TODO: Remove
+                            }
+                        );
+                    }
                 }
-            );
-        }
+                IterableNodeDiff::Update(updates) => {
+                    for (offset, substate_diff) in updates {
+                        let substate_id = SubstateId(node_module.0.clone(), node_module.1.clone(), offset.clone());
+                        match substate_diff {
+                            IterableSubstateDiff::Insert(substate) => {
+                                store.put_substate(
+                                    substate_id,
+                                    OutputValue {
+                                        substate: substate.clone(),
+                                        version: 0u32, // TODO: Remove
+                                    }
+                                );
+                            }
+                            IterableSubstateDiff::Remove => {
+                                store.remove_substate(&substate_id);
+                            }
+                        }
 
-        for substate_id in &self.removed_iterable_substates {
-            store.remove_substate(substate_id);
+                    }
+
+                }
+            }
         }
 
         receipt
