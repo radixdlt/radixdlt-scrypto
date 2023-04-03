@@ -636,21 +636,6 @@ impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_get_first_in_iterable_map(
-        &mut self,
-        node_id: &RENodeId,
-        module_id: &NodeModuleId,
-        count: u32,
-    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
-        self.current_frame.get_first_in_iterable(
-            node_id,
-            module_id,
-            count,
-            &mut self.heap,
-            &mut self.track,
-        )
-    }
-
     fn kernel_insert_into_iterable_map(
         &mut self,
         node_id: &RENodeId,
@@ -678,6 +663,36 @@ where
             node_id,
             module_id,
             key,
+            &mut self.heap,
+            &mut self.track,
+        )
+    }
+
+    fn kernel_remove_first_in_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
+        self.current_frame.remove_first_in_iterable(
+            node_id,
+            module_id,
+            count,
+            &mut self.heap,
+            &mut self.track,
+        )
+    }
+
+    fn kernel_get_first_in_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
+        self.current_frame.get_first_in_iterable(
+            node_id,
+            module_id,
+            count,
             &mut self.heap,
             &mut self.track,
         )

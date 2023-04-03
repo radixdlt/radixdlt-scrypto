@@ -18,6 +18,12 @@ pub trait ClientIterableMapApi<E> {
 
     fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) -> Result<(), E>;
 
+    fn remove_first_in_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        count: u32,
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
+
     fn first_in_iterable_map(
         &mut self,
         node_id: RENodeId,

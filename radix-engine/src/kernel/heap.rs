@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::{CallFrameError, OffsetDoesNotExist};
@@ -28,6 +29,42 @@ impl Heap {
 
     pub fn contains_node(&self, node_id: &RENodeId) -> bool {
         self.nodes.contains_key(node_id)
+    }
+
+    pub fn remove_first_in_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, CallFrameError> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
+
+        let mut items = Vec::new();
+
+        let substates = node
+            .substates
+            .entry(module_id.clone())
+            .or_insert(BTreeMap::new());
+
+        let mut offsets = BTreeSet::new();
+        for (offset, value) in substates.iter().take(count.try_into().unwrap()) {
+            offsets.insert(offset.clone());
+        }
+
+        for offset in offsets {
+            let substate = substates.remove(&offset).unwrap();
+            let substate_id = SubstateId(node_id.clone(), module_id.clone(), offset);
+            if let RuntimeSubstate::IterableEntry(value) = substate {
+                items.push((substate_id, RuntimeSubstate::IterableEntry(value.clone())))
+            } else {
+                panic!("Unexpected");
+            }
+        }
+
+        Ok(items)
     }
 
     pub fn get_first_in_iterable(

@@ -269,6 +269,55 @@ impl<'s> Track<'s> {
             .insert(node_module, IterableNodeUpdate::New(BTreeMap::new()));
     }
 
+    pub fn remove_first_in_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
+        let node_module = (*node_id, *module_id);
+        let iterable_entry = self.iterable_node_updates.entry(node_module);
+        let items = match iterable_entry {
+            Entry::Occupied(..) => {
+            /*
+                match iterable {
+                    IterableNodeUpdate::New(substates) => {
+                        let items = substates
+                            .iter()
+                            .map(|(offset, value)| {
+                                let id = SubstateId(*node_id, *module_id, offset.clone());
+                                (id, RuntimeSubstate::IterableEntry(value.clone()))
+                            })
+                            .collect();
+                        items
+                    }
+                    IterableNodeUpdate::Update(..) => {
+                        panic!("Unsupported");
+                    }
+                }
+             */
+                todo!();
+            }
+            Entry::Vacant(e) => {
+                self.iterable_node_reads
+                    .insert(node_module, IterableNodeRead::FirstRange(count));
+                let items = self
+                    .substate_store
+                    .first_in_iterable(node_id, *module_id, count);
+
+                let mut substates = index_map_new();
+                for (id, substate) in &items {
+                    substates.insert(id.2.clone(), IterableSubstateUpdate::Remove);
+                }
+                e.insert(IterableNodeUpdate::Update(substates));
+                items
+            }
+        };
+
+        Ok(items)
+    }
+
+
     pub fn get_first_in_iterable(
         &mut self,
         node_id: &RENodeId,

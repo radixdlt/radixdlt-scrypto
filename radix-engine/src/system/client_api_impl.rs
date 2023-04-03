@@ -1039,6 +1039,31 @@ where
         self.kernel_remove_from_iterable_map(&node_id, &NodeModuleId::Iterable, key)
     }
 
+    fn remove_first_in_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        count: u32,
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
+            return Err(RuntimeError::SystemError(SystemError::NotAnIterable));
+        }
+
+        let first =
+            self.kernel_remove_first_in_iterable_map(&node_id, &NodeModuleId::Iterable, count)?;
+        let first = first
+            .into_iter()
+            .map(|(id, substate)| {
+                let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
+                match id.2 {
+                    SubstateOffset::IterableMap(key) => (key, bytes),
+                    _ => panic!("Unexpected"),
+                }
+            })
+            .collect();
+        Ok(first)
+    }
+
     fn first_in_iterable_map(
         &mut self,
         node_id: RENodeId,

@@ -62,6 +62,13 @@ pub trait KernelIterableMapApi {
         key: Vec<u8>,
     ) -> Result<(), RuntimeError>;
 
+    fn kernel_remove_first_in_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError>;
+
     fn kernel_get_first_in_iterable_map(
         &mut self,
         node_id: &RENodeId,

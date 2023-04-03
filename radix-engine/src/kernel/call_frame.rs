@@ -659,6 +659,37 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
+    pub fn remove_first_in_iterable<'f, 's>(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s>,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
+        let substates = if heap.contains_node(node_id) {
+            heap.remove_first_in_iterable(node_id, module_id, count)
+                .map_err(|e| RuntimeError::CallFrameError(e))
+        } else {
+            track.remove_first_in_iterable(node_id, module_id, count)
+        }?;
+
+        for (_id, substate) in &substates {
+            let (refs, _owns) = substate.to_ref().references_and_owned_nodes();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref,
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
+    }
+
     pub fn get_first_in_iterable<'f, 's>(
         &mut self,
         node_id: &RENodeId,
