@@ -108,6 +108,22 @@ impl<'a> OutputData<'a> {
         file.write_fmt(format_args!("\n"))
             .expect(&format!("Unable write data."));
     }
+
+    pub fn is_return_from_function(&self) -> bool {
+        for p in &self.param {
+            if p.name == "return" {
+                match p.value {
+                    OutputParamValue::Literal(v) => {
+                        if v == "true" {
+                            return true;
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+        false
+    }
 }
 
 pub struct DataAnalyzer {}

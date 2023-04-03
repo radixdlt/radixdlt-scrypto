@@ -8,6 +8,8 @@ pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
 const SHARED_MEM_ID: &str = "/shm-scrypto";
 /// Maximum pre-allocated data entries
 const OUTPUT_DATA_COUNT: usize = 500000;
+/// Tracked functions calls stack depth
+const CALL_STACK_DEPTH: usize = 30;
 
 std::thread_local! {
     /// Global QEMU plugin object variable
@@ -34,7 +36,7 @@ impl<'a> QemuPluginInterface<'a> {
         };
 
         let mut ret = Self {
-            counters_stack: vec![("", 0); 20],
+            counters_stack: vec![("", 0); CALL_STACK_DEPTH],
             stack_top: 0,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
@@ -53,7 +55,7 @@ impl<'a> QemuPluginInterface<'a> {
     }
 
     pub fn start_counting(&mut self, key: &'static str, arg: &[data_analyzer::OutputParam]) {
-        if self.stack_top == self.counters_stack.len() {
+        if self.stack_top + 1 == self.counters_stack.len() {
             panic!("Stack too small, extend elements count of counters_stack field.");
         }
 
@@ -82,7 +84,29 @@ impl<'a> QemuPluginInterface<'a> {
         if self.stack_top == 0 {
             panic!("Not counting!");
         }
-        self.stack_top -= 1;
+
+        if self.counters_stack[self.stack_top].0 != key {
+            for i in (0..self.stack_top).rev() {
+                if self.counters_stack[i].0 == key {
+                    self.stack_top = i;
+                    break;
+                } else {
+                    self.output_data.push(OutputData {
+                        event: OutputDataEvent::FunctionExit,
+                        stack_depth: i,
+                        cpu_instructions: 0,
+                        cpu_instructions_calibrated: 0,
+                        function_name: self.counters_stack[i].0,
+                        param: vec![OutputParam {
+                            name: "return".into(),
+                            value: data_analyzer::OutputParamValue::Literal("true".into()),
+                        }],
+                    });
+                }
+            }
+        } else {
+            self.stack_top -= 1;
+        }
 
         self.counters_stack[self.stack_top].1 = n - self.counters_stack[self.stack_top].1;
 
@@ -115,7 +139,9 @@ impl<'a> QemuPluginInterface<'a> {
         let overflow_range = 1;
         let mut ov_cnt = 0;
         for i in (0..=self.output_data.len() - 1).rev() {
-            if !matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
+            if !matches!(self.output_data[i].event, OutputDataEvent::FunctionExit)
+                || self.output_data[i].is_return_from_function()
+            {
                 continue;
             }
 
