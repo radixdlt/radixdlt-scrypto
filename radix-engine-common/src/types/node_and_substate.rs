@@ -46,6 +46,13 @@ impl NodeId {
         }
     }
 
+    pub fn is_global_resource(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t.is_global_resource(),
+            None => false,
+        }
+    }
+
     pub fn is_global_package(&self) -> bool {
         match self.entity_type() {
             Some(t) => t.is_global_package(),

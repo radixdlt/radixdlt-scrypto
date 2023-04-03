@@ -17,7 +17,10 @@ fn non_existing_vault_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(non_existing_vault_id, Decimal::one())
+        .recall(
+            LocalAddress::new_unchecked(non_existing_vault_id),
+            Decimal::one(),
+        )
         .call_method(
             account,
             "deposit_batch",
@@ -29,9 +32,7 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
-            RuntimeError::KernelError(KernelError::NodeNotFound(NodeId::Object(
-                non_existing_vault_id,
-            ))),
+            RuntimeError::KernelError(KernelError::NodeNotFound(NodeId(non_existing_vault_id))),
         ))
     });
 }
@@ -49,7 +50,7 @@ fn cannot_take_on_non_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(vault_id, Decimal::one())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             account,
             "deposit_batch",
@@ -81,7 +82,7 @@ fn can_take_on_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(vault_id, Decimal::one())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             other_account,
             "deposit_batch",

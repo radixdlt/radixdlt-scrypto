@@ -1,6 +1,3 @@
-use crate::interface::StateUpdate;
-use crate::interface::{StateUpdates, SubstateDatabase};
-use crate::query::VaultInfoSubstate;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource,
 };
@@ -8,8 +5,56 @@ use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_stores::interface::StateUpdate;
+use radix_engine_stores::interface::{StateUpdates, SubstateDatabase};
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
+
+use crate::blueprints::resource::VaultInfoSubstate;
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct StateUpdateSummary {
+    pub new_packages: Vec<PackageAddress>,
+    pub new_components: Vec<ComponentAddress>,
+    pub new_resources: Vec<ResourceAddress>,
+    pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+    /// This field accounts for two conditions:
+    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
+    /// 2. Fee payments for failed transactions.
+    pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
+}
+
+impl StateUpdateSummary {
+    pub fn new<S: SubstateDatabase>(substate_db: &S, state_updates: &StateUpdates) -> Self {
+        let mut new_packages = index_set_new();
+        let mut new_components = index_set_new();
+        let mut new_resources = index_set_new();
+        for (k, StateUpdate::Upsert(_, previous_version)) in &state_updates.substate_changes {
+            if previous_version.is_none() {
+                if k.0.is_global_package() {
+                    new_packages.insert(PackageAddress::new_unchecked(k.0.into()));
+                }
+                if k.0.is_global_component() {
+                    new_components.insert(ComponentAddress::new_unchecked(k.0.into()));
+                }
+                if k.0.is_global_resource() {
+                    new_resources.insert(ResourceAddress::new_unchecked(k.0.into()));
+                }
+            }
+        }
+
+        let (balance_changes, direct_vault_updates) =
+            BalanceAccounter::new(substate_db, &state_updates).run();
+
+        StateUpdateSummary {
+            new_packages: new_packages.into_iter().collect(),
+            new_components: new_components.into_iter().collect(),
+            new_resources: new_resources.into_iter().collect(),
+            balance_changes,
+            direct_vault_updates,
+        }
+    }
+}
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum BalanceChange {
@@ -64,7 +109,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 .insert(
                     substate_key.clone(),
                     match &change {
-                        StateUpdate::Upsert(substate_value) => substate_value,
+                        StateUpdate::Upsert(substate_value, ..) => substate_value,
                     },
                 );
         }

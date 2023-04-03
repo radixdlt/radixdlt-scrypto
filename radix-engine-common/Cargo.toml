@@ -4,8 +4,8 @@ version = "0.10.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false }
-utils = { path = "../utils", default-features = false }
+sbor = { path = "../sbor", default-features = false, features = ["serde"] }
+utils = { path = "../utils", default-features = false, features = ["serde"] }
 radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
 
 hex = { version = "0.4.3", default-features = false }
@@ -15,8 +15,6 @@ num-bigint = { version = "0.4.3", default-features = false }
 bnum = { version = "0.4.0", default-features = false, features = ["numtraits"] }
 bech32 = { version = "0.9.0", default-features = false }
 paste = { version = "1.0.7"}
-serde = { version = "1.0.144", default-features = false, optional = true }
-serde_with = { version = "2.0.1", optional = true }
 blake2 = { version = "0.10.6", default-features = false }
 lazy_static = "1.4.0"
 strum = { version = "0.24", default-features = false, features = ["derive"] }
@@ -40,12 +38,9 @@ harness = false
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "serde"]
+default = ["std"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "blake2/std"]
 alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
-
-# Enable serde derives
-serde = ["utils/serde", "sbor/serde", "serde/derive", "hex/serde", "serde_with"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

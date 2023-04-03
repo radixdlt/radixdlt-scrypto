@@ -1,5 +1,4 @@
 use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::track::{LockState, TrackError};
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use scrypto_unit::*;

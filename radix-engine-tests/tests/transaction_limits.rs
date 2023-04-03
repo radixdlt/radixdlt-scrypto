@@ -222,7 +222,7 @@ fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
     let size = scrypto_args!(data).len()
         + blueprint_name.len()
         + function_name.len()
-        + package_address.size();
+        + package_address.as_ref().len();
 
     match err {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(

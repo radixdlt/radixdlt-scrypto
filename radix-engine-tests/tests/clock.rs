@@ -13,12 +13,12 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(NodeId::GlobalObject(CLOCK.into()));
+    pre_allocated_ids.insert(CLOCK.into());
     let instructions = vec![Instruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(CLOCK.into()),
+        args: manifest_args!(Into::<[u8; 27]>::into(CLOCK)),
     }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -42,12 +42,12 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(NodeId::GlobalObject(CLOCK.into()));
+    pre_allocated_ids.insert(CLOCK.into());
     let instructions = vec![Instruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(CLOCK.into()),
+        args: manifest_args!(Into::<[u8; 27]>::into(CLOCK)),
     }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(

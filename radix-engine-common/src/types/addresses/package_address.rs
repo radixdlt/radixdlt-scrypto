@@ -76,9 +76,9 @@ impl Into<[u8; NodeId::LENGTH]> for PackageAddress {
     }
 }
 
-impl Into<super::GlobalAddress> for PackageAddress {
-    fn into(self) -> super::GlobalAddress {
-        super::GlobalAddress::new_unchecked(self.0.into())
+impl From<PackageAddress> for super::GlobalAddress {
+    fn from(value: PackageAddress) -> Self {
+        Self::new_unchecked(value.into())
     }
 }
 

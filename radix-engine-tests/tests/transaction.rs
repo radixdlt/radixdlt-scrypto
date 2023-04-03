@@ -16,7 +16,7 @@ fn test_manifest_with_non_existent_resource() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let non_existent_resource = ResourceAddress::Fungible([1u8; 26]);
+    let non_existent_resource = resource_address(EntityType::GlobalFungibleResource, 222);
 
     // Act
     let manifest = ManifestBuilder::new()

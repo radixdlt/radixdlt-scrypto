@@ -110,9 +110,9 @@ impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
     }
 }
 
-impl Into<super::GlobalAddress> for ComponentAddress {
-    fn into(self) -> super::GlobalAddress {
-        super::GlobalAddress::new_unchecked(self.0.into())
+impl From<ComponentAddress> for super::GlobalAddress {
+    fn from(value: ComponentAddress) -> Self {
+        Self::new_unchecked(value.into())
     }
 }
 

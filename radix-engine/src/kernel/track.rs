@@ -2,7 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
-    StateDependencies, StateUpdates, StoreLockError, SubstateDatabase, SubstateStore,
+    StateDependencies, StateUpdate, StateUpdates, StoreLockError, SubstateDatabase, SubstateStore,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -341,6 +341,34 @@ impl<'s> SubstateStore for Track<'s> {
     }
 
     fn finalize(self) -> (StateUpdates, StateDependencies) {
-        todo!()
+        // TODO:
+        // - Remove version from state updates
+        // - Split read,
+        // - Track dependencies
+
+        let mut substate_changes = IndexMap::<(NodeId, ModuleId, SubstateKey), StateUpdate>::new();
+        for (node_id, modules) in self.loaded_substates {
+            for (module_id, module) in modules {
+                for (substate_key, loaded) in module {
+                    substate_changes.insert(
+                        (node_id, module_id, substate_key.clone()),
+                        StateUpdate::Upsert(
+                            loaded.substate.into(),
+                            match loaded.meta_state {
+                                SubstateMetaState::New => None,
+                                SubstateMetaState::Existing { old_version, .. } => {
+                                    Some(old_version)
+                                }
+                            },
+                        ),
+                    );
+                }
+            }
+        }
+
+        (
+            StateUpdates { substate_changes },
+            StateDependencies::default(),
+        )
     }
 }

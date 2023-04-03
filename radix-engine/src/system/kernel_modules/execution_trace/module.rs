@@ -570,13 +570,28 @@ impl ExecutionTraceModule {
     }
 
     pub fn finalize(mut self, transaction_result: &TransactionResult) -> TransactionExecutionTrace {
-        // let mut execution_traces = Vec::new();
-        // for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
-        //     execution_traces.extend(traces);
-        // }
+        match transaction_result {
+            TransactionResult::Commit(c) => {
+                let mut execution_traces = Vec::new();
+                for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
+                    execution_traces.extend(traces);
+                }
 
-        // (execution_traces, self.vault_ops)
-        todo!()
+                let resource_changes = calculate_resource_changes(
+                    self.vault_ops,
+                    &c.fee_payments,
+                    c.outcome.is_success(),
+                );
+
+                TransactionExecutionTrace {
+                    execution_traces,
+                    resource_changes,
+                }
+            }
+            TransactionResult::Reject(_) | TransactionResult::Abort(_) => {
+                TransactionExecutionTrace::default()
+            }
+        }
     }
 
     fn instruction_index(&self) -> usize {

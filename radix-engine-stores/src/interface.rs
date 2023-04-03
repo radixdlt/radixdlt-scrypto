@@ -139,13 +139,13 @@ pub trait SubstateStore {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct StateUpdates {
-    pub substate_changes: BTreeMap<(NodeId, ModuleId, SubstateKey), StateUpdate>,
+    pub substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StateUpdate {
     /// Creates or updates a substate.
-    Upsert(Vec<u8>),
+    Upsert(Vec<u8>, Option<u32>),
     /*
     /// Deletes a substate.
     Delete,
@@ -154,7 +154,7 @@ pub enum StateUpdate {
     */
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateDependencies {
     /// The substates that were read.
     pub substate_reads: BTreeMap<(NodeId, ModuleId, SubstateKey), Option<u32>>,

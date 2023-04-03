@@ -1346,7 +1346,7 @@ impl StateHashSupport {
                 SubstateHashChange::new(
                     substate_id.clone(),
                     match value {
-                        StateUpdate::Upsert(v) => Some(hash(v)),
+                        StateUpdate::Upsert(v, _) => Some(hash(v)),
                     },
                 )
             })

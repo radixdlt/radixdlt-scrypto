@@ -47,7 +47,7 @@ wabt = { version = "0.10.0" }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "serde"]
+default = ["std"]
 std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-stores/std", "utils/std", "moka", "serde_json?/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "utils/alloc", "lru/hashbrown", "serde_json?/alloc"]
 
@@ -62,7 +62,6 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 moka = ["dep:moka"]
 
 resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker"]
-serde = ["dep:serde_json", "sbor/serde", "radix-engine-interface/serde", "radix-engine-common/serde"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

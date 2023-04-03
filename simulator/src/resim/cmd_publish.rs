@@ -66,7 +66,7 @@ impl Publish {
                 RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let substate_id = SubstateId(
-                NodeId::GlobalObject(package_address.0.into()),
+                package_address.0.into(),
                 TypedModuleId::ObjectState,
                 PackageOffset::Package.into(),
             );
@@ -85,7 +85,7 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_db.put_substate(
                 SubstateId(
-                    NodeId::GlobalObject(package_address.0.into()),
+                    package_address.0.into(),
                     TypedModuleId::ObjectState,
                     PackageOffset::Package.into(),
                 ),
@@ -105,7 +105,7 @@ impl Publish {
 
             substate_db.put_substate(
                 SubstateId(
-                    NodeId::GlobalObject(package_address.0.into()),
+                    package_address.0.into(),
                     TypedModuleId::ObjectState,
                     PackageOffset::Package.into(),
                 ),

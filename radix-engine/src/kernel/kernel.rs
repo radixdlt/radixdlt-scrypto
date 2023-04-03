@@ -692,8 +692,10 @@ where
                             .map_err(RuntimeError::KernelError);
                     }
                 } else {
-                    return Err(RuntimeError::KernelError(KernelError::TrackLockError(
-                        *track_err.clone(),
+                    return Err(RuntimeError::KernelError(KernelError::CallFrameError(
+                        CallFrameError::LockSubstateError(LockSubstateError::TrackError(
+                            track_err.clone(),
+                        )),
                     )));
                 }
             }
@@ -713,7 +715,9 @@ where
                                 substate_key,
                                 LockFlags::read_only(),
                             )
-                            .map_err(KernelError::TrackLockError)?;
+                            .map_err(|e| LockSubstateError::TrackError(Box::new(e)))
+                            .map_err(CallFrameError::LockSubstateError)
+                            .map_err(KernelError::CallFrameError)?;
                         self.track.release_lock(handle);
 
                         self.current_frame

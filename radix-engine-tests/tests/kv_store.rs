@@ -1,4 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::kernel::call_frame::UpdateSubstateError;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use scrypto_unit::*;
@@ -65,7 +66,9 @@ fn cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(_))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::RENodeNotVisible(_)
+            ))
         )
     });
 }
@@ -92,7 +95,9 @@ fn self_cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::MovingLockedRENode(..))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::MovingLockedRENode(..)
+            ))
         )
     });
 }
@@ -125,7 +130,9 @@ fn cannot_remove_kv_stores() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::CantDropNodeInStore(_))
+            ))
         )
     });
 }
@@ -158,7 +165,9 @@ fn cannot_overwrite_kv_stores() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::CantDropNodeInStore(_))
+            ))
         )
     });
 }
@@ -295,7 +304,9 @@ fn cannot_directly_reference_inserted_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::RefNotFound(_))
+            ))
         )
     });
 }
@@ -322,7 +333,9 @@ fn cannot_directly_reference_vault_after_container_moved() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::RENodeNotVisible(NodeId::Object(_))
+            ))
         )
     });
 }
@@ -349,7 +362,9 @@ fn cannot_directly_reference_vault_after_container_stored() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::RENodeNotVisible(NodeId::Object(_))
+            ))
         )
     });
 }

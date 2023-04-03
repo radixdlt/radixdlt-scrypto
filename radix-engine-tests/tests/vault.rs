@@ -1,5 +1,6 @@
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError, RuntimeError};
+use radix_engine::kernel::call_frame::UpdateSubstateError;
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use scrypto::prelude::FromPublicKey;
@@ -28,6 +29,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
+            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::UpdateSubstateError(UpdateSubstateError::)))
             RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(NodeId::Object(_)))
         )
     });
@@ -119,7 +121,9 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::RENodeNotOwned(
+                NodeId::Object(_)
+            )))
         )
     });
 }
@@ -168,7 +172,11 @@ fn invalid_double_ownership_of_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(NodeId::Object(_)))
+            Self::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                    MoveError::OwnNotFound(NodeId::Object(_))
+                )),
+            ))
         )
     });
 }
@@ -227,7 +235,9 @@ fn cannot_overwrite_vault_in_map() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::CantDropNodeInStore(_))
+            ))
         )
     });
 }
@@ -282,7 +292,9 @@ fn cannot_remove_vaults() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(NodeId::Object(_)))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UpdateSubstateError(UpdateSubstateError::CantDropNodeInStore(_))
+            ))
         )
     });
 }

@@ -1,3 +1,4 @@
+use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::system::kernel_modules::costing::FeeSummary;
@@ -10,8 +11,7 @@ use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
-use radix_engine_stores::inference::BalanceChange;
-use radix_engine_stores::interface::{StateDependencies, StateUpdates, SubstateDatabase};
+use radix_engine_stores::interface::{StateDependencies, StateUpdates};
 use utils::ContextualDisplay;
 
 #[cfg(feature = "serde")]
@@ -26,11 +26,10 @@ pub struct ResourcesUsage {
     pub cpu_cycles: u64,
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, Default)]
 pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub resources_usage: ResourcesUsage,
 }
 
 impl TransactionExecutionTrace {
@@ -70,24 +69,6 @@ pub struct CommitResult {
     pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct StateUpdateSummary {
-    pub new_packages: Vec<PackageAddress>,
-    pub new_components: Vec<ComponentAddress>,
-    pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-    /// This field accounts for two conditions:
-    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
-    /// 2. Fee payments for failed transactions.
-    pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
-}
-
-impl StateUpdateSummary {
-    pub fn new<S: SubstateDatabase>(substate_db: &S, state_updates: &StateUpdates) -> Self {
-        todo!()
-    }
 }
 
 impl CommitResult {

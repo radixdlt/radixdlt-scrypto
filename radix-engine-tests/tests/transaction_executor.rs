@@ -1,6 +1,5 @@
 use radix_engine::errors::RejectionError;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::InMemorySubstateDatabase;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;

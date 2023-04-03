@@ -106,14 +106,16 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
 
-            builder.recall(vault_id, Decimal::ONE).call_method(
-                account,
-                "deposit_batch",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            builder
+                .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::ONE)
+                .call_method(
+                    account,
+                    "deposit_batch",
+                    manifest_args!(ManifestExpression::EntireWorktop),
+                )
         }
         Action::UpdateMetadata => builder.set_metadata(
-            GlobalAddress::Resource(token_address),
+            token_address.into(),
             "key".to_string(),
             MetadataEntry::Value(MetadataValue::String("value".to_string())),
         ),

@@ -23,7 +23,6 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_stores::interface::StoreLockError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -76,6 +75,14 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
+impl RuntimeError {
+    pub const fn update_substate(e: UpdateSubstateError) -> Self {
+        Self::KernelError(KernelError::CallFrameError(
+            CallFrameError::UpdateSubstateError(e),
+        ))
+    }
+}
+
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())
@@ -119,9 +126,6 @@ pub enum KernelError {
 
     // Call frame
     CallFrameError(CallFrameError),
-
-    // Track
-    TrackLockError(StoreLockError),
 
     /// Interpreter
     InterpreterError(InterpreterError),

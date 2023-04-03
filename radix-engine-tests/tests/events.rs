@@ -5,7 +5,7 @@ use radix_engine::blueprints::epoch_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::ledger::create_genesis;
+use radix_engine::system::bootstrap::create_genesis;
 use radix_engine::system::kernel_modules::events::EventError;
 use radix_engine::system::node_modules::access_rules::SetRuleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
@@ -109,7 +109,7 @@ fn scrypto_can_emit_registered_events() {
             ref event_data,
         )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
-            && *node_id == package_address.as_node_id()
+            && node_id == package_address.as_node_id()
             && blueprint_name == "ScryptoEvents" =>
             true,
         _ => false,
@@ -233,7 +233,7 @@ fn vault_fungible_recall_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .recall(vault_id, 1.into())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), 1.into())
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
@@ -337,7 +337,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .recall(vault_id, 1.into())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), 1.into())
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
@@ -455,10 +455,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(
-                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
-                        TypedModuleId::ObjectState,
-                    ),
+                    Emitter::Method(node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1021,10 +1018,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(
-                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
-                        TypedModuleId::ObjectState,
-                    ),
+                    Emitter::Method(node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1174,10 +1168,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(
-                        NodeId::GlobalObject(GlobalAddress::Resource(resource_address)),
-                        TypedModuleId::ObjectState,
-                    ),
+                    Emitter::Method(node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1200,10 +1191,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(
-                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
-                        TypedModuleId::ObjectState,
-                    ),
+                    Emitter::Method(node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1363,10 +1351,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(
-                        NodeId::GlobalObject(GlobalAddress::Resource(..)),
-                        TypedModuleId::ObjectState,
-                    ),
+                    Emitter::Method(node_id, TypedModuleId::ObjectState),
                     ..,
                 ),
                 ..,
@@ -1499,7 +1484,7 @@ fn setting_metadata_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            GlobalAddress::Resource(resource_address),
+            resource_address.into(),
             "key".into(),
             MetadataEntry::Value(MetadataValue::I32(1)),
         )

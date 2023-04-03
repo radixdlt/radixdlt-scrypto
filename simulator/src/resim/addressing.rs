@@ -1,5 +1,5 @@
 use radix_engine::types::{
-    AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId,
+      Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId,
     PackageAddress, ResourceAddress,
 };
 use radix_engine_interface::{

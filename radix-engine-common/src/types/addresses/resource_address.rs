@@ -75,9 +75,9 @@ impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
     }
 }
 
-impl Into<super::GlobalAddress> for ResourceAddress {
-    fn into(self) -> super::GlobalAddress {
-        super::GlobalAddress::new_unchecked(self.0.into())
+impl From<ResourceAddress> for super::GlobalAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self::new_unchecked(value.into())
     }
 }
 

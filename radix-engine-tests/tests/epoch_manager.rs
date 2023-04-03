@@ -1,6 +1,6 @@
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::ledger::create_genesis;
+use radix_engine::system::bootstrap::create_genesis;
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -844,16 +844,16 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(NodeId::GlobalObject(EPOCH_MANAGER.into()));
-    pre_allocated_ids.insert(NodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
+    pre_allocated_ids.insert(EPOCH_MANAGER.into());
+    pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
     let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ManifestValidatorInit> = BTreeMap::new();
     let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            VALIDATOR_OWNER_TOKEN.into(),
-            EPOCH_MANAGER.into(),
+            Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN),
+            Into::<[u8; 27]>::into(EPOCH_MANAGER),
             validator_set,
             1u64,
             1u64,
@@ -884,8 +884,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(NodeId::GlobalObject(EPOCH_MANAGER.into()));
-    pre_allocated_ids.insert(NodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
+    pre_allocated_ids.insert(EPOCH_MANAGER.into());
+    pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
 
     let validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ManifestValidatorInit> = BTreeMap::new();
     let instructions = vec![Instruction::CallFunction {
@@ -893,8 +893,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: "create".to_string(),
         args: manifest_args!(
-            VALIDATOR_OWNER_TOKEN.into(),
-            EPOCH_MANAGER.into(),
+            Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN),
+            Into::<[u8; 27]>::into(EPOCH_MANAGER),
             validator_set,
             1u64,
             1u64,

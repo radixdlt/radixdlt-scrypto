@@ -55,8 +55,9 @@ fn multi_account_fund_transfer_succeeds() {
                     "../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
                 xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
-                this_account_address =
-                    bech32_encoder.encode_component_address_to_string(&this_account_address),
+                this_account_address = bech32_encoder
+                    .encode(this_account_address.as_ref())
+                    .unwrap(),
                 account_a_component_address = other_accounts[0].display(bech32_encoder),
                 account_b_component_address = other_accounts[1].display(bech32_encoder),
                 account_c_component_address = other_accounts[2].display(bech32_encoder)

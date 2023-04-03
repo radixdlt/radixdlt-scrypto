@@ -1,6 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
@@ -10,6 +9,7 @@ use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;

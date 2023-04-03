@@ -56,7 +56,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            GlobalAddress::Component(component_address),
+            component_address.into(),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )

@@ -1,7 +1,6 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
     use radix_engine::kernel::interpreters::ScryptoInterpreter;
-    use radix_engine::ledger::*;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
@@ -11,6 +10,7 @@ mod multi_threaded_test {
     use radix_engine_interface::blueprints::resource::*;
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
+    use radix_engine_stores::memory_db::InMemorySubstateDatabase;
     use transaction::builder::ManifestBuilder;
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use transaction::model::TestTransaction;

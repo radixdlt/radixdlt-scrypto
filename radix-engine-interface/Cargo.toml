@@ -23,9 +23,6 @@ alloc = ["hex/alloc", "sbor/alloc", "scrypto-schema/alloc", "radix-engine-derive
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]
 
-# Enable serde derives
-serde = ["utils/serde", "sbor/serde", "hex/serde", "scrypto-schema/serde"]
-
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
 bench = false

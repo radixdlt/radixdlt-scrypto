@@ -159,7 +159,7 @@ fn test_balance_changes_when_recall() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(vault_id, Decimal::one())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             other_account,
             "deposit_batch",
