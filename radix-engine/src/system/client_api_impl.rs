@@ -43,6 +43,7 @@ impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn sys_lock_substate(
         &mut self,
         node_id: RENodeId,
@@ -71,10 +72,12 @@ where
         self.kernel_lock_substate(&node_id, module_id, offset, flags)
     }
 
+    #[trace_resources]
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.kernel_read_substate(lock_handle).map(|v| v.into())
     }
 
+    #[trace_resources]
     fn sys_write_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -133,6 +136,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let info = self.kernel_get_lock_info(lock_handle)?;
         if info.flags.contains(LockFlags::MUTABLE) {}
@@ -145,6 +149,7 @@ impl<'g, 's, W> ClientObjectApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn new_object(
         &mut self,
         blueprint_ident: &str,
@@ -355,6 +360,7 @@ where
         Ok(node_id.into())
     }
 
+    #[trace_resources]
     fn globalize(
         &mut self,
         node_id: RENodeId,
@@ -393,6 +399,7 @@ where
         self.globalize_with_address(node_id, modules, global_node_id.into())
     }
 
+    #[trace_resources]
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
@@ -571,6 +578,7 @@ where
         Ok(address.into())
     }
 
+    #[trace_resources]
     fn call_method(
         &mut self,
         receiver: &RENodeId,
@@ -580,6 +588,7 @@ where
         self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
     }
 
+    #[trace_resources]
     fn call_module_method(
         &mut self,
         receiver: &RENodeId,
@@ -595,6 +604,7 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
+    #[trace_resources]
     fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -614,6 +624,7 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
+    #[trace_resources]
     fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
@@ -633,6 +644,7 @@ where
         Ok(blueprint)
     }
 
+    #[trace_resources]
     fn get_key_value_store_info(
         &mut self,
         node_id: RENodeId,
@@ -648,6 +660,7 @@ where
         Ok(schema)
     }
 
+    #[trace_resources]
     fn new_key_value_store(
         &mut self,
         schema: KeyValueStoreSchema,
@@ -669,6 +682,7 @@ where
         Ok(node_id.into())
     }
 
+    #[trace_resources]
     fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.kernel_drop_node(&node_id)?;
         Ok(())
@@ -698,6 +712,7 @@ where
         )
     }
 
+    #[trace_resources]
     fn credit_cost_units(
         &mut self,
         vault_id: ObjectId,
@@ -716,6 +731,7 @@ impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -727,6 +743,7 @@ impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -735,6 +752,7 @@ where
         Ok(auth_zone_id.into())
     }
 
+    #[trace_resources]
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -766,6 +784,7 @@ impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
@@ -780,6 +799,7 @@ impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
@@ -794,6 +814,7 @@ impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -936,6 +957,7 @@ impl<'g, 's, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -945,6 +967,7 @@ where
             .transaction_hash())
     }
 
+    #[trace_resources]
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
