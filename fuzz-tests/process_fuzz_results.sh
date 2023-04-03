@@ -79,41 +79,45 @@ prefixoutput() {
 }
 
 function inspect_crashes() {
-    echo "Inspecting found crashes"
     pushd $dir
     work_dir=$(pwd)
     #files=$(find $work_dir/afl/*/*/* -name "id*")
     files=$(find afl/*/*/* -name "id*")
 
-    if [ ! -d radixdlt-scrypto ] ; then
-        echo "Checking out the repository"
-        git clone git@github.com:radixdlt/radixdlt-scrypto.git radixdlt-scrypto
-    fi
-    git -C radixdlt-scrypto checkout $sha
-
-    pushd radixdlt-scrypto/fuzz-tests
-    echo "Building simple fuzzer"
-    ./fuzz.sh simple build
-    popd
-    echo "Checking crash/hangs files"
-    for f in $files ; do
-        # calling target directly to get rid of unnecessary debugs
-        #./fuzz.sh simple run ../../$f >/dev/null || true
-        cmd="radixdlt-scrypto/fuzz-tests/target/release/transaction $f"
-        echo
-        echo "file    : $f"
-        echo "command : $cmd"
-#        echo "output  :"
-#        prefixoutput $cmd || true
-        $cmd >output.log 2>&1 || true
-        panic=$(grep panic output.log || true)
-        echo "panic   : $panic"
-        fname=$(echo $panic | sha256sum | awk '{print $1}').panic
-        if [ ! -f $fname ] ; then
-            echo -e "\npanic   : $panic" > $fname
+    if [ "$files" != "" ] ; then
+        echo "Inspecting found crashes"
+        if [ ! -d radixdlt-scrypto ] ; then
+            echo "Checking out the repository"
+            git clone git@github.com:radixdlt/radixdlt-scrypto.git radixdlt-scrypto
         fi
-        echo "file    : $f" >> $fname
-    done
+        git -C radixdlt-scrypto checkout $sha
+
+        pushd radixdlt-scrypto/fuzz-tests
+        echo "Building simple fuzzer"
+        ./fuzz.sh simple build
+        popd
+        echo "Checking crash/hangs files"
+        for f in $files ; do
+            # calling target directly to get rid of unnecessary debugs
+            #./fuzz.sh simple run ../../$f >/dev/null || true
+            cmd="radixdlt-scrypto/fuzz-tests/target/release/transaction $f"
+            echo
+            echo "file    : $f"
+            echo "command : $cmd"
+    #        echo "output  :"
+    #        prefixoutput $cmd || true
+            $cmd >output.log 2>&1 || true
+            panic=$(grep panic output.log || true)
+            echo "panic   : $panic"
+            fname=$(echo $panic | sha256sum | awk '{print $1}').panic
+            if [ ! -f $fname ] ; then
+                echo -e "\npanic   : $panic" > $fname
+            fi
+            echo "file    : $f" >> $fname
+        done
+    else
+        echo "No crashes found"
+    fi
 
     cat <<EOF > summary.txt
 url     : $url
