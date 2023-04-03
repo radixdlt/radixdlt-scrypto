@@ -347,6 +347,10 @@ impl CallFrame {
             RefType::Normal,
         );
         frame.add_ref(
+            RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()),
+            RefType::Normal,
+        );
+        frame.add_ref(
             RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()),
             RefType::Normal,
         );
