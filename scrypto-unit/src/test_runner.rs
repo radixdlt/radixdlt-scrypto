@@ -158,9 +158,9 @@ impl TestRunnerBuilder {
             next_transaction_nonce: 0,
             trace: self.trace,
         };
-        let genesis = self
-            .custom_genesis
-            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 10u32, 1u64, 1u64));
+        let genesis = self.custom_genesis.unwrap_or_else(|| {
+            create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 10u32, 1u64, 1u64)
+        });
         let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(btreeset![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
@@ -170,7 +170,6 @@ impl TestRunnerBuilder {
         let next_epoch = result.next_epoch().unwrap();
         (runner, next_epoch.0)
     }
-
 
     pub fn build(self) -> TestRunner {
         self.build_and_get_epoch().0

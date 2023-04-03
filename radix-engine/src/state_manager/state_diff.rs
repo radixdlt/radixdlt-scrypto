@@ -1,8 +1,8 @@
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
+use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::crypto::hash;
-use crate::system::node_substates::PersistedSubstate;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum IterableSubstateDiff {
@@ -69,19 +69,27 @@ impl StateDiff {
             match node_diff {
                 IterableNodeDiff::New(substates) => {
                     for (offset, substate) in substates {
-                        let substate_id = SubstateId(node_module.0.clone(), node_module.1.clone(), offset.clone());
+                        let substate_id = SubstateId(
+                            node_module.0.clone(),
+                            node_module.1.clone(),
+                            offset.clone(),
+                        );
                         store.put_substate(
                             substate_id,
                             OutputValue {
                                 substate: substate.clone(),
                                 version: 0u32, // TODO: Remove
-                            }
+                            },
                         );
                     }
                 }
                 IterableNodeDiff::Update(updates) => {
                     for (offset, substate_diff) in updates {
-                        let substate_id = SubstateId(node_module.0.clone(), node_module.1.clone(), offset.clone());
+                        let substate_id = SubstateId(
+                            node_module.0.clone(),
+                            node_module.1.clone(),
+                            offset.clone(),
+                        );
                         match substate_diff {
                             IterableSubstateDiff::Insert(substate) => {
                                 store.put_substate(
@@ -89,16 +97,14 @@ impl StateDiff {
                                     OutputValue {
                                         substate: substate.clone(),
                                         version: 0u32, // TODO: Remove
-                                    }
+                                    },
                                 );
                             }
                             IterableSubstateDiff::Remove => {
                                 store.remove_substate(&substate_id);
                             }
                         }
-
                     }
-
                 }
             }
         }

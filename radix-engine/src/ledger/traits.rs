@@ -1,5 +1,5 @@
-use crate::{system::node_substates::PersistedSubstate, types::*};
 use crate::system::node_substates::RuntimeSubstate;
+use crate::{system::node_substates::PersistedSubstate, types::*};
 
 pub trait QueryableSubstateStore {
     /// Returns the entire key-value store, as a map from key's entry to value's substate.
@@ -27,7 +27,12 @@ pub struct OutputValue {
 pub trait ReadableSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
 
-    fn first_in_iterable(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)>;
+    fn first_in_iterable(
+        &self,
+        node_id: &RENodeId,
+        module_id: NodeModuleId,
+        count: u32,
+    ) -> Vec<(SubstateId, RuntimeSubstate)>;
 }
 
 pub trait WriteableSubstateStore {

@@ -317,7 +317,12 @@ pub fn create_genesis(
                 schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN, VALIDATOR_OWNER_TOKEN],
+                dependent_resources: vec![
+                    RADIX_TOKEN,
+                    PACKAGE_TOKEN,
+                    SYSTEM_TOKEN,
+                    VALIDATOR_OWNER_TOKEN,
+                ],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -717,15 +722,14 @@ mod tests {
             EcdsaSecp256k1PublicKey([0; 33]),
             (Decimal::one(), account_address),
         );
-        let genesis_transaction =
-            create_genesis(
-                initial_validator_set,
-                BTreeMap::new(),
-                1u64,
-                100u32,
-                1u64,
-                1u64,
-            );
+        let genesis_transaction = create_genesis(
+            initial_validator_set,
+            BTreeMap::new(),
+            1u64,
+            100u32,
+            1u64,
+            1u64,
+        );
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -761,15 +765,14 @@ mod tests {
         let allocation_amount = dec!("100");
         let mut account_xrd_allocations = BTreeMap::new();
         account_xrd_allocations.insert(account_public_key, allocation_amount);
-        let genesis_transaction =
-            create_genesis(
-                BTreeMap::new(),
-                account_xrd_allocations,
-                1u64,
-                100u32,
-                1u64,
-                1u64,
-            );
+        let genesis_transaction = create_genesis(
+            BTreeMap::new(),
+            account_xrd_allocations,
+            1u64,
+            100u32,
+            1u64,
+            1u64,
+        );
 
         let transaction_receipt = execute_transaction(
             &substate_store,

@@ -67,7 +67,12 @@ impl ReadableSubstateStore for TypedInMemorySubstateStore {
         self.substates.get(substate_id).cloned()
     }
 
-    fn first_in_iterable(&self, node_id: &RENodeId, module_id: NodeModuleId, count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
+    fn first_in_iterable(
+        &self,
+        node_id: &RENodeId,
+        module_id: NodeModuleId,
+        count: u32,
+    ) -> Vec<(SubstateId, RuntimeSubstate)> {
         let mut items = Vec::new();
 
         for (id, value) in &self.substates {

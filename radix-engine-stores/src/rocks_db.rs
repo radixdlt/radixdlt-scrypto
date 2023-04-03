@@ -199,9 +199,18 @@ impl ReadableSubstateStore for RadixEngineDB {
             .map(|b| scrypto_decode(&b).expect("Could not decode persisted substate"))
     }
 
-    fn first_in_iterable(&self, node_id: &RENodeId, module_id: NodeModuleId, mut count: u32) -> Vec<(SubstateId, RuntimeSubstate)> {
+    fn first_in_iterable(
+        &self,
+        node_id: &RENodeId,
+        module_id: NodeModuleId,
+        mut count: u32,
+    ) -> Vec<(SubstateId, RuntimeSubstate)> {
         // FIXME: Super hack!
-        let start = SubstateId(node_id.clone(), module_id, SubstateOffset::Component(ComponentOffset::State0));
+        let start = SubstateId(
+            node_id.clone(),
+            module_id,
+            SubstateOffset::Component(ComponentOffset::State0),
+        );
         let start = scrypto_encode(&start).unwrap();
 
         let mut iter = self

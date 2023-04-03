@@ -16,6 +16,7 @@ use crate::transaction::StateUpdateSummary;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
+use crate::types::indexmap::map::Entry;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
@@ -26,7 +27,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
-use crate::types::indexmap::map::Entry;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -255,13 +255,10 @@ impl<'s> Track<'s> {
         runtime_substate.to_ref()
     }
 
-    pub fn insert_iterable(
-        &mut self,
-        node_id: &RENodeId,
-        module_id: &NodeModuleId,
-    ) {
+    pub fn insert_iterable(&mut self, node_id: &RENodeId, module_id: &NodeModuleId) {
         let node_module = (*node_id, *module_id);
-        self.iterable_nodes.insert(node_module, IterableNodeUpdate::New(BTreeMap::new()));
+        self.iterable_nodes
+            .insert(node_module, IterableNodeUpdate::New(BTreeMap::new()));
     }
 
     pub fn get_first_in_iterable(
@@ -276,7 +273,9 @@ impl<'s> Track<'s> {
             todo!()
         } else {
             // TODO: Add read dependency
-            let items = self.substate_store.first_in_iterable(node_id, *module_id, count);
+            let items = self
+                .substate_store
+                .first_in_iterable(node_id, *module_id, count);
             items
         };
 
@@ -289,15 +288,21 @@ impl<'s> Track<'s> {
         module_id: &NodeModuleId,
         key: Vec<u8>,
         value: ScryptoValue,
-    )  {
+    ) {
         let node_module = (*node_id, *module_id);
-        let cur = self.iterable_nodes.entry(node_module).or_insert(IterableNodeUpdate::Update(index_map_new()));
+        let cur = self
+            .iterable_nodes
+            .entry(node_module)
+            .or_insert(IterableNodeUpdate::Update(index_map_new()));
         match cur {
             IterableNodeUpdate::New(substates) => {
                 substates.insert(SubstateOffset::IterableMap(key), value);
             }
             IterableNodeUpdate::Update(updates) => {
-                updates.insert(SubstateOffset::IterableMap(key), IterableSubstateUpdate::Insert(value));
+                updates.insert(
+                    SubstateOffset::IterableMap(key),
+                    IterableSubstateUpdate::Insert(value),
+                );
             }
         }
     }
@@ -309,7 +314,10 @@ impl<'s> Track<'s> {
         key: Vec<u8>,
     ) -> Result<(), TrackError> {
         let node_module = (*node_id, *module_id);
-        let cur = self.iterable_nodes.entry(node_module).or_insert(IterableNodeUpdate::Update(index_map_new()));
+        let cur = self
+            .iterable_nodes
+            .entry(node_module)
+            .or_insert(IterableNodeUpdate::Update(index_map_new()));
         let offset = SubstateOffset::IterableMap(key);
         let substate_id = SubstateId(*node_id, *module_id, offset.clone());
         match cur {
@@ -692,11 +700,8 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: pay tips to the lead validator
 
         let state_update_summary = Self::summarize_update(self.substate_store, &state_updates);
-        let state_updates = Self::generate_diff(
-            self.substate_store,
-            state_updates,
-            self.iterable_nodes,
-        );
+        let state_updates =
+            Self::generate_diff(self.substate_store, state_updates, self.iterable_nodes);
 
         CommitResult {
             state_updates,
@@ -776,21 +781,28 @@ impl<'s> FinalizingTrack<'s> {
         for (node_module, update) in iterable_node_updates {
             match update {
                 IterableNodeUpdate::New(substates) => {
-                    let substates = substates.into_iter()
+                    let substates = substates
+                        .into_iter()
                         .map(|(offset, v)| (offset, PersistedSubstate::IterableEntry(v)))
                         .collect();
-                    diff.iterable_nodes.insert(node_module, IterableNodeDiff::New(substates));
+                    diff.iterable_nodes
+                        .insert(node_module, IterableNodeDiff::New(substates));
                 }
                 IterableNodeUpdate::Update(updates) => {
-                    let updates = updates.into_iter()
-                        .map(|(offset, update)| {
-                            match update {
-                                IterableSubstateUpdate::Remove => (offset, IterableSubstateDiff::Remove),
-                                IterableSubstateUpdate::Insert(v) => (offset, IterableSubstateDiff::Insert(PersistedSubstate::IterableEntry(v))),
+                    let updates = updates
+                        .into_iter()
+                        .map(|(offset, update)| match update {
+                            IterableSubstateUpdate::Remove => {
+                                (offset, IterableSubstateDiff::Remove)
                             }
+                            IterableSubstateUpdate::Insert(v) => (
+                                offset,
+                                IterableSubstateDiff::Insert(PersistedSubstate::IterableEntry(v)),
+                            ),
                         })
                         .collect();
-                    diff.iterable_nodes.insert(node_module, IterableNodeDiff::Update(updates));
+                    diff.iterable_nodes
+                        .insert(node_module, IterableNodeDiff::Update(updates));
                 }
             }
         }

@@ -2,9 +2,9 @@ use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;
-use crate::blueprints::epoch_manager::{EpochManagerSubstate, RegisteredValidatorsSubstate};
 use crate::blueprints::epoch_manager::CurrentValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
+use crate::blueprints::epoch_manager::{EpochManagerSubstate, RegisteredValidatorsSubstate};
 use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::*;
@@ -220,7 +220,9 @@ impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
-            PersistedSubstate::RegisteredValidators(value) => RuntimeSubstate::RegisteredValidators(value),
+            PersistedSubstate::RegisteredValidators(value) => {
+                RuntimeSubstate::RegisteredValidators(value)
+            }
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -259,9 +261,7 @@ impl PersistedSubstate {
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
-            PersistedSubstate::IterableEntry(value) => {
-                RuntimeSubstate::IterableEntry(value)
-            }
+            PersistedSubstate::IterableEntry(value) => RuntimeSubstate::IterableEntry(value),
             PersistedSubstate::Account(value) => RuntimeSubstate::Account(value),
             PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
 
@@ -338,7 +338,9 @@ impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
-            RuntimeSubstate::RegisteredValidators(value) => PersistedSubstate::RegisteredValidators(value.clone()),
+            RuntimeSubstate::RegisteredValidators(value) => {
+                PersistedSubstate::RegisteredValidators(value.clone())
+            }
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -419,7 +421,9 @@ impl RuntimeSubstate {
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
-            RuntimeSubstate::RegisteredValidators(value) => PersistedSubstate::RegisteredValidators(value),
+            RuntimeSubstate::RegisteredValidators(value) => {
+                PersistedSubstate::RegisteredValidators(value)
+            }
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -440,9 +444,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
             }
-            RuntimeSubstate::IterableEntry(value) => {
-                PersistedSubstate::IterableEntry(value)
-            }
+            RuntimeSubstate::IterableEntry(value) => PersistedSubstate::IterableEntry(value),
             RuntimeSubstate::FungibleVaultInfo(value) => {
                 PersistedSubstate::FungibleVaultInfo(value)
             }
@@ -498,23 +500,17 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State0) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| {
-                        KernelError::SborDecodeError(e)
-                    })?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| {
-                        KernelError::SborDecodeError(e)
-                    })?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::IterableMap(..) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| {
-                        KernelError::SborDecodeError(e)
-                    })?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::IterableEntry(substate)
             }
             offset => {
@@ -530,7 +526,9 @@ impl RuntimeSubstate {
     pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
-            RuntimeSubstate::RegisteredValidators(value) => SubstateRefMut::RegisteredValidators(value),
+            RuntimeSubstate::RegisteredValidators(value) => {
+                SubstateRefMut::RegisteredValidators(value)
+            }
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
@@ -601,7 +599,9 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
-            RuntimeSubstate::RegisteredValidators(value) => SubstateRef::RegisteredValidators(value),
+            RuntimeSubstate::RegisteredValidators(value) => {
+                SubstateRef::RegisteredValidators(value)
+            }
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {

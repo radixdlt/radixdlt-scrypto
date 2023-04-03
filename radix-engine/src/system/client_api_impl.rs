@@ -20,12 +20,12 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::object_api::ClientIterableMapApi;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::api::object_api::ClientIterableMapApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -112,8 +112,7 @@ where
                         }
                     }
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -455,12 +454,12 @@ where
                     for (offset, substate) in substates {
                         component_substates.insert(offset, substate);
                     }
-                },
+                }
                 _ => {
                     for (offset, substate) in substates {
                         module_substates.insert((node_module_id, offset), substate);
                     }
-                },
+                }
             };
         }
 
@@ -508,8 +507,8 @@ where
 
                     let mut node = self.kernel_drop_node(&RENodeId::Object(object_id))?;
 
-                    let mut access_rules_substates = node
-                        .substates.remove(&NodeModuleId::SELF).unwrap();
+                    let mut access_rules_substates =
+                        node.substates.remove(&NodeModuleId::SELF).unwrap();
 
                     let access_rules = access_rules_substates
                         .remove(&SubstateOffset::AccessRules(AccessRulesOffset::AccessRules))
@@ -562,9 +561,7 @@ where
 
                     let mut node = self.kernel_drop_node(&node_id)?;
 
-                    let mut royalty_substates = node
-                        .substates.remove(&NodeModuleId::SELF).unwrap();
-
+                    let mut royalty_substates = node.substates.remove(&NodeModuleId::SELF).unwrap();
 
                     let config = royalty_substates
                         .remove(&SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig))
@@ -684,7 +681,6 @@ where
 
         Ok(schema)
     }
-
 
     fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.kernel_drop_node(&node_id)?;
@@ -852,9 +848,11 @@ where
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
                     NodeModuleId::SELF => self.get_object_info(node_id).map(|i| i.blueprint),
-                    NodeModuleId::TypeInfo | NodeModuleId::Iterable => Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
-                    )),
+                    NodeModuleId::TypeInfo | NodeModuleId::Iterable => {
+                        Err(RuntimeError::ApplicationError(
+                            ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
+                        ))
+                    }
                 },
                 Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
@@ -979,7 +977,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine
+impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
 {
     fn new_iterable_map(&mut self, schema: IterableMapSchema) -> Result<ObjectId, RuntimeError> {
         schema
@@ -999,7 +999,12 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
         Ok(node_id.into())
     }
 
-    fn insert_into_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError> {
+    fn insert_into_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let schema = match type_info {
             TypeInfoSubstate::IterableMap(schema) => schema,
@@ -1007,13 +1012,10 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
         };
 
         validate_payload_against_schema(&value, &schema.schema, schema.value)
-            .map_err(|_| {
-                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-            })?;
+            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
 
-        let indexed = IndexedScryptoValue::from_slice(&value).map_err(|_| {
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-        })?;
+        let indexed = IndexedScryptoValue::from_slice(&value)
+            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
         let (_, own, _) = indexed.unpack();
         if !own.is_empty() {
             return Err(RuntimeError::SystemError(
@@ -1024,7 +1026,11 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
         self.kernel_insert_into_iterable_map(&node_id, &NodeModuleId::Iterable, key, value)
     }
 
-    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) -> Result<(), RuntimeError> {
+    fn remove_from_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        key: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
             return Err(RuntimeError::SystemError(SystemError::NotAnIterable));
@@ -1033,17 +1039,25 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
         self.kernel_remove_from_iterable_map(&node_id, &NodeModuleId::Iterable, key)
     }
 
-    fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn first_in_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
             return Err(RuntimeError::SystemError(SystemError::NotAnIterable));
         }
 
-        let first = self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::Iterable, count)?;
-        let first = first.into_iter().map(|(_id, substate)| {
-            let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
-            bytes
-        }).collect();
+        let first =
+            self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::Iterable, count)?;
+        let first = first
+            .into_iter()
+            .map(|(_id, substate)| {
+                let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
+                bytes
+            })
+            .collect();
         Ok(first)
     }
 }

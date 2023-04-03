@@ -101,9 +101,13 @@ impl EpochManagerBlueprint {
 
         let mut validators = BTreeMap::new();
 
-        let registered_validators = api.new_key_value_store(KeyValueStoreSchema::new::<ComponentAddress, Validator>(false))?;
+        let registered_validators = api
+            .new_key_value_store(KeyValueStoreSchema::new::<ComponentAddress, Validator>(
+                false,
+            ))?;
 
-        let index_id = api.new_iterable_map(IterableMapSchema::new::<(ComponentAddress, Validator)>())?;
+        let index_id =
+            api.new_iterable_map(IterableMapSchema::new::<(ComponentAddress, Validator)>())?;
 
         for (key, validator_init) in validator_set {
             let stake = validator_init.initial_stake.sys_amount(api)?;
@@ -122,7 +126,9 @@ impl EpochManagerBlueprint {
             {
                 let lock_handle = api.sys_lock_substate(
                     RENodeId::KeyValueStore(registered_validators),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&address).unwrap())),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                        scrypto_encode(&address).unwrap(),
+                    )),
                     LockFlags::MUTABLE,
                 )?;
                 let validator = Validator { key, stake };
@@ -132,10 +138,7 @@ impl EpochManagerBlueprint {
 
             {
                 let index_key = Self::to_index_key(stake, address);
-                let entry_value = (address, Validator {
-                    key,
-                    stake,
-                });
+                let entry_value = (address, Validator { key, stake });
                 api.insert_into_iterable_map(
                     RENodeId::KeyValueStore(index_id),
                     index_key,
@@ -148,11 +151,10 @@ impl EpochManagerBlueprint {
         }
 
         let current_validator_set = {
-            let next_validator_set: Vec<(ComponentAddress, Validator)> = api.first_typed_in_iterable_map(
-                RENodeId::KeyValueStore(index_id),
-                max_validators,
-            )?;
-            let next_validator_set: BTreeMap<ComponentAddress, Validator> = next_validator_set.into_iter().collect();
+            let next_validator_set: Vec<(ComponentAddress, Validator)> =
+                api.first_typed_in_iterable_map(RENodeId::KeyValueStore(index_id), max_validators)?;
+            let next_validator_set: BTreeMap<ComponentAddress, Validator> =
+                next_validator_set.into_iter().collect();
             Runtime::emit_event(
                 api,
                 EpochChangeEvent {
@@ -282,11 +284,10 @@ impl EpochManagerBlueprint {
             let validators: &RegisteredValidatorsSubstate = api.kernel_get_substate_ref(handle)?;
             let index_id = validators.index.id();
 
-            let next_validator_set: Vec<(ComponentAddress, Validator)> = api.first_typed_in_iterable_map(
-                RENodeId::KeyValueStore(index_id),
-                max_validators,
-            )?;
-            let next_validator_set: BTreeMap<ComponentAddress, Validator> = next_validator_set.into_iter().collect();
+            let next_validator_set: Vec<(ComponentAddress, Validator)> =
+                api.first_typed_in_iterable_map(RENodeId::KeyValueStore(index_id), max_validators)?;
+            let next_validator_set: BTreeMap<ComponentAddress, Validator> =
+                next_validator_set.into_iter().collect();
 
             let epoch_manager: &mut EpochManagerSubstate =
                 api.kernel_get_substate_ref_mut(mgr_handle)?;
@@ -369,22 +370,23 @@ impl EpochManagerBlueprint {
             SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidators),
             LockFlags::MUTABLE,
         )?;
-        let registered: &mut RegisteredValidatorsSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let registered: &mut RegisteredValidatorsSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
         let kv_id = registered.validators.id();
         let index_node = RENodeId::KeyValueStore(registered.index.id());
 
         let lock_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(kv_id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&validator_address).unwrap())),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                scrypto_encode(&validator_address).unwrap(),
+            )),
             LockFlags::MUTABLE,
         )?;
         let previous: Option<Validator> = api.sys_read_typed_substate(lock_handle)?;
 
         match update {
             UpdateValidator::Register(key, stake) => {
-                api.sys_write_typed_substate(lock_handle, Some(Validator {
-                    key, stake,
-                }))?;
+                api.sys_write_typed_substate(lock_handle, Some(Validator { key, stake }))?;
             }
             UpdateValidator::Unregister => {
                 api.sys_write_typed_substate(lock_handle, Option::<Validator>::None)?;
@@ -393,17 +395,12 @@ impl EpochManagerBlueprint {
 
         if let Some(previous) = previous {
             let index_key = Self::to_index_key(previous.stake, validator_address);
-            api.remove_from_iterable_map(
-                index_node,
-                index_key,
-            )?;
+            api.remove_from_iterable_map(index_node, index_key)?;
         }
         match update {
             UpdateValidator::Register(key, stake) => {
                 let index_key = Self::to_index_key(stake, validator_address);
-                let entry_value = (validator_address, Validator {
-                    key, stake,
-                });
+                let entry_value = (validator_address, Validator { key, stake });
 
                 api.insert_into_iterable_map(
                     index_node,

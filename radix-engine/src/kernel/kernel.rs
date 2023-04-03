@@ -15,6 +15,7 @@ use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
+use crate::kernel::kernel_api::KernelIterableMapApi;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -31,7 +32,6 @@ use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
-use crate::kernel::kernel_api::KernelIterableMapApi;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -632,21 +632,55 @@ where
     }
 }
 
-
 impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
-    where
-        W: WasmEngine,
+where
+    W: WasmEngine,
 {
-    fn kernel_get_first_in_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
-        self.current_frame.get_first_in_iterable(node_id, module_id, count, &mut self.heap, &mut self.track)
+    fn kernel_get_first_in_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
+        self.current_frame.get_first_in_iterable(
+            node_id,
+            module_id,
+            count,
+            &mut self.heap,
+            &mut self.track,
+        )
     }
 
-    fn kernel_insert_into_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError> {
-        self.current_frame.insert_into_iterable(node_id, module_id, key, value, &mut self.heap, &mut self.track)
+    fn kernel_insert_into_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        self.current_frame.insert_into_iterable(
+            node_id,
+            module_id,
+            key,
+            value,
+            &mut self.heap,
+            &mut self.track,
+        )
     }
 
-    fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>) -> Result<(), RuntimeError> {
-        self.current_frame.remove_from_iterable(node_id, module_id, key, &mut self.heap, &mut self.track)
+    fn kernel_remove_from_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        self.current_frame.remove_from_iterable(
+            node_id,
+            module_id,
+            key,
+            &mut self.heap,
+            &mut self.track,
+        )
     }
 }
 
@@ -917,7 +951,6 @@ where
         Ok(rtn)
     }
 }
-
 
 impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 

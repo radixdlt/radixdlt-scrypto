@@ -525,9 +525,12 @@ impl CallFrame {
                         track.insert_iterable(&node_id, &module_id);
                         for (offset, substate) in module_substates {
                             match (offset, substate) {
-                                (SubstateOffset::IterableMap(key), RuntimeSubstate::IterableEntry(value)) => {
+                                (
+                                    SubstateOffset::IterableMap(key),
+                                    RuntimeSubstate::IterableEntry(value),
+                                ) => {
                                     track.insert_into_iterable(&node_id, &module_id, key, value);
-                                },
+                                }
                                 _ => panic!("Unexpected"),
                             }
                         }
@@ -686,7 +689,6 @@ impl CallFrame {
         if heap.contains_node(node_id) {
             heap.insert_into_iterable(node_id, module_id, key, value)
                 .map_err(|e| RuntimeError::CallFrameError(e))?;
-
         } else {
             track.insert_into_iterable(node_id, module_id, key, value);
         }
@@ -705,7 +707,8 @@ impl CallFrame {
         if heap.contains_node(node_id) {
             panic!("Heap iterator supported");
         } else {
-            track.remove_from_iterable(node_id, module_id, key)
+            track
+                .remove_from_iterable(node_id, module_id, key)
                 .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(Box::new(e))))
         }
     }

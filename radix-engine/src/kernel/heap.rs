@@ -1,9 +1,9 @@
-use radix_engine_common::data::scrypto::ScryptoValue;
 use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::{CallFrameError, OffsetDoesNotExist};
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::NonIterMap;
+use radix_engine_common::data::scrypto::ScryptoValue;
 use radix_engine_interface::api::types::{
     BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -43,7 +43,9 @@ impl Heap {
 
         let mut items = Vec::new();
 
-        let substates = node.substates.entry(module_id.clone())
+        let substates = node
+            .substates
+            .entry(module_id.clone())
             .or_insert(BTreeMap::new());
 
         for (offset, value) in substates.iter().take(count.try_into().unwrap()) {
@@ -70,7 +72,9 @@ impl Heap {
             .get_mut(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
 
-        let substates = node.substates.entry(module_id.clone())
+        let substates = node
+            .substates
+            .entry(module_id.clone())
             .or_insert(BTreeMap::new());
 
         substates.insert(
@@ -97,7 +101,8 @@ impl Heap {
             (_, _, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node
                     .substates
-                    .entry(module_id).or_insert(BTreeMap::new())
+                    .entry(module_id)
+                    .or_insert(BTreeMap::new())
                     .entry(offset.clone())
                     .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref())
@@ -110,16 +115,13 @@ impl Heap {
                     )))
                 })?;
 
-                substates
-                    .get(offset)
-                    .map(|s| s.to_ref())
-                    .ok_or_else(|| {
-                        CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
-                            node_id.clone(),
-                            offset.clone(),
-                        )))
-                    })
-            },
+                substates.get(offset).map(|s| s.to_ref()).ok_or_else(|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                })
+            }
         }
     }
 
@@ -137,9 +139,7 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
             (_, SubstateOffset::KeyValueStore(..)) => {
-                let substates = node
-                    .substates
-                    .entry(module_id).or_insert(BTreeMap::new());
+                let substates = node.substates.entry(module_id).or_insert(BTreeMap::new());
                 let entry = substates
                     .entry(offset.clone())
                     .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
@@ -153,7 +153,8 @@ impl Heap {
                     )))
                 })?;
 
-                substates.get_mut(offset)
+                substates
+                    .get_mut(offset)
                     .map(|s| s.to_ref_mut())
                     .ok_or_else(|| {
                         CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
@@ -161,7 +162,7 @@ impl Heap {
                             offset.clone(),
                         )))
                     })
-            },
+            }
         }
     }
 
@@ -196,9 +197,12 @@ impl Heap {
                     track.insert_iterable(&node_id, &module_id);
                     for (offset, substate) in substates {
                         match (offset, substate) {
-                            (SubstateOffset::IterableMap(key), RuntimeSubstate::IterableEntry(value)) => {
+                            (
+                                SubstateOffset::IterableMap(key),
+                                RuntimeSubstate::IterableEntry(value),
+                            ) => {
                                 track.insert_into_iterable(&node_id, &module_id, key, value);
-                            },
+                            }
                             _ => panic!("Unexpected"),
                         }
                     }
@@ -209,7 +213,9 @@ impl Heap {
                         self.move_nodes_to_store(track, owned_nodes)?;
                         track
                             .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                            .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
+                            .map_err(|e| {
+                                CallFrameError::FailedToMoveSubstateToTrack(Box::new(e))
+                            })?;
                     }
                 }
             }
@@ -231,10 +237,10 @@ pub struct HeapRENode {
 }
 
 impl HeapRENode {
-    pub fn new(substates: BTreeMap<NodeModuleId, BTreeMap<SubstateOffset, RuntimeSubstate>>) -> Self {
-        Self {
-            substates
-        }
+    pub fn new(
+        substates: BTreeMap<NodeModuleId, BTreeMap<SubstateOffset, RuntimeSubstate>>,
+    ) -> Self {
+        Self { substates }
     }
 }
 

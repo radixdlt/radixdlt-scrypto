@@ -7,8 +7,8 @@ use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_substates::{RuntimeSubstate, SubstateRef};
 use crate::system::node_substates::SubstateRefMut;
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -46,13 +46,28 @@ pub trait KernelNodeApi {
     ) -> Result<(), RuntimeError>;
 }
 
-
 pub trait KernelIterableMapApi {
-    fn kernel_insert_into_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError>;
+    fn kernel_insert_into_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<(), RuntimeError>;
 
-    fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>) -> Result<(), RuntimeError>;
+    fn kernel_remove_from_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+    ) -> Result<(), RuntimeError>;
 
-    fn kernel_get_first_in_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, count: u32) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError>;
+    fn kernel_get_first_in_iterable_map(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError>;
 }
 
 pub trait KernelSubstateApi {
