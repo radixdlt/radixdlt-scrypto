@@ -75,7 +75,7 @@ extern "C" {
     pub fn call_method(
         receiver_ptr: *const u8,
         receive_len: usize,
-        node_module_id: u32,
+        module_id: u32,
         ident_ptr: *const u8,
         ident_len: usize,
         args_ptr: *const u8,
@@ -212,7 +212,7 @@ pub unsafe fn get_key_value_store_info(
 pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
-    _node_module_id: u32,
+    _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,
     _args_ptr: *const u8,

@@ -26,14 +26,14 @@ impl FnKey {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
-    pub node_module_id: TypedModuleId,
+    pub module_id: TypedModuleId,
     pub ident: String,
 }
 
 impl MethodKey {
-    pub fn new(node_module_id: TypedModuleId, method_ident: &str) -> Self {
+    pub fn new(module_id: TypedModuleId, method_ident: &str) -> Self {
         Self {
-            node_module_id,
+            module_id,
             ident: method_ident.to_string(),
         }
     }

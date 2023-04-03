@@ -111,7 +111,7 @@ fn call_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
-    node_module_id: u32,
+    module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -132,7 +132,7 @@ fn call_method(
     runtime.update_wasm_memory_usage(mem)?;
 
     runtime
-        .call_method(receiver, node_module_id, ident, args)
+        .call_method(receiver, module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -462,7 +462,7 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
-             node_module_id: u32,
+             module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -472,7 +472,7 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
-                    node_module_id,
+                    module_id,
                     ident_ptr,
                     ident_len,
                     args_ptr,

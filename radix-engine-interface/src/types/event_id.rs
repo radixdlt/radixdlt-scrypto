@@ -35,18 +35,18 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
         _context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
-            Self::Function(node_id, node_module_id, blueprint_name) => {
+            Self::Function(node_id, module_id, blueprint_name) => {
                 write!(
                     f,
-                    "Function {{ node_id: {:?}, node_module_id: {:?}, blueprint_name: {} }}",
-                    node_id, node_module_id, blueprint_name
+                    "Function {{ node_id: {:?}, module_id: {:?}, blueprint_name: {} }}",
+                    node_id, module_id, blueprint_name
                 )
             }
-            Self::Method(node_id, node_module_id) => {
+            Self::Method(node_id, module_id) => {
                 write!(
                     f,
-                    "Method {{ node_id: {:?}, node_module_id: {:?} }}",
-                    node_id, node_module_id,
+                    "Method {{ node_id: {:?}, module_id: {:?} }}",
+                    node_id, module_id,
                 )
             }
         }

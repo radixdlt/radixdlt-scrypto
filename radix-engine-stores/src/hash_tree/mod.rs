@@ -79,15 +79,12 @@ pub fn put_at_next_version<S: TreeStore<ReNodeModulePayload> + TreeStore<Substat
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 struct ReNodeModule {
     node_id: NodeId,
-    node_module_id: ModuleId,
+    module_id: ModuleId,
 }
 
 impl ReNodeModule {
-    fn new(node_id: NodeId, node_module_id: ModuleId) -> Self {
-        Self {
-            node_id,
-            node_module_id,
-        }
+    fn new(node_id: NodeId, module_id: ModuleId) -> Self {
+        Self { node_id, module_id }
     }
 }
 
@@ -218,7 +215,7 @@ fn to_re_node_change(
                 root.hash,
                 ReNodeModulePayload {
                     node_id: re_node_module.node_id,
-                    node_mode_id: re_node_module.node_module_id,
+                    node_mode_id: re_node_module.module_id,
                     substates_root: root.node,
                 },
             )

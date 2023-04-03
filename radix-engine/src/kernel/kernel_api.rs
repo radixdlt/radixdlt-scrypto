@@ -94,7 +94,7 @@ pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
     // TODO: Cleanup
-    fn kernel_get_node_info(&self, node_id: NodeId) -> Option<(RENodeVisibilityOrigin, bool)>;
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RENodeVisibilityOrigin, bool)>;
 
     fn kernel_get_current_depth(&self) -> usize;
 

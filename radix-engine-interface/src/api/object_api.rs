@@ -42,7 +42,7 @@ pub trait ClientObjectApi<E> {
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        node_module_id: TypedModuleId,
+        module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

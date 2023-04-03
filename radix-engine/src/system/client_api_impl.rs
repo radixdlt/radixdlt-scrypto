@@ -370,12 +370,12 @@ where
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        node_module_id: TypedModuleId,
+        module_id: TypedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = Box::new(MethodInvocation {
-            identifier: MethodIdentifier(receiver.clone(), node_module_id, method_name.to_string()),
+            identifier: MethodIdentifier(receiver.clone(), module_id, method_name.to_string()),
             args,
         });
 
