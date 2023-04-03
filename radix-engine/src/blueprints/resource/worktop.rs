@@ -45,12 +45,9 @@ impl WorktopBlueprint {
         })?;
 
         let mut node = api.kernel_drop_node(&RENodeId::Object(input.worktop.id()))?;
-        let substate = node
-            .substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::Worktop(WorktopOffset::Worktop),
-            ))
+        let mut worktop_substates = node.substates.remove(&NodeModuleId::SELF).unwrap();
+        let substate = worktop_substates
+            .remove(&SubstateOffset::Worktop(WorktopOffset::Worktop))
             .unwrap();
         let worktop: WorktopSubstate = substate.into();
         for (_, bucket) in worktop.resources {

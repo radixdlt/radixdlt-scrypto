@@ -516,10 +516,7 @@ impl CallFrame {
             self.add_ref(node_id, RefType::Normal);
         } else {
             // Insert node into heap
-            let heap_root_node = HeapRENode {
-                substates,
-                //child_nodes,
-            };
+            let heap_root_node = HeapRENode::new(substates);
             heap.create_node(node_id, heap_root_node);
             self.owned_root_nodes.insert(node_id, 0u32);
         }
@@ -544,19 +541,21 @@ impl CallFrame {
     ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
-        for (_, substate) in &node.substates {
-            let (refs, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for node_ref in refs {
-                self.immortal_node_refs.insert(
-                    node_ref,
-                    RENodeRefData {
-                        ref_type: RefType::Normal,
-                    },
-                );
-            }
+        for (_, substates) in &node.substates {
+            for (_, substate) in substates {
+                let (refs, child_nodes) = substate.to_ref().references_and_owned_nodes();
+                for node_ref in refs {
+                    self.immortal_node_refs.insert(
+                        node_ref,
+                        RENodeRefData {
+                            ref_type: RefType::Normal,
+                        },
+                    );
+                }
 
-            for child_node in child_nodes {
-                self.owned_root_nodes.insert(child_node, 0u32);
+                for child_node in child_nodes {
+                    self.owned_root_nodes.insert(child_node, 0u32);
+                }
             }
         }
         Ok(node)

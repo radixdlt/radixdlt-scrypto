@@ -172,12 +172,9 @@ where
 
     if let Some(access_rules) = access_rules {
         let mut node = api.kernel_drop_node(&RENodeId::Object(access_rules.0.id()))?;
-        let access_rules = node
-            .substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-            ))
+        let mut access_rules_substates = node.substates.remove(&NodeModuleId::SELF).unwrap();
+        let access_rules = access_rules_substates
+            .remove(&SubstateOffset::AccessRules(AccessRulesOffset::AccessRules))
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.into();
         node_modules.insert(

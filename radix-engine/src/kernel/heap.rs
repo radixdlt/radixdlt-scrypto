@@ -45,18 +45,10 @@ impl Heap {
 
         let mut items = Vec::new();
 
-        for ((node_module_id, offset), value) in node.substates.iter() {
-            if let NodeModuleId::SELF = node_module_id {
-                let (address, validator) = if let RuntimeSubstate::IterableEntry(value) = value {
-                    let value: (ComponentAddress, Validator) = scrypto_decode(&scrypto_encode(value).unwrap()).unwrap();
-                    value
-                } else {
-                    panic!("oops: {:?}", value);
-                };
-            }
-        }
+        let substates = node.substates.entry(module_id.clone())
+            .or_insert(BTreeMap::new());
 
-        for ((node_module_id, offset), value) in node.substates.iter().take(count.try_into().unwrap()) {
+        for (offset, value) in substates.iter().take(count.try_into().unwrap()) {
             let substate_id = SubstateId(node_id.clone(), module_id.clone(), offset.clone());
             if let RuntimeSubstate::IterableEntry(value) = value {
                 items.push((substate_id, RuntimeSubstate::IterableEntry(value.clone())))
@@ -80,8 +72,11 @@ impl Heap {
             .get_mut(node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
 
-        node.substates.insert(
-            (module_id.clone(), SubstateOffset::IterableMap(key)),
+        let substates = node.substates.entry(module_id.clone())
+            .or_insert(BTreeMap::new());
+
+        substates.insert(
+            SubstateOffset::IterableMap(key),
             RuntimeSubstate::IterableEntry(value),
         );
 
@@ -104,20 +99,29 @@ impl Heap {
             (_, _, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node
                     .substates
-                    .entry((module_id, offset.clone()))
+                    .entry(module_id).or_insert(BTreeMap::new())
+                    .entry(offset.clone())
                     .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref())
             }
-            _ => node
-                .substates
-                .get(&(module_id, offset.clone()))
-                .map(|s| s.to_ref())
-                .ok_or_else(|| {
+            _ => {
+                let substates = node.substates.get(&module_id).ok_or_else(|| {
                     CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
                         node_id.clone(),
                         offset.clone(),
                     )))
-                }),
+                })?;
+
+                substates
+                    .get(offset)
+                    .map(|s| s.to_ref())
+                    .ok_or_else(|| {
+                        CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                            node_id.clone(),
+                            offset.clone(),
+                        )))
+                    })
+            },
         }
     }
 
@@ -135,22 +139,31 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
             (_, SubstateOffset::KeyValueStore(..)) => {
-                let entry = node
+                let substates = node
                     .substates
-                    .entry((module_id, offset.clone()))
+                    .entry(module_id).or_insert(BTreeMap::new());
+                let entry = substates
+                    .entry(offset.clone())
                     .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref_mut())
             }
-            _ => node
-                .substates
-                .get_mut(&(module_id, offset.clone()))
-                .map(|s| s.to_ref_mut())
-                .ok_or_else(|| {
+            _ => {
+                let substates = node.substates.get_mut(&module_id).ok_or_else(|| {
                     CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
                         node_id.clone(),
                         offset.clone(),
                     )))
-                }),
+                })?;
+
+                substates.get_mut(offset)
+                    .map(|s| s.to_ref_mut())
+                    .ok_or_else(|| {
+                        CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                            node_id.clone(),
+                            offset.clone(),
+                        )))
+                    })
+            },
         }
     }
 
@@ -179,12 +192,14 @@ impl Heap {
             .nodes
             .remove(&node_id)
             .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id))?;
-        for ((module_id, offset), substate) in node.substates {
-            let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
-            self.move_nodes_to_store(track, owned_nodes)?;
-            track
-                .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
+        for (module_id, substates) in node.substates {
+            for (offset, substate) in substates {
+                let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
+                self.move_nodes_to_store(track, owned_nodes)?;
+                track
+                    .insert_substate(SubstateId(node_id, module_id, offset), substate)
+                    .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
+            }
         }
 
         Ok(())
@@ -199,7 +214,21 @@ impl Heap {
 
 #[derive(Debug)]
 pub struct HeapRENode {
-    pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
+    pub substates: BTreeMap<NodeModuleId, BTreeMap<SubstateOffset, RuntimeSubstate>>,
+}
+
+impl HeapRENode {
+    pub fn new(substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>) -> Self {
+        let mut heap_substates = BTreeMap::new();
+        for ((node_module_id, offset), substate) in substates {
+            heap_substates.entry(node_module_id).or_insert(BTreeMap::new())
+                .insert(offset, substate);
+        }
+
+        Self {
+            substates: heap_substates
+        }
+    }
 }
 
 pub struct DroppedBucket {
@@ -223,31 +252,22 @@ impl DroppedBucket {
 
 impl Into<DroppedBucket> for HeapRENode {
     fn into(mut self) -> DroppedBucket {
-        let info: BucketInfoSubstate = self
-            .substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::Bucket(BucketOffset::Info),
-            ))
+        let mut self_substates = self.substates.remove(&NodeModuleId::SELF).unwrap();
+        let info: BucketInfoSubstate = self_substates
+            .remove(&SubstateOffset::Bucket(BucketOffset::Info))
             .unwrap()
             .into();
 
         let resource = match info.resource_type {
             ResourceType::Fungible { .. } => DroppedBucketResource::Fungible(
-                self.substates
-                    .remove(&(
-                        NodeModuleId::SELF,
-                        SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-                    ))
+                self_substates
+                    .remove(&SubstateOffset::Bucket(BucketOffset::LiquidFungible))
                     .map(|s| Into::<LiquidFungibleResource>::into(s))
                     .unwrap(),
             ),
             ResourceType::NonFungible { .. } => DroppedBucketResource::NonFungible(
-                self.substates
-                    .remove(&(
-                        NodeModuleId::SELF,
-                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                    ))
+                self_substates
+                    .remove(&SubstateOffset::Bucket(BucketOffset::LiquidNonFungible))
                     .map(|s| Into::<LiquidNonFungibleResource>::into(s))
                     .unwrap(),
             ),
@@ -259,8 +279,9 @@ impl Into<DroppedBucket> for HeapRENode {
 
 impl Into<ProofInfoSubstate> for HeapRENode {
     fn into(mut self) -> ProofInfoSubstate {
-        self.substates
-            .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
+        let mut self_substates = self.substates.remove(&NodeModuleId::SELF).unwrap();
+        self_substates
+            .remove(&SubstateOffset::Proof(ProofOffset::Info))
             .unwrap()
             .into()
     }

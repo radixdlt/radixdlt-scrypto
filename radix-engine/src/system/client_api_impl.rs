@@ -449,10 +449,18 @@ where
 
         let mut module_substates = BTreeMap::new();
         let mut component_substates = BTreeMap::new();
-        for ((node_module_id, offset), substate) in node.substates {
+        for (node_module_id, substates) in node.substates {
             match node_module_id {
-                NodeModuleId::SELF => component_substates.insert(offset, substate),
-                _ => module_substates.insert((node_module_id, offset), substate),
+                NodeModuleId::SELF => {
+                    for (offset, substate) in substates {
+                        component_substates.insert(offset, substate);
+                    }
+                },
+                _ => {
+                    for (offset, substate) in substates {
+                        module_substates.insert((node_module_id, offset), substate);
+                    }
+                },
             };
         }
 
@@ -500,12 +508,11 @@ where
 
                     let mut node = self.kernel_drop_node(&RENodeId::Object(object_id))?;
 
-                    let access_rules = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                        ))
+                    let mut access_rules_substates = node
+                        .substates.remove(&NodeModuleId::SELF).unwrap();
+
+                    let access_rules = access_rules_substates
+                        .remove(&SubstateOffset::AccessRules(AccessRulesOffset::AccessRules))
                         .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
@@ -525,11 +532,12 @@ where
                         )));
                     }
 
-                    let node = self.kernel_drop_node(&node_id)?;
+                    let mut node = self.kernel_drop_node(&node_id)?;
 
+                    let metadata_substates = node.substates.remove(&NodeModuleId::SELF);
                     let mut substates = BTreeMap::new();
-                    for ((module_id, offset), substate) in node.substates {
-                        if let NodeModuleId::SELF = module_id {
+                    if let Some(metadata_substates) = metadata_substates {
+                        for (offset, substate) in metadata_substates {
                             substates.insert(offset, substate);
                         }
                     }
@@ -554,20 +562,16 @@ where
 
                     let mut node = self.kernel_drop_node(&node_id)?;
 
-                    let config = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-                        ))
+                    let mut royalty_substates = node
+                        .substates.remove(&NodeModuleId::SELF).unwrap();
+
+
+                    let config = royalty_substates
+                        .remove(&SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig))
                         .unwrap();
                     let config: ComponentRoyaltyConfigSubstate = config.into();
-                    let accumulator = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                        ))
+                    let accumulator = royalty_substates
+                        .remove(&SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator))
                         .unwrap();
                     let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
 
