@@ -62,12 +62,15 @@ function get_artifacs() {
 }
 
 function get_summary() {
-    cat $dir/afl/summary | awk '/Summary stats/,/Time without/'
+    local d=${1:-}
+    local with_files=${2:-yes}
+    cat $d/afl/summary | awk '/Summary stats/,/Time without/'
+    echo "Fuzzing stats file: $d/afl/summary"
 
-    echo "Fuzzing:"
-    echo "  summary: $dir/afl/summary"
-    echo "  crash/hang files:"
-    find $dir/afl/*/*/* -name "id*" | xargs -n1 -I {} echo "    "{}
+    if [ $with_files = "yes" ] ; then
+        echo "  crash/hang files:"
+        find $d/afl/*/*/* -name "id*" | xargs -n1 -I {} echo "    "{}
+    fi
 }
 
 prefixoutput() {
@@ -105,13 +108,34 @@ function inspect_crashes() {
         $cmd >output.log 2>&1 || true
         panic=$(grep panic output.log || true)
         echo "panic   : $panic"
-    done | tee summary.txt
-    rm output.log
+        fname=$(echo $panic | sha256sum | awk '{print $1}').panic
+        if [ ! -f $fname ] ; then
+            echo -e "\npanic   : $panic" > $fname
+        fi
+        echo "file    : $f" >> $fname
+    done
+
+    cat <<EOF > summary.txt
+url     : $url
+$(get_summary . no)
+
+Crash/hang info
+command : radixdlt-scrypto/fuzz-tests/target/release/transaction <file>
+$(cat *.panic)
+EOF
+    rm -f output.log *.panic
 
     popd
-    echo
-    echo "work dir: $dir"
-    echo "summary : $dir/summary.txt"
+
+cat <<EOF
+
+## Fuzzing summary
+$(cat $dir/summary.txt)
+
+## Processing info
+work dir: $dir
+summary : $dir/summary.txt
+EOF
 }
 
 if [ $url = "help" -o $url = "h" ] ; then
@@ -119,5 +143,5 @@ if [ $url = "help" -o $url = "h" ] ; then
 fi
 validate_run
 get_artifacs
-get_summary
+get_summary $dir
 inspect_crashes
