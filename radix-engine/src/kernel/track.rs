@@ -26,6 +26,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
+use crate::types::indexmap::map::Entry;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -306,18 +307,45 @@ impl<'s> Track<'s> {
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         key: Vec<u8>,
-    ) {
+    ) -> Result<(), TrackError> {
         let node_module = (*node_id, *module_id);
         let cur = self.iterable_nodes.entry(node_module).or_insert(IterableNodeUpdate::Update(index_map_new()));
+        let offset = SubstateOffset::IterableMap(key);
+        let substate_id = SubstateId(*node_id, *module_id, offset.clone());
         match cur {
             IterableNodeUpdate::New(substates) => {
-                substates.remove(&SubstateOffset::IterableMap(key));
+                let removed = substates.remove(&offset);
+                if removed.is_none() {
+                    return Err(TrackError::NotFound(substate_id));
+                }
             }
             IterableNodeUpdate::Update(updates) => {
                 // TODO: Add dependency
-                updates.insert(SubstateOffset::IterableMap(key), IterableSubstateUpdate::Remove);
+                let entry = updates.entry(offset);
+                match entry {
+                    Entry::Occupied(mut e) => {
+                        let entry = e.get_mut();
+                        match entry {
+                            IterableSubstateUpdate::Remove => {
+                                return Err(TrackError::NotFound(substate_id));
+                            }
+                            IterableSubstateUpdate::Insert(..) => {
+                                *entry = IterableSubstateUpdate::Remove;
+                            }
+                        }
+                    }
+                    Entry::Vacant(e) => {
+                        let substate = self.substate_store.get_substate(&substate_id);
+                        if substate.is_none() {
+                            return Err(TrackError::NotFound(substate_id));
+                        }
+                        e.insert(IterableSubstateUpdate::Remove);
+                    }
+                }
             }
         }
+
+        Ok(())
     }
 
     pub fn get_substate_mut(

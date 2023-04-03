@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode, ScryptoValue};
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
@@ -11,7 +11,7 @@ pub trait ClientIterableMapApi<E> {
 
     fn insert_into_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>, value: Vec<u8>) -> Result<(), E>;
 
-    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>);
+    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) -> Result<(), E>;
 
     fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 

@@ -200,6 +200,7 @@ pub struct OffsetDoesNotExist(pub RENodeId, pub SubstateOffset);
 pub enum SystemError {
     GlobalAddressDoesNotExist,
     NotAnObject,
+    NotAnIterable,
     NotAKeyValueStore,
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,

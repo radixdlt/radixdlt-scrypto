@@ -112,7 +112,8 @@ where
                         }
                     }
                 }
-                _ => {}
+                _ => {
+                }
             }
         }
 
@@ -999,14 +1000,45 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
     }
 
     fn insert_into_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let schema = match type_info {
+            TypeInfoSubstate::IterableMap(schema) => schema,
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAnIterable)),
+        };
+
+        validate_payload_against_schema(&value, &schema.schema, schema.value)
+            .map_err(|_| {
+                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+            })?;
+
+        let indexed = IndexedScryptoValue::from_slice(&value).map_err(|_| {
+            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+        })?;
+        let (_, own, _) = indexed.unpack();
+        if !own.is_empty() {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidKeyValueStoreOwnership,
+            ));
+        }
+
         self.kernel_insert_into_iterable_map(&node_id, &NodeModuleId::Iterable, key, value)
     }
 
-    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) {
-        self.kernel_remove_from_iterable_map(&node_id, &NodeModuleId::Iterable, key);
+    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) -> Result<(), RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
+            return Err(RuntimeError::SystemError(SystemError::NotAnIterable));
+        }
+
+        self.kernel_remove_from_iterable_map(&node_id, &NodeModuleId::Iterable, key)
     }
 
     fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
+            return Err(RuntimeError::SystemError(SystemError::NotAnIterable));
+        }
+
         let first = self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::Iterable, count)?;
         let first = first.into_iter().map(|(_id, substate)| {
             let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();

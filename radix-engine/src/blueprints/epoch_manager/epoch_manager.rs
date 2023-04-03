@@ -396,7 +396,7 @@ impl EpochManagerBlueprint {
             api.remove_from_iterable_map(
                 index_node,
                 index_key,
-            );
+            )?;
         }
         match update {
             UpdateValidator::Register(key, stake) => {

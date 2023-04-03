@@ -645,8 +645,8 @@ impl<'g, 's, W> KernelIterableMapApi for Kernel<'g, 's, W>
         self.current_frame.insert_into_iterable(node_id, module_id, key, value, &mut self.heap, &mut self.track)
     }
 
-    fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>) {
-        self.current_frame.remove_from_iterable(node_id, module_id, key, &mut self.heap, &mut self.track);
+    fn kernel_remove_from_iterable_map(&mut self, node_id: &RENodeId, module_id: &NodeModuleId, key: Vec<u8>) -> Result<(), RuntimeError> {
+        self.current_frame.remove_from_iterable(node_id, module_id, key, &mut self.heap, &mut self.track)
     }
 }
 
