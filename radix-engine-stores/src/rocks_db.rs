@@ -22,9 +22,10 @@ impl RadixEngineDB {
     pub fn with_bootstrap<W: WasmEngine>(
         root: PathBuf,
         scrypto_interpreter: &ScryptoInterpreter<W>,
+        network: NetworkDefinition,
     ) -> Self {
         let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store, scrypto_interpreter);
+        bootstrap(&mut substate_store, scrypto_interpreter, network);
         substate_store
     }
 

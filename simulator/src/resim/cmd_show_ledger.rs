@@ -19,7 +19,11 @@ pub struct ShowLedger {}
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+        let substate_store = RadixEngineDB::with_bootstrap(
+            get_data_dir()?,
+            &scrypto_interpreter,
+            NetworkDefinition::simulator(),
+        );
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;

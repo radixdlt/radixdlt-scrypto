@@ -51,12 +51,12 @@ impl EpochManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address: [u8; 26], // TODO: Clean this up
         component_address: [u8; 26],       // TODO: Clean this up
-        validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
+        validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
         initial_epoch: u64,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
         api: &mut Y,
-    ) -> Result<ComponentAddress, RuntimeError>
+    ) -> Result<Vec<Bucket>, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -91,13 +91,14 @@ impl EpochManagerBlueprint {
 
         let mut validators = BTreeMap::new();
 
-        for (key, validator_init) in validator_set {
-            let stake = validator_init.initial_stake.sys_amount(api)?;
+        let mut lp_buckets = vec![];
+        for (key, component_address, initial_stake) in validator_set {
+            let stake = initial_stake.sys_amount(api)?;
             let (address, lp_bucket, owner_token_bucket) =
                 ValidatorCreator::create_with_initial_stake(
                     address,
                     key,
-                    validator_init.initial_stake,
+                    initial_stake,
                     true,
                     api,
                 )?;
@@ -105,8 +106,8 @@ impl EpochManagerBlueprint {
             let validator = Validator { key, stake };
             validators.insert(address, validator);
 
-            Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
-            Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
+            Account(component_address).deposit(owner_token_bucket, api)?;
+            lp_buckets.push(lp_bucket);
         }
 
         let epoch_manager_id = {
@@ -185,7 +186,7 @@ impl EpochManagerBlueprint {
             address.into(),
         )?;
 
-        Ok(address)
+        Ok(lp_buckets)
     }
 
     pub(crate) fn get_current_epoch<Y>(

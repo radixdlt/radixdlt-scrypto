@@ -118,7 +118,10 @@ fn test_normal_transaction_flow() {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(
+        &scrypto_interpreter,
+        NetworkDefinition::simulator(),
+    );
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();

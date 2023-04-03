@@ -163,7 +163,11 @@ pub fn handle_system_transaction<O: std::io::Write>(
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_store = RadixEngineDB::with_bootstrap(
+        get_data_dir()?,
+        &scrypto_interpreter,
+        NetworkDefinition::simulator(),
+    );
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -229,8 +233,11 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let mut substate_store =
-                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+            let mut substate_store = RadixEngineDB::with_bootstrap(
+                get_data_dir()?,
+                &scrypto_interpreter,
+                NetworkDefinition::simulator(),
+            );
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -309,7 +316,11 @@ pub fn get_signing_keys(
 
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let substate_store = RadixEngineDB::with_bootstrap(
+        get_data_dir()?,
+        &scrypto_interpreter,
+        NetworkDefinition::simulator(),
+    );
 
     let output = substate_store
         .get_substate(&SubstateId(
@@ -340,7 +351,11 @@ pub fn export_blueprint_schema(
 
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let substate_store = RadixEngineDB::with_bootstrap(
+        get_data_dir()?,
+        &scrypto_interpreter,
+        NetworkDefinition::simulator(),
+    );
 
     let output = substate_store
         .get_substate(&SubstateId(
