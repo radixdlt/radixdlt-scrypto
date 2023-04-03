@@ -667,12 +667,27 @@ impl CallFrame {
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
     ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
-        if heap.contains_node(node_id) {
+        let substates = if heap.contains_node(node_id) {
             heap.get_first_in_iterable(node_id, module_id, count)
                 .map_err(|e| RuntimeError::CallFrameError(e))
         } else {
             track.get_first_in_iterable(node_id, module_id, count)
+        }?;
+
+        for (id, substate) in &substates {
+            let (refs, _owns) =  substate.to_ref().references_and_owned_nodes();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref,
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
         }
+
+        Ok(substates)
     }
 
     pub fn insert_into_iterable<'f, 's>(
@@ -728,6 +743,8 @@ impl CallFrame {
     pub fn check_node_visibility(&self, node_id: &RENodeId) -> Result<RefType, CallFrameError> {
         self.get_node_visibility(node_id)
             .map(|e| e.0)
-            .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
+            .ok_or_else(|| {
+                CallFrameError::RENodeNotVisible(node_id.clone())
+            })
     }
 }

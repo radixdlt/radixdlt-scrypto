@@ -1516,6 +1516,11 @@ impl<'a> SubstateRef<'a> {
                 }
                 (index_set_new(), owned_nodes)
             }
+            SubstateRef::IterableEntry(substate) => {
+                let (_, own, refs) =
+                    IndexedScryptoValue::from_scrypto_value((*substate).clone()).unpack();
+                (refs, own)
+            }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 if let Some(substate) = substate {
                     let (_, own, refs) =
@@ -1542,6 +1547,10 @@ impl<'a> SubstateRef<'a> {
                     references.insert(RENodeId::Object(parent.0));
                 }
                 (references, owned_nodes)
+            }
+            SubstateRef::ValidatorSet(substate) => {
+                let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                (refs, owns)
             }
             _ => (index_set_new(), Vec::new()),
         }
