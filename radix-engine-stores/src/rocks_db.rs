@@ -205,7 +205,7 @@ impl ReadableSubstateStore for RadixEngineDB {
         module_id: NodeModuleId,
         mut count: u32,
     ) -> Vec<(SubstateId, RuntimeSubstate)> {
-        // FIXME: Super hack!
+        // FIXME: Super hack until node_id and module_id cleaned up
         let start = SubstateId(
             node_id.clone(),
             module_id,

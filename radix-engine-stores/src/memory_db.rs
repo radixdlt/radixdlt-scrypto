@@ -11,13 +11,13 @@ pub struct SerializedInMemorySubstateStore {
     /// A hashmap from SBOR-encoded `SubstateId`s to SBOR-encoded `OutputValue`s.
     /// This structure does not preserve deterministic ordering, but it is only used for test
     /// purposes (where it actually puts the Engine's determinism under test).
-    substates: HashMap<Vec<u8>, Vec<u8>>,
+    substates: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
 impl SerializedInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            substates: HashMap::new(),
+            substates: BTreeMap::new(),
         }
     }
 }
@@ -39,9 +39,31 @@ impl ReadableSubstateStore for SerializedInMemorySubstateStore {
         &self,
         node_id: &RENodeId,
         module_id: NodeModuleId,
-        count: u32,
+        mut count: u32,
     ) -> Vec<(SubstateId, RuntimeSubstate)> {
-        todo!()
+        // FIXME: Super hack until node_id and module_id cleaned up
+        let start = SubstateId(
+            node_id.clone(),
+            module_id,
+            SubstateOffset::Component(ComponentOffset::State0),
+        );
+        let start = scrypto_encode(&start).unwrap();
+
+        let mut items = Vec::new();
+        for (key, value) in self.substates.range(start..) {
+            if count == 0u32 {
+                break;
+            }
+            let id: SubstateId = scrypto_decode(key.as_ref()).unwrap();
+            if !id.0.eq(node_id) || !id.1.eq(&module_id) {
+                break;
+            }
+            let output_value: OutputValue = scrypto_decode(value.as_ref()).unwrap();
+            items.push((id, output_value.substate.to_runtime()));
+            count -= 1;
+        }
+
+        items
     }
 }
 

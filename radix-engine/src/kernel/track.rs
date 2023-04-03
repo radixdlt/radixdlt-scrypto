@@ -74,7 +74,7 @@ pub enum IterableSubstateUpdate {
 
 pub enum IterableNodeRead {
     FirstRange(u32),
-    Substate(Vec<u8>)
+    Substate(Vec<u8>),
 }
 
 /// Transaction-wide states and side effects
@@ -294,7 +294,8 @@ impl<'s> Track<'s> {
                 }
             }
         } else {
-            self.iterable_node_reads.insert(node_module, IterableNodeRead::FirstRange(count));
+            self.iterable_node_reads
+                .insert(node_module, IterableNodeRead::FirstRange(count));
 
             let items = self
                 .substate_store
@@ -352,7 +353,8 @@ impl<'s> Track<'s> {
             }
             IterableNodeUpdate::Update(updates) => {
                 // TODO: Increase granularity?
-                self.iterable_node_reads.insert((*node_id, *module_id), IterableNodeRead::Substate(key));
+                self.iterable_node_reads
+                    .insert((*node_id, *module_id), IterableNodeRead::Substate(key));
 
                 let entry = updates.entry(offset);
                 match entry {
