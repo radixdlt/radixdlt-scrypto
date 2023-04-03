@@ -1,5 +1,5 @@
 use super::actor::ExecutionMode;
-use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, LockSubstateError, RENodeVisibilityOrigin};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
@@ -25,7 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::SubstateStore;
+use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -630,7 +630,7 @@ where
 
         // TODO: Check if valid substate_key for node_id
 
-        // Authorization
+        // Check node configs
         if let Some(actor) = &self.current_frame.actor {
             if !NodeProperties::can_substate_be_locked(
                 current_mode,
@@ -663,10 +663,9 @@ where
 
         let lock_handle = match &maybe_lock_handle {
             Ok(lock_handle) => *lock_handle,
-            Err(RuntimeError::KernelError(KernelError::TrackError(track_err))) => {
-                if let TrackError::NotFound(SubstateId(node_id, module_id, ref substate_key)) =
-                    **track_err
-                {
+            Err(LockSubstateError::TrackError(track_err)) => {
+                if let AcquireLockError::NotFound(node_id, module_id, substate_key) = **track_err {
+                    let module_id = TypedModuleId::from_repr(module_id.0).unwrap();
                     let retry = KernelModuleMixer::on_substate_lock_fault(
                         node_id,
                         module_id,
@@ -674,20 +673,26 @@ where
                         self,
                     )?;
                     if retry {
-                        self.current_frame.acquire_lock(
-                            &mut self.heap,
-                            &mut self.track,
-                            &node_id,
-                            module_id,
-                            substate_key,
-                            flags,
-                        )?
+                        self.current_frame
+                            .acquire_lock(
+                                &mut self.heap,
+                                &mut self.track,
+                                &node_id,
+                                module_id,
+                                &substate_key,
+                                flags,
+                            )
+                            .map_err(CallFrameError::LockSubstateError)
+                            .map_err(KernelError::CallFrameError)?
                     } else {
-                        return maybe_lock_handle;
+                        return maybe_lock_handle
+                            .map_err(CallFrameError::LockSubstateError)
+                            .map_err(KernelError::CallFrameError)
+                            .map_err(RuntimeError::KernelError);
                     }
                 } else {
-                    return Err(RuntimeError::KernelError(KernelError::TrackError(
-                        track_err.clone(),
+                    return Err(RuntimeError::KernelError(KernelError::TrackLockError(
+                        *track_err.clone(),
                     )));
                 }
             }
@@ -695,38 +700,40 @@ where
                 match &err {
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        NodeId::GlobalObject(package_address),
-                    )) => {
-                        let node_id = NodeId::GlobalObject(*package_address);
+                    LockSubstateError::NodeNotInCallFrame(node_id)
+                        if node_id.is_global_package() =>
+                    {
                         let module_id = TypedModuleId::ObjectState;
-                        self.track
+                        let handle = self
+                            .track
                             .acquire_lock(
-                                SubstateId(node_id, module_id, substate_key),
+                                node_id,
+                                module_id.into(),
+                                substate_key,
                                 LockFlags::read_only(),
                             )
-                            .map_err(|_| err.clone())?;
-                        match self
-                            .track
-                            .release_lock(SubstateId(node_id, module_id, substate_key), false)
-                            .map_err(|_| err)
-                        {
-                            Ok(_) => {
-                                self.current_frame
-                                    .add_ref(node_id, RENodeVisibilityOrigin::Normal);
-                                self.current_frame.acquire_lock(
-                                    &mut self.heap,
-                                    &mut self.track,
-                                    &node_id,
-                                    module_id,
-                                    substate_key,
-                                    flags,
-                                )?
-                            }
-                            Err(err) => return Err(err.clone()),
-                        }
+                            .map_err(KernelError::TrackLockError)?;
+                        self.track.release_lock(handle);
+
+                        self.current_frame
+                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        self.current_frame
+                            .acquire_lock(
+                                &mut self.heap,
+                                &mut self.track,
+                                &node_id,
+                                module_id,
+                                substate_key,
+                                flags,
+                            )
+                            .map_err(CallFrameError::LockSubstateError)
+                            .map_err(KernelError::CallFrameError)?
                     }
-                    _ => return Err(err.clone()),
+                    _ => {
+                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
+                            CallFrameError::LockSubstateError(err.clone()),
+                        )))
+                    }
                 }
             }
         };

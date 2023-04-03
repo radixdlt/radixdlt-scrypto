@@ -114,7 +114,7 @@ pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound,
-    TrackAcquireLockError(AcquireLockError),
+    TrackError(Box<AcquireLockError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -172,7 +172,7 @@ impl CallFrame {
         } else {
             let handle = track
                 .acquire_lock(node_id, module_id.into(), substate_key, flags)
-                .map_err(LockSubstateError::TrackAcquireLockError)?;
+                .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             track.get_substate(handle)
         };

@@ -9,7 +9,9 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::actor::{Actor, ExecutionMode};
-use crate::kernel::call_frame::{LockSubstateError, MoveError, UpdateSubstateError};
+use crate::kernel::call_frame::{
+    LockSubstateError, MoveError, ReadSubstateError, UpdateSubstateError, WriteSubstateError,
+};
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::events::EventError;
@@ -21,6 +23,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_stores::interface::AcquireLockError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -116,6 +119,9 @@ pub enum KernelError {
 
     // Call frame
     CallFrameError(CallFrameError),
+
+    // Track
+    TrackLockError(AcquireLockError),
 
     /// Interpreter
     InterpreterError(InterpreterError),
