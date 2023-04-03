@@ -2,7 +2,7 @@ use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 use crate::types::*;
 use radix_engine_interface::crypto::hash;
-use crate::system::node_substates::{PersistedSubstate, RuntimeSubstate};
+use crate::system::node_substates::PersistedSubstate;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateDiff {

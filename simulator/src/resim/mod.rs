@@ -398,6 +398,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                             *local_type_index,
                         ),
                         TypeInfoSubstate::KeyValueStore(..) => return None,
+                        TypeInfoSubstate::IterableMap(..) => return None,
                     }
                 }
                 NodeModuleId::TypeInfo => return None,

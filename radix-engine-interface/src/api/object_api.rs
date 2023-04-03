@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode, ScryptoValue};
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;

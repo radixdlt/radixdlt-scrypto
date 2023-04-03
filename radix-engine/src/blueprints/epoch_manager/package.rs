@@ -24,7 +24,6 @@ impl EpochManagerNativePackage {
         substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<ValidatorSetSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<RegisteredValidatorsSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<RegisteredValidatorsByStakeSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(

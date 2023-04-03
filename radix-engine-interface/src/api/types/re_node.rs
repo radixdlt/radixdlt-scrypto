@@ -217,7 +217,6 @@ pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
     RegisteredValidators,
-    RegisteredValidatorsByStake,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]

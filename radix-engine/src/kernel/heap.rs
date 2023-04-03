@@ -1,5 +1,4 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
-use radix_engine_common::data::scrypto::model::ComponentAddress;
+use radix_engine_common::data::scrypto::ScryptoValue;
 use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::{CallFrameError, OffsetDoesNotExist};
@@ -15,7 +14,6 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
-use crate::blueprints::epoch_manager::Validator;
 
 pub struct Heap {
     nodes: NonIterMap<RENodeId, HeapRENode>,

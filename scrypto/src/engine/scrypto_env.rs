@@ -10,7 +10,7 @@ use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{IterableMapSchema, KeyValueStoreSchema};
+use scrypto_schema::KeyValueStoreSchema;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {

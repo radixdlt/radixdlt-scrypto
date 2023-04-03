@@ -39,18 +39,12 @@ pub struct Validator {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
-    pub epoch: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct RegisteredValidatorsSubstate {
     pub validators: Own,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct RegisteredValidatorsByStakeSubstate {
     pub index: Own,
-    //pub index: BTreeMap<(Decimal, ComponentAddress), EcdsaSecp256k1PublicKey>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -173,7 +167,6 @@ impl EpochManagerBlueprint {
             )?;
 
             ValidatorSetSubstate {
-                epoch: initial_epoch,
                 validator_set: next_validator_set,
             }
         };
@@ -191,9 +184,6 @@ impl EpochManagerBlueprint {
 
             let preparing_validator_set = RegisteredValidatorsSubstate {
                 validators: Own::KeyValueStore(registered_validators),
-            };
-
-            let index = RegisteredValidatorsByStakeSubstate {
                 index: Own::KeyValueStore(index_id),
             };
 
@@ -203,7 +193,6 @@ impl EpochManagerBlueprint {
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&preparing_validator_set).unwrap(),
-                    scrypto_encode(&index).unwrap(),
                 ],
             )?
         };
@@ -295,10 +284,10 @@ impl EpochManagerBlueprint {
         if round >= epoch_manager.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
 
-            let offset = SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidatorsByStake);
+            let offset = SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidators);
             let handle = api.sys_lock_substate(receiver.clone(), offset, LockFlags::read_only())?;
-            let by_stake: &RegisteredValidatorsByStakeSubstate = api.kernel_get_substate_ref(handle)?;
-            let index_id = by_stake.index.id();
+            let validators: &RegisteredValidatorsSubstate = api.kernel_get_substate_ref(handle)?;
+            let index_id = validators.index.id();
 
             let next_validator_set: Vec<(ComponentAddress, Validator)> = api.first_typed_in_iterable_map(
                 RENodeId::KeyValueStore(index_id),
@@ -318,7 +307,6 @@ impl EpochManagerBlueprint {
             )?;
             let validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
-            validator_set.epoch = next_epoch;
             validator_set.validator_set = next_validator_set.clone();
 
             Runtime::emit_event(
@@ -395,6 +383,7 @@ impl EpochManagerBlueprint {
         )?;
         let registered: &mut RegisteredValidatorsSubstate = api.kernel_get_substate_ref_mut(handle)?;
         let kv_id = registered.validators.id();
+        let index_node = RENodeId::KeyValueStore(registered.index.id());
 
         let lock_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(kv_id),
@@ -413,16 +402,6 @@ impl EpochManagerBlueprint {
                 api.sys_write_typed_substate(lock_handle, Option::<Validator>::None)?;
             }
         }
-
-        let index_node = {
-            let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::EpochManager(EpochManagerOffset::RegisteredValidatorsByStake),
-                LockFlags::MUTABLE,
-            )?;
-            let index: &mut RegisteredValidatorsByStakeSubstate = api.kernel_get_substate_ref_mut(handle)?;
-            RENodeId::KeyValueStore(index.index.id())
-        };
 
         if let Some(previous) = previous {
             let index_key = Self::to_index_key(previous.stake, validator_address);

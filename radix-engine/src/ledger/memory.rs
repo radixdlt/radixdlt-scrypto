@@ -71,6 +71,11 @@ impl ReadableSubstateStore for TypedInMemorySubstateStore {
         let mut items = Vec::new();
 
         for (id, value) in &self.substates {
+            let size: u32 = items.len().try_into().unwrap();
+            if size == count {
+                break;
+            }
+
             if id.0.eq(node_id) && id.1.eq(&module_id) {
                 items.push((id.clone(), value.substate.clone().to_runtime()));
             }
