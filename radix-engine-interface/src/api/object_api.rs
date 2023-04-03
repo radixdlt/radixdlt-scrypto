@@ -24,6 +24,20 @@ pub trait ClientIterableMapApi<E> {
         count: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
+    fn first_keys_in_iterable_map<S: ScryptoDecode>(
+        &mut self,
+        node_id: RENodeId,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, E> {
+        let keys = self
+            .first_in_iterable_map(node_id, count)?
+            .into_iter()
+            .map(|(key, _buf)| key)
+            .collect();
+
+        Ok(keys)
+    }
+
     fn first_typed_values_in_iterable_map<S: ScryptoDecode>(
         &mut self,
         node_id: RENodeId,
