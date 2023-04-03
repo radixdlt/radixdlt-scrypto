@@ -470,15 +470,17 @@ where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_get_node_info(&self, node_id: NodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
-        let info = self.current_frame.get_node_visibility(&node_id)?;
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+        let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
     }
 
+    #[trace_resources]
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
 
+    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
