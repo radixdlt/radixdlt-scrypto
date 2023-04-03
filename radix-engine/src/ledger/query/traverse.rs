@@ -1,4 +1,4 @@
-use crate::blueprints::resource::VaultUtil;
+use crate::blueprints::resource::{LiquidNonFungibleVault, VaultUtil};
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
@@ -38,7 +38,7 @@ pub trait StateTreeVisitor {
         &mut self,
         _vault_id: ObjectId,
         _address: &ResourceAddress,
-        _resource: &LiquidNonFungibleResource,
+        _resource: &LiquidNonFungibleVault,
     ) {
     }
 
@@ -139,7 +139,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                 );
                             }
                             NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                                let liquid: LiquidNonFungibleResource = self
+                                let liquid: LiquidNonFungibleVault = self
                                     .substate_store
                                     .get_substate(&SubstateId(
                                         node_id,

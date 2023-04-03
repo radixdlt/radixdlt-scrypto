@@ -41,8 +41,8 @@ pub enum PersistedSubstate {
     FungibleVaultInfo(FungibleVaultDivisibilitySubstate),
     NonFungibleVaultInfo(NonFungibleVaultIdTypeSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
-    VaultLiquidNonFungible(LiquidNonFungibleResource),
     VaultLockedFungible(LockedFungibleResource),
+    VaultLiquidNonFungible(LiquidNonFungibleVault),
     VaultLockedNonFungible(LockedNonFungibleResource),
 
     /* Type info */
@@ -93,7 +93,7 @@ impl PersistedSubstate {
         }
     }
 
-    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
+    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleVault {
         if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
             vault
         } else {
@@ -101,7 +101,7 @@ impl PersistedSubstate {
         }
     }
 
-    pub fn vault_liquid_non_fungible_mut(&mut self) -> &mut LiquidNonFungibleResource {
+    pub fn vault_liquid_non_fungible_mut(&mut self) -> &mut LiquidNonFungibleVault {
         if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
             vault
         } else {
@@ -206,8 +206,8 @@ impl Into<LiquidFungibleResource> for PersistedSubstate {
     }
 }
 
-impl Into<LiquidNonFungibleResource> for PersistedSubstate {
-    fn into(self) -> LiquidNonFungibleResource {
+impl Into<LiquidNonFungibleVault> for PersistedSubstate {
+    fn into(self) -> LiquidNonFungibleVault {
         if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
             vault
         } else {
@@ -305,8 +305,8 @@ pub enum RuntimeSubstate {
     FungibleVaultInfo(FungibleVaultDivisibilitySubstate),
     NonFungibleVaultInfo(NonFungibleVaultIdTypeSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
-    VaultLiquidNonFungible(LiquidNonFungibleResource),
     VaultLockedFungible(LockedFungibleResource),
+    VaultLiquidNonFungible(LiquidNonFungibleVault),
     VaultLockedNonFungible(LockedNonFungibleResource),
 
     BucketInfo(BucketInfoSubstate),
@@ -971,11 +971,19 @@ impl Into<LiquidFungibleResource> for RuntimeSubstate {
     }
 }
 
-impl Into<LiquidNonFungibleResource> for RuntimeSubstate {
-    fn into(self) -> LiquidNonFungibleResource {
+impl Into<LiquidNonFungibleVault> for RuntimeSubstate {
+    fn into(self) -> LiquidNonFungibleVault {
         if let RuntimeSubstate::VaultLiquidNonFungible(substate) = self {
             substate
-        } else if let RuntimeSubstate::BucketLiquidNonFungible(substate) = self {
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
+impl Into<LiquidNonFungibleResource> for RuntimeSubstate {
+    fn into(self) -> LiquidNonFungibleResource {
+        if let RuntimeSubstate::BucketLiquidNonFungible(substate) = self {
             substate
         } else {
             panic!("Not a vault");
@@ -1053,6 +1061,7 @@ impl Into<CurrentValidatorSetSubstate> for RuntimeSubstate {
     }
 }
 
+#[derive(Debug)]
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
     Worktop(&'a WorktopSubstate),
@@ -1070,7 +1079,7 @@ pub enum SubstateRef<'a> {
     FungibleVaultInfo(&'a FungibleVaultDivisibilitySubstate),
     NonFungibleVaultInfo(&'a NonFungibleVaultIdTypeSubstate),
     VaultLiquidFungible(&'a LiquidFungibleResource),
-    VaultLiquidNonFungible(&'a LiquidNonFungibleResource),
+    VaultLiquidNonFungible(&'a LiquidNonFungibleVault),
     VaultLockedFungible(&'a LockedFungibleResource),
     VaultLockedNonFungible(&'a LockedNonFungibleResource),
     BucketInfo(&'a BucketInfoSubstate),
@@ -1122,10 +1131,18 @@ impl<'a> From<SubstateRef<'a>> for &'a LiquidFungibleResource {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a LiquidNonFungibleResource {
+impl<'a> From<SubstateRef<'a>> for &'a LiquidNonFungibleVault {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::VaultLiquidNonFungible(value) => value,
+            _ => panic!("Not a vault/bucket liquid non-fungible: {:?}", value),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a LiquidNonFungibleResource {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
             SubstateRef::BucketLiquidNonFungible(value) => value,
             _ => panic!("Not a vault/bucket liquid non-fungible"),
         }
@@ -1572,7 +1589,7 @@ pub enum SubstateRefMut<'a> {
     FungibleVaultInfo(&'a mut FungibleVaultDivisibilitySubstate),
     NonFungibleVaultInfo(&'a mut NonFungibleVaultIdTypeSubstate),
     VaultLiquidFungible(&'a mut LiquidFungibleResource),
-    VaultLiquidNonFungible(&'a mut LiquidNonFungibleResource),
+    VaultLiquidNonFungible(&'a mut LiquidNonFungibleVault),
     VaultLockedFungible(&'a mut LockedFungibleResource),
     VaultLockedNonFungible(&'a mut LockedNonFungibleResource),
     BucketInfo(&'a mut BucketInfoSubstate),
@@ -1769,10 +1786,18 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut LiquidFungibleResource {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut LiquidNonFungibleResource {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LiquidNonFungibleVault {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::VaultLiquidNonFungible(value) => value,
+            _ => panic!("Not a vault/bucket liquid non-fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LiquidNonFungibleResource {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
             SubstateRefMut::BucketLiquidNonFungible(value) => value,
             _ => panic!("Not a vault/bucket liquid non-fungible"),
         }

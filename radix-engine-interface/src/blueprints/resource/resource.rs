@@ -59,7 +59,7 @@ impl LiquidFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
-    ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl LiquidNonFungibleResource {

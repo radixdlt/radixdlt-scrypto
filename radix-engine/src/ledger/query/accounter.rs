@@ -7,6 +7,7 @@ use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource,
 };
+use crate::blueprints::resource::LiquidNonFungibleVault;
 
 pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
     substate_store: &'s S,
@@ -62,7 +63,7 @@ impl Accounting {
     pub fn add_non_fungible_vault(
         &mut self,
         address: &ResourceAddress,
-        resource: &LiquidNonFungibleResource,
+        resource: &LiquidNonFungibleVault,
     ) {
         match self.balances.entry(*address) {
             Entry::Occupied(mut e) => {
@@ -90,7 +91,7 @@ impl StateTreeVisitor for Accounting {
         &mut self,
         _vault_id: ObjectId,
         address: &ResourceAddress,
-        resource: &LiquidNonFungibleResource,
+        resource: &LiquidNonFungibleVault,
     ) {
         self.add_non_fungible_vault(address, resource);
     }

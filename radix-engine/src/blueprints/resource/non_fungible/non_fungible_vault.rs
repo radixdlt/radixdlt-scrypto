@@ -10,6 +10,77 @@ use radix_engine_interface::api::{ClientApi, ClientSubstateApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct LiquidNonFungibleVault {
+    /// The total non-fungible ids.
+    ids: BTreeSet<NonFungibleLocalId>,
+}
+
+impl LiquidNonFungibleVault {
+    pub fn new(ids: BTreeSet<NonFungibleLocalId>) -> Self {
+        Self { ids }
+    }
+
+    pub fn default() -> Self {
+        Self::new(BTreeSet::new())
+    }
+
+    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+        &self.ids
+    }
+
+    pub fn into_ids(self) -> BTreeSet<NonFungibleLocalId> {
+        self.ids
+    }
+
+    pub fn amount(&self) -> Decimal {
+        self.ids.len().into()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.ids.is_empty()
+    }
+
+    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceError> {
+        // update liquidity
+        self.ids.extend(other.ids);
+        Ok(())
+    }
+
+    pub fn take_by_amount(
+        &mut self,
+        amount_to_take: Decimal,
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
+        // deduct from liquidity pool
+        if Decimal::from(self.ids.len()) < amount_to_take {
+            return Err(ResourceError::InsufficientBalance);
+        }
+        let n: usize = amount_to_take
+            .to_string()
+            .parse()
+            .expect("Failed to convert amount to usize");
+        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n).cloned().collect();
+        self.take_by_ids(&ids)
+    }
+
+    pub fn take_by_ids(
+        &mut self,
+        ids_to_take: &BTreeSet<NonFungibleLocalId>,
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
+        for id in ids_to_take {
+            if !self.ids.remove(&id) {
+                return Err(ResourceError::InsufficientBalance);
+            }
+        }
+        Ok(LiquidNonFungibleResource::new(ids_to_take.clone()))
+    }
+
+    pub fn take_all(&mut self) -> LiquidNonFungibleResource {
+        self.take_by_amount(self.amount())
+            .expect("Take all from `Resource` should not fail")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleVaultIdTypeSubstate {
     pub id_type: NonFungibleIdType,
 }
@@ -370,7 +441,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: &LiquidNonFungibleVault = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
@@ -410,7 +481,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: &LiquidNonFungibleVault = api.kernel_get_substate_ref(handle)?;
         let ids = substate_ref.ids().clone();
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -447,7 +518,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleResource =
+        let substate_ref: &mut LiquidNonFungibleVault =
             api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
@@ -474,7 +545,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleResource =
+        let substate_ref: &mut LiquidNonFungibleVault =
             api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref
             .take_by_ids(ids)
@@ -506,7 +577,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleResource =
+        let substate_ref: &mut LiquidNonFungibleVault =
             api.kernel_get_substate_ref_mut(handle)?;
         substate_ref.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
