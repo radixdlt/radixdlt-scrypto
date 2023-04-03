@@ -1251,7 +1251,7 @@ impl TestRunner {
                             TypeInfoSubstate::IterableMap(..) => panic!("No event schema."),
                         }
                     }
-                    NodeModuleId::TypeInfo => {
+                    NodeModuleId::TypeInfo | NodeModuleId::Iterable => {
                         panic!("No event schema.")
                     }
                 }

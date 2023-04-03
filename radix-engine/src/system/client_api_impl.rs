@@ -489,7 +489,7 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF | NodeModuleId::TypeInfo => {
+                NodeModuleId::SELF | NodeModuleId::Iterable | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules => {
@@ -851,7 +851,7 @@ where
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
                     NodeModuleId::SELF => self.get_object_info(node_id).map(|i| i.blueprint),
-                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                    NodeModuleId::TypeInfo | NodeModuleId::Iterable => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
@@ -999,15 +999,15 @@ impl<'g, 's, W> ClientIterableMapApi<RuntimeError> for Kernel<'g, 's, W> where W
     }
 
     fn insert_into_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>, value: Vec<u8>) -> Result<(), RuntimeError> {
-        self.kernel_insert_into_iterable_map(&node_id, &NodeModuleId::SELF, key, value)
+        self.kernel_insert_into_iterable_map(&node_id, &NodeModuleId::Iterable, key, value)
     }
 
     fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) {
-        self.kernel_remove_from_iterable_map(&node_id, &NodeModuleId::SELF, key);
+        self.kernel_remove_from_iterable_map(&node_id, &NodeModuleId::Iterable, key);
     }
 
     fn first_in_iterable_map(&mut self, node_id: RENodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let first = self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::SELF, count)?;
+        let first = self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::Iterable, count)?;
         let first = first.into_iter().map(|(_id, substate)| {
             let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
             bytes

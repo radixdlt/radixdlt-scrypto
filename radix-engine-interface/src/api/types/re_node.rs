@@ -137,6 +137,7 @@ pub enum NodeModuleId {
     Metadata,
     AccessRules,
     ComponentRoyalty,
+    Iterable,
 }
 
 impl NodeModuleId {
@@ -147,6 +148,7 @@ impl NodeModuleId {
             2u32 => Some(NodeModuleId::Metadata),
             3u32 => Some(NodeModuleId::AccessRules),
             4u32 => Some(NodeModuleId::ComponentRoyalty),
+            5u32 => Some(NodeModuleId::Iterable),
             _ => None,
         }
     }
@@ -158,6 +160,7 @@ impl NodeModuleId {
             NodeModuleId::Metadata => 2u32,
             NodeModuleId::AccessRules => 3u32,
             NodeModuleId::ComponentRoyalty => 4u32,
+            NodeModuleId::Iterable => 5u32,
         }
     }
 }
