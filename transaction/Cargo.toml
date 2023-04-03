@@ -16,6 +16,9 @@ secp256k1 = { version = "0.24.0", default-features = false, features = ["global-
 serde = { version = "1.0.144", default-features = false, optional = true }
 lazy_static = "1.4.0"
 
+strum = { version = "0.24.1", default-features = false, features = ["derive"], optional = true }
+strum_macros = { version = "0.24.3", default-features = false, optional = true }
+
 [dev-dependencies]
 scrypto = { path = "../scrypto" }
 scrypto-derive = { path = "../scrypto-derive" }
@@ -23,11 +26,13 @@ scrypto-derive = { path = "../scrypto-derive" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "utils/std", "radix-engine-interface/std", "radix-engine-common/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
+std = ["sbor/std", "utils/std", "radix-engine-interface/std", "radix-engine-common/std", "hex/std", "ed25519-dalek/std", "secp256k1/std", "strum/std" ]
 alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std"]
 serde = ["serde/derive"]
+#strum = ["strum" , "strum_macros"]
 
 dump_manifest_to_file = []
+enum_cnt = ["strum", "strum_macros"]
 
 [lib]
 bench = false

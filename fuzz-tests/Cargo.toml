@@ -11,8 +11,8 @@ cargo-fuzz = true
 libfuzzer-sys = { version = "0.4", optional = true }
 afl = { version = "0.12.16", features = ["reset_lazy_static"], optional = true }
 clap = { version = "4.1.7", optional = true }
-rand = { version = "0.8.5", optional = true }
-rand_chacha = { version = "0.3.1", optional = true }
+rand = { version = "0.8.5" }
+rand_chacha = { version = "0.3.1" }
 log = { version = "0.4.17", optional = true }
 once_cell = { version = "1.17.1"}
 sbor = { path = "../sbor", default-features = false }
@@ -20,9 +20,10 @@ radix-engine = { path = "../radix-engine", default-features = false, features = 
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
-transaction = { path = "../transaction", default-features = false }
+transaction = { path = "../transaction", default-features = false, features = ["enum_cnt"] }
 utils = { path = "../utils", default-features = false, features = ["radix_engine_fuzzing"] }
 scrypto-unit = { path = "../scrypto-unit", default-features = false }
+strum = { version = "0.24.1", default-features = false, features = ["derive"] }
 
 [patch.crates-io]
 # Use "resettable" `lazy_static` version to prevent incorrect AFL behaviour, eg.

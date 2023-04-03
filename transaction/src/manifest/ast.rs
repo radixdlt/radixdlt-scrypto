@@ -1,6 +1,9 @@
 use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
+#[cfg(feature = "enum_cnt")]
+use strum_macros::EnumCount;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "enum_cnt", derive(EnumCount))]
 pub enum Instruction {
     TakeFromWorktop {
         resource_address: Value,
