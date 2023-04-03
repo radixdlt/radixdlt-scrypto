@@ -1043,7 +1043,7 @@ where
         &mut self,
         node_id: RENodeId,
         count: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
             return Err(RuntimeError::SystemError(SystemError::NotAnIterable));
@@ -1053,9 +1053,12 @@ where
             self.kernel_get_first_in_iterable_map(&node_id, &NodeModuleId::Iterable, count)?;
         let first = first
             .into_iter()
-            .map(|(_id, substate)| {
+            .map(|(id, substate)| {
                 let (bytes, _, _) = substate.to_ref().to_scrypto_value().unpack();
-                bytes
+                match id.2 {
+                    SubstateOffset::IterableMap(key) => (key, bytes),
+                    _ => panic!("Unexpected"),
+                }
             })
             .collect();
         Ok(first)
