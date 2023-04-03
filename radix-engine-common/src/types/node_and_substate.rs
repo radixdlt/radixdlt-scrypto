@@ -66,6 +66,13 @@ impl NodeId {
             None => false,
         }
     }
+
+    pub fn is_internal_vault(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t.is_internal_vault(),
+            None => false,
+        }
+    }
 }
 
 impl AsRef<[u8]> for NodeId {

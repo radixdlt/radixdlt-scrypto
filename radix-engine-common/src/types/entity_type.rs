@@ -108,4 +108,8 @@ impl EntityType {
     pub fn is_internal_kv_store(&self) -> bool {
         matches!(self, EntityType::InternalKeyValueStore)
     }
+
+    pub fn is_internal_vault(&self) -> bool {
+        matches!(self, EntityType::InternalVault)
+    }
 }

@@ -10,6 +10,7 @@ use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
+use radix_engine_stores::inference::BalanceChange;
 use radix_engine_stores::interface::StateUpdates;
 use utils::ContextualDisplay;
 
@@ -80,36 +81,6 @@ pub struct StateUpdateSummary {
     /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
     /// 2. Fee payments for failed transactions.
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
-}
-
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
-pub enum BalanceChange {
-    Fungible(Decimal),
-    NonFungible {
-        added: BTreeSet<NonFungibleLocalId>,
-        removed: BTreeSet<NonFungibleLocalId>,
-    },
-}
-
-impl BalanceChange {
-    pub fn fungible(&mut self) -> &mut Decimal {
-        match self {
-            BalanceChange::Fungible(x) => x,
-            BalanceChange::NonFungible { .. } => panic!("Not fungible"),
-        }
-    }
-    pub fn added_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
-        match self {
-            BalanceChange::Fungible(..) => panic!("Not non fungible"),
-            BalanceChange::NonFungible { added, .. } => added,
-        }
-    }
-    pub fn removed_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
-        match self {
-            BalanceChange::Fungible(..) => panic!("Not non fungible"),
-            BalanceChange::NonFungible { removed, .. } => removed,
-        }
-    }
 }
 
 impl CommitResult {
