@@ -13,12 +13,12 @@ CALL_METHOD
     Decimal("10");
 
 # Publishing a new package and setting some of its royalty and access rules.
-PUBLISH_PACKAGE 
+PUBLISH_PACKAGE_ADVANCED
     Blob("${code_blob_hash}") 
     Blob("${schema_blob_hash}") 
     Map<String, Tuple>()       # Royalty Configuration
     Map<String, String>()      # Metadata 
-    Tuple(                     # Access Rules Struct
+    Tuple(                     # Access Rules Config Struct
         Map<Tuple, Enum>(       # Method auth Field
             Tuple(
                 Enum("NodeModuleId::SELF"),
@@ -90,21 +90,27 @@ PUBLISH_PACKAGE
             )
         ), 
         Map<String, Enum>(),     # Grouped Auth Field
-        Enum("AccessRule::DenyAll"),         # Default Auth Field
+        Enum(
+            "AccessRuleEntry::AccessRule",
+            Enum("AccessRule::DenyAll")         # Default Auth Field
+        ),
         Map<Tuple, Enum>(         # Method Auth Mutability Field
             Tuple(
                 Enum("NodeModuleId::SELF"),
                 "set_royalty_config"
             ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
@@ -114,14 +120,17 @@ PUBLISH_PACKAGE
                 "claim_royalty"
             ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
@@ -129,16 +138,19 @@ PUBLISH_PACKAGE
             Tuple(
                 Enum("NodeModuleId::Metadata"),
                 "set"
-            ), 
+            ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
@@ -148,19 +160,25 @@ PUBLISH_PACKAGE
                 "get"
             ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
             )
         ), 
         Map<String, Enum>(),     # Group Auth Mutability Field
-        Enum("AccessRule::DenyAll")          # Default Auth Mutability Field
+        Enum(
+            "AccessRuleEntry::AccessRule",
+            Enum("AccessRule::DenyAll")          # Default Auth Mutability Field
+        )
     );

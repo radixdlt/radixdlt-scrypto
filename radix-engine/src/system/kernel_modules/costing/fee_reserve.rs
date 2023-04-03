@@ -4,7 +4,6 @@ use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use resources_tracker_macro::trace_resources;
 use sbor::rust::cmp::min;
 use strum::EnumCount;
 
@@ -147,6 +146,7 @@ pub struct SystemLoanFeeReserve {
 
     /// Royalty costs
     royalty_committed: BTreeMap<RoyaltyRecipient, (ObjectId, u128)>,
+    royalty_committed_sum: u32,
 
     /// Payments made during the execution of a transaction.
     payments: Vec<(ObjectId, LiquidFungibleResource, bool)>,
@@ -213,24 +213,33 @@ impl SystemLoanFeeReserve {
             execution_committed_sum: 0,
             execution_deferred: [0u32; CostingReason::COUNT],
             royalty_committed: BTreeMap::new(),
+            royalty_committed_sum: 0,
 
             payments: Vec::new(),
         }
     }
 
-    #[trace_resources(log=cost_units)]
+    fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
+        if checked_add(
+            self.execution_committed_sum,
+            checked_add(self.royalty_committed_sum, cost_units)?,
+        )? > self.cost_unit_limit
+        {
+            return Err(FeeReserveError::LimitExceeded {
+                limit: self.cost_unit_limit,
+                committed: self.execution_committed_sum + self.royalty_committed_sum,
+                new: cost_units,
+            });
+        }
+        Ok(())
+    }
+
     fn consume_execution_internal(
         &mut self,
         cost_units: u32,
         reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
-        if checked_add(self.execution_committed_sum, cost_units)? > self.cost_unit_limit {
-            return Err(FeeReserveError::LimitExceeded {
-                limit: self.cost_unit_limit,
-                committed: self.execution_committed_sum,
-                new: cost_units,
-            });
-        }
+        self.check_cost_unit_limit(cost_units)?;
 
         let amount = self.effective_execution_price * cost_units as u128;
         if self.xrd_balance < amount {
@@ -249,20 +258,23 @@ impl SystemLoanFeeReserve {
         recipient: RoyaltyRecipient,
         recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError> {
+        self.check_cost_unit_limit(cost_units)?;
+
         let amount = self.effective_royalty_price * cost_units as u128;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance);
         } else {
+            self.xrd_balance -= amount;
             self.royalty_committed
                 .entry(recipient)
                 .or_insert((recipient_vault_id, 0))
                 .1
                 .add_assign(amount);
+            self.royalty_committed_sum += cost_units;
             Ok(())
         }
     }
 
-    #[trace_resources]
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
         for i in 0..CostingReason::COUNT {
@@ -291,6 +303,7 @@ impl SystemLoanFeeReserve {
     pub fn revert_royalty(&mut self) {
         self.xrd_balance += self.royalty_committed.values().map(|x| x.1).sum::<u128>();
         self.royalty_committed.clear();
+        self.royalty_committed_sum = 0;
     }
 
     pub fn royalty_cost(&self) -> BTreeMap<RoyaltyRecipient, (ObjectId, Decimal)> {
@@ -455,6 +468,7 @@ mod tests {
     use super::*;
 
     const TEST_VAULT_ID: ObjectId = [0u8; OBJECT_ID_LENGTH];
+    const TEST_VAULT_ID_2: ObjectId = [1u8; OBJECT_ID_LENGTH];
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
         LiquidFungibleResource::new(amount.into())
@@ -577,6 +591,51 @@ mod tests {
             btreemap!(
                 RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("10"))
             )
+        );
+    }
+
+    #[test]
+    fn test_royalty_insufficient_balance() {
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 0, 1000, 50, false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
+        fee_reserve
+            .consume_royalty(
+                90,
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE),
+                TEST_VAULT_ID,
+            )
+            .unwrap();
+        assert_eq!(
+            fee_reserve.consume_royalty(
+                80,
+                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                TEST_VAULT_ID_2
+            ),
+            Err(FeeReserveError::InsufficientBalance)
+        );
+    }
+
+    #[test]
+    fn test_royalty_exceeds_cost_unit_limit() {
+        let mut fee_reserve =
+            SystemLoanFeeReserve::new(decimal_to_u128(dec!(1)), 0, 100, 50, false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(500), false)
+            .unwrap();
+        assert_eq!(
+            fee_reserve.consume_royalty(
+                200,
+                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                TEST_VAULT_ID_2
+            ),
+            Err(FeeReserveError::LimitExceeded {
+                limit: 100,
+                committed: 0,
+                new: 200
+            })
         );
     }
 }

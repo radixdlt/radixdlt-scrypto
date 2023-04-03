@@ -1,4 +1,4 @@
-use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::errors::{InvalidOwnership, KernelError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -22,15 +22,20 @@ fn stored_bucket_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::InvalidOwnership(
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::InvalidOwnership(invalid_ownership)) => {
+            if let InvalidOwnership(
                 SubstateOffset::Component(ComponentOffset::State0),
                 RESOURCE_MANAGER_PACKAGE,
-                ..
-            ))
-        )
+                ..,
+            ) = **invalid_ownership
+            {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 
@@ -53,14 +58,19 @@ fn stored_bucket_in_owned_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::InvalidOwnership(
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::InvalidOwnership(invalid_ownership)) => {
+            if let InvalidOwnership(
                 SubstateOffset::Component(ComponentOffset::State0),
                 RESOURCE_MANAGER_PACKAGE,
-                ..
-            ))
-        )
+                ..,
+            ) = **invalid_ownership
+            {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }

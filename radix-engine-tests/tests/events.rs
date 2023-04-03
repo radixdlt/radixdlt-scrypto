@@ -55,13 +55,15 @@ fn scrypto_cant_emit_unregistered_event() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|runtime_error| {
-        matches!(
-            runtime_error,
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::SchemaNotFoundError { .. },
-            )),
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::EventError(err)) => {
+            if let EventError::SchemaNotFoundError { .. } = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 
@@ -119,7 +121,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     let (code, schema) = Compile::compile("./tests/blueprints/events_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             schema,
             BTreeMap::new(),
@@ -160,7 +162,7 @@ fn local_type_index_with_misleading_name_fails() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .publish_package(
+        .publish_package_advanced(
             code,
             schema,
             BTreeMap::new(),

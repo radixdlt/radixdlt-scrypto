@@ -13,6 +13,7 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use resources_tracker_macro::trace_resources;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -175,6 +176,7 @@ impl ResourceManagerNativePackage {
                 schema,
                 substates,
                 functions,
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema,
             }
         };
@@ -379,6 +381,7 @@ impl ResourceManagerNativePackage {
                 schema,
                 substates,
                 functions,
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema,
             }
         };
@@ -558,6 +561,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema,
         };
 
@@ -697,6 +701,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         };
 
@@ -762,6 +767,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         };
 
@@ -862,6 +868,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
         };
 
@@ -955,6 +962,7 @@ impl ResourceManagerNativePackage {
             substates,
             functions,
             event_schema: btreemap!(),
+            virtual_lazy_load_functions: btreemap!(),
         };
 
         PackageSchema {
@@ -970,6 +978,7 @@ impl ResourceManagerNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,

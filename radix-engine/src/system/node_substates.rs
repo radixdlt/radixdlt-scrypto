@@ -1298,7 +1298,7 @@ impl<'a> SubstateRef<'a> {
     }
 
     // TODO: remove this method
-    pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (IndexSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Worktop(worktop) => {
                 let nodes = worktop
@@ -1306,39 +1306,39 @@ impl<'a> SubstateRef<'a> {
                     .values()
                     .map(|o| RENodeId::Object(o.bucket_id()))
                     .collect();
-                (HashSet::new(), nodes)
+                (index_set_new(), nodes)
             }
             SubstateRef::VaultInfo(vault) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 references.insert(RENodeId::GlobalObject(vault.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::ProofInfo(proof) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 references.insert(RENodeId::GlobalObject(proof.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::FungibleProof(proof) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 for r in proof.evidence.keys() {
                     references.insert(r.to_re_node_id());
                 }
                 (references, Vec::new())
             }
             SubstateRef::NonFungibleProof(proof) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 for r in proof.evidence.keys() {
                     references.insert(r.to_re_node_id());
                 }
                 (references, Vec::new())
             }
             SubstateRef::BucketInfo(bucket) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 references.insert(RENodeId::GlobalObject(bucket.resource_address.into()));
                 (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 for component_ref in &substate.dependent_components {
                     references.insert(RENodeId::GlobalObject(component_ref.clone().into()));
                 }
@@ -1352,10 +1352,10 @@ impl<'a> SubstateRef<'a> {
                 if let Some(vault) = substate.royalty_vault {
                     owns.push(RENodeId::Object(vault.id()));
                 }
-                (HashSet::new(), owns)
+                (index_set_new(), owns)
             }
             SubstateRef::TypeInfo(substate) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 match substate {
                     TypeInfoSubstate::Object {
                         package_address, ..
@@ -1366,12 +1366,12 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
-            SubstateRef::FungibleResourceManager(..) => (HashSet::new(), Vec::new()),
+            SubstateRef::FungibleResourceManager(..) => (index_set_new(), Vec::new()),
             SubstateRef::NonFungibleResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();
                 owned_nodes.push(RENodeId::KeyValueStore(substate.non_fungible_table));
 
-                (HashSet::new(), owned_nodes)
+                (index_set_new(), owned_nodes)
             }
             SubstateRef::EpochManager(substate) => {
                 let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
@@ -1388,7 +1388,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = Vec::new();
                 owned_nodes.push(RENodeId::Object(substate.controlled_asset));
-                (HashSet::new(), owned_nodes)
+                (index_set_new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
                 let (_, owns, refs) =
@@ -1400,7 +1400,7 @@ impl<'a> SubstateRef<'a> {
                 if let Some(vault) = substate.royalty_vault {
                     owned_nodes.push(RENodeId::Object(vault.vault_id()));
                 }
-                (HashSet::new(), owned_nodes)
+                (index_set_new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 if let Some(substate) = substate {
@@ -1408,7 +1408,7 @@ impl<'a> SubstateRef<'a> {
                         IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
                     (refs, own)
                 } else {
-                    (HashSet::new(), Vec::new())
+                    (index_set_new(), Vec::new())
                 }
             }
             SubstateRef::Account(substate) => {
@@ -1416,10 +1416,10 @@ impl<'a> SubstateRef<'a> {
                 owned_nodes.push(RENodeId::KeyValueStore(
                     substate.vaults.key_value_store_id(),
                 ));
-                (HashSet::new(), owned_nodes)
+                (index_set_new(), owned_nodes)
             }
             SubstateRef::AuthZone(substate) => {
-                let mut references = HashSet::new();
+                let mut references = index_set_new();
                 let mut owned_nodes = Vec::new();
                 for proof in &substate.proofs {
                     owned_nodes.push(RENodeId::Object(proof.0));
@@ -1429,7 +1429,7 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, owned_nodes)
             }
-            _ => (HashSet::new(), Vec::new()),
+            _ => (index_set_new(), Vec::new()),
         }
     }
 }

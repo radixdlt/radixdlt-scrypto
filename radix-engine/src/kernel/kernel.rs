@@ -11,33 +11,23 @@ use super::kernel_api::{
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
-use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::identity::IdentityBlueprint;
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
-use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::modules::access_rules::AccessRulesObject;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
-};
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
-use radix_engine_interface::schema::KeyValueStoreSchema;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -127,183 +117,9 @@ where
         (self.module, new_result)
     }
 
-    fn create_virtual_account(
-        &mut self,
-        global_node_id: RENodeId,
-        non_fungible_global_id: NonFungibleGlobalId,
-    ) -> Result<(), RuntimeError> {
-        // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-
-        let access_rule = rule!(require(non_fungible_global_id));
-        let component_id = {
-            let kv_store_id = {
-                let node_id = self.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
-                let node = RENodeInit::KeyValueStore;
-                self.kernel_create_node(
-                    node_id,
-                    node,
-                    btreemap!(
-                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
-                            KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
-                        )
-                    ),
-                )?;
-                node_id
-            };
-
-            let node_id = {
-                let node_modules = btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-                        package_address: ACCOUNT_PACKAGE,
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        global: false
-                    })
-                );
-
-                let account_substate = AccountSubstate {
-                    vaults: Own::KeyValueStore(kv_store_id.into()),
-                };
-
-                let node_id = self.kernel_allocate_node_id(AllocateEntityType::Object)?;
-                let node = RENodeInit::Object(btreemap!(
-                    SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
-                ));
-                self.kernel_create_node(node_id, node, node_modules)?;
-                node_id
-            };
-            node_id
-        };
-
-        let access_rules = {
-            let mut access_rules = AccessRulesConfig::new();
-            access_rules.set_access_rule_and_mutability(
-                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
-                AccessRule::AllowAll,
-                AccessRule::DenyAll,
-            );
-            access_rules.set_access_rule_and_mutability(
-                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
-                AccessRule::AllowAll,
-                AccessRule::DenyAll,
-            );
-            access_rules.default(access_rule.clone(), access_rule)
-        };
-
-        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-        let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
-
-        self.globalize_with_address(
-            component_id,
-            btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            ),
-            global_node_id.into(),
-        )?;
-
-        Ok(())
-    }
-
-    fn create_virtual_identity(
-        &mut self,
-        global_node_id: RENodeId,
-        non_fungible_global_id: NonFungibleGlobalId,
-    ) -> Result<(), RuntimeError> {
-        // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-
-        let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, access_rules) = IdentityBlueprint::create_virtual(access_rule, self)?;
-
-        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-        let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
-
-        self.globalize_with_address(
-            local_id,
-            btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            ),
-            global_node_id.into(),
-        )?;
-
-        Ok(())
-    }
-
-    fn try_virtualize(
-        &mut self,
-        node_id: RENodeId,
-        _module_id: NodeModuleId,
-        _offset: &SubstateOffset,
-    ) -> Result<bool, RuntimeError> {
-        match node_id {
-            // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::GlobalObject(Address::Component(component_address)) => {
-                // Lazy create component if missing
-                match component_address {
-                    ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_account(node_id, non_fungible_global_id)?;
-                    }
-                    ComponentAddress::EddsaEd25519VirtualAccount(address) => {
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_account(node_id, non_fungible_global_id)?;
-                    }
-                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
-                    }
-                    ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
-                    }
-                    _ => return Ok(false),
-                };
-
-                Ok(true)
-            }
-            _ => Ok(false),
-        }
-    }
-
-    fn drop_node_internal(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError> {
+    fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
+            RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, &node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id.clone(),
             ))),
@@ -359,7 +175,7 @@ where
     ) -> Result<X::Output, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
-        let executor = &resolved.executor;
+        let executor = resolved.executor;
         let actor = &resolved.resolved_actor;
         let args = &resolved.args;
         let call_frame_update = &mut resolved.update;
@@ -367,7 +183,7 @@ where
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, &actor, call_frame_update, &args)
+                KernelModuleMixer::before_push_frame(api, actor, call_frame_update, &args)
             })?;
         }
 
@@ -463,135 +279,72 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::GlobalObject(Address::Resource(..)) => {
-                        if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        }
+                    RENodeId::GlobalObject(Address::Component(
+                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                        | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                        | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                        | ComponentAddress::EddsaEd25519VirtualIdentity(..),
+                    )) => {
+                        // For virtual accounts and native packages, create a reference directly
+                        self.current_frame
+                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        continue;
                     }
-                    RENodeId::GlobalObject(Address::Package(package_address)) => {
-                        // TODO: Cleanup
-                        {
-                            if is_native_package(*package_address) {
-                                self.current_frame
-                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                continue;
-                            } else {
-                                if self.current_frame.get_node_visibility(node_id).is_none() {
-                                    let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                                    self.track
-                                        .acquire_lock(
-                                            SubstateId(
-                                                *node_id,
-                                                NodeModuleId::TypeInfo,
-                                                offset.clone(),
-                                            ),
-                                            LockFlags::read_only(),
-                                        )
-                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                    self.track
-                                        .release_lock(
-                                            SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                            false,
-                                        )
-                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                    self.current_frame
-                                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                }
-                            }
-                        }
-                    }
-                    RENodeId::GlobalObject(Address::Component(global_address)) => {
-                        if matches!(
-                            global_address,
-                            ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                        ) || matches!(
-                            global_address,
-                            ComponentAddress::EddsaEd25519VirtualAccount(..)
-                        ) || matches!(
-                            global_address,
-                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                        ) || matches!(
-                            global_address,
-                            ComponentAddress::EddsaEd25519VirtualIdentity(..)
-                        ) {
-                            // For virtual accounts and native packages, create a reference directly
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                            continue;
-                        }
-
-                        if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        }
-                    }
-                    RENodeId::Object(..) => {
-                        if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-
-                            let substate_ref =
-                                self.track
-                                    .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
-                            let type_substate: &TypeInfoSubstate = substate_ref.into();
-                            if !matches!(type_substate,
-                                TypeInfoSubstate::Object {
-                                    package_address,
-                                    blueprint_name,
-                                    ..
-
-                                } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(VAULT_BLUEPRINT)
-                            ) {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::InvalidDirectAccess,
-                                ));
-                            }
-
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
-                        }
+                    RENodeId::GlobalObject(Address::Package(package_address))
+                        if is_native_package(*package_address) =>
+                    {
+                        // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
+                        self.current_frame
+                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        continue;
                     }
                     _ => {}
                 }
+
+                if self.current_frame.get_node_visibility(node_id).is_some() {
+                    continue;
+                }
+
+                let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                self.track
+                    .acquire_lock(
+                        SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                        LockFlags::read_only(),
+                    )
+                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+
+                let substate_ref =
+                    self.track
+                        .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
+                let type_substate: &TypeInfoSubstate = substate_ref.into();
+                match type_substate {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        global,
+                    } => {
+                        if *global {
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            && blueprint_name.eq(VAULT_BLUEPRINT)
+                        {
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                        } else {
+                            return Err(RuntimeError::KernelError(
+                                KernelError::InvalidDirectAccess,
+                            ));
+                        }
+                    }
+                    TypeInfoSubstate::KeyValueStore(..) => {
+                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                    }
+                }
+
+                self.track
+                    .release_lock(SubstateId(*node_id, NodeModuleId::TypeInfo, offset), false)
+                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
             }
         }
 
@@ -647,18 +400,18 @@ where
                 blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess {
+                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
                         package_address,
                         blueprint_name,
-                    },
+                    })),
                 ));
             }
         }
 
-        let node = self.drop_node_internal(node_id)?;
+        let node = self.drop_node_internal(*node_id)?;
 
         // Restore current mode
         self.execution_mode = current_mode;
@@ -677,6 +430,13 @@ where
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
+    }
+
+    #[trace_resources(log=node_id)]
+    fn kernel_allocate_virtual_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.id_allocator.allocate_virtual_node_id(node_id);
+
+        Ok(())
     }
 
     #[trace_resources(log=node_id)]
@@ -886,13 +646,13 @@ where
                 flags,
             ) {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidSubstateAccess {
+                    KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
                         offset,
                         flags,
-                    },
+                    })),
                 ));
             }
         }
@@ -906,22 +666,31 @@ where
             flags,
         );
 
-        let lock_handle = match maybe_lock_handle {
-            Ok(lock_handle) => lock_handle,
-            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(node_id, module_id, ref offset),
-            )))) => {
-                if self.try_virtualize(node_id, module_id, &offset)? {
-                    self.current_frame.acquire_lock(
-                        &mut self.heap,
-                        &mut self.track,
-                        &node_id,
-                        module_id,
-                        offset.clone(),
-                        flags,
-                    )?
+        let lock_handle = match &maybe_lock_handle {
+            Ok(lock_handle) => *lock_handle,
+            Err(RuntimeError::KernelError(KernelError::TrackError(track_err))) => {
+                if let TrackError::NotFound(SubstateId(node_id, module_id, ref offset)) =
+                    **track_err
+                {
+                    let retry = KernelModuleMixer::on_substate_lock_fault(
+                        node_id, module_id, &offset, self,
+                    )?;
+                    if retry {
+                        self.current_frame.acquire_lock(
+                            &mut self.heap,
+                            &mut self.track,
+                            &node_id,
+                            module_id,
+                            offset.clone(),
+                            flags,
+                        )?
+                    } else {
+                        return maybe_lock_handle;
+                    }
                 } else {
-                    return maybe_lock_handle;
+                    return Err(RuntimeError::KernelError(KernelError::TrackError(
+                        track_err.clone(),
+                    )));
                 }
             }
             Err(err) => {
@@ -939,21 +708,27 @@ where
                                 LockFlags::read_only(),
                             )
                             .map_err(|_| err.clone())?;
-                        self.track
+                        match self
+                            .track
                             .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
-                            .map_err(|_| err)?;
-                        self.current_frame
-                            .add_ref(node_id, RENodeVisibilityOrigin::Normal);
-                        self.current_frame.acquire_lock(
-                            &mut self.heap,
-                            &mut self.track,
-                            &node_id,
-                            module_id,
-                            offset.clone(),
-                            flags,
-                        )?
+                            .map_err(|_| err)
+                        {
+                            Ok(_) => {
+                                self.current_frame
+                                    .add_ref(node_id, RENodeVisibilityOrigin::Normal);
+                                self.current_frame.acquire_lock(
+                                    &mut self.heap,
+                                    &mut self.track,
+                                    &node_id,
+                                    module_id,
+                                    offset.clone(),
+                                    flags,
+                                )?
+                            }
+                            Err(err) => return Err(err.clone()),
+                        }
                     }
-                    _ => return Err(err),
+                    _ => return Err(err.clone()),
                 }
             }
         };
@@ -999,7 +774,13 @@ where
                 .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
         let ret = substate_ref.to_scrypto_value();
 
-        KernelModuleMixer::on_read_substate(self, lock_handle, ret.as_slice().len())?;
+        // TODO: Design special package code loading cost rule
+        let size = match substate_ref {
+            SubstateRef::PackageCode(..) => 0,
+            _ => ret.as_slice().len(),
+        };
+
+        KernelModuleMixer::on_read_substate(self, lock_handle, size)?;
 
         Ok(ret)
     }
@@ -1035,12 +816,6 @@ where
         &'a mut S: From<SubstateRefMut<'a>>,
         'b: 'a,
     {
-        // A little hacky: this post sys call is called before the sys call happens due to
-        // a mutable borrow conflict for substate ref.
-        // Some modules (specifically: ExecutionTraceModule) require that all
-        // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop() so that it's actually
-        // after the sys call processing, not before.
         KernelModuleMixer::on_write_substate(
             self,
             lock_handle,
@@ -1065,20 +840,12 @@ where
         package_address: PackageAddress,
         handle: LockHandle,
     ) -> Result<W::WasmInstance, RuntimeError> {
-        let substate_ref = self
-            .current_frame
-            .get_ref(handle, &mut self.heap, &mut self.track)?;
-        let code: &PackageCodeSubstate = substate_ref.into();
-        let code_size = code.code().len();
+        let package_code: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
+        let code = package_code.code.clone();
 
-        let instance = self
+        Ok(self
             .scrypto_interpreter
-            .create_instance(package_address, &code.code);
-
-        // TODO: move before create_instance() call
-        KernelModuleMixer::on_read_substate(self, handle, code_size)?;
-
-        Ok(instance)
+            .create_instance(package_address, &code))
     }
 }
 

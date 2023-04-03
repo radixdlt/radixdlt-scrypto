@@ -1,7 +1,6 @@
 use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::address::EntityType;
-use resources_tracker_macro::trace_resources;
 
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,7 +38,6 @@ impl IdAllocator {
         Ok(())
     }
 
-    #[trace_resources]
     pub fn take_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.last_mut().expect("No frame found");
         let frame_allocated = ids.remove(&node_id);

@@ -145,7 +145,7 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    /// Mints non-fungible resources
+    /// Mints fungible resources
     pub fn mint_fungible<Y, E: Debug + ScryptoDecode>(
         &mut self,
         amount: Decimal,

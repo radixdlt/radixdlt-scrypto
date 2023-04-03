@@ -1,8 +1,8 @@
 use super::track::Track;
 use crate::blueprints::resource::*;
-use crate::errors::CallFrameError;
+use crate::errors::{CallFrameError, OffsetDoesNotExist};
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
-use crate::types::HashMap;
+use crate::types::NonIterMap;
 use radix_engine_interface::api::types::{
     BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -10,18 +10,18 @@ use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
-use resources_tracker_macro::trace_resources;
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 pub struct Heap {
-    nodes: HashMap<RENodeId, HeapRENode>,
+    nodes: NonIterMap<RENodeId, HeapRENode>,
 }
 
 impl Heap {
     pub fn new() -> Self {
         Self {
-            nodes: HashMap::new(),
+            nodes: NonIterMap::new(),
         }
     }
 
@@ -29,7 +29,6 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
-    #[trace_resources(info = "Heap")]
     pub fn get_substate(
         &mut self,
         node_id: &RENodeId,
@@ -54,7 +53,12 @@ impl Heap {
                 .substates
                 .get(&(module_id, offset.clone()))
                 .map(|s| s.to_ref())
-                .ok_or_else(|| CallFrameError::OffsetDoesNotExist(node_id.clone(), offset.clone())),
+                .ok_or_else(|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                }),
         }
     }
 
@@ -82,16 +86,19 @@ impl Heap {
                 .substates
                 .get_mut(&(module_id, offset.clone()))
                 .map(|s| s.to_ref_mut())
-                .ok_or_else(|| CallFrameError::OffsetDoesNotExist(node_id.clone(), offset.clone())),
+                .ok_or_else(|| {
+                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
+                        node_id.clone(),
+                        offset.clone(),
+                    )))
+                }),
         }
     }
 
-    #[trace_resources(info = "Heap")]
     pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
         self.nodes.insert(node_id, node);
     }
 
-    #[trace_resources]
     pub fn move_nodes_to_store(
         &mut self,
         track: &mut Track,
@@ -104,7 +111,6 @@ impl Heap {
         Ok(())
     }
 
-    #[trace_resources]
     pub fn move_node_to_store(
         &mut self,
         track: &mut Track,
@@ -119,7 +125,7 @@ impl Heap {
             self.move_nodes_to_store(track, owned_nodes)?;
             track
                 .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(e))?;
+                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
         }
 
         Ok(())
