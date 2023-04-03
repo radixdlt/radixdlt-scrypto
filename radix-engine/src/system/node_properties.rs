@@ -62,7 +62,7 @@ impl NodeProperties {
         actor: &Actor,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        substate_key: &SubstateKey,
+        _substate_key: &SubstateKey,
     ) -> bool {
         match mode {
             ExecutionMode::Kernel => match module_id {
@@ -110,7 +110,7 @@ impl NodeProperties {
         actor: &Actor,
         node_id: &NodeId,
         module_id: TypedModuleId,
-        substate_key: &SubstateKey,
+        _substate_key: &SubstateKey,
     ) -> bool {
         match mode {
             ExecutionMode::Kernel => match module_id {
@@ -146,9 +146,9 @@ impl NodeProperties {
     }
 
     pub fn can_own(
-        offset: &SubstateKey,
-        package_address: PackageAddress,
-        blueprint_name: &str,
+        _offset: &SubstateKey,
+        _package_address: PackageAddress,
+        _blueprint_name: &str,
     ) -> bool {
         true
     }

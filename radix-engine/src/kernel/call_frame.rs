@@ -310,7 +310,7 @@ impl CallFrame {
 
             if !heap.contains_node(&node_id) {
                 for child in &new_children {
-                    Self::move_node_to_store(heap, track, child);
+                    Self::move_node_to_store(heap, track, child)?;
                 }
             }
         }
@@ -563,7 +563,7 @@ impl CallFrame {
                     }
 
                     if push_to_store {
-                        Self::move_node_to_store(heap, track, child_id);
+                        Self::move_node_to_store(heap, track, child_id)?;
                     }
                 }
             }
@@ -649,16 +649,16 @@ impl CallFrame {
                     }
                 }
 
+                for node in substate_value.owned_node_ids() {
+                    Self::move_node_to_store(heap, track, node)?;
+                }
+
                 track.insert_substate(
                     node_id.clone(),
                     module_id.into(),
                     substate_key,
                     substate_value,
                 );
-
-                for node in substate_value.owned_node_ids() {
-                    Self::move_node_to_store(heap, track, node);
-                }
             }
         }
 

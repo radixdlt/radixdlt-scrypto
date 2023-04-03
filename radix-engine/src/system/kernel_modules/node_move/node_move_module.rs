@@ -77,7 +77,7 @@ impl NodeMoveModule {
     }
 
     fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
-        node_id: NodeId,
+        _node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         Ok(())

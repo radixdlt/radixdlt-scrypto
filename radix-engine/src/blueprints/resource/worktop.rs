@@ -137,7 +137,7 @@ impl WorktopBlueprint {
             } else if existing_amount == amount {
                 // Move
                 worktop.resources.remove(&resource_address);
-                api.sys_write_substate_typed(worktop_handle, &worktop);
+                api.sys_write_substate_typed(worktop_handle, &worktop)?;
                 api.sys_drop_lock(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
             } else {
@@ -188,7 +188,7 @@ impl WorktopBlueprint {
                 // Move
                 worktop = api.sys_read_substate_typed(worktop_handle)?;
                 worktop.resources.remove(&resource_address);
-                api.sys_write_substate_typed(worktop_handle, &worktop);
+                api.sys_write_substate_typed(worktop_handle, &worktop)?;
                 api.sys_drop_lock(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
             } else {
@@ -216,7 +216,7 @@ impl WorktopBlueprint {
         let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         if let Some(bucket) = worktop.resources.remove(&input.resource_address) {
             // Move
-            api.sys_write_substate_typed(worktop_handle, &worktop);
+            api.sys_write_substate_typed(worktop_handle, &worktop)?;
             api.sys_drop_lock(worktop_handle)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
@@ -340,7 +340,7 @@ impl WorktopBlueprint {
         let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
         worktop.resources.clear();
-        api.sys_write_substate_typed(worktop_handle, &worktop);
+        api.sys_write_substate_typed(worktop_handle, &worktop)?;
         api.sys_drop_lock(worktop_handle)?;
         Ok(IndexedScryptoValue::from_typed(&buckets))
     }

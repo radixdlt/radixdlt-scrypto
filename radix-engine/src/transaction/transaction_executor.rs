@@ -159,7 +159,7 @@ where
         &mut self,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        mut fee_reserve: SystemLoanFeeReserve,
+        fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = executable.transaction_hash();
@@ -230,13 +230,13 @@ where
         let (modules, invoke_result) = kernel.teardown(invoke_result);
         let mut fee_reserve = modules.costing.fee_reserve();
         let mut application_events = modules.events.events();
-        let mut application_logs = modules.logger.logs();
+        let application_logs = modules.logger.logs();
 
         // Finalize
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
         let transaction_result = match result_type {
             TransactionResultType::Commit(outcome) => {
-                let is_success = invoke_result.is_ok();
+                let is_success = outcome.is_ok();
 
                 // Commit/revert
                 if !is_success {
@@ -367,7 +367,9 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(&commit.state_updates);
+        substate_db
+            .commit(&commit.state_updates)
+            .expect("Database error");
     }
     receipt
 }

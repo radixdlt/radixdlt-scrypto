@@ -218,7 +218,7 @@ impl ClockNativePackage {
             &ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
+        let mut substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
         substate.current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
         api.sys_write_substate_typed(handle, &substate)?;
 

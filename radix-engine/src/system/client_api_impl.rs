@@ -74,10 +74,7 @@ where
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let LockInfo {
-            node_id,
-            module_id,
-            substate_key,
-            ..
+            node_id, module_id, ..
         } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&TypedModuleId::ObjectState) {
@@ -106,7 +103,7 @@ where
         }
 
         let substate = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
         self.kernel_write_substate(lock_handle, substate)?;
 
         Ok(())
@@ -127,7 +124,7 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        mut object_states: Vec<Vec<u8>>,
+        object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
         let package_address = self
             .kernel_get_current_actor()
@@ -274,7 +271,7 @@ where
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get(&TypedModuleId::TypeInfo)
+            .get_mut(&TypedModuleId::TypeInfo)
             .unwrap()
             .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
@@ -284,7 +281,7 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
         node_substates
-            .get(&TypedModuleId::TypeInfo)
+            .get_mut(&TypedModuleId::TypeInfo)
             .unwrap()
             .insert(
                 TypeInfoOffset::TypeInfo.into(),
@@ -327,7 +324,7 @@ where
                         )));
                     }
 
-                    let node = self.kernel_drop_node(&node_id)?;
+                    let mut node = self.kernel_drop_node(&node_id)?;
                     let metadata = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
                     node_substates.insert(module_id, metadata);
                 }
@@ -638,6 +635,7 @@ where
                 .schema
                 .blueprints
                 .get(&blueprint.blueprint_name)
+                .cloned()
                 .map_or(
                     Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
@@ -650,15 +648,19 @@ where
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
-            let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
-                Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                        blueprint: blueprint.clone(),
-                        event_name,
-                    })),
-                )),
-                Ok,
-            )?;
+            let local_type_index = blueprint_schema
+                .event_schema
+                .get(&event_name)
+                .cloned()
+                .map_or(
+                    Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                            blueprint: blueprint.clone(),
+                            event_name,
+                        })),
+                    )),
+                    Ok,
+                )?;
 
             (handle, blueprint_schema, local_type_index)
         };
@@ -669,7 +671,7 @@ where
                 node_id, module_id, ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, module_id),
-                *local_type_index,
+                local_type_index,
             )),
             Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
@@ -677,7 +679,7 @@ where
                     TypedModuleId::ObjectState,
                     blueprint.blueprint_name.to_string(),
                 ),
-                *local_type_index,
+                local_type_index,
             )),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(Box::new(EventError::InvalidActor)),

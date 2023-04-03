@@ -50,15 +50,9 @@ pub struct AuthModule {
 impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
         match actor {
-            Actor::Method {
-                global_address,
-                node_id,
-                module_id,
-                blueprint,
-                ident,
-            } => node_id.is_global(),
-            Actor::Function { blueprint, ident } => true,
-            Actor::VirtualLazyLoad { blueprint, ident } => true,
+            Actor::Method { node_id, .. } => node_id.is_global(),
+            Actor::Function { .. } => true,
+            Actor::VirtualLazyLoad { .. } => true,
         }
     }
 

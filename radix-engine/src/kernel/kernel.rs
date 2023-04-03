@@ -666,10 +666,9 @@ where
         let lock_handle = match &maybe_lock_handle {
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
-                if let StoreLockError::NotFound(node_id, module_id, substate_key) = **track_err {
-                    let module_id = TypedModuleId::from_repr(module_id.0).unwrap();
+                if matches!(track_err.as_ref(), StoreLockError::NotFound(..)) {
                     let retry = KernelModuleMixer::on_substate_lock_fault(
-                        node_id,
+                        *node_id,
                         module_id,
                         &substate_key,
                         self,

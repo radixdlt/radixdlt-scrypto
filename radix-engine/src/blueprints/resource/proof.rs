@@ -353,7 +353,7 @@ impl ProofBlueprint {
 
         // FIXME: check type before schema check is ready! applicable to all functions!
 
-        let mut heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
+        let heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
         let dropped_proof: DroppedProof = heap_node.into();
         match dropped_proof.resource {
             DroppedProofResource::Fungible(p) => p.drop_proof(api)?,

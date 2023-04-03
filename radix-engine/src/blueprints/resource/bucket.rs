@@ -301,7 +301,7 @@ impl NonFungibleBucket {
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.sys_write_substate_typed(handle, &substate);
+        api.sys_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
         Ok(taken)
     }
@@ -324,7 +324,7 @@ impl NonFungibleBucket {
             .take_by_ids(ids)
             .map_err(BucketError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
-        api.sys_write_substate_typed(handle, &substate);
+        api.sys_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
         Ok(taken)
     }
@@ -352,7 +352,7 @@ impl NonFungibleBucket {
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.sys_write_substate_typed(handle, &substate);
+        api.sys_write_substate_typed(handle, &substate)?;
         api.sys_drop_lock(handle)?;
         Ok(())
     }

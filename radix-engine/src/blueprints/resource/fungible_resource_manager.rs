@@ -298,8 +298,8 @@ impl FungibleResourceManagerBlueprint {
                     // Update total supply
                     resource_manager.total_supply -= resource.amount();
 
-                    api.sys_write_substate_typed(resman_handle, &resource_manager);
-                    api.sys_drop_lock(resman_handle);
+                    api.sys_write_substate_typed(resman_handle, &resource_manager)?;
+                    api.sys_drop_lock(resman_handle)?;
                 }
             }
             DroppedBucketResource::NonFungible(..) => {

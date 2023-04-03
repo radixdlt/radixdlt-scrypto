@@ -139,7 +139,7 @@ where
             global: true,
         }),
     );
-    let metadata_init = BTreeMap::new();
+    let mut metadata_init = BTreeMap::new();
     for (key, value) in metadata {
         metadata_init.insert(
             SubstateKey::from_vec(scrypto_encode(&key).unwrap()).ok_or(
@@ -611,15 +611,17 @@ impl PackageNativePackage {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let handle =
-            api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.sys_lock_substate(
+            receiver,
+            &PackageOffset::Royalty.into(),
+            LockFlags::read_only(),
+        )?;
 
-        let mut substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
+        let substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
             Some(vault) => Vault(vault).sys_take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
-        api.sys_write_substate_typed(handle, &substate)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }

@@ -97,7 +97,7 @@ impl KernelModuleMixer {
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
                 payload_len,
-                num_of_signatures
+                num_of_signatures,
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {

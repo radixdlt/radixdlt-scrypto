@@ -33,7 +33,7 @@ impl Heap {
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
-            .get_mut(node_id)
+            .get(node_id)
             .and_then(|node| node.substates.get(&module_id))
             .and_then(|module| module.get(substate_key))
     }
@@ -97,7 +97,7 @@ impl DroppedBucket {
 
 impl Into<DroppedBucket> for HeapNode {
     fn into(mut self) -> DroppedBucket {
-        let module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
+        let mut module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
 
         let info: BucketInfoSubstate = module
             .remove(&BucketOffset::Info.into())
@@ -135,7 +135,7 @@ pub enum DroppedProofResource {
 
 impl Into<DroppedProof> for HeapNode {
     fn into(mut self) -> DroppedProof {
-        let module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
+        let mut module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
 
         let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())

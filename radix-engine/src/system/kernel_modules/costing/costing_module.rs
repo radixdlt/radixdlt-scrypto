@@ -102,8 +102,8 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 
 impl KernelModule for CostingModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let costing = api.kernel_get_module_state().costing;
-        let fee_reserve = &costing.fee_reserve;
+        let costing = &mut api.kernel_get_module_state().costing;
+        let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;
 
         fee_reserve
@@ -256,7 +256,7 @@ impl KernelModule for CostingModule {
                     RoyaltyRecipient::Component(component_address.clone()),
                     vault_id.into(),
                 )?;
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate));
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
                 api.kernel_drop_lock(handle)?;
             }
         }
