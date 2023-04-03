@@ -675,7 +675,7 @@ impl CallFrame {
         }?;
 
         for (id, substate) in &substates {
-            let (refs, _owns) =  substate.to_ref().references_and_owned_nodes();
+            let (refs, _owns) = substate.to_ref().references_and_owned_nodes();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {
                 self.immortal_node_refs.insert(
@@ -743,8 +743,6 @@ impl CallFrame {
     pub fn check_node_visibility(&self, node_id: &RENodeId) -> Result<RefType, CallFrameError> {
         self.get_node_visibility(node_id)
             .map(|e| e.0)
-            .ok_or_else(|| {
-                CallFrameError::RENodeNotVisible(node_id.clone())
-            })
+            .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }
 }

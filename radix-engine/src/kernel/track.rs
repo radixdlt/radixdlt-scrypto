@@ -273,7 +273,21 @@ impl<'s> Track<'s> {
         let node_module = (*node_id, *module_id);
         let iterable = self.iterable_node_updates.get(&node_module);
         let items = if let Some(iterable) = iterable {
-            todo!()
+            match iterable {
+                IterableNodeUpdate::New(substates) => {
+                    let items = substates
+                        .iter()
+                        .map(|(offset, value)| {
+                            let id = SubstateId(*node_id, *module_id, offset.clone());
+                            (id, RuntimeSubstate::IterableEntry(value.clone()))
+                        })
+                        .collect();
+                    items
+                }
+                IterableNodeUpdate::Update(..) => {
+                    panic!("Unsupported");
+                }
+            }
         } else {
             self.iterable_node_reads.insert(node_module);
 

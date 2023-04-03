@@ -401,7 +401,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                         TypeInfoSubstate::IterableMap(..) => return None,
                     }
                 }
-                NodeModuleId::TypeInfo => return None,
+                NodeModuleId::TypeInfo | NodeModuleId::Iterable => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
