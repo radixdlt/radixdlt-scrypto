@@ -23,7 +23,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_stores::interface::AcquireLockError;
+use radix_engine_stores::interface::StoreLockError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -121,7 +121,7 @@ pub enum KernelError {
     CallFrameError(CallFrameError),
 
     // Track
-    TrackLockError(AcquireLockError),
+    TrackLockError(StoreLockError),
 
     /// Interpreter
     InterpreterError(InterpreterError),

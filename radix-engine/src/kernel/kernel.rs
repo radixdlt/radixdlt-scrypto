@@ -25,7 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{StoreLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -666,7 +666,7 @@ where
         let lock_handle = match &maybe_lock_handle {
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
-                if let AcquireLockError::NotFound(node_id, module_id, substate_key) = **track_err {
+                if let StoreLockError::NotFound(node_id, module_id, substate_key) = **track_err {
                     let module_id = TypedModuleId::from_repr(module_id.0).unwrap();
                     let retry = KernelModuleMixer::on_substate_lock_fault(
                         node_id,

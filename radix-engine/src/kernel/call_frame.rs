@@ -5,7 +5,7 @@ use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{StoreLockError, SubstateStore};
 
 use super::heap::{Heap, HeapNode};
 use super::kernel_api::LockInfo;
@@ -114,7 +114,7 @@ pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound,
-    TrackError(Box<AcquireLockError>),
+    TrackError(Box<StoreLockError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

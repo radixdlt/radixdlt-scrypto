@@ -54,7 +54,7 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum AcquireLockError {
+pub enum StoreLockError {
     NotFound(NodeId, ModuleId, SubstateKey),
     SubstateLocked(NodeId, ModuleId, SubstateKey),
     LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleId, SubstateKey),
@@ -77,7 +77,7 @@ pub trait SubstateStore {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<u32, AcquireLockError>;
+    ) -> Result<u32, StoreLockError>;
 
     /// Releases a lock.
     ///
@@ -94,7 +94,8 @@ pub trait SubstateStore {
     /// Updates a substate.
     ///
     /// # Panics
-    /// - If the lock handle is invalid, or not associated with WRITE permission
+    /// - If the lock handle is invalid;
+    /// - If the lock handle is not associated with WRITE permission
     fn put_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Inserts a substate into the substate store.
