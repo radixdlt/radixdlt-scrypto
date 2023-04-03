@@ -1,3 +1,4 @@
+pub mod bootstrap;
 pub mod client_api_impl;
 pub mod kernel_modules;
 pub mod node_init;

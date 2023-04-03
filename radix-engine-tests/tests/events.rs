@@ -109,7 +109,7 @@ fn scrypto_can_emit_registered_events() {
             ref event_data,
         )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
-            && *node_id == NodeId::GlobalObject(GlobalAddress::Package(package_address))
+            && *node_id == package_address.as_node_id()
             && blueprint_name == "ScryptoEvents" =>
             true,
         _ => false,

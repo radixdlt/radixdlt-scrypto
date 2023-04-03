@@ -1,6 +1,6 @@
 use radix_engine::errors::RejectionError;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::InMemorySubstateDatabase;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
@@ -118,7 +118,7 @@ fn test_normal_transaction_flow() {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_db = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateDatabase::with_bootstrap(&scrypto_interpreter);
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();

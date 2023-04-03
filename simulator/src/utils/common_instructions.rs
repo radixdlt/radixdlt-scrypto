@@ -7,7 +7,7 @@ use radix_engine::types::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::Instruction;
-use transaction::{builder::ManifestBuilder, data::from_address};
+use transaction::{builder::ManifestBuilder};
 
 use super::{parse_resource_specifier, ResourceSpecifier};
 

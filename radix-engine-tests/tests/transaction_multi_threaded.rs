@@ -28,7 +28,7 @@ mod multi_threaded_test {
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,
         };
-        let mut substate_db = InMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+        let mut substate_db = InMemorySubstateDatabase::with_bootstrap(&scrypto_interpreter);
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

@@ -6,12 +6,12 @@ use sbor::rust::ops::Bound::Included;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct InMemorySubstateStore {
+pub struct InMemorySubstateDatabase {
     configs: BTreeMap<ModuleId, ModuleConfig>,
     substates: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
-impl InMemorySubstateStore {
+impl InMemorySubstateDatabase {
     pub fn standard() -> Self {
         Self {
             configs: btreemap!(
@@ -42,7 +42,7 @@ impl InMemorySubstateStore {
     }
 }
 
-impl SubstateDatabase for InMemorySubstateStore {
+impl SubstateDatabase for InMemorySubstateDatabase {
     fn get_substate(
         &self,
         node_id: &NodeId,
@@ -91,7 +91,7 @@ impl SubstateDatabase for InMemorySubstateStore {
     }
 }
 
-impl CommittableSubstateDatabase for InMemorySubstateStore {
+impl CommittableSubstateDatabase for InMemorySubstateDatabase {
     fn commit(&mut self, _state_changes: &StateUpdates) -> Result<(), CommitError> {
         todo!()
     }

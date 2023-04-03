@@ -5,13 +5,14 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
-use radix_engine::ledger::*;
+use radix_engine::system::bootstrap::create_genesis;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -35,6 +36,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
     EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
+use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -47,6 +49,11 @@ use radix_engine_interface::types::{NodeId, VaultOffset};
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use radix_engine_stores::interface::{
+    CommittableSubstateDatabase, StateUpdate, StateUpdates, SubstateDatabase,
+};
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_stores::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
@@ -149,7 +156,7 @@ impl TestRunnerBuilder {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
             },
-            substate_db: InMemorySubstateStore::new(),
+            substate_db: InMemorySubstateDatabase::standard(),
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
@@ -173,7 +180,7 @@ impl TestRunnerBuilder {
 
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
-    substate_db: InMemorySubstateStore,
+    substate_db: InMemorySubstateDatabase,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -193,11 +200,11 @@ impl TestRunner {
         }
     }
 
-    pub fn substate_db(&self) -> &InMemorySubstateStore {
+    pub fn substate_db(&self) -> &InMemorySubstateDatabase {
         &self.substate_db
     }
 
-    pub fn substate_db_mut(&mut self) -> &mut InMemorySubstateStore {
+    pub fn substate_db_mut(&mut self) -> &mut InMemorySubstateDatabase {
         &mut self.substate_db
     }
 
@@ -256,13 +263,12 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
         let metadata_entry = self
             .substate_db
-            .get_substate(&SubstateId(
-                address.into(),
-                TypedModuleId::Metadata,
-                SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode(key).unwrap(),
-                )),
-            ))
+            .get_substate(
+                address.as_node_id(),
+                TypedModuleId::Metadata.into(),
+                &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
+            )
+            .expect("Database error")
             .map(|s| s.substate.to_runtime())?;
 
         let metadata_entry: Option<ScryptoValue> = metadata_entry.into();
@@ -282,22 +288,22 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.get_substate(&SubstateId(
-            NodeId::GlobalObject(component_address.into()),
-            TypedModuleId::Royalty,
-            RoyaltyOffset::Royalty.into(),
-        )) {
+        if let Some(output) = self.substate_db.get_substate(
+            component_address.as_node_id(),
+            TypedModuleId::Royalty.into(),
+            &RoyaltyOffset::RoyaltyAccumulator.into(),
+        ) {
             output
                 .substate
                 .component_royalty_accumulator()
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_substate(&SubstateId(
+                        .get_substate(
                             NodeId::Object(vault.vault_id()),
-                            TypedModuleId::ObjectState,
+                            TypedModuleId::ObjectState.into(),
                             VaultOffset::Vault.into(),
-                        ))
+                        )
                         .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
                 })
         } else {
@@ -306,22 +312,22 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.get_substate(&SubstateId(
-            NodeId::GlobalObject(package_address.into()),
-            TypedModuleId::ObjectState,
+        if let Some(output) = self.substate_db.get_substate(
+            package_address.as_node_id(),
+            TypedModuleId::ObjectState.into(),
             PackageOffset::Package.into(),
-        )) {
+        ) {
             output
                 .substate
                 .package_royalty()
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_substate(&SubstateId(
+                        .get_substate(
                             NodeId::Object(vault.vault_id()),
-                            TypedModuleId::ObjectState,
+                            TypedModuleId::ObjectState.into(),
                             VaultOffset::Vault.into(),
-                        ))
+                        )
                         .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
                 })
         } else {
@@ -354,7 +360,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<NodeId> {
-        let node_id = NodeId::GlobalObject(component_address.into());
+        let node_id = component_address.as_node_id();
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -366,12 +372,17 @@ impl TestRunner {
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {
-        if let Some(output) = self.substate_db().get_substate(&SubstateId(
-            NodeId::Object(vault_id),
-            TypedModuleId::ObjectState,
-            VaultOffset::Vault.into(),
-        )) {
-            if output.substate.vault_info().resource_type.is_fungible() {
+        if let Some(output) = self
+            .substate_db()
+            .get_substate(
+                &vault_id,
+                TypedModuleId::ObjectState.into(),
+                &VaultOffset::Info.into(),
+            )
+            .expect("Database error")
+        {
+            let info: VaultInfoSubstate = scrypto_decode(&output.0).unwrap();
+            if info.resource_type.is_fungible() {
                 self.inspect_fungible_vault(vault_id)
             } else {
                 self.inspect_non_fungible_vault(vault_id)
@@ -384,12 +395,17 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_substate(&SubstateId(
-                NodeId::Object(vault_id),
-                TypedModuleId::ObjectState,
-                VaultOffset::Vault.into(),
-            ))
-            .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+            .get_substate(
+                &vault_id,
+                TypedModuleId::ObjectState.into(),
+                &VaultOffset::LiquidFungible.into(),
+            )
+            .expect("Database error")
+            .map(|mut output| {
+                scrypto_decode::<LiquidFungibleResource>(&output.0)
+                    .unwrap()
+                    .amount()
+            })
     }
 
     pub fn inspect_non_fungible_vault(
@@ -397,17 +413,16 @@ impl TestRunner {
         vault_id: NodeId,
     ) -> Option<BTreeSet<NonFungibleLocalId>> {
         self.substate_db()
-            .get_substate(&SubstateId(
-                NodeId::Object(vault_id),
-                TypedModuleId::ObjectState,
-                VaultOffset::Vault.into(),
-            ))
+            .get_substate(
+                &vault_id,
+                TypedModuleId::ObjectState.into(),
+                &VaultOffset::LiquidNonFungible.into(),
+            )
+            .expect("Database error")
             .map(|mut output| {
-                output
-                    .substate
-                    .vault_liquid_non_fungible_mut()
-                    .ids()
-                    .clone()
+                scrypto_decode::<LiquidNonFungibleResource>(&output.0)
+                    .unwrap()
+                    .into_ids()
             })
     }
 
@@ -415,9 +430,9 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = NodeId::GlobalObject(component_address.into());
+        let node_id = component_address.as_node_id();
         let mut accounter = ResourceAccounter::new(&self.substate_db);
-        accounter.add_resources(node_id).unwrap();
+        accounter.add_resources(node_id.clone());
         accounter.into_map()
     }
 
@@ -478,35 +493,36 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
-        let substate_id = SubstateId(
-            NodeId::GlobalObject(system_address.into()),
-            TypedModuleId::ObjectState,
-            ValidatorOffset::Validator.into(),
-        );
-        let substate: ValidatorSubstate = self
-            .substate_db()
-            .get_substate(&substate_id)
-            .unwrap()
-            .substate
-            .to_runtime()
-            .into();
-        substate
+    pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
+        scrypto_decode(
+            &self
+                .substate_db()
+                .get_substate(
+                    address.as_node_id(),
+                    TypedModuleId::ObjectState.into(),
+                    &ValidatorOffset::Validator.into(),
+                )
+                .expect("Database error")
+                .unwrap()
+                .0,
+        )
+        .unwrap()
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let substate_id = SubstateId(
-            NodeId::GlobalObject(EPOCH_MANAGER.into()),
-            TypedModuleId::ObjectState,
-            EpochManagerOffset::EpochManager.into(),
-        );
-        let substate: ValidatorSetSubstate = self
-            .substate_db()
-            .get_substate(&substate_id)
-            .unwrap()
-            .substate
-            .to_runtime()
-            .into();
+        let substate: ValidatorSetSubstate = scrypto_decode(
+            &self
+                .substate_db()
+                .get_substate(
+                    EPOCH_MANAGER.as_node_id(),
+                    TypedModuleId::ObjectState.into(),
+                    &EpochManagerOffset::CurrentValidatorSet.into(),
+                )
+                .expect("Database error")
+                .unwrap()
+                .0,
+        )
+        .unwrap();
         substate
             .validator_set
             .iter()
@@ -729,9 +745,9 @@ impl TestRunner {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let commit_receipt = commit.state_updates.commit(&mut self.substate_db);
+            let commit_receipt = self.substate_db.commit(&commit.state_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(commit_receipt.outputs);
+                state_hash_support.update_with(&commit.state_updates);
             }
         }
         transaction_receipt
@@ -1151,7 +1167,7 @@ impl TestRunner {
         args: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
-        let substate_db = InMemorySubstateStore::new();
+        let substate_db = InMemorySubstateDatabase::standard();
         let mut track = Track::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
@@ -1164,6 +1180,8 @@ impl TestRunner {
             },
             SystemLoanFeeReserve::no_fee(),
             FeeTable::new(),
+            0,
+            0,
             &execution_config,
         );
         let scrypto_interpreter = ScryptoInterpreter {
@@ -1210,17 +1228,19 @@ impl TestRunner {
                         local_type_index.clone(),
                     ),
                     TypedModuleId::ObjectState => {
-                        let type_info = self
-                            .substate_db()
-                            .get_substate(&SubstateId(
-                                *node_id,
-                                TypedModuleId::TypeInfo,
-                                TypeInfoOffset::TypeInfo.into(),
-                            ))
-                            .unwrap()
-                            .substate
-                            .type_info()
-                            .clone();
+                        let type_info: TypeInfoSubstate = scrypto_decode(
+                            &self
+                                .substate_db()
+                                .get_substate(
+                                    node_id,
+                                    TypedModuleId::TypeInfo.into(),
+                                    &TypeInfoOffset::TypeInfo.into(),
+                                )
+                                .expect("Database error")
+                                .unwrap()
+                                .0,
+                        )
+                        .unwrap();
 
                         match type_info {
                             TypeInfoSubstate::Object { blueprint, .. } => (
@@ -1231,7 +1251,7 @@ impl TestRunner {
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
-                    TypedModuleId::TypeInfo => {
+                    TypedModuleId::TypeInfo | TypedModuleId::KeyValueStore => {
                         panic!("No event schema.")
                     }
                 }
@@ -1239,36 +1259,33 @@ impl TestRunner {
             EventTypeIdentifier(
                 Emitter::Function(node_id, _, blueprint_name),
                 local_type_index,
-            ) => {
-                let NodeId::GlobalObject(GlobalAddress::Package(package_address)) = node_id else {
-                    panic!("must be a package address")
-                };
-                (
-                    *package_address,
-                    blueprint_name.to_owned(),
-                    local_type_index.clone(),
-                )
-            }
+            ) => (
+                PackageAddress::new_unchecked(node_id.0),
+                blueprint_name.to_owned(),
+                local_type_index.clone(),
+            ),
         };
 
-        let substate_id = SubstateId(
-            NodeId::GlobalObject(GlobalAddress::Package(package_address)),
-            TypedModuleId::ObjectState,
-            PackageOffset::Package.into(),
-        );
         (
             local_type_index,
-            self.substate_db()
-                .get_substate(&substate_id)
-                .unwrap()
-                .substate
-                .package_info()
-                .schema
-                .blueprints
-                .get(&blueprint_name)
-                .unwrap()
-                .schema
-                .clone(),
+            scrypto_decode::<PackageInfoSubstate>(
+                &self
+                    .substate_db()
+                    .get_substate(
+                        package_address.as_node_id(),
+                        TypedModuleId::ObjectState.into(),
+                        &PackageOffset::Info.into(),
+                    )
+                    .expect("Database error")
+                    .unwrap()
+                    .0,
+            )
+            .unwrap()
+            .schema
+            .blueprints
+            .remove(&blueprint_name)
+            .unwrap()
+            .schema,
         )
     }
 
@@ -1314,13 +1331,16 @@ impl StateHashSupport {
         }
     }
 
-    pub fn update_with(&mut self, transaction_outputs: Vec<OutputId>) {
-        let hash_changes = transaction_outputs
+    pub fn update_with(&mut self, state_updates: &StateUpdates) {
+        let hash_changes = state_updates
+            .substate_changes
             .iter()
-            .map(|output_id| {
+            .map(|(substate_id, value)| {
                 SubstateHashChange::new(
-                    output_id.substate_id.clone(),
-                    Some(output_id.substate_hash),
+                    substate_id.clone(),
+                    match value {
+                        StateUpdate::Upsert(v) => Some(hash(v)),
+                    },
                 )
             })
             .collect::<Vec<_>>();

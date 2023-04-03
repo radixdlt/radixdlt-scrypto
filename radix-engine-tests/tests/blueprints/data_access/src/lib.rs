@@ -12,7 +12,7 @@ mod data_access {
             let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
-                    NodeId::GlobalObject(component_address.into()),
+                    component_address.as_node_id(),
                     ComponentOffset::Component.into(),
                     LockFlags::read_only(),
                 )
@@ -24,7 +24,7 @@ mod data_access {
             let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
-                    NodeId::GlobalObject(component_address.into()),
+                    component_address.as_node_id(),
                     ComponentOffset::Component.into(),
                     LockFlags::MUTABLE,
                 )
@@ -37,7 +37,7 @@ mod data_access {
         pub fn create_component_and_read_info() {
             let component_address = Self {}.instantiate().globalize();
             ScryptoEnv
-                .get_object_type_info(NodeId::GlobalObject(component_address.into()))
+                .get_object_type_info(component_address.as_node_id())
                 .unwrap();
         }
     }
