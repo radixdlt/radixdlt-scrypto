@@ -3,6 +3,7 @@ from lxml import etree
 from statistics import mean
 from tabulate import tabulate
 import pprint
+import sys
 
 
 input_file = "./out.xml"
@@ -38,6 +39,9 @@ for i in range(1):
         cpu_instructions = int(child.attrib["ins"])
         execute_cost = child.xpath(".//consume_cost_units")
 
+        if cpu_instructions == 0 and child.attrib["return"] == "true":
+            print("Skipping function which returned early: ", child.tag, "\n", file=sys.stderr)
+            continue
 
 #=====================================#
 #    Add arguments to kernel calls    #
