@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
 use radix_engine_stores::inference::BalanceChange;
-use radix_engine_stores::interface::StateUpdates;
+use radix_engine_stores::interface::{StateDependencies, StateUpdates, SubstateDatabase};
 use utils::ContextualDisplay;
 
 #[cfg(feature = "serde")]
@@ -63,6 +63,7 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub state_updates: StateUpdates,
+    pub state_dependencies: StateDependencies,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
@@ -81,6 +82,12 @@ pub struct StateUpdateSummary {
     /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
     /// 2. Fee payments for failed transactions.
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
+}
+
+impl StateUpdateSummary {
+    pub fn new<S: SubstateDatabase>(substate_db: &S, state_updates: &StateUpdates) -> Self {
+        todo!()
+    }
 }
 
 impl CommitResult {
@@ -195,7 +202,10 @@ pub enum AbortReason {
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
     pub result: TransactionResult,
+    /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
     pub execution_trace: TransactionExecutionTrace,
+    /// Optional resource usage trace, controlled by feature flag `resources_usage`.
+    pub resources_usage: ResourcesUsage,
 }
 
 impl TransactionReceipt {

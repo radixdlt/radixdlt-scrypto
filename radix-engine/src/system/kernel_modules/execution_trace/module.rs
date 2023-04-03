@@ -4,6 +4,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node_init::NodeInit;
+use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -568,18 +569,14 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_traces(
-        mut self,
-    ) -> (
-        Vec<ExecutionTrace>,
-        Vec<(TraceActor, NodeId, VaultOp, usize)>,
-    ) {
-        let mut execution_traces = Vec::new();
-        for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
-            execution_traces.extend(traces);
-        }
+    pub fn finalize(mut self, transaction_result: &TransactionResult) -> TransactionExecutionTrace {
+        // let mut execution_traces = Vec::new();
+        // for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
+        //     execution_traces.extend(traces);
+        // }
 
-        (execution_traces, self.vault_ops)
+        // (execution_traces, self.vault_ops)
+        todo!()
     }
 
     fn instruction_index(&self) -> usize {

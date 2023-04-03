@@ -64,6 +64,8 @@ impl KernelModuleMixer {
         auth_zone_params: AuthZoneParams,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
+        payload_len: usize,
+        num_of_signatures: usize,
         execution_config: &ExecutionConfig,
     ) -> Self {
         let mut modules = EnabledModules::empty();
@@ -94,6 +96,8 @@ impl KernelModuleMixer {
                 fee_reserve,
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
+                payload_len,
+                num_of_signatures
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {

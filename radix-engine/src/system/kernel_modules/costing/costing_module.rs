@@ -41,10 +41,12 @@ pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
     pub fee_table: FeeTable,
     pub max_call_depth: usize,
+    pub payload_len: usize,
+    pub num_of_signatures: usize,
 }
 
 impl CostingModule {
-    pub fn take_fee_reserve(self) -> SystemLoanFeeReserve {
+    pub fn fee_reserve(self) -> SystemLoanFeeReserve {
         self.fee_reserve
     }
 
@@ -99,6 +101,34 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 }
 
 impl KernelModule for CostingModule {
+    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        let costing = api.kernel_get_module_state().costing;
+        let fee_reserve = &costing.fee_reserve;
+        let fee_table = &costing.fee_table;
+
+        fee_reserve
+            .consume_deferred(fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_payload_cost_per_byte(),
+                    costing.payload_len,
+                    CostingReason::TxPayloadCost,
+                )
+            })
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_signature_verification_per_sig(),
+                    costing.num_of_signatures,
+                    CostingReason::TxSignatureVerification,
+                )
+            })
+            .map_err(|e| {
+                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
+                    e,
+                )))
+            })
+    }
+
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _identifier: &InvocationDebugIdentifier,
