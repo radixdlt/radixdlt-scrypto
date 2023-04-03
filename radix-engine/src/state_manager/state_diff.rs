@@ -20,7 +20,8 @@ pub enum IterableNodeDiff {
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: BTreeSet<OutputId>,
-    pub iterable_nodes: BTreeMap<(RENodeId, NodeModuleId), IterableNodeDiff>,
+
+    pub iterable_nodes_update: BTreeMap<(RENodeId, NodeModuleId), IterableNodeDiff>,
 }
 
 impl StateDiff {
@@ -28,7 +29,7 @@ impl StateDiff {
         Self {
             up_substates: BTreeMap::new(),
             down_substates: BTreeSet::new(),
-            iterable_nodes: BTreeMap::new(),
+            iterable_nodes_update: BTreeMap::new(),
         }
     }
 
@@ -65,7 +66,7 @@ impl StateDiff {
             store.put_substate(substate_id.clone(), output_value.clone());
         }
 
-        for (node_module, node_diff) in &self.iterable_nodes {
+        for (node_module, node_diff) in &self.iterable_nodes_update {
             match node_diff {
                 IterableNodeDiff::New(substates) => {
                     for (offset, substate) in substates {

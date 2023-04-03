@@ -76,7 +76,9 @@ pub enum IterableSubstateUpdate {
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
-    iterable_nodes: IndexMap<(RENodeId, NodeModuleId), IterableNodeUpdate>,
+
+    iterable_node_reads: IndexSet<(RENodeId, NodeModuleId)>,
+    iterable_node_updates: IndexMap<(RENodeId, NodeModuleId), IterableNodeUpdate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -98,7 +100,8 @@ impl<'s> Track<'s> {
         Self {
             substate_store,
             loaded_substates: index_map_new(),
-            iterable_nodes: index_map_new(),
+            iterable_node_reads: index_set_new(),
+            iterable_node_updates: index_map_new(),
         }
     }
 
@@ -257,7 +260,7 @@ impl<'s> Track<'s> {
 
     pub fn insert_iterable(&mut self, node_id: &RENodeId, module_id: &NodeModuleId) {
         let node_module = (*node_id, *module_id);
-        self.iterable_nodes
+        self.iterable_node_updates
             .insert(node_module, IterableNodeUpdate::New(BTreeMap::new()));
     }
 
@@ -268,11 +271,12 @@ impl<'s> Track<'s> {
         count: u32,
     ) -> Result<Vec<(SubstateId, RuntimeSubstate)>, RuntimeError> {
         let node_module = (*node_id, *module_id);
-        let iterable = self.iterable_nodes.get(&node_module);
+        let iterable = self.iterable_node_updates.get(&node_module);
         let items = if let Some(iterable) = iterable {
             todo!()
         } else {
-            // TODO: Add read dependency
+            self.iterable_node_reads.insert(node_module);
+
             let items = self
                 .substate_store
                 .first_in_iterable(node_id, *module_id, count);
@@ -291,7 +295,7 @@ impl<'s> Track<'s> {
     ) {
         let node_module = (*node_id, *module_id);
         let cur = self
-            .iterable_nodes
+            .iterable_node_updates
             .entry(node_module)
             .or_insert(IterableNodeUpdate::Update(index_map_new()));
         match cur {
@@ -315,7 +319,7 @@ impl<'s> Track<'s> {
     ) -> Result<(), TrackError> {
         let node_module = (*node_id, *module_id);
         let cur = self
-            .iterable_nodes
+            .iterable_node_updates
             .entry(node_module)
             .or_insert(IterableNodeUpdate::Update(index_map_new()));
         let offset = SubstateOffset::IterableMap(key);
@@ -328,7 +332,9 @@ impl<'s> Track<'s> {
                 }
             }
             IterableNodeUpdate::Update(updates) => {
-                // TODO: Add dependency
+                // TODO: Increase granularity?
+                self.iterable_node_reads.insert((*node_id, *module_id));
+
                 let entry = updates.entry(offset);
                 match entry {
                     Entry::Occupied(mut e) => {
@@ -538,7 +544,7 @@ impl<'s> Track<'s> {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
-                    iterable_nodes: self.iterable_nodes.into_iter().collect(),
+                    iterable_nodes: self.iterable_node_updates.into_iter().collect(),
                 };
                 TransactionResult::Commit(finalizing_track.calculate_commit_result(
                     invoke_result,
@@ -785,7 +791,7 @@ impl<'s> FinalizingTrack<'s> {
                         .into_iter()
                         .map(|(offset, v)| (offset, PersistedSubstate::IterableEntry(v)))
                         .collect();
-                    diff.iterable_nodes
+                    diff.iterable_nodes_update
                         .insert(node_module, IterableNodeDiff::New(substates));
                 }
                 IterableNodeUpdate::Update(updates) => {
@@ -801,7 +807,7 @@ impl<'s> FinalizingTrack<'s> {
                             ),
                         })
                         .collect();
-                    diff.iterable_nodes
+                    diff.iterable_nodes_update
                         .insert(node_module, IterableNodeDiff::Update(updates));
                 }
             }
