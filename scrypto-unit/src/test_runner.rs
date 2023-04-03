@@ -23,6 +23,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -36,7 +37,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
     EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
-use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -269,9 +270,8 @@ impl TestRunner {
                 &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
             )
             .expect("Database error")
-            .map(|s| s.substate.to_runtime())?;
+            .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s.0).unwrap())?;
 
-        let metadata_entry: Option<ScryptoValue> = metadata_entry.into();
         let metadata_entry = match metadata_entry {
             Option::Some(value) => {
                 let value: MetadataEntry =
@@ -288,23 +288,31 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.get_substate(
-            component_address.as_node_id(),
-            TypedModuleId::Royalty.into(),
-            &RoyaltyOffset::RoyaltyAccumulator.into(),
-        ) {
-            output
-                .substate
-                .component_royalty_accumulator()
+        if let Some(output) = self
+            .substate_db
+            .get_substate(
+                component_address.as_node_id(),
+                TypedModuleId::Royalty.into(),
+                &RoyaltyOffset::RoyaltyAccumulator.into(),
+            )
+            .expect("Database error")
+        {
+            scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output.0)
+                .unwrap()
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
                         .get_substate(
-                            NodeId::Object(vault.vault_id()),
+                            vault.as_node_id(),
                             TypedModuleId::ObjectState.into(),
-                            VaultOffset::Vault.into(),
+                            &VaultOffset::LiquidFungible.into(),
                         )
-                        .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                        .expect("Database error")
+                        .map(|output| {
+                            scrypto_decode::<LiquidFungibleResource>(&output.0)
+                                .unwrap()
+                                .amount()
+                        })
                 })
         } else {
             None
@@ -312,23 +320,31 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.get_substate(
-            package_address.as_node_id(),
-            TypedModuleId::ObjectState.into(),
-            PackageOffset::Package.into(),
-        ) {
-            output
-                .substate
-                .package_royalty()
+        if let Some(output) = self
+            .substate_db
+            .get_substate(
+                package_address.as_node_id(),
+                TypedModuleId::ObjectState.into(),
+                &PackageOffset::Royalty.into(),
+            )
+            .expect("Database error")
+        {
+            scrypto_decode::<PackageRoyaltySubstate>(&output.0)
+                .unwrap()
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
                         .get_substate(
-                            NodeId::Object(vault.vault_id()),
+                            vault.as_node_id(),
                             TypedModuleId::ObjectState.into(),
-                            VaultOffset::Vault.into(),
+                            &VaultOffset::LiquidFungible.into(),
                         )
-                        .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                        .expect("Database error")
+                        .map(|output| {
+                            scrypto_decode::<LiquidFungibleResource>(&output.0)
+                                .unwrap()
+                                .amount()
+                        })
                 })
         } else {
             None
@@ -340,15 +356,6 @@ impl TestRunner {
         account_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Option<Decimal> {
-        if !matches!(
-            account_address,
-            ComponentAddress::Account(..)
-                | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                | ComponentAddress::EddsaEd25519VirtualAccount(..)
-        ) {
-            panic!("Method only works for accounts!")
-        }
-
         let vaults = self.get_component_vaults(account_address, resource_address);
         vaults
             .get(0)
@@ -365,9 +372,7 @@ impl TestRunner {
 
         let mut state_tree_visitor =
             StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
-        state_tree_visitor
-            .traverse_all_descendents(None, node_id)
-            .unwrap();
+        state_tree_visitor.traverse_all_descendents(None, *node_id);
         vault_finder.to_vaults()
     }
 
@@ -401,7 +406,7 @@ impl TestRunner {
                 &VaultOffset::LiquidFungible.into(),
             )
             .expect("Database error")
-            .map(|mut output| {
+            .map(|output| {
                 scrypto_decode::<LiquidFungibleResource>(&output.0)
                     .unwrap()
                     .amount()
@@ -419,7 +424,7 @@ impl TestRunner {
                 &VaultOffset::LiquidNonFungible.into(),
             )
             .expect("Database error")
-            .map(|mut output| {
+            .map(|output| {
                 scrypto_decode::<LiquidNonFungibleResource>(&output.0)
                     .unwrap()
                     .into_ids()
@@ -745,7 +750,9 @@ impl TestRunner {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let commit_receipt = self.substate_db.commit(&commit.state_updates);
+            self.substate_db
+                .commit(&commit.state_updates)
+                .expect("Database error");
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates);
             }
