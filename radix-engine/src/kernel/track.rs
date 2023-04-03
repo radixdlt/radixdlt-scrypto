@@ -72,12 +72,17 @@ pub enum IterableSubstateUpdate {
     Remove,
 }
 
+pub enum IterableNodeRead {
+    FirstRange(u32),
+    Substate(Vec<u8>)
+}
+
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
 
-    iterable_node_reads: IndexSet<(RENodeId, NodeModuleId)>,
+    iterable_node_reads: IndexMap<(RENodeId, NodeModuleId), IterableNodeRead>,
     iterable_node_updates: IndexMap<(RENodeId, NodeModuleId), IterableNodeUpdate>,
 }
 
@@ -100,7 +105,7 @@ impl<'s> Track<'s> {
         Self {
             substate_store,
             loaded_substates: index_map_new(),
-            iterable_node_reads: index_set_new(),
+            iterable_node_reads: index_map_new(),
             iterable_node_updates: index_map_new(),
         }
     }
@@ -289,7 +294,7 @@ impl<'s> Track<'s> {
                 }
             }
         } else {
-            self.iterable_node_reads.insert(node_module);
+            self.iterable_node_reads.insert(node_module, IterableNodeRead::FirstRange(count));
 
             let items = self
                 .substate_store
@@ -336,7 +341,7 @@ impl<'s> Track<'s> {
             .iterable_node_updates
             .entry(node_module)
             .or_insert(IterableNodeUpdate::Update(index_map_new()));
-        let offset = SubstateOffset::IterableMap(key);
+        let offset = SubstateOffset::IterableMap(key.clone());
         let substate_id = SubstateId(*node_id, *module_id, offset.clone());
         match cur {
             IterableNodeUpdate::New(substates) => {
@@ -347,7 +352,7 @@ impl<'s> Track<'s> {
             }
             IterableNodeUpdate::Update(updates) => {
                 // TODO: Increase granularity?
-                self.iterable_node_reads.insert((*node_id, *module_id));
+                self.iterable_node_reads.insert((*node_id, *module_id), IterableNodeRead::Substate(key));
 
                 let entry = updates.entry(offset);
                 match entry {
