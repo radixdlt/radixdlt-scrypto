@@ -916,6 +916,7 @@ dependencies = [
  "radix-engine-derive",
  "sbor",
  "scrypto-schema",
+ "serde_json",
  "strum",
  "utils",
 ]

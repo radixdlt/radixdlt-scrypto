@@ -4,9 +4,13 @@ use radix_engine_common::types::*;
 use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
+use sbor::serde_serialization::SborPayloadWithoutSchema;
+use sbor::serde_serialization::SchemalessSerializationContext;
+use sbor::serde_serialization::SerializationMode;
 use sbor::traversal::TraversalEvent;
 use sbor::*;
 use utils::ContextualDisplay;
+use utils::ContextualSerialize;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
@@ -146,9 +150,18 @@ impl<'a> ContextualDisplay<ScryptoValueSerializationContext<'a>> for IndexedScry
 
     fn contextual_format<F: fmt::Write>(
         &self,
-        _f: &mut F,
-        _context: &ScryptoValueSerializationContext<'a>,
+        f: &mut F,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<(), Self::Error> {
-        todo!()
+        let json = serde_json::to_string(
+            &SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(self.as_slice())
+                .serializable(SchemalessSerializationContext {
+                    mode: SerializationMode::Invertible,
+                    custom_context: context.clone(),
+                }),
+        )
+        .unwrap();
+
+        f.write_str(&json)
     }
 }

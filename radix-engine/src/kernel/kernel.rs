@@ -513,6 +513,24 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
+            TypedModuleId::TypeInfo,
+            &TypeInfoOffset::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            match type_info {
+                TypeInfoSubstate::Object { blueprint, .. }
+                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                        && blueprint.blueprint_name == BUCKET_BLUEPRINT => {}
+                _ => {
+                    return None;
+                }
+            }
+        } else {
+            return None;
+        }
+
+        if let Some(substate) = self.heap.get_substate(
+            &bucket_id,
             TypedModuleId::ObjectState,
             &BucketOffset::Info.into(),
         ) {
@@ -561,6 +579,24 @@ where
 
     #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+        if let Some(substate) = self.heap.get_substate(
+            &proof_id,
+            TypedModuleId::TypeInfo,
+            &TypeInfoOffset::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            match type_info {
+                TypeInfoSubstate::Object { blueprint, .. }
+                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                        && blueprint.blueprint_name == PROOF_BLUEPRINT => {}
+                _ => {
+                    return None;
+                }
+            }
+        } else {
+            return None;
+        }
+
         if let Some(substate) = self.heap.get_substate(
             proof_id,
             TypedModuleId::ObjectState,

@@ -419,6 +419,9 @@ impl CallFrame {
         frame.add_ref(ECDSA_SECP256K1_TOKEN.into(), RENodeVisibilityOrigin::Normal);
         frame.add_ref(EDDSA_ED25519_TOKEN.into(), RENodeVisibilityOrigin::Normal);
         frame.add_ref(PACKAGE_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RENodeVisibilityOrigin::Normal);
         frame.add_ref(EPOCH_MANAGER.into(), RENodeVisibilityOrigin::Normal);
         frame.add_ref(CLOCK.into(), RENodeVisibilityOrigin::Normal);
         frame.add_ref(FAUCET_PACKAGE.into(), RENodeVisibilityOrigin::Normal);

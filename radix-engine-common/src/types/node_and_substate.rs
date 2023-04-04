@@ -156,7 +156,7 @@ impl Debug for NodeId {
 pub struct ModuleId(pub u8);
 
 /// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct SubstateKey(Vec<u8>);
 
@@ -182,6 +182,14 @@ impl SubstateKey {
         } else {
             Some(Self(bytes))
         }
+    }
+}
+
+impl Debug for SubstateKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SubstateKey")
+            .field(&hex::encode(&self.0))
+            .finish()
     }
 }
 
