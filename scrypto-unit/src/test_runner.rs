@@ -369,10 +369,8 @@ impl TestRunner {
     ) -> Vec<NodeId> {
         let node_id = component_address.as_node_id();
         let mut vault_finder = VaultFinder::new(resource_address);
-
-        let mut state_tree_visitor =
-            StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
-        state_tree_visitor.traverse_all_descendents(None, *node_id);
+        let mut traverser = StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
+        traverser.traverse_all_descendents(None, *node_id);
         vault_finder.to_vaults()
     }
 
@@ -437,8 +435,8 @@ impl TestRunner {
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = component_address.as_node_id();
         let mut accounter = ResourceAccounter::new(&self.substate_db);
-        accounter.add_resources(node_id.clone());
-        accounter.into_map()
+        accounter.traverse(node_id.clone());
+        accounter.close().fungibles
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {

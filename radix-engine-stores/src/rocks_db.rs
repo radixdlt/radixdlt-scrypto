@@ -57,6 +57,18 @@ impl RocksdbSubstateStore {
         )
         .expect("Failed to decode configs")
     }
+
+    pub fn list_packages(&self) -> Vec<PackageAddress> {
+        todo!()
+    }
+
+    pub fn list_components(&self) -> Vec<ComponentAddress> {
+        todo!()
+    }
+
+    pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
+        todo!()
+    }
 }
 
 impl SubstateDatabase for RocksdbSubstateStore {

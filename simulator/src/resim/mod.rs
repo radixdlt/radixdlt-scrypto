@@ -67,6 +67,7 @@ use radix_engine::wasm::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
@@ -231,8 +232,8 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let mut substate_db =
-                RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+            let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+            bootstrap(&mut substate_db, &scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -311,19 +312,20 @@ pub fn get_signing_keys(
 
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
-    let output = substate_db
+    let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
             TypedModuleId::ObjectState.into(),
-            PackageOffset::Package.into(),
+            &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
         .ok_or(Error::PackageNotFound(package_address))?;
+    let package_info: PackageInfoSubstate = scrypto_decode(&substate.0).unwrap();
 
-    let schema = output.substate.package_info().schema.clone();
-    Ok(schema)
+    Ok(package_info.schema)
 }
 
 pub fn export_blueprint_schema(
@@ -343,17 +345,19 @@ pub fn export_blueprint_schema(
 
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
-    let output = substate_db
+    let substate = substate_db
         .get_substate(
             component_address.as_node_id(),
-            TypedModuleId::TypeInfo,
-            TypeInfoOffset::TypeInfo.into(),
+            TypedModuleId::TypeInfo.into(),
+            &TypeInfoOffset::TypeInfo.into(),
         )
         .expect("Database misconfigured")
         .ok_or(Error::ComponentNotFound(component_address))?;
-    let type_info = output.substate.type_info();
+
+    let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
 
     match type_info {
         TypeInfoSubstate::Object { blueprint, .. } => Ok(blueprint.clone()),
@@ -384,18 +388,15 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     *local_type_index,
                 ),
                 TypedModuleId::ObjectState => {
-                    let type_info = substate_db
+                    let substate = substate_db
                         .get_substate(
-                            *node_id,
-                            TypedModuleId::TypeInfo,
-                            SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo),
+                            node_id,
+                            TypedModuleId::TypeInfo.into(),
+                            &TypeInfoOffset::TypeInfo.into(),
                         )
                         .expect("Database misconfigured")
-                        .unwrap()
-                        .substate
-                        .type_info()
-                        .clone();
-
+                        .unwrap();
+                    let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
                     match type_info {
                         TypeInfoSubstate::Object { blueprint, .. } => (
                             blueprint.package_address,
@@ -409,24 +410,25 @@ pub fn get_event_schema<S: SubstateDatabase>(
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
-            PackageAddress::new_unchecked(node_id.into()),
+            PackageAddress::new_unchecked(node_id.clone().into()),
             blueprint_name.to_owned(),
             *local_type_index,
         ),
     };
 
+    let substate = substate_db
+        .get_substate(
+            package_address.as_node_id(),
+            TypedModuleId::ObjectState.into(),
+            &PackageOffset::Info.into(),
+        )
+        .expect("Database misconfigured")
+        .unwrap();
+    let package_info: PackageInfoSubstate = scrypto_decode(&substate.0).unwrap();
+
     Some((
         local_type_index,
-        substate_db
-            .get_substate(
-                package_address.as_node_id(),
-                TypedModuleId::ObjectState.into(),
-                &PackageOffset::Info.into(),
-            )
-            .expect("Database misconfigured")
-            .unwrap()
-            .substate
-            .package_info()
+        package_info
             .schema
             .blueprints
             .get(&blueprint_name)

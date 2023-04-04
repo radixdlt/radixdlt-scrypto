@@ -265,7 +265,7 @@ fn build_call_argument<'a>(
         )),
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PackageAddress) => {
             let value = PackageAddress::try_from_bech32(&bech32_decoder, &argument)
-                .ok_or(|_| BuildCallArgumentError::FailedToParse(argument))?;
+                .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
@@ -275,7 +275,7 @@ fn build_call_argument<'a>(
         }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ComponentAddress) => {
             let value = ComponentAddress::try_from_bech32(&bech32_decoder, &argument)
-                .ok_or(|_| BuildCallArgumentError::FailedToParse(argument))?;
+                .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
@@ -285,7 +285,7 @@ fn build_call_argument<'a>(
         }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
             let value = ResourceAddress::try_from_bech32(&bech32_decoder, &argument)
-                .ok_or(|_| BuildCallArgumentError::FailedToParse(argument))?;
+                .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
@@ -526,10 +526,11 @@ mod test {
     #[test]
     pub fn parsing_of_component_address_succeeds() {
         // Arrange
-        let component_address = ComponentAddress::Account([1u8; 26]);
+        let component_address = component_address(EntityType::GlobalAccount, 5);
 
-        let arg =
-            Bech32Encoder::for_simulator().encode_component_address_to_string(&component_address);
+        let arg = Bech32Encoder::for_simulator()
+            .encode(component_address.as_ref())
+            .unwrap();
         let arg_type = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ComponentAddress);
 
         // Act
@@ -543,9 +544,11 @@ mod test {
     #[test]
     pub fn parsing_of_package_address_succeeds() {
         // Arrange
-        let package_address = PackageAddress::Normal([1u8; 26]);
+        let package_address = package_address(EntityType::GlobalPackage, 5);
 
-        let arg = Bech32Encoder::for_simulator().encode_package_address_to_string(&package_address);
+        let arg = Bech32Encoder::for_simulator()
+            .encode(package_address.as_ref())
+            .unwrap();
         let arg_type = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PackageAddress);
 
         // Act
@@ -559,10 +562,11 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let resource_address = ResourceAddress::Fungible([1u8; 26]);
+        let resource_address = resource_address(EntityType::GlobalFungibleResource, 5);
 
-        let arg =
-            Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
+        let arg = Bech32Encoder::for_simulator()
+            .encode(resource_address.as_ref())
+            .unwrap();
         let arg_type = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress);
 
         // Act

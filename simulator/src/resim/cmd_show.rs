@@ -13,8 +13,8 @@ pub struct Show {
 impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_db =
-            RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+        let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+        bootstrap(&mut substate_db, &scrypto_interpreter);
 
         if let Ok(a) = SimulatorPackageAddress::from_str(&self.address) {
             dump_package(a.0, &substate_db, out).map_err(Error::LedgerDumpError)

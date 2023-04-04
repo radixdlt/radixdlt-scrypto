@@ -84,7 +84,7 @@ impl Publish {
                         None,
                     ),
                     (node_id, module_id, substate_key_info) => StateUpdate::Upsert(
-                        scrypto_encode(&package_code).unwrap(),
+                        scrypto_encode(&package_info).unwrap(),
                         None
                     )
                 ),
