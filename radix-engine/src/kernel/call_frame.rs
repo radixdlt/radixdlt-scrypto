@@ -351,7 +351,7 @@ impl CallFrame {
             for old_child in &substate_lock.initial_owned_nodes {
                 if !new_children.remove(old_child) {
                     // TODO: revisit logic here!
-                    if heap.contains_node(&substate_lock.node_id) {
+                    if !heap.contains_node(node_id) {
                         return Err(UnlockSubstateError::CantDropNodeInStore(old_child.clone()));
                     }
 

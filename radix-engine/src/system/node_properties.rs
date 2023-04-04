@@ -98,6 +98,10 @@ impl NodeProperties {
                     return true;
                 }
 
+                if module_id == TypedModuleId::TypeInfo {
+                    return true;
+                }
+
                 if node_id.is_internal_kv_store() {
                     return true;
                 }
@@ -140,6 +144,10 @@ impl NodeProperties {
             ExecutionMode::KernelModule => true,
             ExecutionMode::Client => {
                 if is_native_package(actor.blueprint().package_address) {
+                    return true;
+                }
+
+                if module_id == TypedModuleId::TypeInfo {
                     return true;
                 }
 
