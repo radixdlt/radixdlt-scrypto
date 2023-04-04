@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
 }
+
 impl RocksdbSubstateStore {
     pub fn standard(root: PathBuf) -> Self {
         let configs: BTreeMap<ModuleId, ModuleConfig> = btreemap!(
@@ -16,10 +17,10 @@ impl RocksdbSubstateStore {
                 iteration_enabled: false,
             },
             TypedModuleId::ObjectState.into() => ModuleConfig {
-                iteration_enabled: false,
+                iteration_enabled: true,
             },
             TypedModuleId::Metadata.into() => ModuleConfig {
-                iteration_enabled: false,
+                iteration_enabled: true,
             },
             TypedModuleId::Royalty.into() => ModuleConfig {
                 iteration_enabled: false,

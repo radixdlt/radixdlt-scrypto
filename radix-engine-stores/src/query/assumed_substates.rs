@@ -1,6 +1,6 @@
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::{Blueprint, PackageAddress, ResourceAddress};
+use radix_engine_interface::types::{Blueprint, ResourceAddress};
 use radix_engine_interface::*;
 
 // TODO: de-dup

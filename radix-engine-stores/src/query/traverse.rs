@@ -115,12 +115,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 }
             }
             TypeInfoSubstate::Object {
-                package_address,
-                blueprint_name,
+                blueprint,
                 global: _,
             } => {
-                if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                    && blueprint_name.eq(VAULT_BLUEPRINT)
+                if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
                 {
                     let (value, _version) = self
                         .substate_db
