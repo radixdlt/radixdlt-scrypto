@@ -5,7 +5,7 @@ use radix_engine::kernel::call_frame::LockSubstateError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_stores::interface::StoreLockError;
+use radix_engine_stores::interface::AcquireLockError;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -154,7 +154,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
                 LockSubstateError::TrackError(err),
             )),
         )) => {
-            if let StoreLockError::LockUnmodifiedBaseOnNewSubstate(..) = **err {
+            if let AcquireLockError::LockUnmodifiedBaseOnNewSubstate(..) = **err {
                 return true;
             } else {
                 return false;
@@ -197,7 +197,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
                 LockSubstateError::TrackError(err),
             )),
         )) => {
-            if let StoreLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
+            if let AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
                 return true;
             } else {
                 return false;

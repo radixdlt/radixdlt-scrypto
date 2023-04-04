@@ -10,7 +10,7 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::{
-    LockSubstateError, MoveError, ReadSubstateError, UpdateSubstateError, WriteSubstateError,
+    LockSubstateError, MoveError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
@@ -76,9 +76,9 @@ pub enum RuntimeError {
 }
 
 impl RuntimeError {
-    pub const fn update_substate(e: UpdateSubstateError) -> Self {
+    pub const fn update_substate(e: UnlockSubstateError) -> Self {
         Self::KernelError(KernelError::CallFrameError(
-            CallFrameError::UpdateSubstateError(e),
+            CallFrameError::UnlockSubstateError(e),
         ))
     }
 }
@@ -185,7 +185,7 @@ impl From<CallFrameError> for KernelError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     LockSubstateError(LockSubstateError),
-    UpdateSubstateError(UpdateSubstateError),
+    UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
     MoveError(MoveError),
@@ -438,9 +438,9 @@ impl From<LockSubstateError> for CallFrameError {
     }
 }
 
-impl From<UpdateSubstateError> for CallFrameError {
-    fn from(value: UpdateSubstateError) -> Self {
-        Self::UpdateSubstateError(value)
+impl From<UnlockSubstateError> for CallFrameError {
+    fn from(value: UnlockSubstateError) -> Self {
+        Self::UnlockSubstateError(value)
     }
 }
 

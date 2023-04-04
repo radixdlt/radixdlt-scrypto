@@ -25,7 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{StoreLockError, SubstateStore};
+use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -215,7 +215,7 @@ where
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)
-                .map_err(CallFrameError::UpdateSubstateError)
+                .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
@@ -232,7 +232,7 @@ where
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)
-                .map_err(CallFrameError::UpdateSubstateError)
+                .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             (output, update)
@@ -453,7 +453,7 @@ where
                 &mut self.track,
                 push_to_store,
             )
-            .map_err(CallFrameError::UpdateSubstateError)
+            .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
         // Restore current mode
@@ -702,7 +702,7 @@ where
         let lock_handle = match &maybe_lock_handle {
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
-                if matches!(track_err.as_ref(), StoreLockError::NotFound(..)) {
+                if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry = KernelModuleMixer::on_substate_lock_fault(
                         *node_id,
                         module_id,
@@ -803,7 +803,7 @@ where
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)
-            .map_err(CallFrameError::UpdateSubstateError)
+            .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
         Ok(())

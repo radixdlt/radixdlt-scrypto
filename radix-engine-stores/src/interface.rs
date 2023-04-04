@@ -54,7 +54,7 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum StoreLockError {
+pub enum AcquireLockError {
     NotFound(NodeId, ModuleId, SubstateKey),
     SubstateLocked(NodeId, ModuleId, SubstateKey),
     LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleId, SubstateKey),
@@ -77,7 +77,7 @@ pub trait SubstateStore {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<u32, StoreLockError>;
+    ) -> Result<u32, AcquireLockError>;
 
     /// Releases a lock.
     ///

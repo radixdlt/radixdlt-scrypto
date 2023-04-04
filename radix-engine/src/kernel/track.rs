@@ -2,7 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
-    StateDependencies, StateUpdate, StateUpdates, StoreLockError, SubstateDatabase, SubstateStore,
+    AcquireLockError, StateDependencies, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -151,7 +151,7 @@ impl<'s> SubstateStore for Track<'s> {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<u32, StoreLockError> {
+    ) -> Result<u32, AcquireLockError> {
         // Load the substate from state track
         if Self::loaded_substate(&self.loaded_substates, node_id, module_id, substate_key).is_none()
         {
@@ -159,7 +159,7 @@ impl<'s> SubstateStore for Track<'s> {
             if let Some(output) = maybe_substate {
                 self.add_loaded_substate(node_id, module_id, substate_key, output);
             } else {
-                return Err(StoreLockError::NotFound(
+                return Err(AcquireLockError::NotFound(
                     *node_id,
                     module_id,
                     substate_key.clone(),
@@ -174,7 +174,7 @@ impl<'s> SubstateStore for Track<'s> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
             match loaded_substate.meta_state {
                 SubstateMetaState::New => {
-                    return Err(StoreLockError::LockUnmodifiedBaseOnNewSubstate(
+                    return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
                         *node_id,
                         module_id,
                         substate_key.clone(),
@@ -184,7 +184,7 @@ impl<'s> SubstateStore for Track<'s> {
                     state: ExistingMetaState::Updated(..),
                     ..
                 } => {
-                    return Err(StoreLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
+                    return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         *node_id,
                         module_id,
                         substate_key.clone(),
@@ -202,7 +202,7 @@ impl<'s> SubstateStore for Track<'s> {
             SubstateLockState::Read(n) => {
                 if flags.contains(LockFlags::MUTABLE) {
                     if n != 0 {
-                        return Err(StoreLockError::SubstateLocked(
+                        return Err(AcquireLockError::SubstateLocked(
                             *node_id,
                             module_id,
                             substate_key.clone(),
@@ -214,7 +214,7 @@ impl<'s> SubstateStore for Track<'s> {
                 }
             }
             SubstateLockState::Write => {
-                return Err(StoreLockError::SubstateLocked(
+                return Err(AcquireLockError::SubstateLocked(
                     *node_id,
                     module_id,
                     substate_key.clone(),

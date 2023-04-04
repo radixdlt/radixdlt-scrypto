@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{MoveError, UpdateSubstateError};
+use radix_engine::kernel::call_frame::{MoveError, UnlockSubstateError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -66,7 +66,7 @@ fn cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
                     MoveError::OwnNotFound(_)
                 ))
             ))
@@ -97,7 +97,7 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
                     MoveError::OwnNotFound(_)
                 ))
             ))
@@ -134,7 +134,7 @@ fn cannot_remove_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::CantDropNodeInStore(_))
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -169,7 +169,7 @@ fn cannot_overwrite_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::CantDropNodeInStore(_))
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -308,7 +308,7 @@ fn cannot_directly_reference_inserted_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::RefNotFound(_))
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::RefNotFound(_))
             ))
         )
     });
@@ -337,7 +337,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
                     MoveError::OwnNotFound(_)
                 ))
             ))
@@ -368,7 +368,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UpdateSubstateError(UpdateSubstateError::MoveError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
                     MoveError::OwnNotFound(_)
                 ))
             ))

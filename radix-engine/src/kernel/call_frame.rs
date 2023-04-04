@@ -5,7 +5,7 @@ use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{StoreLockError, SubstateStore};
+use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 
 use super::heap::{Heap, HeapNode};
 use super::kernel_api::LockInfo;
@@ -114,11 +114,11 @@ pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound,
-    TrackError(Box<StoreLockError>),
+    TrackError(Box<AcquireLockError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum UpdateSubstateError {
+pub enum UnlockSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
     RefNotFound(NodeId),
@@ -126,6 +126,13 @@ pub enum UpdateSubstateError {
     CantDropNodeInStore(NodeId),
     CantOwn(NodeId),
     CantPutLocalRefToStore(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum MoveError {
+    OwnNotFound(NodeId),
+    RefNotFound(NodeId),
+    CantMoveLockedNode(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -137,13 +144,6 @@ pub enum ReadSubstateError {
 pub enum WriteSubstateError {
     LockNotFound(LockHandle),
     NoWritePermission,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MoveError {
-    OwnNotFound(NodeId),
-    RefNotFound(NodeId),
-    CantMoveLockedNode(NodeId),
 }
 
 impl CallFrame {
@@ -159,6 +159,44 @@ impl CallFrame {
         // Check node visibility
         self.get_node_visibility(node_id)
             .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
+
+        // Virtualization
+        if module_id == TypedModuleId::KeyValueStore {
+            if heap.contains_node(node_id) {
+                if heap
+                    .get_substate(node_id, module_id.into(), substate_key)
+                    .is_none()
+                {
+                    heap.put_substate(
+                        node_id.clone(),
+                        module_id,
+                        substate_key.clone(),
+                        IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
+                    );
+                }
+            } else {
+                match track.acquire_lock(
+                    node_id,
+                    module_id.into(),
+                    substate_key,
+                    LockFlags::read_only(),
+                ) {
+                    Ok(handle) => {
+                        track.release_lock(handle);
+                    }
+                    Err(error) => {
+                        if matches!(error, AcquireLockError::NotFound(_, _, _)) {
+                            track.insert_substate(
+                                node_id.clone(),
+                                module_id.into(),
+                                substate_key.clone(),
+                                IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
+                            )
+                        }
+                    }
+                }
+            };
+        }
 
         // Lock and read the substate
         let mut store_handle = None;
@@ -235,11 +273,11 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s>,
         lock_handle: LockHandle,
-    ) -> Result<(), UpdateSubstateError> {
+    ) -> Result<(), UnlockSubstateError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or(UpdateSubstateError::LockNotFound(lock_handle))?;
+            .ok_or(UnlockSubstateError::LockNotFound(lock_handle))?;
 
         let node_id = &substate_lock.node_id;
         let module_id = substate_lock.module_id;
@@ -259,21 +297,21 @@ impl CallFrame {
             let mut new_children: IndexSet<NodeId> = index_set_new();
             for own in owned_nodes {
                 if !new_children.insert(own.clone()) {
-                    return Err(UpdateSubstateError::ContainsDuplicatedOwns);
+                    return Err(UnlockSubstateError::ContainsDuplicatedOwns);
                 }
             }
 
             // Check references exist
             for reference in references {
                 self.get_node_visibility(reference)
-                    .ok_or(UpdateSubstateError::RefNotFound(reference.clone()))?;
+                    .ok_or(UnlockSubstateError::RefNotFound(reference.clone()))?;
             }
 
             for old_child in &substate_lock.initial_owned_nodes {
                 if !new_children.remove(old_child) {
                     // TODO: revisit logic here!
                     if heap.contains_node(&substate_lock.node_id) {
-                        return Err(UpdateSubstateError::CantDropNodeInStore(old_child.clone()));
+                        return Err(UnlockSubstateError::CantDropNodeInStore(old_child.clone()));
                     }
 
                     // Owned nodes discarded by the substate go back to the call frame,
@@ -284,7 +322,7 @@ impl CallFrame {
 
             for child_id in &new_children {
                 self.take_node_internal(child_id)
-                    .map_err(UpdateSubstateError::MoveError)?;
+                    .map_err(UnlockSubstateError::MoveError)?;
 
                 // TODO: Move this check into system layer
                 if let Some(info) = heap.get_substate(
@@ -300,7 +338,7 @@ impl CallFrame {
                                 blueprint.package_address,
                                 blueprint.blueprint_name.as_str(),
                             ) {
-                                return Err(UpdateSubstateError::CantOwn(child_id.clone()));
+                                return Err(UnlockSubstateError::CantOwn(child_id.clone()));
                             }
                         }
                         TypeInfoSubstate::KeyValueStore(..) => {}
@@ -497,7 +535,7 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         track: &mut Track<'s>,
-    ) -> Result<(), UpdateSubstateError> {
+    ) -> Result<(), UnlockSubstateError> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
@@ -530,7 +568,7 @@ impl CallFrame {
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
-    ) -> Result<(), UpdateSubstateError> {
+    ) -> Result<(), UnlockSubstateError> {
         let mut substates = BTreeMap::new();
         substates.insert(TypedModuleId::ObjectState, node_init.to_substates());
         substates.extend(node_modules);
@@ -542,7 +580,7 @@ impl CallFrame {
 
                 for child_id in substate_value.owned_node_ids() {
                     self.take_node_internal(child_id)
-                        .map_err(UpdateSubstateError::MoveError)?;
+                        .map_err(UnlockSubstateError::MoveError)?;
 
                     // TODO: Move this check into system layer
                     if let Some(info) = heap.get_substate(
@@ -558,7 +596,7 @@ impl CallFrame {
                                     blueprint.package_address,
                                     blueprint.blueprint_name.as_str(),
                                 ) {
-                                    return Err(UpdateSubstateError::CantOwn(child_id.clone()));
+                                    return Err(UnlockSubstateError::CantOwn(child_id.clone()));
                                 }
                             }
                             TypeInfoSubstate::KeyValueStore(..) => {}
@@ -577,7 +615,7 @@ impl CallFrame {
                 for (substate_key, substate_value) in module {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
-                            return Err(UpdateSubstateError::CantPutLocalRefToStore(*reference));
+                            return Err(UnlockSubstateError::CantPutLocalRefToStore(*reference));
                         }
                     }
 
@@ -641,14 +679,14 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track,
         node_id: &NodeId,
-    ) -> Result<(), UpdateSubstateError> {
+    ) -> Result<(), UnlockSubstateError> {
         let node = heap.remove_node(node_id);
 
         for (module_id, module) in node.substates {
             for (substate_key, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(UpdateSubstateError::CantPutLocalRefToStore(*reference));
+                        return Err(UnlockSubstateError::CantPutLocalRefToStore(*reference));
                     }
                 }
 
