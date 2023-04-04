@@ -58,16 +58,41 @@ impl RocksdbSubstateStore {
         .expect("Failed to decode configs")
     }
 
+    pub fn list_nodes(&self) -> Vec<NodeId> {
+        let mut items = Vec::new();
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(&[], Direction::Forward));
+        while let Some(kv) = iter.next() {
+            let (key, _value) = kv.unwrap();
+            let (node_id, _, _) = decode_substate_id(key.as_ref()).unwrap();
+
+            if items.last() != Some(&node_id) {
+                items.push(node_id);
+            }
+        }
+        items
+    }
+
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        todo!()
+        self.list_nodes()
+            .into_iter()
+            .filter_map(|x| PackageAddress::try_from(x.as_ref()).ok())
+            .collect()
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {
-        todo!()
+        self.list_nodes()
+            .into_iter()
+            .filter_map(|x| ComponentAddress::try_from(x.as_ref()).ok())
+            .collect()
     }
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        todo!()
+        self.list_nodes()
+            .into_iter()
+            .filter_map(|x| ResourceAddress::try_from(x.as_ref()).ok())
+            .collect()
     }
 }
 
