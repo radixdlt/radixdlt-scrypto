@@ -88,11 +88,9 @@ impl KernelModule for KernelTraceModule {
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Creating node: id = {:?}, entity type = {:?},  init = {:?}, module_init = {:?}",
+            "Creating node: id = {:?}, entity type = {:?}",
             node_id,
-            node_id.entity_type(),
-            node_init,
-            node_module_init
+            node_id.entity_type()
         );
         Ok(())
     }

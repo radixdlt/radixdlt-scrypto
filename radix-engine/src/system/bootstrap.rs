@@ -232,7 +232,7 @@ pub fn create_genesis(
 
     // Package Owner Token
     {
-        // TODO: Integrate this into package instantiation to remove circular depedendency
+        // TODO: Integrate this into package instantiation to remove circular dependency
         let mut access_rules = BTreeMap::new();
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&PACKAGE_PACKAGE).unwrap()).unwrap();
@@ -257,7 +257,7 @@ pub fn create_genesis(
 
     // Identity Package
     {
-        // TODO: Integrate this into package instantiation to remove circular depedendency
+        // TODO: Integrate this into package instantiation to remove circular dependency
         let mut access_rules = BTreeMap::new();
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap();
@@ -347,7 +347,7 @@ pub fn create_genesis(
 
     // Account Package
     {
-        // TODO: Integrate this into package instantiation to remove circular depedendency
+        // TODO: Integrate this into package instantiation to remove circular dependency
         let mut access_rules = BTreeMap::new();
         let global_id = NonFungibleGlobalId::package_actor(ACCOUNT_PACKAGE);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
@@ -620,7 +620,7 @@ pub fn create_genesis(
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    // TODO: Remove this when appropriate syscalls are implemented for Scrypto
+    // TODO: Remove this when appropriate APIs are implemented for Scrypto
     let faucet_component = receipt
         .expect_commit(true)
         .new_component_addresses()
@@ -683,7 +683,7 @@ where
             substate_db,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::genesis().with_trace(true),
             &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 

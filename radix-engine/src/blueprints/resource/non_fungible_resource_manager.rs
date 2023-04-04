@@ -774,7 +774,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        // FIXME: check if the bucket is locked!!!
+        // FIXME: check if the bucket is locked
         let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
 
         // Construct the event and only emit it once all of the operations are done.

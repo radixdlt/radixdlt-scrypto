@@ -1,5 +1,5 @@
 use radix_engine::kernel::interpreters::*;
-use radix_engine::system::bootstrap::{create_genesis, genesis_result};
+use radix_engine::system::bootstrap::{bootstrap, create_genesis, genesis_result};
 use radix_engine::transaction::{execute_transaction, ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -12,36 +12,9 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_db = InMemorySubstateDatabase::standard();
-    let mut initial_validator_set = BTreeMap::new();
-    let public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
-    initial_validator_set.insert(
-        EcdsaSecp256k1PublicKey([0; 33]),
-        (Decimal::one(), account_address),
-    );
-    let genesis_transaction =
-        create_genesis(initial_validator_set, BTreeMap::new(), 1u64, 1u64, 1u64);
+    let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let transaction_receipt = execute_transaction(
-        &substate_db,
-        &scrypto_interpreter,
-        &FeeReserveConfig::default(),
-        &ExecutionConfig::genesis().with_trace(true),
-        &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
-    );
-    #[cfg(not(feature = "alloc"))]
-    println!("{:?}", transaction_receipt);
-
-    transaction_receipt
-        .expect_commit(true)
-        .next_epoch()
-        .expect("There should be a new epoch.");
-
-    assert!(transaction_receipt
-        .expect_commit(true)
-        .new_package_addresses()
-        .contains(&PACKAGE_PACKAGE));
+    let transaction_receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
     let genesis_receipt = genesis_result(&transaction_receipt);
     assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
 }

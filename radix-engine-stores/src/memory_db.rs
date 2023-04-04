@@ -101,19 +101,17 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
             };
             match substate_change {
                 StateUpdate::Upsert(substate_value, _) => {
-                    self.substates
-                        .insert(
-                            substate_id,
-                            scrypto_encode(&(
-                                substate_value,
-                                match previous_version {
-                                    Some(v) => v + 1,
-                                    None => 0u32,
-                                },
-                            ))
-                            .unwrap(),
-                        )
-                        .expect("IO error");
+                    self.substates.insert(
+                        substate_id,
+                        scrypto_encode(&(
+                            substate_value,
+                            match previous_version {
+                                Some(v) => v + 1,
+                                None => 0u32,
+                            },
+                        ))
+                        .unwrap(),
+                    );
                 }
             }
         }

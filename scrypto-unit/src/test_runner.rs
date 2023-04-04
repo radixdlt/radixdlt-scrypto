@@ -12,7 +12,7 @@ use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
-use radix_engine::system::bootstrap::create_genesis;
+use radix_engine::system::bootstrap::{bootstrap, create_genesis};
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -151,13 +151,17 @@ impl TestRunnerBuilder {
     }
 
     pub fn build(self) -> TestRunner {
+        let scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::V0,
+        };
+        let mut substate_db = InMemorySubstateDatabase::standard();
+        bootstrap(&mut substate_db, &scrypto_interpreter);
+
         let mut runner = TestRunner {
-            scrypto_interpreter: ScryptoInterpreter {
-                wasm_metering_config: WasmMeteringConfig::V0,
-                wasm_engine: DefaultWasmEngine::default(),
-                wasm_instrumenter: WasmInstrumenter::default(),
-            },
-            substate_db: InMemorySubstateDatabase::standard(),
+            scrypto_interpreter,
+            substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),

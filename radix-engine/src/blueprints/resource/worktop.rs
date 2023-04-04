@@ -29,7 +29,7 @@ pub enum WorktopError {
 pub struct WorktopBlueprint;
 
 //==============================================
-// Invariant: no empty buckets in the worktop!!!
+// Invariant: no empty buckets in the worktop!
 //==============================================
 
 impl WorktopBlueprint {
