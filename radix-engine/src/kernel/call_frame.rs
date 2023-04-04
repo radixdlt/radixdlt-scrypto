@@ -751,7 +751,7 @@ impl CallFrame {
         track: &'f mut Track<'s>,
     ) -> Result<(), RuntimeError> {
         if heap.contains_node(node_id) {
-            panic!("Heap iterator supported");
+            panic!("Heap iterator unsupported");
         } else {
             track
                 .remove_from_iterable(node_id, module_id, key)
