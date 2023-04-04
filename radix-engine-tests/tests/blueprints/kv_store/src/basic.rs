@@ -23,7 +23,8 @@ mod basic {
         pub fn remove_from_local() -> ComponentAddress {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "hello".to_owned());
-            map.remove(&"hello".to_owned());
+            let removed = map.remove(&"hello".to_owned());
+            assert_eq!(removed, Option::Some("hello".to_owned()));
             let maybe_entry = map.get(&"hello2".to_owned());
             assert!(maybe_entry.is_none());
 

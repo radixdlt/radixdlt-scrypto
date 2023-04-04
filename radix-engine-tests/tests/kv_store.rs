@@ -363,12 +363,7 @@ fn multiple_reads_should_work() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(
-            package_address,
-            "Basic",
-            "multiple_reads",
-            manifest_args!(),
-        )
+        .call_function(package_address, "Basic", "multiple_reads", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

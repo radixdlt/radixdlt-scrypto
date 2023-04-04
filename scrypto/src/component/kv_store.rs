@@ -124,7 +124,7 @@ impl<
     }
 
     /// Inserts a new key-value pair into this map.
-    pub fn remove(&self, key: &K) {
+    pub fn remove(&self, key: &K) -> Option<V> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload.clone()));
@@ -135,10 +135,20 @@ impl<
                 LockFlags::MUTABLE,
             )
             .unwrap();
+
+        let raw_bytes = env.sys_read_substate(handle).unwrap();
+        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
+        let rtn = substate.map(|v| {
+            let rust_value = scrypto_decode(&scrypto_encode(&v).unwrap()).unwrap();
+            rust_value
+        });
+
         let substate: Option<ScryptoValue> = None;
         env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
             .unwrap();
         env.sys_drop_lock(handle).unwrap();
+
+        rtn
     }
 }
 
