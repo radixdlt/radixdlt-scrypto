@@ -5,8 +5,11 @@ from tabulate import tabulate
 import pprint
 import sys
 
+if len(sys.argv) < 2:
+    print("Usage: convert.py <INPUT_FILE_NAME>", file=sys.stderr)
+    sys.exit(-1)
 
-input_file = "./out.xml"
+input_file = sys.argv[1]
 #input_file = "./test1.xml"
 
 
@@ -57,7 +60,7 @@ for i in range(1):
             #print("adding resolve:   ", blueprint_name, fcn_name)
             key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
 
-        # handle node_id (from kernel_create_node, kernel_drop_node, kernel_get_node_visibility_origin)
+        # handle node_id (from kernel_create_node, kernel_drop_node, kernel_get_node_visibility_origin, kernel_lock_substate)
         param = child.xpath("./@node_id")
         if param:
             if '"' in param[0]:
@@ -77,19 +80,13 @@ for i in range(1):
             key += "::" + str(param[0])
 
         # handle kernel_lock_substate
-        param = child.xpath("./self::kernel_lock_substate[@arg0 | @module_id | @offset]")
+        param = child.xpath("./self::kernel_lock_substate[@module_id | @offset]")
         if param:
-            key_object = param[0].attrib["arg0"].partition('(')[0] #[:16]
             key_offset = param[0].attrib["offset"].partition('[')[0]
-            key += "::" + key_object + "::" + param[0].attrib["module_id"] + "::" + key_offset
+            key += "::" + param[0].attrib["module_id"] + "::" + key_offset
 
         # handle kernel_allocate_node_id
         param = child.xpath("./self::kernel_allocate_node_id/@node_type")
-        if param:
-            key += "::" + param[0]
-
-        # handle kernel_read_substate
-        param = child.xpath("./self::kernel_read_substate/on_read_substate/@size]")
         if param:
             key += "::" + param[0]
 
