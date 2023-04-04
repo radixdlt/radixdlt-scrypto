@@ -142,13 +142,11 @@ impl SubstateDatabase for RocksdbSubstateStore {
             if key.as_ref() > &end {
                 break;
             }
-            if key.len() == start.len() {
-                let (_, _, substate_key) =
-                    decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
-                let value = scrypto_decode::<(Vec<u8>, u32)>(value.as_ref())
-                    .expect("Failed to decode value");
-                substates.push((substate_key, value.0));
-            }
+            let (_, _, substate_key) =
+                decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
+            let value =
+                scrypto_decode::<(Vec<u8>, u32)>(value.as_ref()).expect("Failed to decode value");
+            substates.push((substate_key, value.0));
         }
 
         Ok((substates, Hash([0; Hash::LENGTH])))
