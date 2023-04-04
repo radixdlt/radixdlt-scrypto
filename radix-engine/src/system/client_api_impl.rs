@@ -173,7 +173,16 @@ where
         }
         self.kernel_drop_lock(handle)?;
 
-        let node_id = self.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        let entity_type = match (package_address, blueprint_ident) {
+            (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => EntityType::InternalVault,
+            (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                EntityType::InternalAccessController
+            }
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
+            _ => EntityType::InternalGenericComponent,
+        };
+
+        let node_id = self.kernel_allocate_node_id(entity_type)?;
         let node_init = NodeInit::Object(
             object_states
                 .into_iter()
@@ -428,7 +437,8 @@ where
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let node_id = self.kernel_allocate_node_id(EntityType::InternalKeyValueStore)?;
+        let entity_type = EntityType::InternalKeyValueStore;
+        let node_id = self.kernel_allocate_node_id(entity_type)?;
 
         self.kernel_create_node(
             node_id,
