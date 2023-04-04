@@ -280,25 +280,60 @@ impl<'s> Track<'s> {
         let node_module = (*node_id, *module_id);
         let iterable_entry = self.iterable_node_updates.entry(node_module);
         let items = match iterable_entry {
-            Entry::Occupied(..) => {
-            /*
-                match iterable {
+            Entry::Occupied(mut iterable) => {
+                match iterable.get_mut() {
                     IterableNodeUpdate::New(substates) => {
-                        let items = substates
+                        let items: Vec<(SubstateId, RuntimeSubstate)> = substates
                             .iter()
                             .map(|(offset, value)| {
                                 let id = SubstateId(*node_id, *module_id, offset.clone());
                                 (id, RuntimeSubstate::IterableEntry(value.clone()))
                             })
+                            .take(count.try_into().unwrap())
                             .collect();
+
+                        for (id, ..) in &items {
+                            substates.remove(&id.2);
+                        }
+
                         items
                     }
-                    IterableNodeUpdate::Update(..) => {
-                        panic!("Unsupported");
+                    IterableNodeUpdate::Update(updates) => {
+                        let size: u32 = updates.len().try_into().unwrap();
+                        let num_to_retrieve = count.checked_add(size);
+                        let num_to_retrieve = match num_to_retrieve {
+                            None => u32::MAX,
+                            Some(value) => value,
+                        };
+
+                        let stored = self
+                            .substate_store
+                            .first_in_iterable(node_id, *module_id, num_to_retrieve);
+
+                        let mut inserted: BTreeMap<SubstateId, RuntimeSubstate> = updates.iter()
+                            .filter_map(|(o, u)| {
+                                match u {
+                                    IterableSubstateUpdate::Insert(v) => {
+                                        let substate_id = SubstateId(*node_id, *module_id, o.clone());
+                                        Some((substate_id, RuntimeSubstate::IterableEntry(v.clone())))
+                                    }
+                                    IterableSubstateUpdate::Remove => {
+                                        None
+                                    }
+                                }
+                            })
+                            .collect();
+
+                        for (id, substate) in stored {
+                            if !updates.contains_key(&id.2) {
+                                inserted.insert(id, substate);
+                            }
+                        }
+
+                        let items = inserted.into_iter().take(count.try_into().unwrap()).collect();
+                        items
                     }
                 }
-             */
-                todo!();
             }
             Entry::Vacant(e) => {
                 self.iterable_node_reads
@@ -331,6 +366,7 @@ impl<'s> Track<'s> {
         let items = if let Some(iterable) = iterable {
             match iterable {
                 IterableNodeUpdate::New(substates) => {
+                    // TODO: Missing count
                     let items = substates
                         .iter()
                         .map(|(offset, value)| {
