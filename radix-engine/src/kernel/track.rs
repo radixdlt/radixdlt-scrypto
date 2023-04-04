@@ -286,11 +286,45 @@ impl<'s> Track<'s> {
                             let id = SubstateId(*node_id, *module_id, offset.clone());
                             (id, RuntimeSubstate::IterableEntry(value.clone()))
                         })
+                        .take(count.try_into().unwrap())
                         .collect();
                     items
                 }
-                IterableNodeUpdate::Update(..) => {
-                    panic!("Unsupported");
+                IterableNodeUpdate::Update(updates) => {
+                    let size: u32 = updates.len().try_into().unwrap();
+                    let num_to_retrieve = count.checked_add(size);
+                    let num_to_retrieve = match num_to_retrieve {
+                        None => u32::MAX,
+                        Some(value) => value,
+                    };
+
+                    let stored =
+                        self.substate_store
+                            .first_in_iterable(node_id, *module_id, num_to_retrieve);
+
+                    // TODO: Optimize by implementing some sort of iterator merge
+                    let mut inserted: BTreeMap<SubstateId, RuntimeSubstate> = updates
+                        .iter()
+                        .filter_map(|(o, u)| match u {
+                            IterableSubstateUpdate::Insert(v) => {
+                                let substate_id = SubstateId(*node_id, *module_id, o.clone());
+                                Some((substate_id, RuntimeSubstate::IterableEntry(v.clone())))
+                            }
+                            IterableSubstateUpdate::Remove => None,
+                        })
+                        .collect();
+
+                    for (id, substate) in stored {
+                        if !updates.contains_key(&id.2) {
+                            inserted.insert(id, substate);
+                        }
+                    }
+
+                    let items = inserted
+                        .into_iter()
+                        .take(count.try_into().unwrap())
+                        .collect();
+                    items
                 }
             }
         } else {
