@@ -62,11 +62,13 @@ pub struct LoadedSubstate {
     metastate: SubstateMetaState,
 }
 
+#[derive(Debug, Clone)]
 pub enum IterableNodeUpdate {
     New(BTreeMap<SubstateOffset, ScryptoValue>),
     Update(IndexMap<SubstateOffset, IterableSubstateUpdate>),
 }
 
+#[derive(Debug, Clone)]
 pub enum IterableSubstateUpdate {
     Insert(ScryptoValue),
     Remove,
@@ -775,7 +777,7 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
-        let state_update_summary = Self::summarize_update(self.substate_store, &state_updates);
+        let state_update_summary = Self::summarize_update(self.substate_store, &state_updates, &self.iterable_nodes);
         let state_updates =
             Self::generate_diff(self.substate_store, state_updates, self.iterable_nodes);
 
@@ -797,6 +799,7 @@ impl<'s> FinalizingTrack<'s> {
     pub fn summarize_update(
         substate_store: &dyn ReadableSubstateStore,
         state_updates: &IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        iterable_node_updates: &IndexMap<(RENodeId, NodeModuleId), IterableNodeUpdate>,
     ) -> StateUpdateSummary {
         let mut new_packages = index_set_new();
         let mut new_components = index_set_new();
@@ -819,7 +822,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         let (balance_changes, direct_vault_updates) =
-            BalanceChangeAccounting::new(substate_store, &state_updates).run();
+            BalanceChangeAccounting::new(substate_store, &state_updates, iterable_node_updates).run();
 
         StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
@@ -909,12 +912,14 @@ pub struct BalanceChangeAccounting<'a, 'b> {
         RENodeId,
         IndexMap<NodeModuleId, IndexMap<SubstateOffset, &'b (PersistedSubstate, Option<u32>)>>,
     >,
+    iterable_node_updates: IndexMap<(RENodeId, NodeModuleId), IterableNodeUpdate>,
 }
 
 impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
     pub fn new(
         substate_store: &'a dyn ReadableSubstateStore,
         state_updates: &'b IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        iterable_node_updates: &'b IndexMap<(RENodeId, NodeModuleId), IterableNodeUpdate>,
     ) -> Self {
         let mut indexed_state_updates: IndexMap<
             RENodeId,
@@ -929,9 +934,15 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 .insert(offset.clone(), v);
         }
 
+        let mut copy = index_map_new();
+        for (k, v) in iterable_node_updates {
+            copy.insert(k.clone(), v.clone());
+        }
+
         Self {
             substate_store,
             indexed_state_updates,
+            iterable_node_updates: copy,
         }
     }
 
@@ -1166,37 +1177,56 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 }
             }
             NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                // If there is an update to the liquid resource
-                if let Some((substate, old_version)) =
-                    self.fetch_substate_from_state_updates(&SubstateId(
-                        *node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                    ))
-                {
-                    let mut old_balance = if old_version.is_none() {
-                        BTreeSet::new()
-                    } else {
-                        self.fetch_substate_from_store(&SubstateId(
-                            *node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                if let Some((substate, ..), ..) = self.fetch_substate_from_state_updates(&SubstateId(
+                    *node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                )) {
+                    let id = substate.vault_liquid_non_fungible().ids.id();
+                    let vault_node_id = RENodeId::KeyValueStore(id);
+                    let node_module = (vault_node_id, NodeModuleId::Iterable);
+
+                    if let Some(iterable_node_update) = self.iterable_node_updates.get(&node_module) {
+                        let mut added = BTreeSet::new();
+                        let mut removed = BTreeSet::new();
+
+                        match iterable_node_update {
+                            IterableNodeUpdate::New(substates) => {
+                                for (offset, ..) in substates {
+                                    let key = match offset {
+                                        SubstateOffset::IterableMap(key) => key,
+                                        _ => panic!("Unexpected"),
+                                    };
+                                    let id: NonFungibleLocalId = scrypto_decode(key).unwrap();
+                                    added.insert(id);
+                                }
+                            }
+                            IterableNodeUpdate::Update(substate_updates) => {
+                                for (offset, update) in substate_updates {
+                                    let key = match offset {
+                                        SubstateOffset::IterableMap(key) => key,
+                                        _ => panic!("Unexpected"),
+                                    };
+                                    let id: NonFungibleLocalId = scrypto_decode(key).unwrap();
+                                    match update {
+                                        IterableSubstateUpdate::Remove => removed.insert(id),
+                                        IterableSubstateUpdate::Insert(..) => added.insert(id),
+                                    };
+                                }
+
+                            }
+                        }
+
+                        Some((
+                            resource_address,
+                            BalanceChange::NonFungible {
+                                added,
+                                removed,
+                            },
                         ))
-                        .vault_liquid_non_fungible()
-                        .ids()
-                        .clone()
-                    };
-                    let mut new_balance = substate.vault_liquid_non_fungible().ids().clone();
-
-                    remove_intersection(&mut new_balance, &mut old_balance);
-
-                    Some((
-                        resource_address,
-                        BalanceChange::NonFungible {
-                            added: new_balance,
-                            removed: old_balance,
-                        },
-                    ))
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
@@ -1228,7 +1258,9 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
     fn fetch_substate_from_store(&self, substate_id: &SubstateId) -> PersistedSubstate {
         self.substate_store
             .get_substate(substate_id)
-            .unwrap_or_else(|| panic!("Substate store corrupted - missing {:?}", substate_id))
+            .unwrap_or_else(|| {
+                panic!("Substate store corrupted - missing {:?}", substate_id)
+            })
             .substate
     }
 }

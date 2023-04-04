@@ -11,7 +11,7 @@ use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, Substa
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::{IterableMapSchema, KeyValueStoreSchema};
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
 
@@ -841,11 +841,16 @@ impl NonFungibleResourceManagerBlueprint {
             api.kernel_get_substate_ref(resman_handle)?;
         let id_type = resource_manager.id_type;
         let info = NonFungibleVaultIdTypeSubstate { id_type };
+        let ids_map = api.new_iterable_map(IterableMapSchema::new::<()>())?;
+        let vault = LiquidNonFungibleVault {
+            amount: Decimal::zero(),
+            ids: Own::KeyValueStore(ids_map),
+        };
         let vault_id = api.new_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
-                scrypto_encode(&LiquidNonFungibleVault::default()).unwrap(),
+                scrypto_encode(&vault).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;

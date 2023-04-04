@@ -389,7 +389,7 @@ impl TestRunner {
                         FUNGIBLE_VAULT_BLUEPRINT => self.inspect_fungible_vault(vault_id),
                         NON_FUNGIBLE_VAULT_BLUEPRINT => self
                             .inspect_non_fungible_vault(vault_id)
-                            .map(|ids| ids.len().into()),
+                            .map(|(amount, ..)| amount),
                         _ => None,
                     }
                 }
@@ -413,20 +413,32 @@ impl TestRunner {
     pub fn inspect_non_fungible_vault(
         &mut self,
         vault_id: ObjectId,
-    ) -> Option<BTreeSet<NonFungibleLocalId>> {
-        self.substate_store()
+    ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
+        let vault = self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             ))
-            .map(|mut output| {
-                output
+            .map(|output| {
+                let non_fungible = output
                     .substate
-                    .vault_liquid_non_fungible_mut()
-                    .ids()
-                    .clone()
-            })
+                    .vault_liquid_non_fungible();
+                let amount = non_fungible.amount;
+                (amount, RENodeId::KeyValueStore(non_fungible.ids.id()))
+            });
+
+        vault.map(|(amount, node)| {
+            let first = self.substate_store.first_in_iterable(&node, NodeModuleId::Iterable, 1u32);
+            let id = first.first().map(|(id, v)| {
+                let id: NonFungibleLocalId = match &id.2 {
+                    SubstateOffset::IterableMap(key) => scrypto_decode(&key).unwrap(),
+                    _ => panic!("Unexpected"),
+                };
+                id
+            });
+            (amount, id)
+        })
     }
 
     pub fn get_component_resources(

@@ -1504,6 +1504,11 @@ impl<'a> SubstateRef<'a> {
 
                 (index_set_new(), owned_nodes)
             }
+            SubstateRef::VaultLiquidNonFungible(substate) => {
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::KeyValueStore(substate.ids.id()));
+                (index_set_new(), owned_nodes)
+            }
             SubstateRef::EpochManager(substate) => {
                 let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
                 (refs, owns)

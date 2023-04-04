@@ -30,7 +30,7 @@ pub trait ClientIterableMapApi<E> {
         count: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
-    fn first_keys_in_iterable_map<S: ScryptoDecode>(
+    fn first_keys_in_iterable_map(
         &mut self,
         node_id: RENodeId,
         count: u32,

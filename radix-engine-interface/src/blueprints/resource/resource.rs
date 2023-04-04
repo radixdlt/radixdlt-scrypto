@@ -6,6 +6,7 @@ use sbor::rust::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {
     InsufficientBalance,
+    InvalidTakeAmount,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
