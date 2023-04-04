@@ -1,6 +1,6 @@
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode, ScryptoValue};
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -16,7 +16,11 @@ pub trait ClientIterableMapApi<E> {
         value: Vec<u8>,
     ) -> Result<(), E>;
 
-    fn remove_from_iterable_map(&mut self, node_id: RENodeId, key: Vec<u8>) -> Result<(), E>;
+    fn remove_from_iterable_map(
+        &mut self,
+        node_id: RENodeId,
+        key: Vec<u8>,
+    ) -> Result<Option<ScryptoValue>, E>;
 
     fn remove_first_in_iterable_map(
         &mut self,

@@ -401,7 +401,7 @@ impl EpochManagerBlueprint {
 
         if let Some(previous) = previous {
             let index_key = Self::to_index_key(previous.stake, validator_address);
-            api.remove_from_iterable_map(index_node, index_key)?;
+            let _ = api.remove_from_iterable_map(index_node, index_key)?;
         }
         match update {
             UpdateValidator::Register(key, stake) => {

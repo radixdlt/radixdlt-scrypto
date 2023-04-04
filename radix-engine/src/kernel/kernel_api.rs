@@ -60,7 +60,7 @@ pub trait KernelIterableMapApi {
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         key: Vec<u8>,
-    ) -> Result<(), RuntimeError>;
+    ) -> Result<Option<ScryptoValue>, RuntimeError>;
 
     fn kernel_remove_first_in_iterable_map(
         &mut self,

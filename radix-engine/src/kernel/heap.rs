@@ -36,7 +36,7 @@ impl Heap {
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         key: Vec<u8>,
-    ) -> Result<(), CallFrameError> {
+    ) -> Result<Option<ScryptoValue>, CallFrameError> {
         let node = self
             .nodes
             .get_mut(node_id)
@@ -48,9 +48,15 @@ impl Heap {
             .or_insert(BTreeMap::new());
 
         // TODO: Check if removed or not
-        substates.remove(&SubstateOffset::IterableMap(key));
+        let removed = substates.remove(&SubstateOffset::IterableMap(key))
+            .map(|v| {
+                match v {
+                    RuntimeSubstate::IterableEntry(v) => v,
+                    _ => panic!("Unexpected"),
+                }
+            });
 
-        Ok(())
+        Ok(removed)
     }
 
     pub fn remove_first_in_iterable(

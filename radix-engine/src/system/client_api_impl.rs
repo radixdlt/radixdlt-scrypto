@@ -1030,7 +1030,7 @@ where
         &mut self,
         node_id: RENodeId,
         key: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<ScryptoValue>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         if !matches!(type_info, TypeInfoSubstate::IterableMap(..)) {
             return Err(RuntimeError::SystemError(SystemError::NotAnIterable));

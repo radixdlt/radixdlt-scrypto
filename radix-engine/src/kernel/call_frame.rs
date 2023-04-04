@@ -749,7 +749,7 @@ impl CallFrame {
         key: Vec<u8>,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<ScryptoValue>, RuntimeError> {
         if heap.contains_node(node_id) {
             heap.remove_from_iterable(node_id, module_id, key)
                 .map_err(|e| RuntimeError::CallFrameError(e))
