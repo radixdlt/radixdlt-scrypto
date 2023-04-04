@@ -9,7 +9,7 @@ use radix_engine_interface::math::ParseDecimalError;
 #[derive(Debug)]
 pub enum ParseResourceSpecifierError {
     InvalidAmount(ParseDecimalError),
-    InvalidResourceAddress(AddressError),
+    InvalidResourceAddress(String),
     InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     MoreThanOneAmountSpecified,
 }
@@ -116,18 +116,24 @@ pub fn parse_resource_specifier(
         let amount = amount_string
             .parse()
             .map_err(ParseResourceSpecifierError::InvalidAmount)?;
-        let resource_address = bech32_decoder
-            .validate_and_decode_resource_address(resource_address_string)
-            .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
+        let resource_address =
+            ResourceAddress::try_from_bech32(&bech32_decoder, resource_address_string).ok_or(
+                ParseResourceSpecifierError::InvalidResourceAddress(
+                    resource_address_string.to_string(),
+                ),
+            )?;
 
         Ok(ResourceSpecifier::Amount(amount, resource_address))
     } else {
         // Paring the resource address fully first to use it for the non-fungible id type ledger
         // lookup
         let resource_address_string = tokens[0];
-        let resource_address = bech32_decoder
-            .validate_and_decode_resource_address(resource_address_string)
-            .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
+        let resource_address =
+            ResourceAddress::try_from_bech32(&bech32_decoder, resource_address_string).ok_or(
+                ParseResourceSpecifierError::InvalidResourceAddress(
+                    resource_address_string.to_string(),
+                ),
+            )?;
 
         // Parsing the non-fungible ids with the available id type
         let non_fungible_local_ids = tokens[1]

@@ -1,6 +1,6 @@
 use radix_engine::types::{
-      Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId,
-    PackageAddress, ResourceAddress,
+    Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleGlobalId, PackageAddress,
+    ResourceAddress,
 };
 use radix_engine_interface::{
     blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
@@ -9,6 +9,10 @@ use radix_engine_interface::{
 use sbor::rust::fmt;
 use std::str::FromStr;
 use utils::ContextualDisplay;
+
+enum AddressError {
+    InvalidAddress(String),
+}
 
 #[derive(Clone)]
 pub struct SimulatorPackageAddress(pub PackageAddress);
@@ -29,12 +33,12 @@ impl FromStr for SimulatorPackageAddress {
     type Err = AddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
-        if let Ok(address) = PackageAddress::try_from_hex(address) {
-            return Ok(address.into());
-        }
-        let address =
-            Bech32Decoder::for_simulator().validate_and_decode_package_address(address)?;
-        Ok(Self(address))
+        PackageAddress::try_from_hex(address)
+            .or(PackageAddress::try_from_bech32(
+                &Bech32Decoder::for_simulator(),
+                address,
+            ))
+            .ok_or(AddressError::InvalidAddress(address.to_string()))
     }
 }
 
@@ -69,12 +73,12 @@ impl FromStr for SimulatorResourceAddress {
     type Err = AddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
-        if let Ok(address) = ResourceAddress::try_from_hex(address) {
-            return Ok(address.into());
-        }
-        let address =
-            Bech32Decoder::for_simulator().validate_and_decode_resource_address(address)?;
-        Ok(Self(address))
+        ResourceAddress::try_from_hex(address)
+            .or(ResourceAddress::try_from_bech32(
+                &Bech32Decoder::for_simulator(),
+                address,
+            ))
+            .ok_or(AddressError::InvalidAddress(address.to_string()))
     }
 }
 
@@ -109,12 +113,12 @@ impl FromStr for SimulatorComponentAddress {
     type Err = AddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
-        if let Ok(address) = ComponentAddress::try_from_hex(address) {
-            return Ok(address.into());
-        }
-        let address =
-            Bech32Decoder::for_simulator().validate_and_decode_component_address(address)?;
-        Ok(Self(address))
+        ComponentAddress::try_from_hex(address)
+            .or(ComponentAddress::try_from_bech32(
+                &Bech32Decoder::for_simulator(),
+                address,
+            ))
+            .ok_or(AddressError::InvalidAddress(address.to_string()))
     }
 }
 

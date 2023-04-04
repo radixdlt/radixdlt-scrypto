@@ -54,6 +54,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
@@ -162,7 +163,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let mut substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -185,12 +187,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
             .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                get_event_schema(&substate_store, event_type_identifier)
+                get_event_schema(&substate_db, event_type_identifier)
             })
             .build();
         writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
-    drop(substate_store);
+    drop(substate_db);
 
     process_receipt(receipt)
 }
@@ -252,12 +254,12 @@ pub fn handle_manifest<O: std::io::Write>(
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
                     .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                        get_event_schema(&substate_store, event_type_identifier)
+                        get_event_schema(&substate_db, event_type_identifier)
                     })
                     .build();
                 writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
-            drop(substate_store);
+            drop(substate_db);
 
             process_receipt(receipt).map(Option::Some)
         }
@@ -356,8 +358,8 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     }
 }
 
-pub fn get_event_schema<S: ReadableSubstateStore>(
-    substate_store: &S,
+pub fn get_event_schema<S: SubstateDatabase>(
+    substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
@@ -379,7 +381,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                     *local_type_index,
                 ),
                 TypedModuleId::ObjectState => {
-                    let type_info = substate_store
+                    let type_info = substate_db
                         .get_substate(&SubstateId(
                             *node_id,
                             TypedModuleId::TypeInfo,
@@ -399,7 +401,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                TypedModuleId::TypeInfo => return None,
+                TypedModuleId::TypeInfo | TypedModuleId::KeyValueStore => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
@@ -422,7 +424,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
 
     Some((
         local_type_index,
-        substate_store
+        substate_db
             .get_substate(&substate_id)
             .unwrap()
             .substate

@@ -145,6 +145,7 @@ pub struct StateUpdates {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StateUpdate {
     /// Creates or updates a substate.
+    /// TODO: remove version
     Upsert(Vec<u8>, Option<u32>),
     /*
     /// Deletes a substate.

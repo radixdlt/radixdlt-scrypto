@@ -5,9 +5,9 @@
 
 use radix_engine::types::*;
 use radix_engine_interface::schema::BlueprintSchema;
+use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::Instruction;
-use transaction::{builder::ManifestBuilder};
 
 use super::{parse_resource_specifier, ResourceSpecifier};
 
@@ -264,24 +264,22 @@ fn build_call_argument<'a>(
             },
         )),
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PackageAddress) => {
-            let value = bech32_decoder
-                .validate_and_decode_package_address(&argument)
+            let value = PackageAddress::try_from_bech32(&bech32_decoder, &argument)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Address(from_address(value.into())),
+                    value: ManifestCustomValue::Address(value.into()),
                 },
             ))
         }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ComponentAddress) => {
-            let value = bech32_decoder
-                .validate_and_decode_component_address(&argument)
+            let value = ComponentAddress::try_from_bech32(&bech32_decoder, &argument)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Address(from_address(value.into())),
+                    value: ManifestCustomValue::Address(value.into()),
                 },
             ))
         }
@@ -292,7 +290,7 @@ fn build_call_argument<'a>(
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Address(from_address(value.into())),
+                    value: ManifestCustomValue::Address(value.into()),
                 },
             ))
         }

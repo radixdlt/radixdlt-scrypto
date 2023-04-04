@@ -28,6 +28,12 @@ impl ResourceAddress {
         &self.0
     }
 
+    pub fn try_from_hex(s: &str) -> Option<Self> {
+        hex::decode(s)
+            .ok()
+            .and_then(|x| Self::try_from(x.as_ref()).ok())
+    }
+
     pub fn try_from_bech32(decoder: &Bech32Decoder, s: &str) -> Option<Self> {
         if let Ok((_, full_data)) = decoder.validate_and_decode(s) {
             Self::try_from(full_data.as_ref()).ok()

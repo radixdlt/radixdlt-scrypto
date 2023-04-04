@@ -19,7 +19,8 @@ pub struct ShowLedger {}
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+        let substate_db =
+            RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
@@ -45,10 +46,7 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
-        for (last, resource_address) in substate_db
-            .list_resource_managers()
-            .iter()
-            .identify_last()
+        for (last, resource_address) in substate_db.list_resource_managers().iter().identify_last()
         {
             writeln!(
                 out,

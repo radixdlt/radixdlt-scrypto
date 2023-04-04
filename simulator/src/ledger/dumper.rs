@@ -3,16 +3,17 @@ use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
+use radix_engine_common::types::NodeId;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use radix_engine_interface::types::IndexedScryptoValue;
-use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::{
     AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource,
 };
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::types::IndexedScryptoValue;
+use radix_engine_stores::interface::SubstateDatabase;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
 
@@ -20,29 +21,28 @@ use crate::utils::*;
 
 /// Represents an error when displaying an entity.
 #[derive(Debug, Clone)]
-pub enum DisplayError {
+pub enum EntityDumpError {
     PackageNotFound,
     ComponentNotFound,
     ResourceManagerNotFound,
-    AddressError(AddressError),
 }
 
 /// Dump a package into console.
-pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
+pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     package_address: PackageAddress,
     substate_db: &T,
     output: &mut O,
-) -> Result<(), DisplayError> {
+) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let package: Option<PackageCodeSubstate> = substate_db
-        .get_substate(&SubstateId(
+        .get_substate(
             package_address.as_node_id(),
             TypedModuleId::ObjectState,
             PackageOffset::Package.into(),
-        ))
+        )
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let package = package.ok_or(DisplayError::PackageNotFound)?;
+    let package = package.ok_or(EntityDumpError::PackageNotFound)?;
 
     writeln!(
         output,
@@ -68,11 +68,11 @@ struct ComponentStateDump {
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
+pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     component_address: ComponentAddress,
     substate_db: &T,
     output: &mut O,
-) -> Result<(), DisplayError> {
+) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     // Some branching logic is needed here to deal well with native components. Only `Normal`
@@ -80,29 +80,30 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
             let type_info_substate: TypeInfoSubstate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::TypeInfo,
                     TypeInfoOffset::TypeInfo.into(),
-                ))
+                )
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
-                ))
+                )
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
             let state: ComponentStateSubstate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::ObjectState,
                     ComponentOffset::Component.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .unwrap();
@@ -163,23 +164,25 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
         }
         ComponentAddress::Account(..) => {
             let account_substate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::ObjectState,
                     AccountOffset::Account.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().account().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
 
             // Getting the vaults in the key-value store of the account
             let vaults = dump_kv_store(
@@ -212,14 +215,15 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
         }
         ComponentAddress::Identity(..) => {
             let access_rules_chain_substate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
 
             ComponentStateDump {
                 raw_state: None,
@@ -231,23 +235,25 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
         }
         ComponentAddress::AccessController(..) => {
             let access_controller_substate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::Metadata,
                     AccessControllerOffset::AccessController.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_controller().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     component_address.as_node_id(),
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
+                .ok_or(EntityDumpError::ComponentNotFound)?;
 
             ComponentStateDump {
                 raw_state: None,
@@ -259,7 +265,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
         }
         // For the time being, the above component types are the only "dump-able" ones. We should
         // add more as we go.
-        _ => Err(DisplayError::ComponentNotFound)?,
+        _ => Err(EntityDumpError::ComponentNotFound)?,
     };
 
     writeln!(
@@ -302,7 +308,7 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
 
     if let Some(raw_state) = component_state_dump.raw_state {
         let value_display_context =
-            ScryptoValueDisplayContext::with_optional_bech32(Some(&bech32_encoder));
+            ScryptoValueSerializationContext::with_optional_bech32(Some(&bech32_encoder));
         writeln!(
             output,
             "{}: {}",
@@ -318,12 +324,12 @@ pub fn dump_component<T: ReadableSubstateStore, O: std::io::Write>(
     Ok(())
 }
 
-fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
+fn dump_kv_store<T: SubstateDatabase, O: std::io::Write>(
     component_address: ComponentAddress,
     kv_store_id: &NodeId,
     substate_db: &T,
     output: &mut O,
-) -> Result<(Vec<NodeId>, Vec<NodeId>), DisplayError> {
+) -> Result<(Vec<NodeId>, Vec<NodeId>), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let mut owned_kv_stores = Vec::new();
     let mut owned_vaults = Vec::new();
@@ -340,7 +346,7 @@ fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
         if let Option::Some(value) = &substate.kv_store_entry() {
             let key: ScryptoValue = scrypto_decode(&key).unwrap();
             let value_display_context =
-                ScryptoValueDisplayContext::with_optional_bech32(Some(&bech32_encoder));
+                ScryptoValueSerializationContext::with_optional_bech32(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -369,22 +375,23 @@ fn dump_kv_store<T: ReadableSubstateStore, O: std::io::Write>(
     Ok((owned_kv_stores, owned_vaults))
 }
 
-fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
+fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
     vaults: &IndexSet<NodeId>,
-    substate_store: &T,
+    substate_db: &T,
     output: &mut O,
-) -> Result<(), DisplayError> {
+) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         // READ vault info
         let vault_info: VaultInfoSubstate = substate_db
-            .get_substate(&SubstateId(
+            .get_substate(
                 NodeId::Object(*vault_id),
                 TypedModuleId::ObjectState,
                 VaultOffset::Vault.into(),
-            ))
+            )
+            .expect("Database error")
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
@@ -393,13 +400,12 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let resource_address = vault_info.resource_address;
 
         let name_metadata: Option<Option<ScryptoValue>> = substate_db
-            .get_substate(&SubstateId(
+            .get_substate(
                 resource_address.as_node_id(),
                 TypedModuleId::Metadata,
-                SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode("name").unwrap(),
-                )),
-            ))
+                &SubstateKey::from_vec(scrypto_encode("name").unwrap()).unwrap(),
+            )
+            .expect("Database error")
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let name_metadata = match name_metadata {
@@ -417,13 +423,12 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         .unwrap_or(String::new());
 
         let symbol_metadata: Option<Option<ScryptoValue>> = substate_db
-            .get_substate(&SubstateId(
+            .get_substate(
                 resource_address.as_node_id(),
                 TypedModuleId::Metadata,
-                SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode("symbol").unwrap(),
-                )),
-            ))
+                &SubstateKey::from_vec(scrypto_encode("symbol").unwrap()).unwrap(),
+            )
+            .expect("Database error")
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let symbol_metadata = match symbol_metadata {
@@ -443,22 +448,24 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         // DUMP resource
         let amount = if vault_info.resource_type.is_fungible() {
             let vault: LiquidFungibleResource = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     NodeId::Object(*vault_id),
                     TypedModuleId::ObjectState,
                     VaultOffset::Vault.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
             vault.amount()
         } else {
             let vault: LiquidNonFungibleResource = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     NodeId::Object(*vault_id),
                     TypedModuleId::ObjectState,
                     VaultOffset::Vault.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
@@ -477,21 +484,24 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         // DUMP non-fungibles
         if !vault_info.resource_type.is_fungible() {
             let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     resource_address.as_node_id(),
                     TypedModuleId::ObjectState,
                     ResourceManagerOffset::ResourceManager.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into());
-            let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+            let resource_manager =
+                resource_manager.ok_or(EntityDumpError::ResourceManagerNotFound)?;
 
             let vault: LiquidNonFungibleResource = substate_db
-                .get_substate(&SubstateId(
+                .get_substate(
                     NodeId::Object(*vault_id),
                     TypedModuleId::ObjectState,
                     VaultOffset::Vault.into(),
-                ))
+                )
+                .expect("Database error")
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
@@ -500,20 +510,21 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let non_fungible_id = resource_manager.non_fungible_table;
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: Option<ScryptoValue> = substate_db
-                    .get_substate(&SubstateId(
+                    .get_substate(
                         NodeId::KeyValueStore(non_fungible_id),
                         TypedModuleId::ObjectState,
-                        SubstateKey::KeyValueStore(KeyValueStoreOffset::Entry(
-                            scrypto_encode(id).unwrap(),
-                        )),
-                    ))
+                        &SubstateKey::from_vec(scrypto_encode(id).unwrap()).unwrap(),
+                    )
+                    .expect("Database error")
                     .map(|s| s.substate.to_runtime())
                     .map(|s| s.into())
                     .unwrap();
                 if let Option::Some(value) = non_fungible {
                     let id = IndexedScryptoValue::from_typed(id);
                     let value_display_context =
-                        ScryptoValueDisplayContext::with_optional_bech32(Some(&bech32_encoder));
+                        ScryptoValueSerializationContext::with_optional_bech32(Some(
+                            &bech32_encoder,
+                        ));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, data: {} }}",
@@ -530,20 +541,21 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 }
 
 /// Dump a resource into console.
-pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
+pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     resource_address: ResourceAddress,
     substate_db: &T,
     output: &mut O,
-) -> Result<(), DisplayError> {
+) -> Result<(), EntityDumpError> {
     let resource_manager: Option<FungibleResourceManagerSubstate> = substate_db
-        .get_substate(&SubstateId(
+        .get_substate(
             resource_address.as_node_id(),
             TypedModuleId::ObjectState,
             ResourceManagerOffset::ResourceManager.into(),
-        ))
+        )
+        .expect("Database error")
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+    let resource_manager = resource_manager.ok_or(EntityDumpError::ResourceManagerNotFound)?;
 
     writeln!(
         output,
