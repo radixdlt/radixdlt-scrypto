@@ -180,6 +180,21 @@ impl CallFrame {
                         }
                         TypeInfoSubstate::KeyValueStore(_) => true,
                     }
+                } else if let Ok(handle) = track.acquire_lock(
+                    node_id,
+                    TypedModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                    LockFlags::read_only(),
+                ) {
+                    let type_info: TypeInfoSubstate =
+                        track.read_substate(handle).as_typed().unwrap();
+                    match type_info {
+                        TypeInfoSubstate::Object { blueprint, .. } => {
+                            blueprint.package_address == METADATA_PACKAGE
+                                && blueprint.blueprint_name == METADATA_BLUEPRINT
+                        }
+                        TypeInfoSubstate::KeyValueStore(_) => true,
+                    }
                 } else {
                     false
                 }
@@ -238,7 +253,7 @@ impl CallFrame {
                 .acquire_lock(node_id, module_id.into(), substate_key, flags)
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
-            track.get_substate(handle)
+            track.read_substate(handle)
         };
 
         // Infer references and owns within the substate
@@ -311,7 +326,7 @@ impl CallFrame {
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = if let Some(handle) = substate_lock.store_handle {
-                track.get_substate(handle)
+                track.read_substate(handle)
             } else {
                 heap.get_substate(node_id, module_id.into(), substate_key)
                     .expect("Substate locked but missing")
@@ -427,7 +442,7 @@ impl CallFrame {
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
         if let Some(store_handle) = store_handle {
-            Ok(track.get_substate(*store_handle))
+            Ok(track.read_substate(*store_handle))
         } else {
             Ok(heap
                 .get_substate(node_id, *module_id, substate_key)
@@ -459,7 +474,7 @@ impl CallFrame {
         }
 
         if let Some(store_handle) = store_handle {
-            track.put_substate(*store_handle, substate);
+            track.write_substate(*store_handle, substate);
         } else {
             heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
         }

@@ -89,14 +89,14 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the lock handle is invalid
-    fn get_substate(&self, handle: u32) -> &IndexedScryptoValue;
+    fn read_substate(&self, handle: u32) -> &IndexedScryptoValue;
 
     /// Updates a substate.
     ///
     /// # Panics
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
-    fn put_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
+    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Inserts a substate into the substate store.
     ///

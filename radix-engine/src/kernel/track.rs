@@ -267,7 +267,7 @@ impl<'s> SubstateStore for Track<'s> {
         }
     }
 
-    fn get_substate(&self, handle: u32) -> &IndexedScryptoValue {
+    fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
         let (node_id, module_id, substate_key, _flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 
@@ -276,7 +276,7 @@ impl<'s> SubstateStore for Track<'s> {
             .substate
     }
 
-    fn put_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
+    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
         let (node_id, module_id, substate_key, flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 

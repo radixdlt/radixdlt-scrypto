@@ -314,7 +314,7 @@ where
                         LockFlags::read_only(),
                     )
                     .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-                let substate_ref = self.track.get_substate(handle);
+                let substate_ref = self.track.read_substate(handle);
                 let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
                 self.track.release_lock(handle);
                 match type_substate {
