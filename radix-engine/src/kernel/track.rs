@@ -281,61 +281,59 @@ impl<'s> Track<'s> {
         let node_module = (*node_id, *module_id);
         let iterable_entry = self.iterable_node_updates.entry(node_module);
         let items = match iterable_entry {
-            Entry::Occupied(mut iterable) => {
-                match iterable.get_mut() {
-                    IterableNodeUpdate::New(substates) => {
-                        let items: Vec<(SubstateId, RuntimeSubstate)> = substates
-                            .iter()
-                            .map(|(offset, value)| {
-                                let id = SubstateId(*node_id, *module_id, offset.clone());
-                                (id, RuntimeSubstate::IterableEntry(value.clone()))
-                            })
-                            .take(count.try_into().unwrap())
-                            .collect();
+            Entry::Occupied(mut iterable) => match iterable.get_mut() {
+                IterableNodeUpdate::New(substates) => {
+                    let items: Vec<(SubstateId, RuntimeSubstate)> = substates
+                        .iter()
+                        .map(|(offset, value)| {
+                            let id = SubstateId(*node_id, *module_id, offset.clone());
+                            (id, RuntimeSubstate::IterableEntry(value.clone()))
+                        })
+                        .take(count.try_into().unwrap())
+                        .collect();
 
-                        for (id, ..) in &items {
-                            substates.remove(&id.2);
-                        }
-
-                        items
+                    for (id, ..) in &items {
+                        substates.remove(&id.2);
                     }
-                    IterableNodeUpdate::Update(updates) => {
-                        let size: u32 = updates.len().try_into().unwrap();
-                        let num_to_retrieve = count.checked_add(size);
-                        let num_to_retrieve = match num_to_retrieve {
-                            None => u32::MAX,
-                            Some(value) => value,
-                        };
 
-                        let stored = self
-                            .substate_store
+                    items
+                }
+                IterableNodeUpdate::Update(updates) => {
+                    let size: u32 = updates.len().try_into().unwrap();
+                    let num_to_retrieve = count.checked_add(size);
+                    let num_to_retrieve = match num_to_retrieve {
+                        None => u32::MAX,
+                        Some(value) => value,
+                    };
+
+                    let stored =
+                        self.substate_store
                             .first_in_iterable(node_id, *module_id, num_to_retrieve);
 
-                        let mut inserted: BTreeMap<SubstateId, RuntimeSubstate> = updates.iter()
-                            .filter_map(|(o, u)| {
-                                match u {
-                                    IterableSubstateUpdate::Insert(v) => {
-                                        let substate_id = SubstateId(*node_id, *module_id, o.clone());
-                                        Some((substate_id, RuntimeSubstate::IterableEntry(v.clone())))
-                                    }
-                                    IterableSubstateUpdate::Remove => {
-                                        None
-                                    }
-                                }
-                            })
-                            .collect();
-
-                        for (id, substate) in stored {
-                            if !updates.contains_key(&id.2) {
-                                inserted.insert(id, substate);
+                    let mut inserted: BTreeMap<SubstateId, RuntimeSubstate> = updates
+                        .iter()
+                        .filter_map(|(o, u)| match u {
+                            IterableSubstateUpdate::Insert(v) => {
+                                let substate_id = SubstateId(*node_id, *module_id, o.clone());
+                                Some((substate_id, RuntimeSubstate::IterableEntry(v.clone())))
                             }
-                        }
+                            IterableSubstateUpdate::Remove => None,
+                        })
+                        .collect();
 
-                        let items = inserted.into_iter().take(count.try_into().unwrap()).collect();
-                        items
+                    for (id, substate) in stored {
+                        if !updates.contains_key(&id.2) {
+                            inserted.insert(id, substate);
+                        }
                     }
+
+                    let items = inserted
+                        .into_iter()
+                        .take(count.try_into().unwrap())
+                        .collect();
+                    items
                 }
-            }
+            },
             Entry::Vacant(e) => {
                 self.iterable_node_reads
                     .insert(node_module, IterableNodeRead::FirstRange(count));
@@ -344,7 +342,7 @@ impl<'s> Track<'s> {
                     .first_in_iterable(node_id, *module_id, count);
 
                 let mut substates = index_map_new();
-                for (id, substate) in &items {
+                for (id, ..) in &items {
                     substates.insert(id.2.clone(), IterableSubstateUpdate::Remove);
                 }
                 e.insert(IterableNodeUpdate::Update(substates));
@@ -354,7 +352,6 @@ impl<'s> Track<'s> {
 
         Ok(items)
     }
-
 
     pub fn get_first_in_iterable(
         &mut self,
@@ -845,7 +842,8 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
-        let state_update_summary = Self::summarize_update(self.substate_store, &state_updates, &self.iterable_nodes);
+        let state_update_summary =
+            Self::summarize_update(self.substate_store, &state_updates, &self.iterable_nodes);
         let state_updates =
             Self::generate_diff(self.substate_store, state_updates, self.iterable_nodes);
 
@@ -890,7 +888,8 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         let (balance_changes, direct_vault_updates) =
-            BalanceChangeAccounting::new(substate_store, &state_updates, iterable_node_updates).run();
+            BalanceChangeAccounting::new(substate_store, &state_updates, iterable_node_updates)
+                .run();
 
         StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
@@ -1245,16 +1244,19 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 }
             }
             NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                if let Some((substate, ..), ..) = self.fetch_substate_from_state_updates(&SubstateId(
-                    *node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                )) {
+                if let Some((substate, ..), ..) =
+                    self.fetch_substate_from_state_updates(&SubstateId(
+                        *node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                    ))
+                {
                     let id = substate.vault_liquid_non_fungible().ids.id();
                     let vault_node_id = RENodeId::KeyValueStore(id);
                     let node_module = (vault_node_id, NodeModuleId::Iterable);
 
-                    if let Some(iterable_node_update) = self.iterable_node_updates.get(&node_module) {
+                    if let Some(iterable_node_update) = self.iterable_node_updates.get(&node_module)
+                    {
                         let mut added = BTreeSet::new();
                         let mut removed = BTreeSet::new();
 
@@ -1281,16 +1283,12 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                                         IterableSubstateUpdate::Insert(..) => added.insert(id),
                                     };
                                 }
-
                             }
                         }
 
                         Some((
                             resource_address,
-                            BalanceChange::NonFungible {
-                                added,
-                                removed,
-                            },
+                            BalanceChange::NonFungible { added, removed },
                         ))
                     } else {
                         None
@@ -1326,20 +1324,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
     fn fetch_substate_from_store(&self, substate_id: &SubstateId) -> PersistedSubstate {
         self.substate_store
             .get_substate(substate_id)
-            .unwrap_or_else(|| {
-                panic!("Substate store corrupted - missing {:?}", substate_id)
-            })
+            .unwrap_or_else(|| panic!("Substate store corrupted - missing {:?}", substate_id))
             .substate
     }
-}
-
-/// Removes the `left.intersection(right)` from both `left` and `right`, in place, without
-/// computing (or allocating) the intersection itself.
-/// Implementation note: since Rust has no "iterator with delete" capabilities, the implementation
-/// uses a (normally frowned-upon) side-effect of a lambda inside `.retain()`.
-/// Performance note: since the `BTreeSet`s are inherently sorted, the implementation _could_ have
-/// an `O(n+m)` runtime (i.e. traversing 2 iterators). However, it would then contain significantly
-/// more bugs than the `O(n * log(m))` one-liner below.
-fn remove_intersection<T: Ord>(left: &mut BTreeSet<T>, right: &mut BTreeSet<T>) {
-    left.retain(|id| !right.remove(id));
 }

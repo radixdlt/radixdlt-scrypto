@@ -414,23 +414,24 @@ impl TestRunner {
         &mut self,
         vault_id: ObjectId,
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
-        let vault = self.substate_store()
+        let vault = self
+            .substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             ))
             .map(|output| {
-                let non_fungible = output
-                    .substate
-                    .vault_liquid_non_fungible();
+                let non_fungible = output.substate.vault_liquid_non_fungible();
                 let amount = non_fungible.amount;
                 (amount, RENodeId::KeyValueStore(non_fungible.ids.id()))
             });
 
         vault.map(|(amount, node)| {
-            let first = self.substate_store.first_in_iterable(&node, NodeModuleId::Iterable, 1u32);
-            let id = first.first().map(|(id, v)| {
+            let first = self
+                .substate_store
+                .first_in_iterable(&node, NodeModuleId::Iterable, 1u32);
+            let id = first.first().map(|(id, _)| {
                 let id: NonFungibleLocalId = match &id.2 {
                     SubstateOffset::IterableMap(key) => scrypto_decode(&key).unwrap(),
                     _ => panic!("Unexpected"),

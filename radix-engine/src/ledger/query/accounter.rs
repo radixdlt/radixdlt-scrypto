@@ -1,13 +1,11 @@
+use crate::blueprints::resource::LiquidNonFungibleVault;
 use crate::ledger::{
     QueryableSubstateStore, ReadableSubstateStore, StateTreeTraverser, StateTreeTraverserError,
     StateTreeVisitor,
 };
 use crate::types::hash_map::Entry;
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource,
-};
-use crate::blueprints::resource::LiquidNonFungibleVault;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 
 pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
     substate_store: &'s S,

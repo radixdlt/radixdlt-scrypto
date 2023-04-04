@@ -4,8 +4,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, FUNGIBLE_VAULT_BLUEPRINT,
-    NON_FUNGIBLE_VAULT_BLUEPRINT,
+    LiquidFungibleResource, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 
 #[derive(Debug)]

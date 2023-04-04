@@ -1,8 +1,8 @@
+use crate::blueprints::resource::LiquidNonFungibleVault;
 use crate::ledger::StateTreeVisitor;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::vec::Vec;
-use crate::blueprints::resource::LiquidNonFungibleVault;
 
 pub struct VaultFinder {
     vaults: Vec<ObjectId>,

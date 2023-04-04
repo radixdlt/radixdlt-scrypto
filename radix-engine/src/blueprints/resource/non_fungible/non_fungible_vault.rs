@@ -420,10 +420,13 @@ impl NonFungibleVault {
         let non_fungibles = RENodeId::KeyValueStore(vault.ids.id());
 
         let keys = api.first_keys_in_iterable_map(non_fungibles, u32::MAX)?;
-        let ids = keys.into_iter().map(|key| {
-            let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
-            id
-        }).collect();
+        let ids = keys
+            .into_iter()
+            .map(|key| {
+                let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+                id
+            })
+            .collect();
 
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -460,21 +463,24 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleVault =
-            api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: &mut LiquidNonFungibleVault = api.kernel_get_substate_ref_mut(handle)?;
 
         // deduct from liquidity pool
         if substate_ref.amount < amount {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceError(ResourceError::InsufficientBalance)
-            )));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::ResourceError(
+                    ResourceError::InsufficientBalance,
+                )),
+            ));
         }
 
         // TODO: Fix/Cleanup
         if substate_ref.amount > Decimal::from(u32::MAX) {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceError(ResourceError::InvalidTakeAmount)
-            )));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::ResourceError(
+                    ResourceError::InvalidTakeAmount,
+                )),
+            ));
         }
 
         substate_ref.amount -= amount;
@@ -486,19 +492,17 @@ impl NonFungibleVault {
 
         let taken = {
             let node_id = RENodeId::KeyValueStore(substate_ref.ids.id());
-            let ids = api.remove_first_in_iterable_map(
-                node_id,
-                amount_to_take,
-            )?;
+            let ids = api.remove_first_in_iterable_map(node_id, amount_to_take)?;
 
-            let ids = ids.into_iter().map(|(key, _value)| {
-                let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
-                id
-            }).collect();
+            let ids = ids
+                .into_iter()
+                .map(|(key, _value)| {
+                    let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+                    id
+                })
+                .collect();
 
-            LiquidNonFungibleResource {
-                ids
-            }
+            LiquidNonFungibleResource { ids }
         };
 
         api.sys_drop_lock(handle)?;
@@ -521,17 +525,13 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleVault =
-            api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: &mut LiquidNonFungibleVault = api.kernel_get_substate_ref_mut(handle)?;
 
         substate_ref.amount -= Decimal::from(ids.len());
 
         let node_id = RENodeId::KeyValueStore(substate_ref.ids.id());
         for id in ids {
-            api.remove_from_iterable_map(
-                node_id,
-                    scrypto_encode(id).unwrap(),
-            )?;
+            api.remove_from_iterable_map(node_id, scrypto_encode(id).unwrap())?;
 
             /*
             if !self.ids.remove(&id) {
@@ -565,10 +565,8 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidNonFungibleVault =
-            api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: &mut LiquidNonFungibleVault = api.kernel_get_substate_ref_mut(handle)?;
         substate_ref.amount += Decimal::from(resource.ids.len());
-
 
         let node_id = RENodeId::KeyValueStore(substate_ref.ids.id());
         // update liquidity

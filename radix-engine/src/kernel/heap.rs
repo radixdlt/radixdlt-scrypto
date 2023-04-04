@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::{CallFrameError, OffsetDoesNotExist};
@@ -15,6 +14,7 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
+use std::collections::BTreeSet;
 
 pub struct Heap {
     nodes: NonIterMap<RENodeId, HeapRENode>,
@@ -48,12 +48,11 @@ impl Heap {
             .or_insert(BTreeMap::new());
 
         // TODO: Check if removed or not
-        let removed = substates.remove(&SubstateOffset::IterableMap(key))
-            .map(|v| {
-                match v {
-                    RuntimeSubstate::IterableEntry(v) => v,
-                    _ => panic!("Unexpected"),
-                }
+        let removed = substates
+            .remove(&SubstateOffset::IterableMap(key))
+            .map(|v| match v {
+                RuntimeSubstate::IterableEntry(v) => v,
+                _ => panic!("Unexpected"),
             });
 
         Ok(removed)
@@ -78,7 +77,7 @@ impl Heap {
             .or_insert(BTreeMap::new());
 
         let mut offsets = BTreeSet::new();
-        for (offset, value) in substates.iter().take(count.try_into().unwrap()) {
+        for (offset, _value) in substates.iter().take(count.try_into().unwrap()) {
             offsets.insert(offset.clone());
         }
 
