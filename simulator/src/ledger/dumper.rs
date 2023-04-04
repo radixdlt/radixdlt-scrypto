@@ -37,7 +37,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let package: Option<PackageCodeSubstate> = substate_db
         .get_substate(
             package_address.as_node_id(),
-            TypedModuleId::ObjectState,
+            TypedModuleId::ObjectState.into(),
             PackageOffset::Package.into(),
         )
         .map(|s| s.substate)
@@ -100,10 +100,10 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             let state: ComponentStateSubstate = substate_db
                 .get_substate(
                     component_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    TypedModuleId::ObjectState.into(),
                     ComponentOffset::Component.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .unwrap();
@@ -166,10 +166,10 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             let account_substate = substate_db
                 .get_substate(
                     component_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    TypedModuleId::ObjectState.into(),
                     AccountOffset::Account.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().account().clone())
                 .ok_or(EntityDumpError::ComponentNotFound)?;
@@ -179,7 +179,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(EntityDumpError::ComponentNotFound)?;
@@ -220,7 +220,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(EntityDumpError::ComponentNotFound)?;
@@ -240,7 +240,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
                     TypedModuleId::Metadata,
                     AccessControllerOffset::AccessController.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_controller().clone())
                 .ok_or(EntityDumpError::ComponentNotFound)?;
@@ -250,7 +250,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
                     TypedModuleId::AccessRules,
                     &AccessRulesOffset::AccessRules.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(EntityDumpError::ComponentNotFound)?;
@@ -388,10 +388,10 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
         let vault_info: VaultInfoSubstate = substate_db
             .get_substate(
                 NodeId::Object(*vault_id),
-                TypedModuleId::ObjectState,
+                TypedModuleId::ObjectState.into(),
                 VaultOffset::Vault.into(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
@@ -405,7 +405,7 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
                 TypedModuleId::Metadata,
                 &SubstateKey::from_vec(scrypto_encode("name").unwrap()).unwrap(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let name_metadata = match name_metadata {
@@ -428,7 +428,7 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
                 TypedModuleId::Metadata,
                 &SubstateKey::from_vec(scrypto_encode("symbol").unwrap()).unwrap(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let symbol_metadata = match symbol_metadata {
@@ -450,10 +450,10 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
             let vault: LiquidFungibleResource = substate_db
                 .get_substate(
                     NodeId::Object(*vault_id),
-                    TypedModuleId::ObjectState,
+                    TypedModuleId::ObjectState.into(),
                     VaultOffset::Vault.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
@@ -462,10 +462,10 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
             let vault: LiquidNonFungibleResource = substate_db
                 .get_substate(
                     NodeId::Object(*vault_id),
-                    TypedModuleId::ObjectState,
+                    TypedModuleId::ObjectState.into(),
                     VaultOffset::Vault.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
@@ -486,10 +486,10 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
             let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_db
                 .get_substate(
                     resource_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    TypedModuleId::ObjectState.into(),
                     ResourceManagerOffset::ResourceManager.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into());
             let resource_manager =
@@ -498,10 +498,10 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
             let vault: LiquidNonFungibleResource = substate_db
                 .get_substate(
                     NodeId::Object(*vault_id),
-                    TypedModuleId::ObjectState,
+                    TypedModuleId::ObjectState.into(),
                     VaultOffset::Vault.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
@@ -512,10 +512,10 @@ fn dump_resources<T: SubstateDatabase, O: std::io::Write>(
                 let non_fungible: Option<ScryptoValue> = substate_db
                     .get_substate(
                         NodeId::KeyValueStore(non_fungible_id),
-                        TypedModuleId::ObjectState,
+                        TypedModuleId::ObjectState.into(),
                         &SubstateKey::from_vec(scrypto_encode(id).unwrap()).unwrap(),
                     )
-                    .expect("Database error")
+                    .expect("Database misconfigured")
                     .map(|s| s.substate.to_runtime())
                     .map(|s| s.into())
                     .unwrap();
@@ -549,10 +549,10 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     let resource_manager: Option<FungibleResourceManagerSubstate> = substate_db
         .get_substate(
             resource_address.as_node_id(),
-            TypedModuleId::ObjectState,
+            TypedModuleId::ObjectState.into(),
             ResourceManagerOffset::ResourceManager.into(),
         )
-        .expect("Database error")
+        .expect("Database misconfigured")
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
     let resource_manager = resource_manager.ok_or(EntityDumpError::ResourceManagerNotFound)?;

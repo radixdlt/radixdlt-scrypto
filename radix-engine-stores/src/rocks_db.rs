@@ -10,7 +10,7 @@ pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
 }
 impl RocksdbSubstateStore {
-    pub fn new(root: PathBuf) -> Self {
+    pub fn standard(root: PathBuf) -> Self {
         let configs: BTreeMap<ModuleId, ModuleConfig> = btreemap!(
             TypedModuleId::TypeInfo.into() => ModuleConfig {
                 iteration_enabled: false,

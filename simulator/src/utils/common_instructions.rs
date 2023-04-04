@@ -265,7 +265,7 @@ fn build_call_argument<'a>(
         )),
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PackageAddress) => {
             let value = PackageAddress::try_from_bech32(&bech32_decoder, &argument)
-                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
+                .ok_or(|_| BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
@@ -275,7 +275,7 @@ fn build_call_argument<'a>(
         }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ComponentAddress) => {
             let value = ComponentAddress::try_from_bech32(&bech32_decoder, &argument)
-                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
+                .ok_or(|_| BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {
@@ -284,9 +284,8 @@ fn build_call_argument<'a>(
             ))
         }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
-            let value = bech32_decoder
-                .validate_and_decode_resource_address(&argument)
-                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
+            let value = ResourceAddress::try_from_bech32(&bech32_decoder, &argument)
+                .ok_or(|_| BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
                 ManifestValue::Custom {

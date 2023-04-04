@@ -109,7 +109,7 @@ impl<'s> Track<'s> {
     ) -> Option<(IndexedScryptoValue, u32)> {
         self.substate_db
             .get_substate(node_id, module_id, substate_key)
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|e| {
                 (
                     IndexedScryptoValue::from_vec(e.0).expect("Failed to decode substate"),

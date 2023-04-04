@@ -170,11 +170,11 @@ mod test {
             resource_specifier,
             ResourceSpecifier::Amount(
                 900.into(),
-                bech32_decoder
-                    .validate_and_decode_resource_address(
-                        "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn"
-                    )
-                    .unwrap()
+                ResourceAddress::try_from_bech32(
+                    &bech32_decoder,
+                    "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn"
+                )
+                .unwrap()
             )
         )
     }

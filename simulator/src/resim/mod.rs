@@ -72,6 +72,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
+use radix_engine_stores::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -313,11 +314,12 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
     let output = substate_db
-        .get_substate(&SubstateId(
+        .get_substate(
             package_address.as_node_id(),
-            TypedModuleId::ObjectState,
+            TypedModuleId::ObjectState.into(),
             PackageOffset::Package.into(),
-        ))
+        )
+        .expect("Database misconfigured")
         .ok_or(Error::PackageNotFound(package_address))?;
 
     let schema = output.substate.package_info().schema.clone();
@@ -344,11 +346,12 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let substate_db = RocksdbSubstateStore::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
     let output = substate_db
-        .get_substate(&SubstateId(
+        .get_substate(
             component_address.as_node_id(),
             TypedModuleId::TypeInfo,
             TypeInfoOffset::TypeInfo.into(),
-        ))
+        )
+        .expect("Database misconfigured")
         .ok_or(Error::ComponentNotFound(component_address))?;
     let type_info = output.substate.type_info();
 
@@ -382,11 +385,12 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 ),
                 TypedModuleId::ObjectState => {
                     let type_info = substate_db
-                        .get_substate(&SubstateId(
+                        .get_substate(
                             *node_id,
                             TypedModuleId::TypeInfo,
                             SubstateKey::TypeInfo(TypeInfoOffset::TypeInfo),
-                        ))
+                        )
+                        .expect("Database misconfigured")
                         .unwrap()
                         .substate
                         .type_info()
@@ -404,28 +408,22 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 TypedModuleId::TypeInfo | TypedModuleId::KeyValueStore => return None,
             }
         }
-        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
-            let NodeId::GlobalObject(Address::Package(package_address)) = node_id else {
-                return None
-            };
-            (
-                *package_address,
-                blueprint_name.to_owned(),
-                *local_type_index,
-            )
-        }
+        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
+            PackageAddress::new_unchecked(node_id.into()),
+            blueprint_name.to_owned(),
+            *local_type_index,
+        ),
     };
-
-    let substate_id = SubstateId(
-        NodeId::GlobalObject(Address::Package(package_address)),
-        TypedModuleId::ObjectState,
-        SubstateKey::Package(PackageOffset::Info),
-    );
 
     Some((
         local_type_index,
         substate_db
-            .get_substate(&substate_id)
+            .get_substate(
+                package_address.as_node_id(),
+                TypedModuleId::ObjectState.into(),
+                &PackageOffset::Info.into(),
+            )
+            .expect("Database misconfigured")
             .unwrap()
             .substate
             .package_info()

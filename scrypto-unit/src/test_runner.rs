@@ -269,7 +269,7 @@ impl TestRunner {
                 TypedModuleId::Metadata.into(),
                 &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s.0).unwrap())?;
 
         let metadata_entry = match metadata_entry {
@@ -295,7 +295,7 @@ impl TestRunner {
                 TypedModuleId::Royalty.into(),
                 &RoyaltyOffset::RoyaltyAccumulator.into(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
         {
             scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output.0)
                 .unwrap()
@@ -307,7 +307,7 @@ impl TestRunner {
                             TypedModuleId::ObjectState.into(),
                             &VaultOffset::LiquidFungible.into(),
                         )
-                        .expect("Database error")
+                        .expect("Database misconfigured")
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output.0)
                                 .unwrap()
@@ -327,7 +327,7 @@ impl TestRunner {
                 TypedModuleId::ObjectState.into(),
                 &PackageOffset::Royalty.into(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
         {
             scrypto_decode::<PackageRoyaltySubstate>(&output.0)
                 .unwrap()
@@ -339,7 +339,7 @@ impl TestRunner {
                             TypedModuleId::ObjectState.into(),
                             &VaultOffset::LiquidFungible.into(),
                         )
-                        .expect("Database error")
+                        .expect("Database misconfigured")
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output.0)
                                 .unwrap()
@@ -384,7 +384,7 @@ impl TestRunner {
                 TypedModuleId::ObjectState.into(),
                 &VaultOffset::Info.into(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
         {
             let info: VaultInfoSubstate = scrypto_decode(&output.0).unwrap();
             if info.resource_type.is_fungible() {
@@ -405,7 +405,7 @@ impl TestRunner {
                 TypedModuleId::ObjectState.into(),
                 &VaultOffset::LiquidFungible.into(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|output| {
                 scrypto_decode::<LiquidFungibleResource>(&output.0)
                     .unwrap()
@@ -423,7 +423,7 @@ impl TestRunner {
                 TypedModuleId::ObjectState.into(),
                 &VaultOffset::LiquidNonFungible.into(),
             )
-            .expect("Database error")
+            .expect("Database misconfigured")
             .map(|output| {
                 scrypto_decode::<LiquidNonFungibleResource>(&output.0)
                     .unwrap()
@@ -507,7 +507,7 @@ impl TestRunner {
                     TypedModuleId::ObjectState.into(),
                     &ValidatorOffset::Validator.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .unwrap()
                 .0,
         )
@@ -523,7 +523,7 @@ impl TestRunner {
                     TypedModuleId::ObjectState.into(),
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
-                .expect("Database error")
+                .expect("Database misconfigured")
                 .unwrap()
                 .0,
         )
@@ -752,7 +752,7 @@ impl TestRunner {
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             self.substate_db
                 .commit(&commit.state_updates)
-                .expect("Database error");
+                .expect("Database misconfigured");
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates);
             }
@@ -1243,7 +1243,7 @@ impl TestRunner {
                                     TypedModuleId::TypeInfo.into(),
                                     &TypeInfoOffset::TypeInfo.into(),
                                 )
-                                .expect("Database error")
+                                .expect("Database misconfigured")
                                 .unwrap()
                                 .0,
                         )
@@ -1283,7 +1283,7 @@ impl TestRunner {
                         TypedModuleId::ObjectState.into(),
                         &PackageOffset::Info.into(),
                     )
-                    .expect("Database error")
+                    .expect("Database misconfigured")
                     .unwrap()
                     .0,
             )

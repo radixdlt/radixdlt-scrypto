@@ -10,8 +10,18 @@ use sbor::rust::fmt;
 use std::str::FromStr;
 use utils::ContextualDisplay;
 
-enum AddressError {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AddressError {
     InvalidAddress(String),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for AddressError {}
+
+impl fmt::Display for AddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Clone)]
@@ -39,6 +49,7 @@ impl FromStr for SimulatorPackageAddress {
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
+            .map(|x| Self(x))
     }
 }
 
@@ -79,6 +90,7 @@ impl FromStr for SimulatorResourceAddress {
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
+            .map(|x| Self(x))
     }
 }
 
@@ -119,6 +131,7 @@ impl FromStr for SimulatorComponentAddress {
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
+            .map(|x| Self(x))
     }
 }
 

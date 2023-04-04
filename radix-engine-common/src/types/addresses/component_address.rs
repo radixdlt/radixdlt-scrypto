@@ -128,6 +128,12 @@ impl From<ComponentAddress> for Reference {
     }
 }
 
+impl From<ComponentAddress> for crate::data::manifest::model::ManifestAddress {
+    fn from(value: ComponentAddress) -> Self {
+        Self(value.into())
+    }
+}
+
 //========
 // error
 //========

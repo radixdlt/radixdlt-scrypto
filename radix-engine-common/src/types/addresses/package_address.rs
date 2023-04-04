@@ -94,6 +94,11 @@ impl From<PackageAddress> for Reference {
     }
 }
 
+impl From<PackageAddress> for crate::data::manifest::model::ManifestAddress {
+    fn from(value: PackageAddress) -> Self {
+        Self(value.into())
+    }
+}
 //========
 // error
 //========

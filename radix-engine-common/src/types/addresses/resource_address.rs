@@ -93,6 +93,12 @@ impl From<ResourceAddress> for Reference {
     }
 }
 
+impl From<ResourceAddress> for crate::data::manifest::model::ManifestAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self(value.into())
+    }
+}
+
 //========
 // error
 //========

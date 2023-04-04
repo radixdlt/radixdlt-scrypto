@@ -88,6 +88,12 @@ impl From<GlobalAddress> for Reference {
     }
 }
 
+impl From<GlobalAddress> for crate::data::manifest::model::ManifestAddress {
+    fn from(value: GlobalAddress) -> Self {
+        Self(value.into())
+    }
+}
+
 //========
 // error
 //========

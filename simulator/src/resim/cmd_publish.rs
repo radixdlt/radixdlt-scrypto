@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use radix_engine_stores::interface::CommittableSubstateDatabase;
 use radix_engine_stores::interface::StateUpdate;
 use radix_engine_stores::interface::StateUpdates;
 use std::collections::BTreeSet;
@@ -80,16 +81,18 @@ impl Publish {
                 substate_changes: indexmap!(
                     (node_id, module_id, substate_key_code) => StateUpdate::Upsert(
                         scrypto_encode(&package_code).unwrap(),
-                        0
+                        None,
                     ),
                     (node_id, module_id, substate_key_info) => StateUpdate::Upsert(
                         scrypto_encode(&package_code).unwrap(),
-                        0
+                        None
                     )
                 ),
             };
 
-            substate_db.commit(&state_updates).expect("Database error");
+            substate_db
+                .commit(&state_updates)
+                .expect("Database misconfigured");
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
