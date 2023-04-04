@@ -11,7 +11,7 @@ use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::{
-    AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource, FUNGIBLE_VAULT_BLUEPRINT,
+    AccessRulesConfig, LiquidFungibleResource, FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
@@ -461,7 +461,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap();
             vault.amount()
         } else {
-            let vault: LiquidNonFungibleResource = substate_store
+            let vault: LiquidNonFungibleVault = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
@@ -470,7 +470,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
-            vault.amount()
+            vault.amount
         };
         writeln!(
             output,
@@ -494,7 +494,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.to_runtime().into());
             let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
 
-            let vault: LiquidNonFungibleResource = substate_store
+            let vault: LiquidNonFungibleVault = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
@@ -504,7 +504,19 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.into())
                 .unwrap();
 
-            let ids = vault.ids();
+            let node_id = RENodeId::KeyValueStore(vault.ids.id());
+            let ids: Vec<NonFungibleLocalId> = substate_store
+                .first_in_iterable(&node_id, NodeModuleId::Iterable, u32::MAX)
+                .into_iter()
+                .map(|(id, _)| match id.2 {
+                    SubstateOffset::IterableMap(key) => {
+                        let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+                        id
+                    }
+                    _ => panic!("Unexpected"),
+                })
+                .collect();
+
             let non_fungible_id = resource_manager.non_fungible_table;
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: Option<ScryptoValue> = substate_store
