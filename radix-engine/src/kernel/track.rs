@@ -27,6 +27,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
+use std::mem;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -370,7 +371,7 @@ impl<'s> Track<'s> {
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         key: Vec<u8>,
-    ) -> Result<(), TrackError> {
+    ) -> Result<Option<ScryptoValue>, TrackError> {
         let node_module = (*node_id, *module_id);
         let cur = self
             .iterable_node_updates
@@ -378,15 +379,9 @@ impl<'s> Track<'s> {
             .or_insert(IterableNodeUpdate::Update(index_map_new()));
         let offset = SubstateOffset::IterableMap(key.clone());
         let substate_id = SubstateId(*node_id, *module_id, offset.clone());
-        match cur {
-            IterableNodeUpdate::New(substates) => {
-                let removed = substates.remove(&offset);
-                if removed.is_none() {
-                    return Err(TrackError::NotFound(substate_id));
-                }
-            }
+        let removed = match cur {
+            IterableNodeUpdate::New(substates) => substates.remove(&offset),
             IterableNodeUpdate::Update(updates) => {
-                // TODO: Increase granularity?
                 self.iterable_node_reads
                     .insert((*node_id, *module_id), IterableNodeRead::Substate(key));
 
@@ -394,27 +389,30 @@ impl<'s> Track<'s> {
                 match entry {
                     Entry::Occupied(mut e) => {
                         let entry = e.get_mut();
-                        match entry {
-                            IterableSubstateUpdate::Remove => {
-                                return Err(TrackError::NotFound(substate_id));
-                            }
-                            IterableSubstateUpdate::Insert(..) => {
-                                *entry = IterableSubstateUpdate::Remove;
-                            }
+                        let update = mem::replace(entry, IterableSubstateUpdate::Remove);
+                        match update {
+                            IterableSubstateUpdate::Remove => None,
+                            IterableSubstateUpdate::Insert(v) => Some(v),
                         }
                     }
                     Entry::Vacant(e) => {
                         let substate = self.substate_store.get_substate(&substate_id);
-                        if substate.is_none() {
-                            return Err(TrackError::NotFound(substate_id));
+                        match substate {
+                            None => None,
+                            Some(value) => {
+                                e.insert(IterableSubstateUpdate::Remove);
+                                match value.substate {
+                                    PersistedSubstate::IterableEntry(value) => Some(value),
+                                    _ => panic!("Unexpected"),
+                                }
+                            }
                         }
-                        e.insert(IterableSubstateUpdate::Remove);
                     }
                 }
             }
-        }
+        };
 
-        Ok(())
+        Ok(removed)
     }
 
     pub fn get_substate_mut(

@@ -673,7 +673,7 @@ where
         node_id: &RENodeId,
         module_id: &NodeModuleId,
         key: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<ScryptoValue>, RuntimeError> {
         self.current_frame.remove_from_iterable(
             node_id,
             module_id,

@@ -718,7 +718,7 @@ impl CallFrame {
         key: Vec<u8>,
         heap: &'f mut Heap,
         track: &'f mut Track<'s>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<ScryptoValue>, RuntimeError> {
         if heap.contains_node(node_id) {
             panic!("Heap iterator supported");
         } else {
