@@ -344,7 +344,7 @@ fn can_push_vault_into_vector() {
 }
 
 #[test]
-fn create_mutable_vault_with_take() {
+fn create_fungible_vault_with_take() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
@@ -354,8 +354,8 @@ fn create_mutable_vault_with_take() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "VaultTest",
-            "new_vault_with_take",
+            "BasicVault",
+            "new_fungible_vault_with_take",
             manifest_args!(),
         )
         .build();
@@ -366,7 +366,7 @@ fn create_mutable_vault_with_take() {
 }
 
 #[test]
-fn create_mutable_vault_with_take_non_fungible() {
+fn create_non_fungible_vault_with_take() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
@@ -376,8 +376,52 @@ fn create_mutable_vault_with_take_non_fungible() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "VaultTest",
-            "new_vault_with_take_non_fungible",
+            "BasicVault",
+            "new_non_fungible_vault_with_take",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_non_fungible_vault_with_take_twice() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "BasicVault",
+            "new_non_fungible_vault_with_take_twice",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_non_fungible_vault_with_take_non_fungible() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "BasicVault",
+            "new_non_fungible_vault_with_take_non_fungible",
             manifest_args!(),
         )
         .build();
@@ -398,7 +442,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "VaultTest",
+            "BasicVault",
             "new_vault_with_get_non_fungible_local_ids",
             manifest_args!(),
         )
@@ -420,7 +464,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "VaultTest",
+            "BasicVault",
             "new_vault_with_get_non_fungible_local_id",
             manifest_args!(),
         )
@@ -442,7 +486,7 @@ fn create_mutable_vault_with_get_amount() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "VaultTest",
+            "BasicVault",
             "new_vault_with_get_amount",
             manifest_args!(),
         )
@@ -464,7 +508,7 @@ fn create_mutable_vault_with_get_resource_manager() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "VaultTest",
+            "BasicVault",
             "new_vault_with_get_resource_manager",
             manifest_args!(),
         )
