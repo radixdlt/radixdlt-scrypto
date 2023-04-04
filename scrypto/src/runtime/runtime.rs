@@ -25,7 +25,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                &NodeId(EPOCH_MANAGER.into()),
+                EPOCH_MANAGER.as_node_id(),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )

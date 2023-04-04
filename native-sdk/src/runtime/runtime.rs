@@ -6,7 +6,6 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use radix_engine_interface::traits::ScryptoEvent;
-use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::*;
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &NodeId(EPOCH_MANAGER.into()),
+            EPOCH_MANAGER.as_node_id(),
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         )?;
@@ -45,7 +44,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &NodeId(CLOCK.into()),
+            CLOCK.as_node_id(),
             CLOCK_GET_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
@@ -64,7 +63,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &NodeId(CLOCK.into()),
+            CLOCK.as_node_id(),
             CLOCK_COMPARE_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockCompareCurrentTimeInput {
                 precision,

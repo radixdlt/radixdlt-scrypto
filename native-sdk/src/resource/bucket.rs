@@ -6,7 +6,6 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
@@ -119,7 +118,7 @@ impl SysBucket for Bucket {
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &NodeId(receiver.into()),
+            receiver.as_node_id(),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;

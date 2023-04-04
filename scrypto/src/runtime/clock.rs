@@ -6,7 +6,6 @@ use radix_engine_interface::blueprints::clock::{
 use radix_engine_interface::constants::CLOCK;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
-use radix_engine_interface::types::NodeId;
 use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -25,7 +24,7 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId(CLOCK.into()),
+                CLOCK.as_node_id(),
                 CLOCK_GET_CURRENT_TIME_IDENT,
                 scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
             )
@@ -68,7 +67,7 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &NodeId(CLOCK.into()),
+                CLOCK.as_node_id(),
                 CLOCK_COMPARE_CURRENT_TIME_IDENT,
                 scrypto_encode(&ClockCompareCurrentTimeInput {
                     instant,
