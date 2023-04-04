@@ -12,23 +12,7 @@ use radix_engine_interface::blueprints::resource::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleVault {
     pub amount: Decimal,
-    /// The total non-fungible ids.
     pub ids: Own,
-    //ids: BTreeSet<NonFungibleLocalId>,
-}
-
-impl LiquidNonFungibleVault {
-    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
-        todo!()
-    }
-
-    pub fn amount(&self) -> Decimal {
-        self.amount
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.amount.is_zero()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -393,7 +377,7 @@ impl NonFungibleVault {
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidNonFungibleVault = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.amount();
+        let amount = substate_ref.amount;
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }

@@ -31,6 +31,28 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
+    pub fn remove_from_iterable(
+        &mut self,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        key: Vec<u8>,
+    ) -> Result<(), CallFrameError> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
+
+        let substates = node
+            .substates
+            .entry(module_id.clone())
+            .or_insert(BTreeMap::new());
+
+        // TODO: Check if removed or not
+        substates.remove(&SubstateOffset::IterableMap(key));
+
+        Ok(())
+    }
+
     pub fn remove_first_in_iterable(
         &mut self,
         node_id: &RENodeId,

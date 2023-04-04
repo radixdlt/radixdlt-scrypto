@@ -67,11 +67,11 @@ impl Accounting {
     ) {
         match self.balances.entry(*address) {
             Entry::Occupied(mut e) => {
-                let new_amount = resource.amount() + *e.get();
+                let new_amount = resource.amount + *e.get();
                 e.insert(new_amount);
             }
             Entry::Vacant(e) => {
-                e.insert(resource.amount());
+                e.insert(resource.amount);
             }
         }
     }
