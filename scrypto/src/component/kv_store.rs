@@ -122,6 +122,24 @@ impl<
             .unwrap();
         env.sys_drop_lock(handle).unwrap();
     }
+
+    /// Inserts a new key-value pair into this map.
+    pub fn remove(&self, key: &K) {
+        let mut env = ScryptoEnv;
+        let key_payload = scrypto_encode(&key).unwrap();
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload.clone()));
+        let handle = env
+            .sys_lock_substate(
+                RENodeId::KeyValueStore(self.id),
+                offset.clone(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap();
+        let substate: Option<ScryptoValue> = None;
+        env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
+            .unwrap();
+        env.sys_drop_lock(handle).unwrap();
+    }
 }
 
 //========
