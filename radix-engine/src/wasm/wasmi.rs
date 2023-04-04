@@ -288,9 +288,9 @@ fn lock_substate(
     let (memory, runtime) = grab_runtime!(caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
-    let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
+    let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_substate(node_id, offset, flags)
+    runtime.lock_substate(node_id, substate_key, flags)
 }
 
 fn read_substate(

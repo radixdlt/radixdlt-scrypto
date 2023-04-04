@@ -113,7 +113,7 @@ impl KernelModule for KernelTraceModule {
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Locking substate: node id = {:?}, module_id = {:?}, offset = {:?}, flags = {:?}",
+            "Locking substate: node id = {:?}, module_id = {:?}, substate_key = {:?}, flags = {:?}",
             node_id,
             module_id,
             offset,

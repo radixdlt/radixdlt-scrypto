@@ -303,11 +303,11 @@ impl AuthModule {
         };
 
         let state = {
-            let offset = ComponentOffset::State0.into();
+            let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
                 TypedModuleId::ObjectState,
-                &offset,
+                &substate_key,
                 LockFlags::read_only(),
             )?;
             let state: ComponentStateSubstate =

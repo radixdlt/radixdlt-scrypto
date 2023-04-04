@@ -328,7 +328,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
-            let offset = read_memory(&instance, offset_ptr, offset_len)?;
+            let substate_key = read_memory(&instance, offset_ptr, offset_len)?;
 
             let handle = runtime
                 .lock_substate(node_id, offset, flags)

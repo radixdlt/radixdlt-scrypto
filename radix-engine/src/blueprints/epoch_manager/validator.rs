@@ -66,8 +66,8 @@ impl ValidatorBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let offset = ValidatorOffset::Validator.into();
-        let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
+        let substate_key = ValidatorOffset::Validator.into();
+        let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
 
         // Update state
         let validator = {
@@ -119,8 +119,8 @@ impl ValidatorBlueprint {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let offset = ValidatorOffset::Validator.into();
-        let handle = api.sys_lock_substate(receiver, &offset, LockFlags::MUTABLE)?;
+        let substate_key = ValidatorOffset::Validator.into();
+        let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
 
         // Update state
         let validator = {
