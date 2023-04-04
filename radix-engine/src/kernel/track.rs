@@ -337,6 +337,7 @@ impl<'s> Track<'s> {
                             let id = SubstateId(*node_id, *module_id, offset.clone());
                             (id, RuntimeSubstate::IterableEntry(value.clone()))
                         })
+                        .take(count.try_into().unwrap())
                         .collect();
                     items
                 }
