@@ -34,7 +34,7 @@ pub struct NonFungibleResourceManagerSubstate {
     pub total_supply: Decimal,
     pub id_type: NonFungibleIdType,
     pub non_fungible_type_index: LocalTypeIndex,
-    pub non_fungible_table: NodeId,
+    pub non_fungible_table: Own,
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
@@ -104,7 +104,7 @@ where
         id_type,
         non_fungible_type_index: non_fungible_schema.non_fungible,
         total_supply: supply.into(),
-        non_fungible_table: nf_store_id,
+        non_fungible_table: Own(nf_store_id),
         mutable_fields: non_fungible_schema.mutable_fields,
     };
 
@@ -402,8 +402,11 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         for (id, non_fungible) in non_fungibles {
-            let non_fungible_handle =
-                api.sys_lock_substate(&nf_store_id, &id.to_substate_key(), LockFlags::MUTABLE)?;
+            let non_fungible_handle = api.sys_lock_substate(
+                nf_store_id.as_node_id(),
+                &id.to_substate_key(),
+                LockFlags::MUTABLE,
+            )?;
 
             {
                 let cur_non_fungible: Option<ScryptoValue> =
@@ -471,8 +474,11 @@ impl NonFungibleResourceManagerBlueprint {
         let id = NonFungibleLocalId::uuid(uuid).unwrap();
 
         {
-            let non_fungible_handle =
-                api.sys_lock_substate(&nf_store_id, &id.to_substate_key(), LockFlags::MUTABLE)?;
+            let non_fungible_handle = api.sys_lock_substate(
+                nf_store_id.as_node_id(),
+                &id.to_substate_key(),
+                LockFlags::MUTABLE,
+            )?;
             api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -543,7 +549,7 @@ impl NonFungibleResourceManagerBlueprint {
 
                 {
                     let non_fungible_handle = api.sys_lock_substate(
-                        &nf_store_id,
+                        nf_store_id.as_node_id(),
                         &id.to_substate_key(),
                         LockFlags::MUTABLE,
                     )?;
@@ -601,7 +607,7 @@ impl NonFungibleResourceManagerBlueprint {
         let non_fungible_table_id = resource_manager.non_fungible_table;
         let mutable_fields = resource_manager.mutable_fields.clone();
 
-        let kv_schema = api.get_key_value_store_info(&non_fungible_table_id)?;
+        let kv_schema = api.get_key_value_store_info(non_fungible_table_id.as_node_id())?;
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
         let sbor_path = schema_path.to_sbor_path(&kv_schema.schema, non_fungible_type_index);
         let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
@@ -623,7 +629,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let non_fungible_handle = api.sys_lock_substate(
-            &non_fungible_table_id,
+            non_fungible_table_id.as_node_id(),
             &id.to_substate_key(),
             LockFlags::MUTABLE,
         )?;
@@ -671,7 +677,7 @@ impl NonFungibleResourceManagerBlueprint {
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_handle = api.sys_lock_substate(
-            &non_fungible_table_id,
+            non_fungible_table_id.as_node_id(),
             &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
@@ -704,7 +710,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleGlobalId::new(resource_manager.resource_address, id.clone());
 
         let non_fungible_handle = api.sys_lock_substate(
-            &non_fungible_table_id,
+            non_fungible_table_id.as_node_id(),
             &id.to_substate_key(),
             LockFlags::read_only(),
         )?;
@@ -808,7 +814,7 @@ impl NonFungibleResourceManagerBlueprint {
 
                     for id in resource.into_ids() {
                         let non_fungible_handle = api.sys_lock_substate(
-                            &resource_manager.non_fungible_table,
+                            resource_manager.non_fungible_table.as_node_id(),
                             &id.to_substate_key(),
                             LockFlags::MUTABLE,
                         )?;
