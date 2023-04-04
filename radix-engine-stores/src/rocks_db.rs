@@ -18,9 +18,6 @@ impl RocksdbSubstateStore {
             TypedModuleId::ObjectState.into() => ModuleConfig {
                 iteration_enabled: false,
             },
-            TypedModuleId::KeyValueStore.into() => ModuleConfig {
-                iteration_enabled: true,
-            },
             TypedModuleId::Metadata.into() => ModuleConfig {
                 iteration_enabled: false,
             },

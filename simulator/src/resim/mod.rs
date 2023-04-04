@@ -406,7 +406,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                TypedModuleId::TypeInfo | TypedModuleId::KeyValueStore => return None,
+                TypedModuleId::TypeInfo => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (

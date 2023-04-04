@@ -94,7 +94,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_substates(&node_id, TypedModuleId::KeyValueStore.into())
+                    .list_substates(&node_id, TypedModuleId::ObjectState.into())
                     .expect("Failed to list key value store")
                     .0
                 {
@@ -105,7 +105,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_recursive(
                             Some(&(
                                 node_id,
-                                TypedModuleId::KeyValueStore.into(),
+                                TypedModuleId::ObjectState.into(),
                                 substate_key.clone(),
                             )),
                             child_node_id,
@@ -190,7 +190,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 self.traverse_recursive(
                                     Some(&(
                                         node_id,
-                                        TypedModuleId::KeyValueStore.into(),
+                                        TypedModuleId::ObjectState.into(),
                                         substate_key.clone(),
                                     )),
                                     child_node_id,

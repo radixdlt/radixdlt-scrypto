@@ -291,9 +291,7 @@ where
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
             match module_id {
-                TypedModuleId::ObjectState
-                | TypedModuleId::KeyValueStore
-                | TypedModuleId::TypeInfo => {
+                TypedModuleId::ObjectState | TypedModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
@@ -611,11 +609,9 @@ where
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
                     TypedModuleId::ObjectState => self.get_object_type_info(&node_id),
-                    TypedModuleId::TypeInfo | TypedModuleId::KeyValueStore => {
-                        Err(RuntimeError::ApplicationError(
-                            ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
-                        ))
-                    }
+                    TypedModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
+                    )),
                 },
                 Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(

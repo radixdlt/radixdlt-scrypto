@@ -164,7 +164,7 @@ impl CallFrame {
         // Virtualization
         // TODO: clean up this shit!
         let virtualization_enabled = {
-            if module_id == TypedModuleId::KeyValueStore || module_id == TypedModuleId::Metadata {
+            if module_id == TypedModuleId::Metadata {
                 true
             } else if module_id == TypedModuleId::ObjectState {
                 if let Some(substate) = heap.get_substate(

@@ -14,7 +14,6 @@ use strum::FromRepr;
 pub enum TypedModuleId {
     TypeInfo,
     ObjectState,
-    KeyValueStore,
     Metadata,
     Royalty,
     AccessRules,

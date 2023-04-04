@@ -1256,7 +1256,7 @@ impl TestRunner {
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
-                    TypedModuleId::TypeInfo | TypedModuleId::KeyValueStore => {
+                    TypedModuleId::TypeInfo => {
                         panic!("No event schema.")
                     }
                 }
