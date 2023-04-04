@@ -105,5 +105,21 @@ mod vault_test {
             let bucket = Self::new_fungible();
             self.vault_vector.push(Vault::with_bucket(bucket))
         }
+
+        pub fn new_fungible_vault_with_take() -> ComponentAddress {
+            let bucket = Self::new_fungible();
+            let mut vault = Vault::with_bucket(bucket);
+            let bucket = vault.take(1);
+            vault.put(bucket);
+            let vaults = KeyValueStore::new();
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector,
+            }
+            .instantiate()
+            .globalize()
+        }
     }
 }

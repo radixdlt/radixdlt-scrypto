@@ -1,8 +1,7 @@
 use super::{StateTreeTraverser, StateTreeVisitor};
 use crate::interface::SubstateDatabase;
 use radix_engine_interface::{
-    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
-    data::scrypto::model::NonFungibleLocalId,
+    blueprints::resource::{LiquidFungibleResource},
     math::Decimal,
     types::{NodeId, ResourceAddress},
 };
