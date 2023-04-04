@@ -156,7 +156,7 @@ impl AccountBlueprint {
             // Creating the key-value-store where the vaults will be held. This is a KVStore of
             // [`ResourceAddress`] and [`Own`]ed vaults.
             let kv_store_id =
-                api.new_key_value_store(KeyValueStoreSchema::new::<ResourceAddress, Own>(false))?;
+                api.new_key_value_store(KeyValueStoreSchema::new::<ResourceAddress, Own>(true))?;
 
             let account_substate = AccountSubstate {
                 vaults: Own(kv_store_id),

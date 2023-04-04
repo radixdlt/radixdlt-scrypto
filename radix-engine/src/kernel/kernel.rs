@@ -670,7 +670,7 @@ where
 
         // Check node configs
         if let Some(actor) = &self.current_frame.actor {
-            if !NodeProperties::can_substate_be_locked(
+            if !NodeProperties::can_substate_be_accessed(
                 current_mode,
                 actor,
                 node_id,

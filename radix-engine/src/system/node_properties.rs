@@ -41,7 +41,7 @@ impl NodeProperties {
         }
     }
 
-    pub fn can_substate_be_locked(
+    pub fn can_substate_be_accessed(
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
@@ -93,6 +93,15 @@ impl NodeProperties {
                     return true;
                 }
 
+                // TODO: remove
+                if node_id.is_global_package() {
+                    return true;
+                }
+
+                if node_id.is_internal_kv_store() {
+                    return true;
+                }
+
                 match actor {
                     Actor::Method {
                         node_id: actor_node_id,
@@ -131,6 +140,10 @@ impl NodeProperties {
             ExecutionMode::KernelModule => true,
             ExecutionMode::Client => {
                 if is_native_package(actor.blueprint().package_address) {
+                    return true;
+                }
+
+                if node_id.is_internal_kv_store() {
                     return true;
                 }
 
