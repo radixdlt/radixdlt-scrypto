@@ -133,7 +133,34 @@ impl SubstateDatabase for RocksdbSubstateStore {
 }
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
-    fn commit(&mut self, _state_changes: &StateUpdates) -> Result<(), CommitError> {
-        todo!()
+    fn commit(&mut self, state_changes: &StateUpdates) -> Result<(), CommitError> {
+        for ((node_id, module_id, substate_key), substate_change) in &state_changes.substate_changes
+        {
+            let substate_id = encode_substate_id(node_id, *module_id, substate_key);
+            let previous_version = match self.get_substate(node_id, *module_id, substate_key) {
+                Ok(x) => x.map(|a| a.1),
+                Err(GetSubstateError::UnknownModuleId) => {
+                    return Err(CommitError::UnknownModuleId);
+                }
+            };
+            match substate_change {
+                StateUpdate::Upsert(substate_value, _) => {
+                    self.db
+                        .put(
+                            substate_id,
+                            scrypto_encode(&(
+                                substate_value,
+                                match previous_version {
+                                    Some(v) => v + 1,
+                                    None => 0u32,
+                                },
+                            ))
+                            .unwrap(),
+                        )
+                        .expect("IO error");
+                }
+            }
+        }
+        Ok(())
     }
 }

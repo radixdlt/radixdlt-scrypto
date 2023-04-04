@@ -262,6 +262,7 @@ dependencies = [
  "paste",
  "radix-engine-derive",
  "sbor",
+ "strum",
  "utils",
 ]
 

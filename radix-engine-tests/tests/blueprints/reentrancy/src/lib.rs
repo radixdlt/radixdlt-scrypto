@@ -17,31 +17,19 @@ mod reentrant_component {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(
-                    &address.into(),
-                    "mut_func",
-                    scrypto_args!(),
-                )
+                .call_method(&address.into(), "mut_func", scrypto_args!())
                 .unwrap();
         }
 
         pub fn call_self(&self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(
-                    &address.into(),
-                    "func",
-                    scrypto_args!(),
-                )
+                .call_method(&address.into(), "func", scrypto_args!())
                 .unwrap();
         }
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(
-                    &address.into(),
-                    "mut_func",
-                    scrypto_args!(),
-                )
+                .call_method(&address.into(), "mut_func", scrypto_args!())
                 .unwrap();
         }
     }

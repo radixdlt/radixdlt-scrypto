@@ -51,7 +51,7 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test --features serde
+      run: cargo test
       working-directory: sbor
     - name: Run tests (no_std)
       run: cargo test --no-default-features --features alloc
@@ -169,7 +169,6 @@ jobs:
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests \
-          --features serde
         ./check_stack_usage.sh
 
   radix-engine-no-std:

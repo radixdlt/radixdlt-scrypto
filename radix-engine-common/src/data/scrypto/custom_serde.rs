@@ -1,6 +1,7 @@
 use super::*;
 use crate::address::Bech32Encoder;
 use crate::*;
+use sbor::rust::prelude::*;
 use sbor::serde_serialization::*;
 use sbor::traversal::*;
 use sbor::*;
