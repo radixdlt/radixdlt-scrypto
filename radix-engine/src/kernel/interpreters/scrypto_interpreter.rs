@@ -623,6 +623,7 @@ impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
 }
 
 impl<W: WasmEngine> ScryptoInterpreter<W> {
+    #[trace_resources(log=code.len())]
     pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> W::WasmInstance {
         let instrumented_code =
             self.wasm_instrumenter

@@ -214,7 +214,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=input_size)]
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         identifier: &InvocationDebugIdentifier,
@@ -395,7 +395,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=output_size)]
     fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         output_size: usize,
@@ -431,7 +431,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=*node_type)]
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_type: &AllocateEntityType,
@@ -664,7 +664,7 @@ impl KernelModule for KernelModuleMixer {
         VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=size)]
     fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         handle: LockHandle,
@@ -701,7 +701,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=size)]
     fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
@@ -738,7 +738,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=size)]
     fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,

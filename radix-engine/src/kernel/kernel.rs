@@ -421,7 +421,7 @@ where
         Ok(node)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=node_type)]
     fn kernel_allocate_node_id(
         &mut self,
         node_type: AllocateEntityType,
@@ -489,7 +489,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources]
+    #[trace_resources(log=node_id)]
     fn kernel_get_node_visibility_origin(
         &self,
         node_id: RENodeId,
@@ -834,7 +834,7 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources]
+    #[trace_resources(log=package_address)]
     fn kernel_create_wasm_instance(
         &mut self,
         package_address: PackageAddress,
