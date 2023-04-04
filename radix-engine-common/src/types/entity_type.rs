@@ -32,7 +32,7 @@ pub enum EntityType {
 }
 
 impl EntityType {
-    pub fn is_global(&self) -> bool {
+    pub const fn is_global(&self) -> bool {
         match self {
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResource
@@ -56,11 +56,11 @@ impl EntityType {
         }
     }
 
-    pub fn is_local(&self) -> bool {
+    pub const fn is_local(&self) -> bool {
         !self.is_global()
     }
 
-    pub fn is_global_component(&self) -> bool {
+    pub const fn is_global_component(&self) -> bool {
         match self {
         EntityType::GlobalEpochManager |
         EntityType::GlobalValidator |
@@ -84,18 +84,18 @@ impl EntityType {
     }
     }
 
-    pub fn is_global_package(&self) -> bool {
+    pub const fn is_global_package(&self) -> bool {
         matches!(self, EntityType::GlobalPackage)
     }
 
-    pub fn is_global_resource(&self) -> bool {
+    pub const fn is_global_resource(&self) -> bool {
         matches!(
             self,
             EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
         )
     }
 
-    pub fn is_global_virtual(&self) -> bool {
+    pub const fn is_global_virtual(&self) -> bool {
         match self {
             EntityType::GlobalVirtualEcdsaAccount
             | EntityType::GlobalVirtualEddsaAccount
@@ -105,11 +105,11 @@ impl EntityType {
         }
     }
 
-    pub fn is_internal_kv_store(&self) -> bool {
+    pub const fn is_internal_kv_store(&self) -> bool {
         matches!(self, EntityType::InternalKeyValueStore)
     }
 
-    pub fn is_internal_vault(&self) -> bool {
+    pub const fn is_internal_vault(&self) -> bool {
         matches!(self, EntityType::InternalVault)
     }
 }
