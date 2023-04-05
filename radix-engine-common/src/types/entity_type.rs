@@ -78,7 +78,8 @@ impl EntityType {
         EntityType::GlobalPackage | /* PackageAddress */
         EntityType::GlobalFungibleResource | /* ResourceAddress */
         EntityType::GlobalNonFungibleResource | /* ResourceAddress */
-        EntityType::InternalFungibleVault |  EntityType::InternalNonFungibleVault |
+        EntityType::InternalFungibleVault |
+        EntityType::InternalNonFungibleVault |
         EntityType::InternalAccessController |
         EntityType::InternalAccount |
         EntityType::InternalGenericComponent |

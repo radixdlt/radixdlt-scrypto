@@ -115,7 +115,7 @@ pub struct CallFrame {
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound,
+    SubstateNotFound(NodeId, TypedModuleId, SubstateKey),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -254,8 +254,16 @@ impl CallFrame {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
-            heap.get_substate(node_id, module_id.into(), substate_key)
-                .ok_or(LockSubstateError::SubstateNotFound)?
+            match heap.get_substate(node_id, module_id.into(), substate_key) {
+                Some(x) => x,
+                _ => {
+                    return Err(LockSubstateError::SubstateNotFound(
+                        node_id.clone(),
+                        module_id,
+                        substate_key.clone(),
+                    ));
+                }
+            }
         } else {
             let handle = track
                 .acquire_lock(node_id, module_id.into(), substate_key, flags)

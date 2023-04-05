@@ -45,7 +45,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::types::{NodeId, VaultOffset};
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -334,7 +333,7 @@ impl TestRunner {
                         .get_substate(
                             vault.as_node_id(),
                             TypedModuleId::ObjectState.into(),
-                            &VaultOffset::LiquidFungible.into(),
+                            &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
                         .map(|output| {
@@ -366,7 +365,7 @@ impl TestRunner {
                         .get_substate(
                             vault.as_node_id(),
                             TypedModuleId::ObjectState.into(),
-                            &VaultOffset::LiquidFungible.into(),
+                            &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
                         .map(|output| {
@@ -417,7 +416,7 @@ impl TestRunner {
             .get_substate(
                 &vault_id,
                 TypedModuleId::ObjectState.into(),
-                &VaultOffset::LiquidFungible.into(),
+                &FungibleVaultOffset::LiquidFungible.into(),
             )
             .expect("Database misconfigured")
             .map(|output| {
@@ -435,7 +434,7 @@ impl TestRunner {
             .get_substate(
                 &vault_id,
                 TypedModuleId::ObjectState.into(),
-                &VaultOffset::LiquidNonFungible.into(),
+                &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .expect("Database misconfigured")
             .map(|output| {

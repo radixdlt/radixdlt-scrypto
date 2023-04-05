@@ -28,8 +28,11 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle =
-            api.sys_lock_substate(receiver, &VaultOffset::Info.into(), LockFlags::read_only())?;
+        let handle = api.sys_lock_substate(
+            receiver,
+            &FungibleVaultOffset::Info.into(),
+            LockFlags::read_only(),
+        )?;
         let info: FungibleVaultDivisibilitySubstate = api.sys_read_substate_typed(handle)?;
         let divisibility = info.divisibility;
         api.sys_drop_lock(handle)?;
@@ -142,7 +145,7 @@ impl FungibleVaultBlueprint {
         // Lock the substate (with special flags)
         let vault_handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LiquidFungible.into(),
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
@@ -317,7 +320,7 @@ impl FungibleVault {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LiquidFungible.into(),
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -332,7 +335,7 @@ impl FungibleVault {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LockedFungible.into(),
+            &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -358,7 +361,7 @@ impl FungibleVault {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LiquidFungible.into(),
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -391,7 +394,7 @@ impl FungibleVault {
 
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LiquidFungible.into(),
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -419,7 +422,7 @@ impl FungibleVault {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LockedFungible.into(),
+            &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -458,7 +461,7 @@ impl FungibleVault {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LockedFungible.into(),
+            &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;

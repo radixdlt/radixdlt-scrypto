@@ -6,8 +6,8 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
-    IndexedScryptoValue, IntoEnumIterator, ModuleId, ObjectInfo, ResourceAddress, SubstateKey,
-    TypedModuleId, VaultOffset,
+    FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
+    ObjectInfo, ResourceAddress, SubstateKey, TypedModuleId,
 };
 use radix_engine_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
@@ -130,7 +130,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .get_substate(
                                 &node_id,
                                 TypedModuleId::ObjectState.into(),
-                                &VaultOffset::LiquidFungible.into(),
+                                &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database")
                             .expect("Broken database")
@@ -152,7 +152,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .get_substate(
                                 &node_id,
                                 TypedModuleId::ObjectState.into(),
-                                &VaultOffset::LiquidNonFungible.into(),
+                                &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database")
                             .expect("Broken database")

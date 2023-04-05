@@ -470,7 +470,7 @@ fn distribute_fees(
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
         let module_id = TypedModuleId::ObjectState;
-        let substate_key = VaultOffset::LiquidFungible.into();
+        let substate_key = FungibleVaultOffset::LiquidFungible.into();
         let handle = track
             .acquire_lock(
                 &node_id,
@@ -510,7 +510,7 @@ fn distribute_fees(
             .acquire_lock(
                 &vault_id,
                 TypedModuleId::ObjectState.into(),
-                &VaultOffset::LiquidFungible.into(),
+                &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )
             .unwrap();

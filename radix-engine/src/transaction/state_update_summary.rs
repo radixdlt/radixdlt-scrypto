@@ -291,12 +291,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
                 TypedModuleId::ObjectState.into(),
-                &VaultOffset::LiquidFungible.into(),
+                &FungibleVaultOffset::LiquidFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
                     TypedModuleId::ObjectState.into(),
-                    &VaultOffset::LiquidFungible.into(),
+                    &FungibleVaultOffset::LiquidFungible.into(),
                 );
 
                 let old_balance = if let Some(s) = old_substate {
@@ -319,12 +319,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
                 TypedModuleId::ObjectState.into(),
-                &VaultOffset::LiquidNonFungible.into(),
+                &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
                     TypedModuleId::ObjectState.into(),
-                    &VaultOffset::LiquidNonFungible.into(),
+                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 );
 
                 let mut old_balance = if let Some(s) = old_substate {
