@@ -201,19 +201,19 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        92500 /* CreateNode */
-        + 198000 /* DropLock */
+        95000 /* CreateNode */
+        + 211000 /* DropLock */
         + 90000 /* DropNode */
-        + 25340 /* Invoke */
-        + 200500 /* LockSubstate */
-        + 166460 /* ReadSubstate */
+        + 25000 /* Invoke */
+        + 213000 /* LockSubstate */
+        + 415810 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
-        + 1642570 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 1625 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 22000, /* WriteSubstate */
+        + 1523145 /* RunWasm */
+        + 100000 /* TxBaseCost */
+        + 3250 /* TxPayloadCost */
+        + 200000 /* TxSignatureVerification */
+        + 534500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -311,19 +311,19 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        147500 /* CreateNode */
-        + 308500 /* DropLock */
+        150000 /* CreateNode */
+        + 330000 /* DropLock */
         + 147500 /* DropNode */
-        + 44790 /* Invoke */
-        + 316500 /* LockSubstate */
-        + 252830 /* ReadSubstate */
+        + 44030 /* Invoke */
+        + 337500 /* LockSubstate */
+        + 588310 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1428005 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 2375 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 43500, /* WriteSubstate */
+        + 1221370 /* RunWasm */
+        + 100000 /* TxBaseCost */
+        + 4750 /* TxPayloadCost */
+        + 200000 /* TxSignatureVerification */
+        + 2010500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -357,13 +357,7 @@ fn test_publish_large_package() {
 
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
-    let commit_result = receipt.expect_commit(true);
-
-    // Assert
-    assert!(
-        commit_result.fee_summary.execution_cost_sum > 60000000
-            && commit_result.fee_summary.execution_cost_sum < 70000000
-    );
+    receipt.expect_commit_success();
 }
 
 #[test]

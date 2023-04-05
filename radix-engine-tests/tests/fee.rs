@@ -151,15 +151,9 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::LockSubstateError(
-                LockSubstateError::TrackError(err),
+                LockSubstateError::LockUnmodifiedBaseOnHeapNode,
             )),
-        )) => {
-            if let AcquireLockError::LockUnmodifiedBaseOnNewSubstate(..) = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        )) => true,
         _ => false,
     });
 }

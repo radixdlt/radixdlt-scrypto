@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{LockSubstateError, MoveError, UnlockSubstateError};
+use radix_engine::kernel::call_frame::LockSubstateError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -108,9 +108,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::CantMoveLockedNode(_)
-                ))
+                CallFrameError::LockSubstateError(LockSubstateError::TrackError(_))
             ))
         )
     });
