@@ -150,16 +150,19 @@ for idx, item in enumerate(output_tab):
 
 if detailed_output:
     output_tab.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
+    print(tabulate(output_tab, headers="firstrow"))
 else:
     min_ins = output_tab[0][2]
     for row in output_tab:
         if row[2] < min_ins:
             min_ins = row[2]
+    mul_div = 16
     for row in output_tab:
-        coeff = round(10 * row[2] / min_ins)
+        coeff = round(mul_div * row[2] / min_ins)
         row.append(coeff)
-        row.append( row[2] - coeff * min_ins / 10 )
+        row.append( row[2] - coeff * min_ins / mul_div )
     output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "cost function", "error"])
+    print(tabulate(output_tab, headers="firstrow"))
+    print("\nCost function coeff: ", min_ins, "/", mul_div, "\n")
 
-print(tabulate(output_tab, headers="firstrow"))
 
