@@ -126,7 +126,7 @@ pub enum UnlockSubstateError {
     MoveError(MoveError),
     CantDropNodeInStore(NodeId),
     CantOwn(NodeId),
-    CantPutLocalRefToStore(NodeId),
+    CantStoreLocalReference(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -656,7 +656,7 @@ impl CallFrame {
                 for (substate_key, substate_value) in module {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
-                            return Err(UnlockSubstateError::CantPutLocalRefToStore(*reference));
+                            return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
                         }
                     }
 
@@ -727,7 +727,7 @@ impl CallFrame {
             for (substate_key, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(UnlockSubstateError::CantPutLocalRefToStore(*reference));
+                        return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
                     }
                 }
 

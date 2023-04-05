@@ -30,7 +30,7 @@ fn verify_no_internal_ref_can_be_stored_in_track() {
         RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::UnlockSubstateError(x),
         )) => {
-            matches!(x, UnlockSubstateError::CantPutLocalRefToStore(_))
+            matches!(x, UnlockSubstateError::CantStoreLocalReference(_))
         }
         _ => false,
     });

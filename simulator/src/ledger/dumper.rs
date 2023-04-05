@@ -113,14 +113,16 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     }
 
     writeln!(output, "{}", "Non-fungible Resources".green().bold());
-    for (last, (component_address, ids)) in resources.fungibles.iter().identify_last() {
+    for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
         writeln!(
             output,
-            "{} {}: {:?}",
+            "{} {}",
             list_item_prefix(last),
             component_address.display(&bech32_encoder),
-            ids
         );
+        for (last, id) in ids.iter().identify_last() {
+            writeln!(output, "   {} {}", list_item_prefix(last), id);
+        }
     }
 
     Ok(())

@@ -63,8 +63,10 @@ impl RocksdbSubstateStore {
             .iterator(IteratorMode::From(&[], Direction::Forward));
         while let Some(kv) = iter.next() {
             let (key, _value) = kv.unwrap();
+            if key.len() < NodeId::LENGTH {
+                continue;
+            }
             let (node_id, _, _) = decode_substate_id(key.as_ref()).unwrap();
-
             if items.last() != Some(&node_id) {
                 items.push(node_id);
             }
