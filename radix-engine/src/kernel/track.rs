@@ -346,7 +346,8 @@ impl<'s> SubstateStore for Track<'s> {
         // - Split read,
         // - Track dependencies
 
-        let mut substate_changes = IndexMap::<(NodeId, ModuleId, SubstateKey), StateUpdate>::new();
+        let mut substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate> =
+            index_map_new();
         for (node_id, modules) in self.loaded_substates {
             for (module_id, module) in modules {
                 for (substate_key, loaded) in module {
