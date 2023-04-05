@@ -50,21 +50,21 @@ pub struct VaultGetAmountInput {}
 
 pub type VaultGetAmountOutput = Decimal;
 
-pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
+pub const VAULT_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultCreateProofInput {}
+pub struct VaultCreateProofOfAllInput {}
 
-pub type VaultCreateProofOutput = Proof;
+pub type VaultCreateProofOfAllOutput = Proof;
 
-pub const VAULT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+pub const VAULT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultCreateProofByAmountInput {
+pub struct VaultCreateProofOfAmountInput {
     pub amount: Decimal,
 }
 
-pub type VaultCreateProofByAmountOutput = Proof;
+pub type VaultCreateProofOfAmountOutput = Proof;
 
 //========
 // Stub
