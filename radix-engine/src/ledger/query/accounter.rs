@@ -1,4 +1,3 @@
-use crate::blueprints::resource::{FungibleVaultInfoSubstate, NonFungibleVaultInfoSubstate};
 use crate::ledger::{
     QueryableSubstateStore, ReadableSubstateStore, StateTreeTraverser, StateTreeTraverserError,
     StateTreeVisitor,
@@ -46,10 +45,10 @@ impl Accounting {
 
     pub fn add_fungible_vault(
         &mut self,
-        info: &FungibleVaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
-        match self.balances.entry(info.resource_address) {
+        match self.balances.entry(*address) {
             Entry::Occupied(mut e) => {
                 let new_amount = resource.amount() + *e.get();
                 e.insert(new_amount);
@@ -62,10 +61,10 @@ impl Accounting {
 
     pub fn add_non_fungible_vault(
         &mut self,
-        info: &NonFungibleVaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidNonFungibleResource,
     ) {
-        match self.balances.entry(info.resource_address) {
+        match self.balances.entry(*address) {
             Entry::Occupied(mut e) => {
                 let new_amount = resource.amount() + *e.get();
                 e.insert(new_amount);
@@ -81,18 +80,18 @@ impl StateTreeVisitor for Accounting {
     fn visit_fungible_vault(
         &mut self,
         _vault_id: ObjectId,
-        info: &FungibleVaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
-        self.add_fungible_vault(info, resource);
+        self.add_fungible_vault(address, resource);
     }
 
     fn visit_non_fungible_vault(
         &mut self,
         _vault_id: ObjectId,
-        info: &NonFungibleVaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidNonFungibleResource,
     ) {
-        self.add_non_fungible_vault(info, resource);
+        self.add_non_fungible_vault(address, resource);
     }
 }

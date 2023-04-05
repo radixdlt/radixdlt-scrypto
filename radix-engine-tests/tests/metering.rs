@@ -68,11 +68,11 @@ fn test_basic_transfer() {
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
         40000 /* CreateNode */
-        + 76000 /* DropLock */
+        + 75500 /* DropLock */
         + 40000 /* DropNode */
         + 11160 /* Invoke */
-        + 77500 /* LockSubstate */
-        + 62500 /* ReadSubstate */
+        + 77000 /* LockSubstate */
+        + 62000 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 0 /* RunWasm */
@@ -202,19 +202,19 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        92500 /* CreateNode */
-        + 195000 /* DropLock */
-        + 90000 /* DropNode */
-        + 25340 /* Invoke */
-        + 197500 /* LockSubstate */
-        + 163460 /* ReadSubstate */
-        + 137500 /* RunNative */
+        90000 /* CreateNode */
+        + 185500 /* DropLock */
+        + 87500 /* DropNode */
+        + 24610 /* Invoke */
+        + 188000 /* LockSubstate */
+        + 154960 /* ReadSubstate */
+        + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1630745 /* RunWasm */
+        + 1653425 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 22000, /* WriteSubstate */
+        + 21500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -313,11 +313,11 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         147500 /* CreateNode */
-        + 308000 /* DropLock */
+        + 305500 /* DropLock */
         + 147500 /* DropNode */
         + 44990 /* Invoke */
-        + 316000 /* LockSubstate */
-        + 252330 /* ReadSubstate */
+        + 313500 /* LockSubstate */
+        + 249830 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
         + 1409300 /* RunWasm */

@@ -877,7 +877,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .type_info()
             .clone();
 
-        if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+        if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
             VaultUtil::is_vault_blueprint(&blueprint)
         } else {
             false
@@ -897,29 +897,22 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .type_info()
             .clone();
 
-        let blueprint_name = match type_info {
-            TypeInfoSubstate::Object {
+        let (blueprint_name, address) = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
                 blueprint:
                     Blueprint {
                         package_address,
                         blueprint_name,
                     },
+                type_parent: Some(address),
                 ..
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => blueprint_name,
+            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => (blueprint_name, address),
             _ => panic!("Unexpected object"),
         };
+        let resource_address: ResourceAddress = address.into();
 
         match blueprint_name.as_str() {
             FUNGIBLE_VAULT_BLUEPRINT => {
-                let resource_address = self
-                    .fetch_substate(&SubstateId(
-                        *node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::Info),
-                    ))
-                    .fungible_vault_info()
-                    .resource_address;
-
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =
                     self.fetch_substate_from_state_updates(&SubstateId(
@@ -950,15 +943,6 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 }
             }
             NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                let resource_address = self
-                    .fetch_substate(&SubstateId(
-                        *node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::Info),
-                    ))
-                    .non_fungible_vault_info()
-                    .resource_address;
-
                 // If there is an update to the liquid resource
                 if let Some((substate, old_version)) =
                     self.fetch_substate_from_state_updates(&SubstateId(

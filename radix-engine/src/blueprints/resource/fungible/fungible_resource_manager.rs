@@ -337,7 +337,6 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -346,10 +345,7 @@ impl FungibleResourceManagerBlueprint {
         let resource_manager: &FungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let divisibility = resource_manager.divisibility;
-        let info = FungibleVaultInfoSubstate {
-            resource_address,
-            divisibility,
-        };
+        let info = FungibleVaultDivisibilitySubstate { divisibility };
         let vault_id = api.new_object(
             FUNGIBLE_VAULT_BLUEPRINT,
             vec![

@@ -135,11 +135,6 @@ fn build_access_rules(
         withdraw_access_rule,
         withdraw_mutability,
     );
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "recall",
-        recall_access_rule,
-        recall_mutability,
-    );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT),
         "withdraw",
@@ -158,6 +153,22 @@ fn build_access_rules(
         "withdraw",
         DenyAll,
     );
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "recall",
+        recall_access_rule,
+        recall_mutability,
+    );
+    vault_access_rules.set_direct_access_group(
+        MethodKey::new(NodeModuleId::SELF, VAULT_RECALL_IDENT),
+        "recall",
+    );
+    vault_access_rules.set_direct_access_group(
+        MethodKey::new(
+            NodeModuleId::SELF,
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
+        ),
+        "recall",
+    );
 
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT),
@@ -166,11 +177,6 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_GET_RESOURCE_ADDRESS_IDENT),
         AllowAll,
         DenyAll,
     );
@@ -247,8 +253,19 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRules::sys_new(resman_access_rules, api)?.0;
-    let vault_access_rules = AccessRules::sys_new(vault_access_rules, api)?.0;
+    let vault_blueprint_name = match resource_address {
+        ResourceAddress::Fungible(..) => FUNGIBLE_VAULT_BLUEPRINT,
+        ResourceAddress::NonFungible(..) => NON_FUNGIBLE_VAULT_BLUEPRINT,
+    }
+    .to_string();
+
+    let resman_access_rules = AccessRules::sys_new(
+        resman_access_rules,
+        btreemap!(vault_blueprint_name => vault_access_rules),
+        api,
+    )?
+    .0;
+
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
@@ -256,7 +273,6 @@ where
         RENodeId::Object(object_id),
         btreemap!(
             NodeModuleId::AccessRules => resman_access_rules.id(),
-            NodeModuleId::AccessRules1 => vault_access_rules.id(),
             NodeModuleId::Metadata => metadata.id(),
             NodeModuleId::ComponentRoyalty => royalty.id(),
         ),

@@ -64,7 +64,7 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_object_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     pub fn get_key_value_store_info(
         key_value_store_id_ptr: *const u8,
@@ -193,10 +193,7 @@ pub unsafe fn globalize_with_address(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_object_type_info(
-    _component_id_ptr: *const u8,
-    _component_id_len: usize,
-) -> Buffer {
+pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 

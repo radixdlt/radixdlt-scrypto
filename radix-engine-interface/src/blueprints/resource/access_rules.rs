@@ -25,6 +25,18 @@ impl FnKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum ObjectKey {
+    SELF,
+    ChildBlueprint(String),
+}
+
+impl ObjectKey {
+    pub fn child_blueprint(name: &str) -> Self {
+        ObjectKey::ChildBlueprint(name.to_string())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
     pub node_module_id: NodeModuleId,
     pub ident: String,
@@ -66,6 +78,7 @@ impl From<String> for AccessRuleEntry {
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
+    direct_method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,
     default_auth: AccessRuleEntry,
@@ -77,6 +90,7 @@ pub struct AccessRulesConfig {
 impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
+            direct_method_auth: BTreeMap::new(),
             method_auth: BTreeMap::new(),
             grouped_auth: BTreeMap::new(),
             default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -117,8 +131,13 @@ impl AccessRulesConfig {
         self.default_auth = default_auth;
     }
 
-    pub fn get_access_rule(&self, key: &MethodKey) -> AccessRule {
-        match self.method_auth.get(key) {
+    pub fn get_access_rule(&self, is_direct_access: bool, key: &MethodKey) -> AccessRule {
+        let auth = if is_direct_access {
+            &self.direct_method_auth
+        } else {
+            &self.method_auth
+        };
+        match auth.get(key) {
             None => self.get_default(),
             Some(entry) => self.resolve_entry(entry),
         }
@@ -165,10 +184,6 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, method_auth.into());
     }
 
-    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
-        self.grouped_auth_mutability.insert(key, method_auth);
-    }
-
     pub fn get_default(&self) -> AccessRule {
         self.resolve_entry(&self.default_auth)
     }
@@ -183,6 +198,10 @@ impl AccessRulesConfig {
 
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {
         self.grouped_auth.insert(group_key, access_rule);
+    }
+
+    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
+        self.grouped_auth_mutability.insert(key, method_auth);
     }
 
     pub fn set_group_access_rule_and_mutability(
@@ -218,6 +237,11 @@ impl AccessRulesConfig {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
         self.method_auth_mutability.insert(key, mutability.into());
+    }
+
+    pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
+        self.direct_method_auth
+            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
     }
 
     pub fn set_method_access_rule_to_group(&mut self, key: MethodKey, group: String) {

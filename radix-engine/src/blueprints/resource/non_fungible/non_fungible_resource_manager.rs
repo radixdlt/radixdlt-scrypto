@@ -831,7 +831,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -841,10 +840,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let id_type = resource_manager.id_type;
-        let info = NonFungibleVaultInfoSubstate {
-            resource_address,
-            id_type,
-        };
+        let info = NonFungibleVaultIdTypeSubstate { id_type };
         let vault_id = api.new_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
