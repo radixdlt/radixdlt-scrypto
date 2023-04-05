@@ -7,6 +7,17 @@ mod basic {
     }
 
     impl Basic {
+        pub fn new() -> ComponentAddress {
+            let map = KeyValueStore::new();
+            Self { map }.instantiate().globalize()
+        }
+
+        pub fn new_with_entry(key: String, value: String) -> ComponentAddress {
+            let map = KeyValueStore::new();
+            map.insert(key, value);
+            Self { map }.instantiate().globalize()
+        }
+
         pub fn multiple_reads() -> ComponentAddress {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "hello".to_owned());
@@ -29,6 +40,42 @@ mod basic {
             assert!(maybe_entry.is_none());
 
             Self { map }.instantiate().globalize()
+        }
+
+        pub fn insert(&mut self, key: String, value: String) {
+            self.map.insert(key, value);
+        }
+
+        pub fn remove(&mut self, key: String) -> Option<String> {
+            self.map.remove(&key)
+        }
+    }
+}
+
+#[blueprint]
+mod kv_vault {
+    struct KVVault {
+        map: KeyValueStore<String, Vault>,
+    }
+
+    impl KVVault {
+        fn new_fungible() -> Bucket {
+            ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .mint_initial_supply(1)
+        }
+
+        pub fn new() -> ComponentAddress {
+            let bucket = Self::new_fungible();
+            let vault = Vault::with_bucket(bucket);
+            let map = KeyValueStore::new();
+            map.insert("key".to_string(), vault);
+            Self { map }.instantiate().globalize()
+        }
+
+        pub fn remove(&mut self, key: String) -> Option<Vault> {
+            self.map.remove(&key)
         }
     }
 }

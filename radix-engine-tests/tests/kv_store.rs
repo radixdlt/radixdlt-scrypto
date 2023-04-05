@@ -392,3 +392,92 @@ fn remove_from_local_map_should_work() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn remove_from_stored_map_when_empty_should_work() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(package_address, "Basic", "new", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component = receipt.expect_commit_success().new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(
+            component,
+            "remove",
+            manifest_args!("non_existent_key".to_string()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let outputs = result.outcome.expect_success();
+    let expected: Option<String> = None;
+    outputs[1].expect_return_value(&expected);
+}
+
+#[test]
+fn remove_from_stored_map_when_not_empty_should_work() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "Basic",
+            "new_with_entry",
+            manifest_args!("key".to_string(), "value".to_string()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component = receipt.expect_commit_success().new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(component, "remove", manifest_args!("key".to_string()))
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let outputs = result.outcome.expect_success();
+    let expected: Option<String> = Some("value".to_string());
+    outputs[1].expect_return_value(&expected);
+}
+
+#[test]
+fn remove_from_stored_map_when_contain_vault_should_not_work() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(package_address, "KVVault", "new", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component = receipt.expect_commit_success().new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(component, "remove", manifest_args!("key".to_string()))
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(..))
+        )
+    });
+}
