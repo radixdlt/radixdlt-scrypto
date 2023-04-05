@@ -176,7 +176,7 @@ impl FungibleVault {
         Ok(FungibleProof::new(
             amount,
             btreemap!(
-                LocalRef::Vault(receiver.clone().into()) => amount
+                LocalRef::Vault(Reference(receiver.clone())) => amount
             ),
         )
         .map_err(|e| {
@@ -421,7 +421,7 @@ impl NonFungibleVault {
         Ok(NonFungibleProof::new(
             ids_for_proof.clone(),
             btreemap!(
-                LocalRef::Vault(receiver.clone().into()) => ids_for_proof
+                LocalRef::Vault(Reference(receiver.clone())) => ids_for_proof
             ),
         )
         .map_err(|e| {
@@ -464,7 +464,7 @@ impl NonFungibleVault {
         Ok(NonFungibleProof::new(
             ids.clone(),
             btreemap!(
-                LocalRef::Vault(receiver.clone().into()) => ids
+                LocalRef::Vault(Reference(receiver.clone())) => ids
             ),
         )
         .map_err(|e| {

@@ -9,15 +9,15 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
-    Bucket(NodeId),
-    Vault(NodeId),
+    Bucket(Reference),
+    Vault(Reference),
 }
 
 impl LocalRef {
-    pub fn to_node_id(&self) -> NodeId {
+    pub fn as_node_id(&self) -> &NodeId {
         match self {
-            LocalRef::Bucket(id) => id.clone(),
-            LocalRef::Vault(id) => id.clone(),
+            LocalRef::Bucket(id) => id.as_node_id(),
+            LocalRef::Vault(id) => id.as_node_id(),
         }
     }
 }
@@ -90,10 +90,10 @@ impl FungibleProof {
         &self,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
-        for (container_id, locked_amount) in &self.evidence {
+        for (container, locked_amount) in &self.evidence {
             api.call_method(
-                &container_id.to_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
                 },
@@ -107,10 +107,10 @@ impl FungibleProof {
     }
 
     pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
-        for (container_id, locked_amount) in &self.evidence {
+        for (container, locked_amount) in &self.evidence {
             api.call_method(
-                &container_id.to_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => VAULT_UNLOCK_AMOUNT_IDENT,
                 },
@@ -152,10 +152,10 @@ impl NonFungibleProof {
         &self,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
-        for (container_id, locked_ids) in &self.evidence {
+        for (container, locked_ids) in &self.evidence {
             api.call_method(
-                &container_id.to_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
                 },
@@ -169,10 +169,10 @@ impl NonFungibleProof {
     }
 
     pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
-        for (container_id, locked_ids) in &self.evidence {
+        for (container, locked_ids) in &self.evidence {
             api.call_method(
-                &container_id.to_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                 },

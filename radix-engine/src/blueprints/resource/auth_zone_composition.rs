@@ -159,11 +159,11 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 LockFlags::read_only(),
             )?;
             let proof: FungibleProof = api.sys_read_substate_typed(handle)?;
-            for (container_id, locked_amount) in &proof.evidence {
-                if let Some(existing) = max.get_mut(container_id) {
+            for (container, locked_amount) in &proof.evidence {
+                if let Some(existing) = max.get_mut(container) {
                     *existing = Decimal::max(*existing, locked_amount.clone());
                 } else {
-                    max.insert(container_id.clone(), locked_amount.clone());
+                    max.insert(container.clone(), locked_amount.clone());
                 }
             }
             api.sys_drop_lock(handle)?;
@@ -210,12 +210,12 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 LockFlags::read_only(),
             )?;
             let proof: NonFungibleProof = api.sys_read_substate_typed(handle)?;
-            for (container_id, locked_ids) in &proof.evidence {
+            for (container, locked_ids) in &proof.evidence {
                 total.extend(locked_ids.clone());
-                if let Some(ids) = per_container.get_mut(container_id) {
+                if let Some(ids) = per_container.get_mut(container) {
                     ids.extend(locked_ids.clone());
                 } else {
-                    per_container.insert(container_id.clone(), locked_ids.clone());
+                    per_container.insert(container.clone(), locked_ids.clone());
                 }
             }
         } else {
@@ -254,23 +254,23 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         )?;
         let substate: FungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate.clone();
-        for (container_id, _) in &proof.evidence {
+        for (container, _) in &proof.evidence {
             if remaining.is_zero() {
                 break 'outer;
             }
 
-            if let Some(quota) = per_container.remove(container_id) {
+            if let Some(quota) = per_container.remove(container) {
                 let amount = Decimal::min(remaining, quota);
                 api.call_method(
-                    &container_id.to_node_id(),
-                    match container_id {
+                    container.as_node_id(),
+                    match container {
                         LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
                         LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
                     },
                     scrypto_args!(amount),
                 )?;
                 remaining -= amount;
-                evidence.insert(container_id.clone(), amount);
+                evidence.insert(container.clone(), amount);
             }
         }
         api.sys_drop_lock(handle)?;
@@ -337,16 +337,16 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         )?;
         let substate: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate.clone();
-        for (container_id, _) in &proof.evidence {
+        for (container, _) in &proof.evidence {
             if remaining.is_empty() {
                 break 'outer;
             }
 
-            if let Some(quota) = per_container.remove(container_id) {
+            if let Some(quota) = per_container.remove(container) {
                 let ids = remaining.intersection(&quota).cloned().collect();
                 api.call_method(
-                    &container_id.to_node_id(),
-                    match container_id {
+                    container.as_node_id(),
+                    match container {
                         LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                         LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     },
@@ -355,7 +355,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 for id in &ids {
                     remaining.remove(id);
                 }
-                evidence.insert(container_id.clone(), ids);
+                evidence.insert(container.clone(), ids);
             }
         }
         api.sys_drop_lock(handle)?;
