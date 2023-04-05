@@ -202,6 +202,7 @@ impl AccountNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,

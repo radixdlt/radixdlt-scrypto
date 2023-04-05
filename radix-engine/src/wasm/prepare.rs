@@ -476,7 +476,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME => {
+                        GET_OBJECT_INFO_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -488,7 +488,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                        GET_OBJECT_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -997,6 +997,7 @@ mod tests {
         package_schema.blueprints.insert(
             "Test".to_string(),
             BlueprintSchema {
+                parent: None,
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],

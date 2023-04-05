@@ -1,6 +1,4 @@
-use crate::blueprints::resource::{
-    FungibleVaultInfoSubstate, NonFungibleVaultInfoSubstate, VaultUtil,
-};
+use crate::blueprints::resource::VaultUtil;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
@@ -31,7 +29,7 @@ pub trait StateTreeVisitor {
     fn visit_fungible_vault(
         &mut self,
         _vault_id: ObjectId,
-        _info: &FungibleVaultInfoSubstate,
+        _address: &ResourceAddress,
         _resource: &LiquidFungibleResource,
     ) {
     }
@@ -39,7 +37,7 @@ pub trait StateTreeVisitor {
     fn visit_non_fungible_vault(
         &mut self,
         _vault_id: ObjectId,
-        _info: &NonFungibleVaultInfoSubstate,
+        _address: &ResourceAddress,
         _resource: &LiquidNonFungibleResource,
     ) {
     }
@@ -116,59 +114,49 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let type_substate: TypeInfoSubstate = runtime_substate.into();
 
                 match type_substate {
-                    TypeInfoSubstate::Object { blueprint, .. }
-                        if VaultUtil::is_vault_blueprint(&blueprint) =>
-                    {
-                        if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
-                            node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Info),
-                        )) {
-                            match blueprint.blueprint_name.as_str() {
-                                FUNGIBLE_VAULT_BLUEPRINT => {
-                                    let info: FungibleVaultInfoSubstate =
-                                        output_value.substate.into();
-                                    let liquid: LiquidFungibleResource = self
-                                        .substate_store
-                                        .get_substate(&SubstateId(
-                                            node_id,
-                                            NodeModuleId::SELF,
-                                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                                        ))
-                                        .unwrap()
-                                        .substate
-                                        .into();
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint,
+                        type_parent,
+                        ..
+                    }) if VaultUtil::is_vault_blueprint(&blueprint) => {
+                        match blueprint.blueprint_name.as_str() {
+                            FUNGIBLE_VAULT_BLUEPRINT => {
+                                let liquid: LiquidFungibleResource = self
+                                    .substate_store
+                                    .get_substate(&SubstateId(
+                                        node_id,
+                                        NodeModuleId::SELF,
+                                        SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                                    ))
+                                    .unwrap()
+                                    .substate
+                                    .into();
 
-                                    self.visitor.visit_fungible_vault(
-                                        node_id.into(),
-                                        &info,
-                                        &liquid,
-                                    );
-                                }
-                                NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                                    let info: NonFungibleVaultInfoSubstate =
-                                        output_value.substate.into();
-                                    let liquid: LiquidNonFungibleResource = self
-                                        .substate_store
-                                        .get_substate(&SubstateId(
-                                            node_id,
-                                            NodeModuleId::SELF,
-                                            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                                        ))
-                                        .unwrap()
-                                        .substate
-                                        .into();
-
-                                    self.visitor.visit_non_fungible_vault(
-                                        node_id.into(),
-                                        &info,
-                                        &liquid,
-                                    );
-                                }
-                                _ => panic!("Unexpected vault blueprint"),
+                                self.visitor.visit_fungible_vault(
+                                    node_id.into(),
+                                    &type_parent.unwrap().into(),
+                                    &liquid,
+                                );
                             }
-                        } else {
-                            return Err(StateTreeTraverserError::RENodeNotFound(node_id));
+                            NON_FUNGIBLE_VAULT_BLUEPRINT => {
+                                let liquid: LiquidNonFungibleResource = self
+                                    .substate_store
+                                    .get_substate(&SubstateId(
+                                        node_id,
+                                        NodeModuleId::SELF,
+                                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                                    ))
+                                    .unwrap()
+                                    .substate
+                                    .into();
+
+                                self.visitor.visit_non_fungible_vault(
+                                    node_id.into(),
+                                    &type_parent.unwrap().into(),
+                                    &liquid,
+                                );
+                            }
+                            _ => panic!("Unexpected vault blueprint"),
                         }
                     }
                     _ => {

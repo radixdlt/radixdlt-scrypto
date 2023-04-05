@@ -1,7 +1,15 @@
+use crate::data::scrypto::model::Address;
 use crate::ScryptoSbor;
 use radix_engine_common::data::scrypto::model::PackageAddress;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ObjectInfo {
+    pub blueprint: Blueprint,
+    pub global: bool,
+    pub type_parent: Option<Address>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Blueprint {

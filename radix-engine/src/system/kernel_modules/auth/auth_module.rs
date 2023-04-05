@@ -4,12 +4,11 @@ use super::Authentication;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
-use crate::blueprints::resource::{AuthZone, VaultUtil};
-use crate::blueprints::resource::{FungibleVaultInfoSubstate, NonFungibleVaultInfoSubstate};
+use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::call_frame::RENodeVisibilityOrigin;
+use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
@@ -25,7 +24,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
+use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::blueprints::package::{
     PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -37,9 +36,13 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized(Box<Unauthorized>),
+    ChildBlueprintDoesNotExist,
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct Unauthorized(pub Actor, pub MethodAuthorization);
+pub struct Unauthorized {
+    pub callee: Actor,
+    pub authorization: MethodAuthorization,
+}
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
@@ -116,116 +119,27 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = match (node_id, module_id, ident) {
-            (node_id, module_id, ident)
-                if matches!(
-                    module_id,
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1
-                ) =>
-            {
-                match ident {
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule_and_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_method_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule_and_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::get_authorization_for_set_group_mutability(
-                            node_id, *module_id, args, api,
-                        )?
-                    }
-                    _ => MethodAuthorization::AllowAll,
-                }
+            (node_id, module_id, ident) if matches!(module_id, NodeModuleId::AccessRules) => {
+                AccessRulesNativePackage::authorization(node_id, ident, args, api)?
             }
 
             (RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
-                let blueprint = api.get_object_type_info(node_id)?;
-                if VaultUtil::is_vault_blueprint(&blueprint) {
-                    let (visibility, _) = api.kernel_get_node_info(node_id).ok_or(
-                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
-                    )?;
-
-                    let resource_address = {
-                        let handle = api.kernel_lock_substate(
-                            &node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let resource_address = if blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
-                            let substate_ref: &FungibleVaultInfoSubstate =
-                                api.kernel_get_substate_ref(handle)?;
-                            substate_ref.resource_address
-                        } else {
-                            let substate_ref: &NonFungibleVaultInfoSubstate =
-                                api.kernel_get_substate_ref(handle)?;
-                            substate_ref.resource_address
-                        };
-
-                        api.kernel_drop_lock(handle)?;
-                        resource_address
-                    };
-
-                    // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                let info = api.get_object_info(node_id)?;
+                if let Some(parent) = info.type_parent {
+                    let (ref_type, _) =
+                        api.kernel_get_node_info(node_id)
+                            .ok_or(RuntimeError::CallFrameError(
+                                CallFrameError::RENodeNotVisible(node_id),
+                            ))?;
                     let method_key = MethodKey::new(*module_id, ident);
-                    let auth = match visibility {
-                        RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
-                            &RENodeId::GlobalObject(resource_address.into()),
-                            NodeModuleId::AccessRules1,
-                            method_key,
-                            api,
-                        )?,
-                        RENodeVisibilityOrigin::DirectAccess => {
-                            let handle = api.kernel_lock_substate(
-                                &RENodeId::GlobalObject(resource_address.into()),
-                                NodeModuleId::AccessRules1,
-                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                                LockFlags::read_only(),
-                            )?;
-
-                            let substate: &MethodAccessRulesSubstate =
-                                api.kernel_get_substate_ref(handle)?;
-
-                            // TODO: Do we want to allow recaller to be able to withdraw from
-                            // TODO: any visible vault?
-                            let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF)
-                                && (method_key.ident.eq(VAULT_RECALL_IDENT)
-                                || method_key.ident.eq(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT))
-                            {
-                                let access_rule = substate.access_rules.get_group_access_rule("recall");
-                                let authorization = convert_contextless(&access_rule);
-                                authorization
-                            } else {
-                                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                    AuthError::VisibilityError(node_id),
-                                )));
-                            };
-
-                            api.kernel_drop_lock(handle)?;
-
-                            auth
-                        }
-                    };
+                    let auth = Self::method_authorization_stateless(
+                        ref_type,
+                        &RENodeId::GlobalObject(parent.into()),
+                        ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
+                        method_key,
+                        api,
+                    )?;
 
                     auth
                 } else {
@@ -242,16 +156,12 @@ impl AuthModule {
                     RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
-                    Self::method_authorization_stateful(
-                        &node_id,
-                        NodeModuleId::AccessRules,
-                        method_key,
-                        api,
-                    )?
+                    Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(
+                        RefType::Normal,
                         &node_id,
-                        NodeModuleId::AccessRules,
+                        ObjectKey::SELF,
                         method_key,
                         api,
                     )?
@@ -266,14 +176,14 @@ impl AuthModule {
 
     fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
         receiver: &RENodeId,
-        module_id: NodeModuleId,
-        key: MethodKey,
+        object_key: ObjectKey,
+        method_key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let (blueprint_schema, index) = {
             let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
             let blueprint = match type_info {
-                TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
                 TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::SystemError(SystemError::NotAnObject))
                 }
@@ -295,7 +205,13 @@ impl AuthModule {
             let index = match schema.substates.get(0) {
                 Some(index) => index.clone(),
                 None => {
-                    return Self::method_authorization_stateless(receiver, module_id, key, api);
+                    return Self::method_authorization_stateless(
+                        RefType::Normal,
+                        receiver,
+                        object_key,
+                        method_key,
+                        api,
+                    );
                 }
             };
 
@@ -319,13 +235,15 @@ impl AuthModule {
 
         let handle = api.kernel_lock_substate(
             receiver,
-            module_id,
+            NodeModuleId::AccessRules,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get_access_rule(&key);
+        let method_auth = access_rules
+            .access_rules
+            .get_access_rule(false, &method_key);
         let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
@@ -334,20 +252,36 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
+        ref_type: RefType,
         receiver: &RENodeId,
-        module_id: NodeModuleId,
+        object_key: ObjectKey,
         key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            module_id,
+            NodeModuleId::AccessRules,
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        let method_auth = access_rules.access_rules.get_access_rule(&key);
+        let is_direct_access = matches!(ref_type, RefType::DirectAccess);
+
+        let method_auth = match object_key {
+            ObjectKey::SELF => access_rules
+                .access_rules
+                .get_access_rule(is_direct_access, &key),
+            ObjectKey::ChildBlueprint(blueprint_name) => {
+                let child_rules = access_rules
+                    .child_blueprint_rules
+                    .get(&blueprint_name)
+                    .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
+                        AuthError::ChildBlueprintDoesNotExist,
+                    )))?;
+                child_rules.get_access_rule(is_direct_access, &key)
+            }
+        };
 
         // TODO: Remove
         let authorization = convert_contextless(&method_auth);
@@ -408,7 +342,10 @@ impl KernelModule for AuthModule {
             api,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(Box::new(Unauthorized(callee.clone(), authorization))),
+                AuthError::Unauthorized(Box::new(Unauthorized {
+                    callee: callee.clone(),
+                    authorization,
+                })),
             )));
         }
 
@@ -483,10 +420,11 @@ impl KernelModule for AuthModule {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => RuntimeSubstate::AuthZone(auth_zone)
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                    global: false
-                })
+                    global: false,
+                    type_parent: None,
+                }))
             ),
         )?;
 

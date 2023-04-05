@@ -45,7 +45,7 @@ fn test_state_track_success() {
         + 3 /* Package(Royalty) */
         + 2 /* PackageAccessRules */
         + 2 /* KeyValueStore(Entry([92, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
-        + 2 /* Vault(Info) */
+        + 1 /* Vault(Info) */
         + 2 /* Vault(LiquidFungible) */
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
@@ -60,7 +60,7 @@ fn test_state_track_success() {
         + 3 /* Package(Royalty) */
         + 2 /* PackageAccessRules */
         + 2 /* KeyValueStore(Entry([92, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
-        + 2 /* Vault(Info) */
+        + 1 /* Vault(Info) */
         + 2 /* Vault(LiquidFungible) */
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */

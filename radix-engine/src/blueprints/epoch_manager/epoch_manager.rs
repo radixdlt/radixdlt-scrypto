@@ -171,7 +171,7 @@ impl EpochManagerBlueprint {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
+        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 

@@ -110,7 +110,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             let raw_state = IndexedScryptoValue::from_scrypto_value(state.0);
             let blueprint = match type_info_substate {
-                TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
                 _ => panic!("Unexpected"),
             };
             let access_rules = access_rules_chain_substate.access_rules;
@@ -390,25 +390,15 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.into())
             .unwrap();
 
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object { blueprint, .. } => blueprint,
-            TypeInfoSubstate::KeyValueStore(..) => panic!("Unexpected type"),
+        let (blueprint, address) = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint,
+                type_parent: Some(address),
+                ..
+            }) => (blueprint, address),
+            _ => panic!("Unexpected type"),
         };
-
-        let substate = substate_store
-            .get_substate(&SubstateId(
-                RENodeId::Object(*vault_id),
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Info),
-            ))
-            .map(|s| s.substate)
-            .unwrap();
-
-        let resource_address = if blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) {
-            substate.fungible_vault_info().resource_address
-        } else {
-            substate.non_fungible_vault_info().resource_address
-        };
+        let resource_address: ResourceAddress = address.into();
 
         let name_metadata: Option<Option<ScryptoValue>> = substate_store
             .get_substate(&SubstateId(

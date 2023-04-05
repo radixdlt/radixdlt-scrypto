@@ -10,8 +10,7 @@ use radix_engine_interface::api::{ClientApi, ClientSubstateApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NonFungibleVaultInfoSubstate {
-    pub resource_address: ResourceAddress,
+pub struct NonFungibleVaultIdTypeSubstate {
     pub id_type: NonFungibleIdType,
 }
 
@@ -22,10 +21,7 @@ impl NonFungibleVaultBlueprint {
         !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
     }
 
-    fn get_info<Y>(
-        receiver: &RENodeId,
-        api: &mut Y,
-    ) -> Result<NonFungibleVaultInfoSubstate, RuntimeError>
+    fn get_id_type<Y>(receiver: &RENodeId, api: &mut Y) -> Result<NonFungibleIdType, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -34,10 +30,10 @@ impl NonFungibleVaultBlueprint {
             SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::read_only(),
         )?;
-        let info: &NonFungibleVaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
-        let info = info.clone();
+        let info: &NonFungibleVaultIdTypeSubstate = api.kernel_get_substate_ref(handle)?;
+        let id_type = info.id_type;
         api.sys_drop_lock(handle)?;
-        Ok(info)
+        Ok(id_type)
     }
 
     pub fn take<Y>(
@@ -49,7 +45,6 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Check amount
-        let info = Self::get_info(receiver, api)?;
         if !Self::check_amount(amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
@@ -58,16 +53,17 @@ impl NonFungibleVaultBlueprint {
 
         // Take
         let taken = NonFungibleVault::take(receiver, *amount, api)?;
+        let id_type = Self::get_id_type(receiver, api)?;
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
 
         // Create node
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address: info.resource_address,
-                    resource_type: ResourceType::NonFungible {
-                        id_type: info.id_type,
-                    },
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
                 })
                 .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -88,20 +84,20 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = Self::get_info(receiver, api)?;
-
         // Take
         let taken = NonFungibleVault::take_non_fungibles(receiver, &non_fungible_local_ids, api)?;
+
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let id_type = Self::get_id_type(receiver, api)?;
 
         // Create node
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address: info.resource_address,
-                    resource_type: ResourceType::NonFungible {
-                        id_type: info.id_type,
-                    },
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
                 })
                 .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -122,8 +118,9 @@ impl NonFungibleVaultBlueprint {
         let other_bucket: DroppedBucket = api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
 
         // Check resource address
-        let info = Self::get_info(receiver, api)?;
-        if info.resource_address != other_bucket.info.resource_address {
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        if resource_address != other_bucket.info.resource_address {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::MismatchingResource),
             ));
@@ -171,22 +168,22 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = Self::get_info(receiver, api)?;
         if !Self::check_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
         }
 
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let id_type = Self::get_id_type(receiver, api)?;
         let taken = NonFungibleVault::take(receiver, amount, api)?;
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address: info.resource_address,
-                    resource_type: ResourceType::NonFungible {
-                        id_type: info.id_type,
-                    },
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
                 })
                 .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -209,17 +206,18 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = Self::get_info(receiver, api)?;
         let taken = NonFungibleVault::take_non_fungibles(receiver, &non_fungible_local_ids, api)?;
+
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let id_type = Self::get_id_type(receiver, api)?;
 
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address: info.resource_address,
-                    resource_type: ResourceType::NonFungible {
-                        id_type: info.id_type,
-                    },
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
                 })
                 .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -238,15 +236,15 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = Self::get_info(receiver, api)?;
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let id_type = Self::get_id_type(receiver, api)?;
         let amount = NonFungibleVault::liquid_amount(receiver, api)?
             + NonFungibleVault::locked_amount(receiver, api)?;
 
         let proof_info = ProofInfoSubstate {
-            resource_address: info.resource_address,
-            resource_type: ResourceType::NonFungible {
-                id_type: info.id_type,
-            },
+            resource_address,
+            resource_type: ResourceType::NonFungible { id_type },
             restricted: false,
         };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
@@ -271,18 +269,19 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = Self::get_info(receiver, api)?;
         if !Self::check_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
         }
 
+        let id_type = Self::get_id_type(receiver, api)?;
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+
         let proof_info = ProofInfoSubstate {
-            resource_address: info.resource_address,
-            resource_type: ResourceType::NonFungible {
-                id_type: info.id_type,
-            },
+            resource_address,
+            resource_type: ResourceType::NonFungible { id_type },
             restricted: false,
         };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
@@ -306,13 +305,13 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let info = Self::get_info(receiver, api)?;
+        let resource_address: ResourceAddress =
+            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let id_type = Self::get_id_type(receiver, api)?;
 
         let proof_info = ProofInfoSubstate {
-            resource_address: info.resource_address,
-            resource_type: ResourceType::NonFungible {
-                id_type: info.id_type,
-            },
+            resource_address,
+            resource_type: ResourceType::NonFungible { id_type },
             restricted: false,
         };
         let proof = NonFungibleVault::lock_non_fungibles(receiver, ids, api)?;
@@ -356,17 +355,6 @@ impl NonFungibleVaultBlueprint {
         NonFungibleVault::unlock_non_fungibles(receiver, local_ids, api)?;
 
         Ok(())
-    }
-
-    pub fn get_resource_address<Y>(
-        receiver: &RENodeId,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let info = Self::get_info(receiver, api)?;
-        Ok(info.resource_address)
     }
 }
 
