@@ -116,8 +116,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            VAULT_CREATE_PROOF_IDENT,
-            scrypto_encode(&VaultCreateProofInput {}).unwrap(),
+            VAULT_CREATE_PROOF_OF_ALL_IDENT,
+            scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -133,8 +133,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
-            scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
+            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -150,8 +150,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             &RENodeId::Object(self.0),
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT,
-            scrypto_encode(&NonFungibleVaultCreateProofByIdsInput { ids }).unwrap(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

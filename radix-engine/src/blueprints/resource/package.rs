@@ -467,22 +467,24 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_IDENT.to_string(),
+                VAULT_CREATE_PROOF_OF_ALL_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
-                    output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<VaultCreateProofOfAllInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<VaultCreateProofOfAllOutput>(),
                     export_name: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
+                        .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofByAmountOutput>(),
+                        .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
                     export_name: FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
@@ -620,33 +622,33 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            VAULT_CREATE_PROOF_IDENT.to_string(),
+            VAULT_CREATE_PROOF_OF_ALL_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
-                output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofOfAllInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultCreateProofOfAllOutput>(),
                 export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
-            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<VaultCreateProofByAmountOutput>(),
+                    .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
                 export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
-                    .add_child_type_and_descendents::<NonFungibleVaultCreateProofByIdsInput>(),
+                    .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<NonFungibleVaultCreateProofByIdsOutput>(),
-                export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                    .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesOutput>(),
+                export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -684,7 +686,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let vault_schema = BlueprintSchema {
+        let non_fungible_vault_schema = BlueprintSchema {
             schema,
             substates,
             functions,
@@ -1097,7 +1099,7 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
                 FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
-                NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_schema,
+                NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => non_fungible_vault_schema,
                 BUCKET_BLUEPRINT.to_string() => bucket_schema,
                 PROOF_BLUEPRINT.to_string() => proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
@@ -1688,7 +1690,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
+                let _input: VaultCreateProofOfAllInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::create_proof(receiver, api)?;
@@ -1700,7 +1702,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
+                let _input: VaultCreateProofOfAllInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::create_proof(receiver, api)?;
@@ -1712,7 +1714,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: VaultCreateProofByAmountInput = input.as_typed().map_err(|e| {
+                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn =
@@ -1725,20 +1727,20 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: VaultCreateProofByAmountInput = input.as_typed().map_err(|e| {
+                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn =
                     NonFungibleVaultBlueprint::create_proof_by_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT => {
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: NonFungibleVaultCreateProofByIdsInput =
+                let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
