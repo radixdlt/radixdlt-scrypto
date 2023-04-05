@@ -13,7 +13,6 @@ use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{NodeId, TypedModuleId};
 use sbor::rust::prelude::*;
-use std::collections::BTreeMap;
 
 pub struct AccessRules(pub Own);
 
