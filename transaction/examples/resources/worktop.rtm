@@ -1,9 +1,9 @@
 # Withdraw XRD from account
-CALL_METHOD Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn") "withdraw" Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Decimal("5.0");
+CALL_METHOD Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v") "withdraw" Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Decimal("5.0");
 
 # Buy GUM with XRD
 TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Bucket("xrd");
-CALL_METHOD Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn") "buy_gumball" Bucket("xrd");
+CALL_METHOD Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq") "buy_gumball" Bucket("xrd");
 ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
 ASSERT_WORKTOP_CONTAINS Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe");
 
@@ -15,4 +15,4 @@ RETURN_TO_WORKTOP Bucket("some_xrd");
 TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#1#")) Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Bucket("nfts");
 
 # Move all resources in worktop to account
-CALL_METHOD Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn") "deposit_batch" Expression("ENTIRE_WORKTOP");
+CALL_METHOD Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v") "deposit_batch" Expression("ENTIRE_WORKTOP");

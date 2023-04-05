@@ -157,7 +157,7 @@ mod test {
     pub fn parsing_of_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:900";
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:900";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act
@@ -172,7 +172,7 @@ mod test {
                 900.into(),
                 ResourceAddress::try_from_bech32(
                     &bech32_decoder,
-                    "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn"
+                    "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje"
                 )
                 .unwrap()
             )

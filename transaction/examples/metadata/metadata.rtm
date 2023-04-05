@@ -1,12 +1,12 @@
 # Set String Metadata on Package
 SET_METADATA
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
     "field_name"
     Enum(0u8, Enum(0u8, "v"));
 
 # Set String Metadata on Account component
 SET_METADATA
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "field_name"
     Enum(0u8, Enum(0u8, "v"));
 
@@ -62,7 +62,7 @@ SET_METADATA
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
     "field_name"
-    Enum(0u8, Enum(8u8, Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")));
+    Enum(0u8, Enum(8u8, Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")));
 
 # Set Public Key Metadata on Resource
 SET_METADATA
@@ -74,7 +74,7 @@ SET_METADATA
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
     "field_name"
-    Enum(0u8, Enum(10u8, NonFungibleGlobalId("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:<some_string>")));
+    Enum(0u8, Enum(10u8, NonFungibleGlobalId("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<some_string>")));
 
 # Set NonFungibleLocalId Metadata on Resource
 SET_METADATA
@@ -101,11 +101,11 @@ SET_METADATA
     Enum(1u8, Array<Enum>(Enum(0u8, "some_string"), Enum(0u8, "another_string"), Enum(0u8, "yet_another_string")));
 
 REMOVE_METADATA
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
     "field_name";
 
 REMOVE_METADATA
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "field_name";
 
 REMOVE_METADATA

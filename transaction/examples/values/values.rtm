@@ -6,7 +6,7 @@ CREATE_PROOF_FROM_AUTH_ZONE
     Proof("temp2");
 
 CALL_METHOD 
-    Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn")
+    Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")
     "aliases"
 
     # enum
@@ -42,16 +42,16 @@ CALL_METHOD
     Array<Tuple>(NonFungibleGlobalId("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k:<value>"), Tuple(Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"), NonFungibleLocalId("#1#")));
 
 CALL_METHOD 
-    Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn")
+    Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")
     "custom_types"
 
     # Address
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    Address("epochmanager_sim1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7e94kj")
-    Address("clock_sim1quqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq04vnla")
-    Address("validator_sim1qcqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqsncq6gd")
-    Address("accesscontroller_sim1p5qszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs8w8kkt")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    Address("epochmanager_sim1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqf9zrm9")
+    Address("clock_sim1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzxkxrs")
+    Address("validator_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpskldua9")
+    Address("accesscontroller_sim1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsguupgz")
 
     Bucket("temp1")
     Proof("temp2")

@@ -88,7 +88,7 @@ use transaction::model::TransactionManifest;
 use utils::ContextualDisplay;
 
 /// The address of the faucet component, test network only.
-/// TODO: remove 
+/// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
     204,

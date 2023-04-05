@@ -1,5 +1,5 @@
 SET_PACKAGE_ROYALTY_CONFIG
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
     Map<String, Tuple>(
         "Blueprint",
         Tuple(
@@ -11,7 +11,7 @@ SET_PACKAGE_ROYALTY_CONFIG
     );
 
 SET_COMPONENT_ROYALTY_CONFIG
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     Tuple(
         Map<String, U32>(
             "method", 1u32
@@ -20,7 +20,7 @@ SET_COMPONENT_ROYALTY_CONFIG
     );
 
 CLAIM_PACKAGE_ROYALTY
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em");
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv");
 
 CLAIM_COMPONENT_ROYALTY
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh");
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v");
