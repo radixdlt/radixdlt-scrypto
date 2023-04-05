@@ -42,11 +42,15 @@ where
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
+        // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            let blueprint = self.get_object_type_info(node_id)?;
+            let info = self.get_object_info(node_id)?;
             if !matches!(
-                (blueprint.package_address, blueprint.blueprint_name.as_str()),
-                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                (
+                    info.blueprint.package_address,
+                    info.blueprint.blueprint_name.as_str()
+                ),
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
             ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
@@ -126,11 +130,8 @@ where
         blueprint_ident: &str,
         object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
-        let package_address = self
-            .kernel_get_current_actor()
-            .unwrap()
-            .package_address()
-            .clone();
+        let actor = self.kernel_get_current_actor().unwrap();
+        let package_address = actor.package_address().clone();
 
         let handle = self.kernel_lock_substate(
             package_address.as_node_id(),
@@ -174,7 +175,12 @@ where
         self.kernel_drop_lock(handle)?;
 
         let entity_type = match (package_address, blueprint_ident) {
-            (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => EntityType::InternalVault,
+            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
+                EntityType::InternalFungibleVault
+            }
+            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
+                EntityType::InternalNonFungibleVault
+            }
             (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                 EntityType::InternalAccessController
             }
@@ -198,12 +204,33 @@ where
                 .collect(),
         );
 
+        let type_parent = if let Some(parent) = &schema.parent {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    blueprint,
+                    ..
+                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidChildObjectCreation,
+                    ));
+                }
+            }
+        } else {
+            None
+        };
+
         self.kernel_create_node(
             node_id,
             node_init,
             btreemap!(
                 TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::new(Blueprint::new(&package_address, blueprint_ident), false)
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&package_address,blueprint_ident),
+                        global:false,
+                        type_parent
+                    })
                 ).to_substates(),
             ),
         )?;
@@ -220,7 +247,9 @@ where
 
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object { blueprint, global } if !global => blueprint,
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint, global, ..
+            }) if !global => blueprint,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
@@ -262,13 +291,7 @@ where
             TypedModuleId::Royalty,
             TypedModuleId::AccessRules
         );
-        let resource_manager_object = btreeset!(
-            TypedModuleId::Metadata,
-            TypedModuleId::Royalty,
-            TypedModuleId::AccessRules,
-            TypedModuleId::AccessRules1
-        ); // TODO: remove
-        if module_ids != standard_object && module_ids != resource_manager_object {
+        if module_ids != standard_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
                 Box::new(InvalidModuleSet(node_id, module_ids)),
             )));
@@ -286,7 +309,9 @@ where
             .unwrap();
         let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
         match type_info {
-            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
+                *global = true
+            }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
         node_substates
@@ -303,8 +328,8 @@ where
                 TypedModuleId::ObjectState | TypedModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => {
-                    let blueprint = self.get_object_type_info(&node_id)?;
+                TypedModuleId::AccessRules => {
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -320,7 +345,7 @@ where
                     node_substates.insert(module_id, access_rules);
                 }
                 TypedModuleId::Metadata => {
-                    let blueprint = self.get_object_type_info(&node_id)?;
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -336,7 +361,7 @@ where
                     node_substates.insert(module_id, metadata);
                 }
                 TypedModuleId::Royalty => {
-                    let blueprint = self.get_object_type_info(&node_id)?;
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -404,16 +429,16 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
-    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<Blueprint, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let object_info = match type_info {
+            TypeInfoSubstate::Object(info) => info,
             TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
 
-        Ok(blueprint)
+        Ok(object_info)
     }
 
     fn get_key_value_store_info(
@@ -607,7 +632,7 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => Ok(Blueprint::new(
+                    TypedModuleId::AccessRules => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
@@ -618,7 +643,9 @@ where
                     TypedModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    TypedModuleId::ObjectState => self.get_object_type_info(&node_id),
+                    TypedModuleId::ObjectState => {
+                        self.get_object_info(&node_id).map(|x| x.blueprint)
+                    }
                     TypedModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),

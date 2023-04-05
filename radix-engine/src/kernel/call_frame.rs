@@ -55,7 +55,7 @@ pub enum RENodeLocation {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RENodeVisibilityOrigin {
+pub enum RefType {
     Normal,
     DirectAccess,
 }
@@ -74,12 +74,12 @@ pub struct SubstateLock {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RENodeRefData {
-    visibility: RENodeVisibilityOrigin,
+    ref_type: RefType,
 }
 
 impl RENodeRefData {
-    fn new(visibility: RENodeVisibilityOrigin) -> Self {
-        RENodeRefData { visibility }
+    fn new(ref_type: RefType) -> Self {
+        RENodeRefData { ref_type }
     }
 }
 
@@ -197,7 +197,7 @@ impl CallFrame {
             } else if module_id == TypedModuleId::ObjectState {
                 if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
                     match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => {
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                             blueprint.package_address == METADATA_PACKAGE
                                 && blueprint.blueprint_name == METADATA_BLUEPRINT
                         }
@@ -275,7 +275,7 @@ impl CallFrame {
                 self.immortal_node_refs.insert(
                     node_id.clone(),
                     RENodeRefData {
-                        visibility: RENodeVisibilityOrigin::Normal,
+                        ref_type: RefType::Normal,
                     },
                 );
             } else {
@@ -381,7 +381,7 @@ impl CallFrame {
                 ) {
                     let type_info: TypeInfoSubstate = info.as_typed().unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => {
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                             if !NodeProperties::can_own(
                                 &substate_key,
                                 blueprint.package_address,
@@ -501,17 +501,17 @@ impl CallFrame {
         };
 
         // Add well-known global refs to current frame
-        frame.add_ref(RADIX_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(SYSTEM_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(ECDSA_SECP256K1_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(EDDSA_ED25519_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(PACKAGE_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(EPOCH_MANAGER.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(CLOCK.into(), RENodeVisibilityOrigin::Normal);
-        frame.add_ref(FAUCET_PACKAGE.into(), RENodeVisibilityOrigin::Normal);
+        frame.add_ref(RADIX_TOKEN.into(), RefType::Normal);
+        frame.add_ref(SYSTEM_TOKEN.into(), RefType::Normal);
+        frame.add_ref(ECDSA_SECP256K1_TOKEN.into(), RefType::Normal);
+        frame.add_ref(EDDSA_ED25519_TOKEN.into(), RefType::Normal);
+        frame.add_ref(PACKAGE_TOKEN.into(), RefType::Normal);
+        frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RefType::Normal);
+        frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RefType::Normal);
+        frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
+        frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
+        frame.add_ref(CLOCK.into(), RefType::Normal);
+        frame.add_ref(FAUCET_PACKAGE.into(), RefType::Normal);
 
         frame
     }
@@ -570,8 +570,8 @@ impl CallFrame {
             to.immortal_node_refs
                 .entry(node_id)
                 .and_modify(|e| {
-                    if e.visibility == RENodeVisibilityOrigin::DirectAccess {
-                        e.visibility = ref_data.visibility
+                    if e.ref_type == RefType::DirectAccess {
+                        e.ref_type = ref_data.ref_type
                     }
                 })
                 .or_insert(ref_data.clone());
@@ -639,7 +639,7 @@ impl CallFrame {
                     ) {
                         let type_info: TypeInfoSubstate = info.as_typed().unwrap();
                         match type_info {
-                            TypeInfoSubstate::Object { blueprint, .. } => {
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                                 if !NodeProperties::can_own(
                                     &substate_key,
                                     blueprint.package_address,
@@ -672,7 +672,7 @@ impl CallFrame {
                 }
             }
 
-            self.add_ref(node_id, RENodeVisibilityOrigin::Normal);
+            self.add_ref(node_id, RefType::Normal);
         } else {
             // Insert node into heap
             let heap_root_node = HeapNode {
@@ -686,7 +686,7 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn add_ref(&mut self, node_id: NodeId, visibility: RENodeVisibilityOrigin) {
+    pub fn add_ref(&mut self, node_id: NodeId, visibility: RefType) {
         self.immortal_node_refs
             .insert(node_id, RENodeRefData::new(visibility));
     }
@@ -711,7 +711,7 @@ impl CallFrame {
                     self.immortal_node_refs.insert(
                         node_ref.clone(),
                         RENodeRefData {
-                            visibility: RENodeVisibilityOrigin::Normal,
+                            ref_type: RefType::Normal,
                         },
                     );
                 }
@@ -735,7 +735,7 @@ impl CallFrame {
         } else {
             if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
                 match type_info {
-                    TypeInfoSubstate::Object { blueprint, .. }
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                         if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
                             && (blueprint.blueprint_name == BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == PROOF_BLUEPRINT) =>
@@ -777,13 +777,13 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         if self.owned_root_nodes.contains_key(node_id) {
-            Some((RENodeVisibilityOrigin::Normal, true))
+            Some((RefType::Normal, true))
         } else if let Some(_) = self.temp_node_refs.get(node_id) {
-            Some((RENodeVisibilityOrigin::Normal, false))
+            Some((RefType::Normal, false))
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
-            Some((ref_data.visibility, false))
+            Some((ref_data.ref_type, false))
         } else {
             None
         }

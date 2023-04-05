@@ -11,7 +11,7 @@ fn non_existing_vault_should_cause_error() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
-    let non_existing_address = local_address(EntityType::InternalVault, 5);
+    let non_existing_address = local_address(EntityType::InternalFungibleVault, 5);
 
     // Act
     let manifest = ManifestBuilder::new()

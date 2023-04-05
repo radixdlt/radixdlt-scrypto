@@ -87,7 +87,6 @@ lazy_static! {
                 Metadata = 2;
                 Royalty = 3;
                 AccessRules = 4;
-                AccessRules1 = 5;
             }
         );
 

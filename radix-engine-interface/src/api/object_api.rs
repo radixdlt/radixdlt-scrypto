@@ -15,7 +15,7 @@ pub trait ClientObjectApi<E> {
 
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
 
-    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<Blueprint, E>;
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
     fn get_key_value_store_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
 

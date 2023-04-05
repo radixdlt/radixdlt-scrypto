@@ -1,6 +1,6 @@
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::{Blueprint, ResourceAddress};
+use radix_engine_interface::types::{ObjectInfo, ResourceAddress};
 use radix_engine_interface::*;
 
 // TODO: de-dup
@@ -13,6 +13,6 @@ pub struct VaultInfoSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TypeInfoSubstate {
-    Object { blueprint: Blueprint, global: bool },
+    Object(ObjectInfo),
     KeyValueStore(KeyValueStoreSchema),
 }

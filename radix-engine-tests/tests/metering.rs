@@ -68,11 +68,11 @@ fn test_basic_transfer() {
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
         42500 /* CreateNode */
-        + 85000 /* DropLock */
+        + 83000 /* DropLock */
         + 40000 /* DropNode */
         + 10970 /* Invoke */
-        + 86000 /* LockSubstate */
-        + 152220 /* ReadSubstate */
+        + 84000 /* LockSubstate */
+        + 176780 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 100000 /* TxBaseCost */
@@ -201,15 +201,15 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        95000 /* CreateNode */
-        + 211000 /* DropLock */
-        + 90000 /* DropNode */
-        + 25000 /* Invoke */
-        + 213000 /* LockSubstate */
-        + 415810 /* ReadSubstate */
-        + 137500 /* RunNative */
+        92500 /* CreateNode */
+        + 198500 /* DropLock */
+        + 87500 /* DropNode */
+        + 24270 /* Invoke */
+        + 200500 /* LockSubstate */
+        + 497890 /* ReadSubstate */
+        + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1523145 /* RunWasm */
+        + 1544460 /* RunWasm */
         + 100000 /* TxBaseCost */
         + 3250 /* TxPayloadCost */
         + 200000 /* TxSignatureVerification */
@@ -312,18 +312,18 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         150000 /* CreateNode */
-        + 330000 /* DropLock */
+        + 327500 /* DropLock */
         + 147500 /* DropNode */
-        + 44030 /* Invoke */
-        + 337500 /* LockSubstate */
-        + 588310 /* ReadSubstate */
+        + 44230 /* Invoke */
+        + 335000 /* LockSubstate */
+        + 704700 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
         + 1221370 /* RunWasm */
         + 100000 /* TxBaseCost */
         + 4750 /* TxPayloadCost */
         + 200000 /* TxSignatureVerification */
-        + 2010500, /* WriteSubstate */
+        + 1954500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

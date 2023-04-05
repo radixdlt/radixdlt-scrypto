@@ -37,7 +37,7 @@ mod data_access {
         pub fn create_component_and_read_info() {
             let component_address = Self {}.instantiate().globalize();
             ScryptoEnv
-                .get_object_type_info(component_address.as_node_id())
+                .get_object_info(component_address.as_node_id())
                 .unwrap();
         }
     }

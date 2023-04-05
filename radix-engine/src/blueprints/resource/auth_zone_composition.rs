@@ -265,7 +265,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                     container.as_node_id(),
                     match container {
                         LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
-                        LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
+                        LocalRef::Vault(_) => FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                     },
                     scrypto_args!(amount),
                 )?;
@@ -348,7 +348,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                     container.as_node_id(),
                     match container {
                         LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-                        LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                        LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     },
                     scrypto_args!(&ids),
                 )?;

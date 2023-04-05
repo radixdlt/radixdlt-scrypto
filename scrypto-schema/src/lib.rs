@@ -43,6 +43,8 @@ pub struct PackageSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct BlueprintSchema {
+    pub parent: Option<String>,
+
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substates: Vec<LocalTypeIndex>,
@@ -76,6 +78,7 @@ pub enum Receiver {
 impl Default for BlueprintSchema {
     fn default() -> Self {
         Self {
+            parent: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],

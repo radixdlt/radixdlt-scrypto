@@ -1,4 +1,3 @@
-use crate::blueprints::resource::vault::VaultInfoSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -27,17 +26,12 @@ pub enum FungibleResourceManagerError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct FungibleResourceManagerSubstate {
-    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub divisibility: u8,
     pub total_supply: Decimal,
 }
 
 impl FungibleResourceManagerSubstate {
-    pub fn create(
-        resource_address: ResourceAddress,
-        divisibility: u8,
-        total_supply: Decimal,
-    ) -> Result<Self, RuntimeError> {
+    pub fn create(divisibility: u8, total_supply: Decimal) -> Result<Self, RuntimeError> {
         if divisibility > DIVISIBILITY_MAXIMUM {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(
@@ -47,7 +41,6 @@ impl FungibleResourceManagerSubstate {
         }
 
         let substate = Self {
-            resource_address,
             divisibility,
             total_supply,
         };
@@ -116,17 +109,16 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
-
         let resource_manager_substate =
-            FungibleResourceManagerSubstate::create(resource_address, divisibility, 0.into())?;
+            FungibleResourceManagerSubstate::create(divisibility, 0.into())?;
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
+        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok(resource_address)
@@ -166,19 +158,15 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(resource_address);
-
-        let resource_manager_substate = FungibleResourceManagerSubstate::create(
-            resource_address,
-            divisibility,
-            initial_supply,
-        )?;
+        let resource_manager_substate =
+            FungibleResourceManagerSubstate::create(divisibility, initial_supply)?;
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
+        let resource_address = ResourceAddress::new_unchecked(resource_address);
         let bucket = build_fungible_bucket(resource_address, divisibility, initial_supply, api)?;
 
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
@@ -201,6 +189,8 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         let bucket_id = {
+            let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+
             let mut resource_manager: FungibleResourceManagerSubstate =
                 api.sys_read_substate_typed(resman_handle)?;
             let divisibility = resource_manager.divisibility;
@@ -227,7 +217,7 @@ impl FungibleResourceManagerBlueprint {
             resource_manager.total_supply += amount;
 
             let bucket_info = BucketInfoSubstate {
-                resource_address: resource_manager.resource_address,
+                resource_address,
                 resource_type: ResourceType::Fungible { divisibility },
             };
             let liquid_resource = LiquidFungibleResource::new(amount);
@@ -283,9 +273,9 @@ impl FungibleResourceManagerBlueprint {
                 // Check if resource matches
                 // TODO: Move this check into actor check
                 {
-                    let mut resource_manager: FungibleResourceManagerSubstate =
-                        api.sys_read_substate_typed(resman_handle)?;
-                    if dropped_bucket.info.resource_address != resource_manager.resource_address {
+                    let resource_address =
+                        ResourceAddress::new_unchecked(api.get_global_address()?.into());
+                    if dropped_bucket.info.resource_address != resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::ResourceManagerError(
                                 FungibleResourceManagerError::MismatchingBucketResource,
@@ -296,6 +286,8 @@ impl FungibleResourceManagerBlueprint {
                     // Update total supply
                     // TODO: there might be better for maintaining total supply, especially for non-fungibles
                     // Update total supply
+                    let mut resource_manager: FungibleResourceManagerSubstate =
+                        api.sys_read_substate_typed(resman_handle)?;
                     resource_manager.total_supply -= resource.amount();
 
                     api.sys_write_substate_typed(resman_handle, &resource_manager)?;
@@ -318,15 +310,14 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
-
         let resource_manager: FungibleResourceManagerSubstate =
             api.sys_read_substate_typed(resman_handle)?;
-        let resource_address = resource_manager.resource_address;
         let divisibility = resource_manager.divisibility;
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
@@ -353,25 +344,18 @@ impl FungibleResourceManagerBlueprint {
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
-
         let resource_manager: FungibleResourceManagerSubstate =
             api.sys_read_substate_typed(resman_handle)?;
-        let resource_address = resource_manager.resource_address;
         let divisibility = resource_manager.divisibility;
-        let info = VaultInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::Fungible { divisibility },
-        };
+        let info = FungibleVaultDivisibilitySubstate { divisibility };
         let vault_id = api.new_object(
-            VAULT_BLUEPRINT,
+            FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 

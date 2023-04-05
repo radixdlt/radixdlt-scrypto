@@ -1,5 +1,5 @@
 use super::actor::ExecutionMode;
-use super::call_frame::{CallFrame, LockSubstateError, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
@@ -131,7 +131,7 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok(blueprint) = api.get_object_type_info(&node_id) {
+                if let Ok(blueprint) = api.get_object_info(&node_id).map(|x| x.blueprint) {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
@@ -289,15 +289,13 @@ where
             for node_id in &resolved.update.node_refs_to_copy {
                 if node_id.is_global_virtual() {
                     // For virtual accounts and native packages, create a reference directly
-                    self.current_frame
-                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                    self.current_frame.add_ref(*node_id, RefType::Normal);
                     continue;
                 } else if node_id.is_global_package()
                     && is_native_package(PackageAddress::new_unchecked(node_id.0))
                 {
                     // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                    self.current_frame
-                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                    self.current_frame.add_ref(*node_id, RefType::Normal);
                     continue;
                 }
 
@@ -318,15 +316,16 @@ where
                 let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
                 self.track.release_lock(handle);
                 match type_substate {
-                    TypeInfoSubstate::Object { blueprint, global } => {
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) => {
                         if global {
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            self.current_frame.add_ref(*node_id, RefType::Normal);
                         } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
+                            && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                                || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                         {
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                            self.current_frame.add_ref(*node_id, RefType::DirectAccess);
                         } else {
                             return Err(RuntimeError::KernelError(
                                 KernelError::InvalidDirectAccess,
@@ -384,20 +383,20 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let blueprint = self.get_object_type_info(node_id)?;
+            let info = self.get_object_info(node_id)?;
             if !NodeProperties::can_be_dropped(
                 current_mode,
                 &actor,
-                blueprint.package_address,
-                blueprint.blueprint_name.as_str(),
+                info.blueprint.package_address,
+                info.blueprint.blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        package_address: blueprint.package_address,
-                        blueprint_name: blueprint.blueprint_name,
+                        package_address: info.blueprint.package_address,
+                        blueprint_name: info.blueprint.blueprint_name,
                     })),
                 ));
             }
@@ -470,7 +469,7 @@ where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
     }
@@ -495,15 +494,13 @@ where
                     ..
                 } => {
                     self.current_frame
-                        .add_ref(address.as_node_id().clone(), RENodeVisibilityOrigin::Normal);
+                        .add_ref(address.as_node_id().clone(), RefType::Normal);
                 }
                 _ => {}
             }
             let package_address = actor.blueprint().package_address;
-            self.current_frame.add_ref(
-                package_address.as_node_id().clone(),
-                RENodeVisibilityOrigin::Normal,
-            );
+            self.current_frame
+                .add_ref(package_address.as_node_id().clone(), RefType::Normal);
         }
 
         actor
@@ -518,7 +515,7 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object { blueprint, .. }
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
                         && blueprint.blueprint_name == BUCKET_BLUEPRINT => {}
                 _ => {
@@ -586,7 +583,7 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object { blueprint, .. }
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
                         && blueprint.blueprint_name == PROOF_BLUEPRINT => {}
                 _ => {
@@ -756,8 +753,7 @@ where
                             .map_err(KernelError::CallFrameError)?;
                         self.track.release_lock(handle);
 
-                        self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        self.current_frame.add_ref(*node_id, RefType::Normal);
                         self.current_frame
                             .acquire_lock(
                                 &mut self.heap,

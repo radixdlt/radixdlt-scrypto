@@ -91,32 +91,32 @@ use utils::ContextualDisplay;
 /// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
-    204,
-    40,
-    81,
-    111,
-    138,
-    130,
-    248,
-    245,
-    40,
-    168,
-    117,
-    97,
-    17,
+    127,
+    106,
+    32,
     60,
-    50,
+    154,
+    174,
+    55,
+    248,
+    139,
+    247,
+    46,
+    241,
+    29,
+    216,
+    253,
+    201,
+    181,
+    166,
     63,
-    249,
-    31,
-    156,
-    221,
-    189,
-    5,
-    249,
-    179,
-    62,
-    138,
+    220,
+    235,
+    95,
+    180,
+    78,
+    152,
+    174,
 ]);
 
 /// Build fast, reward everyone, and scale without friction
@@ -392,7 +392,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
 
     match type_info {
-        TypeInfoSubstate::Object { blueprint, .. } => Ok(blueprint.clone()),
+        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -404,7 +404,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => (
+                TypedModuleId::AccessRules => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
@@ -430,7 +430,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         .unwrap();
                     let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => (
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                             blueprint.package_address,
                             blueprint.blueprint_name,
                             *local_type_index,

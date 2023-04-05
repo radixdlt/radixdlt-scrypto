@@ -24,7 +24,8 @@ pub enum EntityType {
     GlobalVirtualEcdsaIdentity,
     GlobalVirtualEddsaIdentity,
 
-    InternalVault,
+    InternalFungibleVault,
+    InternalNonFungibleVault,
     InternalAccessController,
     InternalAccount,
     InternalKeyValueStore,
@@ -48,7 +49,8 @@ impl EntityType {
             | EntityType::GlobalVirtualEddsaAccount
             | EntityType::GlobalVirtualEcdsaIdentity
             | EntityType::GlobalVirtualEddsaIdentity => true,
-            EntityType::InternalVault
+            EntityType::InternalFungibleVault
+            | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccessController
             | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
@@ -76,7 +78,7 @@ impl EntityType {
         EntityType::GlobalPackage | /* PackageAddress */
         EntityType::GlobalFungibleResource | /* ResourceAddress */
         EntityType::GlobalNonFungibleResource | /* ResourceAddress */
-        EntityType::InternalVault |
+        EntityType::InternalFungibleVault |  EntityType::InternalNonFungibleVault |
         EntityType::InternalAccessController |
         EntityType::InternalAccount |
         EntityType::InternalGenericComponent |
@@ -110,6 +112,9 @@ impl EntityType {
     }
 
     pub const fn is_internal_vault(&self) -> bool {
-        matches!(self, EntityType::InternalVault)
+        matches!(
+            self,
+            EntityType::InternalFungibleVault | EntityType::InternalNonFungibleVault
+        )
     }
 }

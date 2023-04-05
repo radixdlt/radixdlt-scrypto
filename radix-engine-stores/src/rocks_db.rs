@@ -28,9 +28,6 @@ impl RocksdbSubstateStore {
             TypedModuleId::AccessRules.into() => ModuleConfig {
                 iteration_enabled: false,
             },
-            TypedModuleId::AccessRules1.into() => ModuleConfig {
-                iteration_enabled: false,
-            }
         );
         let db = DB::open_default(root.as_path()).expect("IO Error");
 

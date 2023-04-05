@@ -77,10 +77,13 @@ impl TransactionProcessorBlueprint {
                 WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
             )),
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
-                    global: false,
-                }).to_substates()
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
+                        global: false,
+                        type_parent: None,
+                    })
+                ).to_substates()
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));
@@ -573,7 +576,8 @@ impl TransactionProcessorBlueprint {
                         TypedModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            key: key.clone(),
+                            object_key: ObjectKey::SELF,
+                            method_key: key.clone(),
                             rule: AccessRuleEntry::AccessRule(rule.clone()),
                         })
                         .unwrap(),
@@ -704,8 +708,11 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            let blueprint = api.get_object_type_info(owned_node)?;
-            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+            let info = api.get_object_info(owned_node)?;
+            match (
+                info.blueprint.package_address,
+                info.blueprint.blueprint_name.as_str(),
+            ) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;

@@ -1,4 +1,4 @@
-use super::{StateTreeTraverser, StateTreeVisitor, VaultInfoSubstate};
+use super::{StateTreeTraverser, StateTreeVisitor};
 use crate::interface::SubstateDatabase;
 use radix_engine_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
@@ -48,22 +48,22 @@ impl Accounting {
 
     pub fn add_fungible_vault(
         &mut self,
-        info: &VaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
         self.fungibles
-            .entry(info.resource_address)
+            .entry(*address)
             .or_default()
             .add_assign(resource.amount())
     }
 
     pub fn add_non_fungible_vault(
         &mut self,
-        info: &VaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidNonFungibleResource,
     ) {
         self.non_fungibles
-            .entry(info.resource_address)
+            .entry(*address)
             .or_default()
             .extend(resource.ids().clone())
     }
@@ -73,18 +73,18 @@ impl StateTreeVisitor for Accounting {
     fn visit_fungible_vault(
         &mut self,
         _vault_id: NodeId,
-        info: &VaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
-        self.add_fungible_vault(info, resource);
+        self.add_fungible_vault(address, resource);
     }
 
     fn visit_non_fungible_vault(
         &mut self,
         _vault_id: NodeId,
-        info: &VaultInfoSubstate,
+        address: &ResourceAddress,
         resource: &LiquidNonFungibleResource,
     ) {
-        self.add_non_fungible_vault(info, resource);
+        self.add_non_fungible_vault(address, resource);
     }
 }

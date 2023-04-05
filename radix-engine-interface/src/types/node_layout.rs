@@ -28,7 +28,6 @@ pub enum TypedModuleId {
     Metadata,
     Royalty,
     AccessRules,
-    AccessRules1, // TODO: remove
 }
 
 impl Into<ModuleId> for TypedModuleId {

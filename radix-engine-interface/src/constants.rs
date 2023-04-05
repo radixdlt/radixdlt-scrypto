@@ -22,7 +22,6 @@ pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
 pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 8);
 
-/// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 0);
 pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 1);
 pub const IDENTITY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 2);

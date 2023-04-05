@@ -10,7 +10,7 @@ use radix_engine_stores::interface::{StateUpdates, SubstateDatabase};
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
-use crate::blueprints::resource::VaultInfoSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -267,18 +267,26 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
         &self,
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
-        let vault_info: VaultInfoSubstate = scrypto_decode(
+        let type_info: TypeInfoSubstate = scrypto_decode(
             &self
                 .fetch_substate(
                     node_id,
-                    TypedModuleId::ObjectState.into(),
-                    &VaultOffset::Info.into(),
+                    TypedModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
                 )
                 .expect("Missing vault info"),
         )
         .expect("Failed to decode vault info");
 
-        if vault_info.resource_type.is_fungible() {
+        let resource_address = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
+                type_parent: Some(x),
+                ..
+            }) => ResourceAddress::new_unchecked(x.into()),
+            _ => panic!("Unexpected"),
+        };
+
+        if resource_address.as_node_id().is_global_fungible_resource() {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
@@ -340,7 +348,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 None
             }
         }
-        .map(|x| (vault_info.resource_address, x))
+        .map(|x| (resource_address, x))
     }
 
     fn fetch_substate(

@@ -568,7 +568,7 @@ CALL_METHOD
             vec![],
             r##"
 CREATE_ACCOUNT_ADVANCED
-    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_ACCOUNT;
 "##,
         );
@@ -585,7 +585,7 @@ CREATE_ACCOUNT;
             vec![],
             r##"
 CREATE_IDENTITY_ADVANCED
-    Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_IDENTITY;
 "##,
         );

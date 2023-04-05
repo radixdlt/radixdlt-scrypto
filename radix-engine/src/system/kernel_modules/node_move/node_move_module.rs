@@ -25,7 +25,7 @@ impl NodeMoveModule {
         callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let blueprint = api.get_object_type_info(&node_id)?;
+        let blueprint = api.get_object_info(&node_id).map(|x| x.blueprint)?;
         match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                 if matches!(callee, Actor::Function { .. })
@@ -39,7 +39,7 @@ impl NodeMoveModule {
                 let mut changed_to_restricted = true;
                 if let Actor::Method { node_id, .. } = callee {
                     let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-                    if let TypeInfoSubstate::Object { blueprint, .. } = type_info {
+                    if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
                         if blueprint.eq(&Blueprint::new(
                             &RESOURCE_MANAGER_PACKAGE,
                             AUTH_ZONE_BLUEPRINT,

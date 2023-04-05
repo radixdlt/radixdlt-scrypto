@@ -86,8 +86,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_TAKE_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&VaultTakeNonFungiblesInput {
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
                 non_fungible_local_ids,
             })
             .unwrap(),
@@ -116,8 +116,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_CREATE_PROOF_IDENT,
-            scrypto_encode(&VaultCreateProofInput {}).unwrap(),
+            VAULT_CREATE_PROOF_OF_ALL_IDENT,
+            scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -133,8 +133,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
-            scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
+            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -150,8 +150,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_CREATE_PROOF_BY_IDS_IDENT,
-            scrypto_encode(&VaultCreateProofByIdsInput { ids }).unwrap(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -167,8 +167,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_LOCK_FEE_IDENT,
-            scrypto_encode(&VaultLockFeeInput {
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&FungibleVaultLockFeeInput {
                 amount,
                 contingent: false,
             })
@@ -187,29 +187,13 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_LOCK_FEE_IDENT,
-            scrypto_encode(&VaultLockFeeInput {
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&FungibleVaultLockFeeInput {
                 amount,
                 contingent: true,
             })
             .unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    pub fn sys_resource_address<Y, E: Debug + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, E>
-    where
-        Y: ClientSubstateApi<E> + ClientObjectApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            VAULT_GET_RESOURCE_ADDRESS_IDENT,
-            scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
-        )?;
-
         Ok(scrypto_decode(&rtn).unwrap())
     }
 }

@@ -153,25 +153,39 @@ fn build_access_rules(
         withdraw_access_rule,
         withdraw_mutability,
     );
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "recall",
-        recall_access_rule,
-        recall_mutability,
-    );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(TypedModuleId::ObjectState, VAULT_TAKE_IDENT),
         "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_TAKE_NON_FUNGIBLES_IDENT),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+        ),
         "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_LOCK_FEE_IDENT),
+        MethodKey::new(TypedModuleId::ObjectState, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
         "withdraw",
         DenyAll,
+    );
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "recall",
+        recall_access_rule,
+        recall_mutability,
+    );
+    vault_access_rules.set_direct_access_group(
+        MethodKey::new(TypedModuleId::ObjectState, VAULT_RECALL_IDENT),
+        "recall",
+    );
+    vault_access_rules.set_direct_access_group(
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
+        ),
+        "recall",
     );
 
     vault_access_rules.set_method_access_rule_and_mutability(
@@ -185,53 +199,63 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_GET_RESOURCE_ADDRESS_IDENT),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+        ),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(TypedModuleId::ObjectState, VAULT_CREATE_PROOF_OF_ALL_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             TypedModuleId::ObjectState,
-            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
         ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_CREATE_PROOF_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             TypedModuleId::ObjectState,
-            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
         ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_CREATE_PROOF_BY_IDS_IDENT),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_LOCK_AMOUNT_IDENT),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_LOCK_NON_FUNGIBLES_IDENT),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_UNLOCK_AMOUNT_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, VAULT_UNLOCK_NON_FUNGIBLES_IDENT),
+        MethodKey::new(
+            TypedModuleId::ObjectState,
+            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
+        ),
         AllowAll,
         DenyAll,
     );
@@ -250,8 +274,20 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRules::sys_new(resman_access_rules, api)?.0;
-    let vault_access_rules = AccessRules::sys_new(vault_access_rules, api)?.0;
+    let vault_blueprint_name = if resource_address.as_node_id().is_global_fungible_resource() {
+        FUNGIBLE_VAULT_BLUEPRINT
+    } else {
+        NON_FUNGIBLE_VAULT_BLUEPRINT
+    }
+    .to_string();
+
+    let resman_access_rules = AccessRules::sys_new(
+        resman_access_rules,
+        btreemap!(vault_blueprint_name => vault_access_rules),
+        api,
+    )?
+    .0;
+
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
@@ -259,7 +295,6 @@ where
         object_id,
         btreemap!(
             TypedModuleId::AccessRules => resman_access_rules.0,
-            TypedModuleId::AccessRules1 => vault_access_rules.0,
             TypedModuleId::Metadata => metadata.0,
             TypedModuleId::Royalty => royalty.0,
         ),

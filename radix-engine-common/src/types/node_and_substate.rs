@@ -36,6 +36,20 @@ impl NodeId {
         EntityType::from_repr(self.0[0])
     }
 
+    pub fn is_global_fungible_resource(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => matches!(t, EntityType::GlobalFungibleResource),
+            None => false,
+        }
+    }
+
+    pub fn is_internal_fungible_vault(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => matches!(t, EntityType::InternalFungibleVault),
+            None => false,
+        }
+    }
+
     pub fn is_global(&self) -> bool {
         match self.entity_type() {
             Some(t) => t.is_global(),

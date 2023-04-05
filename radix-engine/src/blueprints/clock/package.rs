@@ -77,6 +77,7 @@ impl ClockNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -179,7 +180,7 @@ impl ClockNativePackage {
             MethodKey::new(TypedModuleId::ObjectState, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
-        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
+        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 

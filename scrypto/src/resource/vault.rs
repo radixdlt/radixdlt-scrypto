@@ -90,8 +90,8 @@ impl ScryptoVault for Vault {
         let _rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_LOCK_FEE_IDENT,
-                scrypto_encode(&VaultLockFeeInput {
+                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+                scrypto_encode(&FungibleVaultLockFeeInput {
                     amount,
                     contingent: false,
                 })
@@ -105,8 +105,8 @@ impl ScryptoVault for Vault {
         let _rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_LOCK_FEE_IDENT,
-                scrypto_encode(&VaultLockFeeInput {
+                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+                scrypto_encode(&FungibleVaultLockFeeInput {
                     amount,
                     contingent: true,
                 })
@@ -123,8 +123,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_TAKE_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&VaultTakeNonFungiblesInput {
+                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
                 })
                 .unwrap(),
@@ -147,14 +147,8 @@ impl ScryptoVault for Vault {
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        let info = env.get_object_info(self.0.as_node_id()).unwrap();
+        ResourceAddress::try_from(info.type_parent.unwrap().as_ref()).unwrap()
     }
 
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
@@ -162,8 +156,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&VaultGetNonFungibleLocalIdsInput {}).unwrap(),
+                NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -174,8 +168,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_CREATE_PROOF_IDENT,
-                scrypto_encode(&VaultCreateProofInput {}).unwrap(),
+                VAULT_CREATE_PROOF_OF_ALL_IDENT,
+                scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -186,8 +180,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
-                scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
+                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -198,8 +192,11 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_CREATE_PROOF_BY_IDS_IDENT,
-                scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
+                NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput {
+                    ids: ids.clone(),
+                })
+                .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

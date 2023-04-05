@@ -1,4 +1,4 @@
-use super::call_frame::RENodeVisibilityOrigin;
+use super::call_frame::RefType;
 use super::heap::HeapNode;
 use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
@@ -94,7 +94,7 @@ pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
     // TODO: Cleanup
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RENodeVisibilityOrigin, bool)>;
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
 
     fn kernel_get_current_depth(&self) -> usize;
 

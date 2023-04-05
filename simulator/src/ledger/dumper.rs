@@ -71,7 +71,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
         let blueprint = match type_info {
-            TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
             TypeInfoSubstate::KeyValueStore(_) => panic!("Unexpected"),
         };
 

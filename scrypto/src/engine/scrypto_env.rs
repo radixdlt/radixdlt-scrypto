@@ -6,9 +6,9 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::{Blueprint, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, TypedModuleId};
+use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -131,9 +131,9 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_type_info(&mut self, node_id: &NodeId) -> Result<Blueprint, ClientApiError> {
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, ClientApiError> {
         let bytes = copy_buffer(unsafe {
-            get_object_type_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            get_object_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)

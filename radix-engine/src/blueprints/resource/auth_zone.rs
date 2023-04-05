@@ -102,10 +102,11 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
-                }).to_substates()
+                    type_parent: None,
+                })).to_substates()
             ),
         )?;
 
@@ -141,10 +142,11 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
-                }).to_substates()
+                    type_parent: None,
+                })).to_substates()
             ),
         )?;
 
@@ -180,10 +182,11 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object {
+                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
-                }).to_substates()
+                    type_parent: None,
+                })).to_substates()
             ),
         )?;
 

@@ -1,17 +1,19 @@
+use super::TypeInfoSubstate;
 use crate::interface::SubstateDatabase;
-use radix_engine_interface::blueprints::resource::{ResourceType, VAULT_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
+};
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
-    IndexedScryptoValue, IntoEnumIterator, ModuleId, SubstateKey, TypedModuleId, VaultOffset,
+    IndexedScryptoValue, IntoEnumIterator, ModuleId, ObjectInfo, ResourceAddress, SubstateKey,
+    TypedModuleId, VaultOffset,
 };
 use radix_engine_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
     types::NodeId,
 };
 use sbor::rust::prelude::*;
-
-use super::{TypeInfoSubstate, VaultInfoSubstate};
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
     substate_db: &'s S,
@@ -23,7 +25,7 @@ pub trait StateTreeVisitor {
     fn visit_fungible_vault(
         &mut self,
         _vault_id: NodeId,
-        _info: &VaultInfoSubstate,
+        _address: &ResourceAddress,
         _resource: &LiquidFungibleResource,
     ) {
     }
@@ -31,7 +33,7 @@ pub trait StateTreeVisitor {
     fn visit_non_fungible_vault(
         &mut self,
         _vault_id: NodeId,
-        _info: &VaultInfoSubstate,
+        _address: &ResourceAddress,
         _resource: &LiquidNonFungibleResource,
     ) {
     }
@@ -114,62 +116,55 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            TypeInfoSubstate::Object {
+            TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
+                type_parent,
                 global: _,
-            } => {
+            }) => {
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                    && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
+                    && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                 {
-                    let (value, _version) = self
-                        .substate_db
-                        .get_substate(
-                            &node_id,
-                            TypedModuleId::ObjectState.into(),
-                            &VaultOffset::Info.into(),
-                        )
-                        .expect("Broken database")
-                        .expect("Broken database");
-                    let info: VaultInfoSubstate =
-                        scrypto_decode(&value).expect("Failed to decode vault info");
-                    match &info.resource_type {
-                        ResourceType::Fungible { .. } => {
-                            let liquid: LiquidFungibleResource = scrypto_decode(
-                                &self
-                                    .substate_db
-                                    .get_substate(
-                                        &node_id,
-                                        TypedModuleId::ObjectState.into(),
-                                        &VaultOffset::LiquidFungible.into(),
-                                    )
-                                    .expect("Broken database")
-                                    .expect("Broken database")
-                                    .0,
+                    let liquid: LiquidFungibleResource = scrypto_decode(
+                        &self
+                            .substate_db
+                            .get_substate(
+                                &node_id,
+                                TypedModuleId::ObjectState.into(),
+                                &VaultOffset::LiquidFungible.into(),
                             )
-                            .expect("Failed to decode liquid fungible");
+                            .expect("Broken database")
+                            .expect("Broken database")
+                            .0,
+                    )
+                    .expect("Failed to decode liquid fungible");
 
-                            self.visitor
-                                .visit_fungible_vault(node_id.into(), &info, &liquid);
-                        }
-                        ResourceType::NonFungible { .. } => {
-                            let liquid: LiquidNonFungibleResource = scrypto_decode(
-                                &self
-                                    .substate_db
-                                    .get_substate(
-                                        &node_id,
-                                        TypedModuleId::ObjectState.into(),
-                                        &VaultOffset::LiquidNonFungible.into(),
-                                    )
-                                    .expect("Broken database")
-                                    .expect("Broken database")
-                                    .0,
+                    self.visitor.visit_fungible_vault(
+                        node_id.into(),
+                        &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                        &liquid,
+                    );
+                } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    && blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
+                {
+                    let liquid: LiquidNonFungibleResource = scrypto_decode(
+                        &self
+                            .substate_db
+                            .get_substate(
+                                &node_id,
+                                TypedModuleId::ObjectState.into(),
+                                &VaultOffset::LiquidNonFungible.into(),
                             )
-                            .expect("Failed to decode liquid non-fungible");
+                            .expect("Broken database")
+                            .expect("Broken database")
+                            .0,
+                    )
+                    .expect("Failed to decode liquid non-fungible");
 
-                            self.visitor
-                                .visit_non_fungible_vault(node_id.into(), &info, &liquid);
-                        }
-                    }
+                    self.visitor.visit_non_fungible_vault(
+                        node_id.into(),
+                        &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                        &liquid,
+                    );
                 } else {
                     for t in TypedModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)

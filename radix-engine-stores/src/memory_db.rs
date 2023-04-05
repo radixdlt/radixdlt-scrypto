@@ -30,9 +30,6 @@ impl InMemorySubstateDatabase {
                 TypedModuleId::AccessRules.into() => ModuleConfig {
                     iteration_enabled: false,
                 },
-                TypedModuleId::AccessRules1.into() => ModuleConfig {
-                    iteration_enabled: false,
-                }
             ),
             substates: btreemap!(),
         }

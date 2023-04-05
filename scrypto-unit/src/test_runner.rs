@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::blueprints::epoch_manager::*;
-use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
@@ -405,24 +404,11 @@ impl TestRunner {
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {
-        if let Some(output) = self
-            .substate_db()
-            .get_substate(
-                &vault_id,
-                TypedModuleId::ObjectState.into(),
-                &VaultOffset::Info.into(),
-            )
-            .expect("Database misconfigured")
-        {
-            let info: VaultInfoSubstate = scrypto_decode(&output.0).unwrap();
-            if info.resource_type.is_fungible() {
-                self.inspect_fungible_vault(vault_id)
-            } else {
-                self.inspect_non_fungible_vault(vault_id)
-                    .map(|ids| ids.len().into())
-            }
+        if vault_id.is_internal_fungible_vault() {
+            self.inspect_fungible_vault(vault_id)
         } else {
-            None
+            self.inspect_non_fungible_vault(vault_id)
+                .map(|ids| ids.len().into())
         }
     }
 
@@ -1251,7 +1237,7 @@ impl TestRunner {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
-                    TypedModuleId::AccessRules | TypedModuleId::AccessRules1 => (
+                    TypedModuleId::AccessRules => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
@@ -1282,7 +1268,7 @@ impl TestRunner {
                         .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object { blueprint, .. } => (
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                                 blueprint.package_address,
                                 blueprint.blueprint_name,
                                 *local_type_index,
@@ -1451,6 +1437,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
     package_schema.blueprints.insert(
         blueprint_name.to_string(),
         BlueprintSchema {
+            parent: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
