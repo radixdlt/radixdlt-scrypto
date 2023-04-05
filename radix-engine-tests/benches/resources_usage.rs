@@ -134,7 +134,6 @@ fn transfer_test(c: &mut Criterion) {
     };
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(
         &scrypto_interpreter,
-        NetworkDefinition::simulator(),
     );
 
     // Create a key pair
