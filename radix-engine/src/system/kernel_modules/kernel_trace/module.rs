@@ -88,12 +88,13 @@ impl KernelModule for KernelTraceModule {
         node_init: &NodeInit,
         node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Creating node: id = {:?}, entity type = {:?}",
+        let message = format!(
+            "Creating node: id = {:?}, type = {:?}",
             node_id,
             node_id.entity_type()
-        );
+        )
+        .red();
+        log!(api, "{}", message);
         Ok(())
     }
 

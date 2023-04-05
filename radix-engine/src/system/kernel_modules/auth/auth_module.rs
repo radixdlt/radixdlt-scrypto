@@ -49,8 +49,9 @@ pub struct AuthModule {
 
 impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
+        // FIXME update the rule to be consistent with internal design
         match actor {
-            Actor::Method { node_id, .. } => node_id.is_global(),
+            Actor::Method { node_id, .. } => node_id.is_global_component(),
             Actor::Function { .. } => true,
             Actor::VirtualLazyLoad { .. } => true,
         }

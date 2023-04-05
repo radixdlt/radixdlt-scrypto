@@ -784,7 +784,7 @@ impl TestRunner {
         account: ComponentAddress,
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
-        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
+        let package = self.compile_and_publish("/Users/yulongwu/workspace/radixdlt-scrypto/radix-engine-tests/tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)

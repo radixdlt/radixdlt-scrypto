@@ -29,7 +29,7 @@ use sbor::rust::vec;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
     /// A vault where the asset controlled by the access controller lives.
-    pub controlled_asset: NodeId,
+    pub controlled_asset: Own,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
     /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
@@ -45,7 +45,7 @@ pub struct AccessControllerSubstate {
 }
 
 impl AccessControllerSubstate {
-    pub fn new(controlled_asset: NodeId, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
+    pub fn new(controlled_asset: Own, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         Self {
             controlled_asset,
             timed_recovery_delay_in_minutes,
@@ -427,7 +427,7 @@ impl AccessControllerNativePackage {
         };
 
         let substate =
-            AccessControllerSubstate::new(vault.0 .0, input.timed_recovery_delay_in_minutes);
+            AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
         let object_id = api.new_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
