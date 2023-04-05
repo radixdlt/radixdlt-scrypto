@@ -12,7 +12,11 @@ use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{NodeId, TypedModuleId};
+use sbor::rust::collections::BTreeMap;
+use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 
 pub struct AccessRules(pub Own);
 
