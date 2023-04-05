@@ -3,11 +3,11 @@
 set -e
 set -u
 
+SUMMARY_FILE=crash_summary.txt
 ARTIFACT_NAME=fuzz_transaction.tgz
-url=$1
-run_id=${url##*/}
-
-dir=run_${run_id}
+url_or_dir=$1
+gh_run_id=
+local_dir=
 
 function usage() {
     echo "$0 <run-id>"
@@ -15,14 +15,13 @@ function usage() {
     echo "The script gets Github run id or URL and checks fuzzing status."
     echo "It also tries to reproduce the crashes if this is the case."
     echo "This is to classify crashes and filter out duplicates."
-    echo "  <run-id>  - Github action run id or url"
-    echo "  <run-id>  - Github action run id or url"
+    echo "  <run-id|run-url|local-afl-output-dir>  - Github action run id or url or AFL output directory"
     exit
 }
 
-function validate_run() {
+function validate_gh_run() {
     local view=
-    view=$(gh run view $run_id --json status,conclusion,url,workflowName,headBranch,headSha,displayTitle)
+    view=$(gh run view $gh_run_id --json status,conclusion,url,workflowName,headBranch,headSha,displayTitle)
     status=$(jq -r '.status' <<< $view)
     conclusion=$(jq -r '.conclusion' <<< $view)
     url=$(jq -r '.url' <<< $view)
@@ -32,15 +31,15 @@ function validate_run() {
 
     title="$(jq -r '.displayTitle' <<< $view)"
     if [ $status = "in_progress" ] ; then
-        echo "run $run_id still in progress - come back later. Details: $url"
+        echo "run $gh_run_id still in progress - come back later. Details: $url"
         exit 1
     fi
     if [ $conclusion = "failure" ] ; then
-        echo "run $run_id failed - nothing to process. Details: $url"
+        echo "run $gh_run_id failed - nothing to process. Details: $url"
         exit 1
     fi
     if [ $name != "Fuzzing" ] ; then
-        echo "run $run_id is a '$name' not 'Fuzzing' run. Details: $url"
+        echo "run $gh_run_id is a '$name' not 'Fuzzing' run. Details: $url"
         exit 1
     fi
 
@@ -50,62 +49,60 @@ function validate_run() {
     echo "  sha   : $sha"
 }
 
-function get_artifacs() {
-    echo "Seting up a work dir: $dir"
-    mkdir -p $dir
+function get_gh_artifacs() {
+    echo "Seting up a work dir: $work_dir"
+    mkdir -p $work_dir
 
     echo "Downloading $ARTIFACT_NAME"
-    gh run download $run_id -n $ARTIFACT_NAME -D $dir
+    gh run download $gh_run_id -n $ARTIFACT_NAME -D $work_dir
 
-    tar xf $dir/$ARTIFACT_NAME -C $dir
-    rm $dir/$ARTIFACT_NAME
+    tar xf $work_dir/$ARTIFACT_NAME -C $work_dir
+    rm $work_dir/$ARTIFACT_NAME
 }
 
-function get_summary() {
+function show_gh_summary() {
     local d=${1:-}
-    local with_files=${2:-yes}
+
+    echo "url     : $url"
     cat $d/afl/summary | awk '/Summary stats/,/Time without/'
     echo "Fuzzing stats file: $d/afl/summary"
-
-    if [ $with_files = "yes" ] ; then
-        echo "  crash/hang files:"
-        find $d/afl/*/*/* -name "id*" | xargs -n1 -I {} echo "    "{}
-    fi
 }
 
-prefixoutput() {
-    local prefix="    "
-    "$@" > >(sed "s/^/$prefix (stdout): /") 2> >(sed "s/^/$prefix (stderr): /" >&2)
+function show_crash_files() {
+    local d=${1:-$afl_dir}
+    echo "Crash/hang files:"
+    find ${d}/*/* -type f ! -path */queue/* -name "id*" | xargs -n1 -I {} echo "    "{}
 }
 
 function inspect_crashes() {
-    pushd $dir
-    work_dir=$(pwd)
-    #files=$(find $work_dir/afl/*/*/* -name "id*")
-    files=$(find afl/*/*/* -name "id*")
+    pushd $work_dir > /dev/null
+    files=$(find ${afl_dir}/*/* -type f ! -path */queue/* -name "id*")
 
     if [ "$files" != "" ] ; then
         echo "Inspecting found crashes"
-        if [ ! -d radixdlt-scrypto ] ; then
-            echo "Checking out the repository"
-            git clone git@github.com:radixdlt/radixdlt-scrypto.git radixdlt-scrypto
+        repo_dir=radixdlt-scrypto/fuzz-tests
+        if [ "$gh_run_id" != "" ] ; then
+            if [ ! -d radixdlt-scrypto ] ; then
+                echo "Checking out the repository"
+                git clone git@github.com:radixdlt/radixdlt-scrypto.git radixdlt-scrypto
+            fi
+            git -C radixdlt-scrypto checkout $sha
+        else
+            repo_path=$(cd ../.. ; pwd)
+            ln -s $repo_path radixdlt-scrypto
         fi
-        git -C radixdlt-scrypto checkout $sha
-
-        pushd radixdlt-scrypto/fuzz-tests
+        pushd $repo_dir > /dev/null
         echo "Building simple fuzzer"
         ./fuzz.sh simple build
-        popd
+        popd > /dev/null
         echo "Checking crash/hangs files"
         for f in $files ; do
             # calling target directly to get rid of unnecessary debugs
             #./fuzz.sh simple run ../../$f >/dev/null || true
-            cmd="radixdlt-scrypto/fuzz-tests/target/release/transaction $f"
+            cmd="${repo_dir}/target/release/transaction $f"
             echo
             echo "file    : $f"
             echo "command : $cmd"
-    #        echo "output  :"
-    #        prefixoutput $cmd || true
             $cmd >output.log 2>&1 || true
             panic=$(grep panic output.log || true)
             echo "panic   : $panic"
@@ -119,33 +116,58 @@ function inspect_crashes() {
         echo "No crashes found"
     fi
 
-    cat <<EOF > summary.txt
-url     : $url
-$(get_summary . no)
-
+    if [ "$gh_run_id" != "" ] ; then
+        show_gh_summary . > $SUMMARY_FILE
+    fi
+    cat <<EOF >> $SUMMARY_FILE
 Crash/hang info
 command : radixdlt-scrypto/fuzz-tests/target/release/transaction <file>
 $(cat *.panic)
 EOF
     rm -f output.log *.panic
 
-    popd
+    popd > /dev/null
 
 cat <<EOF
 
-## Fuzzing summary
-$(cat $dir/summary.txt)
+## Fuzzing crash summary
+$(cat $work_dir/$SUMMARY_FILE)
 
 ## Processing info
-work dir: $dir
-summary : $dir/summary.txt
+work dir: $work_dir
+summary : $work_dir/$SUMMARY_FILE
 EOF
+    cp $work_dir/$SUMMARY_FILE $(dirname $afl_dir)
 }
 
-if [ $url = "help" -o $url = "h" ] ; then
+
+if [ $url_or_dir = "help" -o $url_or_dir = "h" ] ; then
     usage
 fi
-validate_run
-get_artifacs
-get_summary $dir
+# check if argument is an existing AFL output directory
+if [ -d $url_or_dir ] ; then
+    if ls -A ${url_or_dir}/*/fuzzer_stats > /dev/null ; then
+        local_dir=$url_or_dir
+        afl_dir=$local_dir
+        work_dir=local_$(date -u  +%Y%m%d%H%M%S)
+    else
+        echo "This is not AFL output directory"
+    fi
+else
+    gh_run_id=${url_or_dir##*/}
+    work_dir=run_${gh_run_id}
+    afl_dir="afl/*"
+fi
+
+
+if [ "$gh_run_id" != "" ] ; then
+    validate_gh_run
+    get_gh_artifacs
+    show_gh_summary $work_dir
+else
+    mkdir -p $work_dir
+    afl_path=$(cd $(dirname $afl_dir) ; pwd)
+    ln -s $afl_path $work_dir
+fi
+show_crash_files $work_dir
 inspect_crashes
