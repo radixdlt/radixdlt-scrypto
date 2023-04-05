@@ -24,12 +24,9 @@ impl TypedInMemorySubstateStore {
         }
     }
 
-    pub fn with_bootstrap<W: WasmEngine>(
-        scrypto_interpreter: &ScryptoInterpreter<W>,
-        network: NetworkDefinition,
-    ) -> Self {
+    pub fn with_bootstrap<W: WasmEngine>(scrypto_interpreter: &ScryptoInterpreter<W>) -> Self {
         let mut substate_store = Self::new();
-        bootstrap(&mut substate_store, scrypto_interpreter, network);
+        bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
     }
 

@@ -71,7 +71,6 @@ fn next_round_with_validator_auth_succeeds() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         1u64,
         rounds_per_epoch,
@@ -109,7 +108,6 @@ fn next_epoch_with_validator_auth_succeeds() {
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
@@ -152,7 +150,6 @@ fn register_validator_with_auth_succeeds() {
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -191,7 +188,6 @@ fn register_validator_without_auth_fails() {
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -228,7 +224,6 @@ fn unregister_validator_with_auth_succeeds() {
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -267,7 +262,6 @@ fn unregister_validator_without_auth_fails() {
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -303,7 +297,6 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             pub_key,
             Decimal::one(),
@@ -384,7 +377,6 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
@@ -436,7 +428,6 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
@@ -508,7 +499,6 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::one(),
@@ -568,7 +558,6 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::one(),
@@ -640,7 +629,6 @@ fn cannot_claim_unstake_immediately() {
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::from(10),
@@ -703,7 +691,6 @@ fn can_claim_unstake_after_epochs() {
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::from(10),
@@ -775,7 +762,6 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::from(10),

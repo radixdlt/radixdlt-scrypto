@@ -1,8 +1,6 @@
-use scrypto::address::Bech32Encoder;
 use scrypto::api::node_modules::metadata::MetadataValue;
 use scrypto::blueprints::account::AccountDepositInput;
 use scrypto::blueprints::epoch_manager::*;
-use scrypto::network::NetworkDefinition;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
@@ -43,7 +41,6 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn init(
-            network: NetworkDefinition,
             mut genesis_data: GenesisData,
             mut whole_lotta_xrd: Bucket,
             validator_owner_token: [u8; 26], // TODO: Clean this up
@@ -52,8 +49,6 @@ mod genesis_helper {
             rounds_per_epoch: u64,
             num_unstake_epochs: u64,
         ) -> Bucket {
-            let bech32_encoder = Bech32Encoder::new(&network);
-
             // Create the resources
             for (resource_idx, resource) in genesis_data.resources.into_iter().enumerate() {
                 let mut initial_supply = Decimal::ZERO;
@@ -71,13 +66,7 @@ mod genesis_helper {
                 let owner = resource
                     .owner_with_mint_and_burn_rights
                     .map(|idx| genesis_data.accounts[idx].clone());
-                Self::create_resource(
-                    &bech32_encoder,
-                    resource,
-                    initial_supply,
-                    initial_allocation,
-                    owner,
-                );
+                Self::create_resource(resource, initial_supply, initial_allocation, owner);
             }
 
             // Create the epoch manager with initial validator set...
@@ -152,7 +141,6 @@ mod genesis_helper {
         }
 
         fn create_resource(
-            bech32_encoder: &Bech32Encoder,
             resource: GenesisResource,
             initial_supply: Decimal,
             initial_allocation: BTreeMap<ComponentAddress, Decimal>,
@@ -183,13 +171,6 @@ mod genesis_helper {
                     .metadata(
                         "name",
                         format!("Resource Owner Badge ({})", resource.symbol),
-                    )
-                    .metadata(
-                        "description",
-                        format!(
-                            "Owner badge for resource {}",
-                            bech32_encoder.encode_resource_address_to_string(&resource_address)
-                        ),
                     )
                     .mint_initial_supply(1);
 

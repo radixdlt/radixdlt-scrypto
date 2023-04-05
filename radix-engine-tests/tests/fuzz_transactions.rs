@@ -30,10 +30,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut store = TypedInMemorySubstateStore::with_bootstrap(
-        &scrypto_interpreter,
-        NetworkDefinition::simulator(),
-    );
+    let mut store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
     let execution_config = ExecutionConfig::default();
     let fee_reserve_config = FeeReserveConfig::default();
 

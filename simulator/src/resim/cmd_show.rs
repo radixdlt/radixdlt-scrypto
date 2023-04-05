@@ -15,11 +15,7 @@ pub struct Show {
 impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_store = RadixEngineDB::with_bootstrap(
-            get_data_dir()?,
-            &scrypto_interpreter,
-            NetworkDefinition::simulator(),
-        );
+        let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
         if let Ok(package_address) =

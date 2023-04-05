@@ -109,7 +109,6 @@ pub struct GenesisResource {
 }
 
 pub fn create_genesis(
-    network: NetworkDefinition,
     genesis_data: GenesisData,
     initial_epoch: u64,
     rounds_per_epoch: u64,
@@ -646,7 +645,6 @@ pub fn create_genesis(
             blueprint_name: "GenesisHelper".to_string(),
             function_name: "init".to_string(),
             args: manifest_args!(
-                network,
                 genesis_data,
                 whole_lotta_xrd,
                 olympia_validator_token_address,
@@ -698,7 +696,6 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
 pub fn bootstrap<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    network: NetworkDefinition,
 ) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
@@ -707,7 +704,6 @@ where
     bootstrap_with_genesis_data(
         substate_store,
         scrypto_interpreter,
-        network,
         GenesisData::empty(),
         1u64,
         1u64,
@@ -718,7 +714,6 @@ where
 pub fn bootstrap_with_genesis_data<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    network: NetworkDefinition,
     genesis_data: GenesisData,
     initial_epoch: u64,
     rounds_per_epoch: u64,
@@ -737,7 +732,6 @@ where
         .is_none()
     {
         let genesis_transaction = create_genesis(
-            network,
             genesis_data,
             initial_epoch,
             rounds_per_epoch,
@@ -793,13 +787,7 @@ mod tests {
             xrd_balances: BTreeMap::new(),
             stakes,
         };
-        let genesis_transaction = create_genesis(
-            NetworkDefinition::simulator(),
-            genesis_data,
-            1u64,
-            1u64,
-            1u64,
-        );
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -841,13 +829,7 @@ mod tests {
             xrd_balances,
             stakes: BTreeMap::new(),
         };
-        let genesis_transaction = create_genesis(
-            NetworkDefinition::simulator(),
-            genesis_data,
-            1u64,
-            1u64,
-            1u64,
-        );
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -906,13 +888,7 @@ mod tests {
             stakes: BTreeMap::new(),
         };
 
-        let genesis_transaction = create_genesis(
-            NetworkDefinition::simulator(),
-            genesis_data,
-            1u64,
-            1u64,
-            1u64,
-        );
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -1023,13 +999,7 @@ mod tests {
             stakes,
         };
 
-        let genesis_transaction = create_genesis(
-            NetworkDefinition::simulator(),
-            genesis_data,
-            1u64,
-            1u64,
-            1u64,
-        );
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,

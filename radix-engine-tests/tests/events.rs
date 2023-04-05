@@ -615,7 +615,6 @@ fn epoch_manager_round_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         1u64,
         rounds_per_epoch,
@@ -662,7 +661,6 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         1u64,
         rounds_per_epoch,
@@ -716,7 +714,6 @@ fn validator_registration_emits_correct_event() {
         .unwrap()
         .public_key();
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
@@ -771,7 +768,6 @@ fn validator_unregistration_emits_correct_event() {
         .unwrap()
         .public_key();
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
@@ -837,7 +833,6 @@ fn validator_staking_emits_correct_event() {
         .unwrap()
         .public_key();
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
@@ -968,7 +963,6 @@ fn validator_unstake_emits_correct_events() {
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::from(10),
@@ -1128,7 +1122,6 @@ fn validator_claim_xrd_emits_correct_events() {
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::single_validator_and_staker(
             validator_pub_key,
             Decimal::from(10),
@@ -1268,7 +1261,6 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        NetworkDefinition::simulator(),
         GenesisData::empty(),
         initial_epoch,
         rounds_per_epoch,
