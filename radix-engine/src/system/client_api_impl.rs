@@ -83,8 +83,6 @@ where
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
                         .map_err(|_| {
-                            println!("!!! {:?}", schema);
-                            println!("!!! {:?}", IndexedScryptoValue::from_slice(&buffer));
                             RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
                         })?;
 
@@ -257,8 +255,6 @@ where
         modules: BTreeMap<TypedModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
-        println!("!!! Global {:?}", address);
-
         // Check module configuration
         let module_ids = modules.keys().cloned().collect::<BTreeSet<TypedModuleId>>();
         let standard_object = btreeset!(
@@ -443,8 +439,6 @@ where
 
         let entity_type = EntityType::InternalKeyValueStore;
         let node_id = self.kernel_allocate_node_id(entity_type)?;
-
-        println!("!!! KVStore {:?}, {:?}", node_id, schema.schema);
 
         self.kernel_create_node(
             node_id,
