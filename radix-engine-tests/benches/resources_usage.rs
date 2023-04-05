@@ -132,9 +132,7 @@ fn transfer_test(c: &mut Criterion) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(
-        &scrypto_interpreter,
-    );
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
