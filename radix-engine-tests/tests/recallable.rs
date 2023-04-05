@@ -16,7 +16,7 @@ fn non_existing_vault_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .recall(
             LocalAddress::new_unchecked(non_existing_vault_id),
             Decimal::one(),
@@ -49,7 +49,7 @@ fn cannot_take_on_non_recallable_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             account,
@@ -81,7 +81,7 @@ fn can_take_on_recallable_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             other_account,

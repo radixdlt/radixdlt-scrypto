@@ -12,7 +12,7 @@ fn can_insert_in_child_nodes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "SuperKeyValueStore",
@@ -34,7 +34,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -56,7 +56,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "CyclicMap", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -80,7 +80,7 @@ fn self_cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CyclicMap",
@@ -109,7 +109,7 @@ fn cannot_remove_kv_stores() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -122,7 +122,7 @@ fn cannot_remove_kv_stores() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(component_address, "clear_vector", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -144,7 +144,7 @@ fn cannot_overwrite_kv_stores() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -157,7 +157,7 @@ fn cannot_overwrite_kv_stores() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(component_address, "overwrite_kv_store", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -181,7 +181,7 @@ fn create_kv_store_and_get() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -203,7 +203,7 @@ fn create_kv_store_and_put() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -225,7 +225,7 @@ fn can_reference_in_memory_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "Precommitted",
@@ -247,7 +247,7 @@ fn can_reference_deep_in_memory_value() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "Precommitted",
@@ -269,7 +269,7 @@ fn can_reference_deep_in_memory_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "Precommitted",
@@ -291,7 +291,7 @@ fn cannot_directly_reference_inserted_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -320,7 +320,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -349,7 +349,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -378,7 +378,7 @@ fn multiple_reads_should_work() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "MultipleReads",

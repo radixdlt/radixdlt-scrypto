@@ -58,36 +58,5 @@ pub fn is_native_package(address: PackageAddress) -> bool {
 pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 64);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
-/// The address of the faucet component, test network only.
-pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
-    EntityType::GlobalGenericComponent as u8,
-    204,
-    40,
-    81,
-    111,
-    138,
-    130,
-    248,
-    245,
-    40,
-    168,
-    117,
-    97,
-    17,
-    60,
-    50,
-    63,
-    249,
-    31,
-    156,
-    221,
-    189,
-    5,
-    249,
-    179,
-    62,
-    138,
-]);
-
 pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
 pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);

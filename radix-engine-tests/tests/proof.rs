@@ -17,7 +17,7 @@ fn can_create_clone_and_drop_bucket_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account, resource_address, 1.into())
         .take_from_worktop(resource_address, |builder, bucket_id| {
             builder.call_function(
@@ -68,7 +68,7 @@ fn can_create_clone_and_drop_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
@@ -108,7 +108,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -153,7 +153,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     ]);
     let proof_non_fungible_local_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
@@ -177,7 +177,7 @@ fn can_use_bucket_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account, auth_resource_address, 1.into())
         .withdraw_from_account(account, burnable_resource_address, 1.into())
         .take_from_worktop(auth_resource_address, |builder, auth_bucket_id| {
@@ -231,7 +231,7 @@ fn can_use_vault_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account, burnable_resource_address, 1.into())
         .take_from_worktop(burnable_resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -261,7 +261,7 @@ fn can_create_proof_from_account_and_pass_on() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account_by_amount(account, resource_address, 1.into())
         .pop_from_auth_zone(|builder, proof_id| {
             builder.call_function(
@@ -292,7 +292,7 @@ fn cant_move_restricted_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .create_proof_from_account_by_amount(account, resource_address, 1.into())
         .pop_from_auth_zone(|builder, proof_id| {
             builder.call_function(
@@ -330,7 +330,7 @@ fn can_move_locked_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, resource_address, 1.into())
         .take_from_worktop(resource_address, |builder, bucket_id| {
             builder.call_function(
@@ -381,7 +381,7 @@ fn can_compose_bucket_and_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, resource_address, 99u32.into())
         .take_from_worktop_by_amount(99u32.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -426,7 +426,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, resource_address, 99u32.into())
         .take_from_worktop_by_amount(99u32.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -470,7 +470,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
@@ -534,7 +534,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -557,7 +557,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .create_proof_from_account_by_ids(
             account,
             resource_address,

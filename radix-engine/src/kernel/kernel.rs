@@ -21,6 +21,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
@@ -283,6 +284,16 @@ where
         &mut self,
         resolved: Box<ResolvedInvocation<X>>,
     ) -> Result<X::Output, RuntimeError> {
+        println!(
+            "{}",
+            format!(
+                "!!!! {:?}, {:?}",
+                resolved.as_ref().resolved_actor.blueprint().package_address,
+                resolved.as_ref().resolved_actor.blueprint().blueprint_name
+            )
+            .green()
+        );
+
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
         if depth == 0 {

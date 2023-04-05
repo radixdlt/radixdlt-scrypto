@@ -24,7 +24,7 @@ fn missing_memory_should_cause_error() {
             "#,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
             PackageSchema::default(),
@@ -56,7 +56,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package, "LargeReturnSize", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -79,7 +79,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package, "MaxReturnSize", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -102,7 +102,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package, "ZeroReturnSize", "f", manifest_args!())
         .build();
 
@@ -120,7 +120,7 @@ fn test_basic_package() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
             single_function_package_schema("Test", "f"),
@@ -164,7 +164,7 @@ fn test_basic_package_missing_export() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
             package_schema,

@@ -11,7 +11,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "DataAccess",
@@ -38,7 +38,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "DataAccess",
@@ -65,7 +65,7 @@ fn should_be_able_to_read_component_info() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "DataAccess",

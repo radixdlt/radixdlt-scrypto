@@ -132,7 +132,8 @@ fn transfer_test(c: &mut Criterion) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_db = InMemorySubstateDatabase::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
@@ -142,7 +143,7 @@ fn transfer_test(c: &mut Criterion) {
     let accounts = (0..2)
         .map(|_| {
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 100.into())
+                .lock_fee(test_runner.faucet_component(), 100.into())
                 .new_account_advanced(rule!(require(NonFungibleGlobalId::from_public_key(
                     &public_key
                 ))))
@@ -159,8 +160,8 @@ fn transfer_test(c: &mut Criterion) {
             .new_component_addresses()[0];
 
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 100.into())
-                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                .lock_fee(test_runner.faucet_component(), 100.into())
+                .call_method(test_runner.faucet_component(), "free", manifest_args!())
                 .call_method(
                     account,
                     "deposit_batch",
@@ -186,8 +187,8 @@ fn transfer_test(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_method(
             account1,
             "deposit_batch",
@@ -209,7 +210,7 @@ fn transfer_test(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
+        .lock_fee(test_runner.faucet_component(), 100.into())
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,

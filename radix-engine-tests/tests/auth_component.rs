@@ -21,7 +21,7 @@ fn cannot_make_cross_component_process_call_dataout_authorization() {
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -33,7 +33,7 @@ fn cannot_make_cross_component_process_call_dataout_authorization() {
     let secured_component = receipt.expect_commit(true).new_component_addresses()[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -46,7 +46,7 @@ fn cannot_make_cross_component_process_call_dataout_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             my_component,
             "cross_component_call",
@@ -75,7 +75,7 @@ fn can_make_cross_component_process_call_data_authorization() {
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -87,7 +87,7 @@ fn can_make_cross_component_process_call_data_authorization() {
     let secured_component = receipt.expect_commit(true).new_component_addresses()[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -99,7 +99,7 @@ fn can_make_cross_component_process_call_data_authorization() {
     let my_component = receipt.expect_commit(true).new_component_addresses()[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_non_fungibles_from_account(account, auth, &BTreeSet::from([auth_local_id]))
         .call_method(
             my_component,
@@ -115,7 +115,7 @@ fn can_make_cross_component_process_call_data_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             my_component,
             "cross_component_call",
@@ -144,7 +144,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -156,7 +156,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let secured_component = receipt.expect_commit(true).new_component_addresses()[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -169,7 +169,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, auth)
         .call_method(
             my_component,

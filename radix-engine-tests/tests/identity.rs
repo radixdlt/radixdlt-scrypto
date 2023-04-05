@@ -20,7 +20,7 @@ fn cannot_securify_in_advanced_mode() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
@@ -54,7 +54,7 @@ fn can_securify_from_virtual_identity() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
@@ -81,7 +81,7 @@ fn cannot_securify_twice() {
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
@@ -100,7 +100,7 @@ fn cannot_securify_twice() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
@@ -132,7 +132,7 @@ fn can_set_metadata_after_securify() {
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address: identity_address,
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
@@ -151,7 +151,7 @@ fn can_set_metadata_after_securify() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, IDENTITY_OWNER_TOKEN)
         .set_metadata(
             identity_address.into(),
@@ -182,7 +182,7 @@ fn can_set_metadata_on_securified_identity() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, IDENTITY_OWNER_TOKEN)
         .set_metadata(
             identity_address.into(),

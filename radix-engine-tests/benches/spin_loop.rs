@@ -11,8 +11,8 @@ fn bench_spin_loop(c: &mut Criterion) {
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 10u32.into())
-                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                .lock_fee(test_runner.faucet_component(), 10u32.into())
+                .call_method(test_runner.faucet_component(), "free", manifest_args!())
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                     builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                     builder
@@ -27,7 +27,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
         .call_method(
-            FAUCET_COMPONENT,
+            test_runner.faucet_component(),
             "lock_fee",
             manifest_args!(Decimal::from(10)),
         )

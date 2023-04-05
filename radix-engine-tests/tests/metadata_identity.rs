@@ -16,7 +16,7 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .set_metadata(
             component_address.into(),
             "name".to_string(),
@@ -54,7 +54,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .set_metadata(
             component_address.into(),
             "name".to_string(),

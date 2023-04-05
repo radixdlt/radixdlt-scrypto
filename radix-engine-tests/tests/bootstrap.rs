@@ -1,5 +1,5 @@
 use radix_engine::kernel::interpreters::*;
-use radix_engine::system::bootstrap::{bootstrap, create_genesis, genesis_result};
+use radix_engine::system::bootstrap::{bootstrap, create_genesis};
 use radix_engine::transaction::{execute_transaction, ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -15,8 +15,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     let transaction_receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
-    let genesis_receipt = genesis_result(&transaction_receipt);
-    assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
+    transaction_receipt.expect_commit_success();
 }
 
 #[test]

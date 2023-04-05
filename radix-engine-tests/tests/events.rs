@@ -123,7 +123,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 
     let (code, schema) = Compile::compile("./tests/blueprints/events_invalid");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .publish_package_advanced(
             code,
             schema,
@@ -164,7 +164,7 @@ fn local_type_index_with_misleading_name_fails() {
     );
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .publish_package_advanced(
             code,
             schema,
@@ -198,7 +198,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .build();
 
     // Act
@@ -232,7 +232,7 @@ fn vault_fungible_recall_emits_correct_events() {
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .recall(LocalAddress::new_unchecked(vault_id.into()), 1.into())
         .call_method(
             account,
@@ -317,7 +317,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
@@ -336,7 +336,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .recall(LocalAddress::new_unchecked(vault_id.into()), 1.into())
         .call_method(
             account,
@@ -419,7 +419,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
             18,
             Default::default(),
@@ -490,7 +490,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         access_rules.insert(ResourceMethodAuthKey::Burn, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_fungible_resource(18, Default::default(), access_rules, None)
             .call_method(
                 account,
@@ -503,7 +503,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     };
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .mint_fungible(resource_address, 10.into())
         .burn_from_worktop(10.into(), resource_address)
         .build();
@@ -575,7 +575,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         access_rules.insert(ResourceMethodAuthKey::Burn, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
@@ -594,7 +594,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .mint_non_fungible(resource_address, [(id.clone(), EmptyStruct {})])
         .burn_from_worktop(1.into(), resource_address)
         .build();
@@ -785,7 +785,7 @@ fn validator_registration_emits_correct_event() {
     // Act
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
@@ -845,7 +845,7 @@ fn validator_unregistration_emits_correct_event() {
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
@@ -857,7 +857,7 @@ fn validator_unregistration_emits_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .unregister_validator(validator_address)
         .build();
@@ -917,7 +917,7 @@ fn validator_staking_emits_correct_event() {
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
@@ -929,7 +929,7 @@ fn validator_staking_emits_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
@@ -1066,7 +1066,7 @@ fn validator_unstake_emits_correct_events() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
             account_with_lp,
             validator_substate.liquidity_token,
@@ -1237,7 +1237,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
             account_with_lp,
             validator_substate.liquidity_token,
@@ -1261,7 +1261,7 @@ fn validator_claim_xrd_emits_correct_events() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
         .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
@@ -1389,7 +1389,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .register_validator(validator_address)
         .build();
@@ -1401,7 +1401,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .call_method(
             validator_address,
@@ -1482,7 +1482,7 @@ fn setting_metadata_emits_correct_events() {
     let resource_address = create_all_allowed_resource(&mut test_runner);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .set_metadata(
             resource_address.into(),
             "key".into(),

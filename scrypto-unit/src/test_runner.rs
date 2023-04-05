@@ -12,7 +12,7 @@ use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
-use radix_engine::system::bootstrap::{bootstrap, create_genesis};
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -39,7 +39,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
@@ -157,29 +157,50 @@ impl TestRunnerBuilder {
             wasm_metering_config: WasmMeteringConfig::V0,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        bootstrap(&mut substate_db, &scrypto_interpreter);
 
-        let mut runner = TestRunner {
+        // Bootstrap
+        let transaction_receipt = if let Some(genesis) = self.custom_genesis {
+            let transaction_receipt = execute_transaction(
+                &substate_db,
+                &scrypto_interpreter,
+                &FeeReserveConfig::default(),
+                &ExecutionConfig::genesis(),
+                &genesis.get_executable(btreeset![AuthAddresses::system_role()]),
+            );
+
+            let commit_result = transaction_receipt.expect_commit(true);
+            substate_db
+                .commit(&commit_result.state_updates)
+                .expect("Database misconfigured");
+            transaction_receipt
+        } else {
+            bootstrap(&mut substate_db, &scrypto_interpreter).unwrap()
+        };
+        let faucet_component = transaction_receipt
+            .expect_commit_success()
+            .new_component_addresses()
+            .last()
+            .cloned()
+            .unwrap();
+
+        // Note that 0 is not a valid private key
+        let next_private_key = 100;
+
+        // Starting from non-zero considering that bootstrap might have used a few.
+        let next_transaction_nonce = 100;
+
+        TestRunner {
             scrypto_interpreter,
             substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
             intent_hash_manager: TestIntentHashManager::new(),
-            next_private_key: 1, // 0 is invalid
-            next_transaction_nonce: 0,
+            next_private_key,
+            next_transaction_nonce,
             trace: self.trace,
-        };
-        let genesis = self
-            .custom_genesis
-            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
-        let receipt = runner.execute_transaction_with_config(
-            genesis.get_executable(btreeset![AuthAddresses::system_role()]),
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
-        );
-        receipt.expect_commit_success();
-        runner
+            faucet_component,
+        }
     }
 }
 
@@ -191,6 +212,7 @@ pub struct TestRunner {
     next_transaction_nonce: u64,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
+    faucet_component: ComponentAddress,
 }
 
 impl TestRunner {
@@ -203,6 +225,10 @@ impl TestRunner {
             trace: false,
             state_hashing: false,
         }
+    }
+
+    pub fn faucet_component(&self) -> ComponentAddress {
+        self.faucet_component
     }
 
     pub fn substate_db(&self) -> &InMemorySubstateDatabase {
@@ -253,7 +279,7 @@ impl TestRunner {
         proof: NonFungibleGlobalId,
     ) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .set_metadata(
                 address,
                 key.to_string(),
@@ -445,8 +471,8 @@ impl TestRunner {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+            .lock_fee(self.faucet_component(), 100u32.into())
+            .call_method(self.faucet_component(), "free", manifest_args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(account_address, "deposit", manifest_args!(bucket))
             })
@@ -472,7 +498,7 @@ impl TestRunner {
         let account = receipt.expect_commit(true).new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
-            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+            .call_method(self.faucet_component(), "free", manifest_args!())
             .call_method(
                 account,
                 "deposit_batch",
@@ -579,7 +605,7 @@ impl TestRunner {
             let config = AccessRulesConfig::new()
                 .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 10.into())
+                .lock_fee(self.faucet_component(), 10.into())
                 .create_identity_advanced(config)
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
@@ -592,7 +618,7 @@ impl TestRunner {
 
     pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .lock_fee(self.faucet_component(), 10.into())
             .create_identity()
             .call_method(
                 account,
@@ -613,7 +639,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .lock_fee(self.faucet_component(), 10.into())
             .create_validator(pub_key)
             .call_method(
                 account,
@@ -635,7 +661,7 @@ impl TestRunner {
         access_rules: AccessRulesConfig,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .publish_package_advanced(code, schema, royalty_config, metadata, access_rules)
             .build();
 
@@ -650,7 +676,7 @@ impl TestRunner {
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .publish_package_with_owner(code, schema, owner_badge)
             .build();
 
@@ -689,7 +715,7 @@ impl TestRunner {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                component_address: FAUCET_COMPONENT,
+                component_address: self.faucet_component(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
             },
@@ -784,9 +810,9 @@ impl TestRunner {
         account: ComponentAddress,
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
-        let package = self.compile_and_publish("/Users/yulongwu/workspace/radixdlt-scrypto/radix-engine-tests/tests/blueprints/resource_creator");
+        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, manifest_args!(token))
             .build();
@@ -808,7 +834,7 @@ impl TestRunner {
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(
                 package,
@@ -835,7 +861,7 @@ impl TestRunner {
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
@@ -972,7 +998,7 @@ impl TestRunner {
         entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 BTreeMap::new(),
@@ -999,7 +1025,7 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
@@ -1023,7 +1049,7 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(require(admin_auth)), LOCKED));
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
@@ -1047,7 +1073,7 @@ impl TestRunner {
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .lock_fee(self.faucet_component(), 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
@@ -1068,7 +1094,11 @@ impl TestRunner {
         F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
     {
         let manifest = ManifestBuilder::new()
-            .call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("10")))
+            .call_method(
+                self.faucet_component(),
+                "lock_fee",
+                manifest_args!(dec!("10")),
+            )
             .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
             .build();

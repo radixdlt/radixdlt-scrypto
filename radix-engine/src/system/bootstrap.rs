@@ -671,6 +671,7 @@ where
         .expect("Database misconfigured")
         .is_none()
     {
+        println!("!!! bootstrapping...");
         let genesis_transaction = create_genesis(
             validator_set_and_stake_owners,
             account_xrd_allocations,

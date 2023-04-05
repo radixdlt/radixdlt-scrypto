@@ -14,19 +14,6 @@ macro_rules! replace_variables {
     };
 }
 
-/// An example manifest for freeing some funds from the faucet
-#[test]
-fn free_funds_from_faucet_succeeds() {
-    test_manifest(|account_address, bech32_encoder| {
-        let manifest = replace_variables!(
-            include_str!("../../transaction/examples/faucet/free_funds.rtm"),
-            faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
-            account_address = account_address.display(bech32_encoder)
-        );
-        (manifest, Vec::new())
-    });
-}
-
 /// An example manifest for transfer of funds between accounts
 #[test]
 fn transfer_of_funds_to_another_account_succeeds() {

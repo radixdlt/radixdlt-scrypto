@@ -34,7 +34,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             account,
             ACCOUNT_SECURIFY_IDENT,

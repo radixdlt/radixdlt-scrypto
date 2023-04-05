@@ -368,7 +368,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LockedNonFungible.into(),
+            &BucketOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -377,7 +377,7 @@ impl NonFungibleBucket {
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount - max_locked;
-            let resource = NonFungibleVault::take(receiver, delta, api)?;
+            let resource = NonFungibleBucket::take(receiver, delta, api)?;
 
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
@@ -401,11 +401,13 @@ impl NonFungibleBucket {
         Ok(NonFungibleProof::new(
             ids_for_proof.clone(),
             btreemap!(
-                LocalRef::Vault(Reference(receiver.clone())) => ids_for_proof
+                LocalRef::Bucket(Reference(receiver.clone())) => ids_for_proof
             ),
         )
         .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                e,
+            )))
         })?)
     }
 
@@ -420,7 +422,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LockedNonFungible.into(),
+            &BucketOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -431,7 +433,7 @@ impl NonFungibleBucket {
             .cloned()
             .filter(|id| !locked.ids.contains_key(id))
             .collect();
-        NonFungibleVault::take_non_fungibles(receiver, &delta, api)?;
+        NonFungibleBucket::take_non_fungibles(receiver, &delta, api)?;
 
         // Increase lock count
         for id in &ids {
@@ -444,11 +446,13 @@ impl NonFungibleBucket {
         Ok(NonFungibleProof::new(
             ids.clone(),
             btreemap!(
-                LocalRef::Vault(Reference(receiver.clone())) => ids
+                LocalRef::Bucket(Reference(receiver.clone())) => ids
             ),
         )
         .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                e,
+            )))
         })?)
     }
 
@@ -463,7 +467,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &VaultOffset::LockedNonFungible.into(),
+            &BucketOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -483,7 +487,7 @@ impl NonFungibleBucket {
 
         api.sys_write_substate_typed(handle, &locked)?;
 
-        NonFungibleVault::put(
+        NonFungibleBucket::put(
             receiver,
             LiquidNonFungibleResource::new(liquid_non_fungibles),
             api,

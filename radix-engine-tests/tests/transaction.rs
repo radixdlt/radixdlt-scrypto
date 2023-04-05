@@ -182,8 +182,8 @@ fn test_faucet_drain_attempt_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_method(
             account,
             "deposit_batch",

@@ -250,11 +250,6 @@ impl EpochManagerBlueprint {
             api.sys_write_substate_typed(handle, &preparing_validator_set)?;
             api.sys_drop_lock(handle)?;
 
-            epoch_manager.epoch = prepared_epoch;
-            epoch_manager.round = 0;
-            api.sys_write_substate_typed(handle, &epoch_manager)?;
-            api.sys_drop_lock(mgr_handle)?;
-
             let handle = api.sys_lock_substate(
                 receiver,
                 &EpochManagerOffset::CurrentValidatorSet.into(),
@@ -266,6 +261,11 @@ impl EpochManagerBlueprint {
             api.sys_write_substate_typed(handle, &validator_set)?;
             api.sys_drop_lock(handle)?;
 
+            epoch_manager.epoch = prepared_epoch;
+            epoch_manager.round = 0;
+            api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
+            api.sys_drop_lock(mgr_handle)?;
+
             Runtime::emit_event(
                 api,
                 EpochChangeEvent {
@@ -275,6 +275,8 @@ impl EpochManagerBlueprint {
             )?;
         } else {
             epoch_manager.round = round;
+            api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
+            api.sys_drop_lock(mgr_handle)?;
 
             Runtime::emit_event(api, RoundChangeEvent { round })?;
         }
@@ -336,7 +338,7 @@ impl EpochManagerBlueprint {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &EpochManagerOffset::EpochManager.into(),
+            &EpochManagerOffset::PreparingValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
         let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;

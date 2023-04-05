@@ -30,7 +30,13 @@ mod multi_threaded_test {
             wasm_metering_config: WasmMeteringConfig::V0,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        bootstrap(&mut substate_db, &scrypto_interpreter);
+        let receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
+        let faucet_component = receipt
+            .expect_commit_success()
+            .new_component_addresses()
+            .last()
+            .cloned()
+            .unwrap();
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
@@ -45,7 +51,7 @@ mod multi_threaded_test {
         let accounts = (0..2)
             .map(|_| {
                 let manifest = ManifestBuilder::new()
-                    .lock_fee(FAUCET_COMPONENT, 100.into())
+                    .lock_fee(faucet_component, 100.into())
                     .new_account_advanced(config.clone())
                     .build();
                 let account = execute_and_commit_transaction(
@@ -69,8 +75,8 @@ mod multi_threaded_test {
 
         // Fill first account
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+            .lock_fee(faucet_component, 100.into())
+            .call_method(faucet_component, "free", manifest_args!())
             .call_method(
                 account1,
                 "deposit_batch",
@@ -91,7 +97,7 @@ mod multi_threaded_test {
 
         // Create a transfer manifest
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .lock_fee(faucet_component, 100.into())
             .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
             .call_method(
                 account2,

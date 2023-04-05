@@ -15,7 +15,7 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {

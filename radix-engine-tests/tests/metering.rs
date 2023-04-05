@@ -345,7 +345,7 @@ fn test_publish_large_package() {
         "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
     ));
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
+        .lock_fee(test_runner.faucet_component(), 100.into())
         .publish_package_advanced(
             code,
             PackageSchema::default(),

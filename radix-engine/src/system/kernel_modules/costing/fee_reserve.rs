@@ -467,6 +467,8 @@ impl Default for SystemLoanFeeReserve {
 mod tests {
     use super::*;
 
+    const TEST_COMPONENT: ComponentAddress =
+        component_address(EntityType::GlobalGenericComponent, 5);
     const TEST_VAULT_ID: NodeId = NodeId([0u8; NodeId::LENGTH]);
     const TEST_VAULT_ID_2: NodeId = NodeId([1u8; NodeId::LENGTH]);
 
@@ -611,7 +613,7 @@ mod tests {
         assert_eq!(
             fee_reserve.consume_royalty(
                 80,
-                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                RoyaltyRecipient::Component(TEST_COMPONENT),
                 TEST_VAULT_ID_2
             ),
             Err(FeeReserveError::InsufficientBalance)
@@ -628,7 +630,7 @@ mod tests {
         assert_eq!(
             fee_reserve.consume_royalty(
                 200,
-                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                RoyaltyRecipient::Component(TEST_COMPONENT),
                 TEST_VAULT_ID_2
             ),
             Err(FeeReserveError::LimitExceeded {
