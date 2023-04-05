@@ -758,30 +758,25 @@ impl VaultBlueprint {
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
-        // Take by amount
-        let fee = {
-            let mut vault: LiquidFungibleResource = api.sys_read_substate_typed(vault_handle)?;
-
-            // Take fee from the vault
-            let fee = vault.take_by_amount(input.amount).map_err(|_| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::LockFeeInsufficientBalance,
-                ))
-            })?;
-
-            api.sys_write_substate_typed(vault_handle, &vault)?;
-            fee
-        };
+        // Take fee from the vault
+        let mut vault: LiquidFungibleResource = api.sys_read_substate_typed(vault_handle)?;
+        let fee = vault.take_by_amount(input.amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::LockFeeInsufficientBalance,
+            ))
+        })?;
 
         // Credit cost units
         let changes = api.credit_cost_units(receiver.clone().into(), fee, input.contingent)?;
 
         // Keep changes
-        {
-            let mut vault: LiquidFungibleResource = api.sys_read_substate_typed(vault_handle)?;
+        if !changes.is_empty() {
             vault.put(changes).expect("Failed to put fee changes");
-            api.sys_write_substate_typed(vault_handle, &vault)?;
         }
+
+        // Flush updates
+        api.sys_write_substate_typed(vault_handle, &vault)?;
+        api.sys_drop_lock(vault_handle)?;
 
         // Emitting an event once the fee has been locked
         Runtime::emit_event(
