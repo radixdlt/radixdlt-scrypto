@@ -189,19 +189,19 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT),
+        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_OF_ALL_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_BY_AMOUNT_IDENT),
+        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT,
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
         ),
         AllowAll,
         DenyAll,
