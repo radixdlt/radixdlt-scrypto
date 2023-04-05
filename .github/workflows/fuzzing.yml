@@ -84,6 +84,12 @@ jobs:
       run: |
         ./afl.sh watch ${{ github.event.inputs.watch_interval }}
 
+    - name: Process AFL results
+      working-directory: fuzz-tests
+      run: |
+        # it is expected to generate afl/crash_summary.txt
+        ./process_fuzz_results.sh afl/transaction
+
     - name: Generate summary
       working-directory: fuzz-tests
       run: |
@@ -98,6 +104,13 @@ jobs:
          $(cargo afl whatsup -d afl/transaction) \
         \n\`\`\`\n" > afl/summary
         cat afl/summary >> $GITHUB_STEP_SUMMARY
+
+        echo -e \
+        "## Crash summary:\n \
+        \n\`\`\`\n \
+         $(cat afl/crash_summary.txt) \
+        \n\`\`\`\n" >> $GITHUB_STEP_SUMMARY
+
         find afl -type f ! -path "*/queue/*" | tee list
         tar -cvzf fuzz_transaction.tgz -T list
 
