@@ -165,15 +165,25 @@ function generate_input() {
         mkdir -p $raw_dir $cmin_dir $final_dir
 
         pushd ..
-        # Collect input data
-        cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
-        popd
-        if [ $mode = "raw" ] ; then
-            mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
-            return
-        fi
+        if [ "$(ls -A ${curr_path}/${raw_dir})" ] ; then
+            echo "raw dir is not empty, skipping generation"
+            popd
+            if [ $mode = "raw" ] ; then
+                mv ${curr_path}/${raw_dir}/* ${curr_path}/${final_dir}
+                return
+            fi
 
-        mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
+        else
+            # Collect input data
+            cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
+            popd
+            if [ $mode = "raw" ] ; then
+                mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
+                return
+            fi
+
+            mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
+        fi
 
         # Make the input corpus unique
         cargo afl cmin -t $timeout -i $raw_dir -o $cmin_dir -- target-afl/release/${target} 2>&1 | tee afl_cmin.log
