@@ -162,7 +162,7 @@ impl CallFrame {
             .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Virtualization
-        // TODO: clean up this shit!
+        // TODO: clean up the naughty!
         let virtualization_enabled = {
             if module_id == TypedModuleId::Metadata {
                 true

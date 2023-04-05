@@ -814,13 +814,19 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let len = self
+        let mut len = self
             .current_frame
             .read_substate(&mut self.heap, &mut self.track, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?
             .as_slice()
             .len();
+
+        // TODO: replace this overwrite with proper packing costing rule
+        let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
+        if lock_info.node_id.is_global_package() {
+            len = 0;
+        }
 
         KernelModuleMixer::on_read_substate(self, lock_handle, len)?;
 
