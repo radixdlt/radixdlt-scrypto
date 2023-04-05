@@ -14,7 +14,7 @@ fn test_balance_changes_when_success() {
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address = test_runner.compile_and_publish_with_owner(
-        "./tests/blueprints/balance_changes",
+        "/Users/yulongwu/workspace/radixdlt-scrypto/radix-engine-tests/tests/blueprints/balance_changes",
         owner_badge_addr.clone(),
     );
 

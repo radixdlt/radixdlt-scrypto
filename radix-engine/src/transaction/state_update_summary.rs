@@ -145,7 +145,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
 
         self.state_updates_indexed
             .keys()
-            .filter(|x| x.is_internal_vault())
+            .filter(|x| x.is_internal_vault() && !accounted_vaults.contains(*x))
             .for_each(|vault_node_id| {
                 if let Some((resource_address, balance_change)) =
                     self.calculate_vault_balance_change(vault_node_id)
@@ -246,8 +246,9 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             } else {
                 // Scan loaded substates to find children
                 for (_module_id, module_substates) in modules {
-                    for (_, update) in module_substates {
-                        let substate_value = IndexedScryptoValue::from_typed(update);
+                    for (_substate_key, update) in module_substates {
+                        let substate_value = IndexedScryptoValue::from_slice(update.as_ref())
+                            .expect("Failed to decode substate");
                         for own in substate_value.owned_node_ids() {
                             self.traverse_state_updates(
                                 balance_changes,
@@ -284,14 +285,14 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 TypedModuleId::ObjectState.into(),
                 &VaultOffset::LiquidFungible.into(),
             ) {
-                let old_substate = self.fetch_substate_from_state_updates(
+                let old_substate = self.fetch_substate_from_database(
                     node_id,
                     TypedModuleId::ObjectState.into(),
                     &VaultOffset::LiquidFungible.into(),
                 );
 
                 let old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidFungibleResource>(s)
+                    scrypto_decode::<LiquidFungibleResource>(&s)
                         .unwrap()
                         .amount()
                 } else {
@@ -312,14 +313,14 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 TypedModuleId::ObjectState.into(),
                 &VaultOffset::LiquidNonFungible.into(),
             ) {
-                let old_substate = self.fetch_substate_from_state_updates(
+                let old_substate = self.fetch_substate_from_database(
                     node_id,
                     TypedModuleId::ObjectState.into(),
                     &VaultOffset::LiquidNonFungible.into(),
                 );
 
                 let mut old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidNonFungibleResource>(s)
+                    scrypto_decode::<LiquidNonFungibleResource>(&s)
                         .unwrap()
                         .into_ids()
                 } else {
