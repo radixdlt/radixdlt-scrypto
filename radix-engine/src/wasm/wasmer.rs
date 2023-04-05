@@ -331,7 +331,7 @@ impl WasmerModule {
             let substate_key = read_memory(&instance, offset_ptr, offset_len)?;
 
             let handle = runtime
-                .lock_substate(node_id, offset, flags)
+                .lock_substate(node_id, substate_key, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)

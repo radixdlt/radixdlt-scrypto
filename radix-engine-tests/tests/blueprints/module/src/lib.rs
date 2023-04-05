@@ -53,16 +53,16 @@ mod component_module {
 
             let address = ScryptoEnv
                 .globalize(
-                    NodeId::Object(component.component.0),
+                    *component.component.0.as_node_id(),
                     btreemap!(
-                        TypedModuleId::AccessRules => metadata.id(),
-                        TypedModuleId::Metadata => royalty.id(),
-                        TypedModuleId::Royalty => access_rules.id(),
+                        TypedModuleId::AccessRules => metadata.0,
+                        TypedModuleId::Metadata => royalty.0,
+                        TypedModuleId::Royalty => access_rules.0,
                     ),
                 )
                 .unwrap();
 
-            address.into()
+            ComponentAddress::new_unchecked(address.into())
         }
     }
 }

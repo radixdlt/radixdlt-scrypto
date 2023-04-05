@@ -9,7 +9,7 @@ mod reference_test {
     impl ReferenceTest {
         pub fn new() -> ComponentAddress {
             Self {
-                reference: Reference([0u8; 31]),
+                reference: Reference(NodeId([0u8; 27])),
             }
             .instantiate()
             .globalize()

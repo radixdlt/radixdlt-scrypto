@@ -1,7 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "simulator/Cargo.toml",
+        "simulator/Cargo.toml"
     ],
     "cSpell.words": [
         "bech",
@@ -35,5 +35,6 @@
         "virtualizable",
         "Wasmer",
         "Wasmi"
-    ]
+    ],
+    "rust-analyzer.showUnlinkedFileNotification": false
 }
