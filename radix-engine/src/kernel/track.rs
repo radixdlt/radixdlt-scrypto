@@ -327,11 +327,14 @@ impl<'s> SubstateStore for Track<'s> {
     fn revert_non_force_write_changes(&mut self) {
         self.loaded_substates.retain(|_, m| {
             m.retain(|_, m| {
-                m.retain(|_, loaded| match loaded.meta_state {
+                m.retain(|_, loaded| match &loaded.meta_state {
                     SubstateMetaState::Existing {
-                        state: ExistingMetaState::Updated(Some(_)),
+                        state: ExistingMetaState::Updated(Some(value)),
                         ..
-                    } => true,
+                    } => {
+                        loaded.substate = value.clone();
+                        true
+                    }
                     _ => false,
                 });
                 !m.is_empty()

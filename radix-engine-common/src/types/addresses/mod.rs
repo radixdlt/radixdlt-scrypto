@@ -110,3 +110,36 @@ pub const fn package_address(entity_type: EntityType, last_byte: u8) -> PackageA
         last_byte,
     ])
 }
+
+pub const fn local_address(entity_type: EntityType, last_byte: u8) -> LocalAddress {
+    assert!(entity_type.is_local());
+    LocalAddress::new_unchecked([
+        entity_type as u8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        last_byte,
+    ])
+}

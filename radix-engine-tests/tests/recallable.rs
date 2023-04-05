@@ -1,7 +1,6 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_common::types::NodeId;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
@@ -12,15 +11,12 @@ fn non_existing_vault_should_cause_error() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
-    let non_existing_vault_id = [0; NodeId::LENGTH];
+    let non_existing_address = local_address(EntityType::InternalVault, 5);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .recall(
-            LocalAddress::new_unchecked(non_existing_vault_id),
-            Decimal::one(),
-        )
+        .recall(non_existing_address, Decimal::one())
         .call_method(
             account,
             "deposit_batch",
@@ -32,7 +28,9 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
-            RuntimeError::KernelError(KernelError::NodeNotFound(NodeId(non_existing_vault_id))),
+            RuntimeError::KernelError(KernelError::NodeNotFound(
+                non_existing_address.as_node_id().clone(),
+            )),
         ))
     });
 }
