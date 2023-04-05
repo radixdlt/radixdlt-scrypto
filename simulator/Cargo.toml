@@ -43,7 +43,3 @@ bench = false
 
 [lib]
 bench = false
-
-[features]
-# This feature is unused and is only added as  a workaround for https://github.com/rust-lang/rust-analyzer/issues/8521
-serde = []

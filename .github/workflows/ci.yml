@@ -161,6 +161,8 @@ jobs:
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
+    - name: Build with resource tracking
+      run: cargo build --features resource_tracker
     - name: Run tests
       run: |
         cargo nextest run \

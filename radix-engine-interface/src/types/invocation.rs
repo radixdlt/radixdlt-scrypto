@@ -51,6 +51,13 @@ impl FnIdent {
             FnIdent::Application(ident) => ident.len(),
         }
     }
+
+    pub fn to_debug_string(&self) -> String {
+        match self {
+            FnIdent::Application(x) => x.clone(),
+            FnIdent::System(x) => x.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

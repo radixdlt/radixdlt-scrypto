@@ -652,7 +652,7 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log={*node_id}, log=module_id, log=substate_key)]
+    #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,

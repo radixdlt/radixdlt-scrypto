@@ -26,6 +26,10 @@ impl NodeId {
         self.0.to_vec()
     }
 
+    pub fn to_hex(&self) -> String {
+        hex::encode(&self.0)
+    }
+
     // TODO: gradually remove dependency on the following entity-type related methods
 
     pub fn entity_type(&self) -> Option<EntityType> {
@@ -182,6 +186,10 @@ impl SubstateKey {
         } else {
             Some(Self(bytes))
         }
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(&self.0)
     }
 }
 

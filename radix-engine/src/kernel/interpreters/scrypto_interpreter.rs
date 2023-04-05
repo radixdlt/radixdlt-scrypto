@@ -227,7 +227,7 @@ impl ExecutableInvocation for MethodInvocation {
 impl ExecutableInvocation for FunctionInvocation {
     type Exec = ScryptoExecutor;
 
-    #[trace_resources(log={&self.fn_identifier.blueprint_name}, log={&self.fn_identifier.ident}, log=self.payload_size())]
+    #[trace_resources(log={&self.identifier.0}, log={&self.identifier.1}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
@@ -335,7 +335,7 @@ pub struct ScryptoExecutor {
 impl Executor for ScryptoExecutor {
     type Output = IndexedScryptoValue;
 
-    #[trace_resources(log={self.fn_identifier.ident.to_string()}, log={self.fn_identifier.package_address.to_hex()})]
+    #[trace_resources(log={self.ident.to_debug_string()}, log={self.blueprint.package_address.to_hex()})]
     fn execute<Y, W>(
         self,
         args: &IndexedScryptoValue,

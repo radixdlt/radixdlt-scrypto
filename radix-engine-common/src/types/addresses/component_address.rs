@@ -7,8 +7,7 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
@@ -75,6 +74,10 @@ impl ComponentAddress {
         } else {
             None
         }
+    }
+
+    pub fn to_hex(&self) -> String {
+        self.0.to_hex()
     }
 }
 

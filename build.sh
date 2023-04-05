@@ -12,7 +12,7 @@ echo "Building the workspace packages (with all extended features)..."
 
 echo "Building the engine in different configurations..."
 
-(set -x; cd radix-engine; cargo build --features wasmer)
+(set -x; cd radix-engine; cargo build --features wasmer,resource_tracker)
 (set -x; cd radix-engine; cargo build --no-default-features --features alloc)
 
 echo "Building the simulator packages..."
