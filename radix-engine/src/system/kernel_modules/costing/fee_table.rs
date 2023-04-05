@@ -4,12 +4,16 @@ pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
 pub const FIXED_HIGH_FEE: u32 = 5000;
 
-pub enum CostingEntry {
+const COSTING_COEFFICENT: u32 = 237;
+const COSTING_COEFFICENT_DIV_BITS: u32 = 4; // used to divide by shift left operator
+
+
+pub enum CostingEntry<'a> {
     /* invoke */
     Invoke { input_size: u32 },
 
     /* node */
-    CreateNode { size: u32 },
+    CreateNode { node_id: &'a RENodeId },
     DropNode { size: u32 },
 
     /* substate */
@@ -58,13 +62,37 @@ impl FeeTable {
         match entry {
             CostingEntry::Invoke { input_size } => FIXED_LOW_FEE + (10 * input_size) as u32,
 
-            CostingEntry::CreateNode { size } => FIXED_MEDIUM_FEE + (100 * size) as u32,
-            CostingEntry::DropNode { size } => FIXED_MEDIUM_FEE + (100 * size) as u32,
-
             CostingEntry::LockSubstate => FIXED_LOW_FEE,
             CostingEntry::ReadSubstate { size } => FIXED_LOW_FEE + 10 * size,
             CostingEntry::WriteSubstate { size } => FIXED_LOW_FEE + 1000 * size,
-            CostingEntry::DropLock => FIXED_LOW_FEE,
+            
+            // new implementation
+
+            CostingEntry::CreateNode { node_id } => (match node_id {
+                    RENodeId::KeyValueStore(_) => 493,
+                    RENodeId::Object(_) => 3290,
+                    RENodeId::GlobalObject(address) => match address {
+                        Address::Component(component) => match component {
+                            ComponentAddress::AccessController(_) => 0,
+                            ComponentAddress::Account(_) => 10050,
+                            ComponentAddress::Clock(_) => 5049,
+                            ComponentAddress::EpochManager(_) => 7471,
+                            ComponentAddress::Identity(_) => 0,
+                            ComponentAddress::Normal(_) => 6111,
+                            ComponentAddress::Validator(_) => 0,
+                            _ => 0,
+                        },
+                        Address::Resource(resource_type) => match resource_type {
+                            ResourceAddress::Fungible(_) => 32715,
+                            ResourceAddress::NonFungible(_) => 17973,
+                        }
+                        Address::Package(package_type) => match package_type {
+                            PackageAddress::Normal(_) => 4964,
+                        }                        
+                    }
+                }) * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS,
+            CostingEntry::DropNode { size: _ } => 4191 * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS,
+            CostingEntry::DropLock => 180 * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS,
         }
     }
 }

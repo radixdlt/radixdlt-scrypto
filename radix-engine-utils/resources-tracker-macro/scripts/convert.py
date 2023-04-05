@@ -161,8 +161,9 @@ else:
         coeff = round(mul_div * row[2] / min_ins)
         row.append(coeff)
         row.append( row[2] - coeff * min_ins / mul_div )
-    output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "cost function", "error"])
+    output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "function cost (F)", "error"])
     print(tabulate(output_tab, headers="firstrow"))
-    print("\nCost function coeff: ", min_ins, "/", mul_div, "\n")
+    print("\nCost function coeff: ", min_ins, "\n")
+    print("Cost calculation = ( F *", min_ins, ") /", mul_div, "\n")
 
 

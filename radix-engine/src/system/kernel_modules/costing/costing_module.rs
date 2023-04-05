@@ -239,14 +239,14 @@ impl KernelModule for CostingModule {
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _node_id: &RENodeId,
+        node_id: &RENodeId,
         _node_init: &RENodeInit,
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::CreateNode,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { node_id }),
             1,
         )?;
         Ok(())
