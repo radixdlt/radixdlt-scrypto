@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+#
+# Required python packages: lxml, tabulate. To install run command: pip3 install lxml tabulate
+#
+
 from lxml import etree
 from statistics import mean, median
 from tabulate import tabulate
@@ -6,13 +10,19 @@ import pprint
 import sys
 
 if len(sys.argv) < 2:
-    print("Usage: convert.py <INPUT_FILE_NAME>", file=sys.stderr)
+    print("Usage: convert.py <INPUT_FILE_NAME> <DETAILED_OUTPUT_TABLE>\n\nwhere: <DETAILED_OUTPUT_TABLE>: 1 or 0", file=sys.stderr)
     sys.exit(-1)
+
+detailed_output = 0
+if len(sys.argv) == 3:
+    detailed_output = sys.argv[2]
 
 input_file = sys.argv[1]
 
 api_functions_ins = {}
 api_functions_info_data = {}
+
+kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
 
 tree = etree.parse(input_file)
 
@@ -35,15 +45,18 @@ for i in range(1):
 #=====================================#
 #    Add arguments to kernel calls    #
 #=====================================#
-        invoke_size = 0
 
         # handle kernel_inovke
+        invoke_size = 0
         resolve = child.xpath("./self::kernel_invoke/resolve")
         if resolve:
             blueprint_name = resolve[0].attrib["arg0"].replace('"','')
             fcn_name = resolve[0].attrib["arg1"].replace('"','')
-            invoke_size = resolve[0].attrib["arg2"]
-            key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+            if fcn_name in kernel_invoke_divide_by_size:
+                invoke_size = resolve[0].attrib["arg2"]
+                key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+            else:
+                key += "::" + blueprint_name + "::" + fcn_name
 
         # handle node_id (from kernel_create_node, kernel_drop_node, kernel_get_node_visibility_origin, kernel_lock_substate)
         param = child.xpath("./@node_id")
@@ -120,15 +133,33 @@ for i in range(1):
 output = {}
 output_tab = []
 
-for i in api_functions_ins.keys():
-    output_tab.append([i, len(api_functions_ins[i][1]), min(api_functions_ins[i][1]), max(api_functions_ins[i][1]), round(mean(api_functions_ins[i][1])), round(median(api_functions_ins[i][1])) ])
+if detailed_output:
+    for i in api_functions_ins.keys():
+        output_tab.append([i, len(api_functions_ins[i][1]), min(api_functions_ins[i][1]), max(api_functions_ins[i][1]), round(mean(api_functions_ins[i][1])), round(median(api_functions_ins[i][1])) ])
+else:
+    for i in api_functions_ins.keys():
+        if "kernel_create_wasm_instance" in i: # use max value as the code is cached which reduces instructions count
+            output_tab.append([i, max(api_functions_ins[i][1]), "max" ])
+        else: # for all others use median
+            output_tab.append([i, round(median(api_functions_ins[i][1])), "median" ])
 
 #sorted(output_tab, key=lambda x: x[0])
 output_tab.sort()
 for idx, item in enumerate(output_tab):
     item.insert(0,idx + 1)
 
-output_tab.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
+if detailed_output:
+    output_tab.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
+else:
+    min_ins = output_tab[0][2]
+    for row in output_tab:
+        if row[2] < min_ins:
+            min_ins = row[2]
+    for row in output_tab:
+        coeff = round(10 * row[2] / min_ins)
+        row.append(coeff)
+        row.append( row[2] - coeff * min_ins / 10 )
+    output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "cost function", "error"])
 
 print(tabulate(output_tab, headers="firstrow"))
 
