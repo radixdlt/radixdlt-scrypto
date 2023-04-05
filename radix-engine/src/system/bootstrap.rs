@@ -683,7 +683,7 @@ where
             substate_db,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(true),
+            &ExecutionConfig::genesis(),
             &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 

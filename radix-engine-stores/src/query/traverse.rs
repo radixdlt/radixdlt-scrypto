@@ -3,7 +3,7 @@ use radix_engine_interface::blueprints::resource::{ResourceType, VAULT_BLUEPRINT
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
-    IndexedScryptoValue, ModuleId, SubstateKey, TypedModuleId, VaultOffset,
+    IndexedScryptoValue, IntoEnumIterator, ModuleId, SubstateKey, TypedModuleId, VaultOffset,
 };
 use radix_engine_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
@@ -171,30 +171,25 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         }
                     }
                 } else {
-                    for i in 0..0xff {
-                        let substate_key = SubstateKey::from_vec(vec![i]).unwrap();
-                        if let Some((value, _version)) = self
-                            .substate_db
-                            .get_substate(
-                                &node_id,
-                                TypedModuleId::ObjectState.into(),
-                                &substate_key,
-                            )
-                            .expect("Broken database")
-                        {
-                            let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
-                                .expect("Substate is not a scrypto value")
-                                .unpack();
-                            for child_node_id in owned_nodes {
-                                self.traverse_recursive(
-                                    Some(&(
-                                        node_id,
-                                        TypedModuleId::ObjectState.into(),
-                                        substate_key.clone(),
-                                    )),
-                                    child_node_id,
-                                    depth + 1,
-                                );
+                    for t in TypedModuleId::iter() {
+                        // List all iterable modules (currently `ObjectState` & `Metadata`)
+                        if let Ok(x) = self.substate_db.list_substates(&node_id, t.into()) {
+                            for (substate_key, substate_value) in x.0 {
+                                let (_, owned_nodes, _) =
+                                    IndexedScryptoValue::from_vec(substate_value)
+                                        .expect("Substate is not a scrypto value")
+                                        .unpack();
+                                for child_node_id in owned_nodes {
+                                    self.traverse_recursive(
+                                        Some(&(
+                                            node_id,
+                                            TypedModuleId::ObjectState.into(),
+                                            substate_key.clone(),
+                                        )),
+                                        child_node_id,
+                                        depth + 1,
+                                    );
+                                }
                             }
                         }
                     }

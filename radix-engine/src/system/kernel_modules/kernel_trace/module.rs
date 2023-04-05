@@ -6,6 +6,7 @@ use crate::{
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
     system::node_init::NodeInit,
 };
+use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{
     EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateKey, TypedModuleId,
@@ -30,12 +31,13 @@ impl KernelModule for KernelTraceModule {
         identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
+        let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            identifier,
-            input_size
-        );
+            identifier, input_size
+        )
+        .green();
+
+        log!(api, "{}", message);
         Ok(())
     }
 

@@ -173,7 +173,7 @@ impl SubstateKey {
     }
 
     pub fn max() -> Self {
-        Self(vec![u8::MIN; Self::MIN_LENGTH])
+        Self(vec![u8::MAX; Self::MAX_LENGTH])
     }
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {

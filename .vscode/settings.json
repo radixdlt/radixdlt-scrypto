@@ -35,6 +35,5 @@
         "virtualizable",
         "Wasmer",
         "Wasmi"
-    ],
-    "rust-analyzer.showUnlinkedFileNotification": false
+    ]
 }
