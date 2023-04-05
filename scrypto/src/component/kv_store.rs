@@ -123,7 +123,7 @@ impl<
         env.sys_drop_lock(handle).unwrap();
     }
 
-    /// Inserts a new key-value pair into this map.
+    /// Remove an entry from the map and return the original value if it exists
     pub fn remove(&self, key: &K) -> Option<V> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
