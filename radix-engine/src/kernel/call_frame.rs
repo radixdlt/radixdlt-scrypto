@@ -5,6 +5,7 @@ use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 
@@ -127,6 +128,7 @@ pub enum UnlockSubstateError {
     CantDropNodeInStore(NodeId),
     CantOwn(NodeId),
     CantStoreLocalReference(NodeId),
+    CantBeStored(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -148,6 +150,32 @@ pub enum WriteSubstateError {
 }
 
 impl CallFrame {
+    fn get_type_info<'s>(
+        node_id: &NodeId,
+        heap: &mut Heap,
+        track: &mut Track<'s>,
+    ) -> Option<TypeInfoSubstate> {
+        if let Some(substate) = heap.get_substate(
+            node_id,
+            TypedModuleId::TypeInfo,
+            &TypeInfoOffset::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            Some(type_info)
+        } else if let Ok(handle) = track.acquire_lock(
+            node_id,
+            TypedModuleId::TypeInfo.into(),
+            &TypeInfoOffset::TypeInfo.into(),
+            LockFlags::read_only(),
+        ) {
+            let type_info: TypeInfoSubstate = track.read_substate(handle).as_typed().unwrap();
+            track.release_lock(handle);
+            Some(type_info)
+        } else {
+            None
+        }
+    }
+
     pub fn acquire_lock<'s>(
         &mut self,
         heap: &mut Heap,
@@ -167,27 +195,7 @@ impl CallFrame {
             if module_id == TypedModuleId::Metadata {
                 true
             } else if module_id == TypedModuleId::ObjectState {
-                if let Some(substate) = heap.get_substate(
-                    node_id,
-                    TypedModuleId::TypeInfo,
-                    &TypeInfoOffset::TypeInfo.into(),
-                ) {
-                    let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-                    match type_info {
-                        TypeInfoSubstate::Object { blueprint, .. } => {
-                            blueprint.package_address == METADATA_PACKAGE
-                                && blueprint.blueprint_name == METADATA_BLUEPRINT
-                        }
-                        TypeInfoSubstate::KeyValueStore(_) => true,
-                    }
-                } else if let Ok(handle) = track.acquire_lock(
-                    node_id,
-                    TypedModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                    LockFlags::read_only(),
-                ) {
-                    let type_info: TypeInfoSubstate =
-                        track.read_substate(handle).as_typed().unwrap();
+                if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
                     match type_info {
                         TypeInfoSubstate::Object { blueprint, .. } => {
                             blueprint.package_address == METADATA_PACKAGE
@@ -721,8 +729,30 @@ impl CallFrame {
         track: &mut Track,
         node_id: &NodeId,
     ) -> Result<(), UnlockSubstateError> {
-        let node = heap.remove_node(node_id);
+        // FIXME: Clean this up
+        let can_be_stored = if node_id.is_global() {
+            true
+        } else {
+            if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
+                match type_info {
+                    TypeInfoSubstate::Object { blueprint, .. }
+                        if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                            && (blueprint.blueprint_name == BUCKET_BLUEPRINT
+                                || blueprint.blueprint_name == PROOF_BLUEPRINT) =>
+                    {
+                        false
+                    }
+                    _ => true,
+                }
+            } else {
+                false
+            }
+        };
+        if !can_be_stored {
+            return Err(UnlockSubstateError::CantBeStored(node_id.clone()));
+        }
 
+        let node = heap.remove_node(node_id);
         for (module_id, module) in node.substates {
             for (substate_key, substate_value) in module {
                 for reference in substate_value.references() {

@@ -70,6 +70,12 @@ impl NodeId {
             None => false,
         }
     }
+    pub fn is_local(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => t.is_local(),
+            None => false,
+        }
+    }
 
     pub fn is_internal_kv_store(&self) -> bool {
         match self.entity_type() {

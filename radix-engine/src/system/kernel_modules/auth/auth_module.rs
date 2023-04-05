@@ -52,8 +52,8 @@ impl AuthModule {
         // FIXME update the rule to be consistent with internal design
         match actor {
             Actor::Method { node_id, .. } => node_id.is_global_component(),
-            Actor::Function { .. } => true,
-            Actor::VirtualLazyLoad { .. } => true,
+            Actor::Function { .. } => false,
+            Actor::VirtualLazyLoad { .. } => false,
         }
     }
 

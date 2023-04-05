@@ -646,6 +646,7 @@ where
         1u64,
         1u64,
         1u64,
+        false,
     )
 }
 
@@ -657,6 +658,7 @@ pub fn bootstrap_with_validator_set<S, W>(
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
+    trace: bool,
 ) -> Option<TransactionReceipt>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
@@ -683,7 +685,7 @@ where
             substate_db,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::genesis().with_trace(trace),
             &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 

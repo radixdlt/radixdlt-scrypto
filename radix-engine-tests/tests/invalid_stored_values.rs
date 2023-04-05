@@ -27,7 +27,7 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantOwn(_))
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantBeStored(_))
             ))
         )
     });
@@ -56,7 +56,7 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantOwn(_))
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantBeStored(_))
             ))
         )
     });

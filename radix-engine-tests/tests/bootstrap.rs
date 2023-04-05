@@ -1,5 +1,5 @@
 use radix_engine::kernel::interpreters::*;
-use radix_engine::system::bootstrap::{bootstrap, create_genesis};
+use radix_engine::system::bootstrap::{bootstrap_with_validator_set, create_genesis};
 use radix_engine::transaction::{execute_transaction, ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -14,7 +14,17 @@ fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let transaction_receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
+    let transaction_receipt = bootstrap_with_validator_set(
+        &mut substate_db,
+        &scrypto_interpreter,
+        BTreeMap::new(),
+        BTreeMap::new(),
+        1u64,
+        1u64,
+        1u64,
+        true,
+    )
+    .unwrap();
     transaction_receipt.expect_commit_success();
 }
 
