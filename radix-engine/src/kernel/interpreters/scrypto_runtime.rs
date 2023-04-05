@@ -71,9 +71,10 @@ where
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let receiver =
-            scrypto_decode::<NodeId>(&receiver).map_err(WasmRuntimeError::InvalidNodeId)?;
-
+        let receiver = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(receiver.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let module_id = u8::try_from(module_id)
@@ -133,8 +134,10 @@ where
         component_id: Vec<u8>,
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let component_id =
-            scrypto_decode::<NodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+        let component_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(component_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
         let modules = scrypto_decode::<BTreeMap<TypedModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
@@ -160,8 +163,10 @@ where
     }
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        let node_id =
-            scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
 
         self.api.drop_object(node_id)?;
 
@@ -174,10 +179,12 @@ where
         substate_key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
-        let node_id =
-            scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let substate_key = scrypto_decode::<SubstateKey>(&substate_key)
-            .map_err(WasmRuntimeError::InvalidOffset)?;
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let substate_key =
+            SubstateKey::from_vec(substate_key).ok_or(WasmRuntimeError::InvalidSubstateKey)?;
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
         let handle = self.api.sys_lock_substate(&node_id, &substate_key, flags)?;
@@ -247,8 +254,10 @@ where
     }
 
     fn get_type_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id =
-            scrypto_decode::<NodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
         let type_info = self.api.get_object_type_info(&node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
