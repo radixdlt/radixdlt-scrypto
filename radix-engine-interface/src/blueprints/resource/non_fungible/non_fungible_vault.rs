@@ -32,14 +32,15 @@ pub struct NonFungibleVaultRecallNonFungiblesInput {
 
 pub type NonFungibleVaultRecallNonFungiblesOutput = Bucket;
 
-pub const NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+pub const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str =
+    "create_proof_of_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleVaultCreateProofByIdsInput {
+pub struct NonFungibleVaultCreateProofOfNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub type NonFungibleVaultCreateProofByIdsOutput = Proof;
+pub type NonFungibleVaultCreateProofOfNonFungiblesOutput = Proof;
 
 pub const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "lock_non_fungibles";
 
