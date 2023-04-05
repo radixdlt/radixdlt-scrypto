@@ -12,9 +12,10 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use std::collections::BTreeMap;
 
 pub struct AccessRules(pub Own);
 
