@@ -160,7 +160,7 @@ impl TestRunnerBuilder {
         };
         let genesis = self
             .custom_genesis
-            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
+            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 1u64, 1u64));
         let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(btreeset![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),

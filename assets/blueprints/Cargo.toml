@@ -2,7 +2,8 @@
 members = [
     "faucet",
     "radiswap",
-    "flash_loan"
+    "flash_loan",
+    "genesis_helper",
 ]
 
 [profile.release]
