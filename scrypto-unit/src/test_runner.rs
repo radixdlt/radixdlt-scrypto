@@ -11,7 +11,7 @@ use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
-use radix_engine::system::bootstrap::bootstrap;
+use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -157,7 +157,10 @@ impl TestRunnerBuilder {
         let mut substate_db = InMemorySubstateDatabase::standard();
 
         // Bootstrap
-        let transaction_receipt = if let Some(genesis) = self.custom_genesis {
+        let genesis = self
+            .custom_genesis
+            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 1u64, 1u64));
+        let transaction_receipt = {
             let transaction_receipt = execute_transaction(
                 &substate_db,
                 &scrypto_interpreter,
@@ -171,8 +174,6 @@ impl TestRunnerBuilder {
                 .commit(&commit_result.state_updates)
                 .expect("Database misconfigured");
             transaction_receipt
-        } else {
-            bootstrap(&mut substate_db, &scrypto_interpreter).unwrap()
         };
         let faucet_component = transaction_receipt
             .expect_commit_success()

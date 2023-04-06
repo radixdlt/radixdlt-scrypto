@@ -34,6 +34,7 @@ pub const TRANSACTION_PROCESSOR_PACKAGE: PackageAddress =
 pub const METADATA_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 10);
 pub const ROYALTY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 12);
+pub const GENESIS_HELPER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 13);
 
 // There should be no need of this function, but many of our configurations are depending on it.
 // Having it in a single place to avoid out-of-sync.
@@ -49,7 +50,8 @@ pub fn is_native_package(address: PackageAddress) -> bool {
         | TRANSACTION_PROCESSOR_PACKAGE
         | METADATA_PACKAGE
         | ROYALTY_PACKAGE
-        | ACCESS_RULES_PACKAGE => true,
+        | ACCESS_RULES_PACKAGE
+        | GENESIS_HELPER_PACKAGE => true,
         _ => false,
     }
 }
