@@ -15,6 +15,7 @@ pub enum CostingEntry<'a> {
     /* node */
     CreateNode { node_id: &'a RENodeId },
     DropNode { size: u32 },
+    AllocateNodeId { node_type: &'a AllocateEntityType },
 
     /* substate */
     LockSubstate,
@@ -58,7 +59,7 @@ impl FeeTable {
         self.tx_blob_price_per_byte
     }
 
-    pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
+    fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         match entry {
             CostingEntry::Invoke { input_size } => FIXED_LOW_FEE + (10 * input_size) as u32,
 
@@ -93,6 +94,29 @@ impl FeeTable {
                 }) * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS,
             CostingEntry::DropNode { size: _ } => 4191 * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS,
             CostingEntry::DropLock => 180 * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS,
+            CostingEntry::AllocateNodeId { node_type } => (match node_type {
+                AllocateEntityType::GlobalAccount => 111,
+                AllocateEntityType::GlobalComponent => 714,
+                AllocateEntityType::GlobalFungibleResourceManager => 1093,
+                AllocateEntityType::GlobalNonFungibleResourceManager => 0,
+                AllocateEntityType::GlobalPackage => 1197,
+                AllocateEntityType::GlobalEpochManager => 0,
+                AllocateEntityType::GlobalValidator => 0,
+                AllocateEntityType::GlobalAccessController => 0,
+                AllocateEntityType::GlobalIdentity => 0,
+                AllocateEntityType::KeyValueStore => 12,
+                AllocateEntityType::Object => 11,
+                AllocateEntityType::Vault => 21,
+            }) * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS
         }
+    }
+
+    fn kernel_api_cost_from_memory_usage(&self, _entry: &CostingEntry) -> u32 {
+        // todo
+        0
+    }
+
+    pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
+        self.kernel_api_cost_from_cpu_usage(&entry) + self.kernel_api_cost_from_memory_usage(&entry)
     }
 }

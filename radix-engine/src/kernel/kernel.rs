@@ -426,7 +426,8 @@ where
         &mut self,
         node_type: AllocateEntityType,
     ) -> Result<RENodeId, RuntimeError> {
-        // TODO: Add costing
+        KernelModuleMixer::on_allocate_node_id(self, &node_type)?;
+
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
