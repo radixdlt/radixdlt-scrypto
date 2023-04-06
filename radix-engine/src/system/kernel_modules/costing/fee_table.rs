@@ -122,20 +122,57 @@ impl FeeTable {
             CostingEntry::DropNode { size: _ } => 4191,
             CostingEntry::GetSubstateRef => 169,
             CostingEntry::Invoke {
-                input_size: _,
+                input_size,
                 identifier,
             } => match identifier {
                 InvocationDebugIdentifier::Function(fn_ident) => {
-                    if fn_ident.1 == "AccessRules" && fn_ident.2 == "create" {
-                        29249
-                    } else if fn_ident.1 == "Account" && fn_ident.2 == "create_advanced" {
-                        184577
-                    } else {
-                        0
+                    match (&*fn_ident.1, &*fn_ident.2) {
+                        ("AccessRules", "create") => 29249,
+                        ("Account", "create_advanced") => 184577,
+                        ("Clock", "create") => 66722,
+                        ("ComponentRoyalty", "create") => 9963,
+                        ("EpochManager", "create") => 213624,
+                        ("Faucet", "new") => 5708511,
+                        ("FungibleResourceManager", "create_with_initial_supply") => 246986,
+                        ("FungibleResourceManager", "create_with_initial_supply_and_address") => {
+                            192718
+                        }
+                        ("Metadata", "create") => 17906,
+                        ("Metadata", "create_with_data") => 11172,
+                        ("MoveTest", "move_bucket") => 7845424,
+                        ("MoveTest", "move_proof") => 1091059,
+                        ("NonFungibleResourceManager", "create_non_fungible_with_address") => {
+                            136818
+                        }
+                        ("Package", "publish_native") => 5 * input_size + 9975, // calculated using linear regression on gathered data (11 calls)
+                        ("Package", "publish_wasm_advanced") => 12 * input_size + 3117837, // calculated using straight line equetion (basing on 2 calls only)
+                        ("Proof", "Proof_drop") => 65827,
+                        ("TransactionProcessor", "run") => 9040534,
+                        ("Worktop", "Worktop_drop") => 24143,
+                        _ => 0,
                     }
                 }
                 InvocationDebugIdentifier::Method(method_ident) => match method_ident.1 {
-                    NodeModuleId::SELF => 0,
+                    NodeModuleId::SELF => match &*method_ident.2 {
+                        "Bucket_create_proof" => 81014,
+                        "Bucket_get_amount" => 27029,
+                        "Bucket_get_resource_address" => 27497,
+                        "Bucket_unlock_amount" => 32359,
+                        "Worktop_drain" => 33199,
+                        "Worktop_put" => 76813,
+                        "Worktop_take_all" => 10797,
+                        "create_vault" => 35931,
+                        "deposit_batch" => 175766,
+                        "free" => 546446,
+                        "get_current_epoch" => 69146,
+                        "lock_fee" => 157017,
+                        "put" => 42799,
+                        "receive_bucket" => 368023,
+                        "receive_proof" => 200679,
+                        "set_method_access_rule_and_mutability" => 37408,
+                        "take" => 90009,
+                        _ => 0,
+                    },
                     NodeModuleId::AccessRules => 0,
                     NodeModuleId::AccessRules1 => 0,
                     NodeModuleId::ComponentRoyalty => 0,
@@ -231,14 +268,14 @@ impl FeeTable {
 
     fn kernel_api_cost_from_memory_usage(&self, entry: &CostingEntry) -> u32 {
         match entry {
-            CostingEntry::CreateNode { size, node_id: _ } => FIXED_MEDIUM_FEE + (100 * size) as u32,
-            CostingEntry::DropNode { size } => FIXED_MEDIUM_FEE + (100 * size) as u32,
+            CostingEntry::CreateNode { size, node_id: _ } => 100 * size,
+            CostingEntry::DropNode { size } => 100 * size,
             CostingEntry::Invoke {
                 input_size,
                 identifier: _,
-            } => FIXED_LOW_FEE + (10 * input_size) as u32,
-            CostingEntry::ReadSubstate { size } => FIXED_LOW_FEE + 10 * size,
-            CostingEntry::WriteSubstate { size } => FIXED_LOW_FEE + 1000 * size,
+            } => 10 * input_size,
+            CostingEntry::ReadSubstate { size } => 10 * size,
+            CostingEntry::WriteSubstate { size } => 1000 * size,
             _ => 0,
         }
     }
