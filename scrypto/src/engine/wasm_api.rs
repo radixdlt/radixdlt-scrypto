@@ -64,7 +64,7 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_object_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     pub fn get_key_value_store_info(
         key_value_store_id_ptr: *const u8,
@@ -123,7 +123,9 @@ extern "C" {
     // System API
     //===============
 
-    pub fn get_actor() -> Buffer;
+    pub fn get_global_address() -> Buffer;
+
+    pub fn get_blueprint() -> Buffer;
 
     pub fn get_auth_zone() -> Buffer;
 
@@ -191,10 +193,7 @@ pub unsafe fn globalize_with_address(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_object_type_info(
-    _component_id_ptr: *const u8,
-    _component_id_len: usize,
-) -> Buffer {
+pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 
@@ -263,7 +262,12 @@ pub unsafe fn drop_lock(_handle: u32) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_actor() -> Buffer {
+pub unsafe fn get_global_address() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_blueprint() -> Buffer {
     unreachable!()
 }
 

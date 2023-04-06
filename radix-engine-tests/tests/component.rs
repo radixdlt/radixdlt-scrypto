@@ -71,11 +71,11 @@ fn invalid_blueprint_name_should_cause_error() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::InterpreterError(InterpreterError::ScryptoBlueprintNotFound(
-            package_address,
-            blueprint_name,
+            blueprint,
         )) = e
         {
-            package_addr.eq(&package_address) && blueprint_name.eq("NonExistentBlueprint")
+            package_addr.eq(&blueprint.package_address)
+                && blueprint.blueprint_name.eq("NonExistentBlueprint")
         } else {
             false
         }

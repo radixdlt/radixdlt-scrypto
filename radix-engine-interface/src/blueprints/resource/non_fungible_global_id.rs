@@ -119,6 +119,18 @@ impl fmt::Debug for NonFungibleGlobalId {
     }
 }
 
+pub trait FromComponent: Sized {
+    fn from_component_address(component: &ComponentAddress) -> Self;
+}
+
+impl FromComponent for NonFungibleGlobalId {
+    fn from_component_address(component_address: &ComponentAddress) -> Self {
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
+        NonFungibleGlobalId::new(GLOBAL_OBJECT_TOKEN, non_fungible_local_id)
+    }
+}
+
 pub trait FromPublicKey: Sized {
     fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self;
 }

@@ -41,6 +41,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
+        parent: None,
         schema: generate_full_schema(aggregator),
         substates,
         functions,
@@ -71,6 +72,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
+        parent: None,
         schema: generate_full_schema(aggregator),
         substates,
         functions,
@@ -102,6 +104,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
+        parent: None,
         schema: generate_full_schema(aggregator),
         substates,
         functions,

@@ -2,7 +2,7 @@ use crate::errors::SystemError;
 use crate::errors::{
     ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
 };
-use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -32,6 +32,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -48,24 +49,27 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
+        // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+            let info = self.get_object_info(node_id)?;
             if !matches!(
-                (package_address, blueprint.as_str()),
-                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                (
+                    info.blueprint.package_address,
+                    info.blueprint.blueprint_name.as_str()
+                ),
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
             ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
 
-        let module_id = if let ActorIdentifier::Method(method) =
-            self.kernel_get_current_actor().unwrap().identifier
-        {
-            method.1
-        } else {
-            // TODO: Remove this
-            NodeModuleId::SELF
-        };
+        let module_id =
+            if let Actor::Method { module_id, .. } = self.kernel_get_current_actor().unwrap() {
+                module_id
+            } else {
+                // TODO: Remove this
+                NodeModuleId::SELF
+            };
 
         self.kernel_lock_substate(&node_id, module_id, offset, flags)
     }
@@ -149,12 +153,9 @@ where
         blueprint_ident: &str,
         mut app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, RuntimeError> {
-        let package_address = self
-            .kernel_get_current_actor()
-            .unwrap()
-            .fn_identifier
-            .package_address();
+        let actor = self.kernel_get_current_actor().unwrap();
 
+        let package_address = actor.package_address().clone();
         let handle = self.kernel_lock_substate(
             &RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -172,6 +173,24 @@ where
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
                     )),
                 ))?;
+
+        let type_parent = if let Some(parent) = &schema.parent {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    blueprint,
+                    ..
+                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidChildObjectCreation,
+                    ));
+                }
+            }
+        } else {
+            None
+        };
+
         if schema.substates.len() != app_states.len() {
             return Err(RuntimeError::SystemError(
                 SystemError::SubstateValidationError(Box::new(
@@ -260,11 +279,17 @@ where
                     )),
                     AllocateEntityType::Object,
                 ),
-                VAULT_BLUEPRINT => (
+                FUNGIBLE_VAULT_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::FungibleVaultInfo(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
+                    )),
+                    AllocateEntityType::Vault,
+                ),
+                NON_FUNGIBLE_VAULT_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::NonFungibleVaultInfo(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
                     )),
@@ -346,7 +371,11 @@ where
             node_init,
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
-                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&package_address, blueprint_ident),
+                        global: false,
+                        type_parent,
+                    })
                 ),
             ),
         )?;
@@ -364,16 +393,14 @@ where
         let node_type = match node_id {
             RENodeId::Object(..) => {
                 let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
-                let (package_address, blueprint) = match type_info {
-                    TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
-                        global,
-                    } if !global => (package_address, blueprint_name),
+                let blueprint = match type_info {
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) if !global => blueprint,
                     _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
                 };
 
-                match (package_address, blueprint.as_str()) {
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => AllocateEntityType::GlobalAccount,
                     (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => AllocateEntityType::GlobalIdentity,
                     (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
@@ -409,7 +436,6 @@ where
             NodeModuleId::Metadata,
             NodeModuleId::ComponentRoyalty,
             NodeModuleId::AccessRules,
-            NodeModuleId::AccessRules1
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
@@ -439,7 +465,9 @@ where
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
 
         match type_info_substate {
-            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
+                *global = true
+            }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
@@ -455,18 +483,14 @@ where
                 NodeModuleId::SELF | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                NodeModuleId::AccessRules => {
                     let node_id = RENodeId::Object(object_id);
-                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
-                    if !matches!(
-                        (package_address, blueprint.as_str()),
-                        (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
-                    ) {
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
+                    let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
+                    if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
-                                expected_package: ACCESS_RULES_PACKAGE,
-                                expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
-                                actual_package: package_address,
+                                expected_blueprint: expected,
                                 actual_blueprint: blueprint,
                             }),
                         )));
@@ -488,16 +512,12 @@ where
                 }
                 NodeModuleId::Metadata => {
                     let node_id = RENodeId::Object(object_id);
-                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
-                    if !matches!(
-                        (package_address, blueprint.as_str()),
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT)
-                    ) {
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
+                    let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
+                    if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
-                                expected_package: METADATA_PACKAGE,
-                                expected_blueprint: METADATA_BLUEPRINT.to_string(),
-                                actual_package: package_address,
+                                expected_blueprint: expected,
                                 actual_blueprint: blueprint,
                             }),
                         )));
@@ -519,16 +539,12 @@ where
                 }
                 NodeModuleId::ComponentRoyalty => {
                     let node_id = RENodeId::Object(object_id);
-                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
-                    if !matches!(
-                        (package_address, blueprint.as_str()),
-                        (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
-                    ) {
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
+                    let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
+                    if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
-                                expected_package: ROYALTY_PACKAGE,
-                                expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
-                                actual_package: package_address,
+                                expected_blueprint: expected,
                                 actual_blueprint: blueprint,
                             }),
                         )));
@@ -603,8 +619,7 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = Box::new(FunctionInvocation {
             identifier: FunctionIdentifier::new(
-                package_address,
-                blueprint_name.to_string(),
+                Blueprint::new(&package_address, blueprint_name),
                 function_name.to_string(),
             ),
             args,
@@ -613,23 +628,16 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
-    fn get_object_type_info(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<(PackageAddress, String), RuntimeError> {
+    fn get_object_info(&mut self, node_id: RENodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object {
-                package_address,
-                blueprint_name,
-                ..
-            } => (package_address, blueprint_name),
+        let object_info = match type_info {
+            TypeInfoSubstate::Object(info) => info,
             TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
 
-        Ok(blueprint)
+        Ok(object_info)
     }
 
     fn get_key_value_store_info(
@@ -678,6 +686,7 @@ impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources(log=units)]
     fn consume_cost_units(
         &mut self,
         units: u32,
@@ -714,10 +723,24 @@ impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+    fn get_global_address(&mut self) -> Result<Address, RuntimeError> {
+        self.kernel_get_current_actor()
+            .and_then(|e| match e {
+                Actor::Method {
+                    global_address: Some(address),
+                    ..
+                } => Some(address),
+                _ => None,
+            })
+            .ok_or(RuntimeError::SystemError(
+                SystemError::GlobalAddressDoesNotExist,
+            ))
+    }
+
+    fn get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
+        Ok(self.kernel_get_current_actor().unwrap().blueprint().clone())
     }
 }
 
@@ -738,7 +761,8 @@ where
 
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorization = convert_contextless(&rule);
-        let barrier_crossings_allowed = 0;
+        let barrier_crossings_required = 1;
+        let barrier_crossings_allowed = 1;
         let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
 
         // Authenticate
@@ -746,6 +770,7 @@ where
         // Currently, this is to allow authentication to read auth zone substates directly without invocation.
         self.execute_in_mode(ExecutionMode::System, |api| {
             if !Authentication::verify_method_auth(
+                barrier_crossings_required,
                 barrier_crossings_allowed,
                 auth_zone_id,
                 &authorization,
@@ -801,63 +826,59 @@ where
         // Locking the package info substate associated with the emitter's package
         let (handle, blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
-            let (package_address, blueprint_name) = match actor {
-                Some(Actor {
-                    identifier:
-                        ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
-                    ..
-                }) => match node_module_id {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
-                        Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
+            let blueprint = match actor {
+                Some(Actor::Method {
+                    node_id, module_id, ..
+                }) => match module_id {
+                    NodeModuleId::AccessRules => Ok(Blueprint::new(
+                        &ACCESS_RULES_PACKAGE,
+                        ACCESS_RULES_BLUEPRINT,
+                    )),
+                    NodeModuleId::ComponentRoyalty => Ok(Blueprint::new(
+                        &ROYALTY_PACKAGE,
+                        COMPONENT_ROYALTY_BLUEPRINT,
+                    )),
+                    NodeModuleId::Metadata => {
+                        Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    NodeModuleId::ComponentRoyalty => {
-                        Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
-                    }
-                    NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
-                    NodeModuleId::SELF => self.get_object_type_info(node_id),
+                    NodeModuleId::SELF => self.get_object_info(node_id).map(|i| i.blueprint),
                     NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
-                Some(Actor {
-                    identifier:
-                        ActorIdentifier::Function(FunctionIdentifier(
-                            package_address,
-                            ref blueprint_name,
-                            ..,
-                        )),
-                    ..
-                }) => Ok((package_address, blueprint_name.clone())),
+                Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::InvalidActor)),
                 )),
             }?;
 
             let handle = self.kernel_lock_substate(
-                &RENodeId::GlobalObject(Address::Package(package_address)),
+                &RENodeId::GlobalObject(Address::Package(blueprint.package_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
             let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
-            let blueprint_schema = package_info.schema.blueprints.get(&blueprint_name).map_or(
-                Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                        package_address,
-                        blueprint_name: blueprint_name.clone(),
-                        event_name: event_name.clone(),
-                    })),
-                )),
-                Ok,
-            )?;
+            let blueprint_schema = package_info
+                .schema
+                .blueprints
+                .get(&blueprint.blueprint_name)
+                .map_or(
+                    Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                            blueprint: blueprint.clone(),
+                            event_name: event_name.clone(),
+                        })),
+                    )),
+                    Ok,
+                )?;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
             let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
                 Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                        package_address,
-                        blueprint_name,
+                        blueprint: blueprint.clone(),
                         event_name,
                     })),
                 )),
@@ -869,22 +890,17 @@ where
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
-            Some(Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
-                ..
+            Some(Actor::Method {
+                node_id, module_id, ..
             }) => Ok(EventTypeIdentifier(
-                Emitter::Method(node_id, node_module_id),
+                Emitter::Method(node_id, module_id),
                 *local_type_index,
             )),
-            Some(Actor {
-                identifier:
-                    ActorIdentifier::Function(FunctionIdentifier(package_address, blueprint_name, ..)),
-                ..
-            }) => Ok(EventTypeIdentifier(
+            Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
-                    RENodeId::GlobalObject(Address::Package(package_address)),
+                    RENodeId::GlobalObject(Address::Package(blueprint.package_address)),
                     NodeModuleId::SELF,
-                    blueprint_name,
+                    blueprint.blueprint_name.to_string(),
                 ),
                 *local_type_index,
             )),

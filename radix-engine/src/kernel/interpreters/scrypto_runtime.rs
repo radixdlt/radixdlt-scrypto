@@ -206,8 +206,15 @@ where
         Ok(())
     }
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.get_fn_identifier()?;
+    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let address = self.api.get_global_address()?;
+
+        let buffer = scrypto_encode(&address).expect("Failed to encode address");
+        self.allocate_buffer(buffer)
+    }
+
+    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let actor = self.api.get_blueprint()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)
@@ -235,10 +242,13 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn get_type_info(&mut self, node_id: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_object_info(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let type_info = self.api.get_object_type_info(node_id)?;
+        let type_info = self.api.get_object_info(node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
@@ -389,7 +399,11 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -403,7 +417,7 @@ impl WasmRuntime for NopWasmRuntime {
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))
     }
 
-    fn get_type_info(
+    fn get_object_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

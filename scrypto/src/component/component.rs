@@ -163,16 +163,18 @@ impl Component for OwnedComponent {
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_type_info(RENodeId::Object(self.0))
+            .get_object_info(RENodeId::Object(self.0))
             .unwrap()
-            .0
+            .blueprint
+            .package_address
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_type_info(RENodeId::Object(self.0))
+            .get_object_info(RENodeId::Object(self.0))
             .unwrap()
-            .1
+            .blueprint
+            .blueprint_name
     }
 }
 
@@ -229,16 +231,18 @@ impl Component for GlobalComponentRef {
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
+            .get_object_info(RENodeId::GlobalObject(self.0.into()))
             .unwrap()
-            .0
+            .blueprint
+            .package_address
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
+            .get_object_info(RENodeId::GlobalObject(self.0.into()))
             .unwrap()
-            .1
+            .blueprint
+            .blueprint_name
     }
 }
 

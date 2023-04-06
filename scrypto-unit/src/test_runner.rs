@@ -160,7 +160,7 @@ impl TestRunnerBuilder {
         };
         let genesis = self
             .custom_genesis
-            .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
+            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 1u64, 1u64));
         let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(btreeset![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
@@ -185,7 +185,10 @@ impl TestRunner {
     pub fn builder() -> TestRunnerBuilder {
         TestRunnerBuilder {
             custom_genesis: None,
+            #[cfg(not(feature = "resource_tracker"))]
             trace: true,
+            #[cfg(feature = "resource_tracker")]
+            trace: false,
             state_hashing: false,
         }
     }
@@ -365,14 +368,27 @@ impl TestRunner {
     pub fn inspect_vault_balance(&mut self, vault_id: ObjectId) -> Option<Decimal> {
         if let Some(output) = self.substate_store().get_substate(&SubstateId(
             RENodeId::Object(vault_id),
-            NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Info),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         )) {
-            if output.substate.vault_info().resource_type.is_fungible() {
-                self.inspect_fungible_vault(vault_id)
-            } else {
-                self.inspect_non_fungible_vault(vault_id)
-                    .map(|ids| ids.len().into())
+            match output.substate.type_info() {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint:
+                        Blueprint {
+                            package_address,
+                            blueprint_name,
+                        },
+                    ..
+                }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => {
+                    match blueprint_name.as_str() {
+                        FUNGIBLE_VAULT_BLUEPRINT => self.inspect_fungible_vault(vault_id),
+                        NON_FUNGIBLE_VAULT_BLUEPRINT => self
+                            .inspect_non_fungible_vault(vault_id)
+                            .map(|ids| ids.len().into()),
+                        _ => None,
+                    }
+                }
+                _ => None,
             }
         } else {
             None
@@ -1191,7 +1207,7 @@ impl TestRunner {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                    NodeModuleId::AccessRules => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
@@ -1220,11 +1236,11 @@ impl TestRunner {
                             .clone();
 
                         match type_info {
-                            TypeInfoSubstate::Object {
-                                package_address,
-                                blueprint_name,
-                                ..
-                            } => (package_address, blueprint_name, *local_type_index),
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
+                                blueprint.package_address,
+                                blueprint.blueprint_name,
+                                *local_type_index,
+                            ),
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
@@ -1389,6 +1405,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
     package_schema.blueprints.insert(
         blueprint_name.to_string(),
         BlueprintSchema {
+            parent: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],

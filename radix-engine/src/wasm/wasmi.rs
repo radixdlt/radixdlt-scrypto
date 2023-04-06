@@ -248,7 +248,7 @@ fn globalize_object(
         .map(|buffer| buffer.0)
 }
 
-fn get_type_info(
+fn get_object_info(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
@@ -256,7 +256,7 @@ fn get_type_info(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .get_type_info(read_memory(
+        .get_object_info(read_memory(
             caller.as_context_mut(),
             memory,
             component_id_ptr,
@@ -324,10 +324,16 @@ fn drop_lock(
     runtime.drop_lock(handle)
 }
 
+fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.get_global_address().map(|buffer| buffer.0)
+}
+
 fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.get_actor().map(|buffer| buffer.0)
+    runtime.get_blueprint().map(|buffer| buffer.0)
 }
 
 fn get_auth_zone(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -551,13 +557,13 @@ impl WasmiModule {
             },
         );
 
-        let host_get_type_info = Func::wrap(
+        let host_get_object_info = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             component_id_ptr: u32,
-             component_id_len: u32|
+             object_id_ptr: u32,
+             object_id_len: u32|
              -> Result<u64, Trap> {
-                get_type_info(caller, component_id_ptr, component_id_len).map_err(|e| e.into())
+                get_object_info(caller, object_id_ptr, object_id_len).map_err(|e| e.into())
             },
         );
 
@@ -617,7 +623,14 @@ impl WasmiModule {
             },
         );
 
-        let host_get_actor = Func::wrap(
+        let host_get_global_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_global_address(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_get_blueprint = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
                 get_actor(caller).map_err(|e| e.into())
@@ -706,17 +719,18 @@ impl WasmiModule {
             GLOBALIZE_OBJECT_FUNCTION_NAME,
             host_globalize_object
         );
-        linker_define!(
-            linker,
-            GET_OBJECT_TYPE_INFO_FUNCTION_NAME,
-            host_get_type_info
-        );
+        linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
         linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);
-        linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_actor);
+        linker_define!(
+            linker,
+            GET_GLOBAL_ADDRESS_FUNCTION_NAME,
+            host_get_global_address
+        );
+        linker_define!(linker, GET_BLUEPRINT_FUNCTION_NAME, host_get_blueprint);
         linker_define!(linker, GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
         linker_define!(
             linker,

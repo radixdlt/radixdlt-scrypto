@@ -338,9 +338,7 @@ pub fn export_blueprint_schema(
     Ok(schema)
 }
 
-pub fn get_blueprint(
-    component_address: ComponentAddress,
-) -> Result<(PackageAddress, String), Error> {
+pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
@@ -354,11 +352,7 @@ pub fn get_blueprint(
     let type_info = output.substate.type_info();
 
     match type_info {
-        TypeInfoSubstate::Object {
-            package_address,
-            blueprint_name,
-            ..
-        } => Ok((*package_address, blueprint_name.to_string())),
+        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -370,7 +364,7 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                NodeModuleId::AccessRules => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
@@ -398,11 +392,11 @@ pub fn get_event_schema<S: ReadableSubstateStore>(
                         .clone();
 
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => (package_address, blueprint_name, *local_type_index),
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
+                            blueprint.package_address,
+                            blueprint.blueprint_name,
+                            *local_type_index,
+                        ),
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }

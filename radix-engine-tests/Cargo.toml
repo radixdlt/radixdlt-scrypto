@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-tests"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 
 [dependencies]
@@ -8,8 +8,11 @@ sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
+radix-engine-utils = { path = "../radix-engine-utils", optional = true, features = ["resource_tracker"]}
+resources-tracker-macro = { path = "../radix-engine-utils/resources-tracker-macro" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
@@ -49,6 +52,10 @@ name = "resources_usage"
 harness = false
 required-features = ["cpu_ram_metrics"]
 
+[[bench]]
+name = "transaction_decompilation"
+harness = false
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
@@ -57,4 +64,5 @@ alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
+resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker"]
 dump_manifest_to_file = ["transaction/dump_manifest_to_file"]

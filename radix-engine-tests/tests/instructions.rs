@@ -1,9 +1,11 @@
+use radix_engine::errors::ModuleError;
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::{
     blueprints::transaction_processor::TransactionProcessorError,
-    errors::{ApplicationError, RuntimeError, SystemError},
+    errors::{ApplicationError, RuntimeError},
     types::*,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::resource::{AccessRule, FromPublicKey};
 use scrypto::prelude::{require, require_amount};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -70,15 +72,15 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
+    let rule = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
+    let other_account = test_runner.new_account_advanced(rule.clone(), AccessRule::DenyAll);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!(10))
         .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!(5))
         .clear_signature_proofs()
-        .assert_access_rule(rule!(require(NonFungibleGlobalId::from_public_key(
-            &public_key
-        ))))
+        .create_proof_from_account_by_amount(other_account, RADIX_TOKEN, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -89,7 +91,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(..)))
         )
     })
 }
@@ -99,13 +101,15 @@ fn clear_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
+    let rule = rule!(require_amount(dec!(5), RADIX_TOKEN));
+    let other_account = test_runner.new_account_advanced(rule.clone(), AccessRule::DenyAll);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!(10))
         .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!(5))
         .clear_signature_proofs()
-        .assert_access_rule(rule!(require_amount(dec!(5), RADIX_TOKEN)))
+        .create_proof_from_account_by_amount(other_account, RADIX_TOKEN, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
+use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
 
@@ -38,6 +39,7 @@ impl TransactionProcessorNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -48,6 +50,7 @@ impl TransactionProcessorNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,

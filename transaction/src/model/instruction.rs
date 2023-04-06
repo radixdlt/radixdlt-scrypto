@@ -174,10 +174,6 @@ pub enum Instruction {
         args: ManifestValue,
     },
 
-    AssertAccessRule {
-        access_rule: AccessRule,
-    },
-
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,

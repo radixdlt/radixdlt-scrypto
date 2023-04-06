@@ -12,6 +12,7 @@ use radix_engine_interface::schema::{
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::api::types::ClientCostingReason;
+use resources_tracker_macro::trace_resources;
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
 const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";
@@ -201,6 +202,7 @@ impl AccountNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -211,6 +213,7 @@ impl AccountNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,

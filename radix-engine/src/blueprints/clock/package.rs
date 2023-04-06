@@ -16,6 +16,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 use radix_engine_interface::time::*;
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ClockSubstate {
@@ -77,6 +78,7 @@ impl ClockNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -96,6 +98,7 @@ impl ClockNativePackage {
         access_rules
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
@@ -178,7 +181,7 @@ impl ClockNativePackage {
             MethodKey::new(NodeModuleId::SELF, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
-        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
+        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 

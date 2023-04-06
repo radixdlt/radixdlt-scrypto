@@ -48,7 +48,7 @@ pub trait WasmRuntime {
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_type_info(
+    fn get_object_info(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
@@ -75,7 +75,9 @@ pub trait WasmRuntime {
 
     fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

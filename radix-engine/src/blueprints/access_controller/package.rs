@@ -23,6 +23,7 @@ use radix_engine_interface::schema::Receiver;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use resources_tracker_macro::trace_resources;
 use sbor::rust::vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -278,6 +279,7 @@ impl AccessControllerNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -288,6 +290,7 @@ impl AccessControllerNativePackage {
         }
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
@@ -431,7 +434,9 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), api)?.0;
+        let access_rules =
+            AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), btreemap!(), api)?.0;
+
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
@@ -985,6 +990,7 @@ where
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                object_key: ObjectKey::SELF,
                 name: group_name.into(),
                 rule: access_rule.clone(),
             })
@@ -999,7 +1005,8 @@ where
                     NodeModuleId::AccessRules,
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                     scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                        key: method_key.clone(),
+                        object_key: ObjectKey::SELF,
+                        method_key: method_key.clone(),
                         rule: AccessRuleEntry::AccessRule(access_rule.clone()),
                     })
                     .unwrap(),

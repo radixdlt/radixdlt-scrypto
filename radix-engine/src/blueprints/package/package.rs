@@ -23,6 +23,7 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -40,6 +41,7 @@ pub enum PackageError {
     },
     InvalidEventSchema,
     InvalidSystemFunction,
+    InvalidTypeParent,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -134,11 +136,11 @@ where
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+            blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
-        }),
+            type_parent: None,
+        })),
     );
     node_modules.insert(
         NodeModuleId::Metadata,
@@ -187,6 +189,7 @@ where
             NodeModuleId::AccessRules,
             RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
+                child_blueprint_rules: BTreeMap::new(),
             }),
         );
     }
@@ -265,6 +268,7 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -294,6 +298,7 @@ impl PackageNativePackage {
         access_rules
     }
 
+    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<&RENodeId>,
@@ -522,11 +527,18 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            virtual_lazy_load_functions: system_functions,
+            parent,
+            virtual_lazy_load_functions,
             ..
         } in schema.blueprints.values()
         {
-            if !system_functions.is_empty() {
+            if parent.is_some() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::InvalidTypeParent),
+                ));
+            }
+
+            if !virtual_lazy_load_functions.is_empty() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::InvalidSystemFunction),
                 ));

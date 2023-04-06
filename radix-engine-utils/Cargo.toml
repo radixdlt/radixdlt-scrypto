@@ -1,0 +1,15 @@
+[package]
+name = "radix-engine-utils"
+version = "0.9.0"
+edition = "2021"
+
+[dependencies]
+shared_memory = { version = "0.12.4", optional = true }
+fixedstr = "0.2.9"
+
+[lib]
+bench = false
+
+[features]
+default = []
+resource_tracker = ["dep:shared_memory"]
