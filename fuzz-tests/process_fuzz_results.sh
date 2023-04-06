@@ -71,12 +71,16 @@ function show_gh_summary() {
 function show_crash_files() {
     local d=${1:-$afl_dir}
     echo "Crash/hang files:"
-    find ${d}/*/* -type f ! -path */queue/* -name "id*" | xargs -n1 -I {} echo "    "{}
+    find ${d}/*/* -type f ! -path */queue/* -name "id*" | xargs -I {} echo "    "{}
 }
 
 function inspect_crashes() {
     pushd $work_dir > /dev/null
     files=$(find ${afl_dir}/*/* -type f ! -path */queue/* -name "id*")
+
+    if [ "$gh_run_id" != "" ] ; then
+        show_gh_summary . > $SUMMARY_FILE
+    fi
 
     if [ "$files" != "" ] ; then
         echo "Inspecting found crashes"
@@ -112,19 +116,18 @@ function inspect_crashes() {
             fi
             echo "file    : $f" >> $fname
         done
-    else
-        echo "No crashes found"
-    fi
 
-    if [ "$gh_run_id" != "" ] ; then
-        show_gh_summary . > $SUMMARY_FILE
-    fi
-    cat <<EOF >> $SUMMARY_FILE
+        cat <<EOF >> $SUMMARY_FILE
 Crash/hang info
 command : radixdlt-scrypto/fuzz-tests/target/release/transaction <file>
 $(cat *.panic)
 EOF
-    rm -f output.log *.panic
+        rm -f output.log *.panic
+
+    else
+        echo "No crashes found" >> $SUMMARY_FILE
+    fi
+
 
     popd > /dev/null
 
@@ -137,7 +140,10 @@ $(cat $work_dir/$SUMMARY_FILE)
 work dir: $work_dir
 summary : $work_dir/$SUMMARY_FILE
 EOF
-    cp $work_dir/$SUMMARY_FILE $(dirname $afl_dir)
+    # copy crash summary to afl output dir, so it is packed to Github run artifact if running on Github
+    if [ "$gh_run_id" = "" ] ; then
+        cp $work_dir/$SUMMARY_FILE $(dirname $afl_dir)
+    fi
 }
 
 
@@ -156,7 +162,7 @@ if [ -d $url_or_dir ] ; then
 else
     gh_run_id=${url_or_dir##*/}
     work_dir=run_${gh_run_id}
-    afl_dir="afl/*"
+    afl_dir="afl/transaction"
 fi
 
 
