@@ -343,4 +343,18 @@ impl KernelModule for CostingModule {
         )?;
         Ok(())
     }
+
+    fn on_create_wasm_instance<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        size: usize,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_module_state().costing.apply_execution_cost(
+            CostingReason::CreateWasmInstance,
+            |fee_table| {
+                fee_table.kernel_api_cost(CostingEntry::CreateWasmInstance { size: size as u32 })
+            },
+            1,
+        )?;
+        Ok(())
+    }
 }

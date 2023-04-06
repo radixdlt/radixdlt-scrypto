@@ -23,6 +23,7 @@ api_functions_ins = {}
 api_functions_info_data = {}
 
 kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
+use_max_instead_of_median = [] #["kernel_create_wasm_instance"]
 
 tree = etree.parse(input_file)
 
@@ -51,10 +52,10 @@ for i in range(1):
         resolve = child.xpath("./self::kernel_invoke/resolve")
         if resolve:
             info = resolve[0].attrib["info"]
-            blueprint_name = resolve[0].attrib["arg0"].replace('"','')
-            fcn_name = resolve[0].attrib["arg1"].replace('"','')
+            blueprint_name = resolve[0].attrib["arg1"].replace('"','')
+            fcn_name = resolve[0].attrib["arg2"].replace('"','')
             if fcn_name in kernel_invoke_divide_by_size:
-                invoke_size = resolve[0].attrib["arg2"]
+                invoke_size = resolve[0].attrib["arg3"]
                 key += "::" + info + "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
             else:
                 key += "::" + info + "::" + blueprint_name + "::" + fcn_name
@@ -139,9 +140,9 @@ if detailed_output:
         output_tab.append([i, len(api_functions_ins[i][1]), min(api_functions_ins[i][1]), max(api_functions_ins[i][1]), round(mean(api_functions_ins[i][1])), round(median(api_functions_ins[i][1])) ])
 else:
     for i in api_functions_ins.keys():
-        if "kernel_create_wasm_instance" in i: # use max value as the code is cached which reduces instructions count
+        if i in use_max_instead_of_median:
             output_tab.append([i, max(api_functions_ins[i][1]), "max" ])
-        else: # for all others use median
+        else:
             output_tab.append([i, round(median(api_functions_ins[i][1])), "median" ])
 
 #sorted(output_tab, key=lambda x: x[0])

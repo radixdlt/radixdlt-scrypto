@@ -845,6 +845,8 @@ where
         let package_code: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
         let code = package_code.code.clone();
 
+        KernelModuleMixer::on_create_wasm_instance(self, code.len())?;
+
         Ok(self
             .scrypto_interpreter
             .create_instance(package_address, &code))

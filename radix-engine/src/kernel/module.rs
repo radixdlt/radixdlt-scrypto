@@ -61,6 +61,14 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
+    fn on_create_wasm_instance<Y: KernelModuleApi<RuntimeError>>(
+        _api: &mut Y,
+        _size: usize,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _caller: &Option<Actor>,

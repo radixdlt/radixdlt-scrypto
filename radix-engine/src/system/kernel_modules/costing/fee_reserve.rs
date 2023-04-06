@@ -100,6 +100,7 @@ pub enum CostingReason {
     DropNode,
     CreateNode,
     AllocateNodeId,
+    CreateWasmInstance,
     LockSubstate,
     ReadSubstate,
     WriteSubstate,

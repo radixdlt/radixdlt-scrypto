@@ -326,6 +326,42 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
+    fn on_create_wasm_instance<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        size: usize,
+    ) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_DEBUG) {
+            KernelTraceModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            CostingModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::NODE_MOVE) {
+            NodeMoveModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            AuthModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::LOGGER) {
+            LoggerModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            TransactionRuntimeModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            ExecutionTraceModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+            TransactionLimitsModule::on_create_wasm_instance(api, size)?;
+        }
+        if modules.contains(EnabledModules::EVENTS) {
+            EventsModule::on_create_wasm_instance(api, size)?;
+        }
+        Ok(())
+    }
+
+    #[trace_resources]
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         caller: &Option<Actor>,

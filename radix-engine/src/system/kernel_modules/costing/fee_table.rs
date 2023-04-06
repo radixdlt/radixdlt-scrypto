@@ -4,14 +4,17 @@ pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
 pub const FIXED_HIGH_FEE: u32 = 5000;
 
-const COSTING_COEFFICENT: u32 = 237;
-const COSTING_COEFFICENT_DIV_BITS: u32 = 4; // used to divide by shift left operator
+const COSTING_COEFFICENT: u64 = 237;
+const COSTING_COEFFICENT_DIV_BITS: u64 = 9; // used to divide by shift left operator, original value: 4
 
 pub enum CostingEntry<'a> {
     /* invoke */
     Invoke {
         input_size: u32,
         identifier: &'a InvocationDebugIdentifier,
+    },
+    CreateWasmInstance {
+        size: u32,
     },
 
     /* node */
@@ -78,35 +81,28 @@ impl FeeTable {
     }
 
     /// CPU instructions usage numbers obtained from test runs with 'resource_tracker` feature enabled
-    /// and data transformed using convert.py script.
+    /// and transformed (classified and groupped) using convert.py script.
     fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
-        (match entry {
+        ((match entry {
             CostingEntry::AllocateNodeId { node_type } => match node_type {
                 AllocateEntityType::GlobalAccount => 111,
                 AllocateEntityType::GlobalComponent => 714,
                 AllocateEntityType::GlobalFungibleResourceManager => 1093,
-                AllocateEntityType::GlobalNonFungibleResourceManager => 0,
                 AllocateEntityType::GlobalPackage => 1197,
-                AllocateEntityType::GlobalEpochManager => 0,
-                AllocateEntityType::GlobalValidator => 0,
-                AllocateEntityType::GlobalAccessController => 0,
-                AllocateEntityType::GlobalIdentity => 0,
                 AllocateEntityType::KeyValueStore => 12,
                 AllocateEntityType::Object => 11,
                 AllocateEntityType::Vault => 21,
+                _ => 0,
             },
             CostingEntry::CreateNode { size: _, node_id } => match node_id {
                 RENodeId::KeyValueStore(_) => 493,
                 RENodeId::Object(_) => 3290,
                 RENodeId::GlobalObject(address) => match address {
                     Address::Component(component) => match component {
-                        ComponentAddress::AccessController(_) => 0,
                         ComponentAddress::Account(_) => 10050,
                         ComponentAddress::Clock(_) => 5049,
                         ComponentAddress::EpochManager(_) => 7471,
-                        ComponentAddress::Identity(_) => 0,
                         ComponentAddress::Normal(_) => 6111,
-                        ComponentAddress::Validator(_) => 0,
                         _ => 0,
                     },
                     Address::Resource(resource_type) => match resource_type {
@@ -118,6 +114,9 @@ impl FeeTable {
                     },
                 },
             },
+            CostingEntry::CreateWasmInstance { size } => {
+                size / 26 // approx. by average from 10 calls (2 groups)
+            }
             CostingEntry::DropLock => 180,
             CostingEntry::DropNode { size: _ } => 4191,
             CostingEntry::GetSubstateRef => 169,
@@ -173,11 +172,7 @@ impl FeeTable {
                         "take" => 90009,
                         _ => 0,
                     },
-                    NodeModuleId::AccessRules => 0,
-                    NodeModuleId::AccessRules1 => 0,
-                    NodeModuleId::ComponentRoyalty => 0,
-                    NodeModuleId::Metadata => 0,
-                    NodeModuleId::TypeInfo => 0,
+                    _ => 0,
                 },
                 InvocationDebugIdentifier::VirtualLazyLoad => 0,
             },
@@ -262,8 +257,9 @@ impl FeeTable {
             },
             CostingEntry::ReadSubstate { size: _ } => 552,
             CostingEntry::WriteSubstate { size: _ } => 176,
-        }) * COSTING_COEFFICENT
-            >> COSTING_COEFFICENT_DIV_BITS
+        }) as u64
+            * COSTING_COEFFICENT
+            >> COSTING_COEFFICENT_DIV_BITS) as u32
     }
 
     fn kernel_api_cost_from_memory_usage(&self, entry: &CostingEntry) -> u32 {
