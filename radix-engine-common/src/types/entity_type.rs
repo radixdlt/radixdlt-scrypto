@@ -26,7 +26,6 @@ pub enum EntityType {
 
     InternalFungibleVault,
     InternalNonFungibleVault,
-    InternalAccessController,
     InternalAccount,
     InternalKeyValueStore,
     InternalGenericComponent, // generic
@@ -51,7 +50,6 @@ impl EntityType {
             | EntityType::GlobalVirtualEddsaIdentity => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
-            | EntityType::InternalAccessController
             | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore => false,
@@ -80,7 +78,6 @@ impl EntityType {
         EntityType::GlobalNonFungibleResource | /* ResourceAddress */
         EntityType::InternalFungibleVault |
         EntityType::InternalNonFungibleVault |
-        EntityType::InternalAccessController |
         EntityType::InternalAccount |
         EntityType::InternalGenericComponent |
         EntityType::InternalKeyValueStore => false,

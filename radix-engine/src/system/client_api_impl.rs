@@ -181,9 +181,6 @@ where
             (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
                 EntityType::InternalNonFungibleVault
             }
-            (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-                EntityType::InternalAccessController
-            }
             (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
             _ => EntityType::InternalGenericComponent,
         };
