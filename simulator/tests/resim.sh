@@ -78,7 +78,7 @@ files=`ls target/*.blob`
 blobs=`echo $files | sed 's/ / --blobs /g'`
 $resim run ./target/temp2.rtm --blobs $blobs
 $resim new-account --manifest ./target/temp3.rtm
-echo "FIXME: reenable this call: " $resim run ./target/temp3.rtm
+$resim run ./target/temp3.rtm
 
 # Test - run manifest with a given set of signing keys
 $resim generate-key-pair

@@ -827,6 +827,12 @@ where
         let (handle, blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
+                // No OP for transient nodes
+                Some(Actor::Method {
+                    global_address: None,
+                    ..
+                }) => return Ok(()),
+                // For non-transient nodes, emit the event.
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
