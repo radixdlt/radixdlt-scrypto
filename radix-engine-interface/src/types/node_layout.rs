@@ -22,7 +22,7 @@ use strum::{EnumIter, FromRepr};
     FromRepr,
     EnumIter,
 )]
-pub enum TypedModuleId {
+pub enum SysModuleId {
     TypeInfo,
     ObjectState,
     Metadata,
@@ -30,7 +30,7 @@ pub enum TypedModuleId {
     AccessRules,
 }
 
-impl Into<ModuleId> for TypedModuleId {
+impl Into<ModuleId> for SysModuleId {
     fn into(self) -> ModuleId {
         ModuleId(self as u8)
     }

@@ -15,19 +15,19 @@ impl InMemorySubstateDatabase {
     pub fn standard() -> Self {
         Self {
             configs: btreemap!(
-                TypedModuleId::TypeInfo.into() => ModuleConfig {
+                SysModuleId::TypeInfo.into() => ModuleConfig {
                     iteration_enabled: false,
                 },
-                TypedModuleId::ObjectState.into() => ModuleConfig {
+                SysModuleId::ObjectState.into() => ModuleConfig {
                     iteration_enabled: true,
                 },
-                TypedModuleId::Metadata.into() => ModuleConfig {
+                SysModuleId::Metadata.into() => ModuleConfig {
                     iteration_enabled: true,
                 },
-                TypedModuleId::Royalty.into() => ModuleConfig {
+                SysModuleId::Royalty.into() => ModuleConfig {
                     iteration_enabled: false,
                 },
-                TypedModuleId::AccessRules.into() => ModuleConfig {
+                SysModuleId::AccessRules.into() => ModuleConfig {
                     iteration_enabled: false,
                 },
             ),

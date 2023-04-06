@@ -23,7 +23,7 @@ impl BorrowedPackage {
     {
         api.call_module_method(
             self.0.as_node_id(),
-            TypedModuleId::ObjectState,
+            SysModuleId::ObjectState,
             PACKAGE_SET_ROYALTY_CONFIG_IDENT,
             scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
         )?;

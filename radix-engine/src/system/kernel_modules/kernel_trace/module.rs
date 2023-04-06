@@ -9,7 +9,7 @@ use crate::{
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{
-    EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateKey, TypedModuleId,
+    EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateKey, SysModuleId,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -86,7 +86,7 @@ impl KernelModule for KernelTraceModule {
         api: &mut Y,
         node_id: &NodeId,
         node_init: &NodeInit,
-        node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Creating node: id = {:?}, type = {:?}",
@@ -109,7 +109,7 @@ impl KernelModule for KernelTraceModule {
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &TypedModuleId,
+        module_id: &SysModuleId,
         offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

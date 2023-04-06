@@ -29,7 +29,7 @@ impl Heap {
     pub fn get_substate(
         &self,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
@@ -42,7 +42,7 @@ impl Heap {
     pub fn put_substate(
         &mut self,
         node_id: NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
@@ -73,7 +73,7 @@ impl Heap {
 
 #[derive(Debug, Default)]
 pub struct HeapNode {
-    pub substates: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+    pub substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
 }
 
 pub struct DroppedBucket {
@@ -97,7 +97,7 @@ impl DroppedBucket {
 
 impl Into<DroppedBucket> for HeapNode {
     fn into(mut self) -> DroppedBucket {
-        let mut module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
+        let mut module = self.substates.remove(&SysModuleId::ObjectState).unwrap();
 
         let info: BucketInfoSubstate = module
             .remove(&BucketOffset::Info.into())
@@ -135,7 +135,7 @@ pub enum DroppedProofResource {
 
 impl Into<DroppedProof> for HeapNode {
     fn into(mut self) -> DroppedProof {
-        let mut module = self.substates.remove(&TypedModuleId::ObjectState).unwrap();
+        let mut module = self.substates.remove(&SysModuleId::ObjectState).unwrap();
 
         let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())

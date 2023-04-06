@@ -6,7 +6,7 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use radix_engine_interface::types::*;
-use radix_engine_interface::types::{NodeId, TypedModuleId};
+use radix_engine_interface::types::{NodeId, SysModuleId};
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -30,8 +30,8 @@ impl Metadata {
 }
 
 impl MetadataObject for Metadata {
-    fn self_id(&self) -> (NodeId, TypedModuleId) {
-        (self.0.as_node_id().clone(), TypedModuleId::ObjectState)
+    fn self_id(&self) -> (NodeId, SysModuleId) {
+        (self.0.as_node_id().clone(), SysModuleId::ObjectState)
     }
 }
 
@@ -39,13 +39,13 @@ impl MetadataObject for Metadata {
 pub struct AttachedMetadata(pub GlobalAddress);
 
 impl MetadataObject for AttachedMetadata {
-    fn self_id(&self) -> (NodeId, TypedModuleId) {
-        (self.0.into(), TypedModuleId::Metadata)
+    fn self_id(&self) -> (NodeId, SysModuleId) {
+        (self.0.into(), SysModuleId::Metadata)
     }
 }
 
 pub trait MetadataObject {
-    fn self_id(&self) -> (NodeId, TypedModuleId);
+    fn self_id(&self) -> (NodeId, SysModuleId);
 
     fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
         let (node_id, module_id) = self.self_id();

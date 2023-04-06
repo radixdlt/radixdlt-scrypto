@@ -58,7 +58,7 @@ impl AccountBlueprint {
     fn create_modules<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<BTreeMap<TypedModuleId, Own>, RuntimeError>
+    ) -> Result<BTreeMap<SysModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -66,9 +66,9 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            TypedModuleId::AccessRules => access_rules.0,
-            TypedModuleId::Metadata => metadata,
-            TypedModuleId::Royalty => royalty,
+            SysModuleId::AccessRules => access_rules.0,
+            SysModuleId::Metadata => metadata,
+            SysModuleId::Royalty => royalty,
         );
 
         Ok(modules)

@@ -28,7 +28,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let package = substate_db
         .get_substate(
             package_address.as_node_id(),
-            TypedModuleId::ObjectState.into(),
+            SysModuleId::ObjectState.into(),
             &PackageOffset::Code.into(),
         )
         .expect("Database misconfigured");
@@ -64,7 +64,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let substate = substate_db
             .get_substate(
                 component_address.as_node_id(),
-                TypedModuleId::TypeInfo.into(),
+                SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Database misconfigured")
@@ -137,7 +137,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     let substate = substate_db
         .get_substate(
             resource_address.as_node_id(),
-            TypedModuleId::ObjectState.into(),
+            SysModuleId::ObjectState.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
         .expect("Database misconfigured")

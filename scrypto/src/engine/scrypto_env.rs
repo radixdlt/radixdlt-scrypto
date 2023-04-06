@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{Blueprint, GlobalAddress};
-use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, TypedModuleId};
+use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, SysModuleId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -63,7 +63,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, NodeId>,
+        modules: BTreeMap<SysModuleId, NodeId>,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
 
@@ -81,7 +81,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, NodeId>,
+        modules: BTreeMap<SysModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
@@ -106,13 +106,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, TypedModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {

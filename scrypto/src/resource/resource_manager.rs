@@ -32,7 +32,7 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
@@ -48,12 +48,12 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         RESOURCE_MANAGER_BURN_IDENT,
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
@@ -75,7 +75,7 @@ impl ResourceManager {
         let _rtn = ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
@@ -91,11 +91,11 @@ impl ResourceManager {
         let _rtn = ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    method_key: MethodKey::new(TypedModuleId::ObjectState, VAULT_PUT_IDENT),
+                    method_key: MethodKey::new(SysModuleId::ObjectState, VAULT_PUT_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -107,7 +107,7 @@ impl ResourceManager {
         let _rtn = ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
@@ -123,11 +123,11 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+                    method_key: MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -139,12 +139,12 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
@@ -158,7 +158,7 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                     object_key: ObjectKey::SELF,
@@ -174,12 +174,12 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         RESOURCE_MANAGER_BURN_IDENT,
                     ),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -193,11 +193,11 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+                    method_key: MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
@@ -209,12 +209,12 @@ impl ResourceManager {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -227,7 +227,7 @@ impl ResourceManager {
     pub fn lock_withdrawable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             self.0.as_node_id(),
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                 object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
@@ -241,11 +241,11 @@ impl ResourceManager {
     pub fn lock_depositable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             self.0.as_node_id(),
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                 object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                method_key: MethodKey::new(TypedModuleId::ObjectState, VAULT_PUT_IDENT),
+                method_key: MethodKey::new(SysModuleId::ObjectState, VAULT_PUT_IDENT),
                 mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             })
             .unwrap(),
@@ -255,7 +255,7 @@ impl ResourceManager {
     pub fn lock_recallable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             self.0.as_node_id(),
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                 object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),

@@ -79,7 +79,7 @@ where
 
         let module_id = u8::try_from(module_id)
             .ok()
-            .and_then(|x| TypedModuleId::from_repr(x))
+            .and_then(|x| SysModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =
@@ -138,7 +138,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(component_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let modules = scrypto_decode::<BTreeMap<TypedModuleId, NodeId>>(&modules)
+        let modules = scrypto_decode::<BTreeMap<SysModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;

@@ -5,7 +5,7 @@ pub enum Actor {
     Method {
         global_address: Option<GlobalAddress>,
         node_id: NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         blueprint: Blueprint,
         ident: String,
     },

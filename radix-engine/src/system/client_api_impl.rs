@@ -61,7 +61,7 @@ where
                 module_id
             } else {
                 // TODO: Remove this
-                TypedModuleId::ObjectState
+                SysModuleId::ObjectState
             };
 
         self.kernel_lock_substate(&node_id, module_id, substate_key, flags)
@@ -81,7 +81,7 @@ where
             node_id, module_id, ..
         } = self.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&TypedModuleId::ObjectState) {
+        if module_id.eq(&SysModuleId::ObjectState) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -135,7 +135,7 @@ where
 
         let handle = self.kernel_lock_substate(
             package_address.as_node_id(),
-            TypedModuleId::ObjectState,
+            SysModuleId::ObjectState,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -222,7 +222,7 @@ where
             node_id,
             node_init,
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
@@ -238,7 +238,7 @@ where
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, NodeId>,
+        modules: BTreeMap<SysModuleId, NodeId>,
     ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME check completeness of modules
 
@@ -278,15 +278,15 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<TypedModuleId, NodeId>,
+        modules: BTreeMap<SysModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // Check module configuration
-        let module_ids = modules.keys().cloned().collect::<BTreeSet<TypedModuleId>>();
+        let module_ids = modules.keys().cloned().collect::<BTreeSet<SysModuleId>>();
         let standard_object = btreeset!(
-            TypedModuleId::Metadata,
-            TypedModuleId::Royalty,
-            TypedModuleId::AccessRules
+            SysModuleId::Metadata,
+            SysModuleId::Royalty,
+            SysModuleId::AccessRules
         );
         if module_ids != standard_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
@@ -300,7 +300,7 @@ where
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get_mut(&TypedModuleId::TypeInfo)
+            .get_mut(&SysModuleId::TypeInfo)
             .unwrap()
             .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
@@ -312,7 +312,7 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
         node_substates
-            .get_mut(&TypedModuleId::TypeInfo)
+            .get_mut(&SysModuleId::TypeInfo)
             .unwrap()
             .insert(
                 TypeInfoOffset::TypeInfo.into(),
@@ -322,10 +322,10 @@ where
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
             match module_id {
-                TypedModuleId::ObjectState | TypedModuleId::TypeInfo => {
+                SysModuleId::ObjectState | SysModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                TypedModuleId::AccessRules => {
+                SysModuleId::AccessRules => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
@@ -338,10 +338,10 @@ where
                     }
 
                     let mut node = self.kernel_drop_node(&node_id)?;
-                    let access_rules = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
+                    let access_rules = node.substates.remove(&SysModuleId::ObjectState).unwrap();
                     node_substates.insert(module_id, access_rules);
                 }
-                TypedModuleId::Metadata => {
+                SysModuleId::Metadata => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
@@ -354,10 +354,10 @@ where
                     }
 
                     let mut node = self.kernel_drop_node(&node_id)?;
-                    let metadata = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
+                    let metadata = node.substates.remove(&SysModuleId::ObjectState).unwrap();
                     node_substates.insert(module_id, metadata);
                 }
-                TypedModuleId::Royalty => {
+                SysModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
@@ -370,14 +370,14 @@ where
                     }
 
                     let mut node = self.kernel_drop_node(&node_id)?;
-                    let royalty = node.substates.remove(&TypedModuleId::ObjectState).unwrap();
+                    let royalty = node.substates.remove(&SysModuleId::ObjectState).unwrap();
                     node_substates.insert(module_id, royalty);
                 }
             }
         }
 
         // TODO: better interface to remove this
-        let node_init = node_substates.remove(&TypedModuleId::ObjectState).unwrap();
+        let node_init = node_substates.remove(&SysModuleId::ObjectState).unwrap();
 
         self.kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
 
@@ -390,13 +390,13 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, TypedModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -466,7 +466,7 @@ where
             node_id,
             NodeInit::KeyValueStore,
             btreemap!(
-                    TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
+                    SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                         TypeInfoSubstate::KeyValueStore(schema)
                     ).to_substates(),
             ),
@@ -629,21 +629,19 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    TypedModuleId::AccessRules => Ok(Blueprint::new(
+                    SysModuleId::AccessRules => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
-                    TypedModuleId::Royalty => Ok(Blueprint::new(
+                    SysModuleId::Royalty => Ok(Blueprint::new(
                         &ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT,
                     )),
-                    TypedModuleId::Metadata => {
+                    SysModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    TypedModuleId::ObjectState => {
-                        self.get_object_info(&node_id).map(|x| x.blueprint)
-                    }
-                    TypedModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                    SysModuleId::ObjectState => self.get_object_info(&node_id).map(|x| x.blueprint),
+                    SysModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
@@ -655,7 +653,7 @@ where
 
             let handle = self.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                TypedModuleId::ObjectState,
+                SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -704,7 +702,7 @@ where
             Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
-                    TypedModuleId::ObjectState,
+                    SysModuleId::ObjectState,
                     blueprint.blueprint_name.to_string(),
                 ),
                 local_type_index,

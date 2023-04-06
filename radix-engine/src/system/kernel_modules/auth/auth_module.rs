@@ -94,7 +94,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                TypedModuleId::ObjectState,
+                SysModuleId::ObjectState,
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
             )?;
@@ -113,13 +113,13 @@ impl AuthModule {
 
     fn method_auth<Y: KernelModuleApi<RuntimeError>>(
         node_id: &NodeId,
-        module_id: &TypedModuleId,
+        module_id: &SysModuleId,
         ident: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = match (node_id, module_id, ident) {
-            (node_id, module_id, ident) if matches!(module_id, TypedModuleId::AccessRules) => {
+            (node_id, module_id, ident) if matches!(module_id, SysModuleId::AccessRules) => {
                 AccessRulesNativePackage::authorization(node_id, ident, args, api)?
             }
 
@@ -150,7 +150,7 @@ impl AuthModule {
                 let method_key = MethodKey::new(*module_id, ident);
 
                 // TODO: Clean this up
-                let auth = if node_id.is_global() && module_id.eq(&TypedModuleId::ObjectState) {
+                let auth = if node_id.is_global() && module_id.eq(&SysModuleId::ObjectState) {
                     Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(
@@ -186,7 +186,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                TypedModuleId::ObjectState,
+                SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -219,7 +219,7 @@ impl AuthModule {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
-                TypedModuleId::ObjectState,
+                SysModuleId::ObjectState,
                 &substate_key,
                 LockFlags::read_only(),
             )?;
@@ -232,7 +232,7 @@ impl AuthModule {
 
         let handle = api.kernel_lock_substate(
             receiver,
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
@@ -258,7 +258,7 @@ impl AuthModule {
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
@@ -420,7 +420,7 @@ impl KernelModule for AuthModule {
                 AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
             )),
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     type_parent: None,

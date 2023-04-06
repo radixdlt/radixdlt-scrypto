@@ -271,7 +271,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             &self
                 .fetch_substate(
                     node_id,
-                    TypedModuleId::TypeInfo.into(),
+                    SysModuleId::TypeInfo.into(),
                     &TypeInfoOffset::TypeInfo.into(),
                 )
                 .expect("Missing vault info"),
@@ -290,12 +290,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                TypedModuleId::ObjectState.into(),
+                SysModuleId::ObjectState.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    TypedModuleId::ObjectState.into(),
+                    SysModuleId::ObjectState.into(),
                     &FungibleVaultOffset::LiquidFungible.into(),
                 );
 
@@ -318,12 +318,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                TypedModuleId::ObjectState.into(),
+                SysModuleId::ObjectState.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    TypedModuleId::ObjectState.into(),
+                    SysModuleId::ObjectState.into(),
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 );
 

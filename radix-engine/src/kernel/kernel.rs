@@ -307,7 +307,7 @@ where
                     .track
                     .acquire_lock(
                         node_id,
-                        TypedModuleId::TypeInfo.into(),
+                        SysModuleId::TypeInfo.into(),
                         &TypeInfoOffset::TypeInfo.into(),
                         LockFlags::read_only(),
                     )
@@ -432,7 +432,7 @@ where
         &mut self,
         node_id: NodeId,
         node_init: NodeInit,
-        module_init: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         KernelModuleMixer::before_create_node(self, &node_id, &node_init, &module_init)?;
 
@@ -510,7 +510,7 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            TypedModuleId::TypeInfo,
+            SysModuleId::TypeInfo,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -528,7 +528,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            TypedModuleId::ObjectState,
+            SysModuleId::ObjectState,
             &BucketOffset::Info.into(),
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
@@ -539,7 +539,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            TypedModuleId::ObjectState,
+                            SysModuleId::ObjectState,
                             &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
@@ -556,7 +556,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            TypedModuleId::ObjectState,
+                            SysModuleId::ObjectState,
                             &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
@@ -578,7 +578,7 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            TypedModuleId::TypeInfo,
+            SysModuleId::TypeInfo,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -596,7 +596,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             proof_id,
-            TypedModuleId::ObjectState,
+            SysModuleId::ObjectState,
             &ProofOffset::Info.into(),
         ) {
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
@@ -607,7 +607,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            TypedModuleId::ObjectState,
+                            SysModuleId::ObjectState,
                             &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
@@ -625,7 +625,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            TypedModuleId::ObjectState,
+                            SysModuleId::ObjectState,
                             &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
@@ -653,7 +653,7 @@ where
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -739,7 +739,7 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = TypedModuleId::ObjectState;
+                        let module_id = SysModuleId::ObjectState;
                         let handle = self
                             .track
                             .acquire_lock(

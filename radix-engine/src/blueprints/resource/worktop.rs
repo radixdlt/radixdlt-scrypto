@@ -49,7 +49,7 @@ impl WorktopBlueprint {
         let mut node = api.kernel_drop_node(input.worktop.as_node_id())?;
         let substate = node
             .substates
-            .remove(&TypedModuleId::ObjectState)
+            .remove(&SysModuleId::ObjectState)
             .unwrap()
             .remove(&WorktopOffset::Worktop.into())
             .unwrap();

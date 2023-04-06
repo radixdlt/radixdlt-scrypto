@@ -64,7 +64,7 @@ pub enum RefType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub node_id: NodeId,
-    pub module_id: TypedModuleId,
+    pub module_id: SysModuleId,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
@@ -115,7 +115,7 @@ pub struct CallFrame {
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, TypedModuleId, SubstateKey),
+    SubstateNotFound(NodeId, SysModuleId, SubstateKey),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -157,14 +157,14 @@ impl CallFrame {
     ) -> Option<TypeInfoSubstate> {
         if let Some(substate) = heap.get_substate(
             node_id,
-            TypedModuleId::TypeInfo,
+            SysModuleId::TypeInfo,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
         } else if let Ok(handle) = track.acquire_lock(
             node_id,
-            TypedModuleId::TypeInfo.into(),
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
             LockFlags::read_only(),
         ) {
@@ -181,7 +181,7 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s>,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, LockSubstateError> {
@@ -192,9 +192,9 @@ impl CallFrame {
         // Virtualization
         // TODO: clean up the naughty!
         let virtualization_enabled = {
-            if module_id == TypedModuleId::Metadata {
+            if module_id == SysModuleId::Metadata {
                 true
-            } else if module_id == TypedModuleId::ObjectState {
+            } else if module_id == SysModuleId::ObjectState {
                 if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
@@ -384,7 +384,7 @@ impl CallFrame {
                 // TODO: Move this check into system layer
                 if let Some(info) = heap.get_substate(
                     child_id,
-                    TypedModuleId::TypeInfo.into(),
+                    SysModuleId::TypeInfo.into(),
                     &TypeInfoOffset::TypeInfo.into(),
                 ) {
                     let type_info: TypeInfoSubstate = info.as_typed().unwrap();
@@ -621,13 +621,13 @@ impl CallFrame {
         &mut self,
         node_id: NodeId,
         node_init: NodeInit,
-        node_modules: BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         heap: &mut Heap,
         track: &'f mut Track<'s>,
         push_to_store: bool,
     ) -> Result<(), UnlockSubstateError> {
         let mut substates = BTreeMap::new();
-        substates.insert(TypedModuleId::ObjectState, node_init.to_substates());
+        substates.insert(SysModuleId::ObjectState, node_init.to_substates());
         substates.extend(node_modules);
 
         for (_module_id, module) in &substates {
@@ -642,7 +642,7 @@ impl CallFrame {
                     // TODO: Move this check into system layer
                     if let Some(info) = heap.get_substate(
                         child_id,
-                        TypedModuleId::TypeInfo.into(),
+                        SysModuleId::TypeInfo.into(),
                         &TypeInfoOffset::TypeInfo.into(),
                     ) {
                         let type_info: TypeInfoSubstate = info.as_typed().unwrap();

@@ -201,7 +201,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 test_runner.component_address.into(),
-                MethodKey::new(TypedModuleId::ObjectState, "borrow_funds"),
+                MethodKey::new(SysModuleId::ObjectState, "borrow_funds"),
                 to_rule,
             )
             .build(),
@@ -236,19 +236,19 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
         MethodKey::new(
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
         ),
         MethodKey::new(
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            TypedModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
         ),
     ] {

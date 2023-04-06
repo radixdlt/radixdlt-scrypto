@@ -190,7 +190,7 @@ impl KernelModule for CostingModule {
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            TypedModuleId::ObjectState,
+            SysModuleId::ObjectState,
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
@@ -225,7 +225,7 @@ impl KernelModule for CostingModule {
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
                 component_address.as_node_id(),
-                TypedModuleId::Royalty,
+                SysModuleId::Royalty,
                 &RoyaltyOffset::RoyaltyConfig.into(),
                 LockFlags::read_only(),
             )?;
@@ -237,7 +237,7 @@ impl KernelModule for CostingModule {
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    TypedModuleId::Royalty,
+                    SysModuleId::Royalty,
                     &RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                 )?;
@@ -268,7 +268,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(
@@ -293,7 +293,7 @@ impl KernelModule for CostingModule {
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _module_id: &TypedModuleId,
+        _module_id: &SysModuleId,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

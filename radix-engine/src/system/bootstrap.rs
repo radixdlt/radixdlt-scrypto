@@ -667,7 +667,7 @@ where
     if substate_db
         .get_substate(
             &RADIX_TOKEN.into(),
-            TypedModuleId::TypeInfo.into(),
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         )
         .expect("Database misconfigured")

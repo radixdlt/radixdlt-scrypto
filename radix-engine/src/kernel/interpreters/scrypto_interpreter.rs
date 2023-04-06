@@ -112,7 +112,7 @@ impl ExecutableInvocation for MethodInvocation {
         node_refs_to_copy.insert(self.identifier.0);
 
         let (blueprint, global_address) = match self.identifier.1 {
-            TypedModuleId::ObjectState => {
+            SysModuleId::ObjectState => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo {
@@ -149,18 +149,18 @@ impl ExecutableInvocation for MethodInvocation {
                     }
                 }
             }
-            TypedModuleId::Metadata => {
+            SysModuleId::Metadata => {
                 // TODO: Check if type has metadata
                 (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
             }
-            TypedModuleId::Royalty => {
+            SysModuleId::Royalty => {
                 // TODO: Check if type has royalty
                 (
                     Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
                     None,
                 )
             }
-            TypedModuleId::AccessRules => {
+            SysModuleId::AccessRules => {
                 // TODO: Check if type has access rules
                 (
                     Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
@@ -179,7 +179,7 @@ impl ExecutableInvocation for MethodInvocation {
             } else {
                 let handle = api.kernel_lock_substate(
                     blueprint.package_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    SysModuleId::ObjectState,
                     &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
@@ -257,7 +257,7 @@ impl ExecutableInvocation for FunctionInvocation {
             } else {
                 let handle = api.kernel_lock_substate(
                     self.identifier.0.package_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    SysModuleId::ObjectState,
                     &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
@@ -362,7 +362,7 @@ impl Executor for ScryptoExecutor {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 self.blueprint.package_address.as_node_id(),
-                TypedModuleId::ObjectState,
+                SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             );
@@ -404,7 +404,7 @@ impl Executor for ScryptoExecutor {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 self.blueprint.package_address.as_node_id(),
-                TypedModuleId::ObjectState,
+                SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -414,7 +414,7 @@ impl Executor for ScryptoExecutor {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     self.blueprint.package_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    SysModuleId::ObjectState,
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
                 )?;
@@ -454,7 +454,7 @@ impl Executor for ScryptoExecutor {
             let code_type = {
                 let handle = api.kernel_lock_substate(
                     self.blueprint.package_address.as_node_id(),
-                    TypedModuleId::ObjectState,
+                    SysModuleId::ObjectState,
                     &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
@@ -467,7 +467,7 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
                         self.blueprint.package_address.as_node_id(),
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         &PackageOffset::Code.into(),
                         LockFlags::read_only(),
                     )?;
@@ -488,7 +488,7 @@ impl Executor for ScryptoExecutor {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
                             self.blueprint.package_address.as_node_id(),
-                            TypedModuleId::ObjectState,
+                            SysModuleId::ObjectState,
                             &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;

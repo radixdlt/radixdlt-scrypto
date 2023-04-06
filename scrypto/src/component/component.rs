@@ -52,7 +52,7 @@ pub trait LocalComponent: Sized {
     fn globalize(self) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         );
         let access_rules_config =
@@ -68,7 +68,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         );
         let access_rules_config =
@@ -84,7 +84,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         );
         let access_rules_config =
@@ -116,28 +116,25 @@ pub trait LocalComponent: Sized {
         let mut access_rules_config =
             AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_GET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_GET_IDENT),
             AccessRule::AllowAll,
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
             MethodKey::new(
-                TypedModuleId::Royalty,
+                SysModuleId::Royalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
             ),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(
-                TypedModuleId::Royalty,
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-            ),
+            MethodKey::new(SysModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
@@ -193,9 +190,9 @@ impl LocalComponent for OwnedComponent {
             .globalize(
                 self.0.as_node_id().clone(),
                 btreemap!(
-                    TypedModuleId::AccessRules => access_rules.0,
-                    TypedModuleId::Metadata => metadata.0,
-                    TypedModuleId::Royalty => royalty.0,
+                    SysModuleId::AccessRules => access_rules.0,
+                    SysModuleId::Metadata => metadata.0,
+                    SysModuleId::Royalty => royalty.0,
                 ),
             )
             .unwrap();

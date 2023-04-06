@@ -7,7 +7,7 @@ use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
-    ObjectInfo, ResourceAddress, SubstateKey, TypedModuleId,
+    ObjectInfo, ResourceAddress, SubstateKey, SysModuleId,
 };
 use radix_engine_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
@@ -83,7 +83,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 .substate_db
                 .get_substate(
                     &node_id,
-                    TypedModuleId::TypeInfo.into(),
+                    SysModuleId::TypeInfo.into(),
                     &SubstateKey::from_vec(vec![0]).unwrap(),
                 )
                 .expect("Failed to get substate")
@@ -96,7 +96,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_substates(&node_id, TypedModuleId::ObjectState.into())
+                    .list_substates(&node_id, SysModuleId::ObjectState.into())
                     .expect("Failed to list key value store")
                     .0
                 {
@@ -107,7 +107,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_recursive(
                             Some(&(
                                 node_id,
-                                TypedModuleId::ObjectState.into(),
+                                SysModuleId::ObjectState.into(),
                                 substate_key.clone(),
                             )),
                             child_node_id,
@@ -129,7 +129,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                TypedModuleId::ObjectState.into(),
+                                SysModuleId::ObjectState.into(),
                                 &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database")
@@ -151,7 +151,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                TypedModuleId::ObjectState.into(),
+                                SysModuleId::ObjectState.into(),
                                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database")
@@ -166,7 +166,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &liquid,
                     );
                 } else {
-                    for t in TypedModuleId::iter() {
+                    for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         if let Ok(x) = self.substate_db.list_substates(&node_id, t.into()) {
                             for (substate_key, substate_value) in x.0 {
@@ -178,7 +178,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                     self.traverse_recursive(
                                         Some(&(
                                             node_id,
-                                            TypedModuleId::ObjectState.into(),
+                                            SysModuleId::ObjectState.into(),
                                             substate_key.clone(),
                                         )),
                                         child_node_id,

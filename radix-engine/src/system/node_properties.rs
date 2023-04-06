@@ -45,7 +45,7 @@ impl NodeProperties {
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> bool {
@@ -61,30 +61,30 @@ impl NodeProperties {
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         _substate_key: &SubstateKey,
     ) -> bool {
         match mode {
             ExecutionMode::Kernel => match module_id {
-                TypedModuleId::TypeInfo => true,
+                SysModuleId::TypeInfo => true,
                 _ => false,
             },
             ExecutionMode::Resolver => match module_id {
-                TypedModuleId::TypeInfo => true,
-                TypedModuleId::ObjectState => true,
+                SysModuleId::TypeInfo => true,
+                SysModuleId::ObjectState => true,
                 _ => false,
             },
             ExecutionMode::DropNode => match module_id {
-                TypedModuleId::TypeInfo => true,
+                SysModuleId::TypeInfo => true,
                 _ => false,
             },
             ExecutionMode::AutoDrop => match module_id {
-                TypedModuleId::TypeInfo => true,
+                SysModuleId::TypeInfo => true,
                 _ => false,
             },
             ExecutionMode::System => match module_id {
-                TypedModuleId::TypeInfo => true,
-                TypedModuleId::ObjectState => true,
+                SysModuleId::TypeInfo => true,
+                SysModuleId::ObjectState => true,
                 _ => false,
             },
             ExecutionMode::KernelModule => true,
@@ -98,7 +98,7 @@ impl NodeProperties {
                     return true;
                 }
 
-                if module_id == TypedModuleId::TypeInfo {
+                if module_id == SysModuleId::TypeInfo {
                     return true;
                 }
 
@@ -122,7 +122,7 @@ impl NodeProperties {
         mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         _substate_key: &SubstateKey,
     ) -> bool {
         match mode {
@@ -147,7 +147,7 @@ impl NodeProperties {
                     return true;
                 }
 
-                if module_id == TypedModuleId::TypeInfo {
+                if module_id == SysModuleId::TypeInfo {
                     return true;
                 }
 

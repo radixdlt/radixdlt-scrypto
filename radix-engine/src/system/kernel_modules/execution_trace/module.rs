@@ -283,7 +283,7 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
-        _node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state()
             .execution_trace

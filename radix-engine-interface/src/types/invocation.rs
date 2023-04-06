@@ -14,10 +14,10 @@ pub enum InvocationDebugIdentifier {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodReceiver(pub NodeId, pub TypedModuleId);
+pub struct MethodReceiver(pub NodeId, pub SysModuleId);
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodIdentifier(pub NodeId, pub TypedModuleId, pub String);
+pub struct MethodIdentifier(pub NodeId, pub SysModuleId, pub String);
 
 impl MethodIdentifier {
     pub fn method_key(&self) -> MethodKey {

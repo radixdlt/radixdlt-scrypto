@@ -77,7 +77,7 @@ impl TransactionProcessorBlueprint {
                 WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
             )),
             btreemap!(
-                TypedModuleId::TypeInfo => ModuleInit::TypeInfo(
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
@@ -446,7 +446,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        TypedModuleId::Metadata,
+                        SysModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
@@ -471,7 +471,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        TypedModuleId::Metadata,
+                        SysModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
@@ -491,7 +491,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -514,7 +514,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         component_address.as_node_id(),
-                        TypedModuleId::Royalty,
+                        SysModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -534,7 +534,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        TypedModuleId::ObjectState,
+                        SysModuleId::ObjectState,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -551,7 +551,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
                         component_address.as_node_id(),
-                        TypedModuleId::Royalty,
+                        SysModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -573,7 +573,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        TypedModuleId::AccessRules,
+                        SysModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                             object_key: ObjectKey::SELF,

@@ -251,7 +251,7 @@ pub struct InvalidModuleType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<TypedModuleId>);
+pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<SysModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {

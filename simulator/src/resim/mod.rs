@@ -350,7 +350,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            TypedModuleId::ObjectState.into(),
+            SysModuleId::ObjectState.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -383,7 +383,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let substate = substate_db
         .get_substate(
             component_address.as_node_id(),
-            TypedModuleId::TypeInfo.into(),
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         )
         .expect("Database misconfigured")
@@ -404,26 +404,26 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                TypedModuleId::AccessRules => (
+                SysModuleId::AccessRules => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                TypedModuleId::Royalty => (
+                SysModuleId::Royalty => (
                     ROYALTY_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                TypedModuleId::Metadata => (
+                SysModuleId::Metadata => (
                     METADATA_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                TypedModuleId::ObjectState => {
+                SysModuleId::ObjectState => {
                     let substate = substate_db
                         .get_substate(
                             node_id,
-                            TypedModuleId::TypeInfo.into(),
+                            SysModuleId::TypeInfo.into(),
                             &TypeInfoOffset::TypeInfo.into(),
                         )
                         .expect("Database misconfigured")
@@ -438,7 +438,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                TypedModuleId::TypeInfo => return None,
+                SysModuleId::TypeInfo => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
@@ -451,7 +451,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            TypedModuleId::ObjectState.into(),
+            SysModuleId::ObjectState.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

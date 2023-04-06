@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{NodeId, TypedModuleId};
+use radix_engine_interface::types::{NodeId, SysModuleId};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
@@ -47,21 +47,21 @@ impl AccessRules {
 }
 
 impl AccessRulesObject for AccessRules {
-    fn self_id(&self) -> (NodeId, TypedModuleId) {
-        (self.0 .0, TypedModuleId::ObjectState)
+    fn self_id(&self) -> (NodeId, SysModuleId) {
+        (self.0 .0, SysModuleId::ObjectState)
     }
 }
 
 pub struct AttachedAccessRules(pub NodeId);
 
 impl AccessRulesObject for AttachedAccessRules {
-    fn self_id(&self) -> (NodeId, TypedModuleId) {
-        (self.0, TypedModuleId::AccessRules)
+    fn self_id(&self) -> (NodeId, SysModuleId) {
+        (self.0, SysModuleId::AccessRules)
     }
 }
 
 pub trait AccessRulesObject {
-    fn self_id(&self) -> (NodeId, TypedModuleId);
+    fn self_id(&self) -> (NodeId, SysModuleId);
 
     fn set_method_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
         &self,

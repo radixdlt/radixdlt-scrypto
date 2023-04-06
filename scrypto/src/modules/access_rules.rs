@@ -48,11 +48,11 @@ impl AttachedAccessRules {
         ScryptoEnv
             .call_module_method(
                 &self.0.clone().into(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(TypedModuleId::ObjectState, method_name),
+                    method_key: MethodKey::new(SysModuleId::ObjectState, method_name),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -65,11 +65,11 @@ impl AttachedAccessRules {
         ScryptoEnv
             .call_module_method(
                 &self.0.clone().into(),
-                TypedModuleId::AccessRules,
+                SysModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(TypedModuleId::ObjectState, method_name),
+                    method_key: MethodKey::new(SysModuleId::ObjectState, method_name),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),

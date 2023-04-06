@@ -1,4 +1,4 @@
-use super::TypedModuleId;
+use super::SysModuleId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
@@ -21,9 +21,9 @@ pub struct EventTypeIdentifier(pub Emitter, pub LocalTypeIndex);
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Emitter {
     // (Node id, module id, blueprint name)
-    Function(NodeId, TypedModuleId, String),
+    Function(NodeId, SysModuleId, String),
     // (Node id, module id)
-    Method(NodeId, TypedModuleId),
+    Method(NodeId, SysModuleId),
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {

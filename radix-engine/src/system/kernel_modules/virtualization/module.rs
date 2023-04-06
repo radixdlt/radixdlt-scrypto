@@ -17,7 +17,7 @@ pub struct VirtualizationModule;
 impl KernelModule for VirtualizationModule {
     fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
         node_id: NodeId,
-        _module_id: TypedModuleId,
+        _module_id: SysModuleId,
         _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -56,7 +56,7 @@ impl KernelModule for VirtualizationModule {
                     }))?
                     .into();
 
-                let (own, modules): (Own, BTreeMap<TypedModuleId, Own>) =
+                let (own, modules): (Own, BTreeMap<SysModuleId, Own>) =
                     scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;

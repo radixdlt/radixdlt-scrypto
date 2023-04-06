@@ -222,7 +222,7 @@ impl IdentityBlueprint {
     pub fn create_ecdsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<TypedModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -238,7 +238,7 @@ impl IdentityBlueprint {
     pub fn create_eddsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<TypedModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -261,7 +261,7 @@ impl IdentityBlueprint {
     fn create_object<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<TypedModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -271,9 +271,9 @@ impl IdentityBlueprint {
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            TypedModuleId::AccessRules => access_rules.0,
-            TypedModuleId::Metadata => metadata,
-            TypedModuleId::Royalty => royalty,
+            SysModuleId::AccessRules => access_rules.0,
+            SysModuleId::Metadata => metadata,
+            SysModuleId::Royalty => royalty,
         );
 
         Ok((Own(object_id), modules))

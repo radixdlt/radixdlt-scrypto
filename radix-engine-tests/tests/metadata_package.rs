@@ -117,7 +117,7 @@ fn can_lock_package_metadata_with_owner() {
         .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_method_access_rule(
             package_address.into(),
-            MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRule::DenyAll,
         )
         .build();

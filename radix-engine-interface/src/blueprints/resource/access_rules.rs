@@ -38,12 +38,12 @@ impl ObjectKey {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
-    pub module_id: TypedModuleId,
+    pub module_id: SysModuleId,
     pub ident: String,
 }
 
 impl MethodKey {
-    pub fn new(module_id: TypedModuleId, method_ident: &str) -> Self {
+    pub fn new(module_id: SysModuleId, method_ident: &str) -> Self {
         Self {
             module_id,
             ident: method_ident.to_string(),
@@ -107,7 +107,7 @@ impl AccessRulesConfig {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = MethodKey::new(TypedModuleId::ObjectState, method_name);
+        let key = MethodKey::new(SysModuleId::ObjectState, method_name);
         let mutability = mutability.into();
 
         self.method_auth
@@ -274,22 +274,22 @@ pub fn package_access_rules_from_owner_badge(
         AccessRule::DenyAll,
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::Metadata, METADATA_GET_IDENT),
+        MethodKey::new(SysModuleId::Metadata, METADATA_GET_IDENT),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::Metadata, METADATA_SET_IDENT),
+        MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
+        MethodKey::new(SysModuleId::ObjectState, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(TypedModuleId::ObjectState, PACKAGE_CLAIM_ROYALTY_IDENT),
+        MethodKey::new(SysModuleId::ObjectState, PACKAGE_CLAIM_ROYALTY_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

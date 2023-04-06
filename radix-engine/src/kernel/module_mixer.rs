@@ -474,7 +474,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         node_id: &NodeId,
         node_init: &NodeInit,
-        node_module_init: &BTreeMap<TypedModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -621,7 +621,7 @@ impl KernelModule for KernelModuleMixer {
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &TypedModuleId,
+        module_id: &SysModuleId,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
@@ -677,7 +677,7 @@ impl KernelModule for KernelModuleMixer {
     #[trace_resources]
     fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
         node_id: NodeId,
-        module_id: TypedModuleId,
+        module_id: SysModuleId,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
