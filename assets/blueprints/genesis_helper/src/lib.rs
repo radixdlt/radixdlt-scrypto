@@ -8,6 +8,7 @@ type AccountIdx = usize;
 type ResourceIdx = usize;
 type ValidatorIdx = usize;
 
+// This data represents data from Olympia Network state
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisData {
     validators: Vec<GenesisValidator>,
@@ -157,6 +158,8 @@ mod genesis_helper {
             metadata.insert("symbol".to_owned(), resource.symbol.clone());
             metadata.insert("name".to_owned(), resource.name);
             metadata.insert("description".to_owned(), resource.description);
+
+            // TODO: Use url metadata type
             metadata.insert("url".to_owned(), resource.url);
             metadata.insert("icon_url".to_owned(), resource.icon_url);
 
@@ -165,6 +168,7 @@ mod genesis_helper {
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
             if let Some(owner) = owner_with_mint_and_burn_rights {
+                // TODO: Should we use securify style non fungible resource for the owner badge?:167
                 // Note that we also set "tags" metadata later on
                 let owner_badge = ResourceBuilder::new_fungible()
                     .divisibility(DIVISIBILITY_NONE)
@@ -183,6 +187,13 @@ mod genesis_helper {
                 );
                 access_rules.insert(
                     Burn,
+                    (
+                        rule!(require(owner_badge.resource_address())),
+                        rule!(deny_all),
+                    ),
+                );
+                access_rules.insert(
+                    UpdateMetadata,
                     (
                         rule!(require(owner_badge.resource_address())),
                         rule!(deny_all),
@@ -228,9 +239,11 @@ mod genesis_helper {
             }
             bucket.drop_empty();
 
-            borrow_resource_manager!(resource_address)
-                .metadata()
-                .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
+            let address: Address = resource_address.into();
+
+            let metadata = borrow_resource_manager!(resource_address).metadata();
+            metadata.set("owner_of", address);
+            metadata.set_list("tags", vec![MetadataValue::String("badge".to_string())]);
         }
     }
 }

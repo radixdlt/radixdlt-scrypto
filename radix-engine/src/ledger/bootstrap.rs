@@ -589,6 +589,8 @@ pub fn create_genesis(
 
     // Genesis helper package
     {
+        // TODO: Add authorization rules around preventing anyone else from
+        // TODO: calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
         let package_address = GENESIS_HELPER_PACKAGE.to_array_without_entity_id();
