@@ -799,7 +799,7 @@ where
             self,
             lock_handle,
             0, //  TODO: pass the right size
-            true
+            true,
         )?;
 
         let substate_ref =

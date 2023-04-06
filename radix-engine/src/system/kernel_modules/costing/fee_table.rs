@@ -7,20 +7,37 @@ pub const FIXED_HIGH_FEE: u32 = 5000;
 const COSTING_COEFFICENT: u32 = 237;
 const COSTING_COEFFICENT_DIV_BITS: u32 = 4; // used to divide by shift left operator
 
-
 pub enum CostingEntry<'a> {
     /* invoke */
-    Invoke { input_size: u32, identifier: &'a InvocationDebugIdentifier },
+    Invoke {
+        input_size: u32,
+        identifier: &'a InvocationDebugIdentifier,
+    },
 
     /* node */
-    CreateNode { size: u32, node_id: &'a RENodeId },
-    DropNode { size: u32 },
-    AllocateNodeId { node_type: &'a AllocateEntityType },
+    CreateNode {
+        size: u32,
+        node_id: &'a RENodeId,
+    },
+    DropNode {
+        size: u32,
+    },
+    AllocateNodeId {
+        node_type: &'a AllocateEntityType,
+    },
 
     /* substate */
-    LockSubstate {node_id: &'a RENodeId, module_id: &'a NodeModuleId, offset: &'a SubstateOffset} ,
-    ReadSubstate { size: u32 },
-    WriteSubstate { size: u32 },
+    LockSubstate {
+        node_id: &'a RENodeId,
+        module_id: &'a NodeModuleId,
+        offset: &'a SubstateOffset,
+    },
+    ReadSubstate {
+        size: u32,
+    },
+    WriteSubstate {
+        size: u32,
+    },
     GetSubstateRef,
     DropLock,
     // TODO: more costing after API becomes stable.
@@ -79,50 +96,59 @@ impl FeeTable {
                 AllocateEntityType::Vault => 21,
             },
             CostingEntry::CreateNode { size: _, node_id } => match node_id {
-                    RENodeId::KeyValueStore(_) => 493,
-                    RENodeId::Object(_) => 3290,
-                    RENodeId::GlobalObject(address) => match address {
-                        Address::Component(component) => match component {
-                            ComponentAddress::AccessController(_) => 0,
-                            ComponentAddress::Account(_) => 10050,
-                            ComponentAddress::Clock(_) => 5049,
-                            ComponentAddress::EpochManager(_) => 7471,
-                            ComponentAddress::Identity(_) => 0,
-                            ComponentAddress::Normal(_) => 6111,
-                            ComponentAddress::Validator(_) => 0,
-                            _ => 0,
-                        },
-                        Address::Resource(resource_type) => match resource_type {
-                            ResourceAddress::Fungible(_) => 32715,
-                            ResourceAddress::NonFungible(_) => 17973,
-                        }
-                        Address::Package(package_type) => match package_type {
-                            PackageAddress::Normal(_) => 4964,
-                        }
-                    }
+                RENodeId::KeyValueStore(_) => 493,
+                RENodeId::Object(_) => 3290,
+                RENodeId::GlobalObject(address) => match address {
+                    Address::Component(component) => match component {
+                        ComponentAddress::AccessController(_) => 0,
+                        ComponentAddress::Account(_) => 10050,
+                        ComponentAddress::Clock(_) => 5049,
+                        ComponentAddress::EpochManager(_) => 7471,
+                        ComponentAddress::Identity(_) => 0,
+                        ComponentAddress::Normal(_) => 6111,
+                        ComponentAddress::Validator(_) => 0,
+                        _ => 0,
+                    },
+                    Address::Resource(resource_type) => match resource_type {
+                        ResourceAddress::Fungible(_) => 32715,
+                        ResourceAddress::NonFungible(_) => 17973,
+                    },
+                    Address::Package(package_type) => match package_type {
+                        PackageAddress::Normal(_) => 4964,
+                    },
                 },
+            },
             CostingEntry::DropLock => 180,
             CostingEntry::DropNode { size: _ } => 4191,
             CostingEntry::GetSubstateRef => 169,
-            CostingEntry::Invoke { input_size: _, identifier } => match identifier {
+            CostingEntry::Invoke {
+                input_size: _,
+                identifier,
+            } => match identifier {
                 InvocationDebugIdentifier::Function(fn_ident) => {
-                    if fn_ident.1 == "AccessRules" && fn_ident.2 == "create" { 29249 }
-                    else if fn_ident.1 == "Account" && fn_ident.2 == "create_advanced" { 184577 }
-                    else {
+                    if fn_ident.1 == "AccessRules" && fn_ident.2 == "create" {
+                        29249
+                    } else if fn_ident.1 == "Account" && fn_ident.2 == "create_advanced" {
+                        184577
+                    } else {
                         0
                     }
-                },
+                }
                 InvocationDebugIdentifier::Method(method_ident) => match method_ident.1 {
                     NodeModuleId::SELF => 0,
                     NodeModuleId::AccessRules => 0,
                     NodeModuleId::AccessRules1 => 0,
                     NodeModuleId::ComponentRoyalty => 0,
                     NodeModuleId::Metadata => 0,
-                    NodeModuleId::TypeInfo => 0
+                    NodeModuleId::TypeInfo => 0,
                 },
-                InvocationDebugIdentifier::VirtualLazyLoad => 0
+                InvocationDebugIdentifier::VirtualLazyLoad => 0,
             },
-            CostingEntry::LockSubstate { node_id, module_id, offset } => match node_id {
+            CostingEntry::LockSubstate {
+                node_id,
+                module_id,
+                offset,
+            } => match node_id {
                 RENodeId::GlobalObject(address) => match address {
                     Address::Component(component) => match component {
                         ComponentAddress::Account(_) => match module_id {
@@ -138,14 +164,14 @@ impl FeeTable {
                             NodeModuleId::SELF => 2827,
                             NodeModuleId::TypeInfo => 1011,
                             _ => 0,
-                        }
+                        },
                         ComponentAddress::Normal(_) => match module_id {
                             NodeModuleId::AccessRules => 1110,
                             NodeModuleId::ComponentRoyalty => 684,
                             NodeModuleId::SELF => 902,
                             NodeModuleId::TypeInfo => 667,
                             _ => 0,
-                        }
+                        },
                         _ => 0,
                     },
                     Address::Resource(resource_type) => match resource_type {
@@ -159,55 +185,61 @@ impl FeeTable {
                         ResourceAddress::NonFungible(_) => 0,
                     },
                     Address::Package(package_type) => match package_type {
-                        PackageAddress::Normal(_) => if matches!(module_id, NodeModuleId::SELF) {
-                            match offset {
-                                SubstateOffset::Package(package_offset) => match package_offset {
-                                    PackageOffset::Code => 269,
-                                    PackageOffset::CodeType => 519,
-                                    PackageOffset::FunctionAccessRules => 647,
-                                    PackageOffset::Info => 374,
-                                    PackageOffset::Royalty => 567,
-                                },
-                                _ => 0,
+                        PackageAddress::Normal(_) => {
+                            if matches!(module_id, NodeModuleId::SELF) {
+                                match offset {
+                                    SubstateOffset::Package(package_offset) => match package_offset
+                                    {
+                                        PackageOffset::Code => 269,
+                                        PackageOffset::CodeType => 519,
+                                        PackageOffset::FunctionAccessRules => 647,
+                                        PackageOffset::Info => 374,
+                                        PackageOffset::Royalty => 567,
+                                    },
+                                    _ => 0,
+                                }
+                            } else {
+                                0
                             }
-                        } else {
-                            0
                         }
                     },
-                }
+                },
                 RENodeId::KeyValueStore(_) => match module_id {
                     NodeModuleId::SELF => 1566,
                     NodeModuleId::TypeInfo => 3271,
-                    _ => 0
+                    _ => 0,
                 },
                 RENodeId::Object(_) => match module_id {
                     NodeModuleId::SELF => match offset {
                         SubstateOffset::AccessRules(_) => 2932,
-                        SubstateOffset::Bucket(_) => ( 833 + 751 + 747 ) / 3, // average of all Bucket matches
+                        SubstateOffset::Bucket(_) => (833 + 751 + 747) / 3, // average of all Bucket matches
                         SubstateOffset::KeyValueStore(_) => 543,
                         SubstateOffset::Proof(_) => 995,
-                        SubstateOffset::Vault(_) => ( 924 + 917 ) / 2, // average of all Vault matches
+                        SubstateOffset::Vault(_) => (924 + 917) / 2, // average of all Vault matches
                         SubstateOffset::Worktop(_) => 843,
                         _ => 0,
                     },
                     NodeModuleId::TypeInfo => 802,
-                    _ => 0
+                    _ => 0,
                 },
-                
             },
             CostingEntry::ReadSubstate { size: _ } => 552,
             CostingEntry::WriteSubstate { size: _ } => 176,
-        }) * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS
+        }) * COSTING_COEFFICENT
+            >> COSTING_COEFFICENT_DIV_BITS
     }
 
     fn kernel_api_cost_from_memory_usage(&self, entry: &CostingEntry) -> u32 {
         match entry {
             CostingEntry::CreateNode { size, node_id: _ } => FIXED_MEDIUM_FEE + (100 * size) as u32,
             CostingEntry::DropNode { size } => FIXED_MEDIUM_FEE + (100 * size) as u32,
-            CostingEntry::Invoke { input_size, identifier: _ } => FIXED_LOW_FEE + (10 * input_size) as u32,
+            CostingEntry::Invoke {
+                input_size,
+                identifier: _,
+            } => FIXED_LOW_FEE + (10 * input_size) as u32,
             CostingEntry::ReadSubstate { size } => FIXED_LOW_FEE + 10 * size,
             CostingEntry::WriteSubstate { size } => FIXED_LOW_FEE + 1000 * size,
-            _ => 0
+            _ => 0,
         }
     }
 

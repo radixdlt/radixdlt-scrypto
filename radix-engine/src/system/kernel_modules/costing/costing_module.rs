@@ -118,7 +118,7 @@ impl KernelModule for CostingModule {
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::Invoke {
                         input_size: input_size as u32,
-                        identifier
+                        identifier,
                     })
                 },
                 1,
@@ -273,7 +273,13 @@ impl KernelModule for CostingModule {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::LockSubstate,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate { node_id, module_id, offset }),
+            |fee_table| {
+                fee_table.kernel_api_cost(CostingEntry::LockSubstate {
+                    node_id,
+                    module_id,
+                    offset,
+                })
+            },
             1,
         )?;
         Ok(())
@@ -283,7 +289,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
-        only_get_ref: bool
+        only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::ReadSubstate,

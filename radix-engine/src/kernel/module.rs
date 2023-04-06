@@ -164,7 +164,7 @@ pub trait KernelModule {
         _api: &mut Y,
         _lock_handle: LockHandle,
         _size: usize,
-        _only_get_ref: bool
+        _only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

@@ -136,7 +136,7 @@ impl KernelModule for KernelTraceModule {
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
-        only_get_ref: bool
+        only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         log!(
             api,

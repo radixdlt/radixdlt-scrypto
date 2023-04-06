@@ -706,7 +706,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
-        only_get_ref: bool
+        only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {

@@ -293,7 +293,7 @@ impl ExecutableInvocation for FunctionInvocation {
 impl ExecutableInvocation for VirtualLazyLoadInvocation {
     type Exec = ScryptoExecutor;
 
-    #[trace_resources(info="virt", log=self.blueprint_name, log=self.virtual_func_id, log=self.payload_size())]
+    #[trace_resources(info="virt", log={&self.blueprint_name}, log={self.virtual_func_id}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
