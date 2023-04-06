@@ -781,7 +781,7 @@ where
             _ => ret.as_slice().len(),
         };
 
-        KernelModuleMixer::on_read_substate(self, lock_handle, size)?;
+        KernelModuleMixer::on_read_substate(self, lock_handle, size, false)?;
 
         Ok(ret)
     }
@@ -799,6 +799,7 @@ where
             self,
             lock_handle,
             0, //  TODO: pass the right size
+            true
         )?;
 
         let substate_ref =

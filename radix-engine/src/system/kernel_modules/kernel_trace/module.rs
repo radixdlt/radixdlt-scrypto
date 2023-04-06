@@ -136,12 +136,14 @@ impl KernelModule for KernelTraceModule {
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
+        only_get_ref: bool
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {:?}",
+            "Reading substate: handle = {}, size = {:?}, only-get-ref = {}",
             lock_handle,
-            size
+            size,
+            only_get_ref
         );
         Ok(())
     }

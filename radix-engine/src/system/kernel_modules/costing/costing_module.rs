@@ -265,14 +265,14 @@ impl KernelModule for CostingModule {
 
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _node_id: &RENodeId,
-        _module_id: &NodeModuleId,
-        _offset: &SubstateOffset,
+        node_id: &RENodeId,
+        module_id: &NodeModuleId,
+        offset: &SubstateOffset,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::LockSubstate,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate { node_id, module_id, offset }),
             1,
         )?;
         Ok(())
@@ -282,10 +282,17 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
+        only_get_ref: bool
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::ReadSubstate,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 }),
+            |fee_table| {
+                if only_get_ref {
+                    fee_table.kernel_api_cost(CostingEntry::GetSubstateRef)
+                } else {
+                    fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 })
+                }
+            },
             1,
         )?;
         Ok(())
