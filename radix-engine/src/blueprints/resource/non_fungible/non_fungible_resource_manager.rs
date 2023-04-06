@@ -1,4 +1,3 @@
-use crate::blueprints::resource::vault::VaultInfoSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -30,7 +29,6 @@ pub enum NonFungibleResourceManagerError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerSubstate {
-    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub total_supply: Decimal,
     pub id_type: NonFungibleIdType,
     pub non_fungible_type_index: LocalTypeIndex,
@@ -39,7 +37,6 @@ pub struct NonFungibleResourceManagerSubstate {
 }
 
 fn build_non_fungible_resource_manager_substate<Y>(
-    resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     supply: usize,
     non_fungible_schema: NonFungibleDataSchema,
@@ -100,7 +97,6 @@ where
     let nf_store_id = api.new_key_value_store(kv_schema)?;
 
     let resource_manager = NonFungibleResourceManagerSubstate {
-        resource_address,
         id_type,
         non_fungible_type_index: non_fungible_schema.non_fungible,
         total_supply: supply.into(),
@@ -207,23 +203,17 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::NonFungible(resource_address);
-
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
-        let (resource_manager_substate, _) = build_non_fungible_resource_manager_substate(
-            resource_address,
-            id_type,
-            0,
-            non_fungible_schema,
-            api,
-        )?;
+        let (resource_manager_substate, _) =
+            build_non_fungible_resource_manager_substate(id_type, 0, non_fungible_schema, api)?;
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
+        let resource_address = ResourceAddress::NonFungible(resource_address);
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok(resource_address)
@@ -240,10 +230,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(AllocateEntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
@@ -254,7 +240,6 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-            resource_address,
             id_type,
             entries.len(),
             non_fungible_schema,
@@ -265,6 +250,10 @@ impl NonFungibleResourceManagerBlueprint {
             .into_iter()
             .map(|(id, (value,))| (id, value))
             .collect();
+
+        let global_node_id =
+            api.kernel_allocate_node_id(AllocateEntityType::GlobalNonFungibleResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
 
         let bucket =
             build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
@@ -289,10 +278,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            api.kernel_allocate_node_id(AllocateEntityType::GlobalNonFungibleResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
         let mut non_fungible_entries = BTreeMap::new();
         for (entry,) in entries {
             let uuid = Runtime::generate_uuid(api)?;
@@ -301,12 +286,15 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-            resource_address,
             NonFungibleIdType::UUID,
             non_fungible_entries.len(),
             non_fungible_schema,
             api,
         )?;
+
+        let global_node_id =
+            api.kernel_allocate_node_id(AllocateEntityType::GlobalNonFungibleResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
 
         let bucket = build_non_fungible_bucket(
             resource_address,
@@ -335,6 +323,8 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address: ResourceAddress = api.get_global_address()?.into();
+
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -344,7 +334,6 @@ impl NonFungibleResourceManagerBlueprint {
         let (bucket_id, non_fungibles) = {
             let resource_manager: &mut NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_address = resource_manager.resource_address;
             if resource_manager.id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
@@ -394,13 +383,10 @@ impl NonFungibleResourceManagerBlueprint {
             (bucket_id, non_fungibles)
         };
 
-        let (nf_store_id, resource_address) = {
+        let nf_store_id = {
             let resource_manager: &NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref(resman_handle)?;
-            (
-                resource_manager.non_fungible_table,
-                resource_manager.resource_address,
-            )
+            resource_manager.non_fungible_table
         };
 
         for (id, non_fungible) in non_fungibles {
@@ -450,6 +436,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -458,7 +445,6 @@ impl NonFungibleResourceManagerBlueprint {
 
         let resource_manager: &mut NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref_mut(resman_handle)?;
-        let resource_address = resource_manager.resource_address;
         let nf_store_id = resource_manager.non_fungible_table;
         let id_type = resource_manager.id_type;
 
@@ -519,6 +505,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -528,7 +515,6 @@ impl NonFungibleResourceManagerBlueprint {
         let (bucket_id, ids) = {
             let resource_manager: &mut NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_address = resource_manager.resource_address;
             let nf_store_id = resource_manager.non_fungible_table;
             let id_type = resource_manager.id_type;
 
@@ -598,6 +584,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -606,7 +593,6 @@ impl NonFungibleResourceManagerBlueprint {
 
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        let resource_address = resource_manager.resource_address;
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
         let mutable_fields = resource_manager.mutable_fields.clone();
@@ -701,6 +687,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -711,8 +698,7 @@ impl NonFungibleResourceManagerBlueprint {
             api.kernel_get_substate_ref(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(resource_manager.resource_address, id.clone());
+        let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(non_fungible_table_id),
@@ -737,6 +723,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let resource_address: ResourceAddress = api.get_global_address()?.into();
         let resman_handle = api.sys_lock_substate(
             receiver.clone(),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -745,7 +732,6 @@ impl NonFungibleResourceManagerBlueprint {
 
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        let resource_address = resource_manager.resource_address;
         let id_type = resource_manager.id_type;
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
@@ -803,9 +789,10 @@ impl NonFungibleResourceManagerBlueprint {
                 // Check if resource matches
                 // TODO: Move this check into actor check
                 {
+                    let resource_address: ResourceAddress = api.get_global_address()?.into();
                     let resource_manager: &mut NonFungibleResourceManagerSubstate =
                         api.kernel_get_substate_ref_mut(resman_handle)?;
-                    if dropped_bucket.info.resource_address != resource_manager.resource_address {
+                    if dropped_bucket.info.resource_address != resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
                                 NonFungibleResourceManagerError::MismatchingBucketResource,
@@ -852,18 +839,12 @@ impl NonFungibleResourceManagerBlueprint {
 
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        let resource_address = resource_manager.resource_address;
         let id_type = resource_manager.id_type;
-        let info = VaultInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-        };
+        let info = NonFungibleVaultIdTypeSubstate { id_type };
         let vault_id = api.new_object(
-            VAULT_BLUEPRINT,
+            NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],

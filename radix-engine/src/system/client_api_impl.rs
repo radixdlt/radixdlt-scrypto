@@ -49,11 +49,15 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
+        // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            let blueprint = self.get_object_type_info(node_id)?;
+            let info = self.get_object_info(node_id)?;
             if !matches!(
-                (blueprint.package_address, blueprint.blueprint_name.as_str()),
-                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                (
+                    info.blueprint.package_address,
+                    info.blueprint.blueprint_name.as_str()
+                ),
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
             ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
@@ -149,12 +153,9 @@ where
         blueprint_ident: &str,
         mut app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, RuntimeError> {
-        let package_address = self
-            .kernel_get_current_actor()
-            .unwrap()
-            .package_address()
-            .clone();
+        let actor = self.kernel_get_current_actor().unwrap();
 
+        let package_address = actor.package_address().clone();
         let handle = self.kernel_lock_substate(
             &RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -172,6 +173,24 @@ where
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
                     )),
                 ))?;
+
+        let type_parent = if let Some(parent) = &schema.parent {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    blueprint,
+                    ..
+                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidChildObjectCreation,
+                    ));
+                }
+            }
+        } else {
+            None
+        };
+
         if schema.substates.len() != app_states.len() {
             return Err(RuntimeError::SystemError(
                 SystemError::SubstateValidationError(Box::new(
@@ -260,11 +279,17 @@ where
                     )),
                     AllocateEntityType::Object,
                 ),
-                VAULT_BLUEPRINT => (
+                FUNGIBLE_VAULT_BLUEPRINT => (
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::FungibleVaultInfo(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
+                    )),
+                    AllocateEntityType::Vault,
+                ),
+                NON_FUNGIBLE_VAULT_BLUEPRINT => (
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::NonFungibleVaultInfo(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
                         SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
                     )),
@@ -346,7 +371,11 @@ where
             node_init,
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
-                    TypeInfoSubstate::new(Blueprint::new(&package_address, blueprint_ident), false)
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&package_address, blueprint_ident),
+                        global: false,
+                        type_parent,
+                    })
                 ),
             ),
         )?;
@@ -365,7 +394,9 @@ where
             RENodeId::Object(..) => {
                 let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
                 let blueprint = match type_info {
-                    TypeInfoSubstate::Object { blueprint, global } if !global => blueprint,
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) if !global => blueprint,
                     _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
                 };
 
@@ -405,7 +436,6 @@ where
             NodeModuleId::Metadata,
             NodeModuleId::ComponentRoyalty,
             NodeModuleId::AccessRules,
-            NodeModuleId::AccessRules1
         );
         if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
@@ -435,7 +465,9 @@ where
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
 
         match type_info_substate {
-            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
+                *global = true
+            }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
@@ -451,9 +483,9 @@ where
                 NodeModuleId::SELF | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                NodeModuleId::AccessRules => {
                     let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -480,7 +512,7 @@ where
                 }
                 NodeModuleId::Metadata => {
                     let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -507,7 +539,7 @@ where
                 }
                 NodeModuleId::ComponentRoyalty => {
                     let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_type_info(node_id)?;
+                    let blueprint = self.get_object_info(node_id)?.blueprint;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -596,16 +628,16 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
-    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<Blueprint, RuntimeError> {
+    fn get_object_info(&mut self, node_id: RENodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object { blueprint, .. } => blueprint,
+        let object_info = match type_info {
+            TypeInfoSubstate::Object(info) => info,
             TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
 
-        Ok(blueprint)
+        Ok(object_info)
     }
 
     fn get_key_value_store_info(
@@ -798,7 +830,7 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => Ok(Blueprint::new(
+                    NodeModuleId::AccessRules => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
@@ -809,7 +841,7 @@ where
                     NodeModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    NodeModuleId::SELF => self.get_object_type_info(node_id),
+                    NodeModuleId::SELF => self.get_object_info(node_id).map(|i| i.blueprint),
                     NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),

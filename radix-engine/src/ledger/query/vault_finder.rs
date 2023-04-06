@@ -1,5 +1,5 @@
+use crate::ledger::StateTreeVisitor;
 use crate::types::*;
-use crate::{blueprints::resource::VaultInfoSubstate, ledger::StateTreeVisitor};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::vec::Vec;
 
@@ -25,10 +25,10 @@ impl StateTreeVisitor for VaultFinder {
     fn visit_fungible_vault(
         &mut self,
         vault_id: ObjectId,
-        info: &VaultInfoSubstate,
+        address: &ResourceAddress,
         _resource: &LiquidFungibleResource,
     ) {
-        if self.resource_address.eq(&info.resource_address) {
+        if self.resource_address.eq(address) {
             self.vaults.push(vault_id);
         }
     }
@@ -36,10 +36,10 @@ impl StateTreeVisitor for VaultFinder {
     fn visit_non_fungible_vault(
         &mut self,
         vault_id: ObjectId,
-        info: &VaultInfoSubstate,
+        address: &ResourceAddress,
         _resource: &LiquidNonFungibleResource,
     ) {
-        if self.resource_address.eq(&info.resource_address) {
+        if self.resource_address.eq(&address) {
             self.vaults.push(vault_id);
         }
     }

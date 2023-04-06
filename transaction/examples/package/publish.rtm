@@ -19,6 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
     Map<String, Tuple>()       # Royalty Configuration
     Map<String, String>()      # Metadata 
     Tuple(                     # Access Rules Config Struct
+        Map<Tuple, Enum>(),     # Direct Access Method auth Field
         Map<Tuple, Enum>(       # Method auth Field
             Tuple(
                 Enum("NodeModuleId::SELF"),

@@ -9,7 +9,7 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::{CallFrameUpdate, RENodeVisibilityOrigin};
+use crate::kernel::call_frame::{CallFrameUpdate, RefType};
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{
     KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
@@ -115,7 +115,9 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
                 match type_info {
-                    TypeInfoSubstate::Object { blueprint, global } => {
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) => {
                         let global_address = if global {
                             let address: Address = self.identifier.0.into();
                             Some(address)
@@ -128,7 +130,7 @@ impl ExecutableInvocation for MethodInvocation {
                             let (visibility, on_heap) =
                                 api.kernel_get_node_info(self.identifier.0).unwrap();
                             match (visibility, on_heap) {
-                                (RENodeVisibilityOrigin::Normal, false) => {
+                                (RefType::Normal, false) => {
                                     api.kernel_get_current_actor().and_then(|a| match a {
                                         Actor::Method { global_address, .. } => global_address,
                                         _ => None,
@@ -159,7 +161,7 @@ impl ExecutableInvocation for MethodInvocation {
                     None,
                 )
             }
-            NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+            NodeModuleId::AccessRules => {
                 // TODO: Check if type has access rules
                 (
                     Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),

@@ -208,6 +208,7 @@ pub enum SystemError {
     CannotGlobalize,
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
+    InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     SubstateValidationError(Box<SubstateValidationError>),
     AssertAccessRuleFailed,

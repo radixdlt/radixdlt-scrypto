@@ -136,7 +136,6 @@ pub enum NodeModuleId {
     TypeInfo,
     Metadata,
     AccessRules,
-    AccessRules1, // TODO: remove
     ComponentRoyalty,
 }
 
@@ -147,8 +146,7 @@ impl NodeModuleId {
             1u32 => Some(NodeModuleId::TypeInfo),
             2u32 => Some(NodeModuleId::Metadata),
             3u32 => Some(NodeModuleId::AccessRules),
-            4u32 => Some(NodeModuleId::AccessRules1),
-            5u32 => Some(NodeModuleId::ComponentRoyalty),
+            4u32 => Some(NodeModuleId::ComponentRoyalty),
             _ => None,
         }
     }
@@ -159,8 +157,7 @@ impl NodeModuleId {
             NodeModuleId::TypeInfo => 1u32,
             NodeModuleId::Metadata => 2u32,
             NodeModuleId::AccessRules => 3u32,
-            NodeModuleId::AccessRules1 => 4u32,
-            NodeModuleId::ComponentRoyalty => 5u32,
+            NodeModuleId::ComponentRoyalty => 4u32,
         }
     }
 }

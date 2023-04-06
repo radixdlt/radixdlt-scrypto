@@ -259,6 +259,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 
         let access_rules: AccessRulesConfig = manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
+            HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRuleEntry::AccessRule(AccessRule::AllowAll),
             HashMap::<MethodKey, AccessRule>::new(),

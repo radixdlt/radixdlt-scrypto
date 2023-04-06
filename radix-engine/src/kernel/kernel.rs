@@ -1,5 +1,5 @@
 use super::actor::ExecutionMode;
-use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, RefType};
 use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -131,8 +131,11 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let Ok(blueprint) = api.get_object_type_info(node_id) {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                if let Ok(info) = api.get_object_info(node_id) {
+                    match (
+                        info.blueprint.package_address,
+                        info.blueprint.blueprint_name.as_str(),
+                    ) {
                         (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                             api.call_function(
                                 RESOURCE_MANAGER_PACKAGE,
@@ -287,16 +290,14 @@ where
                         | ComponentAddress::EddsaEd25519VirtualIdentity(..),
                     )) => {
                         // For virtual accounts and native packages, create a reference directly
-                        self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        self.current_frame.add_ref(*node_id, RefType::Normal);
                         continue;
                     }
                     RENodeId::GlobalObject(Address::Package(package_address))
                         if is_native_package(*package_address) =>
                     {
                         // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                        self.current_frame
-                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        self.current_frame.add_ref(*node_id, RefType::Normal);
                         continue;
                     }
                     _ => {}
@@ -319,15 +320,13 @@ where
                         .get_substate(node_id, NodeModuleId::TypeInfo, &offset);
                 let type_substate: &TypeInfoSubstate = substate_ref.into();
                 match type_substate {
-                    TypeInfoSubstate::Object { blueprint, global } => {
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint, global, ..
+                    }) => {
                         if *global {
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && blueprint.blueprint_name.eq(VAULT_BLUEPRINT)
-                        {
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                            self.current_frame.add_ref(*node_id, RefType::Normal);
+                        } else if VaultUtil::is_vault_blueprint(blueprint) {
+                            self.current_frame.add_ref(*node_id, RefType::DirectAccess);
                         } else {
                             return Err(RuntimeError::KernelError(
                                 KernelError::InvalidDirectAccess,
@@ -389,20 +388,20 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let blueprint = self.get_object_type_info(node_id.clone())?;
+            let info = self.get_object_info(node_id.clone())?;
             if !VisibilityProperties::check_drop_node_visibility(
                 current_mode,
                 &actor,
-                blueprint.package_address,
-                blueprint.blueprint_name.as_str(),
+                info.blueprint.package_address,
+                info.blueprint.blueprint_name.as_str(),
             ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
-                        package_address: blueprint.package_address,
-                        blueprint_name: blueprint.blueprint_name,
+                        package_address: info.blueprint.package_address,
+                        blueprint_name: info.blueprint.blueprint_name,
                     })),
                 ));
             }
@@ -487,7 +486,7 @@ where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_get_node_info(&self, node_id: RENodeId) -> Option<(RENodeVisibilityOrigin, bool)> {
+    fn kernel_get_node_info(&self, node_id: RENodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(&node_id)?;
         Some(info)
     }
@@ -509,17 +508,15 @@ where
                     global_address: Some(address),
                     ..
                 } => {
-                    self.current_frame.add_ref(
-                        RENodeId::GlobalObject(*address),
-                        RENodeVisibilityOrigin::Normal,
-                    );
+                    self.current_frame
+                        .add_ref(RENodeId::GlobalObject(*address), RefType::Normal);
                 }
                 _ => {}
             }
             let package_address = actor.blueprint().package_address;
             self.current_frame.add_ref(
                 RENodeId::GlobalObject(package_address.into()),
-                RENodeVisibilityOrigin::Normal,
+                RefType::Normal,
             );
         }
 
@@ -729,8 +726,7 @@ where
                             .map_err(|_| err)
                         {
                             Ok(_) => {
-                                self.current_frame
-                                    .add_ref(node_id, RENodeVisibilityOrigin::Normal);
+                                self.current_frame.add_ref(node_id, RefType::Normal);
                                 self.current_frame.acquire_lock(
                                     &mut self.heap,
                                     &mut self.track,
