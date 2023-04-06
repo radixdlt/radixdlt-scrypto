@@ -50,13 +50,14 @@ for i in range(1):
         invoke_size = 0
         resolve = child.xpath("./self::kernel_invoke/resolve")
         if resolve:
+            info = resolve[0].attrib["info"]
             blueprint_name = resolve[0].attrib["arg0"].replace('"','')
             fcn_name = resolve[0].attrib["arg1"].replace('"','')
             if fcn_name in kernel_invoke_divide_by_size:
                 invoke_size = resolve[0].attrib["arg2"]
-                key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+                key += "::" + info + "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
             else:
-                key += "::" + blueprint_name + "::" + fcn_name
+                key += "::" + info + "::" + blueprint_name + "::" + fcn_name
 
         # handle node_id (from kernel_create_node, kernel_drop_node, kernel_get_node_visibility_origin, kernel_lock_substate)
         param = child.xpath("./@node_id")

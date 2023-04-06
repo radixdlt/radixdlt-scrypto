@@ -10,10 +10,10 @@ const COSTING_COEFFICENT_DIV_BITS: u32 = 4; // used to divide by shift left oper
 
 pub enum CostingEntry<'a> {
     /* invoke */
-    Invoke { input_size: u32 },
+    Invoke { input_size: u32, identifier: &'a InvocationDebugIdentifier },
 
     /* node */
-    CreateNode { node_id: &'a RENodeId },
+    CreateNode { size: u32, node_id: &'a RENodeId },
     DropNode { size: u32 },
     AllocateNodeId { node_type: &'a AllocateEntityType },
 
@@ -60,11 +60,10 @@ impl FeeTable {
         self.tx_blob_price_per_byte
     }
 
+    /// CPU instructions usage numbers obtained from test runs with 'resource_tracker` feature enabled
+    /// and data transformed using convert.py script.
     fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         (match entry {
-            CostingEntry::Invoke { input_size } => 0,
-            
-            // new implementation
             CostingEntry::AllocateNodeId { node_type } => match node_type {
                 AllocateEntityType::GlobalAccount => 111,
                 AllocateEntityType::GlobalComponent => 714,
@@ -79,7 +78,7 @@ impl FeeTable {
                 AllocateEntityType::Object => 11,
                 AllocateEntityType::Vault => 21,
             },
-            CostingEntry::CreateNode { node_id } => match node_id {
+            CostingEntry::CreateNode { size: _, node_id } => match node_id {
                     RENodeId::KeyValueStore(_) => 493,
                     RENodeId::Object(_) => 3290,
                     RENodeId::GlobalObject(address) => match address {
@@ -99,12 +98,30 @@ impl FeeTable {
                         }
                         Address::Package(package_type) => match package_type {
                             PackageAddress::Normal(_) => 4964,
-                        }                        
+                        }
                     }
                 },
             CostingEntry::DropLock => 180,
             CostingEntry::DropNode { size: _ } => 4191,
             CostingEntry::GetSubstateRef => 169,
+            CostingEntry::Invoke { input_size: _, identifier } => match identifier {
+                InvocationDebugIdentifier::Function(fn_ident) => {
+                    if fn_ident.1 == "AccessRules" && fn_ident.2 == "create" { 29249 }
+                    else if fn_ident.1 == "Account" && fn_ident.2 == "create_advanced" { 184577 }
+                    else {
+                        0
+                    }
+                },
+                InvocationDebugIdentifier::Method(method_ident) => match method_ident.1 {
+                    NodeModuleId::SELF => 0,
+                    NodeModuleId::AccessRules => 0,
+                    NodeModuleId::AccessRules1 => 0,
+                    NodeModuleId::ComponentRoyalty => 0,
+                    NodeModuleId::Metadata => 0,
+                    NodeModuleId::TypeInfo => 0
+                },
+                InvocationDebugIdentifier::VirtualLazyLoad => 0
+            },
             CostingEntry::LockSubstate { node_id, module_id, offset } => match node_id {
                 RENodeId::GlobalObject(address) => match address {
                     Address::Component(component) => match component {
@@ -183,9 +200,15 @@ impl FeeTable {
         }) * COSTING_COEFFICENT >> COSTING_COEFFICENT_DIV_BITS
     }
 
-    fn kernel_api_cost_from_memory_usage(&self, _entry: &CostingEntry) -> u32 {
-        // todo
-        0
+    fn kernel_api_cost_from_memory_usage(&self, entry: &CostingEntry) -> u32 {
+        match entry {
+            CostingEntry::CreateNode { size, node_id: _ } => FIXED_MEDIUM_FEE + (100 * size) as u32,
+            CostingEntry::DropNode { size } => FIXED_MEDIUM_FEE + (100 * size) as u32,
+            CostingEntry::Invoke { input_size, identifier: _ } => FIXED_LOW_FEE + (10 * input_size) as u32,
+            CostingEntry::ReadSubstate { size } => FIXED_LOW_FEE + 10 * size,
+            CostingEntry::WriteSubstate { size } => FIXED_LOW_FEE + 1000 * size,
+            _ => 0
+        }
     }
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {

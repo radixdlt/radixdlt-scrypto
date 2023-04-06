@@ -102,7 +102,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 impl KernelModule for CostingModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _identifier: &InvocationDebugIdentifier,
+        identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -118,6 +118,7 @@ impl KernelModule for CostingModule {
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::Invoke {
                         input_size: input_size as u32,
+                        identifier
                     })
                 },
                 1,
@@ -246,7 +247,7 @@ impl KernelModule for CostingModule {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::CreateNode,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { node_id }),
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0, node_id }),
             1,
         )?;
         Ok(())

@@ -97,7 +97,7 @@ fn validate_output(
 impl ExecutableInvocation for MethodInvocation {
     type Exec = ScryptoExecutor;
 
-    #[trace_resources(log={format!("{:?}",self.identifier.1)}, log={&self.identifier.2}, log=self.payload_size())]
+    #[trace_resources(info="method", log={format!("{:?}",self.identifier.1)}, log={&self.identifier.2}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
@@ -211,7 +211,7 @@ impl ExecutableInvocation for MethodInvocation {
 impl ExecutableInvocation for FunctionInvocation {
     type Exec = ScryptoExecutor;
 
-    #[trace_resources(log={&self.identifier.1}, log={&self.identifier.2}, log=self.payload_size())]
+    #[trace_resources(info="fn", log={&self.identifier.1}, log={&self.identifier.2}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
@@ -293,6 +293,7 @@ impl ExecutableInvocation for FunctionInvocation {
 impl ExecutableInvocation for VirtualLazyLoadInvocation {
     type Exec = ScryptoExecutor;
 
+    #[trace_resources(info="virt", log=self.blueprint_name, log=self.virtual_func_id, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
