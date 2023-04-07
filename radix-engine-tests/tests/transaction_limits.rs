@@ -27,7 +27,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -54,7 +54,7 @@ fn transaction_limit_memory_exceeded() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -96,7 +96,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -133,7 +133,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -222,7 +222,7 @@ fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
     let size = scrypto_args!(data).len()
         + blueprint_name.len()
         + function_name.len()
-        + package_address.size();
+        + package_address.as_ref().len();
 
     match err {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(

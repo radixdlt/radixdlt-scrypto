@@ -15,7 +15,7 @@ mod epoch_manager_test {
         pub fn next_round(epoch_manager: ComponentAddress, round: u64) {
             ScryptoEnv
                 .call_method(
-                    &RENodeId::GlobalObject(epoch_manager.into()),
+                    &epoch_manager.into(),
                     EPOCH_MANAGER_NEXT_ROUND_IDENT,
                     scrypto_encode(&EpochManagerNextRoundInput { round }).unwrap(),
                 )

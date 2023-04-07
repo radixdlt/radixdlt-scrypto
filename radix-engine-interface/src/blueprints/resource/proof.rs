@@ -1,4 +1,3 @@
-use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
@@ -6,6 +5,7 @@ use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -104,8 +104,12 @@ impl fmt::Display for ProofValidationError {
     }
 }
 
+//========
+// Stub
+//========
+
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Proof(pub ObjectId); // scrypto stub
+pub struct Proof(pub Own); // scrypto stub
 
 //========
 // binary
@@ -114,7 +118,7 @@ pub struct Proof(pub ObjectId); // scrypto stub
 impl Categorize<ScryptoCustomValueKind> for Proof {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Own)
+        Own::value_kind()
     }
 }
 
@@ -126,7 +130,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for P
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Proof(self.0).encode_body(encoder)
+        self.0.encode_body(encoder)
     }
 }
 
@@ -135,11 +139,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            Own::Proof(proof_id) => Ok(Self(proof_id)),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
     }
 }
 

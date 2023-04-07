@@ -11,7 +11,7 @@ pub struct AuthZone {
     pub virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
 
     pub is_barrier: bool,
-    pub parent: Option<InternalRef>,
+    pub parent: Option<Reference>,
 }
 
 impl Clone for AuthZone {
@@ -34,7 +34,7 @@ impl AuthZone {
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
         is_barrier: bool,
-        parent: Option<InternalRef>,
+        parent: Option<Reference>,
     ) -> Self {
         Self {
             proofs,

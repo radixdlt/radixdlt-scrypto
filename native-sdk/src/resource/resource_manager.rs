@@ -1,5 +1,4 @@
-use radix_engine_interface::api::types::{NonFungibleData, RENodeId};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -7,6 +6,8 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::NonFungibleData;
+use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -101,7 +102,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        address: [u8; 26], // TODO: Clean this up
+        address: [u8; 27], // TODO: Clean this up
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -136,7 +137,7 @@ impl ResourceManager {
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
             scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value })
                 .unwrap(),
@@ -155,7 +156,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
         )?;
@@ -172,7 +173,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerGetNonFungibleInput { id }).unwrap(),
         )?;
@@ -186,7 +187,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
             scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
         )?;
@@ -203,7 +204,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput { bucket }).unwrap(),
         )?;
@@ -215,7 +216,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
         )?;
@@ -227,7 +228,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -236,10 +237,10 @@ impl ResourceManager {
 
     pub fn new_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(self.0.into()),
+            self.0.as_node_id(),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;

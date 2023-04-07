@@ -6,13 +6,13 @@ cd "$(dirname "$0")"
 
 echo "Building the workspace packages (with all extended features)..."
 
-(set -x; cargo build --features serde)
-(set -x; cargo test --no-run --features serde)
-(set -x; cargo bench --no-run --features serde)
+(set -x; cargo build)
+(set -x; cargo test --no-run)
+(set -x; cargo bench --no-run)
 
 echo "Building the engine in different configurations..."
 
-(set -x; cd radix-engine; cargo build --features wasmer)
+(set -x; cd radix-engine; cargo build --features wasmer,resource_tracker)
 (set -x; cd radix-engine; cargo build --no-default-features --features alloc)
 
 echo "Building the simulator packages..."

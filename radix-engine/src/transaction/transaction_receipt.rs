@@ -1,6 +1,6 @@
+use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
 use crate::system::kernel_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
@@ -8,9 +8,10 @@ use crate::system::kernel_modules::execution_trace::{
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
+use radix_engine_interface::data::scrypto::ScryptoDecode;
+use radix_engine_interface::types::*;
+use radix_engine_stores::interface::StateUpdates;
 use utils::ContextualDisplay;
 
 #[cfg(feature = "serde")]
@@ -25,11 +26,10 @@ pub struct ResourcesUsage {
     pub cpu_cycles: u64,
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, Default)]
 pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub resources_usage: ResourcesUsage,
 }
 
 impl TransactionExecutionTrace {
@@ -61,55 +61,13 @@ impl TransactionResult {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
-    pub state_updates: StateDiff,
+    pub state_updates: StateUpdates,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
-    pub fee_payments: IndexMap<ObjectId, Decimal>,
+    pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct StateUpdateSummary {
-    pub new_packages: Vec<PackageAddress>,
-    pub new_components: Vec<ComponentAddress>,
-    pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
-    /// This field accounts for two conditions:
-    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
-    /// 2. Fee payments for failed transactions.
-    pub direct_vault_updates: IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>>,
-}
-
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
-pub enum BalanceChange {
-    Fungible(Decimal),
-    NonFungible {
-        added: BTreeSet<NonFungibleLocalId>,
-        removed: BTreeSet<NonFungibleLocalId>,
-    },
-}
-
-impl BalanceChange {
-    pub fn fungible(&mut self) -> &mut Decimal {
-        match self {
-            BalanceChange::Fungible(x) => x,
-            BalanceChange::NonFungible { .. } => panic!("Not fungible"),
-        }
-    }
-    pub fn added_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
-        match self {
-            BalanceChange::Fungible(..) => panic!("Not non fungible"),
-            BalanceChange::NonFungible { added, .. } => added,
-        }
-    }
-    pub fn removed_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
-        match self {
-            BalanceChange::Fungible(..) => panic!("Not non fungible"),
-            BalanceChange::NonFungible { removed, .. } => removed,
-        }
-    }
 }
 
 impl CommitResult {
@@ -117,24 +75,21 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
-                Emitter::Function(
-                    RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
-                    NodeModuleId::SELF,
-                    ..,
-                )
-                | Emitter::Method(
-                    RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
-                    NodeModuleId::SELF,
-                ),
+                Emitter::Function(node_id, SysModuleId::ObjectState, ..)
+                | Emitter::Method(node_id, SysModuleId::ObjectState),
                 ..,
             ) = event_type_id
             {
-                if let Ok(EpochChangeEvent {
-                    ref epoch,
-                    ref validators,
-                }) = scrypto_decode(&event_data)
+                if node_id == EPOCH_MANAGER_PACKAGE.as_node_id()
+                    || node_id.entity_type() == Some(EntityType::GlobalEpochManager)
                 {
-                    return Some((validators.clone(), *epoch));
+                    if let Ok(EpochChangeEvent {
+                        ref epoch,
+                        ref validators,
+                    }) = scrypto_decode(&event_data)
+                    {
+                        return Some((validators.clone(), *epoch));
+                    }
                 }
             }
         }
@@ -153,13 +108,15 @@ impl CommitResult {
         &self.state_update_summary.new_resources
     }
 
-    pub fn balance_changes(&self) -> &IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>> {
+    pub fn balance_changes(
+        &self,
+    ) -> &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.balance_changes
     }
 
     pub fn direct_vault_updates(
         &self,
-    ) -> &IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>> {
+    ) -> &IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.direct_vault_updates
     }
 
@@ -225,7 +182,10 @@ pub enum AbortReason {
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
     pub result: TransactionResult,
+    /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
     pub execution_trace: TransactionExecutionTrace,
+    /// Optional resource usage trace, controlled by feature flag `resources_usage`.
+    pub resources_usage: ResourcesUsage,
 }
 
 impl TransactionReceipt {
@@ -367,8 +327,8 @@ pub struct TransactionReceiptDisplayContext<'a> {
 }
 
 impl<'a> TransactionReceiptDisplayContext<'a> {
-    pub fn scrypto_value_display_context(&self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bench32(self.encoder)
+    pub fn scrypto_value_serialization_context(&self) -> ScryptoValueSerializationContext<'a> {
+        ScryptoValueSerializationContext::with_optional_bech32(self.encoder)
     }
 
     pub fn address_display_context(&self) -> AddressDisplayContext<'a> {
@@ -446,7 +406,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let result = &self.result;
-        let scrypto_value_display_context = context.scrypto_value_display_context();
+        let scrypto_value_serialization_context = context.scrypto_value_serialization_context();
         let address_display_context = context.address_display_context();
 
         write!(
@@ -546,7 +506,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         match output {
                             InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
                                 .expect("Impossible case! Instruction output can't be decoded")
-                                .to_string(scrypto_value_display_context),
+                                .to_string(scrypto_value_serialization_context),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
@@ -664,7 +624,7 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
             .0
             .display(receipt_context.address_display_context()),
         event_type_identifier.1,
-        event_data_value.display(receipt_context.scrypto_value_display_context())
+        event_data_value.display(receipt_context.scrypto_value_serialization_context())
     )?;
     Ok(())
 }
@@ -689,7 +649,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
         let serializable = payload.serializable(SerializationContext {
             mode: SerializationMode::Invertible,
             schema: &schema,
-            custom_context: receipt_context.scrypto_value_display_context(),
+            custom_context: receipt_context.scrypto_value_serialization_context(),
         });
         serde_json::to_string(&serializable).map_err(|_| fmt::Error)
     }?;

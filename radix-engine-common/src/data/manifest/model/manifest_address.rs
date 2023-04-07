@@ -1,29 +1,48 @@
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
+use crate::data::manifest::ManifestCustomValueKind;
+use crate::types::EntityType;
+use crate::types::NodeId;
+use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-use crate::data::manifest::*;
-use crate::*;
+/// Any address supported by manifest, both global and local.
+///
+/// Must start with a supported entity type byte.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ManifestAddress(pub NodeId);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ManifestAddress {
-    Package([u8; 27]),
-    Component([u8; 27]),
-    Resource([u8; 27]),
+impl ManifestAddress {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for ManifestAddress {
+    type Error = ParseManifestAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            NodeId::LENGTH => {
+                if EntityType::from_repr(slice[0]).is_none() {
+                    return Err(Self::Error::InvalidEntityTypeId(slice[0]));
+                }
+                Ok(Self(NodeId(copy_u8_array(slice))))
+            }
+            _ => Err(ParseManifestAddressError::InvalidLength(slice.len())),
+        }
+    }
 }
 
 //========
 // error
 //========
 
-/// Represents an error when parsing ManifestAddress.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseManifestAddressError {
-    InvalidLength,
-    InvalidEntityTypeId,
+    InvalidLength(usize),
+    InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -40,34 +59,18 @@ impl fmt::Display for ParseManifestAddressError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ManifestAddress {
-    type Error = ParseManifestAddressError;
+manifest_type!(
+    ManifestAddress,
+    ManifestCustomValueKind::Address,
+    NodeId::LENGTH
+);
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 27 {
-            return Err(Self::Error::InvalidLength);
-        }
-        // FIXME: move HRP constants to `radix-engine-constants`, and remove hard-coded range here
-        if slice[0] == 0x00 {
-            Ok(Self::Package(copy_u8_array(slice)))
-        } else if slice[0] <= 0x02 {
-            Ok(Self::Resource(copy_u8_array(slice)))
-        } else if slice[0] <= 0x0d {
-            Ok(Self::Component(copy_u8_array(slice)))
-        } else {
-            Err(Self::Error::InvalidEntityTypeId)
-        }
+//======
+// text
+//======
+
+impl fmt::Debug for ManifestAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "Address({})", hex::encode(&self.0))
     }
 }
-
-impl ManifestAddress {
-    pub fn to_vec(&self) -> Vec<u8> {
-        match self {
-            ManifestAddress::Package(v) => v.to_vec(),
-            ManifestAddress::Component(v) => v.to_vec(),
-            ManifestAddress::Resource(v) => v.to_vec(),
-        }
-    }
-}
-
-manifest_type!(ManifestAddress, ManifestCustomValueKind::Address, 27);

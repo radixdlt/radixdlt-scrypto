@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::types::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
@@ -13,8 +13,8 @@ pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct EpochManagerCreateInput {
-    pub validator_owner_token: [u8; 26], // TODO: Clean this up
-    pub component_address: [u8; 26],     // TODO: Clean this up
+    pub validator_owner_token: [u8; 27], // TODO: Clean this up
+    pub component_address: [u8; 27],     // TODO: Clean this up
     pub validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,

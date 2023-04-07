@@ -40,7 +40,7 @@ impl Authentication {
     fn auth_zone_stack_matches<P, Y>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         api: &mut Y,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -58,11 +58,11 @@ impl Authentication {
             // Load auth zone
             let handle = api.kernel_lock_substate(
                 &current_auth_zone_id,
-                NodeModuleId::SELF,
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                SysModuleId::ObjectState,
+                &AuthZoneOffset::AuthZone.into(),
                 LockFlags::read_only(),
             )?;
-            let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
+            let auth_zone: AuthZone = api.kernel_read_substate(handle)?.as_typed().unwrap();
             let auth_zone = auth_zone.clone();
             handles.push(handle);
 
@@ -88,7 +88,7 @@ impl Authentication {
             }
 
             if let Some(id) = auth_zone.parent {
-                current_auth_zone_id = RENodeId::Object(id.0);
+                current_auth_zone_id = id.into();
             } else {
                 break;
             }
@@ -104,7 +104,7 @@ impl Authentication {
     fn auth_zone_stack_has_amount<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         resource_rule: &HardResourceOrNonFungible,
         amount: Decimal,
         api: &mut Y,
@@ -130,7 +130,7 @@ impl Authentication {
     fn auth_zone_stack_matches_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         resource_rule: &HardResourceOrNonFungible,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -180,7 +180,7 @@ impl Authentication {
     pub fn verify_proof_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         proof_rule: &HardProofRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -270,7 +270,7 @@ impl Authentication {
     pub fn verify_auth_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         auth_rule: &HardAuthRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -317,7 +317,7 @@ impl Authentication {
     pub fn verify_method_auth<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
-        auth_zone_id: RENodeId,
+        auth_zone_id: NodeId,
         method_auth: &MethodAuthorization,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {

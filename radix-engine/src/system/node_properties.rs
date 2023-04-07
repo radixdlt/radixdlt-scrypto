@@ -1,19 +1,17 @@
-use crate::errors::{InvalidOwnership, KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::blueprints::resource::{
-    BUCKET_BLUEPRINT, PROOF_BLUEPRINT, WORKTOP_BLUEPRINT,
-};
+use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::blueprints::resource::{PROOF_BLUEPRINT, WORKTOP_BLUEPRINT};
 use radix_engine_interface::constants::*;
 
-pub struct VisibilityProperties;
+pub struct NodeProperties;
 
-impl VisibilityProperties {
-    pub fn check_drop_node_visibility(
+impl NodeProperties {
+    /// Whether a node of the given blueprint can be dropped.
+    pub fn can_be_dropped(
         mode: ExecutionMode,
         actor: &Actor,
         package_address: PackageAddress,
@@ -43,288 +41,136 @@ impl VisibilityProperties {
         }
     }
 
-    pub fn check_substate_access(
+    pub fn can_substate_be_accessed(
         mode: ExecutionMode,
         actor: &Actor,
-        node_id: &RENodeId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> bool {
-        let read_only = flags == LockFlags::read_only();
+        if flags.contains(LockFlags::MUTABLE) {
+            Self::can_substate_be_updated(mode, actor, node_id, module_id, substate_key)
+        } else {
+            Self::can_substate_be_read(mode, actor, node_id, module_id, substate_key)
+        }
+    }
 
-        // TODO: Cleanup and reduce to least privilege
-        match (mode, offset) {
-            (ExecutionMode::Kernel, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
-                _ => false, // Protect ourselves!
-            },
-            (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => read_only,
-                SubstateOffset::Package(PackageOffset::CodeType) => read_only,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Bucket(BucketOffset::Info) => read_only,
+    /// Whether the substate can be read
+    pub fn can_substate_be_read(
+        mode: ExecutionMode,
+        actor: &Actor,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        _substate_key: &SubstateKey,
+    ) -> bool {
+        match mode {
+            ExecutionMode::Kernel => match module_id {
+                SysModuleId::TypeInfo => true,
                 _ => false,
             },
-            (ExecutionMode::AutoDrop, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
+            ExecutionMode::Resolver => match module_id {
+                SysModuleId::TypeInfo => true,
+                SysModuleId::ObjectState => true,
                 _ => false,
             },
-            (ExecutionMode::DropNode, offset) => match offset {
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
-                SubstateOffset::Bucket(BucketOffset::Info) => true,
-                SubstateOffset::Proof(ProofOffset::Info) => true,
-                SubstateOffset::Proof(..) => true,
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
+            ExecutionMode::DropNode => match module_id {
+                SysModuleId::TypeInfo => true,
                 _ => false,
             },
-            (ExecutionMode::System, offset) => match offset {
-                SubstateOffset::AuthZone(_) => read_only,
+            ExecutionMode::AutoDrop => match module_id {
+                SysModuleId::TypeInfo => true,
                 _ => false,
             },
-            (ExecutionMode::KernelModule, offset) => match offset {
-                // TODO: refine based on specific module
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                    read_only
+            ExecutionMode::System => match module_id {
+                SysModuleId::TypeInfo => true,
+                SysModuleId::ObjectState => true,
+                _ => false,
+            },
+            ExecutionMode::KernelModule => true,
+            ExecutionMode::Client => {
+                if is_native_package(actor.blueprint().package_address) {
+                    return true;
                 }
-                SubstateOffset::Vault(..) => true,
-                SubstateOffset::Bucket(..) => read_only,
-                SubstateOffset::Proof(..) => true,
-                SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Package(PackageOffset::CodeType) => read_only,
-                SubstateOffset::Package(PackageOffset::Code) => read_only,
-                SubstateOffset::Package(PackageOffset::Royalty) => true,
-                SubstateOffset::Package(PackageOffset::FunctionAccessRules) => true,
-                SubstateOffset::Component(ComponentOffset::State0) => read_only,
-                SubstateOffset::TypeInfo(_) => read_only,
-                SubstateOffset::AccessRules(_) => read_only,
-                SubstateOffset::AuthZone(_) => read_only,
-                SubstateOffset::Royalty(_) => true,
-                _ => false,
-            },
-            (ExecutionMode::Client, offset) => {
-                if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(offset, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)) {
-                        return true;
-                    }
 
-                    if is_native_package(*actor.package_address()) {
-                        true
-                    } else {
-                        match &actor {
-                            Actor::VirtualLazyLoad { .. } | Actor::Function { .. } => {
-                                match (node_id, offset) {
-                                    // READ package code & abi
-                                    (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                    )
-                                    | (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                    )
-                                    | (
-                                        RENodeId::GlobalObject(_),
-                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                    ) => read_only,
-                                    // READ global substates
-                                    (
-                                        RENodeId::Object(_),
-                                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                                    ) => read_only,
-                                    // READ/WRITE KVStore entry
-                                    (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
-                                    ) => true,
-                                    // Otherwise, false
-                                    _ => false,
-                                }
-                            }
-                            Actor::Method {
-                                node_id: actor_node_id,
-                                ..
-                            } => {
-                                match actor_node_id {
-                                    RENodeId::Object(component_address) => {
-                                        match (node_id, offset) {
-                                            // READ package code & abi
-                                            (
-                                                RENodeId::GlobalObject(_),
-                                                SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                            )
-                                            | (
-                                                RENodeId::GlobalObject(_),
-                                                SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                            )
-                                            | (
-                                                RENodeId::GlobalObject(_),
-                                                SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                            ) => read_only,
-                                            // READ/WRITE KVStore entry
-                                            (
-                                                RENodeId::KeyValueStore(_),
-                                                SubstateOffset::KeyValueStore(
-                                                    KeyValueStoreOffset::Entry(..),
-                                                ),
-                                            ) => true,
-                                            // READ/WRITE component application state
-                                            (
-                                                RENodeId::Object(addr),
-                                                SubstateOffset::Component(ComponentOffset::State0),
-                                            ) => addr.eq(component_address),
-                                            // Otherwise, false
-                                            _ => false,
-                                        }
-                                    }
-                                    RENodeId::GlobalObject(Address::Component(
-                                        component_address,
-                                    )) => match (node_id, offset) {
-                                        // READ package code & abi
-                                        (
-                                            RENodeId::GlobalObject(_),
-                                            SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                        )
-                                        | (
-                                            RENodeId::GlobalObject(_),
-                                            SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                        )
-                                        | (
-                                            RENodeId::GlobalObject(_),
-                                            SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                        ) => read_only,
-                                        // READ/WRITE KVStore entry
-                                        (
-                                            RENodeId::KeyValueStore(_),
-                                            SubstateOffset::KeyValueStore(
-                                                KeyValueStoreOffset::Entry(..),
-                                            ),
-                                        ) => true,
-                                        // READ/WRITE component application state
-                                        (
-                                            RENodeId::GlobalObject(Address::Component(addr)),
-                                            SubstateOffset::Component(ComponentOffset::State0),
-                                        ) => addr.eq(component_address),
-                                        // Otherwise, false
-                                        _ => false,
-                                    },
-                                    _ => false,
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if is_native_package(*actor.package_address()) {
-                        true
-                    } else {
-                        match &actor {
-                            Actor::VirtualLazyLoad { .. } | Actor::Function { .. } => {
-                                match (node_id, offset) {
-                                    (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
-                                    ) => true,
-                                    _ => false,
-                                }
-                            }
+                // TODO: remove
+                if node_id.is_global_package() {
+                    return true;
+                }
 
-                            Actor::Method {
-                                node_id: actor_node_id,
-                                ..
-                            } => match actor_node_id {
-                                RENodeId::Object(component_address) => match (node_id, offset) {
-                                    (
-                                        RENodeId::KeyValueStore(_),
-                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                            ..,
-                                        )),
-                                    ) => true,
-                                    (
-                                        RENodeId::Object(addr),
-                                        SubstateOffset::Component(ComponentOffset::State0),
-                                    ) => addr.eq(component_address),
-                                    _ => false,
-                                },
-                                RENodeId::GlobalObject(Address::Component(component_address)) => {
-                                    match (node_id, offset) {
-                                        (
-                                            RENodeId::KeyValueStore(_),
-                                            SubstateOffset::KeyValueStore(
-                                                KeyValueStoreOffset::Entry(..),
-                                            ),
-                                        ) => true,
-                                        (
-                                            RENodeId::GlobalObject(Address::Component(addr)),
-                                            SubstateOffset::Component(ComponentOffset::State0),
-                                        ) => addr.eq(component_address),
-                                        _ => false,
-                                    }
-                                }
-                                _ => false,
-                            },
-                        }
-                    }
+                if module_id == SysModuleId::TypeInfo {
+                    return true;
+                }
+
+                if node_id.is_internal_kv_store() {
+                    return true;
+                }
+
+                match actor {
+                    Actor::Method {
+                        node_id: actor_node_id,
+                        ..
+                    } if actor_node_id == node_id => true,
+                    _ => false,
                 }
             }
         }
     }
-}
 
-pub struct SubstateProperties;
+    /// Whether the substate can be written
+    pub fn can_substate_be_updated(
+        mode: ExecutionMode,
+        actor: &Actor,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        _substate_key: &SubstateKey,
+    ) -> bool {
+        match mode {
+            ExecutionMode::Kernel => match module_id {
+                _ => false,
+            },
+            ExecutionMode::Resolver => match module_id {
+                _ => false,
+            },
+            ExecutionMode::DropNode => match module_id {
+                _ => false,
+            },
+            ExecutionMode::AutoDrop => match module_id {
+                _ => false,
+            },
+            ExecutionMode::System => match module_id {
+                _ => false,
+            },
+            ExecutionMode::KernelModule => true,
+            ExecutionMode::Client => {
+                if is_native_package(actor.blueprint().package_address) {
+                    return true;
+                }
 
-impl SubstateProperties {
-    pub fn is_persisted(offset: &SubstateOffset) -> bool {
-        match offset {
-            SubstateOffset::Component(..) => true,
-            SubstateOffset::Royalty(..) => true,
-            SubstateOffset::AccessRules(..) => true,
-            SubstateOffset::Package(..) => true,
-            SubstateOffset::ResourceManager(..) => true,
-            SubstateOffset::KeyValueStore(..) => true,
-            SubstateOffset::Vault(..) => true,
-            SubstateOffset::EpochManager(..) => true,
-            SubstateOffset::Validator(..) => true,
-            SubstateOffset::Bucket(..) => false,
-            SubstateOffset::Proof(..) => false,
-            SubstateOffset::Worktop(..) => false,
-            SubstateOffset::AuthZone(..) => false,
-            SubstateOffset::Clock(..) => true,
-            SubstateOffset::Account(..) => true,
-            SubstateOffset::AccessController(..) => true,
-            SubstateOffset::TypeInfo(..) => true,
+                if module_id == SysModuleId::TypeInfo {
+                    return true;
+                }
+
+                if node_id.is_internal_kv_store() {
+                    return true;
+                }
+
+                match actor {
+                    Actor::Method {
+                        node_id: actor_node_id,
+                        ..
+                    } if actor_node_id == node_id => true,
+                    _ => false,
+                }
+            }
         }
     }
 
-    pub fn verify_can_own(
-        offset: &SubstateOffset,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<(), RuntimeError> {
-        match (package_address, blueprint_name) {
-            (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match offset {
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    Box::new(InvalidOwnership(
-                        offset.clone(),
-                        package_address,
-                        blueprint_name.to_string(),
-                    )),
-                ))),
-            },
-            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    Box::new(InvalidOwnership(
-                        offset.clone(),
-                        package_address,
-                        blueprint_name.to_string(),
-                    )),
-                ))),
-            },
-            _ => Ok(()),
-        }
+    pub fn can_own(
+        _offset: &SubstateKey,
+        _package_address: PackageAddress,
+        _blueprint_name: &str,
+    ) -> bool {
+        true
     }
 }

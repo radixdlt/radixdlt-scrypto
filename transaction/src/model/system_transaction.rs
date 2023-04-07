@@ -1,15 +1,15 @@
 use super::{ExecutionContext, FeePayment, Instruction};
 use crate::model::{AuthZoneParams, Executable};
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
-    pub pre_allocated_ids: BTreeSet<RENodeId>,
+    pub pre_allocated_ids: BTreeSet<NodeId>,
     pub blobs: Vec<Vec<u8>>,
     pub nonce: u64,
 }

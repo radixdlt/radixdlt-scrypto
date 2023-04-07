@@ -1,10 +1,11 @@
 use radix_engine::blueprints::resource::WorktopError;
-use radix_engine::errors::{ApplicationError, KernelError};
+use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
-use radix_engine::kernel::track::TrackError;
+use radix_engine::kernel::call_frame::LockSubstateError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_stores::interface::AcquireLockError;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -149,14 +150,10 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-            KernelError::TrackError(err),
-        )) => {
-            if let TrackError::LockUnmodifiedBaseOnNewSubstate(..) = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+            KernelError::CallFrameError(CallFrameError::LockSubstateError(
+                LockSubstateError::LockUnmodifiedBaseOnHeapNode,
+            )),
+        )) => true,
         _ => false,
     });
 }
@@ -190,9 +187,11 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-            KernelError::TrackError(err),
+            KernelError::CallFrameError(CallFrameError::LockSubstateError(
+                LockSubstateError::TrackError(err),
+            )),
         )) => {
-            if let TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
+            if let AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
                 return true;
             } else {
                 return false;

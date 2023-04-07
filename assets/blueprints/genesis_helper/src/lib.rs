@@ -32,7 +32,7 @@ pub struct GenesisResource {
     pub description: String,
     pub url: String,
     pub icon_url: String,
-    pub address_bytes: [u8; 26],
+    pub address_bytes: [u8; 27],
     pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
 }
 
@@ -44,8 +44,8 @@ mod genesis_helper {
         pub fn init(
             mut genesis_data: GenesisData,
             mut whole_lotta_xrd: Bucket,
-            validator_owner_token: [u8; 26], // TODO: Clean this up
-            epoch_manager_component_address: [u8; 26], // TODO: Clean this up
+            validator_owner_token: [u8; 27], // TODO: Clean this up
+            epoch_manager_component_address: [u8; 27], // TODO: Clean this up
             initial_epoch: u64,
             rounds_per_epoch: u64,
             num_unstake_epochs: u64,
@@ -147,8 +147,6 @@ mod genesis_helper {
             initial_allocation: BTreeMap<ComponentAddress, Decimal>,
             owner_with_mint_and_burn_rights: Option<ComponentAddress>,
         ) -> () {
-            let resource_address = ResourceAddress::Fungible(resource.address_bytes.clone());
-
             // Just a sanity check that XRD wasn't acccidentally included in genesis resources
             if resource.symbol.eq_ignore_ascii_case("XRD") {
                 panic!("XRD shouldn't be included in genesis resources");
@@ -210,7 +208,7 @@ mod genesis_helper {
                 );
             }
 
-            let (_, mut bucket): (ResourceAddress, Bucket) = Runtime::call_function(
+            let (resource_address, mut bucket): (ResourceAddress, Bucket) = Runtime::call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
@@ -239,7 +237,7 @@ mod genesis_helper {
             }
             bucket.drop_empty();
 
-            let address: Address = resource_address.into();
+            let address: GlobalAddress = resource_address.into();
 
             let metadata = borrow_resource_manager!(resource_address).metadata();
             metadata.set("owner_of", address);

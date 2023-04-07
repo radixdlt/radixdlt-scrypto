@@ -1,13 +1,13 @@
-use radix_engine_interface::api::types::{ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-pub struct Vault(pub ObjectId); // native stub
+pub struct Vault(pub Own);
 
 impl Vault {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(
@@ -18,13 +18,13 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(resource_address.into()),
+            resource_address.as_node_id(),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;
 
         let own: Own = scrypto_decode(&rtn).unwrap();
-        Ok(Self(own.vault_id()))
+        Ok(Self(own))
     }
 
     pub fn sys_put<Y, E: Debug + ScryptoDecode>(
@@ -36,7 +36,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             VAULT_PUT_IDENT,
             scrypto_encode(&VaultPutInput { bucket }).unwrap(),
         )?;
@@ -53,7 +53,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
         )?;
@@ -68,7 +68,7 @@ impl Vault {
         // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
         )?;
@@ -85,7 +85,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
                 non_fungible_local_ids,
@@ -101,7 +101,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             VAULT_GET_AMOUNT_IDENT,
             scrypto_encode(&VaultGetAmountInput {}).unwrap(),
         )?;
@@ -115,7 +115,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             VAULT_CREATE_PROOF_OF_ALL_IDENT,
             scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
         )?;
@@ -132,7 +132,7 @@ impl Vault {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
             scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
         )?;
@@ -149,7 +149,7 @@ impl Vault {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
             scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
         )?;
@@ -166,7 +166,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             FUNGIBLE_VAULT_LOCK_FEE_IDENT,
             scrypto_encode(&FungibleVaultLockFeeInput {
                 amount,
@@ -186,7 +186,7 @@ impl Vault {
         Y: ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            &RENodeId::Object(self.0),
+            self.0.as_node_id(),
             FUNGIBLE_VAULT_LOCK_FEE_IDENT,
             scrypto_encode(&FungibleVaultLockFeeInput {
                 amount,

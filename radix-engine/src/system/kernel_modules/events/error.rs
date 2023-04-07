@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::Blueprint;
+use radix_engine_interface::types::Blueprint;
 use radix_engine_interface::*;
 use sbor::rust::string::String;
 

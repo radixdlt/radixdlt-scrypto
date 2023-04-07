@@ -31,7 +31,9 @@ mod bucket_test {
                 .metadata("name", "TestToken")
                 .mint_initial_supply(1u32);
 
-            ScryptoEnv.drop_object(RENodeId::Object(bucket.0)).unwrap();
+            ScryptoEnv
+                .drop_object(bucket.0.as_node_id().clone())
+                .unwrap();
         }
 
         pub fn drop_empty(amount: u32) {

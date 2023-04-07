@@ -1,5 +1,5 @@
-use crate::api::types::*;
-use crate::data::scrypto::model::*;
+use crate::types::*;
+use radix_engine_common::types::*;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -10,39 +10,39 @@ pub trait ClientObjectApi<E> {
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: Vec<Vec<u8>>,
-    ) -> Result<ObjectId, E>;
+        object_states: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E>;
 
-    fn get_object_info(&mut self, node_id: RENodeId) -> Result<ObjectInfo, E>;
+    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
 
-    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, E>;
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
-    fn get_key_value_store_info(&mut self, node_id: RENodeId) -> Result<KeyValueStoreSchema, E>;
+    fn get_key_value_store_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
 
     fn globalize(
         &mut self,
-        node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
-    ) -> Result<Address, E>;
+        node_id: NodeId,
+        modules: BTreeMap<SysModuleId, NodeId>,
+    ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address(
         &mut self,
-        node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
-        address: Address,
-    ) -> Result<Address, E>;
+        node_id: NodeId,
+        modules: BTreeMap<SysModuleId, NodeId>,
+        address: GlobalAddress,
+    ) -> Result<(), E>;
 
     fn call_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
     fn call_module_method(
         &mut self,
-        receiver: &RENodeId,
-        node_module_id: NodeModuleId,
+        receiver: &NodeId,
+        module_id: SysModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
@@ -55,5 +55,5 @@ pub trait ClientObjectApi<E> {
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
-    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), E>;
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
 }

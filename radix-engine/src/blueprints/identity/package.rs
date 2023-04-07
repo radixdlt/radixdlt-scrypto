@@ -7,7 +7,6 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -85,7 +84,7 @@ impl IdentityNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -196,40 +195,34 @@ impl IdentityBlueprint {
     pub fn create_advanced<Y>(
         config: AccessRulesConfig,
         api: &mut Y,
-    ) -> Result<Address, RuntimeError>
+    ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let access_rules = SecurifiedIdentity::create_advanced(config, api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
-        let address = api.globalize(RENodeId::Object(object.id()), modules)?;
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+        let address = api.globalize(object.0, modules)?;
         Ok(address)
     }
 
-    pub fn create<Y>(api: &mut Y) -> Result<(Address, Bucket), RuntimeError>
+    pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedIdentity::create_securified(api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
-        let address = api.globalize(RENodeId::Object(object.id()), modules)?;
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+        let address = api.globalize(object.0, modules)?;
         Ok((address, bucket))
     }
 
     pub fn create_ecdsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -245,7 +238,7 @@ impl IdentityBlueprint {
     pub fn create_eddsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -258,7 +251,7 @@ impl IdentityBlueprint {
         Self::create_object(access_rules, api)
     }
 
-    fn securify<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -268,7 +261,7 @@ impl IdentityBlueprint {
     fn create_object<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -278,11 +271,11 @@ impl IdentityBlueprint {
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            NodeModuleId::AccessRules => access_rules.0,
-            NodeModuleId::Metadata => metadata,
-            NodeModuleId::ComponentRoyalty => royalty,
+            SysModuleId::AccessRules => access_rules.0,
+            SysModuleId::Metadata => metadata,
+            SysModuleId::Royalty => royalty,
         );
 
-        Ok((Own::Object(object_id), modules))
+        Ok((Own(object_id), modules))
     }
 }

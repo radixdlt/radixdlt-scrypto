@@ -3,7 +3,8 @@ use crate::data::scrypto::model::*;
 use crate::*;
 use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
-use radix_engine_interface::api::types::NonFungibleData;
+use radix_engine_common::types::*;
+use radix_engine_interface::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -56,7 +57,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub resource_address: [u8; 26], // TODO: Clean this up
+    pub resource_address: [u8; 27], // TODO: Clean this up
 }
 
 pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;

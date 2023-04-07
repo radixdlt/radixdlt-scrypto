@@ -4,7 +4,6 @@ pub mod kernel_modules;
 pub mod node_modules;
 pub mod object_api;
 pub mod substate_api;
-pub mod types;
 
 // Re-exports
 pub use actor_api::ClientActorApi;

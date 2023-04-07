@@ -170,7 +170,7 @@ mod non_fungible_test {
                 borrow_resource_manager!(resource_address).update_non_fungible_data(
                     &NonFungibleLocalId::integer(0),
                     "own",
-                    Some(Own::Vault(vault.0)),
+                    Some(vault.0),
                 );
             });
 

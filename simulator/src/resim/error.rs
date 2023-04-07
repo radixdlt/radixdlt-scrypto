@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::transaction::AbortReason;
-use radix_engine::types::{AddressError, ComponentAddress, PackageAddress};
+use radix_engine::types::{ComponentAddress, PackageAddress};
 use radix_engine::utils::ExtractSchemaError;
 use radix_engine::wasm::PrepareError;
 use radix_engine_interface::blueprints::resource::ParseNonFungibleGlobalIdError;
@@ -11,7 +11,7 @@ use radix_engine_interface::network::ParseNetworkError;
 use sbor::*;
 use transaction::errors::*;
 
-use crate::ledger::*;
+use crate::ledger::EntityDumpError;
 use crate::utils::*;
 
 /// Represents a resim error.
@@ -51,7 +51,7 @@ pub enum Error {
 
     TransactionAborted(AbortReason),
 
-    LedgerDumpError(DisplayError),
+    LedgerDumpError(EntityDumpError),
 
     CompileError(transaction::manifest::CompileError),
 
@@ -60,8 +60,6 @@ pub enum Error {
     InvalidId(String),
 
     InvalidPrivateKey,
-
-    AddressError(AddressError),
 
     NonFungibleGlobalIdError(ParseNonFungibleGlobalIdError),
 

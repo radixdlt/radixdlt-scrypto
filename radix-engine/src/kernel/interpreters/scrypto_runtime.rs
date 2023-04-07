@@ -4,11 +4,11 @@ use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::ClientCostingReason;
-use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::types::ClientCostingReason;
+use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
@@ -71,17 +71,20 @@ where
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let receiver =
-            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidNodeId)?;
-
+        let receiver = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(receiver.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
-        let node_module_id = NodeModuleId::from_u32(module_id)
+        let module_id = u8::try_from(module_id)
+            .ok()
+            .and_then(|x| SysModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =
             self.api
-                .call_module_method(&receiver, node_module_id, ident.as_str(), args)?;
+                .call_module_method(&receiver, module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -110,14 +113,16 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
-        app_states: Vec<u8>,
+        object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
+        let object_states = scrypto_decode::<Vec<Vec<u8>>>(&object_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
-        let component_id = self.api.new_object(blueprint_ident.as_ref(), app_states)?;
+        let component_id = self
+            .api
+            .new_object(blueprint_ident.as_ref(), object_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 
@@ -129,9 +134,11 @@ where
         component_id: Vec<u8>,
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let component_id =
-            scrypto_decode::<RENodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let modules = scrypto_decode::<BTreeMap<NodeModuleId, ObjectId>>(&modules)
+        let component_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(component_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let modules = scrypto_decode::<BTreeMap<SysModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;
@@ -156,8 +163,10 @@ where
     }
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        let node_id =
-            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
 
         self.api.drop_object(node_id)?;
 
@@ -167,16 +176,18 @@ where
     fn lock_substate(
         &mut self,
         node_id: Vec<u8>,
-        offset: Vec<u8>,
+        substate_key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
-        let node_id =
-            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let offset =
-            scrypto_decode::<SubstateOffset>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let substate_key =
+            SubstateKey::from_vec(substate_key).ok_or(WasmRuntimeError::InvalidSubstateKey)?;
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.sys_lock_substate(node_id, offset, flags)?;
+        let handle = self.api.sys_lock_substate(&node_id, &substate_key, flags)?;
 
         Ok(handle)
     }
@@ -246,9 +257,11 @@ where
         &mut self,
         node_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id =
-            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let type_info = self.api.get_object_info(node_id)?;
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let type_info = self.api.get_object_info(&node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
@@ -330,7 +343,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
-        node_module_id: u32,
+        module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -350,7 +363,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
-        app_states: Vec<u8>,
+        object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

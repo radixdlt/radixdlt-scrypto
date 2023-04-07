@@ -1,22 +1,23 @@
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{types::*, ClientSubstateApi};
+use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
-    Bucket(ObjectId),
-    Vault(ObjectId),
+    Bucket(Reference),
+    Vault(Reference),
 }
 
 impl LocalRef {
-    pub fn to_re_node_id(&self) -> RENodeId {
+    pub fn as_node_id(&self) -> &NodeId {
         match self {
-            LocalRef::Bucket(id) => RENodeId::Object(id.clone()),
-            LocalRef::Vault(id) => RENodeId::Object(id.clone()),
+            LocalRef::Bucket(id) => id.as_node_id(),
+            LocalRef::Vault(id) => id.as_node_id(),
         }
     }
 }
@@ -43,15 +44,12 @@ pub struct ProofInfoSubstate {
 
 impl ProofInfoSubstate {
     pub fn of<Y: KernelSubstateApi + ClientSubstateApi<RuntimeError>>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
-        let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Proof(ProofOffset::Info),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let handle =
+            api.sys_lock_substate(receiver, &ProofOffset::Info.into(), LockFlags::read_only())?;
+        let substate_ref: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
         Ok(info)
@@ -92,10 +90,10 @@ impl FungibleProof {
         &self,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
-        for (container_id, locked_amount) in &self.evidence {
+        for (container, locked_amount) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                 },
@@ -109,10 +107,10 @@ impl FungibleProof {
     }
 
     pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
-        for (container_id, locked_amount) in &self.evidence {
+        for (container, locked_amount) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
                 },
@@ -154,10 +152,10 @@ impl NonFungibleProof {
         &self,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
-        for (container_id, locked_ids) in &self.evidence {
+        for (container, locked_ids) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                 },
@@ -171,10 +169,10 @@ impl NonFungibleProof {
     }
 
     pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
-        for (container_id, locked_ids) in &self.evidence {
+        for (container, locked_ids) in &self.evidence {
             api.call_method(
-                &container_id.to_re_node_id(),
-                match container_id {
+                container.as_node_id(),
+                match container {
                     LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                 },
@@ -197,7 +195,7 @@ pub struct ProofBlueprint;
 
 impl ProofBlueprint {
     pub(crate) fn clone<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -211,11 +209,11 @@ impl ProofBlueprint {
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
             let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::Fungible),
+                receiver,
+                &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+            let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
@@ -229,14 +227,14 @@ impl ProofBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            proof_id
         } else {
             let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
+                receiver,
+                &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
@@ -250,15 +248,14 @@ impl ProofBlueprint {
                 ],
             )?;
 
-            RENodeId::Object(proof_id)
+            proof_id
         };
 
-        let proof_id = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
+        Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
 
     pub(crate) fn get_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -272,21 +269,21 @@ impl ProofBlueprint {
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
             let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::Fungible),
+                receiver,
+                &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+            let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
             let amount = substate_ref.amount();
             api.sys_drop_lock(handle)?;
             amount
         } else {
             let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
+                receiver,
+                &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
             let amount = substate_ref.amount();
             api.sys_drop_lock(handle)?;
             amount
@@ -295,7 +292,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -313,11 +310,11 @@ impl ProofBlueprint {
             ))
         } else {
             let handle = api.sys_lock_substate(
-                receiver.clone(),
-                SubstateOffset::Proof(ProofOffset::NonFungible),
+                receiver,
+                &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
             let ids = substate_ref.non_fungible_local_ids().clone();
             api.sys_drop_lock(handle)?;
             Ok(IndexedScryptoValue::from_typed(&ids))
@@ -325,7 +322,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -354,33 +351,14 @@ impl ProofBlueprint {
         })?;
         let proof = input.proof;
 
-        let mut heap_node = api.kernel_drop_node(&RENodeId::Object(proof.0))?;
-        let proof_info: ProofInfoSubstate = heap_node
-            .substates
-            .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
-            .unwrap()
-            .into();
-        if proof_info.resource_type.is_fungible() {
-            let proof: FungibleProof = heap_node
-                .substates
-                .remove(&(
-                    NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::Fungible),
-                ))
-                .unwrap()
-                .into();
-            proof.drop_proof(api)?;
-        } else {
-            let proof: NonFungibleProof = heap_node
-                .substates
-                .remove(&(
-                    NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::NonFungible),
-                ))
-                .unwrap()
-                .into();
-            proof.drop_proof(api)?;
-        }
+        // FIXME: check type before schema check is ready! applicable to all functions!
+
+        let heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
+        let dropped_proof: DroppedProof = heap_node.into();
+        match dropped_proof.resource {
+            DroppedProofResource::Fungible(p) => p.drop_proof(api)?,
+            DroppedProofResource::NonFungible(p) => p.drop_proof(api)?,
+        };
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

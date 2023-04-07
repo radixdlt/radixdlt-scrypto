@@ -10,7 +10,9 @@ pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoCustomTypeKind {
-    Address, /* any */
+    Reference, /* any */
+    GlobalAddress,
+    LocalAddress,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -24,8 +26,6 @@ pub enum ScryptoCustomTypeKind {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
-
-    Reference,
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
@@ -55,7 +55,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         _type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
-            ScryptoCustomTypeKind::Address => ScryptoCustomTypeKind::Address,
+            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
+            ScryptoCustomTypeKind::GlobalAddress => ScryptoCustomTypeKind::GlobalAddress,
+            ScryptoCustomTypeKind::LocalAddress => ScryptoCustomTypeKind::LocalAddress,
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
@@ -69,8 +71,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
             ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
-
-            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
         }
     }
 
@@ -85,7 +85,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
-            ScryptoCustomTypeKind::Address
+            ScryptoCustomTypeKind::Reference
+            | ScryptoCustomTypeKind::GlobalAddress
+            | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -96,8 +98,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::KeyValueStore
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId
-            | ScryptoCustomTypeKind::Reference => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 // No validations
             }
         }
@@ -112,7 +113,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         // Even though they all map to the same thing, we keep the explicit match statement so that
         // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
         match type_kind {
-            ScryptoCustomTypeKind::Address
+            ScryptoCustomTypeKind::Reference
+            | ScryptoCustomTypeKind::GlobalAddress
+            | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -123,8 +126,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId
-            | ScryptoCustomTypeKind::Reference => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 validate_childless_metadata(type_metadata)?;
             }
         }
@@ -144,7 +146,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         match type_kind {
             // Even though they all map to the same thing, we keep the explicit match statement so that
             // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
-            ScryptoCustomTypeKind::Address
+            ScryptoCustomTypeKind::Reference
+            | ScryptoCustomTypeKind::GlobalAddress
+            | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
@@ -155,8 +159,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId
-            | ScryptoCustomTypeKind::Reference => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 // All these custom type kinds only support `SchemaTypeValidation::None`.
                 // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
                 // - which isn't valid.
@@ -171,21 +174,29 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         value_kind: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         match custom_type_kind {
-            ScryptoCustomTypeKind::Address => matches!(
+            ScryptoCustomTypeKind::Reference => matches!(
                 value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Address)
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
+            ),
+            ScryptoCustomTypeKind::GlobalAddress => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
+            ),
+            ScryptoCustomTypeKind::LocalAddress => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
             ScryptoCustomTypeKind::PackageAddress => matches!(
                 value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Address)
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
             ScryptoCustomTypeKind::ComponentAddress => matches!(
                 value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Address)
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
             ScryptoCustomTypeKind::ResourceAddress => matches!(
                 value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Address)
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
             ScryptoCustomTypeKind::Own => {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
@@ -213,10 +224,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::NonFungibleLocalId => matches!(
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
-            ),
-            ScryptoCustomTypeKind::Reference => matches!(
-                value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
         }
     }

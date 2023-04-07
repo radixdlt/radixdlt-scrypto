@@ -7,26 +7,19 @@ use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
+use crate::system::node_init::ModuleInit;
+use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::ClientCostingReason;
-use radix_engine_interface::api::types::Level;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
@@ -45,8 +38,8 @@ where
 {
     fn sys_lock_substate(
         &mut self,
-        node_id: RENodeId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         // TODO: Remove
@@ -68,14 +61,15 @@ where
                 module_id
             } else {
                 // TODO: Remove this
-                NodeModuleId::SELF
+                SysModuleId::ObjectState
             };
 
-        self.kernel_lock_substate(&node_id, module_id, offset, flags)
+        self.kernel_lock_substate(&node_id, module_id, substate_key, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
-        self.kernel_read_substate(lock_handle).map(|v| v.into())
+        self.kernel_read_substate(lock_handle)
+            .map(|v| v.as_slice().to_vec())
     }
 
     fn sys_write_substate(
@@ -84,13 +78,10 @@ where
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let LockInfo {
-            node_id,
-            module_id,
-            offset,
-            ..
+            node_id, module_id, ..
         } = self.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&NodeModuleId::SELF) {
+        if module_id.eq(&SysModuleId::ObjectState) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -115,23 +106,9 @@ where
             }
         }
 
-        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
-        // TODO: support all self substates
-        // TODO: add payload schema validation
-
-        match substate {
-            RuntimeSubstate::ComponentState(next) => {
-                let state: &mut ComponentStateSubstate =
-                    self.kernel_get_substate_ref_mut(lock_handle)?;
-                *state = next
-            }
-            RuntimeSubstate::KeyValueStoreEntry(next) => {
-                let entry: &mut Option<ScryptoValue> =
-                    self.kernel_get_substate_ref_mut(lock_handle)?;
-                *entry = next;
-            }
-            _ => return Err(RuntimeError::SystemError(SystemError::InvalidSubstateWrite)),
-        }
+        let substate = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+        self.kernel_write_substate(lock_handle, substate)?;
 
         Ok(())
     }
@@ -151,18 +128,18 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        mut app_states: Vec<Vec<u8>>,
-    ) -> Result<ObjectId, RuntimeError> {
+        object_states: Vec<Vec<u8>>,
+    ) -> Result<NodeId, RuntimeError> {
         let actor = self.kernel_get_current_actor().unwrap();
-
         let package_address = actor.package_address().clone();
+
         let handle = self.kernel_lock_substate(
-            &RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Info),
+            package_address.as_node_id(),
+            SysModuleId::ObjectState,
+            &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
-        let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
+        let package: PackageInfoSubstate = self.kernel_read_substate(handle)?.as_typed().unwrap();
         let schema =
             package
                 .schema
@@ -173,6 +150,56 @@ where
                         SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
                     )),
                 ))?;
+        if schema.substates.len() != object_states.len() {
+            return Err(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::WrongNumberOfSubstates(
+                        blueprint_ident.to_string(),
+                        object_states.len(),
+                        schema.substates.len(),
+                    ),
+                )),
+            ));
+        }
+        for i in 0..object_states.len() {
+            validate_payload_against_schema(&object_states[i], &schema.schema, schema.substates[i])
+                .map_err(|err| {
+                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
+                        SubstateValidationError::SchemaValidationError(
+                            blueprint_ident.to_string(),
+                            err.error_message(&schema.schema),
+                        ),
+                    )))
+                })?;
+        }
+        self.kernel_drop_lock(handle)?;
+
+        let entity_type = match (package_address, blueprint_ident) {
+            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
+                EntityType::InternalFungibleVault
+            }
+            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
+                EntityType::InternalNonFungibleVault
+            }
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
+            _ => EntityType::InternalGenericComponent,
+        };
+
+        let node_id = self.kernel_allocate_node_id(entity_type)?;
+        let node_init = NodeInit::Object(
+            object_states
+                .into_iter()
+                .enumerate()
+                .map(|(i, x)| {
+                    (
+                        // TODO check size during package publishing time
+                        SubstateKey::from_vec(vec![i as u8]).unwrap(),
+                        IndexedScryptoValue::from_vec(x)
+                            .expect("Checked by payload-schema validation"),
+                    )
+                })
+                .collect(),
+        );
 
         let type_parent = if let Some(parent) = &schema.parent {
             match actor {
@@ -191,192 +218,17 @@ where
             None
         };
 
-        if schema.substates.len() != app_states.len() {
-            return Err(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::WrongNumberOfSubstates(
-                        blueprint_ident.to_string(),
-                        app_states.len(),
-                        schema.substates.len(),
-                    ),
-                )),
-            ));
-        }
-        for i in 0..app_states.len() {
-            validate_payload_against_schema(&app_states[i], &schema.schema, schema.substates[i])
-                .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::SchemaValidationError(
-                            blueprint_ident.to_string(),
-                            err.error_message(&schema.schema),
-                        ),
-                    )))
-                })?;
-        }
-        self.kernel_drop_lock(handle)?;
-
-        struct SubstateSchemaParser<'a> {
-            next_index: usize,
-            app_states: &'a Vec<Vec<u8>>,
-        }
-
-        impl<'a> SubstateSchemaParser<'a> {
-            fn new(app_states: &'a Vec<Vec<u8>>) -> Self {
-                Self {
-                    next_index: 0,
-                    app_states,
-                }
-            }
-
-            fn decode_next<S: ScryptoDecode>(&mut self) -> S {
-                if let Some(substate_bytes) = self.app_states.get(self.next_index) {
-                    let decoded = scrypto_decode(substate_bytes)
-                        .expect("Unexpected decode error for app states");
-                    self.next_index = self.next_index + 1;
-                    decoded
-                } else {
-                    panic!("Unexpected missing app states");
-                }
-            }
-
-            fn end(self) {
-                if self.app_states.get(self.next_index).is_some() {
-                    panic!("Unexpected extra app states");
-                }
-            }
-        }
-
-        let mut parser = SubstateSchemaParser::new(&mut app_states);
-        let (node_init, node_type) = match package_address {
-            RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                PROOF_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
-                        SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()),
-                        SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                BUCKET_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
-                        SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                FUNGIBLE_VAULT_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::FungibleVaultInfo(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
-                    )),
-                    AllocateEntityType::Vault,
-                ),
-                NON_FUNGIBLE_VAULT_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::NonFungibleVaultInfo(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
-                        SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
-                    )),
-                    AllocateEntityType::Vault,
-                ),
-                blueprint => panic!("Unexpected blueprint {}", blueprint),
-            },
-            METADATA_PACKAGE => (RENodeInit::Object(btreemap!()), AllocateEntityType::Object),
-            ROYALTY_PACKAGE => match blueprint_ident {
-                COMPONENT_ROYALTY_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
-                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                blueprint => panic!("Unexpected blueprint {}", blueprint),
-            },
-            ACCESS_RULES_PACKAGE => (
-                RENodeInit::Object(btreemap!(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next())
-                )),
-                AllocateEntityType::Object,
-            ),
-            EPOCH_MANAGER_PACKAGE => match blueprint_ident {
-                VALIDATOR_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next())
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                EPOCH_MANAGER_BLUEPRINT => (
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(parser.decode_next()),
-                        SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()),
-                        SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next())
-                    )),
-                    AllocateEntityType::Object,
-                ),
-                blueprint => panic!("Unexpected blueprint {}", blueprint),
-            },
-            ACCESS_CONTROLLER_PACKAGE => (
-                RENodeInit::Object(btreemap!(
-                    SubstateOffset::AccessController(AccessControllerOffset::AccessController)
-                        => RuntimeSubstate::AccessController(parser.decode_next())
-                )),
-                AllocateEntityType::Object,
-            ),
-            IDENTITY_PACKAGE => (RENodeInit::Object(btreemap!()), AllocateEntityType::Object),
-            ACCOUNT_PACKAGE => (
-                RENodeInit::Object(btreemap!(
-                    SubstateOffset::Account(AccountOffset::Account)
-                        => RuntimeSubstate::Account(parser.decode_next())
-                )),
-                AllocateEntityType::Object,
-            ),
-            CLOCK_PACKAGE => (
-                RENodeInit::Object(btreemap!(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
-                        => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
-                )),
-                AllocateEntityType::Object,
-            ),
-            _ => (
-                RENodeInit::Object(btreemap!(
-                    SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
-                        ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
-                    )
-                )),
-                AllocateEntityType::Object,
-            ),
-        };
-        parser.end();
-
-        let node_id = self.kernel_allocate_node_id(node_type)?;
-
         self.kernel_create_node(
             node_id,
             node_init,
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: Blueprint::new(&package_address, blueprint_ident),
-                        global: false,
-                        type_parent,
+                        blueprint: Blueprint::new(&package_address,blueprint_ident),
+                        global:false,
+                        type_parent
                     })
-                ),
+                ).to_substates(),
             ),
         )?;
 
@@ -385,107 +237,96 @@ where
 
     fn globalize(
         &mut self,
-        node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
-    ) -> Result<Address, RuntimeError> {
+        node_id: NodeId,
+        modules: BTreeMap<SysModuleId, NodeId>,
+    ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME check completeness of modules
 
-        let node_type = match node_id {
-            RENodeId::Object(..) => {
-                let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
-                let blueprint = match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint, global, ..
-                    }) if !global => blueprint,
-                    _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
-                };
-
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => AllocateEntityType::GlobalAccount,
-                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => AllocateEntityType::GlobalIdentity,
-                    (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-                        AllocateEntityType::GlobalAccessController
-                    }
-                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => {
-                        AllocateEntityType::GlobalValidator
-                    }
-                    _ => AllocateEntityType::GlobalComponent,
-                }
-            }
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let blueprint = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint, global, ..
+            }) if !global => blueprint,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
-        let global_node_id = self.kernel_allocate_node_id(node_type)?;
-        self.globalize_with_address(node_id, modules, global_node_id.into())
+        let entity_type = match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+            (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
+            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+                EntityType::GlobalFungibleResource
+            }
+            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+                EntityType::GlobalNonFungibleResource
+            }
+            (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
+            (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
+            (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => EntityType::GlobalClock,
+            (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                EntityType::GlobalAccessController
+            }
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
+            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
+            _ => EntityType::GlobalGenericComponent,
+        };
+
+        let global_node_id = self.kernel_allocate_node_id(entity_type)?;
+        let global_address = GlobalAddress::new_unchecked(global_node_id.into());
+        self.globalize_with_address(node_id, modules, global_address)?;
+        Ok(global_address)
     }
 
     fn globalize_with_address(
         &mut self,
-        node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
-        address: Address,
-    ) -> Result<Address, RuntimeError> {
-        let module_ids = modules.keys().cloned().collect::<BTreeSet<NodeModuleId>>();
+        node_id: NodeId,
+        modules: BTreeMap<SysModuleId, NodeId>,
+        address: GlobalAddress,
+    ) -> Result<(), RuntimeError> {
+        // Check module configuration
+        let module_ids = modules.keys().cloned().collect::<BTreeSet<SysModuleId>>();
         let standard_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules
+            SysModuleId::Metadata,
+            SysModuleId::Royalty,
+            SysModuleId::AccessRules
         );
-        // TODO: remove
-        let resource_manager_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules,
-        );
-        if module_ids != standard_object && module_ids != resource_manager_object {
+        if module_ids != standard_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
                 Box::new(InvalidModuleSet(node_id, module_ids)),
             )));
         }
 
+        // Drop the node
         let node = self.kernel_drop_node(&node_id)?;
+        let mut node_substates = node.substates;
 
-        let mut module_substates = BTreeMap::new();
-        let mut component_substates = BTreeMap::new();
-        for ((node_module_id, offset), substate) in node.substates {
-            match node_module_id {
-                NodeModuleId::SELF => component_substates.insert(offset, substate),
-                _ => module_substates.insert((node_module_id, offset), substate),
-            };
-        }
-
-        let mut module_init = BTreeMap::new();
-
-        let type_info = module_substates
-            .remove(&(
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ))
+        // Update the `global` flag of the type info substate.
+        let type_info_module = node_substates
+            .get_mut(&SysModuleId::TypeInfo)
+            .unwrap()
+            .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
-        let mut type_info_substate: TypeInfoSubstate = type_info.into();
-
-        match type_info_substate {
+        let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
+        match type_info {
             TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
                 *global = true
             }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
+        node_substates
+            .get_mut(&SysModuleId::TypeInfo)
+            .unwrap()
+            .insert(
+                TypeInfoOffset::TypeInfo.into(),
+                IndexedScryptoValue::from_typed(&type_info),
+            );
 
-        module_init.insert(
-            NodeModuleId::TypeInfo,
-            RENodeModuleInit::TypeInfo(type_info_substate),
-        );
-
-        // TODO: Check node type matches modules provided
-
-        for (module_id, object_id) in modules {
+        //  Drop the module nodes and move the substates to the designated module ID.
+        for (module_id, node_id) in modules {
             match module_id {
-                NodeModuleId::SELF | NodeModuleId::TypeInfo => {
+                SysModuleId::ObjectState | SysModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules => {
-                    let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_info(node_id)?.blueprint;
+                SysModuleId::AccessRules => {
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -496,23 +337,12 @@ where
                         )));
                     }
 
-                    let mut node = self.kernel_drop_node(&RENodeId::Object(object_id))?;
-
-                    let access_rules = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                        ))
-                        .unwrap();
-                    let access_rules: MethodAccessRulesSubstate = access_rules.into();
-
-                    module_init
-                        .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
+                    let mut node = self.kernel_drop_node(&node_id)?;
+                    let access_rules = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    node_substates.insert(module_id, access_rules);
                 }
-                NodeModuleId::Metadata => {
-                    let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_info(node_id)?.blueprint;
+                SysModuleId::Metadata => {
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -523,23 +353,12 @@ where
                         )));
                     }
 
-                    let node = self.kernel_drop_node(&node_id)?;
-
-                    let mut substates = BTreeMap::new();
-                    for ((module_id, offset), substate) in node.substates {
-                        if let NodeModuleId::SELF = module_id {
-                            substates.insert(offset, substate);
-                        }
-                    }
-
-                    module_init.insert(
-                        NodeModuleId::Metadata,
-                        RENodeModuleInit::Metadata(substates),
-                    );
+                    let mut node = self.kernel_drop_node(&node_id)?;
+                    let metadata = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    node_substates.insert(module_id, metadata);
                 }
-                NodeModuleId::ComponentRoyalty => {
-                    let node_id = RENodeId::Object(object_id);
-                    let blueprint = self.get_object_info(node_id)?.blueprint;
+                SysModuleId::Royalty => {
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -551,59 +370,38 @@ where
                     }
 
                     let mut node = self.kernel_drop_node(&node_id)?;
-
-                    let config = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-                        ))
-                        .unwrap();
-                    let config: ComponentRoyaltyConfigSubstate = config.into();
-                    let accumulator = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                        ))
-                        .unwrap();
-                    let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
-
-                    module_init.insert(
-                        NodeModuleId::ComponentRoyalty,
-                        RENodeModuleInit::ComponentRoyalty(config, accumulator),
-                    );
+                    let royalty = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    node_substates.insert(module_id, royalty);
                 }
             }
         }
 
-        self.kernel_create_node(
-            address.into(),
-            RENodeInit::GlobalObject(component_substates),
-            module_init,
-        )?;
+        // TODO: better interface to remove this
+        let node_init = node_substates.remove(&SysModuleId::ObjectState).unwrap();
 
-        Ok(address.into())
+        self.kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
+
+        Ok(())
     }
 
     fn call_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
+        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
-        receiver: &RENodeId,
-        node_module_id: NodeModuleId,
+        receiver: &NodeId,
+        module_id: SysModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = Box::new(MethodInvocation {
-            identifier: MethodIdentifier(receiver.clone(), node_module_id, method_name.to_string()),
+            identifier: MethodIdentifier(receiver.clone(), module_id, method_name.to_string()),
             args,
         });
 
@@ -628,7 +426,7 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
-    fn get_object_info(&mut self, node_id: RENodeId) -> Result<ObjectInfo, RuntimeError> {
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
@@ -642,9 +440,9 @@ where
 
     fn get_key_value_store_info(
         &mut self,
-        node_id: RENodeId,
+        node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
@@ -655,28 +453,29 @@ where
         Ok(schema)
     }
 
-    fn new_key_value_store(
-        &mut self,
-        schema: KeyValueStoreSchema,
-    ) -> Result<KeyValueStoreId, RuntimeError> {
+    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let node_id = self.kernel_allocate_node_id(AllocateEntityType::KeyValueStore)?;
+        let entity_type = EntityType::InternalKeyValueStore;
+        let node_id = self.kernel_allocate_node_id(entity_type)?;
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::KeyValueStore,
+            NodeInit::KeyValueStore,
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
-        ))?;
+                    SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                        TypeInfoSubstate::KeyValueStore(schema)
+                    ).to_substates(),
+            ),
+        )?;
 
         Ok(node_id.into())
     }
 
-    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         self.kernel_drop_node(&node_id)?;
         Ok(())
     }
@@ -707,7 +506,7 @@ where
 
     fn credit_cost_units(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
@@ -723,7 +522,7 @@ impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn get_global_address(&mut self) -> Result<Address, RuntimeError> {
+    fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.kernel_get_current_actor()
             .and_then(|e| match e {
                 Actor::Method {
@@ -748,7 +547,7 @@ impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+    fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let auth_zone_id = self.kernel_get_module_state().auth.last_auth_zone();
@@ -830,19 +629,19 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    NodeModuleId::AccessRules => Ok(Blueprint::new(
+                    SysModuleId::AccessRules => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
-                    NodeModuleId::ComponentRoyalty => Ok(Blueprint::new(
+                    SysModuleId::Royalty => Ok(Blueprint::new(
                         &ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT,
                     )),
-                    NodeModuleId::Metadata => {
+                    SysModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    NodeModuleId::SELF => self.get_object_info(node_id).map(|i| i.blueprint),
-                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                    SysModuleId::ObjectState => self.get_object_info(&node_id).map(|x| x.blueprint),
+                    SysModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
                 },
@@ -853,16 +652,18 @@ where
             }?;
 
             let handle = self.kernel_lock_substate(
-                &RENodeId::GlobalObject(Address::Package(blueprint.package_address)),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Info),
+                blueprint.package_address.as_node_id(),
+                SysModuleId::ObjectState,
+                &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
-            let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
+            let package_info: PackageInfoSubstate =
+                self.kernel_read_substate(handle)?.as_typed().unwrap();
             let blueprint_schema = package_info
                 .schema
                 .blueprints
                 .get(&blueprint.blueprint_name)
+                .cloned()
                 .map_or(
                     Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
@@ -875,15 +676,17 @@ where
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
-            let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
-                Err(RuntimeError::ApplicationError(
-                    ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                        blueprint: blueprint.clone(),
-                        event_name,
-                    })),
-                )),
-                Ok,
-            )?;
+            let local_type_index =
+                if let Some(index) = blueprint_schema.event_schema.get(&event_name).cloned() {
+                    index
+                } else {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
+                            blueprint: blueprint.clone(),
+                            event_name,
+                        })),
+                    ));
+                };
 
             (handle, blueprint_schema, local_type_index)
         };
@@ -894,15 +697,15 @@ where
                 node_id, module_id, ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, module_id),
-                *local_type_index,
+                local_type_index,
             )),
             Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
-                    RENodeId::GlobalObject(Address::Package(blueprint.package_address)),
-                    NodeModuleId::SELF,
+                    blueprint.package_address.into(),
+                    SysModuleId::ObjectState,
                     blueprint.blueprint_name.to_string(),
                 ),
-                *local_type_index,
+                local_type_index,
             )),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(Box::new(EventError::InvalidActor)),

@@ -1,6 +1,5 @@
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
-use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -12,6 +11,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::traits::ScryptoEvent;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -25,7 +25,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                &RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+                EPOCH_MANAGER.as_node_id(),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )
@@ -40,8 +40,8 @@ impl Runtime {
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: Address = ScryptoEnv.get_global_address().unwrap();
-        address.into()
+        let address: GlobalAddress = ScryptoEnv.get_global_address().unwrap();
+        ComponentAddress::new_unchecked(address.into())
     }
 
     /// Returns the current package address.
@@ -81,11 +81,7 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let output = ScryptoEnv
-            .call_method(
-                &RENodeId::GlobalObject(component_address.into()),
-                method.as_ref(),
-                args,
-            )
+            .call_method(component_address.as_node_id(), method.as_ref(), args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }

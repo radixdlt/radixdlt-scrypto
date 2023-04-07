@@ -47,7 +47,7 @@ pub trait ExecutionFeeReserve {
         &mut self,
         cost_units: u32,
         recipient: RoyaltyRecipient,
-        recipient_vault_id: ObjectId,
+        recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError>;
 
     fn consume_multiplied_execution(
@@ -65,7 +65,7 @@ pub trait ExecutionFeeReserve {
 
     fn lock_fee(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, FeeReserveError>;
@@ -145,11 +145,11 @@ pub struct SystemLoanFeeReserve {
     execution_deferred: [u32; CostingReason::COUNT],
 
     /// Royalty costs
-    royalty_committed: BTreeMap<RoyaltyRecipient, (ObjectId, u128)>,
+    royalty_committed: BTreeMap<RoyaltyRecipient, (NodeId, u128)>,
     royalty_committed_sum: u32,
 
     /// Payments made during the execution of a transaction.
-    payments: Vec<(ObjectId, LiquidFungibleResource, bool)>,
+    payments: Vec<(NodeId, LiquidFungibleResource, bool)>,
 }
 
 #[inline]
@@ -256,7 +256,7 @@ impl SystemLoanFeeReserve {
         &mut self,
         cost_units: u32,
         recipient: RoyaltyRecipient,
-        recipient_vault_id: ObjectId,
+        recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError> {
         self.check_cost_unit_limit(cost_units)?;
 
@@ -306,7 +306,7 @@ impl SystemLoanFeeReserve {
         self.royalty_committed_sum = 0;
     }
 
-    pub fn royalty_cost(&self) -> BTreeMap<RoyaltyRecipient, (ObjectId, Decimal)> {
+    pub fn royalty_cost(&self) -> BTreeMap<RoyaltyRecipient, (NodeId, Decimal)> {
         self.royalty_committed
             .clone()
             .into_iter()
@@ -359,7 +359,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         &mut self,
         cost_units: u32,
         recipient: RoyaltyRecipient,
-        recipient_vault_id: ObjectId,
+        recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError> {
         if cost_units == 0 {
             return Ok(());
@@ -410,7 +410,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
     fn lock_fee(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         mut fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, FeeReserveError> {
@@ -467,8 +467,10 @@ impl Default for SystemLoanFeeReserve {
 mod tests {
     use super::*;
 
-    const TEST_VAULT_ID: ObjectId = [0u8; OBJECT_ID_LENGTH];
-    const TEST_VAULT_ID_2: ObjectId = [1u8; OBJECT_ID_LENGTH];
+    const TEST_COMPONENT: ComponentAddress =
+        component_address(EntityType::GlobalGenericComponent, 5);
+    const TEST_VAULT_ID: NodeId = NodeId([0u8; NodeId::LENGTH]);
+    const TEST_VAULT_ID_2: NodeId = NodeId([1u8; NodeId::LENGTH]);
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
         LiquidFungibleResource::new(amount.into())
@@ -611,7 +613,7 @@ mod tests {
         assert_eq!(
             fee_reserve.consume_royalty(
                 80,
-                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                RoyaltyRecipient::Component(TEST_COMPONENT),
                 TEST_VAULT_ID_2
             ),
             Err(FeeReserveError::InsufficientBalance)
@@ -628,7 +630,7 @@ mod tests {
         assert_eq!(
             fee_reserve.consume_royalty(
                 200,
-                RoyaltyRecipient::Component(FAUCET_COMPONENT),
+                RoyaltyRecipient::Component(TEST_COMPONENT),
                 TEST_VAULT_ID_2
             ),
             Err(FeeReserveError::LimitExceeded {

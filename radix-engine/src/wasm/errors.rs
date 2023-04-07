@@ -109,11 +109,11 @@ pub enum WasmRuntimeError {
     /// Invalid method ident
     InvalidString,
     /// Invalid RE node ID
-    InvalidNodeId(DecodeError),
+    InvalidNodeId,
     /// Invalid RE module ID
     InvalidModuleId(u32),
     /// Invalid substate offset
-    InvalidOffset(DecodeError),
+    InvalidSubstateKey,
     /// Invalid initial app states
     InvalidAppStates(DecodeError),
     /// Invalid access rules

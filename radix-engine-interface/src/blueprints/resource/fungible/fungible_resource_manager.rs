@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 
@@ -40,7 +40,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: [u8; 26], // TODO: Clean this up
+    pub resource_address: [u8; 27], // TODO: Clean this up
 }
 
 pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);

@@ -2,7 +2,6 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
     ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
@@ -16,59 +15,55 @@ use radix_engine_interface::blueprints::identity::{
 pub struct VirtualizationModule;
 
 impl KernelModule for VirtualizationModule {
-    fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
-        node_id: RENodeId,
-        _module_id: NodeModuleId,
-        _offset: &SubstateOffset,
+    fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
+        node_id: NodeId,
+        _module_id: SysModuleId,
+        _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
-        match node_id {
+        match node_id.entity_type() {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::GlobalObject(Address::Component(component_address)) => {
+            Some(entity_type) => {
                 // Lazy create component if missing
-                let (blueprint, virtual_func_id, id) = match component_address {
-                    ComponentAddress::EcdsaSecp256k1VirtualAccount(id) => (
+                let (blueprint, virtual_func_id) = match entity_type {
+                    EntityType::GlobalVirtualEcdsaAccount => (
                         Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
-                        id,
                     ),
-                    ComponentAddress::EddsaEd25519VirtualAccount(id) => (
+                    EntityType::GlobalVirtualEddsaAccount => (
                         Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
-                        id,
                     ),
-                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(id) => (
+                    EntityType::GlobalVirtualEcdsaIdentity => (
                         Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
-                        id,
                     ),
-                    ComponentAddress::EddsaEd25519VirtualIdentity(id) => (
+                    EntityType::GlobalVirtualEddsaIdentity => (
                         Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
-                        id,
                     ),
                     _ => return Ok(false),
                 };
+
+                let mut args = [0u8; 26];
+                args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let rtn: Vec<u8> = api
                     .kernel_invoke(Box::new(VirtualLazyLoadInvocation {
                         blueprint,
                         virtual_func_id,
-                        args: id,
+                        args,
                     }))?
                     .into();
 
-                let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
+                let (own, modules): (Own, BTreeMap<SysModuleId, Own>) =
                     scrypto_decode(&rtn).unwrap();
-                let modules = modules
-                    .into_iter()
-                    .map(|(id, own)| (id, own.id()))
-                    .collect();
+                let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;
                 api.globalize_with_address(
-                    RENodeId::Object(object_id.id()),
+                    own.0,
                     modules,
-                    node_id.into(),
+                    GlobalAddress::new_unchecked(node_id.into()),
                 )?;
 
                 Ok(true)

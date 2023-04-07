@@ -200,8 +200,8 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
-                Address::Component(test_runner.component_address),
-                MethodKey::new(NodeModuleId::SELF, "borrow_funds"),
+                test_runner.component_address.into(),
+                MethodKey::new(SysModuleId::ObjectState, "borrow_funds"),
                 to_rule,
             )
             .build(),
@@ -236,19 +236,19 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
         MethodKey::new(
-            NodeModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            NodeModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
         ),
         MethodKey::new(
-            NodeModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            NodeModuleId::AccessRules,
+            SysModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
         ),
     ] {
@@ -274,7 +274,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let receipt = test_runner.execute_manifest(
             MutableAccessRulesTestRunner::manifest_builder()
                 .set_method_access_rule(
-                    Address::Component(test_runner.component_address),
+                    test_runner.component_address.into(),
                     access_rule_key,
                     rule!(deny_all),
                 )
@@ -333,7 +333,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
+    let (public_key, _, account) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     let component_address = {
@@ -356,7 +356,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account_component, RADIX_TOKEN)
+        .create_proof_from_account(account, RADIX_TOKEN)
         .call_method(
             component_address,
             "assert_access_rule",

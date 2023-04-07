@@ -1,11 +1,12 @@
 use clap::Parser;
 use colored::*;
-use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
+use radix_engine_stores::interface::CommittableSubstateDatabase;
+use radix_engine_stores::interface::StateUpdate;
+use radix_engine_stores::interface::StateUpdates;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
@@ -62,55 +63,34 @@ impl Publish {
 
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let mut substate_store =
-                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+            let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+            bootstrap(&mut substate_db, &scrypto_interpreter);
 
-            let substate_id = SubstateId(
-                RENodeId::GlobalObject(package_address.0.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Code),
-            );
+            let node_id: NodeId = package_address.0.into();
+            let module_id: ModuleId = SysModuleId::ObjectState.into();
+            let substate_key_code: SubstateKey = PackageOffset::Code.into();
+            let package_code = PackageCodeSubstate { code };
 
-            let previous_version = substate_store
-                .get_substate(&substate_id)
-                .map(|output| output.version);
-
-            let validated_package = PackageCodeSubstate { code };
-            let output_value = OutputValue {
-                substate: PersistedSubstate::PackageCode(validated_package),
-                version: previous_version.unwrap_or(0),
-            };
-
-            // Overwrite package
-            // TODO: implement real package overwrite
-            substate_store.put_substate(
-                SubstateId(
-                    RENodeId::GlobalObject(package_address.0.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Code),
-                ),
-                output_value,
-            );
-
+            let substate_key_info: SubstateKey = PackageOffset::Info.into();
             let package_info = PackageInfoSubstate {
                 schema,
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };
-
-            let output_value = OutputValue {
-                substate: PersistedSubstate::PackageInfo(package_info),
-                version: previous_version.unwrap_or(0),
+            let state_updates = StateUpdates {
+                substate_changes: indexmap!(
+                    (node_id, module_id, substate_key_code) => StateUpdate::Update(
+                        scrypto_encode(&package_code).unwrap()
+                    ),
+                    (node_id, module_id, substate_key_info) => StateUpdate::Update(
+                        scrypto_encode(&package_info).unwrap()
+                    )
+                ),
             };
 
-            substate_store.put_substate(
-                SubstateId(
-                    RENodeId::GlobalObject(package_address.0.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Info),
-                ),
-                output_value,
-            );
+            substate_db
+                .commit(&state_updates)
+                .expect("Database misconfigured");
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {

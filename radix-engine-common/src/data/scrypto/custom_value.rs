@@ -6,23 +6,21 @@ use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
-    Address(Address),
+    Reference(Reference),
     Own(Own),
     Decimal(Decimal),
     PreciseDecimal(PreciseDecimal),
     NonFungibleLocalId(NonFungibleLocalId),
-    InternalRef(InternalRef),
 }
 
 impl ScryptoCustomValue {
     pub fn get_custom_value_kind(&self) -> ScryptoCustomValueKind {
         match self {
-            ScryptoCustomValue::Address(_) => ScryptoCustomValueKind::Address,
+            ScryptoCustomValue::Reference(_) => ScryptoCustomValueKind::Reference,
             ScryptoCustomValue::Own(_) => ScryptoCustomValueKind::Own,
             ScryptoCustomValue::Decimal(_) => ScryptoCustomValueKind::Decimal,
             ScryptoCustomValue::PreciseDecimal(_) => ScryptoCustomValueKind::PreciseDecimal,
             ScryptoCustomValue::NonFungibleLocalId(_) => ScryptoCustomValueKind::NonFungibleLocalId,
-            ScryptoCustomValue::InternalRef(_) => ScryptoCustomValueKind::Reference,
         }
     }
 }
@@ -35,12 +33,11 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             // TODO: vector free
-            ScryptoCustomValue::Address(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Reference(v) => v.encode_body(encoder),
             ScryptoCustomValue::Own(v) => v.encode_body(encoder),
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
-            ScryptoCustomValue::InternalRef(v) => v.encode_body(encoder),
         }
     }
 }
@@ -52,8 +49,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
     ) -> Result<Self, DecodeError> {
         match value_kind {
             ValueKind::Custom(cti) => match cti {
-                ScryptoCustomValueKind::Address => {
-                    Address::decode_body_with_value_kind(decoder, value_kind).map(Self::Address)
+                ScryptoCustomValueKind::Reference => {
+                    Reference::decode_body_with_value_kind(decoder, value_kind).map(Self::Reference)
                 }
                 ScryptoCustomValueKind::Own => {
                     Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
@@ -69,10 +66,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                     NonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
                 }
-                ScryptoCustomValueKind::Reference => {
-                    InternalRef::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::InternalRef)
-                }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {
                 actual: value_kind.as_u8(),
@@ -84,109 +77,52 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::NodeId;
 
     #[test]
     fn test_custom_types_group1() {
-        let values = (
-            Address::Package(PackageAddress::Normal([1u8; 26])),
-            Address::Component(ComponentAddress::Normal([2u8; 26])),
-            Address::Resource(ResourceAddress::Fungible([3u8; 26])),
-            Address::Component(ComponentAddress::EpochManager([4u8; 26])),
-        );
+        let values = (Reference(NodeId([1u8; 27])),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
             vec![
                 92, // prefix
                 33, // tuple
-                4,  // length
-                128, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, // address
-                128, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                2, // address
-                128, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, // address
-                128, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4 // address
+                1,  // length
+                128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, // reference
             ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
-                fields: vec![
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Package(
-                            PackageAddress::Normal([1u8; 26])
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Component(
-                            ComponentAddress::Normal([2u8; 26])
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Resource(
-                            ResourceAddress::Fungible([3u8; 26])
-                        )),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Address(Address::Component(
-                            ComponentAddress::EpochManager([4u8; 26])
-                        )),
-                    },
-                ]
+                fields: vec![ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([1u8; 27]))),
+                },]
             }
         );
     }
 
     #[test]
     fn test_custom_types_group2() {
-        let values = (
-            Own::Bucket([1u8; OBJECT_ID_LENGTH]),
-            Own::Proof([2u8; OBJECT_ID_LENGTH]),
-            Own::Vault([3u8; OBJECT_ID_LENGTH]),
-            Own::Object([4u8; OBJECT_ID_LENGTH]),
-            Own::KeyValueStore([5u8; OBJECT_ID_LENGTH]),
-        );
+        let values = (Own(NodeId([1u8; NodeId::LENGTH])),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
             vec![
                 92, // prefix
                 33, // tuple
-                5,  // length
-                144, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, 1, // own
-                144, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, // own
-                144, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, 3, 3, 3, 3, 3, // own
-                144, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4, 4, 4, 4, 4, 4, // own
-                144, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                5, 5, 5, 5, 5, 5 // own
+                1,  // length
+                144, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, // own
             ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
-                fields: vec![
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Bucket([1u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Proof([2u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Vault([3u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Object([4u8; OBJECT_ID_LENGTH])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; OBJECT_ID_LENGTH])),
-                    },
-                ]
+                fields: vec![ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Own(Own(NodeId([1u8; NodeId::LENGTH]))),
+                },]
             }
         );
     }

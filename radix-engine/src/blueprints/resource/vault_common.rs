@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::types::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {

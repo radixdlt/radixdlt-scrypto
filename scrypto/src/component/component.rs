@@ -8,8 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{ObjectId, RENodeId};
-use radix_engine_interface::api::{types::*, ClientObjectApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
 };
@@ -18,6 +17,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
+use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
@@ -52,7 +52,7 @@ pub trait LocalComponent: Sized {
     fn globalize(self) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         );
         let access_rules_config =
@@ -68,7 +68,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         );
         let access_rules_config =
@@ -84,7 +84,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         );
         let access_rules_config =
@@ -116,28 +116,25 @@ pub trait LocalComponent: Sized {
         let mut access_rules_config =
             AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_GET_IDENT),
             AccessRule::AllowAll,
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
             MethodKey::new(
-                NodeModuleId::ComponentRoyalty,
+                SysModuleId::Royalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
             ),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(
-                NodeModuleId::ComponentRoyalty,
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-            ),
+            MethodKey::new(SysModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
@@ -151,19 +148,19 @@ pub trait LocalComponent: Sized {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct OwnedComponent(pub ObjectId);
+pub struct OwnedComponent(pub Own);
 
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(&RENodeId::Object(self.0), method, args)
+            .call_method(self.0.as_node_id(), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_info(RENodeId::Object(self.0))
+            .get_object_info(self.0.as_node_id())
             .unwrap()
             .blueprint
             .package_address
@@ -171,7 +168,7 @@ impl Component for OwnedComponent {
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_info(RENodeId::Object(self.0))
+            .get_object_info(self.0.as_node_id())
             .unwrap()
             .blueprint
             .blueprint_name
@@ -185,22 +182,22 @@ impl LocalComponent for OwnedComponent {
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
-        let metadata: Own = Own::Object(metadata.0);
-        let access_rules: Own = Own::Object(access_rules.0);
-        let royalty: Own = Own::Object(royalty.0);
+        let metadata: Own = metadata.0;
+        let access_rules: Own = access_rules.0;
+        let royalty: Own = royalty.0;
 
         let address = ScryptoEnv
             .globalize(
-                RENodeId::Object(self.0),
+                self.0.as_node_id().clone(),
                 btreemap!(
-                    NodeModuleId::AccessRules => access_rules.id(),
-                    NodeModuleId::Metadata => metadata.id(),
-                    NodeModuleId::ComponentRoyalty => royalty.id(),
+                    SysModuleId::AccessRules => access_rules.0,
+                    SysModuleId::Metadata => metadata.0,
+                    SysModuleId::Royalty => royalty.0,
                 ),
             )
             .unwrap();
 
-        address.into()
+        ComponentAddress::new_unchecked(address.into())
     }
 }
 
@@ -224,14 +221,14 @@ impl GlobalComponentRef {
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(&RENodeId::GlobalObject(self.0.into()), method, args)
+            .call_method(self.0.as_node_id(), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_info(RENodeId::GlobalObject(self.0.into()))
+            .get_object_info(self.0.as_node_id())
             .unwrap()
             .blueprint
             .package_address
@@ -239,7 +236,7 @@ impl Component for GlobalComponentRef {
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_info(RENodeId::GlobalObject(self.0.into()))
+            .get_object_info(self.0.as_node_id())
             .unwrap()
             .blueprint
             .blueprint_name
@@ -265,7 +262,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Object(self.0).encode_body(encoder)
+        self.0.encode_body(encoder)
     }
 }
 
@@ -274,11 +271,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            Own::Object(component_id) => Ok(Self(component_id)),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
     }
 }
 

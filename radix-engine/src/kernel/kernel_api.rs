@@ -1,23 +1,20 @@
 use super::call_frame::RefType;
-use super::heap::HeapRENode;
+use super::heap::HeapNode;
 use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_substates::SubstateRef;
-use crate::system::node_substates::SubstateRefMut;
+use crate::system::node_init::NodeInit;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 
 pub struct LockInfo {
-    pub node_id: RENodeId,
-    pub module_id: NodeModuleId,
-    pub offset: SubstateOffset,
+    pub node_id: NodeId,
+    pub module_id: SysModuleId,
+    pub substate_key: SubstateKey,
     pub flags: LockFlags,
 }
 
@@ -26,62 +23,47 @@ pub struct LockInfo {
 
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError>;
 
     /// TODO: Cleanup
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
+    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
 
     /// Allocates a new node id useable for create_node
-    fn kernel_allocate_node_id(
-        &mut self,
-        node_type: AllocateEntityType,
-    ) -> Result<RENodeId, RuntimeError>;
+    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError>;
 
     /// Creates a new RENode
+    /// TODO: merge `node_init` and `module_init`?
     fn kernel_create_node(
         &mut self,
-        node_id: RENodeId,
-        init: RENodeInit,
-        node_module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_id: NodeId,
+        node_init: NodeInit,
+        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError>;
 }
 
 pub trait KernelSubstateApi {
-    /// Locks a visible substate
     fn kernel_lock_substate(
         &mut self,
-        node_id: &RENodeId,
-        module_id: NodeModuleId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
 
-    /// Drops a lock
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
-    /// Get a non-mutable reference to a locked substate
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
-    fn kernel_get_substate_ref<'a, 'b, S>(
-        &'b mut self,
+    fn kernel_write_substate(
+        &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&'a S, RuntimeError>
-    where
-        &'a S: From<SubstateRef<'a>>,
-        'b: 'a;
-
-    fn kernel_get_substate_ref_mut<'a, 'b, S>(
-        &'b mut self,
-        lock_handle: LockHandle,
-    ) -> Result<&'a mut S, RuntimeError>
-    where
-        &'a mut S: From<SubstateRefMut<'a>>,
-        'b: 'a;
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError>;
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
@@ -112,7 +94,7 @@ pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
     // TODO: Cleanup
-    fn kernel_get_node_info(&self, node_id: RENodeId) -> Option<(RefType, bool)>;
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
 
     fn kernel_get_current_depth(&self) -> usize;
 
@@ -120,8 +102,8 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot>;
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
 pub trait KernelModuleApi<E>:

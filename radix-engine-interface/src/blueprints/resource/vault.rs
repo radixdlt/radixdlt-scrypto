@@ -1,4 +1,3 @@
-use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
@@ -71,7 +70,7 @@ pub type VaultCreateProofOfAmountOutput = Proof;
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Vault(pub ObjectId);
+pub struct Vault(pub Own);
 
 //========
 // binary
@@ -80,7 +79,7 @@ pub struct Vault(pub ObjectId);
 impl Categorize<ScryptoCustomValueKind> for Vault {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Own)
+        Own::value_kind()
     }
 }
 
@@ -92,7 +91,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for V
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Vault(self.0).encode_body(encoder)
+        self.0.encode_body(encoder)
     }
 }
 
@@ -101,11 +100,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for V
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            Own::Vault(vault_id) => Ok(Self(vault_id)),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
     }
 }
 

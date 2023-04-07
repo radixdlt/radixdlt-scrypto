@@ -1,6 +1,7 @@
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::*;
+use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::scrypto_encode;
 use sbor::rust::prelude::*;
 
@@ -27,5 +28,5 @@ pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
     let node_id = env
         .new_object(blueprint_name, vec![scrypto_encode(&state).unwrap()])
         .unwrap();
-    OwnedComponent(node_id.into())
+    OwnedComponent(Own(node_id))
 }

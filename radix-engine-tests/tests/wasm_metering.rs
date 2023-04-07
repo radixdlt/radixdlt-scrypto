@@ -19,7 +19,7 @@ fn test_loop() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
@@ -45,7 +45,7 @@ fn test_loop_out_of_cost_unit() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 450.into())
+        .lock_fee(test_runner.faucet_component(), 450.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
@@ -70,7 +70,7 @@ fn test_recursion() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -94,7 +94,7 @@ fn test_recursion_stack_overflow() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -122,7 +122,7 @@ fn test_grow_memory() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -146,7 +146,7 @@ fn test_grow_memory_out_of_cost_unit() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

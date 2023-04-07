@@ -71,8 +71,7 @@ fn test_trace_resource_transfers() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(source_component.into())
-                && r.amount == -Decimal::from(transfer_amount)
+            |r| r.node_id == source_component.into() && r.amount == -Decimal::from(transfer_amount)
         ));
 
     // Target vault deposit
@@ -82,8 +81,7 @@ fn test_trace_resource_transfers() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(target_component.into())
-                && r.amount == Decimal::from(transfer_amount)
+            |r| r.node_id == target_component.into() && r.amount == Decimal::from(transfer_amount)
         ));
 
     // Fee withdrawal
@@ -92,8 +90,7 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == RENodeId::GlobalObject(account.into())
-            && r.amount == -Decimal::from(total_fee_paid)));
+        .any(|r| r.node_id == account.into() && r.amount == -Decimal::from(total_fee_paid)));
 }
 
 #[test]
@@ -104,8 +101,8 @@ fn test_trace_fee_payments() {
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -126,7 +123,7 @@ fn test_trace_fee_payments() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
@@ -147,10 +144,7 @@ fn test_trace_fee_payments() {
     assert!(resource_changes
         .into_iter()
         .flat_map(|(_, rc)| rc)
-        .any(
-            |r| r.node_id == RENodeId::GlobalObject(funded_component.into())
-                && r.amount == -total_fee_paid
-        ));
+        .any(|r| r.node_id == funded_component.into() && r.amount == -total_fee_paid));
 }
 
 #[test]
@@ -160,8 +154,8 @@ fn test_instruction_traces() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .create_proof_from_bucket(&bucket_id, |builder, proof_id| {

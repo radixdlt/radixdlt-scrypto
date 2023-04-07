@@ -1,16 +1,16 @@
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{NotarizedTransaction, TransactionHeader};
@@ -18,39 +18,56 @@ use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
 };
 
-fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
-
-    let executable = validator
-        .validate(&transaction, 0, &TestIntentHashManager::new())
-        .unwrap();
-
-    let mut scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::default(),
-        wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::V0,
-    };
-    let mut store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
-    let execution_config = ExecutionConfig::default();
-    let fee_reserve_config = FeeReserveConfig::default();
-
-    execute_and_commit_transaction(
-        &mut store,
-        &mut scrypto_interpreter,
-        &fee_reserve_config,
-        &execution_config,
-        &executable,
-    );
-}
-
 struct TransactionFuzzer {
     rng: ChaCha8Rng,
+    scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    substate_db: InMemorySubstateDatabase,
+    faucet_component: ComponentAddress,
 }
 
 impl TransactionFuzzer {
     fn new() -> Self {
         let rng = ChaCha8Rng::seed_from_u64(1234);
-        Self { rng }
+
+        let scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::V0,
+        };
+        let mut substate_db = InMemorySubstateDatabase::standard();
+        let receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
+        let faucet_component = receipt
+            .expect_commit_success()
+            .new_component_addresses()
+            .last()
+            .cloned()
+            .unwrap();
+
+        Self {
+            rng,
+            scrypto_interpreter,
+            substate_db,
+            faucet_component,
+        }
+    }
+
+    fn execute_single_transaction(&mut self, transaction: NotarizedTransaction) {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+
+        let executable = validator
+            .validate(&transaction, 0, &TestIntentHashManager::new())
+            .unwrap();
+
+        let execution_config = ExecutionConfig::default();
+        let fee_reserve_config = FeeReserveConfig::default();
+
+        execute_and_commit_transaction(
+            &mut self.substate_db,
+            &self.scrypto_interpreter,
+            &fee_reserve_config,
+            &execution_config,
+            &executable,
+        );
     }
 
     fn next_transaction(&mut self) -> NotarizedTransaction {
@@ -75,7 +92,11 @@ impl TransactionFuzzer {
                     builder.new_account_advanced(config);
                 }
                 3 => {
-                    builder.call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("100")));
+                    builder.call_method(
+                        self.faucet_component,
+                        "lock_fee",
+                        manifest_args!(dec!("100")),
+                    );
                 }
                 _ => panic!("Unexpected"),
             }
@@ -111,7 +132,7 @@ fn simple_transaction_fuzz_test() {
         .into_iter()
         .map(|_| fuzzer.next_transaction())
         .collect();
-    transactions.into_par_iter().for_each(|transaction| {
-        execute_single_transaction(transaction);
+    transactions.into_iter().for_each(|transaction| {
+        fuzzer.execute_single_transaction(transaction);
     });
 }

@@ -1,10 +1,10 @@
-use crate::api::types::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
@@ -143,7 +143,7 @@ pub type BucketUnlockNonFungiblesOutput = ();
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Bucket(pub ObjectId);
+pub struct Bucket(pub Own);
 
 //========
 // binary
@@ -152,7 +152,7 @@ pub struct Bucket(pub ObjectId);
 impl Categorize<ScryptoCustomValueKind> for Bucket {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Own)
+        Own::value_kind()
     }
 }
 
@@ -164,7 +164,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for B
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Bucket(self.0).encode_body(encoder)
+        self.0.encode_body(encoder)
     }
 }
 
@@ -173,11 +173,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for B
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
-        match o {
-            Own::Bucket(bucket_id) => Ok(Self(bucket_id)),
-            _ => Err(DecodeError::InvalidCustomValue),
-        }
+        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
     }
 }
 

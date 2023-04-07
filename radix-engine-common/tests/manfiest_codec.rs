@@ -1,12 +1,11 @@
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::data::manifest::*;
+use radix_engine_common::types::NodeId;
 use radix_engine_common::*;
 
 #[derive(ManifestSbor, PartialEq, Eq, Debug)]
 struct TestStruct {
     a: ManifestAddress,
-    b: ManifestAddress,
-    c: ManifestAddress,
     d: ManifestBucket,
     e: ManifestProof,
     f: ManifestExpression,
@@ -19,9 +18,7 @@ struct TestStruct {
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress::Package([0u8; 27]),
-        b: ManifestAddress::Resource([1u8; 27]),
-        c: ManifestAddress::Component([3u8; 27]),
+        a: ManifestAddress(NodeId([0u8; 27])),
         d: ManifestBucket(4),
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,
@@ -37,13 +34,9 @@ fn test_encode_and_decode() {
         vec![
             77, // prefix
             33, // struct
-            10, // field length
+            8,  // field length
             128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, // address
-            128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, // address
-            128, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-            3, // address
             129, 4, 0, 0, 0, // bucket
             130, 5, 0, 0, 0, // proof
             131, 1, // expression

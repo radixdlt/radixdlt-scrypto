@@ -22,6 +22,6 @@ CALL_METHOD
 
 # Depositing all of the XRD dispensed from the faucet into our account component.
 CALL_METHOD
-    Address("${account_component_address}") 
+    Address("${account_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");

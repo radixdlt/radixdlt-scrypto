@@ -6,9 +6,9 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct FungibleVaultDivisibilitySubstate {
@@ -24,32 +24,29 @@ impl FungibleVaultBlueprint {
                 == BnumI256::from(0)
     }
 
-    fn get_divisibility<Y>(receiver: &RENodeId, api: &mut Y) -> Result<u8, RuntimeError>
+    fn get_divisibility<Y>(receiver: &NodeId, api: &mut Y) -> Result<u8, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::Info),
+            receiver,
+            &FungibleVaultOffset::Info.into(),
             LockFlags::read_only(),
         )?;
-        let info: &FungibleVaultDivisibilitySubstate = api.kernel_get_substate_ref(handle)?;
+        let info: FungibleVaultDivisibilitySubstate = api.sys_read_substate_typed(handle)?;
         let divisibility = info.divisibility;
         api.sys_drop_lock(handle)?;
         Ok(divisibility)
     }
 
-    pub fn take<Y>(
-        receiver: &RENodeId,
-        amount: &Decimal,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub fn take<Y>(receiver: &NodeId, amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(receiver, api)?;
-        let resource_address: ResourceAddress =
-            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
 
         // Check amount
         if !Self::check_amount(amount, divisibility) {
@@ -77,20 +74,21 @@ impl FungibleVaultBlueprint {
             ],
         )?;
 
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
-    pub fn put<Y>(receiver: &RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn put<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let other_bucket: DroppedBucket = api.kernel_drop_node(&RENodeId::Object(bucket.0))?.into();
+        let other_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
 
         // Check resource address
         {
-            let resource_address: ResourceAddress =
-                api.get_object_info(*receiver)?.type_parent.unwrap().into();
+            let resource_address = ResourceAddress::new_unchecked(
+                api.get_object_info(receiver)?.type_parent.unwrap().into(),
+            );
             if resource_address != other_bucket.info.resource_address {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::MismatchingResource),
@@ -108,7 +106,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn get_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn get_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -119,7 +117,7 @@ impl FungibleVaultBlueprint {
     }
 
     pub fn lock_fee<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -127,53 +125,49 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // Check resource address
-        {
-            let resource_address: ResourceAddress =
-                api.get_object_info(*receiver)?.type_parent.unwrap().into();
-            if resource_address != RADIX_TOKEN {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
-                ));
-            }
+        // Check resource address and amount
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+        if resource_address != RADIX_TOKEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
+            ));
+        }
 
-            let divisibility = Self::get_divisibility(receiver, api)?;
-            if !Self::check_amount(&amount, divisibility) {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::InvalidAmount),
-                ));
-            }
+        let divisibility = Self::get_divisibility(receiver, api)?;
+        if !Self::check_amount(&amount, divisibility) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
         }
 
         // Lock the substate (with special flags)
         let vault_handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            receiver,
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
-        // Take by amount
-        let fee = {
-            let vault: &mut LiquidFungibleResource =
-                api.kernel_get_substate_ref_mut(vault_handle)?;
-
-            // Take fee from the vault
-            vault.take_by_amount(amount).map_err(|_| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::LockFeeInsufficientBalance,
-                ))
-            })?
-        };
+        // Take fee from the vault
+        let mut vault: LiquidFungibleResource = api.sys_read_substate_typed(vault_handle)?;
+        let fee = vault.take_by_amount(amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::LockFeeInsufficientBalance,
+            ))
+        })?;
 
         // Credit cost units
         let changes = api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
 
         // Keep changes
-        {
-            let vault: &mut LiquidFungibleResource =
-                api.kernel_get_substate_ref_mut(vault_handle)?;
+        if !changes.is_empty() {
             vault.put(changes).expect("Failed to put fee changes");
         }
+
+        // Flush updates
+        api.sys_write_substate_typed(vault_handle, &vault)?;
+        api.sys_drop_lock(vault_handle)?;
 
         // Emitting an event once the fee has been locked
         Runtime::emit_event(api, LockFeeEvent { amount })?;
@@ -182,7 +176,7 @@ impl FungibleVaultBlueprint {
     }
 
     pub fn recall<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -196,8 +190,9 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let resource_address: ResourceAddress =
-            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
         let taken = FungibleVault::take(receiver, amount, api)?;
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
@@ -215,10 +210,10 @@ impl FungibleVaultBlueprint {
         )?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
-        Ok(Bucket(bucket_id))
+        Ok(Bucket(Own(bucket_id)))
     }
 
-    pub fn create_proof<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Proof, RuntimeError>
+    pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -226,8 +221,9 @@ impl FungibleVaultBlueprint {
             + FungibleVault::locked_amount(receiver, api)?;
 
         let divisibility = Self::get_divisibility(receiver, api)?;
-        let resource_address: ResourceAddress =
-            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
         let proof_info = ProofInfoSubstate {
             resource_address,
             resource_type: ResourceType::Fungible { divisibility },
@@ -244,11 +240,11 @@ impl FungibleVaultBlueprint {
             ],
         )?;
 
-        Ok(Proof(proof_id))
+        Ok(Proof(Own(proof_id)))
     }
 
     pub fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -262,8 +258,9 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let resource_address: ResourceAddress =
-            api.get_object_info(*receiver)?.type_parent.unwrap().into();
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
         let proof_info = ProofInfoSubstate {
             resource_address,
             resource_type: ResourceType::Fungible { divisibility },
@@ -279,7 +276,7 @@ impl FungibleVaultBlueprint {
             ],
         )?;
 
-        Ok(Proof(proof_id))
+        Ok(Proof(Own(proof_id)))
     }
 
     //===================
@@ -289,7 +286,7 @@ impl FungibleVaultBlueprint {
     // FIXME: set up auth
 
     pub fn lock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -301,7 +298,7 @@ impl FungibleVaultBlueprint {
     }
 
     pub fn unlock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -317,37 +314,37 @@ impl FungibleVaultBlueprint {
 pub struct FungibleVault;
 
 impl FungibleVault {
-    pub fn liquid_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn liquid_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            receiver,
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
-    pub fn locked_amount<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn locked_amount<Y>(receiver: &NodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedFungible),
+            receiver,
+            &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
-    pub fn is_locked<Y>(receiver: &RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    pub fn is_locked<Y>(receiver: &NodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -355,7 +352,7 @@ impl FungibleVault {
     }
 
     pub fn take<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
@@ -363,16 +360,17 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            receiver,
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
             )))
         })?;
+        api.sys_write_substate_typed(handle, &substate_ref)?;
         api.sys_drop_lock(handle)?;
 
         Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
@@ -381,7 +379,7 @@ impl FungibleVault {
     }
 
     pub fn put<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource: LiquidFungibleResource,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -395,16 +393,17 @@ impl FungibleVault {
         let event = DepositResourceEvent::Amount(resource.amount());
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+            receiver,
+            &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         substate_ref.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
             )))
         })?;
+        api.sys_write_substate_typed(handle, &substate_ref)?;
         api.sys_drop_lock(handle)?;
 
         Runtime::emit_event(api, event)?;
@@ -414,7 +413,7 @@ impl FungibleVault {
 
     // protected method
     pub fn lock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<FungibleProof, RuntimeError>
@@ -422,11 +421,11 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedFungible),
+            receiver,
+            &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -436,14 +435,14 @@ impl FungibleVault {
         }
 
         // Increase lock count
-        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         locked.amounts.entry(amount).or_default().add_assign(1);
+        api.sys_write_substate_typed(handle, &locked)?;
 
         // Issue proof
         Ok(FungibleProof::new(
             amount,
             btreemap!(
-                LocalRef::Vault(receiver.clone().into()) => amount
+                LocalRef::Vault(Reference(receiver.clone().into())) => amount
             ),
         )
         .map_err(|e| {
@@ -453,7 +452,7 @@ impl FungibleVault {
 
     // protected method
     pub fn unlock_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -461,11 +460,11 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Vault(VaultOffset::LockedFungible),
+            receiver,
+            &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -475,6 +474,8 @@ impl FungibleVault {
         if cnt > 1 {
             locked.amounts.insert(amount, cnt - 1);
         }
+
+        api.sys_write_substate_typed(handle, &locked)?;
 
         let delta = max_locked - locked.amount();
         FungibleVault::put(receiver, LiquidFungibleResource::new(delta), api)

@@ -111,7 +111,7 @@ fn call_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
-    node_module_id: u32,
+    module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -132,7 +132,7 @@ fn call_method(
     runtime.update_wasm_memory_usage(mem)?;
 
     runtime
-        .call_method(receiver, node_module_id, ident, args)
+        .call_method(receiver, module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -181,8 +181,8 @@ fn new_object(
     mut caller: Caller<'_, HostState>,
     blueprint_ident_ptr: u32,
     blueprint_ident_len: u32,
-    app_states_ptr: u32,
-    app_states_len: u32,
+    object_states_ptr: u32,
+    object_states_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -197,8 +197,8 @@ fn new_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
-                app_states_ptr,
-                app_states_len,
+                object_states_ptr,
+                object_states_len,
             )?,
         )
         .map(|buffer| buffer.0)
@@ -288,9 +288,9 @@ fn lock_substate(
     let (memory, runtime) = grab_runtime!(caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
-    let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
+    let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_substate(node_id, offset, flags)
+    runtime.lock_substate(node_id, substate_key, flags)
 }
 
 fn read_substate(
@@ -462,7 +462,7 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
-             node_module_id: u32,
+             module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -472,7 +472,7 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
-                    node_module_id,
+                    module_id,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -514,15 +514,15 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              blueprint_ident_ptr: u32,
              blueprint_ident_len: u32,
-             app_states_ptr: u32,
-             app_states_len: u32|
+             object_states_ptr: u32,
+             object_states_len: u32|
              -> Result<u64, Trap> {
                 new_object(
                     caller,
                     blueprint_ident_ptr,
                     blueprint_ident_len,
-                    app_states_ptr,
-                    app_states_len,
+                    object_states_ptr,
+                    object_states_len,
                 )
                 .map_err(|e| e.into())
             },

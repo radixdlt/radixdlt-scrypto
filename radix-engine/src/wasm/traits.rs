@@ -34,7 +34,7 @@ pub trait WasmRuntime {
     fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
-        app_states: Vec<u8>,
+        object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn globalize_object(
