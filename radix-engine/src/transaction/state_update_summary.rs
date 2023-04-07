@@ -29,8 +29,8 @@ impl StateUpdateSummary {
         let mut new_packages = index_set_new();
         let mut new_components = index_set_new();
         let mut new_resources = index_set_new();
-        for (k, StateUpdate::Upsert(_, previous_version)) in &state_updates.substate_changes {
-            if previous_version.is_none() {
+        for (k, u) in &state_updates.substate_changes {
+            if let StateUpdate::Create(_) = u {
                 if k.0.is_global_package() {
                     new_packages.insert(PackageAddress::new_unchecked(k.0.into()));
                 }
@@ -110,6 +110,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                     substate_key.clone(),
                     match &change {
                         StateUpdate::Upsert(substate_value, ..) => substate_value,
+                        StateUpdate::Create(substate_value) => substate_value,
                     },
                 );
         }

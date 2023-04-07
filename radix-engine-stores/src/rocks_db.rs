@@ -164,6 +164,18 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                 }
             };
             match substate_change {
+                StateUpdate::Create(substate_value) => {
+                    self.db
+                        .put(
+                            substate_id,
+                            scrypto_encode(&(
+                                substate_value,
+                                    0u32,
+                            ))
+                                .unwrap(),
+                        )
+                        .expect("IO error");
+                }
                 StateUpdate::Upsert(substate_value, _) => {
                     self.db
                         .put(

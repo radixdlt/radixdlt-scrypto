@@ -179,17 +179,13 @@ impl<'s> Track<'s> {
         for (node_id, modules) in self.loaded_substates {
             for (module_id, module) in modules {
                 for (substate_key, loaded) in module {
+                    let update = match loaded.meta_state {
+                        SubstateMetaState::New => StateUpdate::Create(loaded.substate.into()),
+                        SubstateMetaState::Existing { old_version, .. } => StateUpdate::Upsert(loaded.substate.into(), Some(old_version)),
+                    };
                     substate_changes.insert(
                         (node_id, module_id, substate_key.clone()),
-                        StateUpdate::Upsert(
-                            loaded.substate.into(),
-                            match loaded.meta_state {
-                                SubstateMetaState::New => None,
-                                SubstateMetaState::Existing { old_version, .. } => {
-                                    Some(old_version)
-                                }
-                            },
-                        ),
+                        update,
                     );
                 }
             }
