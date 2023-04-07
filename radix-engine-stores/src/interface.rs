@@ -134,10 +134,10 @@ pub struct StateUpdates {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StateUpdate {
+    /// Creates a substate.
     Create(Vec<u8>),
-    /// Creates or updates a substate.
-    /// TODO: remove version
-    Upsert(Vec<u8>, Option<u32>),
+    /// Updates a substate.
+    Update(Vec<u8>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
@@ -190,7 +190,7 @@ pub trait SubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<(Vec<u8>, u32)>, GetSubstateError>;
+    ) -> Result<Option<Vec<u8>>, GetSubstateError>;
 
     /// Returns an iterator over substates within the given substate module, and the module's root hash.
     ///

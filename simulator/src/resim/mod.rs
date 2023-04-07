@@ -355,7 +355,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
         )
         .expect("Database misconfigured")
         .ok_or(Error::PackageNotFound(package_address))?;
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate.0).unwrap();
+    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Ok(package_info.schema)
 }
@@ -389,7 +389,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
         .expect("Database misconfigured")
         .ok_or(Error::ComponentNotFound(component_address))?;
 
-    let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
+    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
@@ -428,7 +428,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         )
                         .expect("Database misconfigured")
                         .unwrap();
-                    let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
+                    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                             blueprint.package_address,
@@ -456,7 +456,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
         )
         .expect("Database misconfigured")
         .unwrap();
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate.0).unwrap();
+    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Some((
         local_type_index,

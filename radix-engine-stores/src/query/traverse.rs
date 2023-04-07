@@ -87,8 +87,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     &SubstateKey::from_vec(vec![0]).unwrap(),
                 )
                 .expect("Failed to get substate")
-                .expect("Missing TypeInfo substate")
-                .0,
+                .expect("Missing TypeInfo substate"),
         )
         .expect("Failed to decode TypeInfo substate");
 
@@ -133,8 +132,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database")
-                            .expect("Broken database")
-                            .0,
+                            .expect("Broken database"),
                     )
                     .expect("Failed to decode liquid fungible");
 
@@ -155,8 +153,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database")
-                            .expect("Broken database")
-                            .0,
+                            .expect("Broken database"),
                     )
                     .expect("Failed to decode liquid non-fungible");
 

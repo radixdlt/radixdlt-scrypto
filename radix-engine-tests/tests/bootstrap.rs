@@ -148,7 +148,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let commit_result = transaction_receipt.expect_commit(true);
     substate_store.commit(&commit_result.state_updates).unwrap();
 
-    let (persisted_resource_manager_substate, ..) = substate_store
+    let persisted_resource_manager_substate = substate_store
         .get_substate(
             &resource_address,
             SysModuleId::ObjectState.into(),
@@ -161,7 +161,7 @@ fn test_genesis_resource_with_initial_allocation() {
         scrypto_decode(&persisted_resource_manager_substate).unwrap();
     assert_eq!(resource_manager_substate.total_supply, dec!("105"));
 
-    let (persisted_symbol_metadata_entry, ..) = substate_store
+    let persisted_symbol_metadata_entry = substate_store
         .get_substate(
             &resource_address,
             SysModuleId::Metadata.into(),

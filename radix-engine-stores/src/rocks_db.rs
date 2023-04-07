@@ -99,7 +99,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<(Vec<u8>, u32)>, GetSubstateError> {
+    ) -> Result<Option<Vec<u8>>, GetSubstateError> {
         if !self.configs().contains_key(&module_id) {
             return Err(GetSubstateError::UnknownModuleId);
         }
@@ -109,7 +109,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
             .db
             .get(&key)
             .expect("IO Error")
-            .map(|x| scrypto_decode::<(Vec<u8>, u32)>(&x).expect("Failed to decode value"));
+            .map(|x| scrypto_decode::<Vec<u8>>(&x).expect("Failed to decode value"));
         Ok(value)
     }
 
@@ -143,9 +143,8 @@ impl SubstateDatabase for RocksdbSubstateStore {
             }
             let (_, _, substate_key) =
                 decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
-            let value =
-                scrypto_decode::<(Vec<u8>, u32)>(value.as_ref()).expect("Failed to decode value");
-            substates.push((substate_key, value.0));
+            let value = scrypto_decode::<Vec<u8>>(value.as_ref()).expect("Failed to decode value");
+            substates.push((substate_key, value));
         }
 
         Ok((substates, Hash([0; Hash::LENGTH])))
@@ -157,38 +156,15 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
         for ((node_id, module_id, substate_key), substate_change) in &state_changes.substate_changes
         {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
-            let previous_version = match self.get_substate(node_id, *module_id, substate_key) {
-                Ok(x) => x.map(|a| a.1),
-                Err(GetSubstateError::UnknownModuleId) => {
-                    return Err(CommitError::UnknownModuleId);
-                }
-            };
             match substate_change {
                 StateUpdate::Create(substate_value) => {
                     self.db
-                        .put(
-                            substate_id,
-                            scrypto_encode(&(
-                                substate_value,
-                                    0u32,
-                            ))
-                                .unwrap(),
-                        )
+                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
                         .expect("IO error");
                 }
-                StateUpdate::Upsert(substate_value, _) => {
+                StateUpdate::Update(substate_value) => {
                     self.db
-                        .put(
-                            substate_id,
-                            scrypto_encode(&(
-                                substate_value,
-                                match previous_version {
-                                    Some(v) => v + 1,
-                                    None => 0u32,
-                                },
-                            ))
-                            .unwrap(),
-                        )
+                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
                         .expect("IO error");
                 }
             }

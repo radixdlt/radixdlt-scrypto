@@ -44,7 +44,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        scrypto_decode::<PackageCodeSubstate>(&substate.0)
+        scrypto_decode::<PackageCodeSubstate>(&substate)
             .unwrap()
             .code
             .len()
@@ -69,7 +69,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             )
             .expect("Database misconfigured")
             .ok_or(EntityDumpError::ComponentNotFound)?;
-        let type_info: TypeInfoSubstate = scrypto_decode(&substate.0).unwrap();
+        let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
             TypeInfoSubstate::KeyValueStore(_) => panic!("Unexpected"),
@@ -145,7 +145,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
         let resource_manager: NonFungibleResourceManagerSubstate =
-            scrypto_decode(&substate.0).unwrap();
+            scrypto_decode(&substate).unwrap();
         writeln!(
             output,
             "{}: {}",
@@ -165,8 +165,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             resource_manager.total_supply
         );
     } else {
-        let resource_manager: FungibleResourceManagerSubstate =
-            scrypto_decode(&substate.0).unwrap();
+        let resource_manager: FungibleResourceManagerSubstate = scrypto_decode(&substate).unwrap();
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
             output,

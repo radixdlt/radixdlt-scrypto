@@ -26,10 +26,7 @@ pub enum ExistingMetaState {
 #[derive(Debug)]
 pub enum SubstateMetaState {
     New,
-    Existing {
-        old_version: u32,
-        state: ExistingMetaState,
-    },
+    Existing { state: ExistingMetaState },
 }
 
 #[derive(Debug)]
@@ -106,16 +103,11 @@ impl<'s> Track<'s> {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<(IndexedScryptoValue, u32)> {
+    ) -> Option<IndexedScryptoValue> {
         self.substate_db
             .get_substate(node_id, module_id, substate_key)
             .expect("Database misconfigured")
-            .map(|e| {
-                (
-                    IndexedScryptoValue::from_vec(e.0).expect("Failed to decode substate"),
-                    0,
-                )
-            })
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
     }
 
     fn add_loaded_substate(
@@ -123,7 +115,7 @@ impl<'s> Track<'s> {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-        substate_value_and_version: (IndexedScryptoValue, u32),
+        substate_value: IndexedScryptoValue,
     ) {
         self.loaded_substates
             .entry(*node_id)
@@ -133,10 +125,9 @@ impl<'s> Track<'s> {
             .insert(
                 substate_key.clone(),
                 LoadedSubstate {
-                    substate: substate_value_and_version.0,
+                    substate: substate_value,
                     lock_state: SubstateLockState::no_lock(),
                     meta_state: SubstateMetaState::Existing {
-                        old_version: substate_value_and_version.1,
                         state: ExistingMetaState::Loaded,
                     },
                 },
@@ -152,7 +143,6 @@ impl<'s> Track<'s> {
                 m.retain(|_, loaded| match &loaded.meta_state {
                     SubstateMetaState::Existing {
                         state: ExistingMetaState::Updated(Some(value)),
-                        ..
                     } => {
                         loaded.substate = value.clone();
                         true
@@ -181,12 +171,11 @@ impl<'s> Track<'s> {
                 for (substate_key, loaded) in module {
                     let update = match loaded.meta_state {
                         SubstateMetaState::New => StateUpdate::Create(loaded.substate.into()),
-                        SubstateMetaState::Existing { old_version, .. } => StateUpdate::Upsert(loaded.substate.into(), Some(old_version)),
+                        SubstateMetaState::Existing { .. } => {
+                            StateUpdate::Update(loaded.substate.into())
+                        }
                     };
-                    substate_changes.insert(
-                        (node_id, module_id, substate_key.clone()),
-                        update,
-                    );
+                    substate_changes.insert((node_id, module_id, substate_key.clone()), update);
                 }
             }
         }
@@ -236,7 +225,6 @@ impl<'s> SubstateStore for Track<'s> {
                 }
                 SubstateMetaState::Existing {
                     state: ExistingMetaState::Updated(..),
-                    ..
                 } => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         *node_id,
@@ -246,7 +234,6 @@ impl<'s> SubstateStore for Track<'s> {
                 }
                 SubstateMetaState::Existing {
                     state: ExistingMetaState::Loaded,
-                    ..
                 } => {}
             }
         }
@@ -311,7 +298,7 @@ impl<'s> SubstateStore for Track<'s> {
                 } else {
                     match &mut loaded_substate.meta_state {
                         SubstateMetaState::New => {}
-                        SubstateMetaState::Existing { state, .. } => match state {
+                        SubstateMetaState::Existing { state } => match state {
                             ExistingMetaState::Loaded => *state = ExistingMetaState::Updated(None),
                             ExistingMetaState::Updated(..) => {}
                         },
@@ -377,5 +364,4 @@ impl<'s> SubstateStore for Track<'s> {
     ) -> Box<dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>> {
         todo!()
     }
-
 }

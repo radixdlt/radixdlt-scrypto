@@ -109,7 +109,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 .insert(
                     substate_key.clone(),
                     match &change {
-                        StateUpdate::Upsert(substate_value, ..) => substate_value,
+                        StateUpdate::Update(substate_value, ..) => substate_value,
                         StateUpdate::Create(substate_value) => substate_value,
                     },
                 );
@@ -376,7 +376,6 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
         self.substate_db
             .get_substate(node_id, module_id, substate_key)
             .expect("Database misconfigured")
-            .map(|x| x.0)
     }
 
     fn fetch_substate_from_state_updates(

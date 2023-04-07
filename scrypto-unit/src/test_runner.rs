@@ -299,7 +299,7 @@ impl TestRunner {
                 &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
             )
             .expect("Database misconfigured")
-            .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s.0).unwrap())?;
+            .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s).unwrap())?;
 
         let metadata_entry = match metadata_entry {
             Option::Some(value) => {
@@ -326,7 +326,7 @@ impl TestRunner {
             )
             .expect("Database misconfigured")
         {
-            scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output.0)
+            scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output)
                 .unwrap()
                 .royalty_vault
                 .and_then(|vault| {
@@ -338,7 +338,7 @@ impl TestRunner {
                         )
                         .expect("Database misconfigured")
                         .map(|output| {
-                            scrypto_decode::<LiquidFungibleResource>(&output.0)
+                            scrypto_decode::<LiquidFungibleResource>(&output)
                                 .unwrap()
                                 .amount()
                         })
@@ -358,7 +358,7 @@ impl TestRunner {
             )
             .expect("Database misconfigured")
         {
-            scrypto_decode::<PackageRoyaltySubstate>(&output.0)
+            scrypto_decode::<PackageRoyaltySubstate>(&output)
                 .unwrap()
                 .royalty_vault
                 .and_then(|vault| {
@@ -370,7 +370,7 @@ impl TestRunner {
                         )
                         .expect("Database misconfigured")
                         .map(|output| {
-                            scrypto_decode::<LiquidFungibleResource>(&output.0)
+                            scrypto_decode::<LiquidFungibleResource>(&output)
                                 .unwrap()
                                 .amount()
                         })
@@ -421,7 +421,7 @@ impl TestRunner {
             )
             .expect("Database misconfigured")
             .map(|output| {
-                scrypto_decode::<LiquidFungibleResource>(&output.0)
+                scrypto_decode::<LiquidFungibleResource>(&output)
                     .unwrap()
                     .amount()
             })
@@ -439,7 +439,7 @@ impl TestRunner {
             )
             .expect("Database misconfigured")
             .map(|output| {
-                scrypto_decode::<LiquidNonFungibleResource>(&output.0)
+                scrypto_decode::<LiquidNonFungibleResource>(&output)
                     .unwrap()
                     .into_ids()
             })
@@ -522,8 +522,7 @@ impl TestRunner {
                     &ValidatorOffset::Validator.into(),
                 )
                 .expect("Database misconfigured")
-                .unwrap()
-                .0,
+                .unwrap(),
         )
         .unwrap()
     }
@@ -538,8 +537,7 @@ impl TestRunner {
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
                 .expect("Database misconfigured")
-                .unwrap()
-                .0,
+                .unwrap(),
         )
         .unwrap();
         substate
@@ -1262,8 +1260,7 @@ impl TestRunner {
                                     &TypeInfoOffset::TypeInfo.into(),
                                 )
                                 .expect("Database misconfigured")
-                                .unwrap()
-                                .0,
+                                .unwrap(),
                         )
                         .unwrap();
 
@@ -1302,8 +1299,7 @@ impl TestRunner {
                         &PackageOffset::Info.into(),
                     )
                     .expect("Database misconfigured")
-                    .unwrap()
-                    .0,
+                    .unwrap(),
             )
             .unwrap()
             .schema
@@ -1365,7 +1361,7 @@ impl StateHashSupport {
                     substate_id.clone(),
                     match value {
                         StateUpdate::Create(v) => Some(hash(v)),
-                        StateUpdate::Upsert(v, _) => Some(hash(v)),
+                        StateUpdate::Update(v) => Some(hash(v)),
                     },
                 )
             })
