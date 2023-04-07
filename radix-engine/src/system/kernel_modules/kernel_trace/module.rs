@@ -12,6 +12,7 @@ use radix_engine_interface::types::{
     EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateKey, SysModuleId,
 };
 use sbor::rust::collections::BTreeMap;
+use crate::kernel::executor::KernelInvocation;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -28,7 +29,7 @@ macro_rules! log {
 impl KernelModule for KernelTraceModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        identifier: &InvocationDebugIdentifier,
+        identifier: &KernelInvocation,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let message = format!(

@@ -10,6 +10,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
+use crate::kernel::executor::KernelInvocation;
 
 pub struct LockInfo {
     pub node_id: NodeId,
@@ -74,8 +75,8 @@ pub trait KernelWasmApi<W: WasmEngine> {
     ) -> Result<W::WasmInstance, RuntimeError>;
 }
 
-pub trait KernelInvokeApi<I: Invocation, E> {
-    fn kernel_invoke(&mut self, invocation: Box<I>) -> Result<IndexedScryptoValue, E>;
+pub trait KernelInvokeApi<E> {
+    fn kernel_invoke(&mut self, invocation: Box<KernelInvocation>) -> Result<IndexedScryptoValue, E>;
 }
 
 /// Interface of the Kernel, for Kernel modules.
@@ -83,8 +84,7 @@ pub trait KernelApi<W: WasmEngine, E>:
     KernelNodeApi
     + KernelSubstateApi
     + KernelWasmApi<W>
-    + KernelInvokeApi<FunctionInvocation, E>
-    + KernelInvokeApi<MethodInvocation, E>
+    + KernelInvokeApi<E>
 {
 }
 
@@ -114,7 +114,7 @@ pub trait KernelModuleApi<E>:
     KernelNodeApi
     + KernelSubstateApi
     + KernelInternalApi
-    + KernelInvokeApi<VirtualLazyLoadInvocation, E>
+    + KernelInvokeApi<E>
     + ClientObjectApi<E>
 {
 }

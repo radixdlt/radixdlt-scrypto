@@ -6,6 +6,7 @@ use crate::{
     kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
+use crate::kernel::executor::KernelInvocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -184,7 +185,7 @@ impl TransactionLimitsModule {
 impl KernelModule for TransactionLimitsModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _identifier: &InvocationDebugIdentifier,
+        _identifier: &KernelInvocation,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         if input_size

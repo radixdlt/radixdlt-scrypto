@@ -1,3 +1,4 @@
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -10,6 +11,9 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
     IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
 };
+use crate::kernel::actor::Actor;
+use crate::kernel::executor::KernelInvocation;
+use crate::kernel::interpreters::ScryptoExecutor;
 
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;
@@ -48,12 +52,19 @@ impl KernelModule for VirtualizationModule {
                 let mut args = [0u8; 26];
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
+                let invocation = KernelInvocation {
+                    resolved_actor: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
+                    args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
+                    executor: ScryptoExecutor {
+                        blueprint: blueprint,
+                        ident: FnIdent::System(virtual_func_id),
+                        receiver: None,
+                    },
+                    payload_size: 0,
+                };
+
                 let rtn: Vec<u8> = api
-                    .kernel_invoke(Box::new(VirtualLazyLoadInvocation {
-                        blueprint,
-                        virtual_func_id,
-                        args,
-                    }))?
+                    .kernel_invoke(Box::new(invocation))?
                     .into();
 
                 let (own, modules): (Own, BTreeMap<SysModuleId, Own>) =

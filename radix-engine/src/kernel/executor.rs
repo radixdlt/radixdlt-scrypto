@@ -30,8 +30,12 @@ pub trait Executor {
         W: WasmEngine;
 }
 
+#[derive(Debug)]
 pub struct KernelInvocation {
     pub executor: ScryptoExecutor,
+
+    // TODO: Remove
+    pub payload_size: usize,
 
     // TODO: Make these two RENodes / Substates
     pub resolved_actor: Actor,

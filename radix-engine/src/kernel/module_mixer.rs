@@ -26,6 +26,7 @@ use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
+use crate::kernel::executor::KernelInvocation;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -219,7 +220,7 @@ impl KernelModule for KernelModuleMixer {
     #[trace_resources]
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        identifier: &InvocationDebugIdentifier,
+        identifier: &KernelInvocation,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

@@ -91,6 +91,7 @@ fn validate_output(
     Ok(value)
 }
 
+/*
 impl ExecutableInvocation for MethodInvocation {
     #[trace_resources(log={format!("{:?}",self.identifier.1)}, log={&self.identifier.2}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi + KernelInternalApi>(
@@ -165,7 +166,9 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
         0
     }
 }
+ */
 
+#[derive(Debug)]
 pub struct ScryptoExecutor {
     pub blueprint: Blueprint,
     pub ident: FnIdent,

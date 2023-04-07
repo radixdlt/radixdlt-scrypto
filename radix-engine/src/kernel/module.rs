@@ -6,6 +6,7 @@ use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
+use crate::kernel::executor::KernelInvocation;
 
 pub trait KernelModule {
     //======================
@@ -35,7 +36,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _identifier: &InvocationDebugIdentifier,
+        _identifier: &KernelInvocation,
         _input_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())

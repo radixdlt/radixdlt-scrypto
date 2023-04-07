@@ -29,6 +29,8 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use crate::kernel::call_frame::RefType;
+use crate::kernel::executor::KernelInvocation;
+use crate::kernel::interpreters::ScryptoExecutor;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
@@ -461,14 +463,23 @@ where
             _ => todo!(),
         };
 
-        let invocation = Box::new(MethodInvocation {
-            blueprint,
-            global_address: global_address,
-            identifier: MethodIdentifier(receiver.clone(), module_id, method_name.to_string()),
-            args,
-        });
+        let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
+        let payload_size = args.len() + identifier.2.len();
 
-        self.kernel_invoke(invocation).map(|v| v.into())
+        let invocation = KernelInvocation {
+            resolved_actor: Actor::method(global_address, identifier.clone(), blueprint.clone()),
+            executor: ScryptoExecutor {
+                blueprint,
+                ident: FnIdent::Application(identifier.2.clone()),
+                receiver: Some(identifier),
+            },
+            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?,
+            payload_size,
+        };
+
+        self.kernel_invoke(Box::new(invocation)).map(|v| v.into())
     }
 
     fn call_function(
@@ -478,15 +489,26 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = Box::new(FunctionInvocation {
-            identifier: FunctionIdentifier::new(
-                Blueprint::new(&package_address, blueprint_name),
-                function_name.to_string(),
-            ),
-            args,
-        });
+        let identifier = FunctionIdentifier::new(
+            Blueprint::new(&package_address, blueprint_name),
+            function_name.to_string(),
+        );
+        let payload_size = args.len() + identifier.size();
 
-        self.kernel_invoke(invocation).map(|v| v.into())
+        let invocation = KernelInvocation {
+            resolved_actor: Actor::function(identifier.clone()),
+            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?,
+            executor: ScryptoExecutor {
+                blueprint: identifier.0,
+                ident: FnIdent::Application(identifier.1),
+                receiver: None,
+            },
+            payload_size,
+        };
+
+        self.kernel_invoke(Box::new(invocation)).map(|v| v.into())
     }
 
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {

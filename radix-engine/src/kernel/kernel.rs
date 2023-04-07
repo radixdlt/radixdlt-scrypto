@@ -885,30 +885,29 @@ where
     }
 }
 
-impl<'g, 's, W, N> KernelInvokeApi<N, RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-    N: ExecutableInvocation,
 {
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<N>,
+        invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
-            &invocation.debug_identifier(),
-            invocation.payload_size(),
+            &invocation,
+            invocation.payload_size,
         )?;
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
 
-        self.execution_mode = ExecutionMode::Resolver;
-        let resolved = invocation.resolve(self)?;
+        //self.execution_mode = ExecutionMode::Resolver;
+        //let resolved = invocation.resolve(self)?;
 
         self.execution_mode = ExecutionMode::Kernel;
-        let rtn = self.invoke_internal(resolved)?;
+        let rtn = self.invoke_internal(invocation)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
