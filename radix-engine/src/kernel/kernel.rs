@@ -1,11 +1,10 @@
 use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::executor::KernelInvocation;
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeApi, KernelModuleApi, KernelNodeApi,
+    KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelModuleApi, KernelNodeApi,
     KernelSubstateApi, KernelWasmApi, LockInfo,
 };
 use super::module::KernelModule;
@@ -29,6 +28,8 @@ use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{KernelInvocation, KernelInvokeUpstreamApi};
+use crate::system::invoke::SystemInvoke;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -173,14 +174,14 @@ where
 
     fn run(
         &mut self,
-        resolved: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
-        let mut call_frame_update = resolved.get_update();
-        let executor = resolved.executor;
-        let actor = &resolved.resolved_actor;
-        let args = &resolved.args;
+        let mut call_frame_update = invocation.get_update();
+        let sys_invocation = invocation.sys_invocation;
+        let actor = &invocation.resolved_actor;
+        let args = &invocation.args;
 
         // Before push call frame
         {
@@ -221,7 +222,7 @@ where
 
             // Run
             let output =
-                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
+                self.execute_in_mode(ExecutionMode::Client, |api| SystemInvoke::invoke_upstream(sys_invocation, args, api))?;
 
             let mut update = CallFrameUpdate {
                 nodes_to_move: output.owned_node_ids().clone(),
@@ -891,12 +892,12 @@ where
     }
 }
 
-impl<'g, 's, W> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_invoke(
+    fn kernel_invoke_downstream(
         &mut self,
         invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
@@ -908,9 +909,6 @@ where
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
-
-        //self.execution_mode = ExecutionMode::Resolver;
-        //let resolved = invocation.resolve(self)?;
 
         self.execution_mode = ExecutionMode::Kernel;
         let rtn = self.invoke_internal(invocation)?;

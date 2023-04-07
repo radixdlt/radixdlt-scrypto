@@ -6,7 +6,7 @@ use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::executor::KernelInvocation;
+use crate::kernel::kernel_api::KernelInvocation;
 
 pub trait KernelModule {
     //======================

@@ -26,7 +26,7 @@ use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
-use crate::kernel::executor::KernelInvocation;
+use crate::kernel::kernel_api::KernelInvocation;
 
 bitflags! {
     pub struct EnabledModules: u32 {

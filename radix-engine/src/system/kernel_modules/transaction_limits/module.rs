@@ -6,7 +6,7 @@ use crate::{
     kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
-use crate::kernel::executor::KernelInvocation;
+use crate::kernel::kernel_api::KernelInvocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {

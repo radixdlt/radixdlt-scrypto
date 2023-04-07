@@ -29,7 +29,6 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use crate::kernel::call_frame::RefType;
-use crate::kernel::executor::KernelInvocation;
 use crate::system::invoke::SystemInvocation;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
@@ -468,7 +467,7 @@ where
 
         let invocation = KernelInvocation {
             resolved_actor: Actor::method(global_address, identifier.clone(), blueprint.clone()),
-            executor: SystemInvocation {
+            sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
                 receiver: Some(identifier),
@@ -479,7 +478,7 @@ where
             payload_size,
         };
 
-        self.kernel_invoke(Box::new(invocation)).map(|v| v.into())
+        self.kernel_invoke_downstream(Box::new(invocation)).map(|v| v.into())
     }
 
     fn call_function(
@@ -500,7 +499,7 @@ where
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
             })?,
-            executor: SystemInvocation {
+            sys_invocation: SystemInvocation {
                 blueprint: identifier.0,
                 ident: FnIdent::Application(identifier.1),
                 receiver: None,
@@ -508,7 +507,7 @@ where
             payload_size,
         };
 
-        self.kernel_invoke(Box::new(invocation)).map(|v| v.into())
+        self.kernel_invoke_downstream(Box::new(invocation)).map(|v| v.into())
     }
 
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {

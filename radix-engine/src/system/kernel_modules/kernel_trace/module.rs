@@ -12,7 +12,7 @@ use radix_engine_interface::types::{
     EntityType, LockHandle, NodeId, SubstateKey, SysModuleId,
 };
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::executor::KernelInvocation;
+use crate::kernel::kernel_api::KernelInvocation;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}

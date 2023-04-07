@@ -9,10 +9,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{CallFrameUpdate, RefType};
-use crate::kernel::executor::*;
-use crate::kernel::kernel_api::{
-    KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-};
+use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelInvokeUpstreamApi, KernelWasmApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -98,10 +95,12 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-impl SystemInvocation {
+pub struct SystemInvoke;
+
+impl KernelInvokeUpstreamApi for SystemInvoke {
     #[trace_resources(log={self.ident.to_debug_string()}, log={self.blueprint.package_address.to_hex()})]
-    pub fn execute<Y, W>(
-        self,
+    fn invoke_upstream<Y, W>(
+        invocation: SystemInvocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -109,14 +108,14 @@ impl SystemInvocation {
             Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
             W: WasmEngine,
     {
-        let output = if self.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
+        let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             api.kernel_load_package_package_dependencies();
 
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
-            let export_name = match self.ident {
+            let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::InterpreterError(
@@ -126,7 +125,7 @@ impl SystemInvocation {
             };
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                self.blueprint.package_address.as_node_id(),
+                invocation.blueprint.package_address.as_node_id(),
                 SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
@@ -138,19 +137,19 @@ impl SystemInvocation {
 
             NativeVm::invoke_native_package(
                 PACKAGE_CODE_ID,
-                &self.receiver,
+                &invocation.receiver,
                 &export_name,
                 args,
                 api,
             )?
-        } else if self
+        } else if invocation
             .blueprint
             .package_address
             .eq(&TRANSACTION_PROCESSOR_PACKAGE)
         {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
-            let export_name = match self.ident {
+            let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::InterpreterError(
@@ -161,7 +160,7 @@ impl SystemInvocation {
 
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
-                &self.receiver,
+                &invocation.receiver,
                 &export_name,
                 args,
                 api,
@@ -169,7 +168,7 @@ impl SystemInvocation {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                self.blueprint.package_address.as_node_id(),
+                invocation.blueprint.package_address.as_node_id(),
                 SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
@@ -183,7 +182,7 @@ impl SystemInvocation {
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
-                    self.blueprint.package_address.as_node_id(),
+                    invocation.blueprint.package_address.as_node_id(),
                     SysModuleId::ObjectState,
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
@@ -192,9 +191,9 @@ impl SystemInvocation {
                 let schema = package_info
                     .schema
                     .blueprints
-                    .get(&self.blueprint.blueprint_name)
+                    .get(&invocation.blueprint.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::ScryptoBlueprintNotFound(self.blueprint.clone()),
+                        InterpreterError::ScryptoBlueprintNotFound(invocation.blueprint.clone()),
                     ))?
                     .clone();
                 api.kernel_drop_lock(handle)?;
@@ -202,10 +201,10 @@ impl SystemInvocation {
             };
 
             //  Validate input
-            let export_name = match &self.ident {
+            let export_name = match &invocation.ident {
                 FnIdent::Application(ident) => {
                     let export_name =
-                        validate_input(&schema, &ident, self.receiver.is_some(), &args)?;
+                        validate_input(&schema, &ident, invocation.receiver.is_some(), &args)?;
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
@@ -223,7 +222,7 @@ impl SystemInvocation {
             // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    self.blueprint.package_address.as_node_id(),
+                    invocation.blueprint.package_address.as_node_id(),
                     SysModuleId::ObjectState,
                     &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
@@ -236,7 +235,7 @@ impl SystemInvocation {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        self.blueprint.package_address.as_node_id(),
+                        invocation.blueprint.package_address.as_node_id(),
                         SysModuleId::ObjectState,
                         &PackageOffset::Code.into(),
                         LockFlags::read_only(),
@@ -247,7 +246,7 @@ impl SystemInvocation {
 
                     NativeVm::invoke_native_package(
                         native_package_code_id,
-                        &self.receiver,
+                        &invocation.receiver,
                         &export_name,
                         args,
                         api,
@@ -257,13 +256,13 @@ impl SystemInvocation {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
-                            self.blueprint.package_address.as_node_id(),
+                            invocation.blueprint.package_address.as_node_id(),
                             SysModuleId::ObjectState,
                             &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;
                         let wasm_instance = api
-                            .kernel_create_wasm_instance(self.blueprint.package_address, handle)?;
+                            .kernel_create_wasm_instance(invocation.blueprint.package_address, handle)?;
                         api.kernel_drop_lock(handle)?;
 
                         wasm_instance
@@ -273,7 +272,7 @@ impl SystemInvocation {
                         let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
                         let mut input = Vec::new();
-                        if let Some(MethodIdentifier(node_id, ..)) = self.receiver {
+                        if let Some(MethodIdentifier(node_id, ..)) = invocation.receiver {
                             input.push(
                                 runtime
                                     .allocate_buffer(
@@ -299,7 +298,7 @@ impl SystemInvocation {
             };
 
             // Validate output
-            let output = match self.ident {
+            let output = match invocation.ident {
                 FnIdent::Application(ident) => validate_output(&schema, &ident, output)?,
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema

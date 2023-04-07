@@ -2,7 +2,7 @@ use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi};
 use crate::kernel::module::KernelModule;
 use crate::types::*;
 use crate::{
@@ -20,7 +20,6 @@ use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::executor::KernelInvocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {

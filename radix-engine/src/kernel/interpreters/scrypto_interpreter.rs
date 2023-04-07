@@ -10,7 +10,6 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{CallFrameUpdate, RefType};
-use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{
     KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
 };

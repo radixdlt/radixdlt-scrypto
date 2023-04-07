@@ -10,7 +10,8 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
-use crate::kernel::executor::KernelInvocation;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::system::invoke::SystemInvocation;
 
 pub struct LockInfo {
     pub node_id: NodeId,
@@ -75,16 +76,13 @@ pub trait KernelWasmApi<W: WasmEngine> {
     ) -> Result<W::WasmInstance, RuntimeError>;
 }
 
-pub trait KernelInvokeApi<E> {
-    fn kernel_invoke(&mut self, invocation: Box<KernelInvocation>) -> Result<IndexedScryptoValue, E>;
-}
 
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
     KernelNodeApi
     + KernelSubstateApi
     + KernelWasmApi<W>
-    + KernelInvokeApi<E>
+    + KernelInvokeDownstreamApi<E>
 {
 }
 
@@ -114,20 +112,53 @@ pub trait KernelModuleApi<E>:
     KernelNodeApi
     + KernelSubstateApi
     + KernelInternalApi
-    + KernelInvokeApi<E>
+    + KernelInvokeDownstreamApi<E>
     + ClientObjectApi<E>
 {
 }
 
-/*
-pub trait KernelUpstreamInvoke {
-    fn execute<Y, W>(
-        self,
+#[derive(Debug)]
+pub struct KernelInvocation {
+    pub sys_invocation: SystemInvocation,
+
+    // TODO: Remove
+    pub payload_size: usize,
+
+    // TODO: Make these two RENodes / Substates
+    pub resolved_actor: Actor,
+    pub args: IndexedScryptoValue,
+}
+
+impl KernelInvocation {
+    pub fn get_update(&self) -> CallFrameUpdate {
+        let nodes_to_move = self.args.owned_node_ids().clone();
+        let mut node_refs_to_copy = self.args.references().clone();
+        match self.resolved_actor {
+            Actor::Method { node_id, .. } => {
+                node_refs_to_copy.insert(node_id);
+            }
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+            }
+        }
+
+        CallFrameUpdate {
+            nodes_to_move,
+            node_refs_to_copy
+        }
+    }
+}
+
+pub trait KernelInvokeDownstreamApi<E> {
+    fn kernel_invoke_downstream(&mut self, invocation: Box<KernelInvocation>) -> Result<IndexedScryptoValue, E>;
+}
+
+pub trait KernelInvokeUpstreamApi {
+    fn invoke_upstream<Y, W>(
+        invocation: SystemInvocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
             W: WasmEngine;
 }
- */
