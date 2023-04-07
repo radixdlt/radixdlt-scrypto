@@ -459,6 +459,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "genesis-helper"
+version = "0.1.0"
+dependencies = [
+ "radix-engine",
+ "sbor",
+ "scrypto",
+ "scrypto-unit",
+ "transaction",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
