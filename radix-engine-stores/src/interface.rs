@@ -85,6 +85,20 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid.
     fn release_lock(&mut self, handle: u32);
 
+    /// Inserts a substate into the substate store.
+    ///
+    /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
+    ///
+    /// # Panics
+    /// - If the module ID is invalid
+    fn create_substate(
+        &mut self,
+        node_id: NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        substate_value: IndexedScryptoValue,
+    );
+
     /// Reads a substate of the given node module.
     ///
     /// # Panics
@@ -96,21 +110,7 @@ pub trait SubstateStore {
     /// # Panics
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
-    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
-
-    /// Inserts a substate into the substate store.
-    ///
-    /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
-    ///
-    /// # Panics
-    /// - If the module ID is invalid
-    fn insert_substate(
-        &mut self,
-        node_id: NodeId,
-        module_id: ModuleId,
-        substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
-    );
+    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Returns an iterator over substates within the given substate module.
     ///
@@ -125,16 +125,6 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Box<dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>>;
-
-    /// Reverts all non force write changes.
-    ///
-    /// Note that dependencies will never be reverted.
-    fn revert_non_force_write_changes(&mut self);
-
-    /// Finalizes changes captured by this substate store.
-    ///
-    ///  Returns the state changes and dependencies.
-    fn finalize(self) -> (StateUpdates, StateDependencies);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -147,12 +137,6 @@ pub enum StateUpdate {
     /// Creates or updates a substate.
     /// TODO: remove version
     Upsert(Vec<u8>, Option<u32>),
-    /*
-    /// Deletes a substate.
-    Delete,
-    /// Edits an element of a substate, identified by an SBOR path.
-    Edit,
-    */
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]

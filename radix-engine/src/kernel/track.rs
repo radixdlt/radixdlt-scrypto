@@ -142,6 +142,64 @@ impl<'s> Track<'s> {
                 },
             );
     }
+
+    /// Reverts all non force write changes.
+    ///
+    /// Note that dependencies will never be reverted.
+    pub fn revert_non_force_write_changes(&mut self) {
+        self.loaded_substates.retain(|_, m| {
+            m.retain(|_, m| {
+                m.retain(|_, loaded| match &loaded.meta_state {
+                    SubstateMetaState::Existing {
+                        state: ExistingMetaState::Updated(Some(value)),
+                        ..
+                    } => {
+                        loaded.substate = value.clone();
+                        true
+                    }
+                    _ => false,
+                });
+                !m.is_empty()
+            });
+            !m.is_empty()
+        });
+    }
+
+    /// Finalizes changes captured by this substate store.
+    ///
+    ///  Returns the state changes and dependencies.
+    pub fn finalize(self) -> (StateUpdates, StateDependencies) {
+        // TODO:
+        // - Remove version from state updates
+        // - Split read,
+        // - Track dependencies
+
+        let mut substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate> =
+            index_map_new();
+        for (node_id, modules) in self.loaded_substates {
+            for (module_id, module) in modules {
+                for (substate_key, loaded) in module {
+                    substate_changes.insert(
+                        (node_id, module_id, substate_key.clone()),
+                        StateUpdate::Upsert(
+                            loaded.substate.into(),
+                            match loaded.meta_state {
+                                SubstateMetaState::New => None,
+                                SubstateMetaState::Existing { old_version, .. } => {
+                                    Some(old_version)
+                                }
+                            },
+                        ),
+                    );
+                }
+            }
+        }
+
+        (
+            StateUpdates { substate_changes },
+            StateDependencies::default(),
+        )
+    }
 }
 
 impl<'s> SubstateStore for Track<'s> {
@@ -276,7 +334,7 @@ impl<'s> SubstateStore for Track<'s> {
             .substate
     }
 
-    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
+    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
         let (node_id, module_id, substate_key, flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 
@@ -294,7 +352,7 @@ impl<'s> SubstateStore for Track<'s> {
         .substate = substate_value;
     }
 
-    fn insert_substate(
+    fn create_substate(
         &mut self,
         node_id: NodeId,
         module_id: ModuleId,
@@ -324,55 +382,4 @@ impl<'s> SubstateStore for Track<'s> {
         todo!()
     }
 
-    fn revert_non_force_write_changes(&mut self) {
-        self.loaded_substates.retain(|_, m| {
-            m.retain(|_, m| {
-                m.retain(|_, loaded| match &loaded.meta_state {
-                    SubstateMetaState::Existing {
-                        state: ExistingMetaState::Updated(Some(value)),
-                        ..
-                    } => {
-                        loaded.substate = value.clone();
-                        true
-                    }
-                    _ => false,
-                });
-                !m.is_empty()
-            });
-            !m.is_empty()
-        });
-    }
-
-    fn finalize(self) -> (StateUpdates, StateDependencies) {
-        // TODO:
-        // - Remove version from state updates
-        // - Split read,
-        // - Track dependencies
-
-        let mut substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate> =
-            index_map_new();
-        for (node_id, modules) in self.loaded_substates {
-            for (module_id, module) in modules {
-                for (substate_key, loaded) in module {
-                    substate_changes.insert(
-                        (node_id, module_id, substate_key.clone()),
-                        StateUpdate::Upsert(
-                            loaded.substate.into(),
-                            match loaded.meta_state {
-                                SubstateMetaState::New => None,
-                                SubstateMetaState::Existing { old_version, .. } => {
-                                    Some(old_version)
-                                }
-                            },
-                        ),
-                    );
-                }
-            }
-        }
-
-        (
-            StateUpdates { substate_changes },
-            StateDependencies::default(),
-        )
-    }
 }

@@ -235,7 +235,7 @@ impl CallFrame {
                     }
                     Err(error) => {
                         if matches!(error, AcquireLockError::NotFound(_, _, _)) {
-                            track.insert_substate(
+                            track.create_substate(
                                 node_id.clone(),
                                 module_id.into(),
                                 substate_key.clone(),
@@ -490,7 +490,7 @@ impl CallFrame {
         }
 
         if let Some(store_handle) = store_handle {
-            track.write_substate(*store_handle, substate);
+            track.update_substate(*store_handle, substate);
         } else {
             heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
         }
@@ -676,7 +676,7 @@ impl CallFrame {
                         }
                     }
 
-                    track.insert_substate(node_id, module_id.into(), substate_key, substate_value);
+                    track.create_substate(node_id, module_id.into(), substate_key, substate_value);
                 }
             }
 
@@ -773,7 +773,7 @@ impl CallFrame {
                     Self::move_node_to_store(heap, track, node)?;
                 }
 
-                track.insert_substate(
+                track.create_substate(
                     node_id.clone(),
                     module_id.into(),
                     substate_key,

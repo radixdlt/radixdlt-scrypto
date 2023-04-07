@@ -481,7 +481,7 @@ fn distribute_fees(
             .unwrap();
         let mut substate: LiquidFungibleResource = track.read_substate(handle).as_typed().unwrap();
         substate.put(LiquidFungibleResource::new(amount)).unwrap();
-        track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
     }
 
@@ -516,7 +516,7 @@ fn distribute_fees(
             .unwrap();
         let mut substate: LiquidFungibleResource = track.read_substate(handle).as_typed().unwrap();
         substate.put(locked).unwrap();
-        track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
 
         // Record final payments
