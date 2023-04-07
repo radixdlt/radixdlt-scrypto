@@ -10,26 +10,6 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
 use crate::kernel::interpreters::ScryptoExecutor;
 
-pub trait ExecutableInvocation: Invocation {
-    fn resolve<Y: KernelSubstateApi + KernelInternalApi>(
-        self,
-        api: &mut Y,
-    ) -> Result<Box<KernelInvocation>, RuntimeError>;
-
-    fn payload_size(&self) -> usize;
-}
-
-pub trait Executor {
-    fn execute<Y, W>(
-        self,
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
-        W: WasmEngine;
-}
-
 #[derive(Debug)]
 pub struct KernelInvocation {
     pub executor: ScryptoExecutor,

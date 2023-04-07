@@ -5,14 +5,6 @@ use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
 
-// TODO: Remove
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum InvocationDebugIdentifier {
-    Function(FunctionIdentifier),
-    Method(MethodIdentifier),
-    VirtualLazyLoad,
-}
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodReceiver(pub NodeId, pub SysModuleId);
 
@@ -109,37 +101,4 @@ impl FnIdentifier {
 pub struct FunctionInvocation {
     pub identifier: FunctionIdentifier,
     pub args: Vec<u8>,
-}
-
-impl Invocation for FunctionInvocation {
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Function(self.identifier.clone())
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodInvocation {
-    pub blueprint: Blueprint,
-    pub global_address: Option<GlobalAddress>,
-    pub identifier: MethodIdentifier,
-    pub args: Vec<u8>,
-}
-
-impl Invocation for MethodInvocation {
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Method(self.identifier.clone())
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VirtualLazyLoadInvocation {
-    pub blueprint: Blueprint,
-    pub virtual_func_id: u8,
-    pub args: [u8; 26],
-}
-
-impl Invocation for VirtualLazyLoadInvocation {
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::VirtualLazyLoad
-    }
 }

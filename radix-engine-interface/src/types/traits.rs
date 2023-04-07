@@ -6,7 +6,3 @@ use sbor::rust::fmt::Debug;
 pub trait NonFungibleData: ScryptoSbor {
     const MUTABLE_FIELDS: &'static [&'static str];
 }
-
-pub trait Invocation: Debug {
-    fn debug_identifier(&self) -> InvocationDebugIdentifier;
-}

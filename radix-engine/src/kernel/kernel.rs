@@ -1,6 +1,6 @@
 use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::executor::{ExecutableInvocation, Executor, KernelInvocation};
+use super::executor::KernelInvocation;
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;

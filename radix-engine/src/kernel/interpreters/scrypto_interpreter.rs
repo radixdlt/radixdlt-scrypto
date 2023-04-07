@@ -91,83 +91,6 @@ fn validate_output(
     Ok(value)
 }
 
-/*
-impl ExecutableInvocation for MethodInvocation {
-    #[trace_resources(log={format!("{:?}",self.identifier.1)}, log={&self.identifier.2}, log=self.payload_size())]
-    fn resolve<D: KernelSubstateApi + KernelInternalApi>(
-        self,
-        api: &mut D,
-    ) -> Result<Box<KernelInvocation>, RuntimeError> {
-        let resolved = KernelInvocation {
-            resolved_actor: Actor::method(self.global_address, self.identifier.clone(), self.blueprint.clone()),
-            executor: ScryptoExecutor {
-                blueprint: self.blueprint,
-                ident: FnIdent::Application(self.identifier.2.clone()),
-                receiver: Some(self.identifier),
-            },
-            args: IndexedScryptoValue::from_vec(self.args).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?,
-        };
-
-        Ok(Box::new(resolved))
-    }
-
-    fn payload_size(&self) -> usize {
-        self.args.len() + self.identifier.2.len()
-    }
-}
-
-impl ExecutableInvocation for FunctionInvocation {
-    #[trace_resources(log={&self.identifier.0}, log={&self.identifier.1}, log=self.payload_size())]
-    fn resolve<D: KernelSubstateApi>(
-        self,
-        _api: &mut D,
-    ) -> Result<Box<KernelInvocation>, RuntimeError> {
-        let resolved = KernelInvocation {
-            resolved_actor: Actor::function(self.identifier.clone()),
-            args: IndexedScryptoValue::from_vec(self.args).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?,
-            executor: ScryptoExecutor {
-                blueprint: self.identifier.0,
-                ident: FnIdent::Application(self.identifier.1),
-                receiver: None,
-            },
-        };
-
-        Ok(Box::new(resolved))
-    }
-
-    fn payload_size(&self) -> usize {
-        self.args.len() + self.identifier.size()
-    }
-}
-
-impl ExecutableInvocation for VirtualLazyLoadInvocation {
-    fn resolve<D: KernelSubstateApi>(
-        self,
-        _api: &mut D,
-    ) -> Result<Box<KernelInvocation>, RuntimeError> {
-        let resolved = KernelInvocation {
-            resolved_actor: Actor::virtual_lazy_load(self.blueprint.clone(), self.virtual_func_id),
-            args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
-            executor: ScryptoExecutor {
-                blueprint: self.blueprint,
-                ident: FnIdent::System(self.virtual_func_id),
-                receiver: None,
-            },
-        };
-
-        Ok(Box::new(resolved))
-    }
-
-    fn payload_size(&self) -> usize {
-        0
-    }
-}
- */
-
 #[derive(Debug)]
 pub struct ScryptoExecutor {
     pub blueprint: Blueprint,
@@ -175,9 +98,9 @@ pub struct ScryptoExecutor {
     pub receiver: Option<MethodIdentifier>,
 }
 
-impl Executor for ScryptoExecutor {
+impl ScryptoExecutor {
     #[trace_resources(log={self.ident.to_debug_string()}, log={self.blueprint.package_address.to_hex()})]
-    fn execute<Y, W>(
+    pub fn execute<Y, W>(
         self,
         args: &IndexedScryptoValue,
         api: &mut Y,

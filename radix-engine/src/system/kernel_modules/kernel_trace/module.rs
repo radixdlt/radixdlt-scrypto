@@ -9,7 +9,7 @@ use crate::{
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{
-    EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateKey, SysModuleId,
+    EntityType, LockHandle, NodeId, SubstateKey, SysModuleId,
 };
 use sbor::rust::collections::BTreeMap;
 use crate::kernel::executor::KernelInvocation;
