@@ -69,11 +69,6 @@ impl NodeProperties {
                 SysModuleId::TypeInfo => true,
                 _ => false,
             },
-            ExecutionMode::Resolver => match module_id {
-                SysModuleId::TypeInfo => true,
-                SysModuleId::ObjectState => true,
-                _ => false,
-            },
             ExecutionMode::DropNode => match module_id {
                 SysModuleId::TypeInfo => true,
                 _ => false,
@@ -127,9 +122,6 @@ impl NodeProperties {
     ) -> bool {
         match mode {
             ExecutionMode::Kernel => match module_id {
-                _ => false,
-            },
-            ExecutionMode::Resolver => match module_id {
                 _ => false,
             },
             ExecutionMode::DropNode => match module_id {

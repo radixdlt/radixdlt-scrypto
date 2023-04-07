@@ -76,7 +76,6 @@ impl Actor {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Sbor)]
 pub enum ExecutionMode {
     Kernel,
-    Resolver,
     DropNode,
     AutoDrop,
 
