@@ -7,7 +7,7 @@ use std::process::Command;
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::Kernel;
+use radix_engine::kernel::kernel::{Kernel, RadixEngine};
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
@@ -1213,8 +1213,7 @@ impl TestRunner {
             wasm_instrumenter: WasmInstrumenter::default(),
         };
 
-        // Create kernel
-        Kernel::call_function(
+        RadixEngine::call_function(
             &mut id_allocator,
             &mut track,
             &scrypto_interpreter,
@@ -1224,7 +1223,6 @@ impl TestRunner {
             function_name,
             scrypto_args!(&args),
         )
-            //.expect("Failed to initialize kernel");
     }
 
     pub fn event_schema(

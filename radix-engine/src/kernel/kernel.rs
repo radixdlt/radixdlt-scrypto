@@ -31,39 +31,10 @@ use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
-pub struct Kernel<
-    'g, // Lifetime of values outliving all frames
-    's, // Substate store lifetime
-    W,  // WASM engine type
-> where
-    W: WasmEngine,
-{
-    /// Current execution mode, specifies permissions into state/invocations
-    execution_mode: ExecutionMode,
-    /// Stack
-    current_frame: CallFrame,
-    // This stack could potentially be removed and just use the native stack
-    // but keeping this call_frames stack may potentially prove useful if implementing
-    // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame>,
-    /// Heap
-    heap: Heap,
-    /// Store
-    track: &'g mut Track<'s>,
+pub struct RadixEngine;
 
-    /// ID allocator
-    id_allocator: &'g mut IdAllocator,
-    /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g ScryptoInterpreter<W>,
-    /// Kernel module mixer
-    module: &'g mut KernelModuleMixer,
-}
-
-impl<'g, 's, W> Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    pub fn call_function(
+impl RadixEngine {
+    pub fn call_function<'g, 's, W: WasmEngine>(
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
@@ -78,7 +49,7 @@ where
             v.borrow_mut();
         });
 
-        let mut kernel = Self {
+        let mut kernel = Kernel {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
             track,
@@ -152,9 +123,42 @@ where
         let rtn = kernel.call_function(package_address, blueprint_name, function_name, args.into());
         kernel.teardown(rtn)
     }
+}
 
+pub struct Kernel<
+    'g, // Lifetime of values outliving all frames
+    's, // Substate store lifetime
+    W,  // WASM engine type
+> where
+    W: WasmEngine,
+{
+    /// Current execution mode, specifies permissions into state/invocations
+    execution_mode: ExecutionMode,
+    /// Stack
+    current_frame: CallFrame,
+    // This stack could potentially be removed and just use the native stack
+    // but keeping this call_frames stack may potentially prove useful if implementing
+    // execution pause and/or for better debuggability
+    prev_frame_stack: Vec<CallFrame>,
+    /// Heap
+    heap: Heap,
+    /// Store
+    track: &'g mut Track<'s>,
+
+    /// ID allocator
+    id_allocator: &'g mut IdAllocator,
+    /// Interpreter capable of running scrypto programs
+    scrypto_interpreter: &'g ScryptoInterpreter<W>,
+    /// Kernel module mixer
+    module: &'g mut KernelModuleMixer,
+}
+
+impl<'g, 's, W> Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
     // TODO: Josh holds some concern about this interface; will look into this again.
-    pub fn teardown<T>(
+    fn teardown<T>(
         mut self,
         previous_result: Result<T, RuntimeError>,
     ) -> Result<T, RuntimeError> {

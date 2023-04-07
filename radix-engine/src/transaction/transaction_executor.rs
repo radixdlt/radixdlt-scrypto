@@ -1,7 +1,7 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::kernel::Kernel;
+use crate::kernel::kernel::{Kernel, RadixEngine};
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::Track;
 use crate::system::kernel_modules::costing::*;
@@ -198,7 +198,7 @@ where
             execution_config,
         );
 
-        let invoke_result = Kernel::call_function(
+        let invoke_result = RadixEngine::call_function(
             &mut id_allocator,
             &mut track,
             self.scrypto_interpreter,
