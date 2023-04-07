@@ -1214,16 +1214,17 @@ impl TestRunner {
         };
 
         // Create kernel
-        let mut kernel = Kernel::initialize(&mut id_allocator, &mut track, &scrypto_interpreter, &mut modules, &btreeset!())
-            .expect("Failed to initialize kernel");
-
-        // Call function
-        kernel.call_function(
+        Kernel::call_function(
+            &mut id_allocator,
+            &mut track,
+            &scrypto_interpreter,
+            &mut modules,
             package_address,
             blueprint_name,
             function_name,
-            scrypto_args!(args),
+            scrypto_args!(&args),
         )
+            //.expect("Failed to initialize kernel");
     }
 
     pub fn event_schema(

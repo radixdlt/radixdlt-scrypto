@@ -63,13 +63,16 @@ impl<'g, 's, W> Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    pub fn initialize(
+    pub fn call_function(
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut KernelModuleMixer,
-        references: &BTreeSet<Reference>,
-    ) -> Result<Self, RuntimeError> {
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -90,8 +93,11 @@ where
             KernelModuleMixer::on_init(api)
         })?;
 
-        for reference in references {
-            let node_id = reference.as_node_id();
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+        })?;
+
+        for node_id in args.references() {
             if node_id.is_global_virtual() {
                 // For virtual accounts and native packages, create a reference directly
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
@@ -143,7 +149,8 @@ where
             }
         }
 
-        Ok(kernel)
+        let rtn = kernel.call_function(package_address, blueprint_name, function_name, args.into());
+        kernel.teardown(rtn)
     }
 
     // TODO: Josh holds some concern about this interface; will look into this again.
