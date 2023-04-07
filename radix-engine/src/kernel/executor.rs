@@ -27,7 +27,7 @@ pub trait Executor {
         api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
         W: WasmEngine;
 }
 

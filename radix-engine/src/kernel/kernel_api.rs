@@ -101,6 +101,10 @@ pub trait KernelInternalApi {
     // TODO: Remove
     fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
+    // TODO: Remove
+    fn kernel_load_package_package_dependencies(&mut self);
+    fn kernel_load_common(&mut self);
+
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;

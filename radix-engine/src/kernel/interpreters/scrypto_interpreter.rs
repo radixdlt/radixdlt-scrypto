@@ -172,36 +172,6 @@ impl ExecutableInvocation for MethodInvocation {
 
         let actor = Actor::method(global_address, self.identifier.clone(), blueprint.clone());
 
-        // TODO: Remove this weirdness or move to a kernel module if we still want to support this
-        {
-            if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-                node_refs_to_copy.insert(RADIX_TOKEN.into());
-            } else {
-                let handle = api.kernel_lock_substate(
-                    blueprint.package_address.as_node_id(),
-                    SysModuleId::ObjectState,
-                    &PackageOffset::CodeType.into(),
-                    LockFlags::read_only(),
-                )?;
-                let code_type: PackageCodeTypeSubstate =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-                let code_type = code_type.clone();
-                api.kernel_drop_lock(handle)?;
-
-                match code_type {
-                    PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(EPOCH_MANAGER.into());
-                        node_refs_to_copy.insert(CLOCK.into());
-                        node_refs_to_copy.insert(RADIX_TOKEN.into());
-                        node_refs_to_copy.insert(PACKAGE_TOKEN.into());
-                        node_refs_to_copy.insert(ECDSA_SECP256K1_TOKEN.into());
-                        node_refs_to_copy.insert(EDDSA_ED25519_TOKEN.into());
-                    }
-                    _ => {}
-                }
-            }
-        }
-
         let executor = ScryptoExecutor {
             blueprint,
             ident: FnIdent::Application(self.identifier.2.clone()),
@@ -232,53 +202,14 @@ impl ExecutableInvocation for FunctionInvocation {
     #[trace_resources(log={&self.identifier.0}, log={&self.identifier.1}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
-        api: &mut D,
+        _api: &mut D,
     ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
         let nodes_to_move = value.owned_node_ids().clone();
-        let mut node_refs_to_copy = value.references().clone();
+        let node_refs_to_copy = value.references().clone();
         let actor = Actor::function(self.identifier.clone());
-
-        // TODO: Remove this weirdness or move to a kernel module if we still want to support this
-        {
-            if self.identifier.0.package_address.eq(&PACKAGE_PACKAGE) {
-                node_refs_to_copy.insert(RADIX_TOKEN.into());
-            } else if self
-                .identifier
-                .0
-                .package_address
-                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-            {
-                // Required for bootstrap.
-                // Can be removed once the auto reference copying logic is moved to a kernel module.
-                // Will just disable the module for genesis.
-            } else {
-                let handle = api.kernel_lock_substate(
-                    self.identifier.0.package_address.as_node_id(),
-                    SysModuleId::ObjectState,
-                    &PackageOffset::CodeType.into(),
-                    LockFlags::read_only(),
-                )?;
-                let code_type: PackageCodeTypeSubstate =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-                let code_type = code_type.clone();
-                api.kernel_drop_lock(handle)?;
-
-                match code_type {
-                    PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(EPOCH_MANAGER.into());
-                        node_refs_to_copy.insert(CLOCK.into());
-                        node_refs_to_copy.insert(RADIX_TOKEN.into());
-                        node_refs_to_copy.insert(PACKAGE_TOKEN.into());
-                        node_refs_to_copy.insert(ECDSA_SECP256K1_TOKEN.into());
-                        node_refs_to_copy.insert(EDDSA_ED25519_TOKEN.into());
-                    }
-                    _ => {}
-                }
-            }
-        }
 
         let resolved = KernelInvocation {
             resolved_actor: actor,
@@ -342,10 +273,13 @@ impl Executor for ScryptoExecutor {
         api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
         let output = if self.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
+            // TODO: Clean this up
+            api.kernel_load_package_package_dependencies();
+
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
@@ -364,6 +298,7 @@ impl Executor for ScryptoExecutor {
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             );
+
             if let Ok(handle) = handle {
                 api.kernel_drop_lock(handle)?;
             }
@@ -407,6 +342,10 @@ impl Executor for ScryptoExecutor {
                 LockFlags::read_only(),
             )?;
             api.kernel_drop_lock(handle)?;
+
+            // TODO: Remove this weirdness or move to a kernel module if we still want to support this
+            // Make common resources/components visible
+            api.kernel_load_common();
 
             // Load schema
             let schema = {
