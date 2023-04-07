@@ -119,6 +119,8 @@ impl Invocation for FunctionInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodInvocation {
+    pub blueprint: Blueprint,
+    pub global_address: Option<GlobalAddress>,
     pub identifier: MethodIdentifier,
     pub args: Vec<u8>,
 }

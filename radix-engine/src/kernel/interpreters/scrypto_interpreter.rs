@@ -102,69 +102,10 @@ impl ExecutableInvocation for MethodInvocation {
         self,
         api: &mut D,
     ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
-        let (blueprint, global_address) = match self.identifier.1 {
-            SysModuleId::ObjectState => {
-                let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
-                match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint, global, ..
-                    }) => {
-                        let global_address = if global {
-                            Some(GlobalAddress::new_unchecked(self.identifier.0.into()))
-                        } else {
-                            // See if we have a parent
-
-                            // TODO: Cleanup, this is a rather crude way of trying to figure out
-                            // TODO: whether the node reference is a child of the current parent
-                            // TODO: this should be cleaned up once call_frame is refactored
-                            let (visibility, on_heap) =
-                                api.kernel_get_node_info(&self.identifier.0).unwrap();
-                            match (visibility, on_heap) {
-                                (RefType::Normal, false) => {
-                                    api.kernel_get_current_actor().and_then(|a| match a {
-                                        Actor::Method { global_address, .. } => global_address,
-                                        _ => None,
-                                    })
-                                }
-                                _ => None,
-                            }
-                        };
-
-                        (blueprint, global_address)
-                    }
-
-                    TypeInfoSubstate::KeyValueStore(..) => {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::CallMethodOnKeyValueStore,
-                        ))
-                    }
-                }
-            }
-            SysModuleId::Metadata => {
-                // TODO: Check if type has metadata
-                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
-            }
-            SysModuleId::Royalty => {
-                // TODO: Check if type has royalty
-                (
-                    Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                    None,
-                )
-            }
-            SysModuleId::AccessRules => {
-                // TODO: Check if type has access rules
-                (
-                    Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                    None,
-                )
-            }
-            _ => todo!(),
-        };
-
         let resolved = KernelInvocation {
-            resolved_actor: Actor::method(global_address, self.identifier.clone(), blueprint.clone()),
+            resolved_actor: Actor::method(self.global_address, self.identifier.clone(), self.blueprint.clone()),
             executor: ScryptoExecutor {
-                blueprint,
+                blueprint: self.blueprint,
                 ident: FnIdent::Application(self.identifier.2.clone()),
                 receiver: Some(self.identifier),
             },

@@ -1,4 +1,4 @@
-use crate::errors::SystemError;
+use crate::errors::{InterpreterError, SystemError};
 use crate::errors::{
     ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
 };
@@ -28,6 +28,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::kernel::call_frame::RefType;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
@@ -400,7 +401,69 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
+
+        let (blueprint, global_address) = match module_id {
+            SysModuleId::ObjectState => {
+                let type_info = TypeInfoBlueprint::get_type(receiver, self)?;
+                match type_info {
+                    TypeInfoSubstate::Object(ObjectInfo {
+                                                 blueprint, global, ..
+                                             }) => {
+                        let global_address = if global {
+                            Some(GlobalAddress::new_unchecked(receiver.clone().into()))
+                        } else {
+                            // See if we have a parent
+
+                            // TODO: Cleanup, this is a rather crude way of trying to figure out
+                            // TODO: whether the node reference is a child of the current parent
+                            // TODO: this should be cleaned up once call_frame is refactored
+                            let (visibility, on_heap) =
+                                self.kernel_get_node_info(receiver).unwrap();
+                            match (visibility, on_heap) {
+                                (RefType::Normal, false) => {
+                                    self.kernel_get_current_actor().and_then(|a| match a {
+                                        Actor::Method { global_address, .. } => global_address,
+                                        _ => None,
+                                    })
+                                }
+                                _ => None,
+                            }
+                        };
+
+                        (blueprint, global_address)
+                    }
+
+                    TypeInfoSubstate::KeyValueStore(..) => {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::CallMethodOnKeyValueStore,
+                        ))
+                    }
+                }
+            }
+            SysModuleId::Metadata => {
+                // TODO: Check if type has metadata
+                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
+            }
+            SysModuleId::Royalty => {
+                // TODO: Check if type has royalty
+                (
+                    Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                    None,
+                )
+            }
+            SysModuleId::AccessRules => {
+                // TODO: Check if type has access rules
+                (
+                    Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                    None,
+                )
+            }
+            _ => todo!(),
+        };
+
         let invocation = Box::new(MethodInvocation {
+            blueprint,
+            global_address: global_address,
             identifier: MethodIdentifier(receiver.clone(), module_id, method_name.to_string()),
             args,
         });
