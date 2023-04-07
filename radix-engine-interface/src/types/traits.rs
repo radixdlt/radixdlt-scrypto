@@ -8,7 +8,5 @@ pub trait NonFungibleData: ScryptoSbor {
 }
 
 pub trait Invocation: Debug {
-    type Output: Debug;
-
     fn debug_identifier(&self) -> InvocationDebugIdentifier;
 }

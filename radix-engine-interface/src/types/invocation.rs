@@ -112,8 +112,6 @@ pub struct FunctionInvocation {
 }
 
 impl Invocation for FunctionInvocation {
-    type Output = IndexedScryptoValue;
-
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
         InvocationDebugIdentifier::Function(self.identifier.clone())
     }
@@ -126,8 +124,6 @@ pub struct MethodInvocation {
 }
 
 impl Invocation for MethodInvocation {
-    type Output = IndexedScryptoValue;
-
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
         InvocationDebugIdentifier::Method(self.identifier.clone())
     }
@@ -141,8 +137,6 @@ pub struct VirtualLazyLoadInvocation {
 }
 
 impl Invocation for VirtualLazyLoadInvocation {
-    type Output = IndexedScryptoValue;
-
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
         InvocationDebugIdentifier::VirtualLazyLoad
     }

@@ -10,7 +10,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
 
 pub trait ExecutableInvocation: Invocation {
-    type Exec: Executor<Output = Self::Output>;
+    type Exec: Executor;
 
     fn resolve<Y: KernelSubstateApi + KernelInternalApi>(
         self,
@@ -21,13 +21,11 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 pub trait Executor {
-    type Output: Debug;
-
     fn execute<Y, W>(
         self,
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine;

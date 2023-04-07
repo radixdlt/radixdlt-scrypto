@@ -75,7 +75,7 @@ pub trait KernelWasmApi<W: WasmEngine> {
 }
 
 pub trait KernelInvokeApi<I: Invocation, E> {
-    fn kernel_invoke(&mut self, invocation: Box<I>) -> Result<I::Output, E>;
+    fn kernel_invoke(&mut self, invocation: Box<I>) -> Result<IndexedScryptoValue, E>;
 }
 
 /// Interface of the Kernel, for Kernel modules.

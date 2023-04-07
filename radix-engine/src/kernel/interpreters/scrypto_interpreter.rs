@@ -335,8 +335,6 @@ pub struct ScryptoExecutor {
 }
 
 impl Executor for ScryptoExecutor {
-    type Output = IndexedScryptoValue;
-
     #[trace_resources(log={self.ident.to_debug_string()}, log={self.blueprint.package_address.to_hex()})]
     fn execute<Y, W>(
         self,

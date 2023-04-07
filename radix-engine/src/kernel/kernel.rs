@@ -173,7 +173,7 @@ where
     fn run<X: Executor>(
         &mut self,
         mut resolved: Box<ResolvedInvocation<X>>,
-    ) -> Result<X::Output, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
         let executor = resolved.executor;
@@ -282,7 +282,7 @@ where
     fn invoke_internal<X: Executor>(
         &mut self,
         resolved: Box<ResolvedInvocation<X>>,
-    ) -> Result<X::Output, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
         if depth == 0 {
@@ -876,7 +876,7 @@ where
     fn kernel_invoke(
         &mut self,
         invocation: Box<N>,
-    ) -> Result<<N as Invocation>::Output, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
             &invocation.debug_identifier(),
