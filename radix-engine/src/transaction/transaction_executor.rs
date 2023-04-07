@@ -206,7 +206,7 @@ where
         kernel.initialize().expect("Failed to initialize kernel");
 
         // Execute
-        let invoke_result = kernel.initialize().and_then(|_| {
+        let invoke_result =
             kernel
                 .call_function(
                     TRANSACTION_PROCESSOR_PACKAGE,
@@ -223,8 +223,7 @@ where
                     })
                     .unwrap(),
                 )
-                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap())
-        });
+                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
 
         // Teardown
         let (modules, invoke_result) = kernel.teardown(invoke_result);

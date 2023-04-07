@@ -53,7 +53,6 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::kernel::vm::ScryptoInterpreter;
 use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
@@ -78,6 +77,7 @@ use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use radix_engine::vm::ScryptoInterpreter;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
