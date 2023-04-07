@@ -27,7 +27,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AuthZonePopInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
@@ -55,7 +55,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZonePushInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
@@ -82,7 +82,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
@@ -122,7 +122,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
@@ -162,7 +162,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(
@@ -202,7 +202,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(
@@ -232,7 +232,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(
@@ -257,7 +257,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AuthZoneDrainInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle = api.sys_lock_substate(

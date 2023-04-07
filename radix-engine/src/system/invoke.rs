@@ -6,7 +6,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{InterpreterError, RuntimeError};
+use crate::errors::{SystemInvokeError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{CallFrameUpdate, RefType};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelInvokeUpstreamApi, KernelWasmApi};
@@ -15,8 +15,7 @@ use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use crate::wasm::{WasmEngine, WasmInstance, WasmRuntime};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
@@ -34,13 +33,13 @@ fn validate_input(
         blueprint_schema
             .functions
             .get(fn_ident)
-            .ok_or(RuntimeError::InterpreterError(
-                InterpreterError::ScryptoFunctionNotFound(fn_ident.to_string()),
+            .ok_or(RuntimeError::SystemInvokeError(
+                SystemInvokeError::FunctionNotFound(fn_ident.to_string()),
             ))?;
 
     if function_schema.receiver.is_some() != with_receiver {
-        return Err(RuntimeError::InterpreterError(
-            InterpreterError::ScryptoReceiverNotMatch(fn_ident.to_string()),
+        return Err(RuntimeError::SystemInvokeError(
+            SystemInvokeError::ReceiverNotMatch(fn_ident.to_string()),
         ));
     }
 
@@ -50,7 +49,7 @@ fn validate_input(
         function_schema.input,
     )
         .map_err(|err| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputSchemaNotMatch(
                 fn_ident.to_string(),
                 err.error_message(&blueprint_schema.schema),
             ))
@@ -65,7 +64,7 @@ fn validate_output(
     output: Vec<u8>,
 ) -> Result<IndexedScryptoValue, RuntimeError> {
     let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
-        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(e))
+        RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e))
     })?;
 
     let function_schema = blueprint_schema
@@ -79,7 +78,7 @@ fn validate_output(
         function_schema.output,
     )
         .map_err(|err| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoOutputSchemaNotMatch(
+            RuntimeError::SystemInvokeError(SystemInvokeError::OutputSchemaNotMatch(
                 fn_ident.to_string(),
                 err.error_message(&blueprint_schema.schema),
             ))
@@ -118,8 +117,8 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
             let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidSystemCall,
+                    return Err(RuntimeError::SystemInvokeError(
+                        SystemInvokeError::InvalidSystemCall,
                     ))
                 }
             };
@@ -152,8 +151,8 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
             let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidSystemCall,
+                    return Err(RuntimeError::SystemInvokeError(
+                        SystemInvokeError::InvalidSystemCall,
                     ))
                 }
             };
@@ -192,8 +191,8 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                     .schema
                     .blueprints
                     .get(&invocation.blueprint.blueprint_name)
-                    .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::ScryptoBlueprintNotFound(invocation.blueprint.clone()),
+                    .ok_or(RuntimeError::SystemInvokeError(
+                        SystemInvokeError::BlueprintNotFound(invocation.blueprint.clone()),
                     ))?
                     .clone();
                 api.kernel_drop_lock(handle)?;
@@ -212,8 +211,8 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                     {
                         sys_func.export_name.to_string()
                     } else {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidSystemCall,
+                        return Err(RuntimeError::SystemInvokeError(
+                            SystemInvokeError::InvalidSystemCall,
                         ));
                     }
                 }
@@ -303,7 +302,7 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema
                     let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
-                        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(
+                        RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(
                             e,
                         ))
                     })?;
@@ -365,8 +364,8 @@ impl NativeVm {
             ACCESS_RULES_CODE_ID => {
                 AccessRulesNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeInvalidCodeId(native_package_code_id),
+            _ => Err(RuntimeError::SystemInvokeError(
+                SystemInvokeError::NativeInvalidCodeId(native_package_code_id),
             )),
         }
     }

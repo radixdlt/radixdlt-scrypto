@@ -7,7 +7,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{InterpreterError, RuntimeError};
+use crate::errors::{SystemInvokeError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{CallFrameUpdate, RefType};
 use crate::kernel::kernel_api::{

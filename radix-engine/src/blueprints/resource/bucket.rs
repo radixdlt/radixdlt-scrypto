@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, InterpreterError};
+use crate::errors::{ApplicationError, SystemInvokeError};
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
@@ -520,7 +520,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketDropEmptyInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let amount = input.bucket.sys_amount(api)?;
@@ -543,7 +543,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketTakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         // Check amount
@@ -602,7 +602,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketTakeNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
@@ -640,7 +640,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketPutInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         // Drop other bucket
@@ -675,7 +675,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
@@ -701,7 +701,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
@@ -725,7 +725,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
@@ -742,7 +742,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
@@ -805,7 +805,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketLockAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         FungibleBucket::lock_amount(receiver, input.amount, api)?;
@@ -822,7 +822,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketLockNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         NonFungibleBucket::lock_non_fungibles(receiver, input.local_ids, api)?;
@@ -839,7 +839,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketUnlockAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         FungibleBucket::unlock_amount(receiver, input.amount, api)?;
@@ -856,7 +856,7 @@ impl BucketBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: BucketUnlockNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         NonFungibleBucket::unlock_non_fungibles(receiver, input.local_ids, api)?;

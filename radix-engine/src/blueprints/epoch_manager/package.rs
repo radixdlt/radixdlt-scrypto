@@ -1,5 +1,5 @@
 use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint};
-use crate::errors::InterpreterError;
+use crate::errors::SystemInvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -233,12 +233,12 @@ impl EpochManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemInvokeError(
+                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: EpochManagerCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::create(
                     input.validator_owner_token,
@@ -254,11 +254,11 @@ impl EpochManagerNativePackage {
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: EpochManagerGetCurrentEpochInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
                 })?;
 
                 let rtn = EpochManagerBlueprint::get_current_epoch(receiver, api)?;
@@ -267,11 +267,11 @@ impl EpochManagerNativePackage {
             EPOCH_MANAGER_SET_EPOCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: EpochManagerSetEpochInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::set_epoch(receiver, input.epoch, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -279,11 +279,11 @@ impl EpochManagerNativePackage {
             EPOCH_MANAGER_NEXT_ROUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: EpochManagerNextRoundInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::next_round(receiver, input.round, api)?;
 
@@ -292,11 +292,11 @@ impl EpochManagerNativePackage {
             EPOCH_MANAGER_CREATE_VALIDATOR_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: EpochManagerCreateValidatorInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::create_validator(receiver, input.key, api)?;
 
@@ -305,11 +305,11 @@ impl EpochManagerNativePackage {
             EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: EpochManagerUpdateValidatorInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
                 })?;
 
                 let rtn = EpochManagerBlueprint::update_validator(
@@ -324,61 +324,61 @@ impl EpochManagerNativePackage {
             VALIDATOR_REGISTER_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::register(receiver, input, api)
             }
             VALIDATOR_UNREGISTER_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::unregister(receiver, input, api)
             }
             VALIDATOR_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::stake(receiver, input, api)
             }
             VALIDATOR_UNSTAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::unstake(receiver, input, api)
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::claim_xrd(receiver, input, api)
             }
             VALIDATOR_UPDATE_KEY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::update_key(receiver, input, api)
             }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
+                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ValidatorBlueprint::update_accept_delegated_stake(receiver, input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemInvokeError(
+                SystemInvokeError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

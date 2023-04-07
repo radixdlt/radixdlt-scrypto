@@ -1,7 +1,7 @@
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, InterpreterError};
+use crate::errors::{ApplicationError, SystemInvokeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
@@ -63,7 +63,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let substate_key = ValidatorOffset::Validator.into();
@@ -116,7 +116,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let substate_key = ValidatorOffset::Validator.into();
@@ -164,7 +164,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         // Prepare the event and emit it once the operations succeed
@@ -236,7 +236,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         // Prepare event and emit it once operations finish
@@ -337,7 +337,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(
@@ -406,7 +406,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(
@@ -453,7 +453,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorUpdateAcceptDelegatedStakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let rule = if input.accept_delegated_stake {

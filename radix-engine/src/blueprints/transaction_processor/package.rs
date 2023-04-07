@@ -1,4 +1,4 @@
-use crate::errors::InterpreterError;
+use crate::errors::SystemInvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -64,14 +64,14 @@ impl TransactionProcessorNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemInvokeError(
+                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 TransactionProcessorBlueprint::run(input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemInvokeError(
+                SystemInvokeError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

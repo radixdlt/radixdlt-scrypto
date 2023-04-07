@@ -1,5 +1,5 @@
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, InterpreterError};
+use crate::errors::{ApplicationError, SystemInvokeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
@@ -41,7 +41,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         // FIXME we must check the node type, before generic own schema validation is ready.
@@ -71,7 +71,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopPutInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
@@ -107,7 +107,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let resource_address = input.resource_address;
@@ -157,7 +157,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let resource_address = input.resource_address;
@@ -208,7 +208,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeAllInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let worktop_handle =
@@ -235,7 +235,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let worktop_handle = api.sys_lock_substate(
@@ -267,7 +267,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let worktop_handle = api.sys_lock_substate(
@@ -299,7 +299,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let worktop_handle = api.sys_lock_substate(
@@ -332,7 +332,7 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: WorktopDrainInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         let worktop_handle =

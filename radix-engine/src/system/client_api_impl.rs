@@ -1,4 +1,4 @@
-use crate::errors::{InterpreterError, SystemError};
+use crate::errors::{SystemInvokeError, SystemError};
 use crate::errors::{
     ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
 };
@@ -435,8 +435,8 @@ where
                     }
 
                     TypeInfoSubstate::KeyValueStore(..) => {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::CallMethodOnKeyValueStore,
+                        return Err(RuntimeError::SystemError(
+                            SystemError::CallMethodOnKeyValueStore,
                         ))
                     }
                 }
@@ -473,7 +473,7 @@ where
                 receiver: Some(identifier),
             },
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
             })?,
             payload_size,
         };
@@ -497,7 +497,7 @@ where
         let invocation = KernelInvocation {
             resolved_actor: Actor::function(identifier.clone()),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
             })?,
             sys_invocation: SystemInvocation {
                 blueprint: identifier.0,

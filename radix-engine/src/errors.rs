@@ -66,7 +66,7 @@ pub enum RuntimeError {
     SystemError(SystemError),
 
     /// TODO: merge with `ModuleError`/`ApplicationError`
-    InterpreterError(InterpreterError),
+    SystemInvokeError(SystemInvokeError),
 
     /// An error occurred within a kernel module.
     ModuleError(ModuleError),
@@ -89,9 +89,9 @@ impl From<KernelError> for RuntimeError {
     }
 }
 
-impl From<InterpreterError> for RuntimeError {
-    fn from(error: InterpreterError) -> Self {
-        RuntimeError::InterpreterError(error.into())
+impl From<SystemInvokeError> for RuntimeError {
+    fn from(error: SystemInvokeError) -> Self {
+        RuntimeError::SystemInvokeError(error.into())
     }
 }
 
@@ -112,7 +112,7 @@ impl CanBeAbortion for RuntimeError {
         match self {
             RuntimeError::KernelError(err) => err.abortion(),
             RuntimeError::SystemError(_) => None,
-            RuntimeError::InterpreterError(_) => None,
+            RuntimeError::SystemInvokeError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
@@ -128,7 +128,7 @@ pub enum KernelError {
     CallFrameError(CallFrameError),
 
     /// Interpreter
-    InterpreterError(InterpreterError),
+    InterpreterError(SystemInvokeError),
     WasmRuntimeError(WasmRuntimeError),
 
     // ID allocation
@@ -207,6 +207,26 @@ pub enum SystemError {
     InvalidModuleType(Box<InvalidModuleType>),
     SubstateValidationError(Box<SubstateValidationError>),
     AssertAccessRuleFailed,
+    CallMethodOnKeyValueStore,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemInvokeError {
+    InvalidSystemCall,
+
+    NativeUnexpectedReceiver(String),
+    NativeExpectedReceiver(String),
+    NativeExportDoesNotExist(String),
+    NativeInvalidCodeId(u8),
+
+    BlueprintNotFound(Blueprint),
+    FunctionNotFound(String),
+    ReceiverNotMatch(String),
+    InputSchemaNotMatch(String, String),
+    InputDecodeError(DecodeError),
+
+    OutputDecodeError(DecodeError),
+    OutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -214,26 +234,6 @@ pub enum SubstateValidationError {
     BlueprintNotFound(String),
     WrongNumberOfSubstates(String, usize, usize),
     SchemaValidationError(String, String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum InterpreterError {
-    InvalidSystemCall,
-    CallMethodOnKeyValueStore,
-
-    NativeUnexpectedReceiver(String),
-    NativeExpectedReceiver(String),
-    NativeExportDoesNotExist(String),
-    NativeInvalidCodeId(u8),
-
-    ScryptoBlueprintNotFound(Blueprint),
-    ScryptoFunctionNotFound(String),
-    ScryptoReceiverNotMatch(String),
-    ScryptoInputSchemaNotMatch(String, String),
-    ScryptoInputDecodeError(DecodeError),
-
-    ScryptoOutputDecodeError(DecodeError),
-    ScryptoOutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

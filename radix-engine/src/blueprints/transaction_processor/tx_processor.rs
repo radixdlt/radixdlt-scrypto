@@ -1,6 +1,6 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
-use crate::errors::InterpreterError;
+use crate::errors::SystemInvokeError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
@@ -61,7 +61,7 @@ impl TransactionProcessorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
         })?;
 
         // Runtime transaction validation
