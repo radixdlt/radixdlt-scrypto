@@ -68,6 +68,7 @@ where
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut KernelModuleMixer,
+        references: &BTreeSet<Reference>,
     ) -> Result<Self, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -88,6 +89,59 @@ where
         kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
             KernelModuleMixer::on_init(api)
         })?;
+
+        for reference in references {
+            let node_id = reference.as_node_id();
+            if node_id.is_global_virtual() {
+                // For virtual accounts and native packages, create a reference directly
+                kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                continue;
+            } else if node_id.is_global_package()
+                && is_native_package(PackageAddress::new_unchecked(node_id.0))
+            {
+                // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
+                kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                continue;
+            }
+
+            if kernel.current_frame.get_node_visibility(node_id).is_some() {
+                continue;
+            }
+
+            let handle = kernel
+                .track
+                .acquire_lock(
+                    node_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                    LockFlags::read_only(),
+                )
+                .map_err(|_| KernelError::NodeNotFound(*node_id))?;
+            let substate_ref = kernel.track.read_substate(handle);
+            let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
+            kernel.track.release_lock(handle);
+            match type_substate {
+                TypeInfoSubstate::Object(ObjectInfo {
+                                             blueprint, global, ..
+                                         }) => {
+                    if global {
+                        kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                    } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                        || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                    {
+                        kernel.current_frame.add_ref(*node_id, RefType::DirectAccess);
+                    } else {
+                        return Err(RuntimeError::KernelError(
+                            KernelError::InvalidDirectAccess,
+                        ));
+                    }
+                }
+                TypeInfoSubstate::KeyValueStore(..) => {
+                    return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                }
+            }
+        }
 
         Ok(kernel)
     }
@@ -172,7 +226,7 @@ where
         Ok(())
     }
 
-    fn run(
+    fn invoke(
         &mut self,
         invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
@@ -285,71 +339,6 @@ where
                 KernelError::InvalidModeTransition(*cur, *next),
             )),
         }
-    }
-
-    fn invoke_internal(
-        &mut self,
-        resolved: Box<KernelInvocation>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let depth = self.current_frame.depth;
-        // TODO: Move to higher layer
-        if depth == 0 {
-            for node_id in &resolved.get_update().node_refs_to_copy {
-                if node_id.is_global_virtual() {
-                    // For virtual accounts and native packages, create a reference directly
-                    self.current_frame.add_ref(*node_id, RefType::Normal);
-                    continue;
-                } else if node_id.is_global_package()
-                    && is_native_package(PackageAddress::new_unchecked(node_id.0))
-                {
-                    // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                    self.current_frame.add_ref(*node_id, RefType::Normal);
-                    continue;
-                }
-
-                if self.current_frame.get_node_visibility(node_id).is_some() {
-                    continue;
-                }
-
-                let handle = self
-                    .track
-                    .acquire_lock(
-                        node_id,
-                        SysModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                        LockFlags::read_only(),
-                    )
-                    .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-                let substate_ref = self.track.read_substate(handle);
-                let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-                self.track.release_lock(handle);
-                match type_substate {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint, global, ..
-                    }) => {
-                        if global {
-                            self.current_frame.add_ref(*node_id, RefType::Normal);
-                        } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                                || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                        {
-                            self.current_frame.add_ref(*node_id, RefType::DirectAccess);
-                        } else {
-                            return Err(RuntimeError::KernelError(
-                                KernelError::InvalidDirectAccess,
-                            ));
-                        }
-                    }
-                    TypeInfoSubstate::KeyValueStore(..) => {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
-                    }
-                }
-            }
-        }
-
-        let output = self.run(resolved)?;
-
-        Ok(output)
     }
 
     #[inline(always)]
@@ -915,7 +904,7 @@ where
         let saved_mode = self.execution_mode;
 
         self.execution_mode = ExecutionMode::Kernel;
-        let rtn = self.invoke_internal(invocation)?;
+        let rtn = self.invoke(invocation)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;

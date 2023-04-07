@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::kernel::vm::ScryptoInterpreter;
 use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
+use radix_engine::vm::ScryptoInterpreter;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;

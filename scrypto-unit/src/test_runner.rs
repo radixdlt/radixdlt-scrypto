@@ -1214,7 +1214,7 @@ impl TestRunner {
         };
 
         // Create kernel
-        let mut kernel = Kernel::initialize(&mut id_allocator, &mut track, &scrypto_interpreter, &mut modules)
+        let mut kernel = Kernel::initialize(&mut id_allocator, &mut track, &scrypto_interpreter, &mut modules, &btreeset!())
             .expect("Failed to initialize kernel");
 
         // Call function

@@ -198,35 +198,43 @@ where
             execution_config,
         );
 
-        let mut kernel = Kernel::initialize(
+        let references = extract_refs_from_manifest(executable.instructions());
+        let kernel = Kernel::initialize(
             &mut id_allocator,
             &mut track,
             self.scrypto_interpreter,
             &mut modules,
-        ).expect("Failed to initialize kernel");
+            &references,
+        );
 
         // Execute
-        let invoke_result =
-            kernel
-                .call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInput {
-                        transaction_hash: transaction_hash.clone(),
-                        runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                        instructions: Cow::Owned(
-                            manifest_encode(executable.instructions()).unwrap(),
-                        ),
-                        blobs: Cow::Borrowed(executable.blobs()),
-                        references: extract_refs_from_manifest(executable.instructions()),
-                    })
-                    .unwrap(),
-                )
-                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
+        let invoke_result = match kernel {
+            Ok(mut kernel) => {
+                let invoke_result =
+                    kernel
+                        .call_function(
+                            TRANSACTION_PROCESSOR_PACKAGE,
+                            TRANSACTION_PROCESSOR_BLUEPRINT,
+                            TRANSACTION_PROCESSOR_RUN_IDENT,
+                            scrypto_encode(&TransactionProcessorRunInput {
+                                transaction_hash: transaction_hash.clone(),
+                                runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                                instructions: Cow::Owned(
+                                    manifest_encode(executable.instructions()).unwrap(),
+                                ),
+                                blobs: Cow::Borrowed(executable.blobs()),
+                                references,
+                            })
+                                .unwrap(),
+                        )
+                        .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
+                // Teardown
+                let invoke_result = kernel.teardown(invoke_result);
+                invoke_result
+            },
+            Err(e) => Err(e),
+        };
 
-        // Teardown
-        let invoke_result = kernel.teardown(invoke_result);
         let mut fee_reserve = modules.costing.fee_reserve();
         let mut application_events = modules.events.events();
         let application_logs = modules.logger.logs();
