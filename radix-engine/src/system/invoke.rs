@@ -92,19 +92,19 @@ fn validate_output(
 }
 
 #[derive(Debug)]
-pub struct ScryptoExecutor {
+pub struct SystemInvocation {
     pub blueprint: Blueprint,
     pub ident: FnIdent,
     pub receiver: Option<MethodIdentifier>,
 }
 
-impl ScryptoExecutor {
+impl SystemInvocation {
     #[trace_resources(log={self.ident.to_debug_string()}, log={self.blueprint.package_address.to_hex()})]
     pub fn execute<Y, W>(
         self,
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
             W: WasmEngine,
@@ -315,12 +315,7 @@ impl ScryptoExecutor {
             output
         };
 
-        let update = CallFrameUpdate {
-            node_refs_to_copy: output.references().clone(),
-            nodes_to_move: output.owned_node_ids().clone(),
-        };
-
-        Ok((output, update))
+        Ok(output)
     }
 }
 

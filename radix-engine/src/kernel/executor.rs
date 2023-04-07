@@ -8,11 +8,11 @@ use crate::kernel::kernel_api::KernelInternalApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
-use crate::system::invoke::ScryptoExecutor;
+use crate::system::invoke::SystemInvocation;
 
 #[derive(Debug)]
 pub struct KernelInvocation {
-    pub executor: ScryptoExecutor,
+    pub executor: SystemInvocation,
 
     // TODO: Remove
     pub payload_size: usize,

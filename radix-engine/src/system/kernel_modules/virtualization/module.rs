@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::identity::{
 };
 use crate::kernel::actor::Actor;
 use crate::kernel::executor::KernelInvocation;
-use crate::system::invoke::ScryptoExecutor;
+use crate::system::invoke::SystemInvocation;
 
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;
@@ -55,7 +55,7 @@ impl KernelModule for VirtualizationModule {
                 let invocation = KernelInvocation {
                     resolved_actor: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
-                    executor: ScryptoExecutor {
+                    executor: SystemInvocation {
                         blueprint: blueprint,
                         ident: FnIdent::System(virtual_func_id),
                         receiver: None,

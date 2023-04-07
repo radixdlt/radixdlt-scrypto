@@ -118,3 +118,16 @@ pub trait KernelModuleApi<E>:
     + ClientObjectApi<E>
 {
 }
+
+/*
+pub trait KernelUpstreamInvoke {
+    fn execute<Y, W>(
+        self,
+        args: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
+            W: WasmEngine;
+}
+ */

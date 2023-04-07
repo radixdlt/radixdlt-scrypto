@@ -28,6 +28,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use crate::kernel::call_frame::CallFrameUpdate;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -219,8 +220,13 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
-            let (output, mut update) =
+            let output =
                 self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
+
+            let mut update = CallFrameUpdate {
+                nodes_to_move: output.owned_node_ids().clone(),
+                node_refs_to_copy: output.references().clone(),
+            };
 
             // Handle execution finish
             {

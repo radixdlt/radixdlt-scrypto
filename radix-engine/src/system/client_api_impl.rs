@@ -30,7 +30,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::executor::KernelInvocation;
-use crate::system::invoke::ScryptoExecutor;
+use crate::system::invoke::SystemInvocation;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
@@ -468,7 +468,7 @@ where
 
         let invocation = KernelInvocation {
             resolved_actor: Actor::method(global_address, identifier.clone(), blueprint.clone()),
-            executor: ScryptoExecutor {
+            executor: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
                 receiver: Some(identifier),
@@ -500,7 +500,7 @@ where
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
             })?,
-            executor: ScryptoExecutor {
+            executor: SystemInvocation {
                 blueprint: identifier.0,
                 ident: FnIdent::Application(identifier.1),
                 receiver: None,
