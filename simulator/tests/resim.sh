@@ -80,7 +80,7 @@ blobs=`echo $files | sed 's/ / --blobs /g'`
 $resim run ./target/temp2.rtm --blobs $blobs
 $resim new-account --manifest ./target/temp3.rtm
 # FIXME: temporarily commenting below call since it causes following panic.
-#  thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', src/resim/mod.rs:395:26
+#  thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', src/resim/vm:395:26
 #  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 echo "FIXME: reenable this call: " $resim run ./target/temp3.rtm
 

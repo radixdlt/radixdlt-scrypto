@@ -1,4 +1,3 @@
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
@@ -11,6 +10,7 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
+use radix_engine::vm::ScryptoInterpreter;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{NotarizedTransaction, TransactionHeader};

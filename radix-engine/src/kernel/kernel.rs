@@ -2,7 +2,6 @@ use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
-use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelModuleApi, KernelNodeApi,
     KernelSubstateApi, KernelWasmApi, LockInfo,
@@ -19,7 +18,6 @@ use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
@@ -30,6 +28,8 @@ use sbor::rust::mem;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelInvokeUpstreamApi};
 use crate::system::invoke::SystemInvoke;
+use crate::vm::ScryptoInterpreter;
+use crate::wasm::WasmEngine;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames

@@ -1,6 +1,5 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
-    use radix_engine::kernel::interpreters::ScryptoInterpreter;
     use radix_engine::system::bootstrap::bootstrap;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
@@ -19,6 +18,7 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
+    use radix_engine::vm::ScryptoInterpreter;
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]

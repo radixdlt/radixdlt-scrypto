@@ -1,4 +1,3 @@
-use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::wasm::WasmEngine;
@@ -9,6 +8,7 @@ use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
+use crate::vm::ScryptoInterpreter;
 
 #[derive(Debug)]
 pub struct PreviewResult {

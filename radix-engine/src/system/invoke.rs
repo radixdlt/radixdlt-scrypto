@@ -21,7 +21,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use resources_tracker_macro::trace_resources;
-use crate::kernel::interpreters::ScryptoRuntime;
+use crate::vm::ScryptoRuntime;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,

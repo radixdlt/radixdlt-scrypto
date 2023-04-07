@@ -66,7 +66,7 @@ mod tests {
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
             assert_sync::<
-                crate::kernel::interpreters::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>,
+                crate::vm::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>,
             >();
         }
     };

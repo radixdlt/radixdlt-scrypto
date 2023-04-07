@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
-use radix_engine::kernel::interpreters::*;
+use radix_engine::vm::*;
 use radix_engine::system::bootstrap::{
     create_genesis, GenesisData, GenesisResource, GenesisValidator,
 };

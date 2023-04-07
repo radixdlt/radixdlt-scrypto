@@ -7,7 +7,6 @@ use std::process::Command;
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
@@ -21,6 +20,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
+use radix_engine::vm::ScryptoInterpreter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;

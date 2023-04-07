@@ -1,7 +1,6 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::Track;
@@ -22,6 +21,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_stores::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
+use crate::vm::ScryptoInterpreter;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
