@@ -20,7 +20,6 @@ pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
 pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
     vanity_address!(EntityType::NonFungibleResource, 8);
 
-/// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);
 pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 1);
 pub const IDENTITY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 2);
@@ -32,6 +31,7 @@ pub const TRANSACTION_PROCESSOR_PACKAGE: PackageAddress = vanity_address!(Entity
 pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 10);
 pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 12);
+pub const GENESIS_HELPER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 13);
 
 // There should be no need of this function, but many of our configurations are depending on it.
 // Having it in a single place to avoid out-of-sync.
@@ -47,7 +47,8 @@ pub fn is_native_package(address: PackageAddress) -> bool {
         | TRANSACTION_PROCESSOR_PACKAGE
         | METADATA_PACKAGE
         | ROYALTY_PACKAGE
-        | ACCESS_RULES_PACKAGE => true,
+        | ACCESS_RULES_PACKAGE
+        | GENESIS_HELPER_PACKAGE => true,
         _ => false,
     }
 }

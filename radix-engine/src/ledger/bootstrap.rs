@@ -21,7 +21,6 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -38,9 +37,79 @@ pub struct GenesisReceipt {
     pub faucet_component: ComponentAddress,
 }
 
+type AccountIdx = usize;
+type ResourceIdx = usize;
+type ValidatorIdx = usize;
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct GenesisData {
+    pub validators: Vec<GenesisValidator>,
+    pub resources: Vec<GenesisResource>,
+    pub accounts: Vec<ComponentAddress>,
+    pub resource_balances: BTreeMap<ResourceIdx, Vec<(AccountIdx, Decimal)>>,
+    pub xrd_balances: BTreeMap<AccountIdx, Decimal>,
+    pub stakes: BTreeMap<ValidatorIdx, Vec<(AccountIdx, Decimal)>>,
+}
+
+impl GenesisData {
+    pub fn empty() -> GenesisData {
+        GenesisData {
+            validators: vec![],
+            resources: vec![],
+            accounts: vec![],
+            resource_balances: BTreeMap::new(),
+            xrd_balances: BTreeMap::new(),
+            stakes: BTreeMap::new(),
+        }
+    }
+
+    pub fn single_validator_and_staker(
+        validator_key: EcdsaSecp256k1PublicKey,
+        stake_amount: Decimal,
+        account_address: ComponentAddress,
+    ) -> GenesisData {
+        let mut stakes = BTreeMap::new();
+        stakes.insert(0, vec![(0, stake_amount)]);
+        GenesisData {
+            validators: vec![validator_key.into()],
+            resources: vec![],
+            accounts: vec![account_address],
+            resource_balances: BTreeMap::new(),
+            xrd_balances: BTreeMap::new(),
+            stakes,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct GenesisValidator {
+    pub key: EcdsaSecp256k1PublicKey,
+    pub component_address: ComponentAddress,
+}
+
+impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
+    fn from(key: EcdsaSecp256k1PublicKey) -> Self {
+        let component_address = ComponentAddress::virtual_account_from_public_key(&key);
+        GenesisValidator {
+            key,
+            component_address,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct GenesisResource {
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub url: String,
+    pub icon_url: String,
+    pub address_bytes: [u8; 26],
+    pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
+}
+
 pub fn create_genesis(
-    validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
-    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    genesis_data: GenesisData,
     initial_epoch: u64,
     max_validators: u32,
     rounds_per_epoch: u64,
@@ -524,6 +593,30 @@ pub fn create_genesis(
         });
     }
 
+    // Genesis helper package
+    {
+        // TODO: Add authorization rules around preventing anyone else from
+        // TODO: calling genesis helper code
+        let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
+        let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
+        let package_address = GENESIS_HELPER_PACKAGE.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(GENESIS_HELPER_PACKAGE.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedInput {
+                package_address: Some(package_address),
+                code: genesis_helper_code,
+                schema: scrypto_decode(&genesis_helper_abi).unwrap(),
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRulesConfig::new()
+                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+            }),
+        });
+    }
+
     // Clock Component
     {
         let component_address = CLOCK.to_array_without_entity_id();
@@ -536,68 +629,40 @@ pub fn create_genesis(
         });
     }
 
+    // Call the GenesisHelper to init the epoch manager/validators/resources
     {
-        let mut validators = BTreeMap::new();
-        for (key, (amount, stake_account_address)) in validator_set_and_stake_owners {
-            let initial_stake = id_allocator.new_bucket_id().unwrap();
-            instructions.push(
-                Instruction::TakeFromWorktopByAmount {
-                    resource_address: RADIX_TOKEN,
-                    amount,
-                }
-                .into(),
-            );
-            let validator_account_address = ComponentAddress::virtual_account_from_public_key(&key);
-            validators.insert(
-                key,
-                ManifestValidatorInit {
-                    validator_account_address,
-                    initial_stake,
-                    stake_account_address,
-                },
-            );
+        for resource in genesis_data.resources.iter() {
+            let address_bytes = resource.address_bytes;
+            let resource_address = ResourceAddress::Fungible(address_bytes.clone());
+            pre_allocated_ids.insert(RENodeId::GlobalObject(Address::Resource(resource_address)));
         }
-
-        let component_address = EPOCH_MANAGER.to_array_without_entity_id();
+        let epoch_manager_component_address = EPOCH_MANAGER.to_array_without_entity_id();
         let olympia_validator_token_address = VALIDATOR_OWNER_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
         pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+        pre_allocated_ids.insert(RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
+
+        let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
+        instructions.push(
+            Instruction::TakeFromWorktop {
+                resource_address: RADIX_TOKEN,
+            }
+            .into(),
+        );
         instructions.push(Instruction::CallFunction {
-            package_address: EPOCH_MANAGER_PACKAGE,
-            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            package_address: GENESIS_HELPER_PACKAGE,
+            blueprint_name: "GenesisHelper".to_string(),
+            function_name: "init".to_string(),
             args: manifest_args!(
+                genesis_data,
+                whole_lotta_xrd,
                 olympia_validator_token_address,
-                component_address,
-                validators,
+                epoch_manager_component_address,
                 initial_epoch,
                 max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
         });
-    }
-
-    for (public_key, amount) in account_xrd_allocations.into_iter() {
-        let bucket_id = id_allocator.new_bucket_id().unwrap();
-        instructions.push(
-            Instruction::TakeFromWorktopByAmount {
-                resource_address: RADIX_TOKEN,
-                amount,
-            }
-            .into(),
-        );
-        let component_address = ComponentAddress::virtual_account_from_public_key(
-            &PublicKey::EcdsaSecp256k1(public_key),
-        );
-        instructions.push(
-            Instruction::CallMethod {
-                component_address: component_address,
-                method_name: "deposit".to_string(),
-                args: manifest_args!(bucket_id),
-            }
-            .into(),
-        );
     }
 
     // Faucet
@@ -616,7 +681,7 @@ pub fn create_genesis(
             function_name: "new".to_string(),
             args: manifest_args!(bucket),
         });
-    };
+    }
 
     SystemTransaction {
         instructions,
@@ -645,11 +710,10 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
-    bootstrap_with_validator_set(
+    bootstrap_with_genesis_data(
         substate_store,
         scrypto_interpreter,
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         1u64,
         100u32,
         1u64,
@@ -657,11 +721,10 @@ where
     )
 }
 
-pub fn bootstrap_with_validator_set<S, W>(
+pub fn bootstrap_with_genesis_data<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
-    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    genesis_data: GenesisData,
     initial_epoch: u64,
     max_validators: u32,
     rounds_per_epoch: u64,
@@ -680,8 +743,7 @@ where
         .is_none()
     {
         let genesis_transaction = create_genesis(
-            validator_set_and_stake_owners,
-            account_xrd_allocations,
+            genesis_data,
             initial_epoch,
             max_validators,
             rounds_per_epoch,
@@ -708,38 +770,45 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::system::node_substates::PersistedSubstate;
+    use crate::transaction::BalanceChange;
+    use crate::types::ResourceAddress;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
+    use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
     #[test]
     fn test_bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let mut initial_validator_set = BTreeMap::new();
-        let public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-        let account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
-        initial_validator_set.insert(
-            EcdsaSecp256k1PublicKey([0; 33]),
-            (Decimal::one(), account_address),
+        let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
+        let validator_address = ComponentAddress::virtual_account_from_public_key(&validator_key);
+        let staker_address = ComponentAddress::virtual_account_from_public_key(
+            &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
         );
-        let genesis_transaction = create_genesis(
-            initial_validator_set,
-            BTreeMap::new(),
-            1u64,
-            100u32,
-            1u64,
-            1u64,
-        );
+
+        let mut stakes = BTreeMap::new();
+        stakes.insert(0, vec![(0, Decimal::one())]);
+        let genesis_data = GenesisData {
+            validators: vec![GenesisValidator {
+                key: validator_key,
+                component_address: validator_address,
+            }],
+            resources: vec![],
+            accounts: vec![staker_address],
+            resource_balances: BTreeMap::new(),
+            xrd_balances: BTreeMap::new(),
+            stakes,
+        };
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(true),
+            &ExecutionConfig::genesis(),
             &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
-        #[cfg(not(feature = "alloc"))]
-        println!("{:?}", transaction_receipt);
 
         transaction_receipt
             .expect_commit(true)
@@ -763,16 +832,17 @@ mod tests {
             &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
         );
         let allocation_amount = dec!("100");
-        let mut account_xrd_allocations = BTreeMap::new();
-        account_xrd_allocations.insert(account_public_key, allocation_amount);
-        let genesis_transaction = create_genesis(
-            BTreeMap::new(),
-            account_xrd_allocations,
-            1u64,
-            100u32,
-            1u64,
-            1u64,
-        );
+        let mut xrd_balances = BTreeMap::new();
+        xrd_balances.insert(0, allocation_amount);
+        let genesis_data = GenesisData {
+            validators: vec![],
+            resources: vec![],
+            accounts: vec![account_component_address],
+            resource_balances: BTreeMap::new(),
+            xrd_balances,
+            stakes: BTreeMap::new(),
+        };
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -791,19 +861,197 @@ mod tests {
             .iter()
             .flat_map(|(_, rc)| rc)
             .any(|rc| rc.amount == allocation_amount
-                && rc.node_id == RENodeId::GlobalObject(account_component_address.into())));
+                && rc.node_id == RENodeId::GlobalObject(account_component_address.into())
+                && rc.resource_address == RADIX_TOKEN));
     }
 
     #[test]
-    fn test_encode_and_decode_validator_init() {
-        let t = ManifestValidatorInit {
-            validator_account_address: ComponentAddress::AccessController([0u8; 26]),
-            initial_stake: ManifestBucket(1),
-            stake_account_address: ComponentAddress::AccessController([0u8; 26]),
+    fn test_genesis_resource_with_initial_allocation() {
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let tokenholder = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
+        );
+        let allocation_amount = dec!("105");
+        let address_bytes = hash(vec![1, 2, 3]).lower_26_bytes();
+        let resource_address = ResourceAddress::Fungible(address_bytes);
+
+        let owner = ComponentAddress::virtual_account_from_public_key(
+            &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
+        );
+
+        let genesis_resource = GenesisResource {
+            symbol: "TST".to_string(),
+            name: "Test".to_string(),
+            description: "A test resource".to_string(),
+            url: "test".to_string(),
+            icon_url: "test".to_string(),
+            address_bytes,
+            owner_with_mint_and_burn_rights: Some(1),
+        };
+        let mut resource_balances = BTreeMap::new();
+        resource_balances.insert(0, vec![(0, allocation_amount)]);
+
+        let genesis_data = GenesisData {
+            resources: vec![genesis_resource],
+            validators: vec![],
+            accounts: vec![tokenholder.clone(), owner],
+            resource_balances,
+            xrd_balances: BTreeMap::new(),
+            stakes: BTreeMap::new(),
         };
 
-        let bytes = manifest_encode(&t).unwrap();
-        let decoded: ManifestValidatorInit = manifest_decode(&bytes).unwrap();
-        assert_eq!(decoded, t);
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 10u32, 1u64, 1u64);
+
+        let transaction_receipt = execute_transaction(
+            &substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = transaction_receipt.expect_commit(true);
+        commit_result.state_updates.commit(&mut substate_store);
+
+        let persisted_resource_manager_substate: PersistedSubstate = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::GlobalObject(Address::Resource(resource_address)),
+                NodeModuleId::SELF,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            ))
+            .map(|o| o.substate)
+            .unwrap();
+
+        if let PersistedSubstate::ResourceManager(resource_manager_substate) =
+            persisted_resource_manager_substate
+        {
+            assert_eq!(resource_manager_substate.total_supply, dec!("105"));
+        } else {
+            panic!("Failed to get a resource manager substate")
+        }
+
+        let persisted_symbol_metadata_entry: PersistedSubstate = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::GlobalObject(Address::Resource(resource_address)),
+                NodeModuleId::Metadata,
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode("symbol").unwrap(),
+                )),
+            ))
+            .map(|o| o.substate)
+            .unwrap();
+
+        if let PersistedSubstate::KeyValueStoreEntry(Some(value)) = persisted_symbol_metadata_entry
+        {
+            let entry: MetadataEntry = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+            if let MetadataEntry::Value(MetadataValue::String(symbol)) = entry {
+                assert_eq!(symbol, "TST");
+            } else {
+                panic!("Resource symbol was not a string");
+            }
+        } else {
+            panic!("Failed to get resource symbol metadata")
+        }
+
+        assert!(transaction_receipt
+            .execution_trace
+            .resource_changes
+            .iter()
+            .flat_map(|(_, rc)| rc)
+            .any(|rc| rc.amount == allocation_amount
+                && rc.node_id == RENodeId::GlobalObject(tokenholder.into())
+                && rc.resource_address == resource_address));
+
+        assert!(transaction_receipt
+            .execution_trace
+            .resource_changes
+            .iter()
+            .flat_map(|(_, rc)| rc)
+            .any(|rc|
+                // Not an ideal condition, but assuming this is the owner badge
+                rc.amount == dec!("1")
+                && rc.node_id == RENodeId::GlobalObject(owner.into())));
+    }
+
+    #[test]
+    fn test_genesis_stake_allocation() {
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let mut substate_store = TypedInMemorySubstateStore::new();
+
+        // There are two genesis validators
+        // - one with two stakers (0 and 1)
+        // - one with one staker (just 1)
+        let validator_0: GenesisValidator = EcdsaSecp256k1PrivateKey::from_u64(10)
+            .unwrap()
+            .public_key()
+            .into();
+        let validator_1: GenesisValidator = EcdsaSecp256k1PrivateKey::from_u64(11)
+            .unwrap()
+            .public_key()
+            .into();
+
+        let staker_0 = ComponentAddress::virtual_account_from_public_key(
+            &EcdsaSecp256k1PrivateKey::from_u64(4).unwrap().public_key(),
+        );
+
+        let staker_1 = ComponentAddress::virtual_account_from_public_key(
+            &EcdsaSecp256k1PrivateKey::from_u64(5).unwrap().public_key(),
+        );
+
+        let mut stakes = BTreeMap::new();
+        stakes.insert(0, vec![(0, dec!("10")), (1, dec!("50000"))]);
+        stakes.insert(1, vec![(1, dec!("1"))]);
+
+        let genesis_data = GenesisData {
+            resources: vec![],
+            validators: vec![validator_0, validator_1],
+            accounts: vec![staker_0.clone(), staker_1.clone()],
+            resource_balances: BTreeMap::new(),
+            xrd_balances: BTreeMap::new(),
+            stakes,
+        };
+
+        let genesis_transaction = create_genesis(genesis_data, 1u64, 10u32, 1u64, 1u64);
+
+        let transaction_receipt = execute_transaction(
+            &substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = transaction_receipt.expect_commit(true);
+        commit_result.state_updates.commit(&mut substate_store);
+
+        // Staker 0 should have one liquidity balance entry
+        {
+            let balances = commit_result
+                .state_update_summary
+                .balance_changes
+                .get(&Address::Component(staker_0))
+                .unwrap();
+            assert!(balances.len() == 1);
+            assert!(balances
+                .values()
+                .any(|bal| *bal == BalanceChange::Fungible(dec!("10"))));
+        }
+
+        // Staker 1 should have two liquidity balance entries
+        {
+            let balances = commit_result
+                .state_update_summary
+                .balance_changes
+                .get(&Address::Component(staker_1))
+                .unwrap();
+            assert!(balances.len() == 2);
+            assert!(balances
+                .values()
+                .any(|bal| *bal == BalanceChange::Fungible(dec!("1"))));
+            assert!(balances
+                .values()
+                .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
+        }
     }
 }

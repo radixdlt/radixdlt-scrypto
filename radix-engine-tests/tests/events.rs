@@ -5,7 +5,7 @@ use radix_engine::blueprints::epoch_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::ledger::create_genesis;
+use radix_engine::ledger::{create_genesis, GenesisData};
 use radix_engine::system::kernel_modules::events::EventError;
 use radix_engine::system::node_modules::access_rules::SetRuleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
@@ -616,8 +616,7 @@ fn epoch_manager_round_update_emits_correct_event() {
     let num_unstake_epochs = 1u64;
 
     let genesis = create_genesis(
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         1u64,
         10u32,
         rounds_per_epoch,
@@ -664,8 +663,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         1u64,
         10u32,
         rounds_per_epoch,
@@ -720,8 +718,7 @@ fn validator_registration_emits_correct_event() {
         .unwrap()
         .public_key();
     let genesis = create_genesis(
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -777,8 +774,7 @@ fn validator_unregistration_emits_correct_event() {
         .unwrap()
         .public_key();
     let genesis = create_genesis(
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -845,8 +841,7 @@ fn validator_staking_emits_correct_event() {
         .unwrap()
         .public_key();
     let genesis = create_genesis(
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -977,11 +972,12 @@ fn validator_unstake_emits_correct_events() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let mut validator_set_and_stake_owners = BTreeMap::new();
-    validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
-        validator_set_and_stake_owners,
-        BTreeMap::new(),
+        GenesisData::single_validator_and_staker(
+            validator_pub_key,
+            Decimal::from(10),
+            account_with_lp,
+        ),
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -1137,11 +1133,12 @@ fn validator_claim_xrd_emits_correct_events() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let mut validator_set_and_stake_owners = BTreeMap::new();
-    validator_set_and_stake_owners.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
-        validator_set_and_stake_owners,
-        BTreeMap::new(),
+        GenesisData::single_validator_and_staker(
+            validator_pub_key,
+            Decimal::from(10),
+            account_with_lp,
+        ),
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -1278,8 +1275,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
-        BTreeMap::new(),
-        BTreeMap::new(),
+        GenesisData::empty(),
         initial_epoch,
         max_validators,
         rounds_per_epoch,
