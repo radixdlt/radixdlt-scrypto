@@ -63,18 +63,18 @@ impl<'g, 's, W> Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    pub fn new(
+    pub fn initialize(
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut KernelModuleMixer,
-    ) -> Self {
+    ) -> Result<Self, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
-        Self {
+        let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
             track,
@@ -83,13 +83,13 @@ where
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
             module,
-        }
-    }
+        };
 
-    pub fn initialize(&mut self) -> Result<(), RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
+        kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
             KernelModuleMixer::on_init(api)
-        })
+        })?;
+
+        Ok(kernel)
     }
 
     // TODO: Josh holds some concern about this interface; will look into this again.

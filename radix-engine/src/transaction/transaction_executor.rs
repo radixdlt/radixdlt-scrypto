@@ -198,13 +198,12 @@ where
             execution_config,
         );
 
-        let mut kernel = Kernel::new(
+        let mut kernel = Kernel::initialize(
             &mut id_allocator,
             &mut track,
             self.scrypto_interpreter,
             &mut modules,
-        );
-        kernel.initialize().expect("Failed to initialize kernel");
+        ).expect("Failed to initialize kernel");
 
         // Execute
         let invoke_result =
