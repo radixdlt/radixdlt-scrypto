@@ -21,9 +21,6 @@ use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
@@ -95,13 +92,11 @@ fn validate_output(
 }
 
 impl ExecutableInvocation for MethodInvocation {
-    type Exec = ScryptoExecutor;
-
     #[trace_resources(log={format!("{:?}",self.identifier.1)}, log={&self.identifier.2}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi + KernelInternalApi>(
         self,
         api: &mut D,
-    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
+    ) -> Result<Box<KernelInvocation>, RuntimeError> {
         let resolved = KernelInvocation {
             resolved_actor: Actor::method(self.global_address, self.identifier.clone(), self.blueprint.clone()),
             executor: ScryptoExecutor {
@@ -123,13 +118,11 @@ impl ExecutableInvocation for MethodInvocation {
 }
 
 impl ExecutableInvocation for FunctionInvocation {
-    type Exec = ScryptoExecutor;
-
     #[trace_resources(log={&self.identifier.0}, log={&self.identifier.1}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
+    ) -> Result<Box<KernelInvocation>, RuntimeError> {
         let resolved = KernelInvocation {
             resolved_actor: Actor::function(self.identifier.clone()),
             args: IndexedScryptoValue::from_vec(self.args).map_err(|e| {
@@ -151,12 +144,10 @@ impl ExecutableInvocation for FunctionInvocation {
 }
 
 impl ExecutableInvocation for VirtualLazyLoadInvocation {
-    type Exec = ScryptoExecutor;
-
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
+    ) -> Result<Box<KernelInvocation>, RuntimeError> {
         let resolved = KernelInvocation {
             resolved_actor: Actor::virtual_lazy_load(self.blueprint.clone(), self.virtual_func_id),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),

@@ -170,9 +170,9 @@ where
         Ok(())
     }
 
-    fn run<X: Executor>(
+    fn run(
         &mut self,
-        resolved: Box<KernelInvocation<X>>,
+        resolved: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
@@ -279,9 +279,9 @@ where
         }
     }
 
-    fn invoke_internal<X: Executor>(
+    fn invoke_internal(
         &mut self,
-        resolved: Box<KernelInvocation<X>>,
+        resolved: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
