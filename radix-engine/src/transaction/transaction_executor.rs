@@ -251,13 +251,12 @@ where
                     distribute_fees(&mut track, fee_reserve, is_success);
 
                 // Finalize track
-                let (state_updates, state_dependencies) = track.finalize();
+                let state_updates = track.finalize();
                 let state_update_summary =
                     StateUpdateSummary::new(self.substate_db, &state_updates);
 
                 TransactionResult::Commit(CommitResult {
                     state_updates,
-                    state_dependencies,
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),

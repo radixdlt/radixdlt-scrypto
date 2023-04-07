@@ -11,7 +11,7 @@ use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{StateDependencies, StateUpdates};
+use radix_engine_stores::interface::StateUpdates;
 use utils::ContextualDisplay;
 
 #[cfg(feature = "serde")]
@@ -62,7 +62,6 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub state_updates: StateUpdates,
-    pub state_dependencies: StateDependencies,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,

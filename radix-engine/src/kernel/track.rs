@@ -2,7 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
-    AcquireLockError, StateDependencies, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
+    AcquireLockError, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -158,7 +158,7 @@ impl<'s> Track<'s> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(self) -> (StateUpdates, StateDependencies) {
+    pub fn finalize(self) -> StateUpdates {
         // TODO:
         // - Remove version from state updates
         // - Split read,
@@ -180,10 +180,7 @@ impl<'s> Track<'s> {
             }
         }
 
-        (
-            StateUpdates { substate_changes },
-            StateDependencies::default(),
-        )
+        StateUpdates { substate_changes }
     }
 }
 
