@@ -1195,7 +1195,7 @@ impl TestRunner {
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
-        let modules = KernelModuleMixer::standard(
+        let mut modules = KernelModuleMixer::standard(
             transaction_hash,
             AuthZoneParams {
                 initial_proofs: btreeset![],
@@ -1214,7 +1214,7 @@ impl TestRunner {
         };
 
         // Create kernel
-        let mut kernel = Kernel::new(&mut id_allocator, &mut track, &scrypto_interpreter, modules);
+        let mut kernel = Kernel::new(&mut id_allocator, &mut track, &scrypto_interpreter, &mut modules);
 
         // Initialize kernel
         kernel.initialize().expect("Failed to initialize kernel");

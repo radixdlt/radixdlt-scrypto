@@ -188,7 +188,7 @@ where
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let modules = KernelModuleMixer::standard(
+        let mut modules = KernelModuleMixer::standard(
             transaction_hash.clone(),
             executable.auth_zone_params().clone(),
             fee_reserve,
@@ -197,11 +197,12 @@ where
             executable.auth_zone_params().initial_proofs.len(),
             execution_config,
         );
+
         let mut kernel = Kernel::new(
             &mut id_allocator,
             &mut track,
             self.scrypto_interpreter,
-            modules,
+            &mut modules,
         );
         kernel.initialize().expect("Failed to initialize kernel");
 
@@ -226,7 +227,7 @@ where
                 .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
 
         // Teardown
-        let (modules, invoke_result) = kernel.teardown(invoke_result);
+        let invoke_result = kernel.teardown(invoke_result);
         let mut fee_reserve = modules.costing.fee_reserve();
         let mut application_events = modules.events.events();
         let application_logs = modules.logger.logs();

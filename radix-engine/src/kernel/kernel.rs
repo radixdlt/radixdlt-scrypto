@@ -56,7 +56,7 @@ pub struct Kernel<
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g ScryptoInterpreter<W>,
     /// Kernel module mixer
-    module: KernelModuleMixer,
+    module: &'g mut KernelModuleMixer,
 }
 
 impl<'g, 's, W> Kernel<'g, 's, W>
@@ -67,7 +67,7 @@ where
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        module: KernelModuleMixer,
+        module: &'g mut KernelModuleMixer,
     ) -> Self {
         #[cfg(feature = "resource_tracker")]
         radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -96,7 +96,7 @@ where
     pub fn teardown<T>(
         mut self,
         previous_result: Result<T, RuntimeError>,
-    ) -> (KernelModuleMixer, Result<T, RuntimeError>) {
+    ) -> Result<T, RuntimeError> {
         let new_result = match previous_result {
             Ok(output) => {
                 // Sanity check call frame
@@ -114,7 +114,7 @@ where
             Err(error) => Err(error),
         };
 
-        (self.module, new_result)
+        new_result
     }
 
     fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
