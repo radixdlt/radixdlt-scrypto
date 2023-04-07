@@ -1,5 +1,6 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::types::*;
 use crate::{
     errors::RuntimeError,
@@ -8,11 +9,8 @@ use crate::{
 };
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::types::{
-    EntityType, LockHandle, NodeId, SubstateKey, SysModuleId,
-};
+use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey, SysModuleId};
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::kernel_api::KernelInvocation;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}

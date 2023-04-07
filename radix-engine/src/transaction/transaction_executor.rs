@@ -7,6 +7,7 @@ use crate::kernel::track::Track;
 use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;
 use crate::types::*;
+use crate::vm::ScryptoInterpreter;
 use crate::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::api::ClientObjectApi;
@@ -21,7 +22,6 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_stores::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
-use crate::vm::ScryptoInterpreter;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,

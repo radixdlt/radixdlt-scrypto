@@ -3,6 +3,8 @@ use super::heap::HeapNode;
 use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::system::invoke::SystemInvocation;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node_init::NodeInit;
@@ -10,8 +12,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::system::invoke::SystemInvocation;
 
 pub struct LockInfo {
     pub node_id: NodeId,
@@ -76,13 +76,9 @@ pub trait KernelWasmApi<W: WasmEngine> {
     ) -> Result<W::WasmInstance, RuntimeError>;
 }
 
-
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelNodeApi
-    + KernelSubstateApi
-    + KernelWasmApi<W>
-    + KernelInvokeDownstreamApi<E>
+    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeDownstreamApi<E>
 {
 }
 
@@ -137,19 +133,21 @@ impl KernelInvocation {
             Actor::Method { node_id, .. } => {
                 node_refs_to_copy.insert(node_id);
             }
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-            }
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {}
         }
 
         CallFrameUpdate {
             nodes_to_move,
-            node_refs_to_copy
+            node_refs_to_copy,
         }
     }
 }
 
 pub trait KernelInvokeDownstreamApi<E> {
-    fn kernel_invoke_downstream(&mut self, invocation: Box<KernelInvocation>) -> Result<IndexedScryptoValue, E>;
+    fn kernel_invoke_downstream(
+        &mut self,
+        invocation: Box<KernelInvocation>,
+    ) -> Result<IndexedScryptoValue, E>;
 }
 
 pub trait KernelInvokeUpstreamApi {
@@ -158,7 +156,11 @@ pub trait KernelInvokeUpstreamApi {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
-            W: WasmEngine;
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + KernelWasmApi<W>
+            + KernelInternalApi
+            + ClientApi<RuntimeError>,
+        W: WasmEngine;
 }

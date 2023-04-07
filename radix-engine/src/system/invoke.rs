@@ -6,22 +6,21 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{SystemInvokeError, RuntimeError};
-use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::{CallFrameUpdate, RefType};
-use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelInvokeUpstreamApi, KernelWasmApi};
+use crate::errors::{RuntimeError, SystemInvokeError};
+use crate::kernel::kernel_api::{
+    KernelInternalApi, KernelInvokeUpstreamApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
+};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
+use crate::vm::ScryptoRuntime;
 use crate::wasm::{WasmEngine, WasmInstance, WasmRuntime};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use resources_tracker_macro::trace_resources;
-use crate::vm::ScryptoRuntime;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,
@@ -48,12 +47,12 @@ fn validate_input(
         &blueprint_schema.schema,
         function_schema.input,
     )
-        .map_err(|err| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputSchemaNotMatch(
-                fn_ident.to_string(),
-                err.error_message(&blueprint_schema.schema),
-            ))
-        })?;
+    .map_err(|err| {
+        RuntimeError::SystemInvokeError(SystemInvokeError::InputSchemaNotMatch(
+            fn_ident.to_string(),
+            err.error_message(&blueprint_schema.schema),
+        ))
+    })?;
 
     Ok(function_schema.export_name.clone())
 }
@@ -63,9 +62,8 @@ fn validate_output(
     fn_ident: &str,
     output: Vec<u8>,
 ) -> Result<IndexedScryptoValue, RuntimeError> {
-    let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
-        RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e))
-    })?;
+    let value = IndexedScryptoValue::from_vec(output)
+        .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e)))?;
 
     let function_schema = blueprint_schema
         .functions
@@ -77,12 +75,12 @@ fn validate_output(
         &blueprint_schema.schema,
         function_schema.output,
     )
-        .map_err(|err| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::OutputSchemaNotMatch(
-                fn_ident.to_string(),
-                err.error_message(&blueprint_schema.schema),
-            ))
-        })?;
+    .map_err(|err| {
+        RuntimeError::SystemInvokeError(SystemInvokeError::OutputSchemaNotMatch(
+            fn_ident.to_string(),
+            err.error_message(&blueprint_schema.schema),
+        ))
+    })?;
 
     Ok(value)
 }
@@ -103,9 +101,13 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInternalApi + ClientApi<RuntimeError>,
-            W: WasmEngine,
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + KernelWasmApi<W>
+            + KernelInternalApi
+            + ClientApi<RuntimeError>,
+        W: WasmEngine,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
@@ -250,7 +252,7 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                         args,
                         api,
                     )?
-                        .into()
+                    .into()
                 }
                 PackageCodeTypeSubstate::Wasm => {
                     let mut wasm_instance = {
@@ -260,8 +262,10 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                             &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;
-                        let wasm_instance = api
-                            .kernel_create_wasm_instance(invocation.blueprint.package_address, handle)?;
+                        let wasm_instance = api.kernel_create_wasm_instance(
+                            invocation.blueprint.package_address,
+                            handle,
+                        )?;
                         api.kernel_drop_lock(handle)?;
 
                         wasm_instance
@@ -302,9 +306,7 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema
                     let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(
-                            e,
-                        ))
+                        RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e))
                     })?;
                     value
                 }
@@ -327,8 +329,8 @@ impl NativeVm {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let receiver = receiver.as_ref().map(|x| &x.0);
 

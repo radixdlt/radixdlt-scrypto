@@ -1,6 +1,6 @@
 use super::events::*;
 use super::state_machine::*;
-use crate::errors::{ApplicationError, SystemInvokeError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, SystemInvokeError};
 use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -412,9 +412,9 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerCreateGlobalInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let input: AccessControllerCreateGlobalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         // Creating a new vault and putting in it the controlled asset
         let vault = {
@@ -461,9 +461,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: AccessControllerCreateProofInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         let proof = transition(receiver, api, AccessControllerCreateProofStateMachineInput)?;
 
@@ -478,10 +478,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccessControllerInitiateRecoveryAsPrimaryInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerInitiateRecoveryAsPrimaryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -514,10 +513,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccessControllerInitiateRecoveryAsRecoveryInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerInitiateRecoveryAsRecoveryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -550,10 +548,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -592,10 +589,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?;
+        let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -634,9 +630,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccessControllerTimedConfirmRecoveryInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let input: AccessControllerTimedConfirmRecoveryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -676,10 +672,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?;
+        let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -705,10 +700,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?;
+        let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -734,9 +728,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerLockPrimaryRoleInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: AccessControllerLockPrimaryRoleInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -756,9 +750,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: AccessControllerUnlockPrimaryRoleInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: AccessControllerUnlockPrimaryRoleInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -778,9 +772,9 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccessControllerStopTimedRecoveryInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let input: AccessControllerStopTimedRecoveryInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,

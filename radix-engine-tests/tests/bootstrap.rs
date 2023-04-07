@@ -1,5 +1,4 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
-use radix_engine::vm::*;
 use radix_engine::system::bootstrap::{
     create_genesis, GenesisData, GenesisResource, GenesisValidator,
 };
@@ -7,6 +6,7 @@ use radix_engine::transaction::{
     execute_transaction, BalanceChange, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
+use radix_engine::vm::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};

@@ -14,6 +14,7 @@ use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
+use crate::vm::ScryptoInterpreter;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
@@ -25,7 +26,6 @@ use radix_engine_interface::rule;
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
-use crate::vm::ScryptoInterpreter;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";

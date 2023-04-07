@@ -1,4 +1,4 @@
-use crate::errors::{ApplicationError, SystemInvokeError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, SystemInvokeError};
 use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
@@ -202,9 +202,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ProofCloneInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: ProofCloneInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
@@ -262,9 +262,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: ProofGetAmountInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
@@ -299,9 +299,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: ProofGetNonFungibleLocalIdsInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         if proof_info.resource_type.is_fungible() {
@@ -329,9 +329,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let _input: ProofGetResourceAddressInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         Ok(IndexedScryptoValue::from_typed(
@@ -346,9 +346,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ProofDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let input: ProofDropInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
         let proof = input.proof;
 
         // FIXME: check type before schema check is ready! applicable to all functions!

@@ -1,30 +1,5 @@
-use super::ScryptoRuntime;
-use crate::blueprints::access_controller::AccessControllerNativePackage;
-use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
-use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
-use crate::blueprints::resource::ResourceManagerNativePackage;
-use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{SystemInvokeError, RuntimeError};
-use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::{CallFrameUpdate, RefType};
-use crate::kernel::kernel_api::{
-    KernelInternalApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-};
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
-use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::schema::BlueprintSchema;
-use resources_tracker_macro::trace_resources;
+use crate::wasm::*;
 
 pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_engine: W,
@@ -65,9 +40,7 @@ mod tests {
             // This test ensures the requirement for this cache to be Sync isn't broken
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
-            assert_sync::<
-                crate::vm::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>,
-            >();
+            assert_sync::<crate::vm::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>>();
         }
     };
 }

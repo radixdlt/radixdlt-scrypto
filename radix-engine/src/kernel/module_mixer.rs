@@ -2,6 +2,7 @@ use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::AuthModule;
 use crate::system::kernel_modules::costing::CostingModule;
@@ -26,7 +27,6 @@ use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
-use crate::kernel::kernel_api::KernelInvocation;
 
 bitflags! {
     pub struct EnabledModules: u32 {

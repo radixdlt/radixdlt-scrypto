@@ -1,4 +1,5 @@
 use crate::kernel::actor::Actor;
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::types::*;
 use crate::{
     errors::ModuleError,
@@ -6,7 +7,6 @@ use crate::{
     kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
-use crate::kernel::kernel_api::KernelInvocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {

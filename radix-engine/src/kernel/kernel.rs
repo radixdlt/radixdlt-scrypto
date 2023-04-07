@@ -13,11 +13,16 @@ use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::{KernelInvocation, KernelInvokeUpstreamApi};
+use crate::system::invoke::SystemInvoke;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
+use crate::vm::ScryptoInterpreter;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
@@ -25,11 +30,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelInvokeUpstreamApi};
-use crate::system::invoke::SystemInvoke;
-use crate::vm::ScryptoInterpreter;
-use crate::wasm::WasmEngine;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
@@ -221,8 +221,9 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
-            let output =
-                self.execute_in_mode(ExecutionMode::Client, |api| SystemInvoke::invoke_upstream(sys_invocation, args, api))?;
+            let output = self.execute_in_mode(ExecutionMode::Client, |api| {
+                SystemInvoke::invoke_upstream(sys_invocation, args, api)
+            })?;
 
             let mut update = CallFrameUpdate {
                 nodes_to_move: output.owned_node_ids().clone(),
@@ -517,18 +518,25 @@ where
     // TODO: Remove
     #[trace_resources]
     fn kernel_load_package_package_dependencies(&mut self) {
-        self.current_frame.add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     // TODO: Remove
     #[trace_resources]
     fn kernel_load_common(&mut self) {
-        self.current_frame.add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
-        self.current_frame.add_ref(CLOCK.as_node_id().clone(), RefType::Normal);
-        self.current_frame.add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame.add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame.add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame.add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(CLOCK.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     #[trace_resources]
@@ -901,11 +909,7 @@ where
         &mut self,
         invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        KernelModuleMixer::before_invoke(
-            self,
-            &invocation,
-            invocation.payload_size,
-        )?;
+        KernelModuleMixer::before_invoke(self, &invocation, invocation.payload_size)?;
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;

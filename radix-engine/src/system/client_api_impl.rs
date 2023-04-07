@@ -1,10 +1,12 @@
-use crate::errors::{SystemInvokeError, SystemError};
 use crate::errors::{
     ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
 };
+use crate::errors::{SystemError, SystemInvokeError};
 use crate::kernel::actor::{Actor, ExecutionMode};
+use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
+use crate::system::invoke::SystemInvocation;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node_init::ModuleInit;
@@ -28,8 +30,6 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::kernel::call_frame::RefType;
-use crate::system::invoke::SystemInvocation;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
@@ -402,14 +402,13 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-
         let (blueprint, global_address) = match module_id {
             SysModuleId::ObjectState => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self)?;
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo {
-                                                 blueprint, global, ..
-                                             }) => {
+                        blueprint, global, ..
+                    }) => {
                         let global_address = if global {
                             Some(GlobalAddress::new_unchecked(receiver.clone().into()))
                         } else {
@@ -478,7 +477,8 @@ where
             payload_size,
         };
 
-        self.kernel_invoke_downstream(Box::new(invocation)).map(|v| v.into())
+        self.kernel_invoke_downstream(Box::new(invocation))
+            .map(|v| v.into())
     }
 
     fn call_function(
@@ -507,7 +507,8 @@ where
             payload_size,
         };
 
-        self.kernel_invoke_downstream(Box::new(invocation)).map(|v| v.into())
+        self.kernel_invoke_downstream(Box::new(invocation))
+            .map(|v| v.into())
     }
 
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {

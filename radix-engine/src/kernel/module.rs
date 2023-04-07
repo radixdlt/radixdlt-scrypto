@@ -2,11 +2,11 @@ use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::kernel_api::KernelInvocation;
 
 pub trait KernelModule {
     //======================

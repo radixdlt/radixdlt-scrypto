@@ -1,5 +1,6 @@
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
+use crate::vm::ScryptoInterpreter;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_stores::interface::*;
@@ -8,7 +9,6 @@ use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
-use crate::vm::ScryptoInterpreter;
 
 #[derive(Debug)]
 pub struct PreviewResult {
