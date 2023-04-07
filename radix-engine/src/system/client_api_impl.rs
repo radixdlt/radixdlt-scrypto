@@ -30,7 +30,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::executor::KernelInvocation;
-use crate::kernel::interpreters::ScryptoExecutor;
+use crate::system::invoke::ScryptoExecutor;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;

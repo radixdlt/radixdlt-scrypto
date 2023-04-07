@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::identity::{
 };
 use crate::kernel::actor::Actor;
 use crate::kernel::executor::KernelInvocation;
-use crate::kernel::interpreters::ScryptoExecutor;
+use crate::system::invoke::ScryptoExecutor;
 
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;

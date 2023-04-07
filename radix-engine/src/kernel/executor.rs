@@ -8,7 +8,7 @@ use crate::kernel::kernel_api::KernelInternalApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
-use crate::kernel::interpreters::ScryptoExecutor;
+use crate::system::invoke::ScryptoExecutor;
 
 #[derive(Debug)]
 pub struct KernelInvocation {
