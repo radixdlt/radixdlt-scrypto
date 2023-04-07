@@ -176,7 +176,7 @@ where
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
-        let mut call_frame_update = resolved.get_update().clone();
+        let mut call_frame_update = resolved.get_update();
         let executor = resolved.executor;
         let actor = &resolved.resolved_actor;
         let args = &resolved.args;

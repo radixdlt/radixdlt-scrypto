@@ -102,15 +102,6 @@ impl ExecutableInvocation for MethodInvocation {
         self,
         api: &mut D,
     ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
-        let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-        let nodes_to_move = value.owned_node_ids().clone();
-        let mut node_refs_to_copy = value.references().clone();
-
-        // Pass the component ref
-        node_refs_to_copy.insert(self.identifier.0);
-
         let (blueprint, global_address) = match self.identifier.1 {
             SysModuleId::ObjectState => {
                 let type_info = TypeInfoBlueprint::get_type(&self.identifier.0, api)?;
@@ -170,22 +161,16 @@ impl ExecutableInvocation for MethodInvocation {
             _ => todo!(),
         };
 
-        let actor = Actor::method(global_address, self.identifier.clone(), blueprint.clone());
-
-        let executor = ScryptoExecutor {
-            blueprint,
-            ident: FnIdent::Application(self.identifier.2.clone()),
-            receiver: Some(self.identifier),
-        };
-
         let resolved = KernelInvocation {
-            resolved_actor: actor,
-            update: CallFrameUpdate {
-                nodes_to_move,
-                node_refs_to_copy,
+            resolved_actor: Actor::method(global_address, self.identifier.clone(), blueprint.clone()),
+            executor: ScryptoExecutor {
+                blueprint,
+                ident: FnIdent::Application(self.identifier.2.clone()),
+                receiver: Some(self.identifier),
             },
-            executor,
-            args: value,
+            args: IndexedScryptoValue::from_vec(self.args).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?,
         };
 
         Ok(Box::new(resolved))
@@ -204,20 +189,11 @@ impl ExecutableInvocation for FunctionInvocation {
         self,
         _api: &mut D,
     ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
-        let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-        let nodes_to_move = value.owned_node_ids().clone();
-        let node_refs_to_copy = value.references().clone();
-        let actor = Actor::function(self.identifier.clone());
-
         let resolved = KernelInvocation {
-            resolved_actor: actor,
-            update: CallFrameUpdate {
-                nodes_to_move,
-                node_refs_to_copy,
-            },
-            args: value,
+            resolved_actor: Actor::function(self.identifier.clone()),
+            args: IndexedScryptoValue::from_vec(self.args).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?,
             executor: ScryptoExecutor {
                 blueprint: self.identifier.0,
                 ident: FnIdent::Application(self.identifier.1),
@@ -242,7 +218,6 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
     ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
         let resolved = KernelInvocation {
             resolved_actor: Actor::virtual_lazy_load(self.blueprint.clone(), self.virtual_func_id),
-            update: CallFrameUpdate::empty(),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),
             executor: ScryptoExecutor {
                 blueprint: self.blueprint,

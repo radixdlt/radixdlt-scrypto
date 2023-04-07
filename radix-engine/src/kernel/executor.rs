@@ -33,7 +33,6 @@ pub trait Executor {
 
 pub struct KernelInvocation<E: Executor> {
     pub executor: E,
-    pub update: CallFrameUpdate,
 
     // TODO: Make these two RENodes / Substates
     pub resolved_actor: Actor,
@@ -41,7 +40,20 @@ pub struct KernelInvocation<E: Executor> {
 }
 
 impl<E: Executor> KernelInvocation<E> {
-    pub fn get_update(&self) -> &CallFrameUpdate {
-        &self.update
+    pub fn get_update(&self) -> CallFrameUpdate {
+        let nodes_to_move = self.args.owned_node_ids().clone();
+        let mut node_refs_to_copy = self.args.references().clone();
+        match self.resolved_actor {
+            Actor::Method { node_id, .. } => {
+                node_refs_to_copy.insert(node_id);
+            }
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+            }
+        }
+
+        CallFrameUpdate {
+            nodes_to_move,
+            node_refs_to_copy
+        }
     }
 }
