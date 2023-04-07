@@ -15,7 +15,7 @@ pub trait ExecutableInvocation: Invocation {
     fn resolve<Y: KernelSubstateApi + KernelInternalApi>(
         self,
         api: &mut Y,
-    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError>;
+    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError>;
 
     fn payload_size(&self) -> usize;
 }
@@ -31,11 +31,17 @@ pub trait Executor {
         W: WasmEngine;
 }
 
-pub struct ResolvedInvocation<E: Executor> {
+pub struct KernelInvocation<E: Executor> {
     pub executor: E,
     pub update: CallFrameUpdate,
 
     // TODO: Make these two RENodes / Substates
     pub resolved_actor: Actor,
     pub args: IndexedScryptoValue,
+}
+
+impl<E: Executor> KernelInvocation<E> {
+    pub fn get_update(&self) -> &CallFrameUpdate {
+        &self.update
+    }
 }

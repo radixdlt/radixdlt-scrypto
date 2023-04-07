@@ -101,7 +101,7 @@ impl ExecutableInvocation for MethodInvocation {
     fn resolve<D: KernelSubstateApi + KernelInternalApi>(
         self,
         api: &mut D,
-    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
+    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -208,7 +208,7 @@ impl ExecutableInvocation for MethodInvocation {
             receiver: Some(self.identifier),
         };
 
-        let resolved = ResolvedInvocation {
+        let resolved = KernelInvocation {
             resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
@@ -233,7 +233,7 @@ impl ExecutableInvocation for FunctionInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
+    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -280,7 +280,7 @@ impl ExecutableInvocation for FunctionInvocation {
             }
         }
 
-        let resolved = ResolvedInvocation {
+        let resolved = KernelInvocation {
             resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
@@ -308,8 +308,8 @@ impl ExecutableInvocation for VirtualLazyLoadInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError> {
-        let resolved = ResolvedInvocation {
+    ) -> Result<Box<KernelInvocation<Self::Exec>>, RuntimeError> {
+        let resolved = KernelInvocation {
             resolved_actor: Actor::virtual_lazy_load(self.blueprint.clone(), self.virtual_func_id),
             update: CallFrameUpdate::empty(),
             args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: self.args }),

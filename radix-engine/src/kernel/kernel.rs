@@ -1,6 +1,6 @@
 use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
+use super::executor::{ExecutableInvocation, Executor, KernelInvocation};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
@@ -172,19 +172,19 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        mut resolved: Box<ResolvedInvocation<X>>,
+        resolved: Box<KernelInvocation<X>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
+        let mut call_frame_update = resolved.get_update().clone();
         let executor = resolved.executor;
         let actor = &resolved.resolved_actor;
         let args = &resolved.args;
-        let call_frame_update = &mut resolved.update;
 
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, actor, call_frame_update, &args)
+                KernelModuleMixer::before_push_frame(api, actor, &mut call_frame_update, &args)
             })?;
         }
 
@@ -281,12 +281,12 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        resolved: Box<ResolvedInvocation<X>>,
+        resolved: Box<KernelInvocation<X>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
         if depth == 0 {
-            for node_id in &resolved.update.node_refs_to_copy {
+            for node_id in &resolved.get_update().node_refs_to_copy {
                 if node_id.is_global_virtual() {
                     // For virtual accounts and native packages, create a reference directly
                     self.current_frame.add_ref(*node_id, RefType::Normal);
