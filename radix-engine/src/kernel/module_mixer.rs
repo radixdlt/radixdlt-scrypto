@@ -676,16 +676,6 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_substate_lock_fault<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
-        node_id: NodeId,
-        module_id: SysModuleId,
-        offset: &SubstateKey,
-        api: &mut Y,
-    ) -> Result<bool, RuntimeError> {
-        VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
-    }
-
-    #[trace_resources]
     fn after_lock_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         handle: LockHandle,

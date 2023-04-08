@@ -7,9 +7,7 @@ use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{RuntimeError, SystemInvokeError};
-use crate::kernel::kernel_api::{
-    KernelInternalApi, KernelUpstream, KernelNodeApi, KernelSubstateApi,
-};
+use crate::kernel::kernel_api::{KernelInternalApi, KernelUpstream, KernelNodeApi, KernelSubstateApi, KernelModuleApi, KernelInvocation};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -21,6 +19,11 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use resources_tracker_macro::trace_resources;
+use crate::kernel::actor::Actor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::kernel::module::KernelModule;
+use crate::system::node_init::NodeInit;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,
@@ -97,6 +100,117 @@ pub struct SystemInvoke<'g, W: WasmEngine> {
 }
 
 impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
+    fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::on_init(api)
+    }
+
+    fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError>  {
+        KernelModuleMixer::on_teardown(api)
+    }
+
+    fn before_drop_node<Y>(
+        node_id: &NodeId,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::before_drop_node(api, node_id)
+    }
+
+    fn after_drop_node<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::after_drop_node(api)
+    }
+
+    fn before_create_node<Y>(
+        node_id: &NodeId,
+        node_init: &NodeInit,
+        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::before_create_node(api, node_id, node_init, node_module_init)
+    }
+
+    fn before_lock_substate<Y>(
+        node_id: &NodeId,
+        module_id: &SysModuleId,
+        substate_key: &SubstateKey,
+        flags: &LockFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::before_lock_substate(api, node_id, module_id, substate_key, flags)
+    }
+
+    fn after_lock_substate<Y>(
+        handle: LockHandle,
+        size: usize,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::after_lock_substate(api, handle, size)
+    }
+
+    fn on_drop_lock<Y>(
+        lock_handle: LockHandle,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::on_drop_lock(api, lock_handle)
+    }
+
+    fn on_read_substate<Y>(
+        lock_handle: LockHandle,
+        size: usize,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::on_read_substate(api, lock_handle, size)
+    }
+
+    fn on_write_substate<Y>(
+        lock_handle: LockHandle,
+        size: usize,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+
+        KernelModuleMixer::on_write_substate(api, lock_handle, size)
+    }
+
+    fn after_create_node<Y>(
+        node_id: &NodeId,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::after_create_node(api, node_id)
+    }
+
+    fn before_invoke<Y>(
+        identifier: &KernelInvocation,
+        input_size: usize,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::before_invoke(api, identifier, input_size)
+    }
+
+    fn after_invoke<Y>(
+        output_size: usize,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::after_invoke(api, output_size)
+    }
+
+    fn before_push_frame<Y>(callee: &Actor, update: &mut CallFrameUpdate, args: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::before_push_frame(api, callee, update, args)
+    }
+
+    fn on_execution_start<Y:>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::on_execution_start(api, &caller)
+    }
+
     fn invoke_upstream<Y>(
         invocation: SystemInvocation,
         args: &IndexedScryptoValue,
@@ -317,6 +431,15 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
         };
 
         Ok(output)
+    }
+
+    fn on_execution_finish<Y>(caller: &Option<Actor>, update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::on_execution_finish(api, caller, update)
+    }
+
+    fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
+        KernelModuleMixer::after_pop_frame(api)
     }
 }
 

@@ -29,6 +29,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use crate::system::kernel_modules::virtualization::VirtualizationModule;
 
 pub struct RadixEngine;
 
@@ -60,7 +61,7 @@ impl RadixEngine {
         };
 
         kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-            KernelModuleMixer::on_init(api)
+            M::on_init(api)
         })?;
 
         let args = IndexedScryptoValue::from_vec(args)
@@ -122,7 +123,8 @@ impl RadixEngine {
             kernel.call_function(package_address, blueprint_name, function_name, args.into())?;
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
-        KernelModuleMixer::on_teardown(&mut kernel)?;
+
+        M::on_teardown(&mut kernel)?;
 
         Ok(rtn)
     }
@@ -233,7 +235,7 @@ where
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, actor, &mut call_frame_update, &args)
+                M::before_push_frame(actor, &mut call_frame_update, &args, api)
             })?;
         }
 
@@ -257,7 +259,7 @@ where
             // Handle execution start
             {
                 self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                    KernelModuleMixer::on_execution_start(api, &caller)
+                    M::on_execution_start(&caller, api)
                 })?;
             }
 
@@ -280,7 +282,7 @@ where
             // Handle execution finish
             {
                 self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                    KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
+                    M::on_execution_finish(&caller, &mut update, api)
                 })?;
             }
 
@@ -314,7 +316,7 @@ where
         // After pop call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::after_pop_frame(api)
+                M::after_pop_frame(api)
             })?;
         }
 
@@ -366,7 +368,7 @@ where
 {
     #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
-        KernelModuleMixer::before_drop_node(self, &node_id)?;
+        M::before_drop_node(node_id, self)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -398,7 +400,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        KernelModuleMixer::after_drop_node(self)?;
+        M::after_drop_node(self)?;
 
         Ok(node)
     }
@@ -425,7 +427,7 @@ where
         node_init: NodeInit,
         module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::before_create_node(self, &node_id, &node_init, &module_init)?;
+        M::before_create_node(&node_id, &node_init, &module_init, self)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -449,7 +451,7 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        KernelModuleMixer::after_create_node(self, &node_id)?;
+        M::after_create_node(&node_id, self)?;
 
         Ok(())
     }
@@ -680,7 +682,7 @@ where
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, substate_key, &flags)?;
+        M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -723,12 +725,10 @@ where
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                    let retry = KernelModuleMixer::on_substate_lock_fault(
+                    let retry = VirtualizationModule::on_substate_lock_fault(
                         *node_id,
-                        module_id,
-                        &substate_key,
-                        self,
-                    )?;
+                        module_id, &substate_key, self)?;
+
                     if retry {
                         self.current_frame
                             .acquire_lock(
@@ -802,7 +802,7 @@ where
         self.execution_mode = current_mode;
 
         // TODO: pass the right size
-        KernelModuleMixer::after_lock_substate(self, lock_handle, 0)?;
+        M::after_lock_substate(lock_handle, 0, self)?;
 
         Ok(lock_handle)
     }
@@ -818,7 +818,7 @@ where
 
     #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_drop_lock(self, lock_handle)?;
+        M::on_drop_lock(lock_handle, self)?;
 
         self.current_frame
             .drop_lock(&mut self.heap, self.store, lock_handle)
@@ -847,7 +847,7 @@ where
             len = 0;
         }
 
-        KernelModuleMixer::on_read_substate(self, lock_handle, len)?;
+        M::on_read_substate(lock_handle, len, self)?;
 
         Ok(self
             .current_frame
@@ -860,7 +860,7 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_write_substate(self, lock_handle, value.as_slice().len())?;
+        M::on_write_substate(lock_handle, value.as_slice().len(), self)?;
 
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
@@ -881,7 +881,7 @@ where
         &mut self,
         invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        KernelModuleMixer::before_invoke(self, &invocation, invocation.payload_size)?;
+        M::before_invoke(&invocation, invocation.payload_size, self)?;
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
@@ -892,8 +892,9 @@ where
         // Restore previous mode
         self.execution_mode = saved_mode;
 
-        KernelModuleMixer::after_invoke(
-            self, 0, // TODO: Pass the right size
+        M::after_invoke(
+            0, // TODO: Pass the right size
+            self,
         )?;
 
         Ok(rtn)
