@@ -262,6 +262,7 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                             &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;
+
                         let wasm_instance = api.kernel_create_wasm_instance(
                             invocation.blueprint.package_address,
                             handle,

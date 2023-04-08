@@ -7,7 +7,7 @@ use std::process::Command;
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{Kernel, RadixEngine};
+use radix_engine::kernel::kernel::RadixEngine;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
@@ -26,7 +26,6 @@ use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,

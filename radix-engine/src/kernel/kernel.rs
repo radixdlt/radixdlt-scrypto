@@ -8,7 +8,6 @@ use super::kernel_api::{
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
-use super::track::Track;
 use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
@@ -34,9 +33,9 @@ use sbor::rust::mem;
 pub struct RadixEngine;
 
 impl RadixEngine {
-    pub fn call_function<'g, 's, W: WasmEngine>(
+    pub fn call_function<'g, S: SubstateStore, W: WasmEngine>(
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track<'s>,
+        store: &'g mut S,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut KernelModuleMixer,
         package_address: PackageAddress,
@@ -52,7 +51,7 @@ impl RadixEngine {
         let mut kernel = Kernel {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
-            track,
+            store,
             scrypto_interpreter,
             id_allocator,
             current_frame: CallFrame::new_root(),
@@ -64,9 +63,8 @@ impl RadixEngine {
             KernelModuleMixer::on_init(api)
         })?;
 
-        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
-            RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-        })?;
+        let args = IndexedScryptoValue::from_vec(args)
+            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
 
         for node_id in args.references() {
             if node_id.is_global_virtual() {
@@ -86,7 +84,7 @@ impl RadixEngine {
             }
 
             let handle = kernel
-                .track
+                .store
                 .acquire_lock(
                     node_id,
                     SysModuleId::TypeInfo.into(),
@@ -94,24 +92,24 @@ impl RadixEngine {
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-            let substate_ref = kernel.track.read_substate(handle);
+            let substate_ref = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            kernel.track.release_lock(handle);
+            kernel.store.release_lock(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                                             blueprint, global, ..
-                                         }) => {
+                    blueprint, global, ..
+                }) => {
                     if global {
                         kernel.current_frame.add_ref(*node_id, RefType::Normal);
                     } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                        || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                            || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
-                        kernel.current_frame.add_ref(*node_id, RefType::DirectAccess);
+                        kernel
+                            .current_frame
+                            .add_ref(*node_id, RefType::DirectAccess);
                     } else {
-                        return Err(RuntimeError::KernelError(
-                            KernelError::InvalidDirectAccess,
-                        ));
+                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
                 TypeInfoSubstate::KeyValueStore(..) => {
@@ -120,7 +118,8 @@ impl RadixEngine {
             }
         }
 
-        let rtn = kernel.call_function(package_address, blueprint_name, function_name, args.into())?;
+        let rtn =
+            kernel.call_function(package_address, blueprint_name, function_name, args.into())?;
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
         KernelModuleMixer::on_teardown(&mut kernel)?;
@@ -131,9 +130,10 @@ impl RadixEngine {
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
-    's, // Substate store lifetime
+    S,  // Substate store
     W,  // WASM engine type
 > where
+    S: SubstateStore,
     W: WasmEngine,
 {
     /// Current execution mode, specifies permissions into state/invocations
@@ -147,7 +147,7 @@ pub struct Kernel<
     /// Heap
     heap: Heap,
     /// Store
-    track: &'g mut Track<'s>,
+    store: &'g mut S,
 
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
@@ -157,9 +157,10 @@ pub struct Kernel<
     module: &'g mut KernelModuleMixer,
 }
 
-impl<'g, 's, W> Kernel<'g, 's, W>
+impl<'g, S, W> Kernel<'g, S, W>
 where
     W: WasmEngine,
+    S: SubstateStore,
 {
     fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| {
@@ -260,7 +261,7 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)
+                .drop_all_locks(&mut self.heap, self.store)
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -283,7 +284,7 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)
+                .drop_all_locks(&mut self.heap, self.store)
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -356,9 +357,10 @@ where
     }
 }
 
-impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
+impl<'g, S, W> KernelNodeApi for Kernel<'g, S, W>
 where
     W: WasmEngine,
+    S: SubstateStore,
 {
     #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
@@ -436,7 +438,7 @@ where
                 node_init,
                 module_init,
                 &mut self.heap,
-                &mut self.track,
+                self.store,
                 push_to_store,
             )
             .map_err(CallFrameError::UnlockSubstateError)
@@ -451,8 +453,9 @@ where
     }
 }
 
-impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
+impl<'g, S, W> KernelInternalApi for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     #[trace_resources]
@@ -657,8 +660,9 @@ where
     }
 }
 
-impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
+impl<'g, S, W> KernelSubstateApi for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
@@ -701,7 +705,7 @@ where
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
-            &mut self.track,
+            self.store,
             node_id,
             module_id,
             substate_key,
@@ -722,7 +726,7 @@ where
                         self.current_frame
                             .acquire_lock(
                                 &mut self.heap,
-                                &mut self.track,
+                                self.store,
                                 &node_id,
                                 module_id,
                                 &substate_key,
@@ -753,7 +757,7 @@ where
                     {
                         let module_id = SysModuleId::ObjectState;
                         let handle = self
-                            .track
+                            .store
                             .acquire_lock(
                                 node_id,
                                 module_id.into(),
@@ -763,13 +767,13 @@ where
                             .map_err(|e| LockSubstateError::TrackError(Box::new(e)))
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?;
-                        self.track.release_lock(handle);
+                        self.store.release_lock(handle);
 
                         self.current_frame.add_ref(*node_id, RefType::Normal);
                         self.current_frame
                             .acquire_lock(
                                 &mut self.heap,
-                                &mut self.track,
+                                self.store,
                                 &node_id,
                                 module_id,
                                 substate_key,
@@ -810,7 +814,7 @@ where
         KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
         self.current_frame
-            .drop_lock(&mut self.heap, &mut self.track, lock_handle)
+            .drop_lock(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -824,7 +828,7 @@ where
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let mut len = self
             .current_frame
-            .read_substate(&mut self.heap, &mut self.track, lock_handle)
+            .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?
             .as_slice()
@@ -840,7 +844,7 @@ where
 
         Ok(self
             .current_frame
-            .read_substate(&mut self.heap, &mut self.track, lock_handle)
+            .read_substate(&mut self.heap, self.store, lock_handle)
             .unwrap())
     }
 
@@ -852,15 +856,16 @@ where
         KernelModuleMixer::on_write_substate(self, lock_handle, value.as_slice().len())?;
 
         self.current_frame
-            .write_substate(&mut self.heap, &mut self.track, lock_handle, value)
+            .write_substate(&mut self.heap, self.store, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
 }
 
-impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
+impl<'g, S, W> KernelWasmApi<W> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     #[trace_resources]
@@ -879,8 +884,9 @@ where
     }
 }
 
-impl<'g, 's, W> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     #[trace_resources]
@@ -907,6 +913,16 @@ where
     }
 }
 
-impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
+impl<'g, S, W> KernelApi<W, RuntimeError> for Kernel<'g, S, W>
+where
+    S: SubstateStore,
+    W: WasmEngine,
+{
+}
 
-impl<'g, 's, W> KernelModuleApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
+impl<'g, S, W> KernelModuleApi<RuntimeError> for Kernel<'g, S, W>
+where
+    S: SubstateStore,
+    W: WasmEngine,
+{
+}

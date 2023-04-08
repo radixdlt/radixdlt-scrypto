@@ -27,6 +27,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_stores::interface::SubstateStore;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -34,8 +35,9 @@ use sbor::rust::vec::Vec;
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
 
-impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientSubstateApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn sys_lock_substate(
@@ -123,8 +125,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientObjectApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientObjectApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn new_object(
@@ -566,8 +569,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientCostingApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     #[trace_resources(log=units)]
@@ -603,8 +607,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientActorApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientActorApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
@@ -628,8 +633,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientAuthApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
@@ -669,8 +675,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
@@ -683,8 +690,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
@@ -697,8 +705,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientEventApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
@@ -820,8 +829,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientLoggerApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientLoggerApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
@@ -834,8 +844,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, S, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, S, W>
 where
+    S: SubstateStore,
     W: WasmEngine,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
@@ -857,4 +868,9 @@ where
     }
 }
 
-impl<'g, 's, W> ClientApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
+impl<'g, S, W> ClientApi<RuntimeError> for Kernel<'g, S, W>
+where
+    S: SubstateStore,
+    W: WasmEngine,
+{
+}

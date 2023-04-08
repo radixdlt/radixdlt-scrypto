@@ -1,7 +1,7 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::kernel::{Kernel, RadixEngine};
+use crate::kernel::kernel::RadixEngine;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::Track;
 use crate::system::kernel_modules::costing::*;
@@ -10,7 +10,6 @@ use crate::types::*;
 use crate::vm::ScryptoInterpreter;
 use crate::wasm::*;
 use radix_engine_constants::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::{
@@ -209,13 +208,13 @@ where
             scrypto_encode(&TransactionProcessorRunInput {
                 transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                instructions: Cow::Owned(
-                    manifest_encode(executable.instructions()).unwrap(),
-                ),
+                instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
                 blobs: Cow::Borrowed(executable.blobs()),
                 references: extract_refs_from_manifest(executable.instructions()),
-            }).unwrap(),
-        ).map(|rtn| {
+            })
+            .unwrap(),
+        )
+        .map(|rtn| {
             let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
             output
         });
