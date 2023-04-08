@@ -120,8 +120,12 @@ impl RadixEngine {
             }
         }
 
-        let rtn = kernel.call_function(package_address, blueprint_name, function_name, args.into());
-        kernel.teardown(rtn)
+        let rtn = kernel.call_function(package_address, blueprint_name, function_name, args.into())?;
+        // Sanity check call frame
+        assert!(kernel.prev_frame_stack.is_empty());
+        KernelModuleMixer::on_teardown(&mut kernel)?;
+
+        Ok(rtn)
     }
 }
 
@@ -157,31 +161,6 @@ impl<'g, 's, W> Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    // TODO: Josh holds some concern about this interface; will look into this again.
-    fn teardown<T>(
-        mut self,
-        previous_result: Result<T, RuntimeError>,
-    ) -> Result<T, RuntimeError> {
-        let new_result = match previous_result {
-            Ok(output) => {
-                // Sanity check call frame
-                assert!(self.prev_frame_stack.is_empty());
-
-                // Tear down kernel modules
-                match self
-                    .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                        KernelModuleMixer::on_teardown(api)
-                    }) {
-                    Ok(_) => Ok(output),
-                    Err(error) => Err(error),
-                }
-            }
-            Err(error) => Err(error),
-        };
-
-        new_result
-    }
-
     fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| {
             api.current_frame
