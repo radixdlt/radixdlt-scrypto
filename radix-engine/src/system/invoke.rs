@@ -8,13 +8,13 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{RuntimeError, SystemInvokeError};
 use crate::kernel::kernel_api::{
-    KernelInternalApi, KernelInvokeUpstreamApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
+    KernelInternalApi, KernelUpstream, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
 };
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::types::*;
-use crate::vm::ScryptoRuntime;
+use crate::vm::{ScryptoInterpreter, ScryptoRuntime};
 use crate::wasm::{WasmEngine, WasmInstance, WasmRuntime};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -92,10 +92,12 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemInvoke;
+pub struct SystemInvoke<'g, W: WasmEngine> {
+    pub scrypto_interpreter: &'g ScryptoInterpreter<W>,
+}
 
-impl KernelInvokeUpstreamApi for SystemInvoke {
-    fn invoke_upstream<Y, W>(
+impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
+    fn invoke_upstream<Y>(
         invocation: SystemInvocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -103,10 +105,9 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelWasmApi<W>
+            + KernelWasmApi<SystemInvoke<'g, W>>
             + KernelInternalApi
             + ClientApi<RuntimeError>,
-        W: WasmEngine,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
@@ -266,8 +267,8 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                             api.kernel_read_substate(handle)?.as_typed().unwrap();
                         api.kernel_drop_lock(handle)?;
 
-                        let interpreter = api.kernel_get_system();
-                        let wasm_instance = interpreter.create_instance(
+                        let system = api.kernel_get_system();
+                        let wasm_instance = system.scrypto_interpreter.create_instance(
                             invocation.blueprint.package_address, &package_code.code);
                         wasm_instance
                     };

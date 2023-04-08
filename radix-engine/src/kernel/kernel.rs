@@ -13,7 +13,7 @@ use crate::errors::*;
 use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelInvokeUpstreamApi};
+use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
 use crate::system::invoke::SystemInvoke;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::NodeInit;
@@ -33,10 +33,10 @@ use sbor::rust::mem;
 pub struct RadixEngine;
 
 impl RadixEngine {
-    pub fn call_function<'g, S: SubstateStore, W: WasmEngine>(
+    pub fn call_function<'g, M: KernelUpstream, S: SubstateStore>(
         id_allocator: &'g mut IdAllocator,
+        upstream: &'g mut M,
         store: &'g mut S,
-        scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut KernelModuleMixer,
         package_address: PackageAddress,
         blueprint_name: &str,
@@ -52,10 +52,10 @@ impl RadixEngine {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
             store,
-            scrypto_interpreter,
             id_allocator,
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
+            upstream,
             module,
         };
 
@@ -130,11 +130,11 @@ impl RadixEngine {
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
+    M, // Upstream Interface to the system layer
     S,  // Substate store
-    W,  // WASM engine type
 > where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     /// Current execution mode, specifies permissions into state/invocations
     execution_mode: ExecutionMode,
@@ -151,15 +151,17 @@ pub struct Kernel<
 
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
-    /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g ScryptoInterpreter<W>,
+
+    /// Upstream system layer
+    upstream: &'g M,
+
     /// Kernel module mixer
     module: &'g mut KernelModuleMixer,
 }
 
-impl<'g, S, W> Kernel<'g, S, W>
+impl<'g, M, S> Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelUpstream,
     S: SubstateStore,
 {
     fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
@@ -267,7 +269,7 @@ where
 
             // Run
             let output = self.execute_in_mode(ExecutionMode::Client, |api| {
-                SystemInvoke::invoke_upstream(sys_invocation, args, api)
+                M::invoke_upstream(sys_invocation, args, api)
             })?;
 
             let mut update = CallFrameUpdate {
@@ -357,9 +359,9 @@ where
     }
 }
 
-impl<'g, S, W> KernelNodeApi for Kernel<'g, S, W>
+impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelUpstream,
     S: SubstateStore,
 {
     #[trace_resources]
@@ -453,10 +455,10 @@ where
     }
 }
 
-impl<'g, S, W> KernelInternalApi for Kernel<'g, S, W>
+impl<'g, M, S> KernelInternalApi for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     #[trace_resources]
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
@@ -660,10 +662,10 @@ where
     }
 }
 
-impl<'g, S, W> KernelSubstateApi for Kernel<'g, S, W>
+impl<'g, M, S> KernelSubstateApi for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
     fn kernel_lock_substate(
@@ -863,36 +865,21 @@ where
     }
 }
 
-impl<'g, S, W> KernelWasmApi<W> for Kernel<'g, S, W>
+impl<'g, M, S> KernelWasmApi<M> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     #[trace_resources]
-    fn kernel_create_wasm_instance(
-        &mut self,
-        package_address: PackageAddress,
-        handle: LockHandle,
-    ) -> Result<W::WasmInstance, RuntimeError> {
-        // TODO: check if save to unwrap
-        let package_code: PackageCodeSubstate =
-            self.kernel_read_substate(handle)?.as_typed().unwrap();
-
-        Ok(self
-            .scrypto_interpreter
-            .create_instance(package_address, &package_code.code))
-    }
-
-    #[trace_resources]
-    fn kernel_get_system(&self) -> &ScryptoInterpreter<W> {
-        &self.scrypto_interpreter
+    fn kernel_get_system(&self) -> &M {
+        &self.upstream
     }
 }
 
-impl<'g, S, W> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     #[trace_resources]
     fn kernel_invoke_downstream(
@@ -918,16 +905,16 @@ where
     }
 }
 
-impl<'g, S, W> KernelApi<W, RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> KernelApi<M, RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
 }
 
-impl<'g, S, W> KernelModuleApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> KernelModuleApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
 }

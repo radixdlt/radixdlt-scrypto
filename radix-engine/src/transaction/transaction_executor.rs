@@ -21,6 +21,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_stores::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
+use crate::system::invoke::SystemInvoke;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
@@ -199,8 +200,10 @@ where
 
         let invoke_result = RadixEngine::call_function(
             &mut id_allocator,
+            &mut SystemInvoke {
+                scrypto_interpreter: self.scrypto_interpreter,
+            },
             &mut track,
-            self.scrypto_interpreter,
             &mut modules,
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,

@@ -69,19 +69,13 @@ pub trait KernelSubstateApi {
     ) -> Result<(), RuntimeError>;
 }
 
-pub trait KernelWasmApi<W: WasmEngine> {
-    fn kernel_create_wasm_instance(
-        &mut self,
-        package_address: PackageAddress,
-        handle: LockHandle,
-    ) -> Result<W::WasmInstance, RuntimeError>;
-
-    fn kernel_get_system(&self) -> &ScryptoInterpreter<W>;
+pub trait KernelWasmApi<M: KernelUpstream> {
+    fn kernel_get_system(&self) -> &M;
 }
 
 /// Interface of the Kernel, for Kernel modules.
-pub trait KernelApi<W: WasmEngine, E>:
-    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeDownstreamApi<E>
+pub trait KernelApi<M: KernelUpstream, E>:
+    KernelNodeApi + KernelSubstateApi + KernelWasmApi<M> + KernelInvokeDownstreamApi<E>
 {
 }
 
@@ -153,8 +147,8 @@ pub trait KernelInvokeDownstreamApi<E> {
     ) -> Result<IndexedScryptoValue, E>;
 }
 
-pub trait KernelInvokeUpstreamApi {
-    fn invoke_upstream<Y, W>(
+pub trait KernelUpstream {
+    fn invoke_upstream<Y>(
         invocation: SystemInvocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -162,8 +156,8 @@ pub trait KernelInvokeUpstreamApi {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelWasmApi<W>
+            + KernelWasmApi<Self>
             + KernelInternalApi
             + ClientApi<RuntimeError>,
-        W: WasmEngine;
+        Self: Sized;
 }

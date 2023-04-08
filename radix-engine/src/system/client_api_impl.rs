@@ -35,10 +35,10 @@ use sbor::rust::vec::Vec;
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
 
-impl<'g, S, W> ClientSubstateApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientSubstateApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn sys_lock_substate(
         &mut self,
@@ -125,10 +125,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientObjectApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientObjectApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn new_object(
         &mut self,
@@ -569,10 +569,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientCostingApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientCostingApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     #[trace_resources(log=units)]
     fn consume_cost_units(
@@ -607,10 +607,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientActorApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientActorApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.kernel_get_current_actor()
@@ -633,10 +633,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientAuthApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientAuthApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -675,10 +675,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
         // No costing applied
@@ -690,10 +690,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
@@ -705,10 +705,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientEventApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientEventApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
@@ -829,10 +829,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientLoggerApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientLoggerApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -844,10 +844,10 @@ where
     }
 }
 
-impl<'g, S, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -868,9 +868,9 @@ where
     }
 }
 
-impl<'g, S, W> ClientApi<RuntimeError> for Kernel<'g, S, W>
+impl<'g, M, S> ClientApi<RuntimeError> for Kernel<'g, M, S>
 where
+    M: KernelUpstream,
     S: SubstateStore,
-    W: WasmEngine,
 {
 }
