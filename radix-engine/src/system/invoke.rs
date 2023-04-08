@@ -95,7 +95,6 @@ pub struct SystemInvocation {
 pub struct SystemInvoke;
 
 impl KernelInvokeUpstreamApi for SystemInvoke {
-    #[trace_resources(log={self.ident.to_debug_string()}, log={self.blueprint.package_address.to_hex()})]
     fn invoke_upstream<Y, W>(
         invocation: SystemInvocation,
         args: &IndexedScryptoValue,
@@ -262,13 +261,14 @@ impl KernelInvokeUpstreamApi for SystemInvoke {
                             &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;
-
-                        let wasm_instance = api.kernel_create_wasm_instance(
-                            invocation.blueprint.package_address,
-                            handle,
-                        )?;
+                        // TODO: check if save to unwrap
+                        let package_code: PackageCodeSubstate =
+                            api.kernel_read_substate(handle)?.as_typed().unwrap();
                         api.kernel_drop_lock(handle)?;
 
+                        let interpreter = api.kernel_get_system();
+                        let wasm_instance = interpreter.create_instance(
+                            invocation.blueprint.package_address, &package_code.code);
                         wasm_instance
                     };
 

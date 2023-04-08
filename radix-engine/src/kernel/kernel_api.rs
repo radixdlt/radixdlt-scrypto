@@ -12,6 +12,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
+use crate::vm::ScryptoInterpreter;
 
 pub struct LockInfo {
     pub node_id: NodeId,
@@ -74,6 +75,8 @@ pub trait KernelWasmApi<W: WasmEngine> {
         package_address: PackageAddress,
         handle: LockHandle,
     ) -> Result<W::WasmInstance, RuntimeError>;
+
+    fn kernel_get_system(&self) -> &ScryptoInterpreter<W>;
 }
 
 /// Interface of the Kernel, for Kernel modules.

@@ -882,6 +882,11 @@ where
             .scrypto_interpreter
             .create_instance(package_address, &package_code.code))
     }
+
+    #[trace_resources]
+    fn kernel_get_system(&self) -> &ScryptoInterpreter<W> {
+        &self.scrypto_interpreter
+    }
 }
 
 impl<'g, S, W> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, S, W>
