@@ -1,5 +1,5 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
 use crate::types::*;
 use crate::{
     errors::ModuleError,
@@ -183,7 +183,7 @@ impl TransactionLimitsModule {
 }
 
 impl KernelModule for TransactionLimitsModule {
-    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
+    fn before_invoke<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _identifier: &KernelInvocation,
         input_size: usize,
@@ -205,7 +205,7 @@ impl KernelModule for TransactionLimitsModule {
         }
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
@@ -219,7 +219,7 @@ impl KernelModule for TransactionLimitsModule {
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_module_state()
             .transaction_limits
@@ -228,7 +228,7 @@ impl KernelModule for TransactionLimitsModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn on_read_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -242,7 +242,7 @@ impl KernelModule for TransactionLimitsModule {
         tlimit.validate_substates(Some(size), None)
     }
 
-    fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn on_write_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,

@@ -2,7 +2,7 @@ use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
@@ -20,7 +20,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
+    fn prepare_move_downstream<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -76,7 +76,7 @@ impl NodeMoveModule {
         Ok(())
     }
 
-    fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
+    fn prepare_move_upstream<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         _node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -85,7 +85,7 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -99,7 +99,7 @@ impl KernelModule for NodeMoveModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,

@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi};
+use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
 use crate::system::invoke::SystemInvocation;
 use crate::types::*;
@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::identity::{
 pub struct VirtualizationModule;
 
 impl KernelModule for VirtualizationModule {
-    fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
+    fn on_substate_lock_fault<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         node_id: NodeId,
         _module_id: SysModuleId,
         _offset: &SubstateKey,

@@ -69,19 +69,17 @@ pub trait KernelSubstateApi {
     ) -> Result<(), RuntimeError>;
 }
 
-pub trait KernelWasmApi<M: KernelUpstream> {
-    fn kernel_get_system(&self) -> &M;
-}
-
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<M: KernelUpstream, E>:
-    KernelNodeApi + KernelSubstateApi + KernelWasmApi<M> + KernelInvokeDownstreamApi<E>
+    KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi<E>
 {
 }
 
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
-pub trait KernelInternalApi {
+pub trait KernelInternalApi<M: KernelUpstream> {
+    fn kernel_get_system(&self) -> &M;
+
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
 
     // TODO: Cleanup
@@ -101,10 +99,10 @@ pub trait KernelInternalApi {
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelModuleApi<E>:
+pub trait KernelModuleApi<M: KernelUpstream, E>:
     KernelNodeApi
     + KernelSubstateApi
-    + KernelInternalApi
+    + KernelInternalApi<M>
     + KernelInvokeDownstreamApi<E>
     + ClientObjectApi<E>
 {
@@ -156,8 +154,7 @@ pub trait KernelUpstream {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelWasmApi<Self>
-            + KernelInternalApi
+            + KernelInternalApi<Self>
             + ClientApi<RuntimeError>,
         Self: Sized;
 }

@@ -1,6 +1,6 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation, KernelUpstream};
 use crate::types::*;
 use crate::{
     errors::RuntimeError,
@@ -25,7 +25,7 @@ macro_rules! log {
 
 #[allow(unused_variables)] // for no_std
 impl KernelModule for KernelTraceModule {
-    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
+    fn before_invoke<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         identifier: &KernelInvocation,
         input_size: usize,
@@ -40,7 +40,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         callee: &Actor,
         nodes_and_refs: &mut CallFrameUpdate,
@@ -51,7 +51,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
@@ -65,7 +65,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn after_invoke<Y: KernelModuleApi<RuntimeError>>(
+    fn after_invoke<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -73,7 +73,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
+    fn on_allocate_node_id<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
@@ -81,7 +81,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
+    fn before_create_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         node_id: &NodeId,
         node_init: &NodeInit,
@@ -97,7 +97,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
+    fn before_drop_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -105,7 +105,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn before_lock_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &SysModuleId,
@@ -123,7 +123,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn after_lock_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -132,7 +132,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn on_read_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -146,7 +146,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
+    fn on_write_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -160,7 +160,7 @@ impl KernelModule for KernelTraceModule {
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelModuleApi<RuntimeError>>(
+    fn on_drop_lock<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

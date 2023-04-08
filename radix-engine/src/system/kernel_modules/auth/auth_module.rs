@@ -9,7 +9,7 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RefType;
-use crate::kernel::kernel_api::KernelModuleApi;
+use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
 use crate::system::node_init::ModuleInit;
@@ -75,7 +75,7 @@ impl AuthModule {
         }
     }
 
-    fn function_auth<Y: KernelModuleApi<RuntimeError>>(
+    fn function_auth<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         blueprint: &Blueprint,
         ident: &str,
         api: &mut Y,
@@ -111,7 +111,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<Y: KernelModuleApi<RuntimeError>>(
+    fn method_auth<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         node_id: &NodeId,
         module_id: &SysModuleId,
         ident: &str,
@@ -169,7 +169,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
+    fn method_authorization_stateful<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         receiver: &NodeId,
         object_key: ObjectKey,
         method_key: MethodKey,
@@ -249,7 +249,7 @@ impl AuthModule {
         Ok(authorization)
     }
 
-    fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
+    fn method_authorization_stateless<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         ref_type: RefType,
         receiver: &NodeId,
         object_key: ObjectKey,
@@ -299,17 +299,17 @@ impl AuthModule {
 }
 
 impl KernelModule for AuthModule {
-    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
         Self::on_execution_start(api, &None)
     }
 
-    fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
         Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         callee: &Actor,
         _call_frame_update: &mut CallFrameUpdate,
@@ -351,7 +351,7 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_start<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -436,7 +436,7 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
         api: &mut Y,
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,

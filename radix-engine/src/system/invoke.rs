@@ -8,7 +8,7 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{RuntimeError, SystemInvokeError};
 use crate::kernel::kernel_api::{
-    KernelInternalApi, KernelUpstream, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
+    KernelInternalApi, KernelUpstream, KernelNodeApi, KernelSubstateApi,
 };
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -105,8 +105,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelWasmApi<SystemInvoke<'g, W>>
-            + KernelInternalApi
+            + KernelInternalApi<SystemInvoke<'g, W>>
             + ClientApi<RuntimeError>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {

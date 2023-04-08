@@ -4,7 +4,7 @@ use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelModuleApi, KernelNodeApi,
-    KernelSubstateApi, KernelWasmApi, LockInfo,
+    KernelSubstateApi, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
@@ -130,7 +130,7 @@ impl RadixEngine {
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
-    M, // Upstream Interface to the system layer
+    M, // Upstream System layer
     S,  // Substate store
 > where
     M: KernelUpstream,
@@ -455,7 +455,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInternalApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,
@@ -464,6 +464,11 @@ where
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
+    }
+
+    #[trace_resources]
+    fn kernel_get_system(&self) -> &M {
+        &self.upstream
     }
 
     #[trace_resources]
@@ -865,16 +870,6 @@ where
     }
 }
 
-impl<'g, M, S> KernelWasmApi<M> for Kernel<'g, M, S>
-where
-    M: KernelUpstream,
-    S: SubstateStore,
-{
-    #[trace_resources]
-    fn kernel_get_system(&self) -> &M {
-        &self.upstream
-    }
-}
 
 impl<'g, M, S> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, M, S>
 where
@@ -912,7 +907,7 @@ where
 {
 }
 
-impl<'g, M, S> KernelModuleApi<RuntimeError> for Kernel<'g, M, S>
+impl<'g, M, S> KernelModuleApi<M, RuntimeError> for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,
