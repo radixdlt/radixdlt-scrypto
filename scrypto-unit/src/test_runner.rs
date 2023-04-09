@@ -21,7 +21,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
-use radix_engine::vm::ScryptoInterpreter;
+use radix_engine::vm::ScryptoVm;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -149,7 +149,7 @@ impl TestRunnerBuilder {
     }
 
     pub fn build(self) -> TestRunner {
-        let scrypto_interpreter = ScryptoInterpreter {
+        let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,
@@ -204,7 +204,7 @@ impl TestRunnerBuilder {
 }
 
 pub struct TestRunner {
-    scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
@@ -1207,7 +1207,7 @@ impl TestRunner {
             0,
             &execution_config,
         );
-        let scrypto_interpreter = ScryptoInterpreter {
+        let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),

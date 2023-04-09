@@ -8,7 +8,7 @@ use crate::system::system_modules::costing::*;
 use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::*;
 use crate::types::*;
-use crate::vm::ScryptoInterpreter;
+use crate::vm::ScryptoVm;
 use crate::vm::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
@@ -117,7 +117,7 @@ where
     W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_interpreter: &'w ScryptoInterpreter<W>,
+    scrypto_interpreter: &'w ScryptoVm<W>,
 }
 
 impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
@@ -125,7 +125,7 @@ where
     S: SubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
+    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoVm<W>) -> Self {
         Self {
             substate_db,
             scrypto_interpreter,
@@ -347,7 +347,7 @@ pub fn execute_and_commit_transaction<
     W: WasmEngine,
 >(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
@@ -369,7 +369,7 @@ pub fn execute_and_commit_transaction<
 
 pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,

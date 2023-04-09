@@ -14,7 +14,7 @@ use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
-use crate::vm::ScryptoInterpreter;
+use crate::vm::ScryptoVm;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
@@ -696,7 +696,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
 
 pub fn bootstrap<S, W>(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
 ) -> Option<TransactionReceipt>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
@@ -715,7 +715,7 @@ where
 
 pub fn bootstrap_with_genesis_data<S, W>(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     genesis_data: GenesisData,
     initial_epoch: u64,
     rounds_per_epoch: u64,

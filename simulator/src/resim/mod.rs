@@ -62,7 +62,7 @@ use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::vm::ScryptoInterpreter;
+use radix_engine::vm::ScryptoVm;
 use radix_engine::wasm::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
@@ -196,7 +196,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
@@ -263,7 +263,7 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
             bootstrap(&mut substate_db, &scrypto_interpreter);
 
@@ -343,7 +343,7 @@ pub fn get_signing_keys(
 }
 
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
@@ -376,7 +376,7 @@ pub fn export_blueprint_schema(
 }
 
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 

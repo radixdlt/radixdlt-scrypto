@@ -18,13 +18,13 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::ScryptoInterpreter;
+    use radix_engine::vm::ScryptoVm;
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
     fn test_multithread_transfer() {
         // Set up environment.
-        let mut scrypto_interpreter = ScryptoInterpreter {
+        let mut scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,

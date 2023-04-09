@@ -62,7 +62,7 @@ impl Publish {
         .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
             bootstrap(&mut substate_db, &scrypto_interpreter);
 

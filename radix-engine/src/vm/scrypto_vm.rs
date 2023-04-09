@@ -1,7 +1,7 @@
 use crate::types::*;
 use crate::vm::wasm::*;
 
-pub struct ScryptoInterpreter<W: WasmEngine> {
+pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,
     /// WASM Instrumenter
     pub wasm_instrumenter: WasmInstrumenter,
@@ -9,7 +9,7 @@ pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_metering_config: WasmMeteringConfig,
 }
 
-impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
+impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
     fn default() -> Self {
         Self {
             wasm_engine: W::default(),
@@ -19,7 +19,7 @@ impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
     }
 }
 
-impl<W: WasmEngine> ScryptoInterpreter<W> {
+impl<W: WasmEngine> ScryptoVm<W> {
     pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> W::WasmInstance {
         let instrumented_code =
             self.wasm_instrumenter
@@ -40,7 +40,7 @@ mod tests {
             // This test ensures the requirement for this cache to be Sync isn't broken
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
-            assert_sync::<crate::vm::ScryptoInterpreter<crate::vm::wasm::DefaultWasmEngine>>();
+            assert_sync::<crate::vm::ScryptoVm<crate::vm::wasm::DefaultWasmEngine>>();
         }
     };
 }

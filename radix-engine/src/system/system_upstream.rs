@@ -21,7 +21,7 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
-use crate::vm::{ScryptoInterpreter, ScryptoRuntime};
+use crate::vm::{ScryptoVm, ScryptoRuntime};
 use crate::vm::wasm::{WasmEngine, WasmInstance, WasmRuntime};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -104,7 +104,7 @@ pub struct SystemInvocation {
 }
 
 pub struct SystemUpstream<'g, W: WasmEngine> {
-    pub scrypto_interpreter: &'g ScryptoInterpreter<W>,
+    pub scrypto_interpreter: &'g ScryptoVm<W>,
     pub modules: &'g mut SystemModuleMixer,
 }
 
