@@ -1,6 +1,6 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceMethodAuthKey;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;

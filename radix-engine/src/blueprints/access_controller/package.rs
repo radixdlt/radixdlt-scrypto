@@ -3,7 +3,7 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError, SystemInvokeError};
 use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;

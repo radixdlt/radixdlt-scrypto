@@ -10,8 +10,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
-use crate::kernel::module::KernelModule;
-use crate::system::kernel_modules::auth::convert;
+use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::access_rules::{
@@ -20,6 +19,7 @@ use crate::system::node_modules::access_rules::{
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_modules::auth::convert;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -305,7 +305,7 @@ impl AuthModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule {
     fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
         Self::on_execution_start(api, &None)

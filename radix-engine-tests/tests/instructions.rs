@@ -1,5 +1,5 @@
 use radix_engine::errors::ModuleError;
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::{
     blueprints::transaction_processor::TransactionProcessorError,
     errors::{ApplicationError, RuntimeError},

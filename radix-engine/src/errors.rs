@@ -12,13 +12,13 @@ use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::{
     LockSubstateError, MoveError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
-use crate::system::kernel_modules::auth::AuthError;
-use crate::system::kernel_modules::costing::CostingError;
-use crate::system::kernel_modules::events::EventError;
-use crate::system::kernel_modules::node_move::NodeMoveError;
-use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::system_modules::auth::AuthError;
+use crate::system::system_modules::costing::CostingError;
+use crate::system::system_modules::events::EventError;
+use crate::system::system_modules::node_move::NodeMoveError;
+use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;

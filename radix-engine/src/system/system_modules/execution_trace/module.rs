@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
-use crate::kernel::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::node_init::NodeInit;
 use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
@@ -283,7 +283,7 @@ impl ResourceSummary {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTraceModule {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTraceModule {
     fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _node_id: &NodeId,

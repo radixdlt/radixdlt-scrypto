@@ -1,4 +1,4 @@
-use radix_engine::system::kernel_modules::execution_trace::{
+use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;

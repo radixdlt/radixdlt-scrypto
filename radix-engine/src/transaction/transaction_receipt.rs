@@ -1,8 +1,8 @@
 use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::execution_trace::{
+use crate::system::system_modules::costing::FeeSummary;
+use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::types::*;

@@ -3,7 +3,7 @@ use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi};
-use crate::kernel::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
@@ -103,7 +103,7 @@ fn apply_royalty_cost<'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W: WasmEngi
         })
 }
 
-impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModule {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for CostingModule {
     fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
         let fee_reserve = &mut costing.fee_reserve;

@@ -1,13 +1,12 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
+use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use crate::{
-    errors::RuntimeError,
-    kernel::{kernel_api::KernelModuleApi, module::KernelModule},
-    system::node_init::NodeInit,
+    errors::RuntimeError, kernel::kernel_api::KernelModuleApi, system::node_init::NodeInit,
 };
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -26,7 +25,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTraceModule {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for KernelTraceModule {
     fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         identifier: &KernelInvocation,

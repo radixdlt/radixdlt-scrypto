@@ -7,12 +7,12 @@ use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::heap::HeapNode;
 use crate::kernel::kernel_api::*;
-use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::kernel_modules::events::EventError;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_properties::NodeProperties;
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
+use crate::system::system_modules::events::EventError;
 use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -33,8 +33,8 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::kernel_modules::auth::{convert_contextless, Authentication};
-use super::kernel_modules::costing::CostingReason;
+use super::system_modules::auth::{convert_contextless, Authentication};
+use super::system_modules::costing::CostingReason;
 
 pub struct SystemDownstream<'a, 'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g> {
     pub api: &'a mut Y,

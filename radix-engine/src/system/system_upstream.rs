@@ -12,14 +12,14 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     KernelInvocation, KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelUpstream,
 };
-use crate::kernel::module::KernelModule;
-use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::system::kernel_modules::virtualization::VirtualizationModule;
+use crate::system::module::SystemModule;
+use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{ScryptoInterpreter, ScryptoRuntime};
 use crate::wasm::{WasmEngine, WasmInstance, WasmRuntime};
@@ -105,7 +105,7 @@ pub struct SystemInvocation {
 
 pub struct SystemUpstream<'g, W: WasmEngine> {
     pub scrypto_interpreter: &'g ScryptoInterpreter<W>,
-    pub modules: &'g mut KernelModuleMixer,
+    pub modules: &'g mut SystemModuleMixer,
 }
 
 impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
@@ -113,28 +113,28 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_init(api)
+        SystemModuleMixer::on_init(api)
     }
 
     fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_teardown(api)
+        SystemModuleMixer::on_teardown(api)
     }
 
     fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::before_drop_node(api, node_id)
+        SystemModuleMixer::before_drop_node(api, node_id)
     }
 
     fn after_drop_node<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::after_drop_node(api)
+        SystemModuleMixer::after_drop_node(api)
     }
 
     fn before_create_node<Y>(
@@ -146,7 +146,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::before_create_node(api, node_id, node_init, node_module_init)
+        SystemModuleMixer::before_create_node(api, node_id, node_init, node_module_init)
     }
 
     fn before_lock_substate<Y>(
@@ -159,7 +159,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::before_lock_substate(api, node_id, module_id, substate_key, flags)
+        SystemModuleMixer::before_lock_substate(api, node_id, module_id, substate_key, flags)
     }
 
     fn after_lock_substate<Y>(
@@ -170,14 +170,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::after_lock_substate(api, handle, size)
+        SystemModuleMixer::after_lock_substate(api, handle, size)
     }
 
     fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_drop_lock(api, lock_handle)
+        SystemModuleMixer::on_drop_lock(api, lock_handle)
     }
 
     fn on_read_substate<Y>(
@@ -188,7 +188,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_read_substate(api, lock_handle, size)
+        SystemModuleMixer::on_read_substate(api, lock_handle, size)
     }
 
     fn on_write_substate<Y>(
@@ -199,14 +199,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_write_substate(api, lock_handle, size)
+        SystemModuleMixer::on_write_substate(api, lock_handle, size)
     }
 
     fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::after_create_node(api, node_id)
+        SystemModuleMixer::after_create_node(api, node_id)
     }
 
     fn before_invoke<Y>(
@@ -217,14 +217,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::before_invoke(api, identifier, input_size)
+        SystemModuleMixer::before_invoke(api, identifier, input_size)
     }
 
     fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::after_invoke(api, output_size)
+        SystemModuleMixer::after_invoke(api, output_size)
     }
 
     fn before_push_frame<Y>(
@@ -236,14 +236,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::before_push_frame(api, callee, update, args)
+        SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
     fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_execution_start(api, &caller)
+        SystemModuleMixer::on_execution_start(api, &caller)
     }
 
     fn invoke_upstream<Y>(
@@ -485,7 +485,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::on_execution_finish(api, caller, update)
+        SystemModuleMixer::on_execution_finish(api, caller, update)
     }
 
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
@@ -527,7 +527,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     where
         Y: KernelModuleApi<Self>,
     {
-        KernelModuleMixer::after_pop_frame(api)
+        SystemModuleMixer::after_pop_frame(api)
     }
 
     fn on_substate_lock_fault<Y>(

@@ -1,7 +1,7 @@
 use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::*;
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 
 // This file is supposed collect tests that help monitoring and debugging stack usage.
 

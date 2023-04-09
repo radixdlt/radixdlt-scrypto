@@ -1,4 +1,4 @@
-use crate::kernel::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -32,7 +32,7 @@ impl TransactionRuntimeModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for TransactionRuntimeModule {}
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for TransactionRuntimeModule {}
 
 #[cfg(test)]
 mod tests {

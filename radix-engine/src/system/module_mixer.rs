@@ -1,24 +1,24 @@
-use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::module::KernelModule;
-use crate::system::kernel_modules::auth::AuthModule;
-use crate::system::kernel_modules::costing::CostingModule;
-use crate::system::kernel_modules::costing::FeeTable;
-use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
-use crate::system::kernel_modules::events::EventsModule;
-use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
-use crate::system::kernel_modules::kernel_trace::KernelTraceModule;
-use crate::system::kernel_modules::logger::LoggerModule;
-use crate::system::kernel_modules::node_move::NodeMoveModule;
-use crate::system::kernel_modules::transaction_limits::{
+use crate::kernel::kernel_api::KernelModuleApi;
+use crate::system::module::SystemModule;
+use crate::system::node_init::NodeInit;
+use crate::system::system_modules::auth::AuthModule;
+use crate::system::system_modules::costing::CostingModule;
+use crate::system::system_modules::costing::FeeTable;
+use crate::system::system_modules::costing::SystemLoanFeeReserve;
+use crate::system::system_modules::events::EventsModule;
+use crate::system::system_modules::execution_trace::ExecutionTraceModule;
+use crate::system::system_modules::kernel_trace::KernelTraceModule;
+use crate::system::system_modules::logger::LoggerModule;
+use crate::system::system_modules::node_move::NodeMoveModule;
+use crate::system::system_modules::transaction_limits::{
     TransactionLimitsConfig, TransactionLimitsModule,
 };
-use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::kernel_modules::virtualization::VirtualizationModule;
-use crate::system::node_init::NodeInit;
+use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
@@ -44,7 +44,7 @@ bitflags! {
     }
 }
 
-pub struct KernelModuleMixer {
+pub struct SystemModuleMixer {
     /* flags */
     pub enabled_modules: EnabledModules,
 
@@ -61,7 +61,7 @@ pub struct KernelModuleMixer {
     pub virtualization: VirtualizationModule,
 }
 
-impl KernelModuleMixer {
+impl SystemModuleMixer {
     pub fn standard(
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
@@ -133,7 +133,7 @@ impl KernelModuleMixer {
 // NOTE: Modules are applied in the reverse order of initialization!
 //====================================================================
 
-impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModuleMixer {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModuleMixer {
     #[trace_resources]
     fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;

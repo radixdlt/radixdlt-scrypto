@@ -2,9 +2,9 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::RadixEngine;
-use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::Track;
-use crate::system::kernel_modules::costing::*;
+use crate::system::module_mixer::SystemModuleMixer;
+use crate::system::system_modules::costing::*;
 use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::*;
 use crate::types::*;
@@ -188,7 +188,7 @@ where
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let mut modules = KernelModuleMixer::standard(
+        let mut modules = SystemModuleMixer::standard(
             transaction_hash.clone(),
             executable.auth_zone_params().clone(),
             fee_reserve,

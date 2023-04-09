@@ -1,14 +1,14 @@
-use super::call_frame::CallFrameUpdate;
-use super::kernel_api::KernelModuleApi;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
 use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
 
-pub trait KernelModule<M: KernelUpstream> {
+pub trait SystemModule<M: KernelUpstream> {
     //======================
     // Kernel module setup
     //======================

@@ -10,7 +10,7 @@ use radix_engine_interface::schema::{
 };
 
 use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
-use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
