@@ -22,7 +22,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<'g, Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>, W: WasmEngine + 'g>(
+    fn prepare_move_downstream<'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -78,7 +78,7 @@ impl NodeMoveModule {
         Ok(())
     }
 
-    fn prepare_move_upstream<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn prepare_move_upstream<Y: KernelModuleApi<M>, M: KernelUpstream>(
         _node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -87,7 +87,7 @@ impl NodeMoveModule {
 }
 
 impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for NodeMoveModule {
-    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -101,7 +101,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for NodeMoveMod
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,

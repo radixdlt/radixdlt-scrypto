@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::identity::{
 pub struct VirtualizationModule;
 
 impl VirtualizationModule {
-    pub fn on_substate_lock_fault<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    pub fn on_substate_lock_fault<Y: KernelModuleApi<M>, M: KernelUpstream>(
         node_id: NodeId,
         _module_id: SysModuleId,
         _offset: &SubstateKey,

@@ -87,7 +87,7 @@ impl CostingModule {
     }
 }
 
-fn apply_royalty_cost<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+fn apply_royalty_cost<Y: KernelModuleApi<M>, M: KernelUpstream>(
     api: &mut Y,
     cost_units: u32,
     recipient: RoyaltyRecipient,
@@ -103,7 +103,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
 }
 
 impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModule {
-    fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_module_state().costing;
         let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;
@@ -131,7 +131,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
             })
     }
 
-    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _identifier: &KernelInvocation,
         input_size: usize,
@@ -158,7 +158,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError> + ClientObjectApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>> + ClientObjectApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -266,7 +266,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
@@ -281,7 +281,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::DropNode,
@@ -292,7 +292,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _module_id: &SysModuleId,
@@ -307,7 +307,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -320,7 +320,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -335,7 +335,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_drop_lock<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

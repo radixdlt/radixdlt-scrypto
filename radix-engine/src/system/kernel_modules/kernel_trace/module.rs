@@ -28,7 +28,7 @@ macro_rules! log {
 
 #[allow(unused_variables)] // for no_std
 impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTraceModule {
-    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         identifier: &KernelInvocation,
         input_size: usize,
@@ -43,7 +43,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         nodes_and_refs: &mut CallFrameUpdate,
@@ -54,7 +54,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
@@ -68,7 +68,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn after_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn after_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -76,7 +76,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_allocate_node_id<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
@@ -84,7 +84,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_init: &NodeInit,
@@ -100,7 +100,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -108,7 +108,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &SysModuleId,
@@ -126,7 +126,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn after_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -135,7 +135,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -149,7 +149,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -163,7 +163,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_drop_lock<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

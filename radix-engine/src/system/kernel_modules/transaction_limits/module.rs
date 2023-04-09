@@ -185,7 +185,7 @@ impl TransactionLimitsModule {
 }
 
 impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for TransactionLimitsModule {
-    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _identifier: &KernelInvocation,
         input_size: usize,
@@ -207,7 +207,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for Transaction
         }
     }
 
-    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
@@ -221,7 +221,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for Transaction
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_module_state()
             .transaction_limits
@@ -230,7 +230,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for Transaction
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -244,7 +244,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for Transaction
         tlimit.validate_substates(Some(size), None)
     }
 
-    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
+    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,

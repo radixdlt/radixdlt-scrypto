@@ -872,7 +872,7 @@ where
 }
 
 
-impl<'g, M, S> KernelInvokeDownstreamApi<RuntimeError> for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeDownstreamApi for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,
@@ -902,14 +902,14 @@ where
     }
 }
 
-impl<'g, M, S> KernelApi<M, RuntimeError> for Kernel<'g, M, S>
+impl<'g, M, S> KernelApi<M> for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,
 {
 }
 
-impl<'g, M, S> KernelModuleApi<M, RuntimeError> for Kernel<'g, M, S>
+impl<'g, M, S> KernelModuleApi<M> for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,
