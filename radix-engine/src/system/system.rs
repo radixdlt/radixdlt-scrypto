@@ -96,11 +96,11 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct System<'g, W: WasmEngine> {
+pub struct SystemUpstream<'g, W: WasmEngine> {
     pub scrypto_interpreter: &'g ScryptoInterpreter<W>,
 }
 
-impl<'g, W: WasmEngine + 'g> KernelUpstream for System<'g, W> {
+impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
         KernelModuleMixer::on_init(api)
     }
@@ -220,7 +220,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for System<'g, W> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelInternalApi<System<'g, W>>
+            + KernelInternalApi<SystemUpstream<'g, W>>
             + ClientApi<RuntimeError>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {

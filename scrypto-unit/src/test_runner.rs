@@ -11,7 +11,7 @@ use radix_engine::kernel::kernel::RadixEngine;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
-use radix_engine::system::system::System;
+use radix_engine::system::system::SystemUpstream;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -1215,7 +1215,7 @@ impl TestRunner {
 
         RadixEngine::call_function(
             &mut id_allocator,
-            &mut System {
+            &mut SystemUpstream {
                 scrypto_interpreter: &scrypto_interpreter,
             },
             &mut track,

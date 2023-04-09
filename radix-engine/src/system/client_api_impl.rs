@@ -6,7 +6,7 @@ use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
-use crate::system::system::SystemInvocation;
+use crate::system::system::{SystemInvocation, SystemUpstream};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node_init::ModuleInit;
@@ -34,6 +34,11 @@ use sbor::rust::vec::Vec;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
+
+struct SystemDownstream<'g, Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>, W: WasmEngine + 'g> {
+    pub api: &'g mut Y,
+    pub phantom: PhantomData<W>,
+}
 
 impl<'g, M, S> ClientSubstateApi<RuntimeError> for Kernel<'g, M, S>
 where
