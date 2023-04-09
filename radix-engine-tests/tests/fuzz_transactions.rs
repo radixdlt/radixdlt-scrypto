@@ -3,8 +3,8 @@ use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::vm::ScryptoVm;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;

@@ -4,8 +4,8 @@ use radix_engine_interface::schema::PackageSchema;
 use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
-use crate::vm::NopWasmRuntime;
 use crate::vm::wasm::*;
+use crate::vm::NopWasmRuntime;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {

@@ -1,30 +1,17 @@
-use crate::blueprints::access_controller::AccessControllerNativePackage;
-use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
-use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
-use crate::blueprints::resource::ResourceManagerNativePackage;
-use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
+use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::{KernelError, RuntimeError, SystemInvokeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    KernelInvocation, KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelUpstream,
-};
+use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::node_init::NodeInit;
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
-use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
-use crate::vm::{ScryptoVm, ScryptoRuntime};
 use crate::vm::wasm::{WasmEngine, WasmInstance, WasmRuntime};
+use crate::vm::{NativeVm, ScryptoRuntime, ScryptoVm};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::ClientTransactionLimitsApi;
 use radix_engine_interface::blueprints::package::*;
@@ -540,59 +527,5 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
         Y: KernelModuleApi<Self>,
     {
         VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
-    }
-}
-
-struct NativeVm;
-
-impl NativeVm {
-    pub fn invoke_native_package<Y>(
-        native_package_code_id: u8,
-        receiver: &Option<MethodIdentifier>,
-        export_name: &str,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let receiver = receiver.as_ref().map(|x| &x.0);
-
-        match native_package_code_id {
-            PACKAGE_CODE_ID => {
-                PackageNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            RESOURCE_MANAGER_CODE_ID => {
-                ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            EPOCH_MANAGER_CODE_ID => {
-                EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            IDENTITY_CODE_ID => {
-                IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            CLOCK_CODE_ID => ClockNativePackage::invoke_export(&export_name, receiver, input, api),
-            ACCOUNT_CODE_ID => {
-                AccountNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            ACCESS_CONTROLLER_CODE_ID => {
-                AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            TRANSACTION_PROCESSOR_CODE_ID => {
-                TransactionProcessorNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            METADATA_CODE_ID => {
-                MetadataNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            ROYALTY_CODE_ID => {
-                RoyaltyNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            ACCESS_RULES_CODE_ID => {
-                AccessRulesNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            _ => Err(RuntimeError::SystemInvokeError(
-                SystemInvokeError::NativeInvalidCodeId(native_package_code_id),
-            )),
-        }
     }
 }
