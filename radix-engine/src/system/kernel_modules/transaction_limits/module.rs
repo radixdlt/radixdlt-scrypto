@@ -1,14 +1,14 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
+use crate::kernel::kernel_api::KernelInvocation;
+use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
     kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -223,7 +223,9 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for Transaction
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_system()
             .modules

@@ -2,17 +2,17 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelApi, KernelModuleApi, KernelUpstream};
+use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
 use crate::system::node_init::NodeInit;
+use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
 
 //===================================================================================
 // Note: ExecutionTrace must not produce any error or transactional side effect!
@@ -267,7 +267,10 @@ impl ResourceSummary {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelModuleApi<M>, M: KernelUpstream>(api: &mut Y, node_id: &NodeId) -> Self {
+    pub fn from_node_id<Y: KernelModuleApi<M>, M: KernelUpstream>(
+        api: &mut Y,
+        node_id: &NodeId,
+    ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         if let Some(x) = api.kernel_read_bucket(node_id) {
@@ -320,7 +323,9 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         api.kernel_get_system()
@@ -338,7 +343,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.kernel_get_system().modules
+        api.kernel_get_system()
+            .modules
             .execution_trace
             .handle_before_push_frame(current_actor, callee, resource_summary);
         Ok(())

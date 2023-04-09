@@ -1,8 +1,9 @@
-use std::alloc::System;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation, KernelUpstream};
+use crate::kernel::kernel_api::KernelInvocation;
+use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use crate::{
     errors::RuntimeError,
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
@@ -12,8 +13,6 @@ use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey, SysModuleId};
 use sbor::rust::collections::BTreeMap;
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}

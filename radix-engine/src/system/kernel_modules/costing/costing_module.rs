@@ -2,9 +2,12 @@ use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi, KernelUpstream};
+use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi};
 use crate::kernel::module::KernelModule;
+use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
     system::node_init::NodeInit,
@@ -15,14 +18,10 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 use sbor::rust::collections::BTreeMap;
-use crate::system::system_downstream::SystemDownstream;
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -146,15 +145,18 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         }
 
         if current_depth > 0 {
-            api.kernel_get_system().modules.costing.apply_execution_cost(
-                CostingReason::Invoke,
-                |fee_table| {
-                    fee_table.kernel_api_cost(CostingEntry::Invoke {
-                        input_size: input_size as u32,
-                    })
-                },
-                1,
-            )?;
+            api.kernel_get_system()
+                .modules
+                .costing
+                .apply_execution_cost(
+                    CostingReason::Invoke,
+                    |fee_table| {
+                        fee_table.kernel_api_cost(CostingEntry::Invoke {
+                            input_size: input_size as u32,
+                        })
+                    },
+                    1,
+                )?;
         }
 
         Ok(())
@@ -277,21 +279,29 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        api.kernel_get_system().modules.costing.apply_execution_cost(
-            CostingReason::CreateNode,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
-            1,
-        )?;
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::CreateNode,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
+                1,
+            )?;
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        api.kernel_get_system().modules.costing.apply_execution_cost(
-            CostingReason::DropNode,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
-            1,
-        )?;
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::DropNode,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
+                1,
+            )?;
 
         Ok(())
     }
@@ -303,11 +313,14 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system().modules.costing.apply_execution_cost(
-            CostingReason::LockSubstate,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
-            1,
-        )?;
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::LockSubstate,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
+                1,
+            )?;
         Ok(())
     }
 
@@ -316,11 +329,16 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system().modules.costing.apply_execution_cost(
-            CostingReason::ReadSubstate,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 }),
-            1,
-        )?;
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::ReadSubstate,
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 })
+                },
+                1,
+            )?;
         Ok(())
     }
 
@@ -329,13 +347,16 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system().modules.costing.apply_execution_cost(
-            CostingReason::WriteSubstate,
-            |fee_table| {
-                fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: size as u32 })
-            },
-            1,
-        )?;
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::WriteSubstate,
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: size as u32 })
+                },
+                1,
+            )?;
         Ok(())
     }
 
@@ -343,11 +364,14 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system().modules.costing.apply_execution_cost(
-            CostingReason::DropLock,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
-            1,
-        )?;
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::DropLock,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
+                1,
+            )?;
         Ok(())
     }
 }

@@ -1,10 +1,10 @@
 use crate::kernel::module::KernelModule;
 
+use crate::system::system_upstream::SystemUpstream;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone)]
 pub struct LoggerModule(Vec<(Level, String)>);

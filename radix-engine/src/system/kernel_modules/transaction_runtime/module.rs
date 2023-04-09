@@ -1,8 +1,8 @@
 use crate::kernel::module::KernelModule;
-use crate::types::*;
-use radix_engine_interface::crypto::Hash;
 use crate::system::system_upstream::SystemUpstream;
+use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {

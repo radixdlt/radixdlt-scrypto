@@ -6,31 +6,26 @@ use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelModuleApi, KernelNodeApi,
     KernelSubstateApi, LockInfo,
 };
-use super::module::KernelModule;
-use super::module_mixer::KernelModuleMixer;
 use crate::blueprints::resource::*;
 use crate::errors::*;
-use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
+use crate::errors::{InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
-use crate::system::system_upstream::SystemUpstream;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
+use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
-use crate::vm::ScryptoInterpreter;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
-use crate::system::system_downstream::SystemDownstream;
-use crate::system::kernel_modules::virtualization::VirtualizationModule;
 
 pub struct RadixEngine;
 
@@ -120,7 +115,8 @@ impl RadixEngine {
 
         let mut system = SystemDownstream::new(&mut kernel);
 
-        let rtn = system.call_function(package_address, blueprint_name, function_name, args.into())?;
+        let rtn =
+            system.call_function(package_address, blueprint_name, function_name, args.into())?;
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
@@ -132,7 +128,7 @@ impl RadixEngine {
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
-    M, // Upstream System layer
+    M,  // Upstream System layer
     S,  // Substate store
 > where
     M: KernelUpstream,
@@ -285,9 +281,7 @@ where
 
         // After pop call frame
         {
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::after_pop_frame(api)
-            })?;
+            self.execute_in_mode(ExecutionMode::KernelModule, |api| M::after_pop_frame(api))?;
         }
 
         Ok(output)
@@ -673,9 +667,8 @@ where
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                    let retry = M::on_substate_lock_fault(
-                        *node_id,
-                        module_id, &substate_key, self)?;
+                    let retry =
+                        M::on_substate_lock_fault(*node_id, module_id, &substate_key, self)?;
 
                     if retry {
                         self.current_frame
@@ -817,7 +810,6 @@ where
             .map_err(RuntimeError::KernelError)
     }
 }
-
 
 impl<'g, M, S> KernelInvokeDownstreamApi for Kernel<'g, M, S>
 where

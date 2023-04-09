@@ -1,15 +1,19 @@
-use crate::errors::{ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError, SubstateValidationError};
+use crate::errors::{
+    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError,
+    RuntimeError, SubstateValidationError,
+};
 use crate::errors::{SystemError, SystemInvokeError};
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::RefType;
-use crate::kernel::kernel::Kernel;
+use crate::kernel::heap::HeapNode;
 use crate::kernel::kernel_api::*;
-use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_properties::NodeProperties;
+use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -25,14 +29,9 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_stores::interface::SubstateStore;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::system::node_properties::NodeProperties;
-use crate::kernel::heap::HeapNode;
-use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
@@ -43,9 +42,9 @@ pub struct SystemDownstream<'a, 'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W
 }
 
 impl<'a, 'g, Y, W> SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     pub fn new(api: &'a mut Y) -> Self {
         Self {
@@ -53,110 +52,6 @@ impl<'a, 'g, Y, W> SystemDownstream<'a, 'g, Y, W>
             phantom: PhantomData::default(),
         }
     }
-
-}
-
-impl<'a, 'g, Y, W> KernelNodeApi for SystemDownstream<'a, 'g, Y, W> where W: 'g + WasmEngine, Y: KernelModuleApi<SystemUpstream<'g, W>> {
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
-        self.api.kernel_drop_node(node_id)
-    }
-
-    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        todo!()
-    }
-
-    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
-        self.api.kernel_allocate_node_id(node_type)
-    }
-
-    fn kernel_create_node(
-        &mut self,
-        node_id: NodeId,
-        node_init: NodeInit,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>
-    ) -> Result<(), RuntimeError> {
-        self.api.kernel_create_node(node_id, node_init, module_init)
-    }
-}
-
-impl<'a, 'g, Y, W> KernelSubstateApi for SystemDownstream<'a, 'g, Y, W> where W: 'g + WasmEngine, Y: KernelModuleApi<SystemUpstream<'g, W>> {
-    fn kernel_lock_substate(
-        &mut self,
-        node_id: &NodeId,
-        module_id: SysModuleId,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
-        self.api.kernel_lock_substate(node_id, module_id, substate_key, flags)
-    }
-
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
-        todo!()
-    }
-
-    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.api.kernel_drop_lock(lock_handle)
-    }
-
-    fn kernel_read_substate(&mut self, lock_handle: LockHandle) -> Result<&IndexedScryptoValue, RuntimeError> {
-        self.api.kernel_read_substate(lock_handle)
-    }
-
-    fn kernel_write_substate(&mut self, lock_handle: LockHandle, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
-        self.api.kernel_write_substate(lock_handle, value)
-    }
-}
-
-impl<'a, 'g, Y, W> KernelInternalApi<SystemUpstream<'g, W>> for SystemDownstream<'a, 'g, Y, W> where W: 'g + WasmEngine, Y: KernelModuleApi<SystemUpstream<'g, W>> {
-    fn kernel_get_system(&mut self) -> &mut SystemUpstream<'g, W> {
-        todo!()
-    }
-
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
-        todo!()
-    }
-
-    fn kernel_get_current_depth(&self) -> usize {
-        todo!()
-    }
-
-    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
-        self.api.kernel_get_current_actor()
-    }
-
-    fn kernel_set_mode(&mut self, mode: ExecutionMode) {
-        self.api.kernel_set_mode(mode);
-    }
-
-    fn kernel_load_package_package_dependencies(&mut self) {
-        todo!()
-    }
-
-    fn kernel_load_common(&mut self) {
-        todo!()
-    }
-
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        todo!()
-    }
-
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        todo!()
-    }
-}
-
-impl<'a, 'g, Y, W> KernelInvokeDownstreamApi for SystemDownstream<'a, 'g, Y, W> where W: 'g + WasmEngine, Y: KernelModuleApi<SystemUpstream<'g, W>> {
-    fn kernel_invoke_downstream(&mut self, invocation: Box<KernelInvocation>) -> Result<IndexedScryptoValue, RuntimeError> {
-        todo!()
-    }
-}
-
-impl<'a, 'g, Y, W> KernelModuleApi<SystemUpstream<'g, W>> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
-{
-
 }
 
 impl<'a, 'g, Y, W> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
@@ -192,11 +87,13 @@ where
                 SysModuleId::ObjectState
             };
 
-        self.api.kernel_lock_substate(&node_id, module_id, substate_key, flags)
+        self.api
+            .kernel_lock_substate(&node_id, module_id, substate_key, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
-        self.api.kernel_read_substate(lock_handle)
+        self.api
+            .kernel_read_substate(lock_handle)
             .map(|v| v.as_slice().to_vec())
     }
 
@@ -250,9 +147,9 @@ where
 }
 
 impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn new_object(
         &mut self,
@@ -268,7 +165,8 @@ impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
-        let package: PackageInfoSubstate = self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let package: PackageInfoSubstate =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         let schema =
             package
                 .schema
@@ -508,7 +406,8 @@ impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
         // TODO: better interface to remove this
         let node_init = node_substates.remove(&SysModuleId::ObjectState).unwrap();
 
-        self.api.kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
+        self.api
+            .kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
 
         Ok(())
     }
@@ -604,7 +503,8 @@ impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
             payload_size,
         };
 
-        self.api.kernel_invoke_downstream(Box::new(invocation))
+        self.api
+            .kernel_invoke_downstream(Box::new(invocation))
             .map(|v| v.into())
     }
 
@@ -634,7 +534,8 @@ impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
             payload_size,
         };
 
-        self.api.kernel_invoke_downstream(Box::new(invocation))
+        self.api
+            .kernel_invoke_downstream(Box::new(invocation))
             .map(|v| v.into())
     }
 
@@ -689,7 +590,7 @@ impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
 
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         // TODO: Cleanup
-        if let Some(actor) = self.kernel_get_current_actor() {
+        if let Some(actor) = self.api.kernel_get_current_actor() {
             let info = self.get_object_info(&node_id)?;
             if !NodeProperties::can_be_dropped(
                 ExecutionMode::Client,
@@ -716,9 +617,9 @@ impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
 }
 
 impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     #[trace_resources(log=units)]
     fn consume_cost_units(
@@ -728,15 +629,19 @@ impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y
     ) -> Result<(), RuntimeError> {
         // No costing applied
 
-        self.api.kernel_get_system().modules.costing.apply_execution_cost(
-            match reason {
-                ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunNative => CostingReason::RunNative,
-                ClientCostingReason::RunSystem => CostingReason::RunSystem,
-            },
-            |_| units,
-            5,
-        )
+        self.api
+            .kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                match reason {
+                    ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                    ClientCostingReason::RunNative => CostingReason::RunNative,
+                    ClientCostingReason::RunSystem => CostingReason::RunSystem,
+                },
+                |_| units,
+                5,
+            )
     }
 
     fn credit_cost_units(
@@ -747,7 +652,8 @@ impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y
     ) -> Result<LiquidFungibleResource, RuntimeError> {
         // No costing applied
 
-        self.api.kernel_get_system()
+        self.api
+            .kernel_get_system()
             .modules
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
@@ -755,12 +661,13 @@ impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y
 }
 
 impl<'a, 'g, Y, W> ClientActorApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        self.api.kernel_get_current_actor()
+        self.api
+            .kernel_get_current_actor()
             .and_then(|e| match e {
                 Actor::Method {
                     global_address: Some(address),
@@ -776,14 +683,19 @@ impl<'a, 'g, Y, W> ClientActorApi<RuntimeError> for SystemDownstream<'a, 'g, Y, 
     fn get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self.api.kernel_get_current_actor().unwrap().blueprint().clone())
+        Ok(self
+            .api
+            .kernel_get_current_actor()
+            .unwrap()
+            .blueprint()
+            .clone())
     }
 }
 
 impl<'a, 'g, Y, W> ClientAuthApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -827,15 +739,16 @@ impl<'a, 'g, Y, W> ClientAuthApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W
 }
 
 impl<'a, 'g, Y, W> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
         let current_depth = self.api.kernel_get_current_depth();
-        self.api.kernel_get_system()
+        self.api
+            .kernel_get_system()
             .modules
             .transaction_limits
             .update_wasm_memory_usage(current_depth, consumed_memory)
@@ -843,14 +756,15 @@ impl<'a, 'g, Y, W> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream
 }
 
 impl<'a, 'g, Y, W> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
-        self.api.kernel_get_system()
+        self.api
+            .kernel_get_system()
             .modules
             .execution_trace
             .update_instruction_index(new_index);
@@ -859,9 +773,9 @@ impl<'a, 'g, Y, W> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a
 }
 
 impl<'a, 'g, Y, W> ClientEventApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
@@ -972,7 +886,8 @@ impl<'a, 'g, Y, W> ClientEventApi<RuntimeError> for SystemDownstream<'a, 'g, Y, 
         })?;
 
         // Adding the event to the event store
-        self.api.kernel_get_system()
+        self.api
+            .kernel_get_system()
             .modules
             .events
             .add_event(event_type_identifier, event_data);
@@ -984,14 +899,15 @@ impl<'a, 'g, Y, W> ClientEventApi<RuntimeError> for SystemDownstream<'a, 'g, Y, 
 }
 
 impl<'a, 'g, Y, W> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        self.api.kernel_get_system()
+        self.api
+            .kernel_get_system()
             .modules
             .logger
             .add_log(level, message);
@@ -1000,9 +916,9 @@ impl<'a, 'g, Y, W> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
 }
 
 impl<'a, 'g, Y, W> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -1028,8 +944,75 @@ impl<'a, 'g, Y, W> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstrea
 }
 
 impl<'a, 'g, Y, W> ClientApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
-    where
-        Y: KernelModuleApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
+where
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+    W: WasmEngine + 'g,
 {
+}
+
+impl<'a, 'g, Y, W> KernelNodeApi for SystemDownstream<'a, 'g, Y, W>
+where
+    W: 'g + WasmEngine,
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+{
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
+        self.api.kernel_drop_node(node_id)
+    }
+
+    fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        self.api.kernel_allocate_virtual_node_id(node_id)
+    }
+
+    fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError> {
+        self.api.kernel_allocate_node_id(node_type)
+    }
+
+    fn kernel_create_node(
+        &mut self,
+        node_id: NodeId,
+        node_init: NodeInit,
+        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_create_node(node_id, node_init, module_init)
+    }
+}
+
+impl<'a, 'g, Y, W> KernelSubstateApi for SystemDownstream<'a, 'g, Y, W>
+where
+    W: 'g + WasmEngine,
+    Y: KernelModuleApi<SystemUpstream<'g, W>>,
+{
+    fn kernel_lock_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
+        self.api
+            .kernel_lock_substate(node_id, module_id, substate_key, flags)
+    }
+
+    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+        self.api.kernel_get_lock_info(lock_handle)
+    }
+
+    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        self.api.kernel_drop_lock(lock_handle)
+    }
+
+    fn kernel_read_substate(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+        self.api.kernel_read_substate(lock_handle)
+    }
+
+    fn kernel_write_substate(
+        &mut self,
+        lock_handle: LockHandle,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_write_substate(lock_handle, value)
+    }
 }

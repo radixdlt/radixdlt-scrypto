@@ -1,8 +1,8 @@
 use crate::kernel::module::KernelModule;
-use crate::types::*;
-use radix_engine_interface::types::*;
 use crate::system::system_upstream::SystemUpstream;
+use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::types::*;
 
 #[derive(Debug, Default, Clone)]
 pub struct EventsModule(Vec<(EventTypeIdentifier, Vec<u8>)>);

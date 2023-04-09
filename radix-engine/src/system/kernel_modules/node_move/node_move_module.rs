@@ -1,18 +1,18 @@
 use crate::blueprints::resource::ProofInfoSubstate;
-use crate::errors::{ModuleError, RuntimeError, SystemError};
+use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use crate::system::system_downstream::SystemDownstream;
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
-use radix_engine_interface::api::ClientObjectApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
@@ -24,24 +24,16 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
+    fn prepare_move_downstream<
+        'g,
+        Y: KernelModuleApi<SystemUpstream<'g, W>>,
+        W: WasmEngine + 'g,
+    >(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let (package_address, blueprint_name) = {
-            /*
-            let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
-            let object_info = match type_info {
-                TypeInfoSubstate::Object(info) => info,
-                TypeInfoSubstate::KeyValueStore(..) => {
-                    return Err(RuntimeError::SystemError(SystemError::NotAnObject))
-                }
-            };
-
-            let blueprint = object_info.blueprint;
-             */
-
             let mut system = SystemDownstream::new(api);
             let blueprint = system.get_object_info(&node_id)?.blueprint;
             (blueprint.package_address, blueprint.blueprint_name)

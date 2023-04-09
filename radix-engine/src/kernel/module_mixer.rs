@@ -2,7 +2,7 @@ use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::AuthModule;
 use crate::system::kernel_modules::costing::CostingModule;
@@ -19,16 +19,16 @@ use crate::system::kernel_modules::transaction_limits::{
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::kernel_modules::virtualization::VirtualizationModule;
 use crate::system::node_init::NodeInit;
+use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
-use crate::system::system_upstream::SystemUpstream;
-use crate::wasm::WasmEngine;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -187,7 +187,9 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
     }
 
     #[trace_resources]
-    fn on_teardown<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;
@@ -368,7 +370,9 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_pop_frame(api)?;
@@ -588,7 +592,9 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
     }
 
     #[trace_resources]
-    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_drop_node(api)?;
