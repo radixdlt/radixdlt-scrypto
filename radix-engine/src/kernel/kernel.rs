@@ -375,27 +375,6 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        // TODO: Move this into the system layer
-        if let Some(actor) = self.current_frame.actor.clone() {
-            let info = self.get_object_info(node_id)?;
-            if !NodeProperties::can_be_dropped(
-                current_mode,
-                &actor,
-                info.blueprint.package_address,
-                info.blueprint.blueprint_name.as_str(),
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        mode: current_mode,
-                        actor: actor.clone(),
-                        node_id: node_id.clone(),
-                        package_address: info.blueprint.package_address,
-                        blueprint_name: info.blueprint.blueprint_name,
-                    })),
-                ));
-            }
-        }
-
         let node = self.drop_node_internal(*node_id)?;
 
         // Restore current mode

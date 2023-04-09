@@ -1,6 +1,4 @@
-use crate::errors::{
-    ApplicationError, InvalidModuleSet, InvalidModuleType, RuntimeError, SubstateValidationError,
-};
+use crate::errors::{ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError, SubstateValidationError};
 use crate::errors::{SystemError, SystemInvokeError};
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::RefType;
@@ -31,6 +29,7 @@ use radix_engine_stores::interface::SubstateStore;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::node_properties::NodeProperties;
 
 use super::kernel_modules::auth::{convert_contextless, Authentication};
 use super::kernel_modules::costing::CostingReason;
@@ -569,6 +568,28 @@ where
     }
 
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+
+        // TODO: Cleanup
+        if let Some(actor) = self.kernel_get_current_actor() {
+            let info = self.get_object_info(&node_id)?;
+            if !NodeProperties::can_be_dropped(
+                ExecutionMode::Client,
+                &actor,
+                info.blueprint.package_address,
+                info.blueprint.blueprint_name.as_str(),
+            ) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+                        mode: ExecutionMode::Client,
+                        actor: actor.clone(),
+                        node_id: node_id.clone(),
+                        package_address: info.blueprint.package_address,
+                        blueprint_name: info.blueprint.blueprint_name,
+                    })),
+                ));
+            }
+        }
+
         self.kernel_drop_node(&node_id)?;
         Ok(())
     }
