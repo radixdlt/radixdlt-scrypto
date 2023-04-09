@@ -22,7 +22,7 @@ use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_modules::auth::convert;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;

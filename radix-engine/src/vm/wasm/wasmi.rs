@@ -9,9 +9,10 @@ use super::InstrumentedCode;
 use super::MeteredCodeKey;
 use crate::errors::InvokeError;
 use crate::types::*;
-use crate::wasm::constants::*;
-use crate::wasm::errors::*;
-use crate::wasm::traits::*;
+use crate::vm::wasm::WasmEngine;
+use crate::vm::wasm::constants::*;
+use crate::vm::wasm::errors::*;
+use crate::vm::wasm::traits::*;
 
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;

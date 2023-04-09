@@ -4,8 +4,8 @@ mod multi_threaded_test {
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
-    use radix_engine::wasm::WasmInstrumenter;
-    use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
+    use radix_engine::vm::wasm::WasmInstrumenter;
+    use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
     use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
     use radix_engine_interface::blueprints::resource::*;
     use radix_engine_interface::dec;

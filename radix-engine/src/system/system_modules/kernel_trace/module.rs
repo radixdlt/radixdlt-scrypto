@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::RuntimeError, kernel::kernel_api::KernelModuleApi, system::node_init::NodeInit,
 };

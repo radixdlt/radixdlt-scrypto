@@ -1,5 +1,5 @@
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
 
 pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_engine: W,
@@ -40,7 +40,7 @@ mod tests {
             // This test ensures the requirement for this cache to be Sync isn't broken
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
-            assert_sync::<crate::vm::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>>();
+            assert_sync::<crate::vm::ScryptoInterpreter<crate::vm::wasm::DefaultWasmEngine>>();
         }
     };
 }

@@ -7,7 +7,7 @@ use crate::system::module::SystemModule;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
     system::node_init::NodeInit,

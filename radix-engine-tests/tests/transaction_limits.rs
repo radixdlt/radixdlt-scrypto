@@ -3,7 +3,7 @@ use radix_engine::{
     system::system_modules::transaction_limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
-    wasm::WASM_MEMORY_PAGE_SIZE,
+    vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
 use radix_engine_interface::{blueprints::resource::*, schema::PackageSchema};
 use scrypto_unit::*;

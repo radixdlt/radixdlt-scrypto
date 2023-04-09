@@ -3,7 +3,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,

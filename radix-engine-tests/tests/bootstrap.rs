@@ -7,7 +7,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::vm::*;
-use radix_engine::wasm::DefaultWasmEngine;
+use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};

@@ -1,7 +1,7 @@
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::vm::ScryptoInterpreter;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_stores::interface::*;
 use transaction::errors::TransactionValidationError;

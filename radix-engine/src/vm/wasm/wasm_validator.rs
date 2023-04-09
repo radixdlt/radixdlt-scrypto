@@ -1,7 +1,7 @@
 use radix_engine_interface::schema::PackageSchema;
 
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
 
 pub struct WasmValidator {
     pub max_initial_memory_size_pages: u32,

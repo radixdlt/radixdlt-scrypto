@@ -15,7 +15,7 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::vm::ScryptoInterpreter;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,

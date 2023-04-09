@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi};
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{

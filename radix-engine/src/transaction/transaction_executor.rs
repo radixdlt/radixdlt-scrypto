@@ -9,7 +9,7 @@ use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::ScryptoInterpreter;
-use crate::wasm::*;
+use crate::vm::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;

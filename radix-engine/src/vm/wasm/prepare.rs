@@ -11,7 +11,7 @@ use wasm_instrument::{
 use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::types::*;
-use crate::wasm::{constants::*, errors::*, PrepareError};
+use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 
 use super::WasmiModule;
 #[derive(Debug, PartialEq)]

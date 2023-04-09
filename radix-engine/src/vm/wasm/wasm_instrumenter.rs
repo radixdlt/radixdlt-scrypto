@@ -1,6 +1,6 @@
 use super::{CodeKey, MeteredCodeKey, WasmMeteringParams};
 use crate::types::*;
-use crate::wasm::{WasmMeteringConfig, WasmModule};
+use crate::vm::wasm::{WasmMeteringConfig, WasmModule};
 use sbor::rust::sync::Arc;
 
 pub struct WasmInstrumenter {

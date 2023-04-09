@@ -2,7 +2,7 @@ use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::system::system_modules::costing::*;
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;

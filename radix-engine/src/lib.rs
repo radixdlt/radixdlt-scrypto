@@ -16,9 +16,6 @@ pub mod transaction;
 /// Native blueprints (to be moved to individual crates)
 pub mod blueprints;
 
-/// Wasm validation, instrumentation and execution.
-pub mod wasm;
-
 /// Scrypto/SBOR types required by Radix Engine.
 pub mod types;
 

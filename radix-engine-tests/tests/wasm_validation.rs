@@ -1,4 +1,4 @@
-use radix_engine::wasm::{InvalidMemory, PrepareError, WasmValidator};
+use radix_engine::vm::wasm::{InvalidMemory, PrepareError, WasmValidator};
 use scrypto_unit::*;
 
 #[test]

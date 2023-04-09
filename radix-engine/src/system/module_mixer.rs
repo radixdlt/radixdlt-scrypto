@@ -22,7 +22,7 @@ use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::crypto::Hash;

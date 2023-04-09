@@ -1,7 +1,7 @@
 use super::InstrumentedCode;
 use crate::errors::InvokeError;
 use crate::types::*;
-use crate::wasm::errors::*;
+use crate::vm::wasm::errors::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 

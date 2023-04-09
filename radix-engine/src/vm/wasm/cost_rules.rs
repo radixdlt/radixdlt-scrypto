@@ -240,7 +240,7 @@ impl Rules for InstructionCostRules {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::wasm::WasmModule;
+    use crate::vm::wasm::WasmModule;
     use wabt::wat2wasm;
 
     #[test]

@@ -1,7 +1,7 @@
 use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]

@@ -21,7 +21,7 @@ use crate::system::system_modules::node_move::NodeMoveError;
 use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
-use crate::wasm::WasmRuntimeError;
+use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::substate_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -9,7 +9,7 @@ use crate::system::node_modules::access_rules::{
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
-use crate::wasm::{PrepareError, WasmValidator};
+use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
