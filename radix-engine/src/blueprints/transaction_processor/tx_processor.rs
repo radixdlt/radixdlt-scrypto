@@ -491,7 +491,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        SysModuleId::ObjectTuple,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -534,7 +534,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        SysModuleId::ObjectTuple,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;

@@ -106,7 +106,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, SysModuleId::ObjectTuple, method_name, args)
     }
 
     fn call_module_method(

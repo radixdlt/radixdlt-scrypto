@@ -170,7 +170,7 @@ where
         let mut node = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node
             .substates
-            .remove(&SysModuleId::ObjectState)
+            .remove(&SysModuleId::ObjectTuple)
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();

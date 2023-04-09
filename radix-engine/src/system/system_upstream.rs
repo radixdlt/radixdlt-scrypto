@@ -259,7 +259,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             );
@@ -305,7 +305,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -319,7 +319,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     invocation.blueprint.package_address.as_node_id(),
-                    SysModuleId::ObjectState,
+                    SysModuleId::ObjectTuple,
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
                 )?;
@@ -360,7 +360,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             let code_type = {
                 let handle = api.kernel_lock_substate(
                     invocation.blueprint.package_address.as_node_id(),
-                    SysModuleId::ObjectState,
+                    SysModuleId::ObjectTuple,
                     &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
@@ -373,7 +373,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
                         invocation.blueprint.package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        SysModuleId::ObjectTuple,
                         &PackageOffset::Code.into(),
                         LockFlags::read_only(),
                     )?;
@@ -397,7 +397,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
                             invocation.blueprint.package_address.as_node_id(),
-                            SysModuleId::ObjectState,
+                            SysModuleId::ObjectTuple,
                             &PackageOffset::Code.into(),
                             LockFlags::read_only(),
                         )?;

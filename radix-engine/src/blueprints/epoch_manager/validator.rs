@@ -468,7 +468,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(SysModuleId::ObjectState, VALIDATOR_STAKE_IDENT),
+                method_key: MethodKey::new(SysModuleId::ObjectTuple, VALIDATOR_STAKE_IDENT),
                 rule,
             })
             .unwrap(),

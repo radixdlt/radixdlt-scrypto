@@ -44,7 +44,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
         ),
         "mint",
@@ -52,7 +52,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
         ),
         "mint",
@@ -60,7 +60,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
         ),
         "mint",
@@ -68,7 +68,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
         ),
         "mint",
@@ -76,13 +76,13 @@ fn build_access_rules(
     );
 
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, RESOURCE_MANAGER_BURN_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, RESOURCE_MANAGER_BURN_IDENT),
         burn_access_rule,
         burn_mutability,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
         ),
         update_non_fungible_data_access_rule,
@@ -90,7 +90,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
         ),
         AllowAll,
@@ -98,7 +98,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
         ),
         AllowAll,
@@ -106,7 +106,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
         ),
         AllowAll,
@@ -114,7 +114,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
         ),
         AllowAll,
@@ -122,7 +122,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
         ),
         AllowAll,
@@ -130,7 +130,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
         ),
         AllowAll,
@@ -154,20 +154,20 @@ fn build_access_rules(
         withdraw_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, VAULT_TAKE_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, VAULT_TAKE_IDENT),
         "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
         ),
         "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
         "withdraw",
         DenyAll,
     );
@@ -177,48 +177,48 @@ fn build_access_rules(
         recall_mutability,
     );
     vault_access_rules.set_direct_access_group(
-        MethodKey::new(SysModuleId::ObjectState, VAULT_RECALL_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, VAULT_RECALL_IDENT),
         "recall",
     );
     vault_access_rules.set_direct_access_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
         ),
         "recall",
     );
 
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, VAULT_PUT_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, VAULT_PUT_IDENT),
         deposit_access_rule,
         deposit_mutability,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, VAULT_GET_AMOUNT_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, VAULT_GET_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
         ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, VAULT_CREATE_PROOF_OF_ALL_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, VAULT_CREATE_PROOF_OF_ALL_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
         ),
         AllowAll,
@@ -226,7 +226,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AllowAll,
@@ -234,7 +234,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AllowAll,
@@ -242,7 +242,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AllowAll,
@@ -250,7 +250,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AllowAll,

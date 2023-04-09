@@ -151,7 +151,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let persisted_resource_manager_substate = substate_store
         .get_substate(
             &resource_address,
-            SysModuleId::ObjectState.into(),
+            SysModuleId::ObjectTuple.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
         .unwrap()

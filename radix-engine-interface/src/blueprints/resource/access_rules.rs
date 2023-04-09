@@ -107,7 +107,7 @@ impl AccessRulesConfig {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = MethodKey::new(SysModuleId::ObjectState, method_name);
+        let key = MethodKey::new(SysModuleId::ObjectTuple, method_name);
         let mutability = mutability.into();
 
         self.method_auth
@@ -284,12 +284,12 @@ pub fn package_access_rules_from_owner_badge(
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(SysModuleId::ObjectState, PACKAGE_CLAIM_ROYALTY_IDENT),
+        MethodKey::new(SysModuleId::ObjectTuple, PACKAGE_CLAIM_ROYALTY_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

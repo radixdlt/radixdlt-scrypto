@@ -816,21 +816,21 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         primary_group.into(),
@@ -841,35 +841,35 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
@@ -885,7 +885,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     // Other methods
     access_rules.set_method_access_rule(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         ),
         access_rule_or(
@@ -899,14 +899,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     );
     access_rules.set_method_access_rule(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
     );
     access_rules.set_method_access_rule(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),

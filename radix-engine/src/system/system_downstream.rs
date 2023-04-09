@@ -84,7 +84,7 @@ where
                 module_id
             } else {
                 // TODO: Remove this
-                SysModuleId::ObjectState
+                SysModuleId::ObjectTuple
             };
 
         self.api
@@ -106,7 +106,7 @@ where
             node_id, module_id, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::ObjectState) {
+        if module_id.eq(&SysModuleId::ObjectTuple) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -161,7 +161,7 @@ where
 
         let handle = self.api.kernel_lock_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -349,7 +349,7 @@ where
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
             match module_id {
-                SysModuleId::ObjectState | SysModuleId::TypeInfo => {
+                SysModuleId::ObjectTuple | SysModuleId::ObjectMap | SysModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 SysModuleId::AccessRules => {
@@ -365,7 +365,7 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    let access_rules = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(module_id, access_rules);
                 }
                 SysModuleId::Metadata => {
@@ -381,7 +381,7 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    let metadata = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(module_id, metadata);
                 }
                 SysModuleId::Royalty => {
@@ -397,14 +397,14 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    let royalty = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(module_id, royalty);
                 }
             }
         }
 
         // TODO: better interface to remove this
-        let node_init = node_substates.remove(&SysModuleId::ObjectState).unwrap();
+        let node_init = node_substates.remove(&SysModuleId::ObjectTuple).unwrap();
 
         self.api
             .kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
@@ -418,7 +418,7 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, SysModuleId::ObjectTuple, method_name, args)
     }
 
     fn call_module_method(
@@ -429,7 +429,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let (blueprint, global_address) = match module_id {
-            SysModuleId::ObjectState => {
+            SysModuleId::ObjectTuple => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo {
@@ -801,7 +801,7 @@ where
                     SysModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    SysModuleId::ObjectState => self.get_object_info(&node_id).map(|x| x.blueprint),
+                    SysModuleId::ObjectTuple | SysModuleId::ObjectMap => self.get_object_info(&node_id).map(|x| x.blueprint),
                     SysModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),
@@ -814,7 +814,7 @@ where
 
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -863,7 +863,7 @@ where
             Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
-                    SysModuleId::ObjectState,
+                    SysModuleId::ObjectTuple,
                     blueprint.blueprint_name.to_string(),
                 ),
                 local_type_index,

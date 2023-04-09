@@ -24,10 +24,11 @@ use strum::{EnumIter, FromRepr};
 )]
 pub enum SysModuleId {
     TypeInfo,
-    ObjectState,
     Metadata,
     Royalty,
     AccessRules,
+    ObjectTuple,
+    ObjectMap,
 }
 
 impl Into<ModuleId> for SysModuleId {

@@ -494,7 +494,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             &BucketOffset::Info.into(),
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
@@ -505,7 +505,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::ObjectTuple,
                             &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
@@ -522,7 +522,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::ObjectTuple,
                             &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
@@ -562,7 +562,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             proof_id,
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             &ProofOffset::Info.into(),
         ) {
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
@@ -573,7 +573,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::ObjectTuple,
                             &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
@@ -591,7 +591,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::ObjectTuple,
                             &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
@@ -703,7 +703,7 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = SysModuleId::ObjectState;
+                        let module_id = SysModuleId::ObjectTuple;
                         let handle = self
                             .store
                             .acquire_lock(

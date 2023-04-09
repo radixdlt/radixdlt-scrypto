@@ -31,7 +31,7 @@ impl Metadata {
 
 impl MetadataObject for Metadata {
     fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0.as_node_id().clone(), SysModuleId::ObjectState)
+        (self.0.as_node_id().clone(), SysModuleId::ObjectTuple)
     }
 }
 

@@ -98,7 +98,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
             )?;
@@ -157,7 +157,7 @@ impl AuthModule {
                 let method_key = MethodKey::new(*module_id, ident);
 
                 // TODO: Clean this up
-                let auth = if node_id.is_global() && module_id.eq(&SysModuleId::ObjectState) {
+                let auth = if node_id.is_global() && module_id.eq(&SysModuleId::ObjectTuple) {
                     Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(
@@ -193,7 +193,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -226,7 +226,7 @@ impl AuthModule {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &substate_key,
                 LockFlags::read_only(),
             )?;

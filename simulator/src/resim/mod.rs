@@ -63,7 +63,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::ScryptoVm;
-use radix_engine::wasm::*;
+use radix_engine::vm::wasm::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
@@ -350,7 +350,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectState.into(),
+            SysModuleId::ObjectTuple.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -419,7 +419,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::ObjectState => {
+                SysModuleId::ObjectTuple => {
                     let substate = substate_db
                         .get_substate(
                             node_id,
@@ -438,6 +438,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
+                SysModuleId::ObjectMap => return None,
                 SysModuleId::TypeInfo => return None,
             }
         }
@@ -451,7 +452,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectState.into(),
+            SysModuleId::ObjectTuple.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

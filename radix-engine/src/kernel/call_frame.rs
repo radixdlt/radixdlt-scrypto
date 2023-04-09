@@ -188,12 +188,12 @@ impl CallFrame {
         self.get_node_visibility(node_id)
             .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        // Virtualization
+        // Substate Virtualization
         // TODO: clean up the naughty!
         let virtualization_enabled = {
             if module_id == SysModuleId::Metadata {
                 true
-            } else if module_id == SysModuleId::ObjectState {
+            } else if module_id == SysModuleId::ObjectTuple {
                 if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
@@ -626,7 +626,7 @@ impl CallFrame {
         push_to_store: bool,
     ) -> Result<(), UnlockSubstateError> {
         let mut substates = BTreeMap::new();
-        substates.insert(SysModuleId::ObjectState, node_init.to_substates());
+        substates.insert(SysModuleId::ObjectTuple, node_init.to_substates());
         substates.extend(node_modules);
 
         for (_module_id, module) in &substates {

@@ -18,7 +18,7 @@ impl InMemorySubstateDatabase {
                 SysModuleId::TypeInfo.into() => ModuleConfig {
                     iteration_enabled: false,
                 },
-                SysModuleId::ObjectState.into() => ModuleConfig {
+                SysModuleId::ObjectTuple.into() => ModuleConfig {
                     iteration_enabled: true,
                 },
                 SysModuleId::Metadata.into() => ModuleConfig {

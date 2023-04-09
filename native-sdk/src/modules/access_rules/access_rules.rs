@@ -48,7 +48,7 @@ impl AccessRules {
 
 impl AccessRulesObject for AccessRules {
     fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0 .0, SysModuleId::ObjectState)
+        (self.0 .0, SysModuleId::ObjectTuple)
     }
 }
 

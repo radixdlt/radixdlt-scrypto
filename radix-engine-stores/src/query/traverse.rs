@@ -95,7 +95,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_substates(&node_id, SysModuleId::ObjectState.into())
+                    .list_substates(&node_id, SysModuleId::ObjectTuple.into())
                     .expect("Failed to list key value store")
                     .0
                 {
@@ -106,7 +106,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_recursive(
                             Some(&(
                                 node_id,
-                                SysModuleId::ObjectState.into(),
+                                SysModuleId::ObjectTuple.into(),
                                 substate_key.clone(),
                             )),
                             child_node_id,
@@ -128,7 +128,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                SysModuleId::ObjectState.into(),
+                                SysModuleId::ObjectTuple.into(),
                                 &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database")
@@ -149,7 +149,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                SysModuleId::ObjectState.into(),
+                                SysModuleId::ObjectTuple.into(),
                                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database")
@@ -175,7 +175,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                     self.traverse_recursive(
                                         Some(&(
                                             node_id,
-                                            SysModuleId::ObjectState.into(),
+                                            SysModuleId::ObjectTuple.into(),
                                             substate_key.clone(),
                                         )),
                                         child_node_id,
