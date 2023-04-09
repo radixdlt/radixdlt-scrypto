@@ -2,7 +2,7 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
+use crate::kernel::kernel_api::{KernelUpstreamApi, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::node_init::NodeInit;
 use crate::system::system_upstream::SystemUpstream;
@@ -250,7 +250,7 @@ impl ResourceSummary {
         self.buckets.is_empty() && self.proofs.is_empty()
     }
 
-    pub fn from_call_frame_update<Y: KernelModuleApi<M>, M: KernelUpstream>(
+    pub fn from_call_frame_update<Y: KernelUpstreamApi<M>, M: KernelUpstream>(
         api: &mut Y,
         call_frame_update: &CallFrameUpdate,
     ) -> Self {
@@ -267,7 +267,7 @@ impl ResourceSummary {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelModuleApi<M>, M: KernelUpstream>(
+    pub fn from_node_id<Y: KernelUpstreamApi<M>, M: KernelUpstream>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Self {
@@ -284,7 +284,7 @@ impl ResourceSummary {
 }
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTraceModule {
-    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+    fn before_create_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
@@ -297,7 +297,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTr
         Ok(())
     }
 
-    fn after_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+    fn after_create_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -311,7 +311,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTr
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+    fn before_drop_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -323,7 +323,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTr
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+    fn after_drop_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
@@ -335,7 +335,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTr
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+    fn before_push_frame<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -350,7 +350,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTr
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
+    fn on_execution_finish<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         update: &CallFrameUpdate,

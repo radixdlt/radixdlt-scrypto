@@ -95,7 +95,7 @@ pub trait KernelInternalApi<M: KernelUpstream> {
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelModuleApi<M: KernelUpstream>:
+pub trait KernelUpstreamApi<M: KernelUpstream>:
     KernelNodeApi + KernelSubstateApi + KernelInternalApi<M> + KernelInvokeDownstreamApi
 {
 }
@@ -140,19 +140,19 @@ pub trait KernelInvokeDownstreamApi {
 pub trait KernelUpstream: Sized {
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn after_drop_node<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn before_create_node<Y>(
         node_id: &NodeId,
@@ -161,11 +161,11 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
@@ -175,7 +175,7 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn after_lock_substate<Y>(
         handle: LockHandle,
@@ -183,11 +183,11 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
@@ -195,7 +195,7 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
@@ -203,7 +203,7 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn before_invoke<Y>(
         identifier: &KernelInvocation,
@@ -211,11 +211,11 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn before_push_frame<Y>(
         callee: &Actor,
@@ -224,11 +224,11 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn invoke_upstream<Y>(
         invocation: SystemInvocation,
@@ -236,14 +236,7 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
-
-    /*
-    Y: KernelNodeApi
-            + KernelSubstateApi
-            + KernelInternalApi<Self>;
-            + ClientApi<RuntimeError>;
-     */
+        Y: KernelUpstreamApi<Self>;
 
     fn on_execution_finish<Y>(
         caller: &Option<Actor>,
@@ -251,15 +244,15 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
@@ -268,5 +261,5 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelModuleApi<Self>;
+        Y: KernelUpstreamApi<Self>;
 }
