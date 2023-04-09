@@ -287,7 +287,6 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for ExecutionTr
     fn before_create_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _node_init: &NodeInit,
         _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()

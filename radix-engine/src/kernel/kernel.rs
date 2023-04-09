@@ -367,10 +367,9 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        node_init: NodeInit,
         module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        M::before_create_node(&node_id, &node_init, &module_init, self)?;
+        M::before_create_node(&node_id, &module_init, self)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -382,7 +381,6 @@ where
         self.current_frame
             .create_node(
                 node_id,
-                node_init,
                 module_init,
                 &mut self.heap,
                 self.store,

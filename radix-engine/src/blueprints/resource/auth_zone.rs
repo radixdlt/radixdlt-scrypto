@@ -100,8 +100,8 @@ impl AuthZoneBlueprint {
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             node_id,
-            composed_proof.into(),
             btreemap!(
+                SysModuleId::ObjectTuple => composed_proof.into(),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
@@ -140,8 +140,8 @@ impl AuthZoneBlueprint {
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             node_id,
-            composed_proof.into(),
             btreemap!(
+                SysModuleId::ObjectTuple => composed_proof.into(),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
@@ -180,8 +180,8 @@ impl AuthZoneBlueprint {
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             node_id,
-            composed_proof.into(),
             btreemap!(
+                SysModuleId::ObjectTuple => composed_proof.into(),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,

@@ -31,11 +31,10 @@ pub trait KernelNodeApi {
     fn kernel_allocate_node_id(&mut self, node_type: EntityType) -> Result<NodeId, RuntimeError>;
 
     /// Creates a new RENode
-    /// TODO: merge `node_init` and `module_init`?
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        node_init: NodeInit,
+        //node_init: NodeInit,
         module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError>;
 }
@@ -156,7 +155,6 @@ pub trait KernelUpstream: Sized {
 
     fn before_create_node<Y>(
         node_id: &NodeId,
-        node_init: &NodeInit,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

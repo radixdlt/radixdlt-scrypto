@@ -213,7 +213,7 @@ where
         };
 
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let node_init = NodeInit::Object(
+        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> =
             object_states
                 .into_iter()
                 .enumerate()
@@ -225,8 +225,7 @@ where
                             .expect("Checked by payload-schema validation"),
                     )
                 })
-                .collect(),
-        );
+                .collect();
 
         let type_parent = if let Some(parent) = &schema.parent {
             match actor {
@@ -247,8 +246,8 @@ where
 
         self.api.kernel_create_node(
             node_id,
-            node_init,
             btreemap!(
+                SysModuleId::ObjectTuple => node_init,
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
@@ -403,11 +402,7 @@ where
             }
         }
 
-        // TODO: better interface to remove this
-        let node_init = node_substates.remove(&SysModuleId::ObjectTuple).unwrap();
-
-        self.api
-            .kernel_create_node(address.into(), NodeInit::Object(node_init), node_substates)?;
+        self.api.kernel_create_node(address.into(), node_substates)?;
 
         Ok(())
     }
@@ -577,11 +572,11 @@ where
 
         self.api.kernel_create_node(
             node_id,
-            NodeInit::KeyValueStore,
             btreemap!(
-                    SysModuleId::TypeInfo => ModuleInit::TypeInfo(
-                        TypeInfoSubstate::KeyValueStore(schema)
-                    ).to_substates(),
+                SysModuleId::ObjectTuple => btreemap!(),
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::KeyValueStore(schema)
+                ).to_substates(),
             ),
         )?;
 
@@ -970,10 +965,9 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        node_init: NodeInit,
         module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_create_node(node_id, node_init, module_init)
+        self.api.kernel_create_node(node_id, module_init)
     }
 }
 

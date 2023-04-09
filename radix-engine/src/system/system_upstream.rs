@@ -126,14 +126,13 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
 
     fn before_create_node<Y>(
         node_id: &NodeId,
-        node_init: &NodeInit,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelUpstreamApi<Self>,
     {
-        SystemModuleMixer::before_create_node(api, node_id, node_init, node_module_init)
+        SystemModuleMixer::before_create_node(api, node_id, node_module_init)
     }
 
     fn before_lock_substate<Y>(

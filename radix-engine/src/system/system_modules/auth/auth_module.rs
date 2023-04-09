@@ -428,10 +428,10 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule 
             api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             auth_zone_node_id,
-            NodeInit::Object(btreemap!(
-                AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
-            )),
             btreemap!(
+                SysModuleId::ObjectTuple => btreemap!(
+                    AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
+                ),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,

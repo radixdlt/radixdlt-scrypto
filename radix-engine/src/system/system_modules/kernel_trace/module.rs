@@ -85,7 +85,6 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for KernelTrace
     fn before_create_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_init: &NodeInit,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let message = format!(

@@ -98,7 +98,6 @@ pub trait SystemModule<M: KernelUpstream> {
     fn before_create_node<Y: KernelUpstreamApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _node_init: &NodeInit,
         _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         Ok(())

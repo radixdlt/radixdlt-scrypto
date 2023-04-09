@@ -124,13 +124,13 @@ where
     // Can't use the ClientApi because of chicken-and-egg issue.
 
     // Prepare node init.
-    let node_init = NodeInit::Object(btreemap!(
+    let node_init = btreemap!(
         PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
         PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type ),
         PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code ),
         PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty ),
         PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(& function_access_rules ),
-    ));
+    );
 
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
@@ -195,14 +195,13 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    api.kernel_create_node(
-        node_id,
-        node_init,
-        node_modules
-            .into_iter()
-            .map(|(k, v)| (k, v.to_substates()))
-            .collect(),
-    )?;
+    let mut modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>> = node_modules
+        .into_iter()
+        .map(|(k, v)| (k, v.to_substates()))
+        .collect();
+    modules.insert(SysModuleId::ObjectTuple, node_init);
+
+    api.kernel_create_node(node_id, modules)?;
 
     let package_address = PackageAddress::new_unchecked(node_id.into());
     Ok(package_address)

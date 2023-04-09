@@ -22,6 +22,21 @@ pub enum ComposedProof {
     NonFungible(ProofInfoSubstate, NonFungibleProof),
 }
 
+impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
+    fn from(value: ComposedProof) -> Self {
+        match value {
+            ComposedProof::Fungible(info, proof) => btreemap!(
+                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+                ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
+            ),
+            ComposedProof::NonFungible(info, proof) => btreemap!(
+                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+                ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
+            ),
+        }
+    }
+}
+
 impl From<ComposedProof> for NodeInit {
     fn from(value: ComposedProof) -> Self {
         match value {

@@ -480,41 +480,39 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     fn before_create_node<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_init: &NodeInit,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            KernelTraceModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            CostingModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            NodeMoveModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            AuthModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            LoggerModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
             TransactionRuntimeModule::before_create_node(
                 api,
                 node_id,
-                node_init,
                 node_module_init,
             )?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            ExecutionTraceModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            TransactionLimitsModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_create_node(api, node_id, node_init, node_module_init)?;
+            EventsModule::before_create_node(api, node_id, node_module_init)?;
         }
         Ok(())
     }
