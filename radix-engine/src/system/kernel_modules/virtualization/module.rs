@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
-use crate::system::invoke::SystemInvocation;
+use crate::system::system::SystemInvocation;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::account::{

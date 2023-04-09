@@ -14,7 +14,7 @@ use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
-use crate::system::invoke::SystemInvoke;
+use crate::system::system::System;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -157,6 +157,7 @@ pub struct Kernel<
     /// Upstream system layer
     upstream: &'g M,
 
+    // TODO: Combine into upstream
     /// Kernel module mixer
     module: &'g mut KernelModuleMixer,
 }
@@ -725,7 +726,7 @@ where
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                    let retry = VirtualizationModule::on_substate_lock_fault(
+                    let retry = M::on_substate_lock_fault(
                         *node_id,
                         module_id, &substate_key, self)?;
 

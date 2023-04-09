@@ -4,7 +4,7 @@ use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::system::invoke::SystemInvocation;
+use crate::system::system::SystemInvocation;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node_init::NodeInit;
@@ -257,5 +257,13 @@ pub trait KernelUpstream: Sized {
     where Y: KernelModuleApi<Self, RuntimeError>;
 
     fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError>;
+
+    fn on_substate_lock_fault<Y>(
+        node_id: NodeId,
+        module_id: SysModuleId,
+        offset: &SubstateKey,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
         where Y: KernelModuleApi<Self, RuntimeError>;
 }

@@ -23,6 +23,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::module::KernelModule;
+use crate::system::kernel_modules::virtualization::VirtualizationModule;
 use crate::system::node_init::NodeInit;
 
 fn validate_input(
@@ -95,11 +96,11 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemInvoke<'g, W: WasmEngine> {
+pub struct System<'g, W: WasmEngine> {
     pub scrypto_interpreter: &'g ScryptoInterpreter<W>,
 }
 
-impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
+impl<'g, W: WasmEngine + 'g> KernelUpstream for System<'g, W> {
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
         KernelModuleMixer::on_init(api)
     }
@@ -219,7 +220,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelInternalApi<SystemInvoke<'g, W>>
+            + KernelInternalApi<System<'g, W>>
             + ClientApi<RuntimeError>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
@@ -440,6 +441,16 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemInvoke<'g, W> {
 
     fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self, RuntimeError> {
         KernelModuleMixer::after_pop_frame(api)
+    }
+
+    fn on_substate_lock_fault<Y>(
+        node_id: NodeId,
+        module_id: SysModuleId,
+        offset: &SubstateKey,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+        where Y: KernelModuleApi<Self, RuntimeError> {
+        VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
     }
 }
 

@@ -6,7 +6,7 @@ use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::*;
-use crate::system::invoke::SystemInvocation;
+use crate::system::system::SystemInvocation;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node_init::ModuleInit;
