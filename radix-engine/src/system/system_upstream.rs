@@ -6,7 +6,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{RuntimeError, SystemInvokeError};
+use crate::errors::{KernelError, RuntimeError, SystemInvokeError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelUpstream, KernelNodeApi, KernelSubstateApi, KernelModuleApi, KernelInvocation};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -23,8 +23,12 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::module::KernelModule;
+use crate::system::system_downstream::SystemDownstream;
 use crate::system::kernel_modules::virtualization::VirtualizationModule;
 use crate::system::node_init::NodeInit;
+use radix_engine_interface::api::ClientTransactionLimitsApi;
+use radix_engine_interface::blueprints::resource::{Proof, PROOF_BLUEPRINT, PROOF_DROP_IDENT, ProofDropInput};
+use radix_engine_interface::api::ClientObjectApi;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,
@@ -218,10 +222,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + KernelInternalApi<SystemUpstream<'g, W>>
-            + ClientApi<RuntimeError>,
+        Y: KernelModuleApi<SystemUpstream<'g, W>>
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
@@ -250,12 +251,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 api.kernel_drop_lock(handle)?;
             }
 
+            let mut system = SystemDownstream::new(api);
+
             NativeVm::invoke_native_package(
                 PACKAGE_CODE_ID,
                 &invocation.receiver,
                 &export_name,
                 args,
-                api,
+                &mut system,
             )?
         } else if invocation
             .blueprint
@@ -273,12 +276,13 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 }
             };
 
+            let mut system = SystemDownstream::new(api);
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
                 &invocation.receiver,
                 &export_name,
                 args,
-                api,
+                &mut system,
             )?
         } else {
             // Make dependent resources/components visible
@@ -302,7 +306,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
                 )?;
-                let package_info: PackageInfoSubstate = api.sys_read_substate_typed(handle)?;
+                let package_info = api.kernel_read_substate(handle)?;
+                let package_info: PackageInfoSubstate = package_info.as_typed().unwrap();
                 let schema = package_info
                     .schema
                     .blueprints
@@ -342,8 +347,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     &PackageOffset::CodeType.into(),
                     LockFlags::read_only(),
                 )?;
-                let code_type: PackageCodeTypeSubstate = api.sys_read_substate_typed(handle)?;
-                let code_type = code_type.clone();
+                let code_type = api.kernel_read_substate(handle)?;
+                let code_type: PackageCodeTypeSubstate = code_type.as_typed().unwrap();
                 api.kernel_drop_lock(handle)?;
                 code_type
             };
@@ -355,16 +360,19 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                         &PackageOffset::Code.into(),
                         LockFlags::read_only(),
                     )?;
-                    let code: PackageCodeSubstate = api.sys_read_substate_typed(handle)?;
+                    let code = api.kernel_read_substate(handle)?;
+                    let code: PackageCodeSubstate = code.as_typed().unwrap();
                     let native_package_code_id = code.code[0];
                     api.kernel_drop_lock(handle)?;
+
+                    let mut system = SystemDownstream::new(api);
 
                     NativeVm::invoke_native_package(
                         native_package_code_id,
                         &invocation.receiver,
                         &export_name,
                         args,
-                        api,
+                        &mut system,
                     )?
                     .into()
                 }
@@ -388,7 +396,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     };
 
                     let output = {
-                        let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
+                        let mut system = SystemDownstream::new(api);
+                        let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(&mut system));
 
                         let mut input = Vec::new();
                         if let Some(MethodIdentifier(node_id, ..)) = invocation.receiver {
@@ -410,7 +419,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                         wasm_instance.invoke_export(&export_name, input, &mut runtime)?
                     };
 
-                    api.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
+                    let mut system = SystemDownstream::new(api);
+                    system.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
 
                     output
                 }
@@ -437,6 +447,40 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     fn on_execution_finish<Y>(caller: &Option<Actor>, update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
         where Y: KernelModuleApi<Self> {
         KernelModuleMixer::on_execution_finish(api, caller, update)
+    }
+
+    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self> {
+
+        let mut system = SystemDownstream::new(api);
+        for node_id in nodes {
+            if let Ok(blueprint) = system.get_object_info(&node_id).map(|x| x.blueprint) {
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                    (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                        system.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            PROOF_BLUEPRINT,
+                            PROOF_DROP_IDENT,
+                            scrypto_encode(&ProofDropInput {
+                                proof: Proof(Own(node_id)),
+                            })
+                                .unwrap(),
+                        )?;
+                    }
+                    _ => {
+                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                            node_id,
+                        )))
+                    }
+                }
+            } else {
+                return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                    node_id,
+                )));
+            }
+        }
+
+        Ok(())
     }
 
     fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError> where Y: KernelModuleApi<Self> {

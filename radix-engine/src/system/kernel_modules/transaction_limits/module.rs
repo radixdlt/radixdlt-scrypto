@@ -7,7 +7,7 @@ use crate::{
     kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

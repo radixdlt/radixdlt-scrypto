@@ -27,7 +27,7 @@ use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
 
 bitflags! {

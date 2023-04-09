@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_stores::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,

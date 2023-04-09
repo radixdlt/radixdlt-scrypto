@@ -20,7 +20,8 @@ use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 use sbor::rust::collections::BTreeMap;
-use crate::system::system::SystemUpstream;
+use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -158,7 +159,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>> + ClientObjectApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -207,7 +208,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
             let vault_id = if let Some(vault) = substate.royalty_vault {
                 vault
             } else {
-                let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
+                let mut system = SystemDownstream::new(api);
+                let new_vault = ResourceManager(RADIX_TOKEN).new_vault(&mut system)?;
                 substate.royalty_vault = Some(new_vault);
                 api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
                 new_vault
@@ -248,7 +250,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for CostingModu
                 let vault_id = if let Some(vault) = substate.royalty_vault {
                     vault
                 } else {
-                    let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
+                    let mut system = SystemDownstream::new(api);
+                    let new_vault = ResourceManager(RADIX_TOKEN).new_vault(&mut system)?;
                     substate.royalty_vault = Some(new_vault);
                     new_vault
                 };

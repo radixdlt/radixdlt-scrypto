@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
 use native_sdk::resource::SysProof;
-use radix_engine_interface::api::{ClientObjectApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
@@ -177,7 +177,7 @@ impl Authentication {
         )
     }
 
-    pub fn verify_proof_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+    pub fn verify_proof_rule<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -267,7 +267,7 @@ impl Authentication {
         }
     }
 
-    pub fn verify_auth_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+    pub fn verify_auth_rule<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -314,7 +314,7 @@ impl Authentication {
         }
     }
 
-    pub fn verify_method_auth<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+    pub fn verify_method_auth<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,

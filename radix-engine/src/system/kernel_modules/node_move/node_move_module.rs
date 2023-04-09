@@ -1,5 +1,5 @@
 use crate::blueprints::resource::ProofInfoSubstate;
-use crate::errors::{ModuleError, RuntimeError};
+use crate::errors::{ModuleError, RuntimeError, SystemError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, KernelUpstream};
@@ -9,8 +9,10 @@ use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use crate::system::system::SystemUpstream;
+use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::ClientObjectApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
@@ -27,8 +29,24 @@ impl NodeMoveModule {
         callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let blueprint = api.get_object_info(&node_id).map(|x| x.blueprint)?;
-        match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+        let (package_address, blueprint_name) = {
+            /*
+            let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+            let object_info = match type_info {
+                TypeInfoSubstate::Object(info) => info,
+                TypeInfoSubstate::KeyValueStore(..) => {
+                    return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+                }
+            };
+
+            let blueprint = object_info.blueprint;
+             */
+
+            let mut system = SystemDownstream::new(api);
+            let blueprint = system.get_object_info(&node_id)?.blueprint;
+            (blueprint.package_address, blueprint.blueprint_name)
+        };
+        match (package_address, blueprint_name.as_str()) {
             (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                 if matches!(callee, Actor::Function { .. })
                     && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)

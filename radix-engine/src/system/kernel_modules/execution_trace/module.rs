@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
 
 //===================================================================================

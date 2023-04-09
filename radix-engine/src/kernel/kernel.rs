@@ -14,7 +14,7 @@ use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -29,14 +29,15 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use crate::system::system_downstream::SystemDownstream;
 use crate::system::kernel_modules::virtualization::VirtualizationModule;
 
 pub struct RadixEngine;
 
 impl RadixEngine {
-    pub fn call_function<'g, M: KernelUpstream, S: SubstateStore>(
+    pub fn call_function<'g, W: WasmEngine, S: SubstateStore>(
         id_allocator: &'g mut IdAllocator,
-        upstream: &'g mut M,
+        upstream: &'g mut SystemUpstream<W>,
         store: &'g mut S,
         module: &'g mut KernelModuleMixer,
         package_address: PackageAddress,
@@ -61,7 +62,7 @@ impl RadixEngine {
         };
 
         kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-            M::on_init(api)
+            SystemUpstream::on_init(api)
         })?;
 
         let args = IndexedScryptoValue::from_vec(args)
@@ -119,12 +120,13 @@ impl RadixEngine {
             }
         }
 
-        let rtn =
-            kernel.call_function(package_address, blueprint_name, function_name, args.into())?;
+        let mut system = SystemDownstream::new(&mut kernel);
+
+        let rtn = system.call_function(package_address, blueprint_name, function_name, args.into())?;
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        M::on_teardown(&mut kernel)?;
+        SystemUpstream::on_teardown(&mut kernel)?;
 
         Ok(rtn)
     }
@@ -182,34 +184,7 @@ where
     fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
-            for node_id in owned_nodes {
-                if let Ok(blueprint) = api.get_object_info(&node_id).map(|x| x.blueprint) {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                            api.call_function(
-                                RESOURCE_MANAGER_PACKAGE,
-                                PROOF_BLUEPRINT,
-                                PROOF_DROP_IDENT,
-                                scrypto_encode(&ProofDropInput {
-                                    proof: Proof(Own(node_id)),
-                                })
-                                .unwrap(),
-                            )?;
-                        }
-                        _ => {
-                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                                node_id,
-                            )))
-                        }
-                    }
-                } else {
-                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                        node_id,
-                    )));
-                }
-            }
-
-            Ok(())
+            M::auto_drop(owned_nodes, api)
         })?;
 
         // Last check
@@ -461,6 +436,10 @@ where
     #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
+    }
+
+    fn kernel_set_mode(&mut self, mode: ExecutionMode) {
+        self.execution_mode = mode;
     }
 
     // TODO: Remove

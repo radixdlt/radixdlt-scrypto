@@ -2,9 +2,9 @@ use super::call_frame::RefType;
 use super::heap::HeapNode;
 use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::system::system::SystemInvocation;
+use crate::system::system_upstream::SystemInvocation;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node_init::NodeInit;
@@ -90,6 +90,8 @@ pub trait KernelInternalApi<M: KernelUpstream> {
     // TODO: Remove
     fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
+    fn kernel_set_mode(&mut self, mode: ExecutionMode);
+
     // TODO: Remove
     fn kernel_load_package_package_dependencies(&mut self);
     fn kernel_load_common(&mut self);
@@ -104,7 +106,7 @@ pub trait KernelModuleApi<M: KernelUpstream>:
     + KernelSubstateApi
     + KernelInternalApi<M>
     + KernelInvokeDownstreamApi
-    + ClientObjectApi<RuntimeError>
+    //+ ClientObjectApi<RuntimeError>
 {
 }
 
@@ -244,10 +246,14 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
+        Y: KernelModuleApi<Self>;
+
+    /*
+    Y: KernelNodeApi
             + KernelSubstateApi
-            + KernelInternalApi<Self>
+            + KernelInternalApi<Self>;
             + ClientApi<RuntimeError>;
+     */
 
     fn on_execution_finish<Y>(
         caller: &Option<Actor>,
@@ -255,6 +261,9 @@ pub trait KernelUpstream: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where Y: KernelModuleApi<Self>;
+
+    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
+        where Y: KernelModuleApi<Self>;
 
     fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
         where Y: KernelModuleApi<Self>;

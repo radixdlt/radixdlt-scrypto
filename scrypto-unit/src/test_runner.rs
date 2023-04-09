@@ -11,7 +11,7 @@ use radix_engine::kernel::kernel::RadixEngine;
 use radix_engine::kernel::module_mixer::KernelModuleMixer;
 use radix_engine::kernel::track::Track;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
-use radix_engine::system::system::SystemUpstream;
+use radix_engine::system::system_upstream::SystemUpstream;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;

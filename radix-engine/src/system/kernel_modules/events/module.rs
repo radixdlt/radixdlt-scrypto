@@ -1,7 +1,7 @@
 use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::types::*;
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
 
 #[derive(Debug, Default, Clone)]

@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInvocation, KernelModuleApi, KernelUpstream};
 use crate::kernel::module::KernelModule;
-use crate::system::system::SystemInvocation;
+use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::blueprints::account::{
@@ -13,12 +13,15 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
     IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
 };
+use crate::system::system_downstream::SystemDownstream;
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::ClientObjectApi;
 
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;
 
 impl VirtualizationModule {
-    pub fn on_substate_lock_fault<Y: KernelModuleApi<M>, M: KernelUpstream>(
+    pub fn on_substate_lock_fault<'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
         node_id: NodeId,
         _module_id: SysModuleId,
         _offset: &SubstateKey,
@@ -68,7 +71,9 @@ impl VirtualizationModule {
                     scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;
-                api.globalize_with_address(
+
+                let mut system = SystemDownstream::new(api);
+                system.globalize_with_address(
                     own.0,
                     modules,
                     GlobalAddress::new_unchecked(node_id.into()),

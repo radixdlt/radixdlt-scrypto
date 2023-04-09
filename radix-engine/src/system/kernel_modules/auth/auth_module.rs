@@ -30,8 +30,10 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
-use crate::system::system::SystemUpstream;
+use crate::system::system_downstream::SystemDownstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::ClientObjectApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -113,7 +115,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<Y: KernelModuleApi<M>, M: KernelUpstream>(
+    fn method_auth<'g, Y: KernelModuleApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
         node_id: &NodeId,
         module_id: &SysModuleId,
         ident: &str,
@@ -126,7 +128,10 @@ impl AuthModule {
             }
 
             (node_id, ..) if node_id.is_local() => {
-                let info = api.get_object_info(node_id)?;
+                let info = {
+                    let mut system = SystemDownstream::new(api);
+                    system.get_object_info(node_id)?
+                };
                 if let Some(parent) = info.type_parent {
                     let (ref_type, _) =
                         api.kernel_get_node_info(node_id)
@@ -334,13 +339,15 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule 
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
 
+        let mut system = SystemDownstream::new(api);
+
         // Authenticate
         if !Authentication::verify_method_auth(
             barrier_crossings_required,
             barrier_crossings_allowed,
             auth_zone_id,
             &authorization,
-            api,
+            &mut system,
         )? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                 AuthError::Unauthorized(Box::new(Unauthorized {

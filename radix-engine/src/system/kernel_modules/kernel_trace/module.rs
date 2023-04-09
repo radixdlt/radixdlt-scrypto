@@ -12,7 +12,7 @@ use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey, SysModuleId};
 use sbor::rust::collections::BTreeMap;
-use crate::system::system::SystemUpstream;
+use crate::system::system_upstream::SystemUpstream;
 use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone)]
