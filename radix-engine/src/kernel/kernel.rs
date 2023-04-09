@@ -39,7 +39,6 @@ impl RadixEngine {
         id_allocator: &'g mut IdAllocator,
         upstream: &'g mut SystemUpstream<W>,
         store: &'g mut S,
-        module: &'g mut KernelModuleMixer,
         package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
@@ -58,7 +57,6 @@ impl RadixEngine {
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
             upstream,
-            module,
         };
 
         kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
@@ -157,11 +155,7 @@ pub struct Kernel<
     id_allocator: &'g mut IdAllocator,
 
     /// Upstream system layer
-    upstream: &'g M,
-
-    // TODO: Combine into upstream
-    /// Kernel module mixer
-    module: &'g mut KernelModuleMixer,
+    upstream: &'g mut M,
 }
 
 impl<'g, M, S> Kernel<'g, M, S>
@@ -424,13 +418,8 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_system(&self) -> &M {
-        &self.upstream
-    }
-
-    #[trace_resources]
-    fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
-        &mut self.module
+    fn kernel_get_system(&mut self) -> &mut M {
+        self.upstream
     }
 
     #[trace_resources]

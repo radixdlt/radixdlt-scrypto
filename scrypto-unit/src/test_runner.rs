@@ -1217,9 +1217,9 @@ impl TestRunner {
             &mut id_allocator,
             &mut SystemUpstream {
                 scrypto_interpreter: &scrypto_interpreter,
+                modules: &mut modules,
             },
             &mut track,
-            &mut modules,
             package_address,
             blueprint_name,
             function_name,

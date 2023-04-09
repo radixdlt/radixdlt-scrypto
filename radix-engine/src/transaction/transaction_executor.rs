@@ -202,9 +202,9 @@ where
             &mut id_allocator,
             &mut SystemUpstream {
                 scrypto_interpreter: self.scrypto_interpreter,
+                modules: &mut modules,
             },
             &mut track,
-            &mut modules,
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,

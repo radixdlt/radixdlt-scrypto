@@ -102,6 +102,7 @@ pub struct SystemInvocation {
 
 pub struct SystemUpstream<'g, W: WasmEngine> {
     pub scrypto_interpreter: &'g ScryptoInterpreter<W>,
+    pub modules: &'g mut KernelModuleMixer,
 }
 
 impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {

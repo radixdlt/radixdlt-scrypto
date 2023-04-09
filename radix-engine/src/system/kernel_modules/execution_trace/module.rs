@@ -287,7 +287,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
         _node_init: &NodeInit,
         _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_module_state()
+        api.kernel_get_system()
+            .modules
             .execution_trace
             .handle_before_create_node();
         Ok(())
@@ -300,7 +301,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.kernel_get_module_state()
+        api.kernel_get_system()
+            .modules
             .execution_trace
             .handle_after_create_node(current_actor, current_depth, resource_summary);
         Ok(())
@@ -311,7 +313,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.kernel_get_module_state()
+        api.kernel_get_system()
+            .modules
             .execution_trace
             .handle_before_drop_node(resource_summary);
         Ok(())
@@ -320,7 +323,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
     fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
-        api.kernel_get_module_state()
+        api.kernel_get_system()
+            .modules
             .execution_trace
             .handle_after_drop_node(current_actor, current_depth);
         Ok(())
@@ -334,7 +338,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.kernel_get_module_state()
+        api.kernel_get_system().modules
             .execution_trace
             .handle_before_push_frame(current_actor, callee, resource_summary);
         Ok(())
@@ -348,7 +352,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTr
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.kernel_get_module_state()
+        api.kernel_get_system()
+            .modules
             .execution_trace
             .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
         Ok(())

@@ -337,7 +337,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule 
         };
         let barrier_crossings_required = 0;
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
-        let auth_zone_id = api.kernel_get_module_state().auth.last_auth_zone();
+        let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemDownstream::new(api);
 
@@ -397,7 +397,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule 
         };
         let is_transaction_processor = Self::is_transaction_processor(&actor);
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_module_state().auth;
+            let auth_module = &api.kernel_get_system().modules.auth;
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -406,7 +406,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule 
             (BTreeSet::new(), BTreeSet::new())
         };
         let parent = api
-            .kernel_get_module_state()
+            .kernel_get_system()
+            .modules
             .auth
             .auth_zone_stack
             .last()
@@ -437,7 +438,8 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule 
             ),
         )?;
 
-        api.kernel_get_module_state()
+        api.kernel_get_system()
+            .modules
             .auth
             .auth_zone_stack
             .push(auth_zone_node_id);
@@ -451,7 +453,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule 
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let auth_zone = api
-            .kernel_get_module_state()
+            .kernel_get_system().modules
             .auth
             .auth_zone_stack
             .pop()

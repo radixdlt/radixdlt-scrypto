@@ -78,9 +78,7 @@ pub trait KernelApi<M: KernelUpstream>:
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi<M: KernelUpstream> {
-    fn kernel_get_system(&self) -> &M;
-
-    fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
+    fn kernel_get_system(&mut self) -> &mut M;
 
     // TODO: Cleanup
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;

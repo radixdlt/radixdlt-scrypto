@@ -108,11 +108,7 @@ impl<'a, 'g, Y, W> KernelSubstateApi for SystemDownstream<'a, 'g, Y, W> where W:
 }
 
 impl<'a, 'g, Y, W> KernelInternalApi<SystemUpstream<'g, W>> for SystemDownstream<'a, 'g, Y, W> where W: 'g + WasmEngine, Y: KernelModuleApi<SystemUpstream<'g, W>> {
-    fn kernel_get_system(&self) -> &SystemUpstream<'g, W> {
-        todo!()
-    }
-
-    fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
+    fn kernel_get_system(&mut self) -> &mut SystemUpstream<'g, W> {
         todo!()
     }
 
@@ -732,7 +728,7 @@ impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y
     ) -> Result<(), RuntimeError> {
         // No costing applied
 
-        self.api.kernel_get_module_state().costing.apply_execution_cost(
+        self.api.kernel_get_system().modules.costing.apply_execution_cost(
             match reason {
                 ClientCostingReason::RunWasm => CostingReason::RunWasm,
                 ClientCostingReason::RunNative => CostingReason::RunNative,
@@ -751,7 +747,8 @@ impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y
     ) -> Result<LiquidFungibleResource, RuntimeError> {
         // No costing applied
 
-        self.api.kernel_get_module_state()
+        self.api.kernel_get_system()
+            .modules
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
@@ -791,7 +788,7 @@ impl<'a, 'g, Y, W> ClientAuthApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone_id = self.api.kernel_get_module_state().auth.last_auth_zone();
+        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         Ok(auth_zone_id.into())
     }
@@ -803,7 +800,7 @@ impl<'a, 'g, Y, W> ClientAuthApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W
         let authorization = convert_contextless(&rule);
         let barrier_crossings_required = 1;
         let barrier_crossings_allowed = 1;
-        let auth_zone_id = self.api.kernel_get_module_state().auth.last_auth_zone();
+        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         // Authenticate
         // TODO: should we just run in `Client` model?
@@ -838,7 +835,8 @@ impl<'a, 'g, Y, W> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream
         // No costing applied
 
         let current_depth = self.api.kernel_get_current_depth();
-        self.api.kernel_get_module_state()
+        self.api.kernel_get_system()
+            .modules
             .transaction_limits
             .update_wasm_memory_usage(current_depth, consumed_memory)
     }
@@ -852,7 +850,8 @@ impl<'a, 'g, Y, W> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
-        self.api.kernel_get_module_state()
+        self.api.kernel_get_system()
+            .modules
             .execution_trace
             .update_instruction_index(new_index);
         Ok(())
@@ -973,7 +972,8 @@ impl<'a, 'g, Y, W> ClientEventApi<RuntimeError> for SystemDownstream<'a, 'g, Y, 
         })?;
 
         // Adding the event to the event store
-        self.api.kernel_get_module_state()
+        self.api.kernel_get_system()
+            .modules
             .events
             .add_event(event_type_identifier, event_data);
 
@@ -991,7 +991,8 @@ impl<'a, 'g, Y, W> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, 'g, Y,
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        self.api.kernel_get_module_state()
+        self.api.kernel_get_system()
+            .modules
             .logger
             .add_log(level, message);
         Ok(())
@@ -1008,7 +1009,8 @@ impl<'a, 'g, Y, W> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstrea
 
         Ok(self
             .api
-            .kernel_get_module_state()
+            .kernel_get_system()
+            .modules
             .transaction_runtime
             .transaction_hash())
     }
@@ -1018,7 +1020,8 @@ impl<'a, 'g, Y, W> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstrea
 
         Ok(self
             .api
-            .kernel_get_module_state()
+            .kernel_get_system()
+            .modules
             .transaction_runtime
             .generate_uuid())
     }

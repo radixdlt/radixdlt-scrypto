@@ -136,7 +136,7 @@ impl KernelModuleMixer {
 impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModuleMixer {
     #[trace_resources]
     fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
 
         // Enable transaction limits
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
@@ -188,7 +188,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
 
     #[trace_resources]
     fn on_teardown<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;
         }
@@ -225,7 +225,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         identifier: &KernelInvocation,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_invoke(api, identifier, input_size)?;
         }
@@ -263,7 +263,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_push_frame(api, callee, update, args)?;
         }
@@ -299,7 +299,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         api: &mut Y,
         caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_execution_start(api, caller)?;
         }
@@ -336,7 +336,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_execution_finish(api, caller, update)?;
         }
@@ -369,7 +369,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
 
     #[trace_resources]
     fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_pop_frame(api)?;
         }
@@ -405,7 +405,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_invoke(api, output_size)?;
         }
@@ -441,7 +441,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         api: &mut Y,
         node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_allocate_node_id(api, node_type)?;
         }
@@ -479,7 +479,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         node_init: &NodeInit,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_create_node(api, node_id, node_init, node_module_init)?;
         }
@@ -520,7 +520,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_create_node(api, node_id)?;
         }
@@ -556,7 +556,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_drop_node(api, node_id)?;
         }
@@ -589,7 +589,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
 
     #[trace_resources]
     fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_drop_node(api)?;
         }
@@ -628,7 +628,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
@@ -683,7 +683,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_lock_substate(api, handle, size)?;
         }
@@ -720,7 +720,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_read_substate(api, lock_handle, size)?;
         }
@@ -757,7 +757,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_write_substate(api, lock_handle, size)?;
         }
@@ -793,7 +793,7 @@ impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModul
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_drop_lock(api, lock_handle)?;
         }
