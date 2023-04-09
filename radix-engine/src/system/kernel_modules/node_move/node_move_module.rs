@@ -9,6 +9,8 @@ use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use crate::system::system::SystemUpstream;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
@@ -20,7 +22,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn prepare_move_downstream<'g, Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>, W: WasmEngine + 'g>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -84,8 +86,8 @@ impl NodeMoveModule {
     }
 }
 
-impl KernelModule for NodeMoveModule {
-    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for NodeMoveModule {
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -99,7 +101,7 @@ impl KernelModule for NodeMoveModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,

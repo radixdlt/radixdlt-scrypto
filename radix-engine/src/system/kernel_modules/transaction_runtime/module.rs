@@ -1,6 +1,8 @@
 use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::crypto::Hash;
+use crate::system::system::SystemUpstream;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
@@ -30,7 +32,7 @@ impl TransactionRuntimeModule {
     }
 }
 
-impl KernelModule for TransactionRuntimeModule {}
+impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for TransactionRuntimeModule {}
 
 #[cfg(test)]
 mod tests {

@@ -11,6 +11,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
+use crate::system::system::SystemUpstream;
+use crate::wasm::WasmEngine;
 
 //===================================================================================
 // Note: ExecutionTrace must not produce any error or transactional side effect!
@@ -278,8 +280,8 @@ impl ResourceSummary {
     }
 }
 
-impl KernelModule for ExecutionTraceModule {
-    fn before_create_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for ExecutionTraceModule {
+    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         _node_id: &NodeId,
         _node_init: &NodeInit,
@@ -291,7 +293,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn after_create_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn after_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -304,7 +306,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -315,7 +317,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         api.kernel_get_module_state()
@@ -324,7 +326,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -338,7 +340,7 @@ impl KernelModule for ExecutionTraceModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         caller: &Option<Actor>,
         update: &CallFrameUpdate,

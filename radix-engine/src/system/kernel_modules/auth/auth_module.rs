@@ -30,6 +30,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
+use crate::system::system::SystemUpstream;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -298,18 +300,18 @@ impl AuthModule {
     }
 }
 
-impl KernelModule for AuthModule {
-    fn on_init<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for AuthModule {
+    fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
         Self::on_execution_start(api, &None)
     }
 
-    fn on_teardown<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
         Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         _call_frame_update: &mut CallFrameUpdate,
@@ -351,7 +353,7 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_execution_start<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -436,7 +438,7 @@ impl KernelModule for AuthModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,

@@ -27,6 +27,8 @@ use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
+use crate::system::system::SystemUpstream;
+use crate::wasm::WasmEngine;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -131,9 +133,9 @@ impl KernelModuleMixer {
 // NOTE: Modules are applied in the reverse order of initialization!
 //====================================================================
 
-impl KernelModule for KernelModuleMixer {
+impl<'g, W: WasmEngine + 'g> KernelModule<SystemUpstream<'g, W>> for KernelModuleMixer {
     #[trace_resources]
-    fn on_init<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
 
         // Enable transaction limits
@@ -185,7 +187,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_teardown<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;
@@ -218,7 +220,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn before_invoke<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         identifier: &KernelInvocation,
         input_size: usize,
@@ -255,7 +257,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn before_push_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_push_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -293,7 +295,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_execution_start<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_execution_start<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -329,7 +331,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_execution_finish<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_execution_finish<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         caller: &Option<Actor>,
         update: &CallFrameUpdate,
@@ -366,7 +368,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_pop_frame(api)?;
@@ -399,7 +401,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn after_invoke<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn after_invoke<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -435,7 +437,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_allocate_node_id<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_allocate_node_id<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
@@ -471,7 +473,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn before_create_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
         node_init: &NodeInit,
@@ -514,7 +516,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn after_create_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn after_create_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -550,7 +552,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn before_drop_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -586,7 +588,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn after_drop_node<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_drop_node(api)?;
@@ -619,7 +621,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn before_lock_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn before_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &SysModuleId,
@@ -676,7 +678,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn after_lock_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn after_lock_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -713,7 +715,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_read_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_read_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -750,7 +752,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_write_substate<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_write_substate<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -787,7 +789,7 @@ impl KernelModule for KernelModuleMixer {
     }
 
     #[trace_resources]
-    fn on_drop_lock<Y: KernelModuleApi<M, RuntimeError>, M: KernelUpstream>(
+    fn on_drop_lock<Y: KernelModuleApi<SystemUpstream<'g, W>, RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
