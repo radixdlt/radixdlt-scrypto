@@ -18,9 +18,9 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;

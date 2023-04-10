@@ -1,5 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
@@ -10,7 +11,6 @@ use radix_engine_interface::types::{Blueprint, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto_schema::KeyValueStoreSchema;
@@ -67,12 +67,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
 
-        let bytes = copy_buffer(unsafe {
-            globalize_object(
-                modules.as_ptr(),
-                modules.len(),
-            )
-        });
+        let bytes = copy_buffer(unsafe { globalize_object(modules.as_ptr(), modules.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

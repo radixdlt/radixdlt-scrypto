@@ -1,10 +1,10 @@
+use crate::api::ObjectModuleId;
 use crate::blueprints::resource::MethodKey;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
-use crate::api::ObjectModuleId;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodIdentifier(pub NodeId, pub ObjectModuleId, pub String);

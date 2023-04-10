@@ -31,6 +31,18 @@ pub enum SysModuleId {
     ObjectMap,
 }
 
+impl SysModuleId {
+    pub fn is_map(&self) -> bool {
+        match self {
+            SysModuleId::TypeInfo
+            | SysModuleId::Royalty
+            | SysModuleId::AccessRules
+            | SysModuleId::ObjectTuple => false,
+            SysModuleId::Metadata | SysModuleId::ObjectMap => true,
+        }
+    }
+}
+
 impl Into<ModuleId> for SysModuleId {
     fn into(self) -> ModuleId {
         ModuleId(self as u8)

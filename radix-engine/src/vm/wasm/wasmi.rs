@@ -230,14 +230,12 @@ fn globalize_object(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_object(
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                access_rules_ptr,
-                access_rules_len,
-            )?,
-        )
+        .globalize_object(read_memory(
+            caller.as_context_mut(),
+            memory,
+            access_rules_ptr,
+            access_rules_len,
+        )?)
         .map(|buffer| buffer.0)
 }
 
@@ -537,12 +535,7 @@ impl WasmiModule {
              modules_ptr: u32,
              modules_len: u32|
              -> Result<u64, Trap> {
-                globalize_object(
-                    caller,
-                    modules_ptr,
-                    modules_len,
-                )
-                .map_err(|e| e.into())
+                globalize_object(caller, modules_ptr, modules_len).map_err(|e| e.into())
             },
         );
 

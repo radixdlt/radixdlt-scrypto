@@ -1,13 +1,21 @@
-use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput, AccessRulesSetMethodAccessRuleAndMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, AccessRulesSetMethodAccessRuleInput, AccessRulesSetGroupAccessRuleInput};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleAndMutabilityInput,
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{NodeId};
+use radix_engine_interface::types::NodeId;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
@@ -75,7 +83,7 @@ pub trait AccessRulesObject {
                 name: name.into(),
                 rule,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         Ok(())
@@ -97,7 +105,7 @@ pub trait AccessRulesObject {
                 method_key,
                 rule,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         Ok(())

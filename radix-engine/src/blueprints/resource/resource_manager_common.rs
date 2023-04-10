@@ -4,11 +4,11 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -68,10 +68,7 @@ fn build_access_rules(
         DenyAll,
     );
     resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-        ),
+        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
         "mint",
         DenyAll,
     );
@@ -90,10 +87,7 @@ fn build_access_rules(
         update_non_fungible_data_mutability,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-        ),
+        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_CREATE_BUCKET_IDENT),
         AllowAll,
         DenyAll,
     );
@@ -114,10 +108,7 @@ fn build_access_rules(
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            RESOURCE_MANAGER_CREATE_VAULT_IDENT,
-        ),
+        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_CREATE_VAULT_IDENT),
         AllowAll,
         DenyAll,
     );

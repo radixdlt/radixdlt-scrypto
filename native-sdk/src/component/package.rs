@@ -1,5 +1,5 @@
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageSetRoyaltyConfigInput, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };

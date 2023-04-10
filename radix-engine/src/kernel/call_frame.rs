@@ -2,7 +2,6 @@ use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
@@ -188,27 +187,7 @@ impl CallFrame {
             .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Substate Virtualization
-        // TODO: clean up the naughty!
-        let virtualization_enabled = {
-            if module_id == SysModuleId::Metadata || module_id == SysModuleId::ObjectMap {
-                true
-            } else if module_id == SysModuleId::ObjectTuple {
-                if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
-                    match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                            blueprint.package_address == METADATA_PACKAGE
-                                && blueprint.blueprint_name == METADATA_BLUEPRINT
-                        }
-                        TypeInfoSubstate::KeyValueStore(_) => true,
-                    }
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        };
-        if virtualization_enabled {
+        if module_id.is_map() {
             if heap.contains_node(node_id) {
                 if heap
                     .get_substate(node_id, module_id.into(), substate_key)

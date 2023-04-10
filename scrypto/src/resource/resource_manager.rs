@@ -4,6 +4,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
@@ -11,7 +12,6 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, Scry
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -53,10 +53,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(
-                        ObjectModuleId::SELF,
-                        RESOURCE_MANAGER_BURN_IDENT,
-                    ),
+                    method_key: MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -179,10 +176,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(
-                        ObjectModuleId::SELF,
-                        RESOURCE_MANAGER_BURN_IDENT,
-                    ),
+                    method_key: MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),

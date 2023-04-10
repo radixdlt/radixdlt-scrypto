@@ -1,4 +1,5 @@
 use crate::api::node_modules::metadata::*;
+use crate::api::ObjectModuleId;
 use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
 use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use crate::blueprints::resource::*;
@@ -8,7 +9,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use crate::api::ObjectModuleId;
 
 use super::AccessRule;
 

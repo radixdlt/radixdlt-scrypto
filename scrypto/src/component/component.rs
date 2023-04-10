@@ -8,8 +8,8 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
 };
@@ -135,7 +135,10 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
         );
         access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT),
+            MethodKey::new(
+                ObjectModuleId::Royalty,
+                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+            ),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
@@ -188,14 +191,12 @@ impl LocalComponent for OwnedComponent {
         let royalty: Own = royalty.0;
 
         let address = ScryptoEnv
-            .globalize(
-                btreemap!(
-                    ObjectModuleId::SELF => self.0.as_node_id().clone(),
-                    ObjectModuleId::AccessRules => access_rules.0,
-                    ObjectModuleId::Metadata => metadata.0,
-                    ObjectModuleId::Royalty => royalty.0,
-                ),
-            )
+            .globalize(btreemap!(
+                ObjectModuleId::SELF => self.0.as_node_id().clone(),
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
+            ))
             .unwrap();
 
         ComponentAddress::new_unchecked(address.into())

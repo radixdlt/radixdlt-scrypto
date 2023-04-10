@@ -27,6 +27,7 @@ use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
@@ -46,7 +47,6 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{

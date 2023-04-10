@@ -18,9 +18,9 @@ use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
@@ -29,7 +29,6 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::SysModuleId::TypeInfo;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -72,9 +71,8 @@ where
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             match &type_info {
                 TypeInfoSubstate::Object(info)
-                if info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                    && info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) => {
-                }
+                    if info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) => {}
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
                 }
@@ -82,20 +80,27 @@ where
         }
 
         let module_id = match type_info {
-            TypeInfoSubstate::KeyValueStore(..) => {
-                SysModuleId::ObjectMap
-            }
-            TypeInfoSubstate::Object(..) => {
-                if let Actor::Method { module_id, .. } = self.api.kernel_get_current_actor().unwrap() {
+            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::ObjectMap,
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                if let Actor::Method { module_id, .. } =
+                    self.api.kernel_get_current_actor().unwrap()
+                {
                     match module_id {
-                        ObjectModuleId::SELF => SysModuleId::ObjectTuple,
-                        ObjectModuleId::Royalty => SysModuleId::Royalty,
+                        ObjectModuleId::SELF => {
+                            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::ObjectMap,
+                                _ => SysModuleId::ObjectTuple,
+                            }
+                        }
                         ObjectModuleId::Metadata => SysModuleId::Metadata,
+                        ObjectModuleId::Royalty => SysModuleId::Royalty,
                         ObjectModuleId::AccessRules => SysModuleId::AccessRules,
                     }
                 } else {
-                    // TODO: Remove this
-                    SysModuleId::ObjectTuple
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::ObjectMap,
+                        _ => SysModuleId::ObjectTuple,
+                    }
                 }
             }
         };
@@ -259,10 +264,15 @@ where
             None
         };
 
+        let self_module_id = match (package_address, blueprint_ident) {
+            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::ObjectMap,
+            _ => SysModuleId::ObjectTuple,
+        };
+
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectTuple => node_init,
+                self_module_id => node_init,
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
@@ -282,8 +292,11 @@ where
     ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME check completeness of modules
 
-        let node_id = modules.get(&ObjectModuleId::SELF)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(ObjectModuleId::SELF)))?;
+        let node_id = modules
+            .get(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::SELF,
+            )))?;
 
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let blueprint = match type_info {
@@ -324,7 +337,10 @@ where
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // Check module configuration
-        let module_ids = modules.keys().cloned().collect::<BTreeSet<ObjectModuleId>>();
+        let module_ids = modules
+            .keys()
+            .cloned()
+            .collect::<BTreeSet<ObjectModuleId>>();
         let standard_object = btreeset!(
             ObjectModuleId::SELF,
             ObjectModuleId::Metadata,
@@ -338,8 +354,11 @@ where
         }
 
         // Drop the node
-        let node_id = modules.remove(&ObjectModuleId::SELF)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(ObjectModuleId::SELF)))?;
+        let node_id = modules
+            .remove(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::SELF,
+            )))?;
         let node = self.api.kernel_drop_node(&node_id)?;
         let mut node_substates = node.substates;
 
@@ -397,7 +416,7 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
+                    let metadata = node.substates.remove(&SysModuleId::ObjectMap).unwrap();
                     node_substates.insert(SysModuleId::Metadata, metadata);
                 }
                 ObjectModuleId::Royalty => {

@@ -1,8 +1,8 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::AttachedMetadata;
 use crate::runtime::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,

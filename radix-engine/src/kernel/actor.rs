@@ -1,5 +1,5 @@
-use radix_engine_interface::api::ObjectModuleId;
 use crate::types::*;
+use radix_engine_interface::api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {

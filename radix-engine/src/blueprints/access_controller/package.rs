@@ -10,6 +10,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -22,7 +23,6 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::vec;
 
@@ -441,14 +441,12 @@ impl AccessControllerNativePackage {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(
-            btreemap!(
-                ObjectModuleId::SELF => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
-            ),
-        )?;
+        let address = api.globalize(btreemap!(
+            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+        ))?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
@@ -815,10 +813,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
-        ),
+        MethodKey::new(ObjectModuleId::SELF, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(

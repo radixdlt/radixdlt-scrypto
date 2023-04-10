@@ -6,9 +6,9 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
