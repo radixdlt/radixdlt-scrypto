@@ -6,7 +6,6 @@ use crate::kernel::heap::HeapNode;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::node_properties::NodeProperties;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
@@ -182,10 +181,12 @@ where
                 }
                 _ => {
                     // TODO: Other schema checks
+                    // TODO: Check objects stored are storeable
                 }
             }
         } else {
             // TODO: Other schema checks
+            // TODO: Check objects stored are storeable
         }
 
         let substate = IndexedScryptoValue::from_vec(buffer)
@@ -627,12 +628,7 @@ where
         // TODO: Cleanup
         if let Some(actor) = self.api.kernel_get_current_actor() {
             let info = self.get_object_info(&node_id)?;
-            if !NodeProperties::can_be_dropped(
-                ExecutionMode::Client,
-                &actor,
-                info.blueprint.package_address,
-                info.blueprint.blueprint_name.as_str(),
-            ) {
+            if !info.blueprint.package_address.eq(actor.package_address()) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                         mode: ExecutionMode::Client,

@@ -1,6 +1,5 @@
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_properties::NodeProperties;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
@@ -357,27 +356,6 @@ impl CallFrame {
             for child_id in &new_children {
                 self.take_node_internal(child_id)
                     .map_err(UnlockSubstateError::MoveError)?;
-
-                // TODO: Move this check into system layer
-                if let Some(info) = heap.get_substate(
-                    child_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                ) {
-                    let type_info: TypeInfoSubstate = info.as_typed().unwrap();
-                    match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                            if !NodeProperties::can_own(
-                                &substate_key,
-                                blueprint.package_address,
-                                blueprint.blueprint_name.as_str(),
-                            ) {
-                                return Err(UnlockSubstateError::CantOwn(child_id.clone()));
-                            }
-                        }
-                        TypeInfoSubstate::KeyValueStore(..) => {}
-                    }
-                }
             }
 
             if !heap.contains_node(&node_id) {
@@ -603,35 +581,12 @@ impl CallFrame {
         push_to_store: bool,
     ) -> Result<(), UnlockSubstateError> {
         for (_module_id, module) in &substates {
-            for (substate_key, substate_value) in module {
+            for (_substate_key, substate_value) in module {
                 // FIXME there is a huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
-
                 for child_id in substate_value.owned_node_ids() {
                     self.take_node_internal(child_id)
                         .map_err(UnlockSubstateError::MoveError)?;
-
-                    // TODO: Move this check into system layer
-                    if let Some(info) = heap.get_substate(
-                        child_id,
-                        SysModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                    ) {
-                        let type_info: TypeInfoSubstate = info.as_typed().unwrap();
-                        match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                                if !NodeProperties::can_own(
-                                    &substate_key,
-                                    blueprint.package_address,
-                                    blueprint.blueprint_name.as_str(),
-                                ) {
-                                    return Err(UnlockSubstateError::CantOwn(child_id.clone()));
-                                }
-                            }
-                            TypeInfoSubstate::KeyValueStore(..) => {}
-                        }
-                    }
-
                     if push_to_store {
                         Self::move_node_to_store(heap, store, child_id)?;
                     }
