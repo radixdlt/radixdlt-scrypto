@@ -79,7 +79,7 @@ impl NodeProperties {
             },
             ExecutionMode::System => match module_id {
                 SysModuleId::TypeInfo => true,
-                SysModuleId::ObjectState => true,
+                SysModuleId::ObjectTuple => true,
                 _ => false,
             },
             ExecutionMode::KernelModule => true,

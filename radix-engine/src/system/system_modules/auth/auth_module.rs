@@ -97,7 +97,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
             )?;
@@ -192,7 +192,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -225,7 +225,7 @@ impl AuthModule {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &substate_key,
                 LockFlags::read_only(),
             )?;
@@ -426,7 +426,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule 
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                SysModuleId::ObjectState => btreemap!(
+                SysModuleId::ObjectTuple => btreemap!(
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {

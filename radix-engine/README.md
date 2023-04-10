@@ -4,8 +4,11 @@ Radix Engine is the underlying execution engine specialized to run DeFi-based Sc
 
 ## Architecture
 
-Radix Engine is organized into 7 layers. Each layer provides a Downstream API to the layer above. Execution
-layers provide an Upstream API which the layer above must implement.
+Radix Engine is organized into 7 layers.
+
+Each layer provides a Downstream API to the layer above.
+
+Execution layers provide an Upstream API which the layer above must implement.
 
 | Layer          | Responsibilities                                                                   | Downstream API                                                                                                                                                                                                                                                               |     | Implementation(s)                                                                                          |
 |----------------|------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----|------------------------------------------------------------------------------------------------------------|

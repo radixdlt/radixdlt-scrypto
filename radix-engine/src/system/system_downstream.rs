@@ -29,6 +29,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::types::SysModuleId::TypeInfo;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -65,32 +66,39 @@ where
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            let info = self.get_object_info(node_id)?;
-            if !matches!(
-                (
-                    info.blueprint.package_address,
-                    info.blueprint.blueprint_name.as_str()
-                ),
-                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT)
-            ) {
-                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+            match &type_info {
+                TypeInfoSubstate::Object(info)
+                if info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    && info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) => {
+                }
+                _ => {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+                }
             }
         }
 
-        let module_id =
-            if let Actor::Method { module_id, .. } = self.api.kernel_get_current_actor().unwrap() {
-                match module_id {
-                    ObjectModuleId::SELF => SysModuleId::ObjectState,
-                    ObjectModuleId::Royalty => SysModuleId::Royalty,
-                    ObjectModuleId::Metadata => SysModuleId::Metadata,
-                    ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+        let module_id = match type_info {
+            TypeInfoSubstate::KeyValueStore(..) => {
+                SysModuleId::ObjectMap
+            }
+            TypeInfoSubstate::Object(..) => {
+                if let Actor::Method { module_id, .. } = self.api.kernel_get_current_actor().unwrap() {
+                    match module_id {
+                        ObjectModuleId::SELF => SysModuleId::ObjectTuple,
+                        ObjectModuleId::Royalty => SysModuleId::Royalty,
+                        ObjectModuleId::Metadata => SysModuleId::Metadata,
+                        ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+                    }
+                } else {
+                    // TODO: Remove this
+                    SysModuleId::ObjectTuple
                 }
-            } else {
-                // TODO: Remove this
-                SysModuleId::ObjectState
-            };
+            }
+        };
 
         self.api
             .kernel_lock_substate(&node_id, module_id, substate_key, flags)
@@ -111,7 +119,7 @@ where
             node_id, module_id, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::ObjectState) {
+        if module_id.eq(&SysModuleId::ObjectMap) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -132,8 +140,12 @@ where
                         }
                     }
                 }
-                _ => {}
+                _ => {
+                    // TODO: Other schema checks
+                }
             }
+        } else {
+            // TODO: Other schema checks
         }
 
         let substate = IndexedScryptoValue::from_vec(buffer)
@@ -166,7 +178,7 @@ where
 
         let handle = self.api.kernel_lock_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectState,
+            SysModuleId::ObjectTuple,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -250,7 +262,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectState => node_init,
+                SysModuleId::ObjectTuple => node_init,
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
@@ -369,7 +381,7 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    let access_rules = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(SysModuleId::AccessRules, access_rules);
                 }
                 ObjectModuleId::Metadata => {
@@ -385,7 +397,7 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    let metadata = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(SysModuleId::Metadata, metadata);
                 }
                 ObjectModuleId::Royalty => {
@@ -401,7 +413,7 @@ where
                     }
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = node.substates.remove(&SysModuleId::ObjectState).unwrap();
+                    let royalty = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(SysModuleId::Royalty, royalty);
                 }
             }
@@ -547,7 +559,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectState => btreemap!(),
+                SysModuleId::ObjectMap => btreemap!(),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -817,7 +829,7 @@ where
 
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectState,
+                SysModuleId::ObjectTuple,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;

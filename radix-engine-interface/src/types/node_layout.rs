@@ -27,7 +27,8 @@ pub enum SysModuleId {
     Metadata,
     Royalty,
     AccessRules,
-    ObjectState,
+    ObjectTuple,
+    ObjectMap,
 }
 
 impl Into<ModuleId> for SysModuleId {

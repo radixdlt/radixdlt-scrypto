@@ -190,9 +190,9 @@ impl CallFrame {
         // Substate Virtualization
         // TODO: clean up the naughty!
         let virtualization_enabled = {
-            if module_id == SysModuleId::Metadata {
+            if module_id == SysModuleId::Metadata || module_id == SysModuleId::ObjectMap {
                 true
-            } else if module_id == SysModuleId::ObjectState {
+            } else if module_id == SysModuleId::ObjectTuple {
                 if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {

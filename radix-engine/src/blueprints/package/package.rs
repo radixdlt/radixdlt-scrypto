@@ -170,7 +170,7 @@ where
         let mut node = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node
             .substates
-            .remove(&SysModuleId::ObjectState)
+            .remove(&SysModuleId::ObjectTuple)
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
@@ -200,7 +200,7 @@ where
             .into_iter()
             .map(|(k, v)| (k, v.to_substates()))
             .collect();
-    modules.insert(SysModuleId::ObjectState, node_init);
+    modules.insert(SysModuleId::ObjectTuple, node_init);
 
     api.kernel_create_node(node_id, modules)?;
 
