@@ -16,7 +16,7 @@ pub use kernel_modules::execution_trace_api::ClientExecutionTraceApi;
 pub use kernel_modules::logger_api::ClientLoggerApi;
 pub use kernel_modules::transaction_limits_api::ClientTransactionLimitsApi;
 pub use kernel_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
-pub use object_api::ClientObjectApi;
+pub use object_api::*;
 pub use substate_api::ClientSubstateApi;
 pub use substate_api::LockFlags;
 

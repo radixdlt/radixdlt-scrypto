@@ -8,6 +8,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -291,9 +292,9 @@ where
     api.globalize_with_address(
         object_id,
         btreemap!(
-            SysModuleId::AccessRules => resman_access_rules.0,
-            SysModuleId::Metadata => metadata.0,
-            SysModuleId::Royalty => royalty.0,
+            ObjectModuleId::AccessRules => resman_access_rules.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
         ),
         resource_address.into(),
     )?;

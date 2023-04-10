@@ -8,6 +8,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
@@ -188,9 +189,9 @@ impl ClockNativePackage {
         api.globalize_with_address(
             clock_id,
             btreemap!(
-                SysModuleId::AccessRules => access_rules.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;

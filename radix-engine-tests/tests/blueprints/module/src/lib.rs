@@ -56,9 +56,9 @@ mod component_module {
                 .globalize(
                     *component.component.0.as_node_id(),
                     btreemap!(
-                        SysModuleId::AccessRules => metadata.0,
-                        SysModuleId::Metadata => royalty.0,
-                        SysModuleId::Royalty => access_rules.0,
+                        ObjectModuleId::AccessRules => metadata.0,
+                        ObjectModuleId::Metadata => royalty.0,
+                        ObjectModuleId::Royalty => access_rules.0,
                     ),
                 )
                 .unwrap();

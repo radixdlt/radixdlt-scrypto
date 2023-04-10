@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Pr
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -58,7 +59,7 @@ impl AccountBlueprint {
     fn create_modules<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<BTreeMap<SysModuleId, Own>, RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -66,9 +67,9 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            SysModuleId::AccessRules => access_rules.0,
-            SysModuleId::Metadata => metadata,
-            SysModuleId::Royalty => royalty,
+            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::Metadata => metadata,
+            ObjectModuleId::Royalty => royalty,
         );
 
         Ok(modules)

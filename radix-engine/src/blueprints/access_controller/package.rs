@@ -23,6 +23,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::vec;
 
@@ -444,9 +445,9 @@ impl AccessControllerNativePackage {
         let address = api.globalize(
             object_id,
             btreemap!(
-                SysModuleId::AccessRules => access_rules.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
             ),
         )?;
 

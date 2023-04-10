@@ -52,7 +52,7 @@ pub trait ClientObjectApi<E> {
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<SysModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
@@ -60,7 +60,7 @@ pub trait ClientObjectApi<E> {
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<SysModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), E>;
 

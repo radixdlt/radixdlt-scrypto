@@ -7,6 +7,7 @@ use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
     ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
@@ -66,7 +67,7 @@ impl VirtualizationModule {
 
                 let rtn: Vec<u8> = api.kernel_invoke_downstream(Box::new(invocation))?.into();
 
-                let (own, modules): (Own, BTreeMap<SysModuleId, Own>) =
+                let (own, modules): (Own, BTreeMap<ObjectModuleId, Own>) =
                     scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;

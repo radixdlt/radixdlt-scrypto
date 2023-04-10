@@ -8,6 +8,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
@@ -222,7 +223,7 @@ impl IdentityBlueprint {
     pub fn create_ecdsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<ObjectModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -238,7 +239,7 @@ impl IdentityBlueprint {
     pub fn create_eddsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<ObjectModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -261,7 +262,7 @@ impl IdentityBlueprint {
     fn create_object<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<ObjectModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -271,9 +272,9 @@ impl IdentityBlueprint {
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            SysModuleId::AccessRules => access_rules.0,
-            SysModuleId::Metadata => metadata,
-            SysModuleId::Royalty => royalty,
+            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::Metadata => metadata,
+            ObjectModuleId::Royalty => royalty,
         );
 
         Ok((Own(object_id), modules))

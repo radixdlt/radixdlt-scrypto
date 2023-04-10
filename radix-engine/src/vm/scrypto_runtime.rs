@@ -139,7 +139,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(component_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let modules = scrypto_decode::<BTreeMap<SysModuleId, NodeId>>(&modules)
+        let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;

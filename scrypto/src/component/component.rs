@@ -9,6 +9,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
 };
@@ -190,9 +191,9 @@ impl LocalComponent for OwnedComponent {
             .globalize(
                 self.0.as_node_id().clone(),
                 btreemap!(
-                    SysModuleId::AccessRules => access_rules.0,
-                    SysModuleId::Metadata => metadata.0,
-                    SysModuleId::Royalty => royalty.0,
+                    ObjectModuleId::AccessRules => access_rules.0,
+                    ObjectModuleId::Metadata => metadata.0,
+                    ObjectModuleId::Royalty => royalty.0,
                 ),
             )
             .unwrap();

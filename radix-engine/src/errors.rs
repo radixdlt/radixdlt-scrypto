@@ -1,3 +1,4 @@
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
@@ -251,7 +252,7 @@ pub struct InvalidModuleType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<SysModuleId>);
+pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<ObjectModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {

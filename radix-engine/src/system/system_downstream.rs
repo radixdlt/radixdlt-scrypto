@@ -262,7 +262,7 @@ where
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<SysModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME check completeness of modules
 
@@ -302,15 +302,15 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<SysModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // Check module configuration
-        let module_ids = modules.keys().cloned().collect::<BTreeSet<SysModuleId>>();
+        let module_ids = modules.keys().cloned().collect::<BTreeSet<ObjectModuleId>>();
         let standard_object = btreeset!(
-            SysModuleId::Metadata,
-            SysModuleId::Royalty,
-            SysModuleId::AccessRules
+            ObjectModuleId::Metadata,
+            ObjectModuleId::Royalty,
+            ObjectModuleId::AccessRules
         );
         if module_ids != standard_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
@@ -346,10 +346,10 @@ where
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
             match module_id {
-                SysModuleId::ObjectState | SysModuleId::TypeInfo => {
+                ObjectModuleId::SELF => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                SysModuleId::AccessRules => {
+                ObjectModuleId::AccessRules => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
@@ -363,9 +363,9 @@ where
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = node.substates.remove(&SysModuleId::ObjectState).unwrap();
-                    node_substates.insert(module_id, access_rules);
+                    node_substates.insert(SysModuleId::AccessRules, access_rules);
                 }
-                SysModuleId::Metadata => {
+                ObjectModuleId::Metadata => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
@@ -379,9 +379,9 @@ where
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
                     let metadata = node.substates.remove(&SysModuleId::ObjectState).unwrap();
-                    node_substates.insert(module_id, metadata);
+                    node_substates.insert(SysModuleId::Metadata, metadata);
                 }
-                SysModuleId::Royalty => {
+                ObjectModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
@@ -395,7 +395,7 @@ where
 
                     let mut node = self.api.kernel_drop_node(&node_id)?;
                     let royalty = node.substates.remove(&SysModuleId::ObjectState).unwrap();
-                    node_substates.insert(module_id, royalty);
+                    node_substates.insert(SysModuleId::Royalty, royalty);
                 }
             }
         }
