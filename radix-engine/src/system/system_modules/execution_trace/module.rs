@@ -2,7 +2,7 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelUpstream, KernelApi};
+use crate::kernel::kernel_api::{KernelApi, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
@@ -266,10 +266,7 @@ impl ResourceSummary {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelApi<M>, M: KernelUpstream>(
-        api: &mut Y,
-        node_id: &NodeId,
-    ) -> Self {
+    pub fn from_node_id<Y: KernelApi<M>, M: KernelUpstream>(api: &mut Y, node_id: &NodeId) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         if let Some(x) = api.kernel_read_bucket(node_id) {

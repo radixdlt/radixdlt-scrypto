@@ -9,7 +9,7 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RefType;
-use crate::kernel::kernel_api::{KernelUpstream, KernelApi};
+use crate::kernel::kernel_api::{KernelApi, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -305,16 +305,12 @@ impl AuthModule {
 }
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemUpstream<'g, W>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
         Self::on_execution_start(api, &None)
     }
 
-    fn on_teardown<Y: KernelApi<SystemUpstream<'g, W>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
         Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
     }

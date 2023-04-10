@@ -2,7 +2,7 @@ use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::{KernelError, RuntimeError, SystemInvokeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream, KernelApi};
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_downstream::SystemDownstream;
@@ -90,8 +90,8 @@ pub struct SystemInvocation {
 }
 
 pub struct SystemUpstream<'g, W: WasmEngine> {
-    pub scrypto_interpreter: &'g ScryptoVm<W>,
-    pub modules: &'g mut SystemModuleMixer,
+    pub scrypto_vm: &'g ScryptoVm<W>,
+    pub modules: SystemModuleMixer,
 }
 
 impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
@@ -405,7 +405,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                         api.kernel_drop_lock(handle)?;
 
                         let system = api.kernel_get_system();
-                        let wasm_instance = system.scrypto_interpreter.create_instance(
+                        let wasm_instance = system.scrypto_vm.create_instance(
                             invocation.blueprint.package_address,
                             &package_code.code,
                         );

@@ -1,8 +1,8 @@
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
@@ -134,9 +134,7 @@ impl SystemModuleMixer {
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModuleMixer {
     #[trace_resources]
-    fn on_init<Y: KernelApi<SystemUpstream<'g, W>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
 
         // Enable transaction limits
@@ -188,9 +186,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_teardown<Y: KernelApi<SystemUpstream<'g, W>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;

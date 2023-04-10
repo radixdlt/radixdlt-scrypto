@@ -1,11 +1,11 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::kernel::RadixEngine;
-use crate::track::Track;
+use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_modules::costing::*;
 use crate::system::system_upstream::SystemUpstream;
+use crate::track::Track;
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -188,43 +188,47 @@ where
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let mut modules = SystemModuleMixer::standard(
-            transaction_hash.clone(),
-            executable.auth_zone_params().clone(),
-            fee_reserve,
-            fee_table,
-            executable.payload_size(),
-            executable.auth_zone_params().initial_proofs.len(),
-            execution_config,
-        );
+        let mut system = SystemUpstream {
+            scrypto_vm: self.scrypto_interpreter,
+            modules: SystemModuleMixer::standard(
+                transaction_hash.clone(),
+                executable.auth_zone_params().clone(),
+                fee_reserve,
+                fee_table,
+                executable.payload_size(),
+                executable.auth_zone_params().initial_proofs.len(),
+                execution_config,
+            ),
+        };
 
-        let invoke_result = RadixEngine::call_function(
-            &mut id_allocator,
-            &mut SystemUpstream {
-                scrypto_interpreter: self.scrypto_interpreter,
-                modules: &mut modules,
-            },
-            &mut track,
-            TRANSACTION_PROCESSOR_PACKAGE,
-            TRANSACTION_PROCESSOR_BLUEPRINT,
-            TRANSACTION_PROCESSOR_RUN_IDENT,
-            scrypto_encode(&TransactionProcessorRunInput {
-                transaction_hash: transaction_hash.clone(),
-                runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
-                blobs: Cow::Borrowed(executable.blobs()),
-                references: extract_refs_from_manifest(executable.instructions()),
-            })
-            .unwrap(),
-        )
-        .map(|rtn| {
-            let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-            output
-        });
+        let kernel_boot = KernelBoot {
+            id_allocator: &mut id_allocator,
+            upstream: &mut system,
+            store: &mut track,
+        };
 
-        let mut fee_reserve = modules.costing.fee_reserve();
-        let mut application_events = modules.events.events();
-        let application_logs = modules.logger.logs();
+        let invoke_result = kernel_boot
+            .call_function(
+                TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+                TRANSACTION_PROCESSOR_RUN_IDENT,
+                scrypto_encode(&TransactionProcessorRunInput {
+                    transaction_hash: transaction_hash.clone(),
+                    runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                    instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
+                    blobs: Cow::Borrowed(executable.blobs()),
+                    references: extract_refs_from_manifest(executable.instructions()),
+                })
+                .unwrap(),
+            )
+            .map(|rtn| {
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            });
+
+        let mut fee_reserve = system.modules.costing.fee_reserve();
+        let mut application_events = system.modules.events.events();
+        let application_logs = system.modules.logger.logs();
 
         // Finalize
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
@@ -269,7 +273,7 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = modules.execution_trace.finalize(&transaction_result);
+        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {

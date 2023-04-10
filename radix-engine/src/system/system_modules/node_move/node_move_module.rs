@@ -2,7 +2,7 @@ use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelUpstream, KernelApi};
+use crate::kernel::kernel_api::{KernelApi, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_downstream::SystemDownstream;
@@ -24,11 +24,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<
-        'g,
-        Y: KernelApi<SystemUpstream<'g, W>>,
-        W: WasmEngine + 'g,
-    >(
+    fn prepare_move_downstream<'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,

@@ -35,8 +35,7 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub struct SystemDownstream<'a, 'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>
-{
+pub struct SystemDownstream<'a, 'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<&'g W>,
 }

@@ -7,14 +7,15 @@ use std::process::Command;
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::RadixEngine;
-use radix_engine::track::Track;
+use radix_engine::kernel::kernel;
+use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::system_upstream::SystemUpstream;
+use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
@@ -1195,31 +1196,35 @@ impl TestRunner {
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
-        let mut modules = SystemModuleMixer::standard(
-            transaction_hash,
-            AuthZoneParams {
-                initial_proofs: btreeset![],
-                virtual_resources: BTreeSet::new(),
-            },
-            SystemLoanFeeReserve::no_fee(),
-            FeeTable::new(),
-            0,
-            0,
-            &execution_config,
-        );
         let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
         };
 
-        RadixEngine::call_function(
-            &mut id_allocator,
-            &mut SystemUpstream {
-                scrypto_interpreter: &scrypto_interpreter,
-                modules: &mut modules,
-            },
-            &mut track,
+        let mut system = SystemUpstream {
+            scrypto_vm: &scrypto_interpreter,
+            modules: SystemModuleMixer::standard(
+                transaction_hash,
+                AuthZoneParams {
+                    initial_proofs: btreeset![],
+                    virtual_resources: BTreeSet::new(),
+                },
+                SystemLoanFeeReserve::no_fee(),
+                FeeTable::new(),
+                0,
+                0,
+                &execution_config,
+            ),
+        };
+
+        let kernel_boot = KernelBoot {
+            id_allocator: &mut id_allocator,
+            upstream: &mut system,
+            store: &mut track,
+        };
+
+        kernel_boot.call_function(
             package_address,
             blueprint_name,
             function_name,

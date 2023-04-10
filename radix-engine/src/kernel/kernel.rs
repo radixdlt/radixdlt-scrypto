@@ -3,8 +3,8 @@ use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
-    KernelInternalApi, KernelInvokeDownstreamApi, KernelNodeApi, KernelSubstateApi,
-    KernelApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelNodeApi, KernelSubstateApi,
+    LockInfo,
 };
 use crate::blueprints::resource::*;
 use crate::errors::*;
@@ -26,13 +26,15 @@ use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
-pub struct RadixEngine;
+pub struct KernelBoot<'g, 'h, W: WasmEngine, S: SubstateStore> {
+    pub id_allocator: &'g mut IdAllocator,
+    pub upstream: &'g mut SystemUpstream<'h, W>,
+    pub store: &'g mut S,
+}
 
-impl RadixEngine {
-    pub fn call_function<'g, W: WasmEngine, S: SubstateStore>(
-        id_allocator: &'g mut IdAllocator,
-        upstream: &'g mut SystemUpstream<W>,
-        store: &'g mut S,
+impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
+    pub fn call_function(
+        self,
         package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
@@ -46,11 +48,11 @@ impl RadixEngine {
         let mut kernel = Kernel {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
-            store,
-            id_allocator,
+            store: self.store,
+            id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
-            upstream,
+            upstream: self.upstream,
         };
 
         kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
