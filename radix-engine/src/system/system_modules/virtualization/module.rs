@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::kernel_api::{KernelInvocation, KernelUpstreamApi};
+use crate::kernel::kernel_api::{KernelInvocation, KernelApi};
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
@@ -22,7 +22,7 @@ pub struct VirtualizationModule;
 impl VirtualizationModule {
     pub fn on_substate_lock_fault<
         'g,
-        Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+        Y: KernelApi<SystemUpstream<'g, W>>,
         W: WasmEngine + 'g,
     >(
         node_id: NodeId,

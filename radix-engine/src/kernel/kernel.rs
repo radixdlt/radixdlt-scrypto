@@ -3,8 +3,8 @@ use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelNodeApi, KernelSubstateApi,
-    KernelUpstreamApi, LockInfo,
+    KernelInternalApi, KernelInvokeDownstreamApi, KernelNodeApi, KernelSubstateApi,
+    KernelApi, LockInfo,
 };
 use crate::blueprints::resource::*;
 use crate::errors::*;
@@ -839,13 +839,6 @@ where
 }
 
 impl<'g, M, S> KernelApi<M> for Kernel<'g, M, S>
-where
-    M: KernelUpstream,
-    S: SubstateStore,
-{
-}
-
-impl<'g, M, S> KernelUpstreamApi<M> for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,

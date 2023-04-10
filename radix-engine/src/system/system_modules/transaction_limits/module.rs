@@ -7,7 +7,7 @@ use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
-    kernel::{call_frame::CallFrameUpdate, kernel_api::KernelUpstreamApi},
+    kernel::{call_frame::CallFrameUpdate, kernel_api::KernelApi},
     types::Vec,
 };
 
@@ -186,7 +186,7 @@ impl TransactionLimitsModule {
 }
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for TransactionLimitsModule {
-    fn before_invoke<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn before_invoke<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _identifier: &KernelInvocation,
         input_size: usize,
@@ -209,7 +209,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for Transaction
         }
     }
 
-    fn before_push_frame<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
@@ -224,7 +224,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for Transaction
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn after_pop_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         // pop from internal stack
@@ -236,7 +236,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for Transaction
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn on_read_substate<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -250,7 +250,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for Transaction
         tlimit.validate_substates(Some(size), None)
     }
 
-    fn on_write_substate<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn on_write_substate<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,

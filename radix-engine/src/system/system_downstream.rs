@@ -35,7 +35,7 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub struct SystemDownstream<'a, 'g, Y: KernelUpstreamApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>
+pub struct SystemDownstream<'a, 'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>
 {
     pub api: &'a mut Y,
     pub phantom: PhantomData<&'g W>,
@@ -43,7 +43,7 @@ pub struct SystemDownstream<'a, 'g, Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
 
 impl<'a, 'g, Y, W> SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     pub fn new(api: &'a mut Y) -> Self {
@@ -56,7 +56,7 @@ where
 
 impl<'a, 'g, Y, W> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn sys_lock_substate(
@@ -148,7 +148,7 @@ where
 
 impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn new_object(
@@ -612,7 +612,7 @@ where
 
 impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     #[trace_resources(log=units)]
@@ -656,7 +656,7 @@ where
 
 impl<'a, 'g, Y, W> ClientActorApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
@@ -688,7 +688,7 @@ where
 
 impl<'a, 'g, Y, W> ClientAuthApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
@@ -734,7 +734,7 @@ where
 
 impl<'a, 'g, Y, W> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
@@ -751,7 +751,7 @@ where
 
 impl<'a, 'g, Y, W> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
@@ -768,7 +768,7 @@ where
 
 impl<'a, 'g, Y, W> ClientEventApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
@@ -896,7 +896,7 @@ where
 
 impl<'a, 'g, Y, W> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
@@ -913,7 +913,7 @@ where
 
 impl<'a, 'g, Y, W> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
@@ -941,7 +941,7 @@ where
 
 impl<'a, 'g, Y, W> ClientApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
 where
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
     W: WasmEngine + 'g,
 {
 }
@@ -949,7 +949,7 @@ where
 impl<'a, 'g, Y, W> KernelNodeApi for SystemDownstream<'a, 'g, Y, W>
 where
     W: 'g + WasmEngine,
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
 {
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         self.api.kernel_drop_node(node_id)
@@ -975,7 +975,7 @@ where
 impl<'a, 'g, Y, W> KernelSubstateApi for SystemDownstream<'a, 'g, Y, W>
 where
     W: 'g + WasmEngine,
-    Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+    Y: KernelApi<SystemUpstream<'g, W>>,
 {
     fn kernel_lock_substate(
         &mut self,

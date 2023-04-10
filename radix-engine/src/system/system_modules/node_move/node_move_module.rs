@@ -2,7 +2,7 @@ use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelUpstream, KernelUpstreamApi};
+use crate::kernel::kernel_api::{KernelUpstream, KernelApi};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_downstream::SystemDownstream;
@@ -26,7 +26,7 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<
         'g,
-        Y: KernelUpstreamApi<SystemUpstream<'g, W>>,
+        Y: KernelApi<SystemUpstream<'g, W>>,
         W: WasmEngine + 'g,
     >(
         node_id: NodeId,
@@ -88,7 +88,7 @@ impl NodeMoveModule {
         Ok(())
     }
 
-    fn prepare_move_upstream<Y: KernelUpstreamApi<M>, M: KernelUpstream>(
+    fn prepare_move_upstream<Y: KernelApi<M>, M: KernelUpstream>(
         _node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -97,7 +97,7 @@ impl NodeMoveModule {
 }
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for NodeMoveModule {
-    fn before_push_frame<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -111,7 +111,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for NodeMoveMod
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+    fn on_execution_finish<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,
