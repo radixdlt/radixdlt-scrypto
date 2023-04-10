@@ -26,6 +26,7 @@ use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
+/// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, 'h, W: WasmEngine, S: SubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
     pub upstream: &'g mut SystemUpstream<'h, W>,
@@ -33,6 +34,7 @@ pub struct KernelBoot<'g, 'h, W: WasmEngine, S: SubstateStore> {
 }
 
 impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
+    /// Executes a transaction
     pub fn call_function(
         self,
         package_address: PackageAddress,
@@ -135,6 +137,7 @@ pub struct Kernel<
     M: KernelUpstream,
     S: SubstateStore,
 {
+    // TODO: Remove
     /// Current execution mode, specifies permissions into state/invocations
     execution_mode: ExecutionMode,
     /// Stack

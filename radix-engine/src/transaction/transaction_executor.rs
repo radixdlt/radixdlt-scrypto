@@ -117,7 +117,7 @@ where
     W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_interpreter: &'w ScryptoVm<W>,
+    scrypto_vm: &'w ScryptoVm<W>,
 }
 
 impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
@@ -125,10 +125,10 @@ where
     S: SubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoVm<W>) -> Self {
+    pub fn new(substate_db: &'s S, scrypto_vm: &'w ScryptoVm<W>) -> Self {
         Self {
             substate_db,
-            scrypto_interpreter,
+            scrypto_vm,
         }
     }
 
@@ -189,7 +189,7 @@ where
             executable.pre_allocated_ids().clone(),
         );
         let mut system = SystemUpstream {
-            scrypto_vm: self.scrypto_interpreter,
+            scrypto_vm: self.scrypto_vm,
             modules: SystemModuleMixer::standard(
                 transaction_hash.clone(),
                 executable.auth_zone_params().clone(),
