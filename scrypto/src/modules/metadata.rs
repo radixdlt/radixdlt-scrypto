@@ -8,7 +8,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use radix_engine_interface::types::*;
-use radix_engine_interface::types::{NodeId, SysModuleId};
+use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;

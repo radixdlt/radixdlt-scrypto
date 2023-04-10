@@ -78,6 +78,7 @@ use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use radix_engine_interface::api::ObjectModuleId;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
@@ -404,22 +405,22 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                SysModuleId::AccessRules => (
+                ObjectModuleId::AccessRules => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::Royalty => (
+                ObjectModuleId::Royalty => (
                     ROYALTY_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::Metadata => (
+                ObjectModuleId::Metadata => (
                     METADATA_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::ObjectState => {
+                ObjectModuleId::SELF => {
                     let substate = substate_db
                         .get_substate(
                             node_id,
@@ -438,7 +439,6 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                SysModuleId::TypeInfo => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (

@@ -81,7 +81,12 @@ where
 
         let module_id =
             if let Actor::Method { module_id, .. } = self.api.kernel_get_current_actor().unwrap() {
-                module_id
+                match module_id {
+                    ObjectModuleId::SELF => SysModuleId::ObjectState,
+                    ObjectModuleId::Royalty => SysModuleId::Royalty,
+                    ObjectModuleId::Metadata => SysModuleId::Metadata,
+                    ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+                }
             } else {
                 // TODO: Remove this
                 SysModuleId::ObjectState
@@ -424,7 +429,7 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let (blueprint, global_address, sys_module_id) = match module_id {
+        let (blueprint, global_address) = match module_id {
             ObjectModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
@@ -452,7 +457,7 @@ where
                             }
                         };
 
-                        (blueprint, global_address, SysModuleId::ObjectState)
+                        (blueprint, global_address)
                     }
 
                     TypeInfoSubstate::KeyValueStore(..) => {
@@ -464,14 +469,13 @@ where
             }
             ObjectModuleId::Metadata => {
                 // TODO: Check if type has metadata
-                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None, SysModuleId::Metadata)
+                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
             }
             ObjectModuleId::Royalty => {
                 // TODO: Check if type has royalty
                 (
                     Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
                     None,
-                    SysModuleId::Royalty,
                 )
             }
             ObjectModuleId::AccessRules => {
@@ -479,12 +483,11 @@ where
                 (
                     Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
                     None,
-                    SysModuleId::AccessRules,
                 )
             }
         };
 
-        let identifier = MethodIdentifier(receiver.clone(), sys_module_id, method_name.to_string());
+        let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
 
         let invocation = KernelInvocation {
@@ -793,21 +796,18 @@ where
                 Some(Actor::Method {
                     node_id, module_id, ..
                 }) => match module_id {
-                    SysModuleId::AccessRules => Ok(Blueprint::new(
+                    ObjectModuleId::AccessRules => Ok(Blueprint::new(
                         &ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
-                    SysModuleId::Royalty => Ok(Blueprint::new(
+                    ObjectModuleId::Royalty => Ok(Blueprint::new(
                         &ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT,
                     )),
-                    SysModuleId::Metadata => {
+                    ObjectModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    SysModuleId::ObjectState => self.get_object_info(&node_id).map(|x| x.blueprint),
-                    SysModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
-                    )),
+                    ObjectModuleId::SELF => self.get_object_info(&node_id).map(|x| x.blueprint),
                 },
                 Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
@@ -866,7 +866,7 @@ where
             Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
-                    SysModuleId::ObjectState,
+                    ObjectModuleId::SELF,
                     blueprint.blueprint_name.to_string(),
                 ),
                 local_type_index,

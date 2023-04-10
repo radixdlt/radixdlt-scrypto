@@ -25,7 +25,7 @@ use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -116,13 +116,13 @@ impl AuthModule {
 
     fn method_auth<'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
         node_id: &NodeId,
-        module_id: &SysModuleId,
+        module_id: &ObjectModuleId,
         ident: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = match (node_id, module_id, ident) {
-            (node_id, module_id, ident) if matches!(module_id, SysModuleId::AccessRules) => {
+            (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
                 AccessRulesNativePackage::authorization(node_id, ident, args, api)?
             }
 
@@ -156,7 +156,7 @@ impl AuthModule {
                 let method_key = MethodKey::new(*module_id, ident);
 
                 // TODO: Clean this up
-                let auth = if node_id.is_global() && module_id.eq(&SysModuleId::ObjectState) {
+                let auth = if node_id.is_global() && module_id.eq(&ObjectModuleId::SELF) {
                     Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(

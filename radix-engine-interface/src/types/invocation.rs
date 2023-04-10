@@ -4,12 +4,10 @@ use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodReceiver(pub NodeId, pub SysModuleId);
+use crate::api::ObjectModuleId;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodIdentifier(pub NodeId, pub SysModuleId, pub String);
+pub struct MethodIdentifier(pub NodeId, pub ObjectModuleId, pub String);
 
 impl MethodIdentifier {
     pub fn method_key(&self) -> MethodKey {

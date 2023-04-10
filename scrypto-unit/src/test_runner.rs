@@ -46,6 +46,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{
@@ -1238,22 +1239,22 @@ impl TestRunner {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
-                    SysModuleId::AccessRules => (
+                    ObjectModuleId::AccessRules => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    SysModuleId::Royalty => (
+                    ObjectModuleId::Royalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    SysModuleId::Metadata => (
+                    ObjectModuleId::Metadata => (
                         METADATA_PACKAGE,
                         METADATA_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    SysModuleId::ObjectState => {
+                    ObjectModuleId::SELF => {
                         let type_info: TypeInfoSubstate = scrypto_decode(
                             &self
                                 .substate_db()
@@ -1275,9 +1276,6 @@ impl TestRunner {
                             ),
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
-                    }
-                    SysModuleId::TypeInfo => {
-                        panic!("No event schema.")
                     }
                 }
             }

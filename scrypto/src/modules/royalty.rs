@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
-use radix_engine_interface::types::{NodeId, RoyaltyConfig, SysModuleId};
+use radix_engine_interface::types::{NodeId, RoyaltyConfig};
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Royalty(pub Own);

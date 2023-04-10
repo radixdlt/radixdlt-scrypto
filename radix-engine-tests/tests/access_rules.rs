@@ -6,6 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
     ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -201,7 +202,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 test_runner.component_address.into(),
-                MethodKey::new(SysModuleId::ObjectState, "borrow_funds"),
+                MethodKey::new(ObjectModuleId::SELF, "borrow_funds"),
                 to_rule,
             )
             .build(),
@@ -236,19 +237,19 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
         MethodKey::new(
-            SysModuleId::AccessRules,
+            ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            SysModuleId::AccessRules,
+            ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
         ),
         MethodKey::new(
-            SysModuleId::AccessRules,
+            ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            SysModuleId::AccessRules,
+            ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
         ),
     ] {

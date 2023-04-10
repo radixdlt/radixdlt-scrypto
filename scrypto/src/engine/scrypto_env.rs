@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{Blueprint, GlobalAddress};
-use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, SysModuleId};
+use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;

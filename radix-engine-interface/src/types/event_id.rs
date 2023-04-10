@@ -1,4 +1,3 @@
-use super::SysModuleId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
@@ -6,6 +5,7 @@ use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::LocalTypeIndex;
 use utils::ContextualDisplay;
+use crate::api::ObjectModuleId;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
 ///
@@ -21,9 +21,9 @@ pub struct EventTypeIdentifier(pub Emitter, pub LocalTypeIndex);
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Emitter {
     // (Node id, module id, blueprint name)
-    Function(NodeId, SysModuleId, String),
+    Function(NodeId, ObjectModuleId, String),
     // (Node id, module id)
-    Method(NodeId, SysModuleId),
+    Method(NodeId, ObjectModuleId),
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {

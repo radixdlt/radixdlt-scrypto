@@ -1,4 +1,3 @@
-use crate::types::*;
 use crate::ManifestSbor;
 use crate::ScryptoSbor;
 use radix_engine_common::data::scrypto::model::Own;

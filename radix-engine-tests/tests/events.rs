@@ -12,6 +12,7 @@ use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerNextRoundInput, ValidatorUpdateAcceptDelegatedStakeInput,
@@ -91,7 +92,7 @@ fn scrypto_can_emit_registered_events() {
     assert!(match events.get(0) {
         Some((
             event_identifier
-            @ EventTypeIdentifier(Emitter::Method(_, SysModuleId::ObjectState), ..),
+            @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
             && is_decoded_equal(&LockFeeEvent { amount: 100.into() }, event_data) =>
@@ -101,7 +102,7 @@ fn scrypto_can_emit_registered_events() {
     assert!(match events.get(1) {
         Some((
             event_identifier @ EventTypeIdentifier(
-                Emitter::Function(node_id, SysModuleId::ObjectState, blueprint_name),
+                Emitter::Function(node_id, ObjectModuleId::SELF, blueprint_name),
                 ..,
             ),
             ref event_data,
@@ -209,7 +210,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -249,7 +250,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -263,7 +264,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -275,7 +276,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -287,7 +288,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -353,7 +354,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -367,7 +368,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -379,7 +380,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -391,7 +392,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -441,7 +442,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -453,7 +454,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, SysModuleId::ObjectState),
+                    Emitter::Method(_node_id, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -463,7 +464,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -516,7 +517,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -528,7 +529,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -544,7 +545,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -607,7 +608,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -619,7 +620,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -637,7 +638,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -696,7 +697,7 @@ fn epoch_manager_round_update_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -745,7 +746,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -796,7 +797,7 @@ fn validator_registration_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -808,7 +809,7 @@ fn validator_registration_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -867,7 +868,7 @@ fn validator_unregistration_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -879,7 +880,7 @@ fn validator_unregistration_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -946,7 +947,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -958,7 +959,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -970,7 +971,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -982,7 +983,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(4) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -994,7 +995,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1011,7 +1012,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, SysModuleId::ObjectState),
+                    Emitter::Method(_node_id, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1021,7 +1022,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1101,7 +1102,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1113,7 +1114,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1125,7 +1126,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1141,7 +1142,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1152,7 +1153,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(4) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1162,7 +1163,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, SysModuleId::ObjectState),
+                    Emitter::Method(node_id, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1175,7 +1176,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1185,7 +1186,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, SysModuleId::ObjectState),
+                    Emitter::Method(_node_id, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1195,7 +1196,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(8) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1289,7 +1290,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1301,7 +1302,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1313,7 +1314,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1325,7 +1326,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1336,7 +1337,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(4) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1346,7 +1347,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, SysModuleId::ObjectState),
+                    Emitter::Method(_node_id, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1356,7 +1357,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ..,
@@ -1425,7 +1426,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1437,7 +1438,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::AccessRules),
+                    Emitter::Method(_, ObjectModuleId::AccessRules),
                     ..,
                 ),
                 ..,
@@ -1447,7 +1448,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1499,7 +1500,7 @@ fn setting_metadata_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::ObjectState),
+                    Emitter::Method(_, ObjectModuleId::SELF),
                     ..,
                 ),
                 ref event_data,
@@ -1511,7 +1512,7 @@ fn setting_metadata_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, SysModuleId::Metadata),
+                    Emitter::Method(_, ObjectModuleId::Metadata),
                     ..,
                 ),
                 ..,

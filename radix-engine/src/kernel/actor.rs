@@ -1,3 +1,4 @@
+use radix_engine_interface::api::ObjectModuleId;
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -5,7 +6,7 @@ pub enum Actor {
     Method {
         global_address: Option<GlobalAddress>,
         node_id: NodeId,
-        module_id: SysModuleId,
+        module_id: ObjectModuleId,
         blueprint: Blueprint,
         ident: String,
     },
