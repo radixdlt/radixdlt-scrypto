@@ -169,15 +169,15 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectTuple, CLOCK_SET_CURRENT_TIME_IDENT),
+            MethodKey::new(SysModuleId::ObjectState, CLOCK_SET_CURRENT_TIME_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectTuple, CLOCK_GET_CURRENT_TIME_IDENT),
+            MethodKey::new(SysModuleId::ObjectState, CLOCK_GET_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectTuple, CLOCK_COMPARE_CURRENT_TIME_IDENT),
+            MethodKey::new(SysModuleId::ObjectState, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;

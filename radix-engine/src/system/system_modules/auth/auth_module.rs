@@ -97,7 +97,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectState,
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
             )?;
@@ -156,7 +156,7 @@ impl AuthModule {
                 let method_key = MethodKey::new(*module_id, ident);
 
                 // TODO: Clean this up
-                let auth = if node_id.is_global() && module_id.eq(&SysModuleId::ObjectTuple) {
+                let auth = if node_id.is_global() && module_id.eq(&SysModuleId::ObjectState) {
                     Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
                 } else {
                     Self::method_authorization_stateless(
@@ -192,7 +192,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectState,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -225,7 +225,7 @@ impl AuthModule {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectState,
                 &substate_key,
                 LockFlags::read_only(),
             )?;
@@ -426,7 +426,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule 
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                SysModuleId::ObjectTuple => btreemap!(
+                SysModuleId::ObjectState => btreemap!(
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {

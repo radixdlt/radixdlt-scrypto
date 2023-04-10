@@ -3,10 +3,10 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
+use crate::system::system_upstream::SystemInvocation;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
-use crate::system::system_upstream::SystemInvocation;
 
 pub trait SystemModule<M: KernelUpstream> {
     //======================

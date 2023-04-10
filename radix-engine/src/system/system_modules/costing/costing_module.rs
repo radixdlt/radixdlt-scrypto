@@ -195,7 +195,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for CostingModu
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::ObjectTuple,
+            SysModuleId::ObjectState,
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;

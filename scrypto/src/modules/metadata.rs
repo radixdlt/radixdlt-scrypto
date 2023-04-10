@@ -2,8 +2,8 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use radix_engine_interface::types::*;
@@ -32,7 +32,7 @@ impl Metadata {
 
 impl MetadataObject for Metadata {
     fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0.as_node_id().clone(), SysModuleId::ObjectTuple)
+        (self.0.as_node_id().clone(), SysModuleId::ObjectState)
     }
 }
 

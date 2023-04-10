@@ -350,7 +350,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::ObjectState.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -419,7 +419,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::ObjectTuple => {
+                SysModuleId::ObjectState => {
                     let substate = substate_db
                         .get_substate(
                             node_id,
@@ -438,7 +438,6 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                SysModuleId::ObjectMap => return None,
                 SysModuleId::TypeInfo => return None,
             }
         }
@@ -452,7 +451,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::ObjectState.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

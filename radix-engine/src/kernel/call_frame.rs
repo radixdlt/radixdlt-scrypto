@@ -192,7 +192,7 @@ impl CallFrame {
         let virtualization_enabled = {
             if module_id == SysModuleId::Metadata {
                 true
-            } else if module_id == SysModuleId::ObjectTuple {
+            } else if module_id == SysModuleId::ObjectState {
                 if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {

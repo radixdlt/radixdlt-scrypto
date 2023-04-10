@@ -59,7 +59,7 @@ impl NodeMoveModule {
 
                 let handle = api.kernel_lock_substate(
                     &node_id,
-                    SysModuleId::ObjectTuple,
+                    SysModuleId::ObjectState,
                     &ProofOffset::Info.into(),
                     LockFlags::MUTABLE,
                 )?;

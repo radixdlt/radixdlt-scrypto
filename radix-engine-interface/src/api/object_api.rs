@@ -61,5 +61,4 @@ pub trait ClientObjectApi<E> {
 
     /// Drops an object
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
-
 }

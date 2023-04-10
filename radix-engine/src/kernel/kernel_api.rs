@@ -134,10 +134,9 @@ pub trait KernelInternalApi<M: KernelUpstream> {
 }
 
 pub trait KernelApi<M: KernelUpstream>:
-KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi<M::Invocation> + KernelInternalApi<M>
 {
 }
-
 
 pub trait KernelUpstream: Sized {
     type Invocation: Debug;

@@ -75,8 +75,8 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
-                Emitter::Function(node_id, SysModuleId::ObjectTuple, ..)
-                | Emitter::Method(node_id, SysModuleId::ObjectTuple),
+                Emitter::Function(node_id, SysModuleId::ObjectState, ..)
+                | Emitter::Method(node_id, SysModuleId::ObjectState),
                 ..,
             ) = event_type_id
             {
