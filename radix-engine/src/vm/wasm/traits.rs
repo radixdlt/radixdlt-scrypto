@@ -39,7 +39,6 @@ pub trait WasmRuntime {
 
     fn globalize_object(
         &mut self,
-        component_id: Vec<u8>,
         access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

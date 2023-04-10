@@ -132,21 +132,16 @@ where
 
     fn globalize_object(
         &mut self,
-        component_id: Vec<u8>,
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let component_id = NodeId(
-            TryInto::<[u8; NodeId::LENGTH]>::try_into(component_id.as_ref())
-                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
-        );
         let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
 
-        let component_address = self.api.globalize(component_id, modules)?;
-        let component_address_encoded =
-            scrypto_encode(&component_address).expect("Failed to encode component id");
+        let object_address = self.api.globalize(modules)?;
+        let object_address_encoded =
+            scrypto_encode(&object_address).expect("Failed to encode object address");
 
-        self.allocate_buffer(component_address_encoded)
+        self.allocate_buffer(object_address_encoded)
     }
 
     fn new_key_value_store(
@@ -371,7 +366,6 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn globalize_object(
         &mut self,
-        component_id: Vec<u8>,
         access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))

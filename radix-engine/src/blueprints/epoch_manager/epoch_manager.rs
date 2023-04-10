@@ -187,8 +187,8 @@ impl EpochManagerBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            epoch_manager_id,
             btreemap!(
+                ObjectModuleId::SELF => epoch_manager_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,

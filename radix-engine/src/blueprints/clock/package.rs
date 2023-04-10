@@ -187,8 +187,8 @@ impl ClockNativePackage {
 
         let address = ComponentAddress::new_unchecked(input.component_address);
         api.globalize_with_address(
-            clock_id,
             btreemap!(
+                ObjectModuleId::SELF => clock_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,

@@ -261,12 +261,14 @@ where
 
     fn globalize(
         &mut self,
-        node_id: NodeId,
         modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, RuntimeError> {
         // FIXME check completeness of modules
 
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        let node_id = modules.get(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(ObjectModuleId::SELF)))?;
+
+        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint, global, ..
@@ -295,30 +297,32 @@ where
 
         let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
         let global_address = GlobalAddress::new_unchecked(global_node_id.into());
-        self.globalize_with_address(node_id, modules, global_address)?;
+        self.globalize_with_address(modules, global_address)?;
         Ok(global_address)
     }
 
     fn globalize_with_address(
         &mut self,
-        node_id: NodeId,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        mut modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // Check module configuration
         let module_ids = modules.keys().cloned().collect::<BTreeSet<ObjectModuleId>>();
         let standard_object = btreeset!(
+            ObjectModuleId::SELF,
             ObjectModuleId::Metadata,
             ObjectModuleId::Royalty,
             ObjectModuleId::AccessRules
         );
         if module_ids != standard_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(InvalidModuleSet(node_id, module_ids)),
+                Box::new(InvalidModuleSet(module_ids)),
             )));
         }
 
         // Drop the node
+        let node_id = modules.remove(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(ObjectModuleId::SELF)))?;
         let node = self.api.kernel_drop_node(&node_id)?;
         let mut node_substates = node.substates;
 
@@ -346,9 +350,7 @@ where
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
             match module_id {
-                ObjectModuleId::SELF => {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidModule))
-                }
+                ObjectModuleId::SELF => panic!("Should have been removed already"),
                 ObjectModuleId::AccessRules => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
                     let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);

@@ -224,8 +224,6 @@ fn new_key_value_store(
 
 fn globalize_object(
     mut caller: Caller<'_, HostState>,
-    component_id_ptr: u32,
-    component_id_len: u32,
     access_rules_ptr: u32,
     access_rules_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -233,12 +231,6 @@ fn globalize_object(
 
     runtime
         .globalize_object(
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                component_id_ptr,
-                component_id_len,
-            )?,
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -542,17 +534,13 @@ impl WasmiModule {
         let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             component_id_ptr: u32,
-             component_id_len: u32,
-             access_rules_ptr: u32,
-             access_rules_len: u32|
+             modules_ptr: u32,
+             modules_len: u32|
              -> Result<u64, Trap> {
                 globalize_object(
                     caller,
-                    component_id_ptr,
-                    component_id_len,
-                    access_rules_ptr,
-                    access_rules_len,
+                    modules_ptr,
+                    modules_len,
                 )
                 .map_err(|e| e.into())
             },

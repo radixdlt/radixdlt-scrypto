@@ -202,6 +202,7 @@ pub enum SystemError {
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
+    MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
     InvalidChildObjectCreation,
@@ -252,7 +253,7 @@ pub struct InvalidModuleType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<ObjectModuleId>);
+pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {

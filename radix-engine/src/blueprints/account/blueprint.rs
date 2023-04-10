@@ -88,9 +88,10 @@ impl AccountBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
 
-        Ok((account, modules))
+        Ok(modules)
     }
 
     pub fn create_virtual_eddsa_25519<Y>(
@@ -106,9 +107,10 @@ impl AccountBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
 
-        Ok((account, modules))
+        Ok(modules)
     }
 
     pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
@@ -127,10 +129,11 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(config, api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(account.0, modules)?;
+        let address = api.globalize(modules)?;
 
         Ok(address)
     }
@@ -141,10 +144,11 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(account.0, modules)?;
+        let address = api.globalize(modules)?;
 
         Ok((address, bucket))
     }

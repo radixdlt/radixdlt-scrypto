@@ -443,8 +443,8 @@ impl AccessControllerNativePackage {
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
-            object_id,
             btreemap!(
+                ObjectModuleId::SELF => object_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,

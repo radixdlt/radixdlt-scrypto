@@ -653,8 +653,8 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            validator_id,
             btreemap!(
+                ObjectModuleId::SELF => validator_id,
                 ObjectModuleId::AccessRules => access_rules.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -701,8 +701,8 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            validator_id,
             btreemap!(
+                ObjectModuleId::SELF => validator_id,
                 ObjectModuleId::AccessRules => access_rules.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,

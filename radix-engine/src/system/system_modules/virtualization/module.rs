@@ -67,14 +67,13 @@ impl VirtualizationModule {
 
                 let rtn: Vec<u8> = api.kernel_invoke_downstream(Box::new(invocation))?.into();
 
-                let (own, modules): (Own, BTreeMap<ObjectModuleId, Own>) =
+                let modules: BTreeMap<ObjectModuleId, Own> =
                     scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;
 
                 let mut system = SystemDownstream::new(api);
                 system.globalize_with_address(
-                    own.0,
                     modules,
                     GlobalAddress::new_unchecked(node_id.into()),
                 )?;

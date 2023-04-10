@@ -51,7 +51,6 @@ pub trait ClientObjectApi<E> {
     /// it accessible to all. A global address is automatically created and returned.
     fn globalize(
         &mut self,
-        node_id: NodeId,
         modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, E>;
 
@@ -59,7 +58,6 @@ pub trait ClientObjectApi<E> {
     /// it accessible to all with the provided global address.
     fn globalize_with_address(
         &mut self,
-        node_id: NodeId,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), E>;

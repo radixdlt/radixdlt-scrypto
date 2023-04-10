@@ -10,4 +10,4 @@ pub struct VirtualLazyLoadInput {
     pub id: [u8; 26],
 }
 
-pub type VirtualLazyLoadOutput = (Own, BTreeMap<ObjectModuleId, Own>);
+pub type VirtualLazyLoadOutput = BTreeMap<ObjectModuleId, Own>;

@@ -202,9 +202,9 @@ impl IdentityBlueprint {
     {
         let access_rules = SecurifiedIdentity::create_advanced(config, api)?;
 
-        let (object, modules) = Self::create_object(access_rules, api)?;
+        let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(object.0, modules)?;
+        let address = api.globalize(modules)?;
         Ok(address)
     }
 
@@ -214,16 +214,16 @@ impl IdentityBlueprint {
     {
         let (access_rules, bucket) = SecurifiedIdentity::create_securified(api)?;
 
-        let (object, modules) = Self::create_object(access_rules, api)?;
+        let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(object.0, modules)?;
+        let address = api.globalize(modules)?;
         Ok((address, bucket))
     }
 
     pub fn create_ecdsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<ObjectModuleId, Own>), RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -239,7 +239,7 @@ impl IdentityBlueprint {
     pub fn create_eddsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<ObjectModuleId, Own>), RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -262,7 +262,7 @@ impl IdentityBlueprint {
     fn create_object<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<ObjectModuleId, Own>), RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -272,11 +272,12 @@ impl IdentityBlueprint {
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
+            ObjectModuleId::SELF => Own(object_id),
             ObjectModuleId::AccessRules => access_rules.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,
         );
 
-        Ok((Own(object_id), modules))
+        Ok(modules)
     }
 }

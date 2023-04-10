@@ -189,8 +189,8 @@ impl LocalComponent for OwnedComponent {
 
         let address = ScryptoEnv
             .globalize(
-                self.0.as_node_id().clone(),
                 btreemap!(
+                    ObjectModuleId::SELF => self.0.as_node_id().clone(),
                     ObjectModuleId::AccessRules => access_rules.0,
                     ObjectModuleId::Metadata => metadata.0,
                     ObjectModuleId::Royalty => royalty.0,
