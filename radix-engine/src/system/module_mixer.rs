@@ -4,7 +4,6 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::KernelUpstreamApi;
 use crate::system::module::SystemModule;
-use crate::system::node_init::NodeInit;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
 use crate::system::system_modules::costing::FeeTable;
@@ -135,7 +134,9 @@ impl SystemModuleMixer {
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModuleMixer {
     #[trace_resources]
-    fn on_init<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
 
         // Enable transaction limits
@@ -499,11 +500,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
             LoggerModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_create_node(
-                api,
-                node_id,
-                node_module_init,
-            )?;
+            TransactionRuntimeModule::before_create_node(api, node_id, node_module_init)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
             ExecutionTraceModule::before_create_node(api, node_id, node_module_init)?;

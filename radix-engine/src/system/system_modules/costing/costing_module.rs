@@ -10,7 +10,6 @@ use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
-    system::node_init::NodeInit,
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
@@ -104,7 +103,9 @@ fn apply_royalty_cost<'g, Y: KernelUpstreamApi<SystemUpstream<'g, W>>, W: WasmEn
 }
 
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for CostingModule {
-    fn on_init<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelUpstreamApi<SystemUpstream<'g, W>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
         let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;

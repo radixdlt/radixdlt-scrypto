@@ -2,7 +2,7 @@ use super::PackageCodeTypeSubstate;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_init::{ModuleInit, NodeInit};
+use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
@@ -195,10 +195,11 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    let mut modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>> = node_modules
-        .into_iter()
-        .map(|(k, v)| (k, v.to_substates()))
-        .collect();
+    let mut modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>> =
+        node_modules
+            .into_iter()
+            .map(|(k, v)| (k, v.to_substates()))
+            .collect();
     modules.insert(SysModuleId::ObjectTuple, node_init);
 
     api.kernel_create_node(node_id, modules)?;

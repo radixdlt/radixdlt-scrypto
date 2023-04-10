@@ -1,5 +1,4 @@
 use crate::kernel::actor::Actor;
-use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::types::*;
@@ -619,13 +618,11 @@ impl CallFrame {
     pub fn create_node<'f, S: SubstateStore>(
         &mut self,
         node_id: NodeId,
-        node_modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         heap: &mut Heap,
         store: &'f mut S,
         push_to_store: bool,
     ) -> Result<(), UnlockSubstateError> {
-        let mut substates = node_modules;
-
         for (_module_id, module) in &substates {
             for (substate_key, substate_value) in module {
                 // FIXME there is a huge mismatch between drop_lock and create_node

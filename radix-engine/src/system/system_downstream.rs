@@ -8,7 +8,6 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::heap::HeapNode;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_properties::NodeProperties;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
@@ -36,7 +35,8 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub struct SystemDownstream<'a, 'g, Y: KernelUpstreamApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g> {
+pub struct SystemDownstream<'a, 'g, Y: KernelUpstreamApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>
+{
     pub api: &'a mut Y,
     pub phantom: PhantomData<&'g W>,
 }
@@ -213,19 +213,17 @@ where
         };
 
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> =
-            object_states
-                .into_iter()
-                .enumerate()
-                .map(|(i, x)| {
-                    (
-                        // TODO check size during package publishing time
-                        SubstateKey::from_vec(vec![i as u8]).unwrap(),
-                        IndexedScryptoValue::from_vec(x)
-                            .expect("Checked by payload-schema validation"),
-                    )
-                })
-                .collect();
+        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = object_states
+            .into_iter()
+            .enumerate()
+            .map(|(i, x)| {
+                (
+                    // TODO check size during package publishing time
+                    SubstateKey::from_vec(vec![i as u8]).unwrap(),
+                    IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
+                )
+            })
+            .collect();
 
         let type_parent = if let Some(parent) = &schema.parent {
             match actor {
@@ -402,7 +400,8 @@ where
             }
         }
 
-        self.api.kernel_create_node(address.into(), node_substates)?;
+        self.api
+            .kernel_create_node(address.into(), node_substates)?;
 
         Ok(())
     }
@@ -796,7 +795,9 @@ where
                     SysModuleId::Metadata => {
                         Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
                     }
-                    SysModuleId::ObjectTuple | SysModuleId::ObjectMap => self.get_object_info(&node_id).map(|x| x.blueprint),
+                    SysModuleId::ObjectTuple | SysModuleId::ObjectMap => {
+                        self.get_object_info(&node_id).map(|x| x.blueprint)
+                    }
                     SysModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(Box::new(EventError::NoAssociatedPackage)),
                     )),

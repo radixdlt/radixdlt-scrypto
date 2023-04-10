@@ -5,9 +5,7 @@ use crate::system::module::SystemModule;
 use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
-use crate::{
-    errors::RuntimeError, kernel::kernel_api::KernelUpstreamApi, system::node_init::NodeInit,
-};
+use crate::{errors::RuntimeError, kernel::kernel_api::KernelUpstreamApi};
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey, SysModuleId};

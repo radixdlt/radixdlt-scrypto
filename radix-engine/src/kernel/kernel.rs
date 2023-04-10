@@ -3,8 +3,8 @@ use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelUpstreamApi, KernelNodeApi,
-    KernelSubstateApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelNodeApi, KernelSubstateApi,
+    KernelUpstreamApi, LockInfo,
 };
 use crate::blueprints::resource::*;
 use crate::errors::*;
@@ -12,7 +12,6 @@ use crate::errors::{InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
-use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::NodeProperties;
 use crate::system::system_downstream::SystemDownstream;

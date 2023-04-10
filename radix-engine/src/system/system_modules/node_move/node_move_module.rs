@@ -2,7 +2,7 @@ use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelUpstreamApi, KernelUpstream};
+use crate::kernel::kernel_api::{KernelUpstream, KernelUpstreamApi};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_downstream::SystemDownstream;
