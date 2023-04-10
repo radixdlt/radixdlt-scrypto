@@ -8,7 +8,7 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::RadixEngine;
-use radix_engine::kernel::track::Track;
+use radix_engine::track::Track;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
