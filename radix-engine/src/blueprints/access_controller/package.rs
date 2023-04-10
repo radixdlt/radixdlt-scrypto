@@ -5,7 +5,7 @@ use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
@@ -979,32 +979,17 @@ fn update_access_rules<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
+    let attached = AttachedAccessRules(receiver.clone());
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
-        api.call_module_method(
-            receiver,
-            SysModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                object_key: ObjectKey::SELF,
-                name: group_name.into(),
-                rule: access_rule.clone(),
-            })
-            .unwrap(),
-        )?;
+        attached.set_group_access_rule(group_name, access_rule.clone(), api)?;
     }
     for (method_key, entry) in access_rules.get_all_method_auth().iter() {
         match entry {
             AccessRuleEntry::AccessRule(access_rule) => {
-                api.call_module_method(
-                    receiver,
-                    SysModuleId::AccessRules,
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                    scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                        object_key: ObjectKey::SELF,
-                        method_key: method_key.clone(),
-                        rule: AccessRuleEntry::AccessRule(access_rule.clone()),
-                    })
-                    .unwrap(),
+                attached.set_method_access_rule(
+                    method_key.clone(),
+                    AccessRuleEntry::AccessRule(access_rule.clone()),
+                    api,
                 )?;
             }
             AccessRuleEntry::Group(..) => {} // Already updated above

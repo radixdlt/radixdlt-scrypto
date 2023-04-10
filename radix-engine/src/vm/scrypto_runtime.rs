@@ -5,6 +5,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::ClientCostingReason;
@@ -79,7 +80,7 @@ where
 
         let module_id = u8::try_from(module_id)
             .ok()
-            .and_then(|x| SysModuleId::from_repr(x))
+            .and_then(|x| ObjectModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =

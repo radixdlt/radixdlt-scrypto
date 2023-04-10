@@ -13,6 +13,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -464,7 +465,7 @@ impl ValidatorBlueprint {
 
         api.call_module_method(
             receiver,
-            SysModuleId::AccessRules,
+            ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 object_key: ObjectKey::SELF,

@@ -1,9 +1,32 @@
 use crate::types::*;
 use radix_engine_common::types::*;
+use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 use scrypto_schema::KeyValueStoreSchema;
+
+#[repr(u8)]
+#[derive(
+Debug,
+Clone,
+Copy,
+PartialEq,
+Eq,
+Hash,
+PartialOrd,
+Ord,
+ScryptoSbor,
+ManifestSbor,
+FromRepr,
+EnumIter,
+)]
+pub enum ObjectModuleId {
+    SELF,
+    Metadata,
+    Royalty,
+    AccessRules,
+}
 
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
@@ -54,7 +77,7 @@ pub trait ClientObjectApi<E> {
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: SysModuleId,
+        module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

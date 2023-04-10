@@ -20,6 +20,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
@@ -411,18 +412,18 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: SysModuleId,
+        module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let (blueprint, global_address) = match module_id {
-            SysModuleId::ObjectState => {
+        let (blueprint, global_address, sys_module_id) = match module_id {
+            ObjectModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo {
@@ -449,7 +450,7 @@ where
                             }
                         };
 
-                        (blueprint, global_address)
+                        (blueprint, global_address, SysModuleId::ObjectState)
                     }
 
                     TypeInfoSubstate::KeyValueStore(..) => {
@@ -459,28 +460,29 @@ where
                     }
                 }
             }
-            SysModuleId::Metadata => {
+            ObjectModuleId::Metadata => {
                 // TODO: Check if type has metadata
-                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
+                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None, SysModuleId::Metadata)
             }
-            SysModuleId::Royalty => {
+            ObjectModuleId::Royalty => {
                 // TODO: Check if type has royalty
                 (
                     Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
                     None,
+                    SysModuleId::Royalty,
                 )
             }
-            SysModuleId::AccessRules => {
+            ObjectModuleId::AccessRules => {
                 // TODO: Check if type has access rules
                 (
                     Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
                     None,
+                    SysModuleId::AccessRules,
                 )
             }
-            _ => todo!(),
         };
 
-        let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
+        let identifier = MethodIdentifier(receiver.clone(), sys_module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
 
         let invocation = KernelInvocation {

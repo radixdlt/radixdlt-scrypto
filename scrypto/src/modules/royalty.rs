@@ -8,6 +8,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -34,8 +35,8 @@ impl Royalty {
 }
 
 impl RoyaltyObject for Royalty {
-    fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0.as_node_id().clone(), SysModuleId::ObjectState)
+    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
+        (self.0.as_node_id(), ObjectModuleId::SELF)
     }
 }
 
@@ -43,13 +44,13 @@ impl RoyaltyObject for Royalty {
 pub struct AttachedRoyalty(pub ComponentAddress);
 
 impl RoyaltyObject for AttachedRoyalty {
-    fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0.into(), SysModuleId::Royalty)
+    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
+        (self.0.as_node_id(), ObjectModuleId::Royalty)
     }
 }
 
 pub trait RoyaltyObject {
-    fn self_id(&self) -> (NodeId, SysModuleId);
+    fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
     fn set_config(&self, royalty_config: RoyaltyConfig) {
         let (node_id, module_id) = self.self_id();

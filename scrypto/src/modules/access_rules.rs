@@ -15,6 +15,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use sbor::rust::prelude::*;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -47,8 +48,8 @@ impl AttachedAccessRules {
         // TODO: allow setting method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                &self.0.clone().into(),
-                SysModuleId::AccessRules,
+                self.0.as_node_id(),
+                ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
@@ -64,8 +65,8 @@ impl AttachedAccessRules {
         // TODO: allow locking method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                &self.0.clone().into(),
-                SysModuleId::AccessRules,
+                self.0.as_node_id(),
+                ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,

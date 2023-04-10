@@ -10,6 +10,7 @@ use radix_engine_interface::types::{Blueprint, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, SysModuleId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto_schema::KeyValueStoreSchema;
@@ -106,13 +107,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: SysModuleId,
+        module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {

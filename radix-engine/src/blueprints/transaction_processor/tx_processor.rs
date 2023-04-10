@@ -20,6 +20,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
@@ -445,7 +446,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        SysModuleId::Metadata,
+                        ObjectModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
@@ -470,7 +471,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        SysModuleId::Metadata,
+                        ObjectModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
@@ -490,7 +491,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        ObjectModuleId::SELF,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -513,7 +514,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         component_address.as_node_id(),
-                        SysModuleId::Royalty,
+                        ObjectModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -533,7 +534,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        ObjectModuleId::SELF,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -550,7 +551,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
                         component_address.as_node_id(),
-                        SysModuleId::Royalty,
+                        ObjectModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -572,7 +573,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        SysModuleId::AccessRules,
+                        ObjectModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                             object_key: ObjectKey::SELF,
