@@ -3,7 +3,6 @@ use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::{PROOF_BLUEPRINT, WORKTOP_BLUEPRINT};
 use radix_engine_interface::constants::*;
 
@@ -38,81 +37,6 @@ impl NodeProperties {
                 }
             }
             _ => return false,
-        }
-    }
-
-    pub fn can_substate_be_accessed(
-        actor: &Actor,
-        node_id: &NodeId,
-        module_id: SysModuleId,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> bool {
-        if flags.contains(LockFlags::MUTABLE) {
-            Self::can_substate_be_updated(actor, node_id, module_id, substate_key)
-        } else {
-            Self::can_substate_be_read(actor, node_id, module_id, substate_key)
-        }
-    }
-
-    /// Whether the substate can be read
-    pub fn can_substate_be_read(
-        actor: &Actor,
-        node_id: &NodeId,
-        module_id: SysModuleId,
-        _substate_key: &SubstateKey,
-    ) -> bool {
-        if is_native_package(actor.blueprint().package_address) {
-            return true;
-        }
-
-        // TODO: remove
-        if node_id.is_global_package() {
-            return true;
-        }
-
-        if module_id == SysModuleId::TypeInfo {
-            return true;
-        }
-
-        if node_id.is_internal_kv_store() {
-            return true;
-        }
-
-        match actor {
-            Actor::Method {
-                node_id: actor_node_id,
-                ..
-            } if actor_node_id == node_id => true,
-            _ => false,
-        }
-    }
-
-    /// Whether the substate can be written
-    pub fn can_substate_be_updated(
-        actor: &Actor,
-        node_id: &NodeId,
-        module_id: SysModuleId,
-        _substate_key: &SubstateKey,
-    ) -> bool {
-        if is_native_package(actor.blueprint().package_address) {
-            return true;
-        }
-
-        if module_id == SysModuleId::TypeInfo {
-            return true;
-        }
-
-        if node_id.is_internal_kv_store() {
-            return true;
-        }
-
-        match actor {
-            Actor::Method {
-                node_id: actor_node_id,
-                ..
-            } if actor_node_id == node_id => true,
-            _ => false,
         }
     }
 

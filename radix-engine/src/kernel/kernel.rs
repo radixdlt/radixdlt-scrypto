@@ -8,12 +8,11 @@ use super::kernel_api::{
 };
 use crate::blueprints::resource::*;
 use crate::errors::*;
-use crate::errors::{InvalidSubstateAccess, RuntimeError};
+use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_properties::NodeProperties;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_upstream::SystemUpstream;
@@ -631,31 +630,6 @@ where
         // Change to kernel mode
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
-
-        // TODO: Check if valid substate_key for node_id
-
-        // Check node configs
-        if let Some(actor) = &self.current_frame.actor {
-            if let ExecutionMode::Client = current_mode {
-                if !NodeProperties::can_substate_be_accessed(
-                    actor,
-                    node_id,
-                    module_id,
-                    substate_key,
-                    flags,
-                ) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
-                            mode: current_mode,
-                            actor: actor.clone(),
-                            node_id: node_id.clone(),
-                            substate_key: substate_key.clone(),
-                            flags,
-                        })),
-                    ));
-                }
-            }
-        }
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,

@@ -161,7 +161,6 @@ pub struct InvalidDropNodeAccess {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidSubstateAccess {
-    pub mode: ExecutionMode,
     pub actor: Actor,
     pub node_id: NodeId,
     pub substate_key: SubstateKey,

@@ -1,7 +1,4 @@
-use crate::errors::{
-    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError,
-    RuntimeError, SubstateValidationError,
-};
+use crate::errors::{ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError};
 use crate::errors::{SystemError, SystemInvokeError};
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::RefType;
@@ -52,6 +49,28 @@ where
             phantom: PhantomData::default(),
         }
     }
+
+    fn can_substate_be_accessed(
+        actor: &Actor,
+        node_id: &NodeId,
+    ) -> bool {
+        // TODO: Remove
+        if is_native_package(actor.blueprint().package_address) {
+            return true;
+        }
+
+        if node_id.is_internal_kv_store() {
+            return true;
+        }
+
+        match actor {
+            Actor::Method {
+                node_id: actor_node_id,
+                ..
+            } if actor_node_id == node_id => true,
+            _ => false,
+        }
+    }
 }
 
 impl<'a, 'g, Y, W> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
@@ -79,11 +98,27 @@ where
             }
         }
 
+        let actor = self.api.kernel_get_current_actor().unwrap();
+
+        // TODO: Check if valid substate_key for node_id
+        if !Self::can_substate_be_accessed(
+            &actor,
+            node_id,
+        ) {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
+                    actor: actor.clone(),
+                    node_id: node_id.clone(),
+                    substate_key: substate_key.clone(),
+                    flags,
+                })),
+            ));
+        }
+
         let module_id = match type_info {
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::ObjectMap,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                if let Actor::Method { module_id, .. } =
-                    self.api.kernel_get_current_actor().unwrap()
+                if let Actor::Method { module_id, .. } = &actor
                 {
                     match module_id {
                         ObjectModuleId::SELF => {
