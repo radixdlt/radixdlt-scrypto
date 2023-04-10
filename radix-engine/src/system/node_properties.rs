@@ -42,7 +42,6 @@ impl NodeProperties {
     }
 
     pub fn can_substate_be_accessed(
-        mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -50,111 +49,70 @@ impl NodeProperties {
         flags: LockFlags,
     ) -> bool {
         if flags.contains(LockFlags::MUTABLE) {
-            Self::can_substate_be_updated(mode, actor, node_id, module_id, substate_key)
+            Self::can_substate_be_updated(actor, node_id, module_id, substate_key)
         } else {
-            Self::can_substate_be_read(mode, actor, node_id, module_id, substate_key)
+            Self::can_substate_be_read(actor, node_id, module_id, substate_key)
         }
     }
 
     /// Whether the substate can be read
     pub fn can_substate_be_read(
-        mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
         module_id: SysModuleId,
         _substate_key: &SubstateKey,
     ) -> bool {
-        match mode {
-            ExecutionMode::Kernel => match module_id {
-                SysModuleId::TypeInfo => true,
-                _ => false,
-            },
-            ExecutionMode::DropNode => match module_id {
-                SysModuleId::TypeInfo => true,
-                _ => false,
-            },
-            ExecutionMode::AutoDrop => match module_id {
-                SysModuleId::TypeInfo => true,
-                _ => false,
-            },
-            ExecutionMode::System => match module_id {
-                SysModuleId::TypeInfo => true,
-                SysModuleId::ObjectTuple => true,
-                _ => false,
-            },
-            ExecutionMode::KernelModule => true,
-            ExecutionMode::Client => {
-                if is_native_package(actor.blueprint().package_address) {
-                    return true;
-                }
+        if is_native_package(actor.blueprint().package_address) {
+            return true;
+        }
 
-                // TODO: remove
-                if node_id.is_global_package() {
-                    return true;
-                }
+        // TODO: remove
+        if node_id.is_global_package() {
+            return true;
+        }
 
-                if module_id == SysModuleId::TypeInfo {
-                    return true;
-                }
+        if module_id == SysModuleId::TypeInfo {
+            return true;
+        }
 
-                if node_id.is_internal_kv_store() {
-                    return true;
-                }
+        if node_id.is_internal_kv_store() {
+            return true;
+        }
 
-                match actor {
-                    Actor::Method {
-                        node_id: actor_node_id,
-                        ..
-                    } if actor_node_id == node_id => true,
-                    _ => false,
-                }
-            }
+        match actor {
+            Actor::Method {
+                node_id: actor_node_id,
+                ..
+            } if actor_node_id == node_id => true,
+            _ => false,
         }
     }
 
     /// Whether the substate can be written
     pub fn can_substate_be_updated(
-        mode: ExecutionMode,
         actor: &Actor,
         node_id: &NodeId,
         module_id: SysModuleId,
         _substate_key: &SubstateKey,
     ) -> bool {
-        match mode {
-            ExecutionMode::Kernel => match module_id {
-                _ => false,
-            },
-            ExecutionMode::DropNode => match module_id {
-                _ => false,
-            },
-            ExecutionMode::AutoDrop => match module_id {
-                _ => false,
-            },
-            ExecutionMode::System => match module_id {
-                _ => false,
-            },
-            ExecutionMode::KernelModule => true,
-            ExecutionMode::Client => {
-                if is_native_package(actor.blueprint().package_address) {
-                    return true;
-                }
+        if is_native_package(actor.blueprint().package_address) {
+            return true;
+        }
 
-                if module_id == SysModuleId::TypeInfo {
-                    return true;
-                }
+        if module_id == SysModuleId::TypeInfo {
+            return true;
+        }
 
-                if node_id.is_internal_kv_store() {
-                    return true;
-                }
+        if node_id.is_internal_kv_store() {
+            return true;
+        }
 
-                match actor {
-                    Actor::Method {
-                        node_id: actor_node_id,
-                        ..
-                    } if actor_node_id == node_id => true,
-                    _ => false,
-                }
-            }
+        match actor {
+            Actor::Method {
+                node_id: actor_node_id,
+                ..
+            } if actor_node_id == node_id => true,
+            _ => false,
         }
     }
 
