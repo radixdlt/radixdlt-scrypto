@@ -501,37 +501,6 @@ where
             .map(|v| v.into())
     }
 
-    fn call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let identifier = FunctionIdentifier::new(
-            Blueprint::new(&package_address, blueprint_name),
-            function_name.to_string(),
-        );
-        let payload_size = args.len() + identifier.size();
-
-        let invocation = KernelInvocation {
-            resolved_actor: Actor::function(identifier.clone()),
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
-            })?,
-            sys_invocation: SystemInvocation {
-                blueprint: identifier.0,
-                ident: FnIdent::Application(identifier.1),
-                receiver: None,
-            },
-            payload_size,
-        };
-
-        self.api
-            .kernel_invoke_downstream(Box::new(invocation))
-            .map(|v| v.into())
-    }
-
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
@@ -606,6 +575,43 @@ where
         self.api.kernel_drop_node(&node_id)?;
 
         Ok(())
+    }
+}
+
+impl<'a, 'g, Y, W> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+    where
+        Y: KernelApi<SystemUpstream<'g, W>>,
+        W: WasmEngine + 'g,
+{
+    fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let identifier = FunctionIdentifier::new(
+            Blueprint::new(&package_address, blueprint_name),
+            function_name.to_string(),
+        );
+        let payload_size = args.len() + identifier.size();
+
+        let invocation = KernelInvocation {
+            resolved_actor: Actor::function(identifier.clone()),
+            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
+                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+            })?,
+            sys_invocation: SystemInvocation {
+                blueprint: identifier.0,
+                ident: FnIdent::Application(identifier.1),
+                receiver: None,
+            },
+            payload_size,
+        };
+
+        self.api
+            .kernel_invoke_downstream(Box::new(invocation))
+            .map(|v| v.into())
     }
 }
 

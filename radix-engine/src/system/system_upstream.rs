@@ -12,6 +12,7 @@ use crate::vm::wasm::{WasmEngine, WasmInstance, WasmRuntime};
 use crate::vm::{NativeVm, ScryptoRuntime, ScryptoVm};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientTransactionLimitsApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
@@ -95,6 +96,8 @@ pub struct SystemUpstream<'g, W: WasmEngine> {
 }
 
 impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
+    type Invocation = SystemInvocation;
+
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -195,7 +198,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
     }
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation,
+        identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

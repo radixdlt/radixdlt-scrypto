@@ -7,7 +7,6 @@ use std::process::Command;
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel;
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::module_mixer::SystemModuleMixer;

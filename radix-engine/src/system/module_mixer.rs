@@ -18,7 +18,7 @@ use crate::system::system_modules::transaction_limits::{
 };
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::system::system_upstream::SystemUpstream;
+use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -221,7 +221,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     #[trace_resources]
     fn before_invoke<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
-        identifier: &KernelInvocation,
+        identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;

@@ -5,7 +5,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::system_downstream::SystemDownstream;
-use crate::system::system_upstream::SystemUpstream;
+use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::{
@@ -133,7 +133,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for CostingModu
 
     fn before_invoke<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
-        _identifier: &KernelInvocation,
+        _identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();

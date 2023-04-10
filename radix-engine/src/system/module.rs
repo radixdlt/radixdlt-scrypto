@@ -6,6 +6,7 @@ use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use sbor::rust::collections::BTreeMap;
+use crate::system::system_upstream::SystemInvocation;
 
 pub trait SystemModule<M: KernelUpstream> {
     //======================
@@ -35,7 +36,7 @@ pub trait SystemModule<M: KernelUpstream> {
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _identifier: &KernelInvocation,
+        _identifier: &KernelInvocation<SystemInvocation>,
         _input_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())

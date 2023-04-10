@@ -1,4 +1,5 @@
 pub mod actor_api;
+pub mod blueprint_api;
 pub mod component;
 pub mod kernel_modules;
 pub mod node_modules;
@@ -7,6 +8,7 @@ pub mod substate_api;
 
 // Re-exports
 pub use actor_api::ClientActorApi;
+pub use blueprint_api::ClientBlueprintApi;
 pub use kernel_modules::auth_api::ClientAuthApi;
 pub use kernel_modules::costing_api::ClientCostingApi;
 pub use kernel_modules::event_api::ClientEventApi;
@@ -24,6 +26,7 @@ pub use substate_api::LockFlags;
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientObjectApi<E>
+    + ClientBlueprintApi<E>
     + ClientSubstateApi<E>
     + ClientCostingApi<E>
     + ClientEventApi<E>

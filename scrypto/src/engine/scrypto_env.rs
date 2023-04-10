@@ -1,6 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::ClientTransactionRuntimeApi;
+use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -139,6 +139,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
+        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
+
+        Ok(())
+    }
+}
+
+impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
     fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -162,12 +170,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         });
 
         Ok(return_data)
-    }
-
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
-        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
-
-        Ok(())
     }
 }
 

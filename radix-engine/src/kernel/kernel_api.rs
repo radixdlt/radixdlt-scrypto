@@ -5,7 +5,6 @@ use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
-use crate::system::system_upstream::SystemInvocation;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 
@@ -72,8 +71,8 @@ pub trait KernelSubstateApi {
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation {
-    pub sys_invocation: SystemInvocation,
+pub struct KernelInvocation<I: Debug> {
+    pub sys_invocation: I,
 
     // TODO: Remove
     pub payload_size: usize,
@@ -83,7 +82,7 @@ pub struct KernelInvocation {
     pub args: IndexedScryptoValue,
 }
 
-impl KernelInvocation {
+impl<I: Debug> KernelInvocation<I> {
     pub fn get_update(&self) -> CallFrameUpdate {
         let nodes_to_move = self.args.owned_node_ids().clone();
         let mut node_refs_to_copy = self.args.references().clone();
@@ -103,10 +102,10 @@ impl KernelInvocation {
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeDownstreamApi {
+pub trait KernelInvokeDownstreamApi<I: Debug> {
     fn kernel_invoke_downstream(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<I>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
@@ -135,12 +134,14 @@ pub trait KernelInternalApi<M: KernelUpstream> {
 }
 
 pub trait KernelApi<M: KernelUpstream>:
-KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi + KernelInternalApi<M>
+KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi<M::Invocation> + KernelInternalApi<M>
 {
 }
 
 
 pub trait KernelUpstream: Sized {
+    type Invocation: Debug;
+
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
@@ -208,7 +209,7 @@ pub trait KernelUpstream: Sized {
         Y: KernelApi<Self>;
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation,
+        identifier: &KernelInvocation<Self::Invocation>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -233,7 +234,7 @@ pub trait KernelUpstream: Sized {
         Y: KernelApi<Self>;
 
     fn invoke_upstream<Y>(
-        invocation: SystemInvocation,
+        invocation: Self::Invocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

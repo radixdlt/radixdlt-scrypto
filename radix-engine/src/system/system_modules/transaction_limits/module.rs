@@ -1,7 +1,7 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_upstream::SystemUpstream;
+use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::{
@@ -188,7 +188,7 @@ impl TransactionLimitsModule {
 impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for TransactionLimitsModule {
     fn before_invoke<Y: KernelApi<SystemUpstream<'g, W>>>(
         api: &mut Y,
-        _identifier: &KernelInvocation,
+        _identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         if input_size

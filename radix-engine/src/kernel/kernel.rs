@@ -20,7 +20,7 @@ use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 use resources_tracker_macro::trace_resources;
@@ -193,7 +193,7 @@ where
 
     fn invoke(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
@@ -813,7 +813,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeDownstreamApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeDownstreamApi<M::Invocation> for Kernel<'g, M, S>
 where
     M: KernelUpstream,
     S: SubstateStore,
@@ -821,9 +821,9 @@ where
     #[trace_resources]
     fn kernel_invoke_downstream(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        M::before_invoke(&invocation, invocation.payload_size, self)?;
+        M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
