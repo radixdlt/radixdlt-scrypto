@@ -11,7 +11,6 @@ pub struct LocatedTraversalEvent<'t, 'de, C: CustomTraversal> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraversalEvent<'de, C: CustomTraversal> {
-    PayloadPrefix,
     ContainerStart(ContainerHeader<C>),
     ContainerEnd(ContainerHeader<C>),
     TerminalValue(TerminalValueRef<'de, C>),
@@ -46,8 +45,29 @@ pub struct Location<'t, C: CustomTraversal> {
     /// * For DecodeError, this is the location where the error occurred
     pub end_offset: usize,
     /// The path of containers from the root to the current value.
-    /// If the event is ContainerStart/End, this does not include the newly started/ended container.
+    /// If the event is ContainerStart/ContainerEnd, this does not include the newly started/ended container.
     pub ancestor_path: &'t [ContainerState<C>],
+}
+
+impl<'t, C: CustomTraversal> Location<'t, C> {
+    /// Gives the offset of the start of the value body (ignoring the value kind byte).
+    /// The result is only valid if this location corresponds to a ContainerStart/TerminalValue/ContainerEnd event.
+    pub fn get_start_offset_of_value_body(&self) -> usize {
+        let value_has_implicit_value_kind = match self.ancestor_path.last() {
+            Some(parent) => parent
+                .container_header
+                .get_implicit_child_value_kind(0)
+                .is_some(),
+            None => false,
+        };
+        if value_has_implicit_value_kind {
+            self.start_offset
+        } else {
+            // Shouldn't saturate if called on a valid location - but this prevents panic / overflow if called on an
+            // invalid value and then the result is ignored.
+            self.start_offset.saturating_sub(1)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

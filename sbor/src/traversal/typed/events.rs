@@ -1,15 +1,15 @@
-use super::*;
+use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedLocatedTraversalEvent<'t, 's, 'de, C: CustomTraversal> {
-    pub location: TypedLocation<'t, 's, C>,
-    pub event: TypedTraversalEvent<'de, C>,
+pub struct TypedLocatedTraversalEvent<'t, 's, 'de, E: CustomTypeExtension> {
+    pub location: TypedLocation<'t, 's, E::CustomTraversal>,
+    pub event: TypedTraversalEvent<'de, E>,
 }
 
-impl<'t, 's, 'de, C: CustomTraversal> TypedLocatedTraversalEvent<'t, 's, 'de, C> {
-    pub fn full_location(&self) -> FullLocation<'s, C> {
+impl<'t, 's, 'de, E: CustomTypeExtension> TypedLocatedTraversalEvent<'t, 's, 'de, E> {
+    pub fn full_location(&self) -> FullLocation<'s, E> {
         FullLocation {
             start_offset: self.location.location.start_offset,
             end_offset: self.location.location.end_offset,
@@ -22,25 +22,46 @@ impl<'t, 's, 'de, C: CustomTraversal> TypedLocatedTraversalEvent<'t, 's, 'de, C>
                 .zip(self.location.typed_ancestor_path.iter().cloned())
                 .collect(),
             current_value_info: self.event.current_value_info(),
+            error: match &self.event {
+                TypedTraversalEvent::Error(error) => Some(error.clone()),
+                _ => None,
+            },
         }
+    }
+
+    pub fn display_as_unexpected_event(
+        &self,
+        expected: &'static str,
+        schema: &Schema<E>,
+    ) -> String {
+        let error_display = match &self.event {
+            TypedTraversalEvent::Error(error) => format!("{:?} occurred", error),
+            _ => format!("Expected {} but found {:?}", expected, self.event),
+        };
+        let full_location = self.full_location();
+        format!(
+            "{} at byte offset {}-{} and value path {}",
+            error_display,
+            full_location.start_offset,
+            full_location.end_offset,
+            full_location.path_to_string(&schema)
+        )
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
-    PayloadPrefix,
-    ContainerStart(LocalTypeIndex, ContainerHeader<C>),
-    ContainerEnd(LocalTypeIndex, ContainerHeader<C>),
-    TerminalValue(LocalTypeIndex, TerminalValueRef<'de, C>),
+pub enum TypedTraversalEvent<'de, E: CustomTypeExtension> {
+    ContainerStart(LocalTypeIndex, ContainerHeader<E::CustomTraversal>),
+    ContainerEnd(LocalTypeIndex, ContainerHeader<E::CustomTraversal>),
+    TerminalValue(LocalTypeIndex, TerminalValueRef<'de, E::CustomTraversal>),
     TerminalValueBatch(LocalTypeIndex, TerminalValueBatchRef<'de>),
     End,
-    Error(TypedTraversalError<C::CustomValueKind>),
+    Error(TypedTraversalError<E>),
 }
 
-impl<'de, C: CustomTraversal> TypedTraversalEvent<'de, C> {
-    pub fn current_value_info(&self) -> Option<CurrentValueInfo<C::CustomValueKind>> {
+impl<'de, E: CustomTypeExtension> TypedTraversalEvent<'de, E> {
+    pub fn current_value_info(&self) -> Option<CurrentValueInfo<E>> {
         match self {
-            TypedTraversalEvent::PayloadPrefix => None,
             TypedTraversalEvent::ContainerStart(type_index, header) => {
                 Some(CurrentValueInfo::for_container(*type_index, header))
             }
@@ -59,18 +80,12 @@ impl<'de, C: CustomTraversal> TypedTraversalEvent<'de, C> {
             TypedTraversalEvent::Error(TypedTraversalError::ValueMismatchWithType(
                 type_mismatch_error,
             )) => match type_mismatch_error {
-                TypeMismatchError::MismatchingType { expected, actual } => {
-                    Some(CurrentValueInfo::for_value(*expected, *actual))
-                }
-                TypeMismatchError::MismatchingChildElementType { expected, actual } => {
-                    Some(CurrentValueInfo::for_value(*expected, *actual))
-                }
-                TypeMismatchError::MismatchingChildKeyType { expected, actual } => {
-                    Some(CurrentValueInfo::for_value(*expected, *actual))
-                }
-                TypeMismatchError::MismatchingChildValueType { expected, actual } => {
-                    Some(CurrentValueInfo::for_value(*expected, *actual))
-                }
+                // For these, we have a type mismatch - so we can't return accurate information on "current value"
+                // Instead, let's handle these when we print the full location
+                TypeMismatchError::MismatchingType { .. }
+                | TypeMismatchError::MismatchingChildElementType { .. }
+                | TypeMismatchError::MismatchingChildKeyType { .. }
+                | TypeMismatchError::MismatchingChildValueType { .. } => None,
                 TypeMismatchError::MismatchingTupleLength { type_index, .. } => {
                     Some(CurrentValueInfo::for_value(*type_index, ValueKind::Tuple))
                 }
@@ -89,24 +104,29 @@ impl<'de, C: CustomTraversal> TypedTraversalEvent<'de, C> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CurrentValueInfo<X: CustomValueKind> {
+pub struct CurrentValueInfo<E: CustomTypeExtension> {
     pub type_index: LocalTypeIndex,
-    pub value_kind: ValueKind<X>,
+    pub value_kind: ValueKind<E::CustomValueKind>,
     pub variant: Option<u8>,
+    pub error: Option<TypedTraversalError<E>>,
 }
 
-impl<X: CustomValueKind> CurrentValueInfo<X> {
-    pub fn for_value(type_index: LocalTypeIndex, value_kind: ValueKind<X>) -> Self {
+impl<E: CustomTypeExtension> CurrentValueInfo<E> {
+    pub fn for_value(
+        type_index: LocalTypeIndex,
+        value_kind: ValueKind<E::CustomValueKind>,
+    ) -> Self {
         Self {
             type_index,
+            error: None,
             value_kind,
             variant: None,
         }
     }
 
-    pub fn for_container<C: CustomTraversal>(
+    pub fn for_container(
         type_index: LocalTypeIndex,
-        container_header: &ContainerHeader<C>,
+        container_header: &ContainerHeader<E::CustomTraversal>,
     ) -> Self {
         let (value_kind, variant) = match container_header {
             ContainerHeader::Tuple(_) => (ValueKind::Tuple, None),
@@ -116,6 +136,7 @@ impl<X: CustomValueKind> CurrentValueInfo<X> {
         };
         Self {
             type_index,
+            error: None,
             value_kind,
             variant,
         }
@@ -124,6 +145,7 @@ impl<X: CustomValueKind> CurrentValueInfo<X> {
     pub fn for_enum_variant(type_index: LocalTypeIndex, variant: u8) -> Self {
         Self {
             type_index,
+            error: None,
             value_kind: ValueKind::Enum,
             variant: Some(variant),
         }
@@ -138,30 +160,38 @@ pub struct TypedLocation<'t, 's, C: CustomTraversal> {
     pub typed_ancestor_path: &'t [ContainerType<'s>],
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TypedTraversalError<X: CustomValueKind> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypedTraversalError<E: CustomTypeExtension> {
     TypeIndexNotFound(LocalTypeIndex),
-    ValueMismatchWithType(TypeMismatchError<X>),
+    ValueMismatchWithType(TypeMismatchError<E>),
     DecodeError(DecodeError),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TypeMismatchError<X: CustomValueKind> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypeMismatchError<E: CustomTypeExtension> {
     MismatchingType {
-        expected: LocalTypeIndex,
-        actual: ValueKind<X>,
+        expected_type_index: LocalTypeIndex,
+        expected_type_kind:
+            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildElementType {
-        expected: LocalTypeIndex,
-        actual: ValueKind<X>,
+        expected_type_index: LocalTypeIndex,
+        expected_type_kind:
+            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildKeyType {
-        expected: LocalTypeIndex,
-        actual: ValueKind<X>,
+        expected_type_index: LocalTypeIndex,
+        expected_type_kind:
+            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildValueType {
-        expected: LocalTypeIndex,
-        actual: ValueKind<X>,
+        expected_type_index: LocalTypeIndex,
+        expected_type_kind:
+            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingTupleLength {
         expected: usize,

@@ -1,19 +1,13 @@
 use super::*;
 use crate::data::scrypto::model::InternalRef;
 use crate::*;
-use sbor::serde_serialization::*;
+use sbor::representations::*;
 use sbor::traversal::*;
 use sbor::*;
 use utils::ContextualDisplay;
 
-impl<'a> CustomSerializationContext<'a> for ScryptoValueDisplayContext<'a> {
-    type CustomTypeExtension = ScryptoCustomTypeExtension;
-}
-
 impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
-    type CustomSerializationContext<'a> = ScryptoValueDisplayContext<'a>;
-
-    fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
+    fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
         context: &SerializationContext<'s, 'a, Self>,
         _: LocalTypeIndex,
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
@@ -87,8 +81,8 @@ mod tests {
             "value": "FungibleResource[010000000000000000000000000000000000000000000000000000]"
         });
 
-        assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
-        assert_invertible_json_matches(
+        assert_natural_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
+        assert_programmatic_json_matches(
             &value,
             ScryptoValueDisplayContext::no_context(),
             expected_invertible,
@@ -108,8 +102,8 @@ mod tests {
             "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
-        assert_simple_json_matches(&value, &encoder, expected_simple);
-        assert_invertible_json_matches(&value, &encoder, expected_invertible);
+        assert_natural_json_matches(&value, &encoder, expected_simple);
+        assert_programmatic_json_matches(&value, &encoder, expected_invertible);
     }
 
     #[test]
@@ -161,38 +155,7 @@ mod tests {
             ],
         };
 
-        let expected_simple = json!([
-            "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k",
-            {
-                "kind": "Own",
-                "value": "00000000000000000000000000000000000000000000000000000000000000"
-            },
-            "1",
-            "0.01",
-            "0",
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "<hello>"
-            },
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "#123#"
-            },
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "[2345]"
-            },
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
-            },
-            {
-                "kind": "Reference",
-                "value": "00000000000000000000000000000000000000000000000000000000000000"
-            }
-        ]);
-
-        let expected_invertible = json!({
+        let expected_programmatic = json!({
             "fields": [
                 {
                     "kind": "Address",
@@ -238,31 +201,44 @@ mod tests {
             "kind": "Tuple"
         });
 
-        let context = ScryptoValueDisplayContext::with_optional_bench32(Some(&encoder));
+        let expected_natural = json!([
+            "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k",
+            {
+                "kind": "Own",
+                "value": "00000000000000000000000000000000000000000000000000000000000000"
+            },
+            "1",
+            "0.01",
+            "0",
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "<hello>"
+            },
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "#123#"
+            },
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "[2345]"
+            },
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+            },
+            {
+                "kind": "Reference",
+                "value": "00000000000000000000000000000000000000000000000000000000000000"
+            }
+        ]);
 
-        assert_simple_json_matches(&value, context, expected_simple);
-        assert_invertible_json_matches(&value, context, expected_invertible);
+        let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
+
+        assert_natural_json_matches(&value, context, expected_natural);
+        assert_programmatic_json_matches(&value, context, expected_programmatic);
     }
 
-    fn assert_simple_json_matches<'a, T: ScryptoEncode, C: Into<ScryptoValueDisplayContext<'a>>>(
-        value: &T,
-        context: C,
-        expected: JsonValue,
-    ) {
-        let payload = scrypto_encode(&value).unwrap();
-
-        assert_json_eq(
-            SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(&payload).serializable(
-                SchemalessSerializationContext {
-                    mode: SerializationMode::Simple,
-                    custom_context: context.into(),
-                },
-            ),
-            expected,
-        );
-    }
-
-    fn assert_invertible_json_matches<
+    fn assert_natural_json_matches<
         'a,
         T: ScryptoEncode,
         C: Into<ScryptoValueDisplayContext<'a>>,
@@ -274,9 +250,31 @@ mod tests {
         let payload = scrypto_encode(&value).unwrap();
 
         assert_json_eq(
-            SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(&payload).serializable(
-                SchemalessSerializationContext {
-                    mode: SerializationMode::Invertible,
+            ScryptoRawPayload::new_from_valid_slice(&payload).serializable(
+                SerializationParameters::Schemaless {
+                    mode: SerializationMode::Natural,
+                    custom_context: context.into(),
+                },
+            ),
+            expected,
+        );
+    }
+
+    fn assert_programmatic_json_matches<
+        'a,
+        T: ScryptoEncode,
+        C: Into<ScryptoValueDisplayContext<'a>>,
+    >(
+        value: &T,
+        context: C,
+        expected: JsonValue,
+    ) {
+        let payload = scrypto_encode(&value).unwrap();
+
+        assert_json_eq(
+            ScryptoRawPayload::new_from_valid_slice(&payload).serializable(
+                SerializationParameters::Schemaless {
+                    mode: SerializationMode::Programmatic,
                     custom_context: context.into(),
                 },
             ),

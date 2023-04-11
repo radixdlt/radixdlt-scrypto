@@ -1,3 +1,5 @@
+mod custom_formatting;
+mod custom_payload_wrappers;
 /// Defines the custom Scrypto schema types.
 mod custom_schema;
 /// Defines custom serialization of the types.
@@ -18,6 +20,8 @@ mod value_formatter;
 
 pub mod model;
 
+pub use custom_formatting::*;
+pub use custom_payload_wrappers::*;
 pub use custom_schema::*;
 #[cfg(feature = "serde")]
 pub use custom_serde::*;

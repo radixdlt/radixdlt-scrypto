@@ -7,7 +7,7 @@ use sbor::path::SborPathBuf;
 use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
-use sbor::traversal::TraversalEvent;
+use sbor::traversal::*;
 use sbor::*;
 use utils::ContextualDisplay;
 
@@ -24,7 +24,7 @@ impl IndexedScryptoValue {
         let mut traverser = ScryptoTraverser::new(
             &bytes,
             SCRYPTO_SBOR_V1_MAX_DEPTH,
-            Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
+            ExpectedStart::PayloadPrefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
         let mut references = HashSet::<RENodeId>::new();
@@ -32,7 +32,6 @@ impl IndexedScryptoValue {
         loop {
             let event = traverser.next_event();
             match event.event {
-                TraversalEvent::PayloadPrefix => {}
                 TraversalEvent::ContainerStart(_) => {}
                 TraversalEvent::ContainerEnd(_) => {}
                 TraversalEvent::TerminalValue(r) => {

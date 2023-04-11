@@ -41,6 +41,12 @@ impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum ScryptoCustomTypeExtension {}
 
+lazy_static::lazy_static! {
+    static ref EMPTY_SCHEMA: Schema<ScryptoCustomTypeExtension> = {
+        Schema::empty()
+    };
+}
+
 impl CustomTypeExtension for ScryptoCustomTypeExtension {
     const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
@@ -219,5 +225,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
         }
+    }
+
+    fn empty_schema() -> &'static Schema<Self> {
+        &EMPTY_SCHEMA
     }
 }

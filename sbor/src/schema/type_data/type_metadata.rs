@@ -16,6 +16,12 @@ pub struct TypeMetadata {
     pub child_names: Option<ChildNames>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum ChildNames {
+    NamedFields(Vec<Cow<'static, str>>),
+    EnumVariants(BTreeMap<u8, TypeMetadata>),
+}
+
 impl TypeMetadata {
     pub fn unnamed() -> Self {
         Self {
@@ -63,10 +69,62 @@ impl TypeMetadata {
     pub fn get_name_string(&self) -> Option<String> {
         self.type_name.as_ref().map(|c| c.to_string())
     }
+
+    pub fn get_field_names<'a>(&'a self) -> Option<&'a [Cow<'static, str>]> {
+        match &self.child_names {
+            Some(ChildNames::NamedFields(field_names)) => Some(field_names.as_slice()),
+            _ => None,
+        }
+    }
+
+    pub fn get_matching_tuple_data(&self, fields_length: usize) -> TupleData {
+        TupleData {
+            name: self.get_name(),
+            field_names: self
+                .get_field_names()
+                .filter(|field_names| field_names.len() == fields_length),
+        }
+    }
+
+    pub fn get_matching_enum_variant_data(
+        &self,
+        variant_id: u8,
+        fields_length: usize,
+    ) -> EnumVariantData {
+        let enum_name = self.get_name();
+        let Some(ChildNames::EnumVariants(variants)) = &self.child_names else {
+            return EnumVariantData {
+                enum_name,
+                variant_name: None,
+                field_names: None,
+            };
+        };
+        let Some(variant_metadata) = variants.get(&variant_id) else {
+            return EnumVariantData {
+                enum_name,
+                variant_name: None,
+                field_names: None,
+            };
+        };
+        EnumVariantData {
+            enum_name,
+            variant_name: variant_metadata.get_name(),
+            field_names: variant_metadata
+                .get_field_names()
+                .filter(|field_names| field_names.len() == fields_length),
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ChildNames {
-    NamedFields(Vec<Cow<'static, str>>),
-    EnumVariants(BTreeMap<u8, TypeMetadata>),
+#[derive(Debug, Default)]
+pub struct TupleData<'s> {
+    pub name: Option<&'s str>,
+    pub field_names: Option<&'s [Cow<'static, str>]>,
+}
+
+#[derive(Debug, Default)]
+pub struct EnumVariantData<'s> {
+    pub enum_name: Option<&'s str>,
+    pub variant_name: Option<&'s str>,
+    pub field_names: Option<&'s [Cow<'static, str>]>,
 }

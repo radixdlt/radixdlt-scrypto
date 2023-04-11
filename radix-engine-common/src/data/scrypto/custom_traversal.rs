@@ -27,7 +27,7 @@ impl CustomTraversal for ScryptoCustomTraversal {
         reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
     where
-        R: PayloadTraverser<'de, Self::CustomValueKind>,
+        R: BorrowingDecoder<'de, Self::CustomValueKind>,
     {
         // TODO: copy-free decoding for better performance
         ScryptoCustomValue::decode_body_with_value_kind(

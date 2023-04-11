@@ -166,6 +166,21 @@ pub trait Decoder<X: CustomValueKind>: Sized {
     fn read_byte(&mut self) -> Result<u8, DecodeError>;
 
     fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError>;
+
+    // Advanced methods - mostly for use by traversers
+
+    fn peek_remaining(&self) -> &[u8];
+
+    fn get_stack_depth(&self) -> usize;
+
+    fn get_offset(&self) -> usize;
+
+    fn peek_value_kind(&self) -> Result<ValueKind<X>, DecodeError> {
+        let id = self.peek_byte()?;
+        ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
+    }
+
+    fn peek_byte(&self) -> Result<u8, DecodeError>;
 }
 
 pub trait BorrowingDecoder<'de, X: CustomValueKind>: Decoder<X> {
@@ -259,32 +274,12 @@ impl<'de, X: CustomValueKind> Decoder<X> for VecDecoder<'de, X> {
             Ok(())
         }
     }
-}
 
-impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
     #[inline]
-    fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
-        self.require_remaining(n)?;
-        let slice = &self.input[self.offset..self.offset + n];
-        self.offset += n;
-        Ok(slice)
-    }
-}
-
-pub trait PayloadTraverser<'de, X: CustomValueKind>: BorrowingDecoder<'de, X> {
-    fn get_stack_depth(&self) -> usize;
-
-    fn get_offset(&self) -> usize;
-
-    fn peek_value_kind(&self) -> Result<ValueKind<X>, DecodeError> {
-        let id = self.peek_byte()?;
-        ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
+    fn peek_remaining(&self) -> &[u8] {
+        &self.input[self.offset..]
     }
 
-    fn peek_byte(&self) -> Result<u8, DecodeError>;
-}
-
-impl<'de, X: CustomValueKind> PayloadTraverser<'de, X> for VecDecoder<'de, X> {
     #[inline]
     fn get_stack_depth(&self) -> usize {
         self.stack_depth
@@ -300,6 +295,16 @@ impl<'de, X: CustomValueKind> PayloadTraverser<'de, X> for VecDecoder<'de, X> {
         self.require_remaining(1)?;
         let result = self.input[self.offset];
         Ok(result)
+    }
+}
+
+impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
+    #[inline]
+    fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
+        self.require_remaining(n)?;
+        let slice = &self.input[self.offset..self.offset + n];
+        self.offset += n;
+        Ok(slice)
     }
 }
 

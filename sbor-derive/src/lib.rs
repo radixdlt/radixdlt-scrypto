@@ -40,3 +40,63 @@ pub fn sbor(input: TokenStream) -> TokenStream {
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
+
+const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";
+const BASIC_CUSTOM_TYPE_KIND: &str = "sbor::NoCustomTypeKind";
+
+/// Derive code that returns the value kind - specifically for Basic SBOR.
+#[proc_macro_derive(BasicCategorize, attributes(sbor))]
+pub fn basic_categorize(input: TokenStream) -> TokenStream {
+    sbor_derive_common::categorize::handle_categorize(
+        proc_macro2::TokenStream::from(input),
+        Some(BASIC_CUSTOM_VALUE_KIND),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}
+
+/// Derive code that encodes this data structure - specifically for Basic SBOR.
+#[proc_macro_derive(BasicEncode, attributes(sbor))]
+pub fn basic_encode(input: TokenStream) -> TokenStream {
+    sbor_derive_common::encode::handle_encode(
+        proc_macro2::TokenStream::from(input),
+        Some(BASIC_CUSTOM_VALUE_KIND),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}
+
+/// Derive code that decodes this data structure from a byte array - specifically for Basic SBOR.
+#[proc_macro_derive(BasicDecode, attributes(sbor))]
+pub fn basic_decode(input: TokenStream) -> TokenStream {
+    sbor_derive_common::decode::handle_decode(
+        proc_macro2::TokenStream::from(input),
+        Some(BASIC_CUSTOM_VALUE_KIND),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}
+
+/// Derive code that describes the SBOR type - specifically for Basic SBOR.
+#[proc_macro_derive(BasicDescribe, attributes(sbor))]
+pub fn basic_describe(input: TokenStream) -> TokenStream {
+    sbor_derive_common::describe::handle_describe(
+        proc_macro2::TokenStream::from(input),
+        Some(BASIC_CUSTOM_TYPE_KIND),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}
+
+/// Derive code that implements `BasicCategorize`, `BasicEncode`, `BasicDecode`, and `BasicDescribe` traits for this struct or enum.
+///
+#[proc_macro_derive(BasicSbor, attributes(sbor))]
+pub fn basic_sbor(input: TokenStream) -> TokenStream {
+    sbor_derive_common::sbor::handle_sbor(
+        proc_macro2::TokenStream::from(input),
+        Some(BASIC_CUSTOM_VALUE_KIND),
+        Some(BASIC_CUSTOM_TYPE_KIND),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}

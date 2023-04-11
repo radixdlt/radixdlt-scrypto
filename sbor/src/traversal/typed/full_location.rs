@@ -6,20 +6,21 @@ use crate::traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FullLocation<'s, C: CustomTraversal> {
+pub struct FullLocation<'s, E: CustomTypeExtension> {
     pub start_offset: usize,
     pub end_offset: usize,
-    pub ancestor_path: Vec<(ContainerState<C>, ContainerType<'s>)>,
-    pub current_value_info: Option<CurrentValueInfo<C::CustomValueKind>>,
+    pub ancestor_path: Vec<(ContainerState<E::CustomTraversal>, ContainerType<'s>)>,
+    pub current_value_info: Option<CurrentValueInfo<E>>,
+    pub error: Option<TypedTraversalError<E>>,
 }
 
-impl<'s, C: CustomTraversal> FullLocation<'s, C> {
+impl<'s, E: CustomTypeExtension> FullLocation<'s, E> {
     /// This enables a full path to be provided in an error message, which can have a debug such as:
     /// EG: `MyStruct.hello[0]->MyEnum::Option2{1}.inner[0]->MyEnum::Option1{0}.[0]->Map[0].Value->Array[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map[0].Key`
     ///
     /// As much information is extracted from the Type as possible, falling back to data from the value model
     /// if the Type is Any.
-    pub fn path_to_string<E: CustomTypeExtension>(&self, schema: &Schema<E>) -> String {
+    pub fn path_to_string(&self, schema: &Schema<E>) -> String {
         let mut buf = String::new();
         let mut is_first = true;
         for (container_state, container_type) in self.ancestor_path.iter() {
@@ -44,12 +45,9 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                         _ => None,
                     });
                     let variant_part = variant_data
-                        .map(|d| {
-                            format!(
-                                "::{}{{{}}}",
-                                d.get_name().expect("Enum variants require names"),
-                                variant_header.variant
-                            )
+                        .and_then(|d| d.get_name())
+                        .map(|variant_name| {
+                            format!("::{{{}|{}}}", variant_header.variant, variant_name,)
                         })
                         .unwrap_or_else(|| format!("::{{{}}}", variant_header.variant));
                     let index = variant_data.and_then(|d| match &d.child_names {
@@ -59,7 +57,7 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                         _ => None,
                     });
                     let field_part = index
-                        .map(|i| format!(".{}[{}]", i, current_index))
+                        .map(|field_name| format!(".[{}|{}]", current_index, field_name))
                         .unwrap_or_else(|| format!(".[{}]", current_index));
                     write!(buf, "{}{}{}", type_name, variant_part, field_part).unwrap();
                 }
@@ -71,7 +69,7 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                         _ => None,
                     });
                     let field_part = index
-                        .map(|i| format!(".{}[{}]", i, current_index))
+                        .map(|field_name| format!(".[{}|{}]", current_index, field_name))
                         .unwrap_or_else(|| format!(".[{}]", current_index));
                     write!(buf, "{}{}", type_name, field_part).unwrap();
                 }
@@ -110,17 +108,108 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                     _ => None,
                 });
                 let variant_part = variant_data
-                    .map(|d| {
-                        format!(
-                            "::{}{{{}}}",
-                            d.get_name().expect("Enum variants require names"),
-                            variant
-                        )
-                    })
+                    .and_then(|d| d.get_name())
+                    .map(|variant_name| format!("::{{{}|{}}}", variant, variant_name,))
                     .unwrap_or_else(|| format!("::{{{}}}", variant));
                 write!(buf, "{}{}", type_name, variant_part).unwrap();
             } else {
                 write!(buf, "{}", type_name).unwrap();
+            }
+        }
+        if let Some(error) = &self.error {
+            if !is_first && !self.current_value_info.is_some() {
+                write!(buf, "->").unwrap();
+            }
+            write!(buf, "[ERROR] ").unwrap();
+            match error {
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::MismatchingType {
+                        expected_type_kind,
+                        actual_value_kind,
+                        ..
+                    },
+                ) => {
+                    write!(
+                        buf,
+                        "{{ expected_type: {:?}, found: {:?} }}",
+                        expected_type_kind, actual_value_kind
+                    )
+                    .unwrap();
+                }
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::MismatchingChildElementType {
+                        expected_type_kind,
+                        actual_value_kind,
+                        ..
+                    },
+                ) => {
+                    write!(
+                        buf,
+                        "{{ expected_child_type: {:?}, found: {:?} }}",
+                        expected_type_kind, actual_value_kind
+                    )
+                    .unwrap();
+                }
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::MismatchingChildKeyType {
+                        expected_type_kind,
+                        actual_value_kind,
+                        ..
+                    },
+                ) => {
+                    write!(
+                        buf,
+                        "{{ expected_key_type: {:?}, found: {:?} }}",
+                        expected_type_kind, actual_value_kind
+                    )
+                    .unwrap();
+                }
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::MismatchingChildValueType {
+                        expected_type_kind,
+                        actual_value_kind,
+                        ..
+                    },
+                ) => {
+                    write!(
+                        buf,
+                        "{{ expected_value_type: {:?}, found: {:?} }}",
+                        expected_type_kind, actual_value_kind
+                    )
+                    .unwrap();
+                }
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::MismatchingTupleLength {
+                        expected, actual, ..
+                    },
+                ) => {
+                    write!(
+                        buf,
+                        "{{ expected_field_count: {:?}, found: {:?} }}",
+                        expected, actual
+                    )
+                    .unwrap();
+                }
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::MismatchingEnumVariantLength {
+                        expected, actual, ..
+                    },
+                ) => {
+                    write!(
+                        buf,
+                        "{{ expected_field_count: {:?}, found: {:?} }}",
+                        expected, actual
+                    )
+                    .unwrap();
+                }
+                TypedTraversalError::ValueMismatchWithType(
+                    TypeMismatchError::UnknownEnumVariant { variant, .. },
+                ) => {
+                    write!(buf, "{{ unknown_variant_id: {:?} }}", variant).unwrap();
+                }
+                TypedTraversalError::TypeIndexNotFound(_) | TypedTraversalError::DecodeError(_) => {
+                    write!(buf, "{:?}", error).unwrap();
+                }
             }
         }
         buf

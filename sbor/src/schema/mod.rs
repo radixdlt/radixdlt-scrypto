@@ -7,7 +7,6 @@ mod schema_validation;
 mod type_aggregator;
 mod type_data;
 mod type_link;
-pub mod typed_traversal;
 mod well_known_types;
 
 pub use custom_traits::*;
