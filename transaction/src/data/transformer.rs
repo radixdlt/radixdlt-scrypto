@@ -5,7 +5,7 @@ use radix_engine_interface::data::manifest::model::{
 use radix_engine_interface::data::manifest::{
     ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
-use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::data::scrypto::model::{Own, Reference};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
@@ -88,7 +88,7 @@ pub fn transform<T: TransformHandler<E>, E>(
         }
         sbor::Value::Custom { value } => match value {
             ManifestCustomValue::Address(address) => Ok(ScryptoValue::Custom {
-                value: ScryptoCustomValue::Address(to_address(address)),
+                value: ScryptoCustomValue::Reference(Reference(address.0)),
             }),
             ManifestCustomValue::Bucket(b) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::Own(handler.replace_bucket(b)?),
@@ -147,7 +147,7 @@ pub fn transform_value_kind(kind: ManifestValueKind) -> ScryptoValueKind {
         sbor::ValueKind::Map => ScryptoValueKind::Map,
         sbor::ValueKind::Custom(c) => match c {
             ManifestCustomValueKind::Address => {
-                ScryptoValueKind::Custom(ScryptoCustomValueKind::Address)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::Reference)
             }
             ManifestCustomValueKind::Bucket => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::Own)

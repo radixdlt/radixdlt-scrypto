@@ -1,5 +1,5 @@
-use crate::api::types::*;
 use crate::data::scrypto::model::*;
+use crate::types::*;
 use crate::*;
 use radix_engine_common::data::scrypto::ScryptoValue;
 use radix_engine_derive::ScryptoDescribe;

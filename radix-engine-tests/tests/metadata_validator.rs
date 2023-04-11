@@ -5,50 +5,33 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, Metadat
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-
-fn create_validator(
-    test_runner: &mut TestRunner,
-    pk: EcdsaSecp256k1PublicKey,
-    owner_access_rule: AccessRule,
-) -> ComponentAddress {
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_validator(pk, owner_access_rule)
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
-
-    component_address
-}
 
 #[test]
 fn can_set_validator_metadata_with_owner() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-    let component_address = create_validator(
-        &mut test_runner,
-        pk.clone(),
-        rule!(require(owner_id.clone())),
-    );
+    let (pub_key, _, account) = test_runner.new_account(false);
+    let validator = test_runner.new_validator_with_pub_key(pub_key, account);
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(account, VALIDATOR_OWNER_TOKEN)
         .set_metadata(
-            Address::Component(component_address),
+            validator.into(),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![owner_id]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
     let value = test_runner
-        .get_metadata(component_address.into(), "name")
+        .get_metadata(validator.into(), "name")
         .expect("Should exist");
     assert_eq!(
         value,
@@ -60,21 +43,22 @@ fn can_set_validator_metadata_with_owner() {
 fn cannot_set_validator_metadata_without_owner() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let pk = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-    let component_address =
-        create_validator(&mut test_runner, pk.clone(), rule!(require(owner_id)));
+    let (pub_key, _, account) = test_runner.new_account(false);
+    let validator = test_runner.new_validator_with_pub_key(pub_key, account);
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .set_metadata(
-            Address::Component(component_address),
+            validator.into(),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {

@@ -4,7 +4,8 @@ use crate::errors::*;
 use crate::validation::*;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
-use radix_engine_interface::data::scrypto::model::{Own, OBJECT_ID_LENGTH};
+use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 use sbor::rust::collections::*;
 
@@ -20,16 +21,16 @@ pub enum ProofKind {
 
 pub struct ManifestValidator {
     id_allocator: ManifestIdAllocator,
-    bucket_ids: HashMap<ManifestBucket, usize>,
-    proof_ids: HashMap<ManifestProof, ProofKind>,
+    bucket_ids: NonIterMap<ManifestBucket, usize>,
+    proof_ids: NonIterMap<ManifestProof, ProofKind>,
 }
 
 impl ManifestValidator {
     pub fn new() -> Self {
         Self {
             id_allocator: ManifestIdAllocator::new(),
-            bucket_ids: HashMap::new(),
-            proof_ids: HashMap::new(),
+            bucket_ids: NonIterMap::new(),
+            proof_ids: NonIterMap::new(),
         }
     }
 
@@ -138,12 +139,12 @@ impl ManifestValidator {
 impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, ManifestIdValidationError> {
         self.drop_bucket(&b)?;
-        Ok(Own::Bucket([0u8; OBJECT_ID_LENGTH]))
+        Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, ManifestIdValidationError> {
         self.drop_proof(&p)?;
-        Ok(Own::Proof([0u8; OBJECT_ID_LENGTH]))
+        Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
     // TODO: validate expression and blob as well

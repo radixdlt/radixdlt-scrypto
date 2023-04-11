@@ -1,6 +1,7 @@
-use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::types::NonFungibleData;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::borrow_resource_manager;

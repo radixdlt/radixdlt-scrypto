@@ -1,9 +1,9 @@
 // Re-exports
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateOffset};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
+use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
 use radix_engine_interface::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
@@ -59,16 +59,16 @@ pub struct TreeLeafNode<P> {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct ReNodeModulePayload {
     /// ReNode ID.
-    pub re_node_id: RENodeId,
+    pub node_id: NodeId,
     /// Module ID.
-    pub node_mode_id: NodeModuleId,
+    pub node_mode_id: ModuleId,
     /// An embedded root of the descendant Substate layer tree.
-    pub substates_root: TreeNode<SubstateOffset>,
+    pub substates_root: TreeNode<SubstateKey>,
 }
 
 /// A payload carried by a physical leaf.
 /// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
-/// The sub-trees carry  a `SubstateOffset` payload.
+/// The sub-trees carry  a `SubstateKey` payload.
 pub trait Payload:
     Clone + PartialEq + Eq + rust::hash::Hash + rust::fmt::Debug + ScryptoSbor
 {
@@ -76,7 +76,7 @@ pub trait Payload:
 
 impl Payload for ReNodeModulePayload {}
 
-impl Payload for SubstateOffset {}
+impl Payload for SubstateKey {}
 
 /// The "read" part of a physical tree node storage SPI.
 pub trait ReadableTreeStore<P: Payload> {
@@ -102,7 +102,7 @@ impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> f
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemoryTreeStore {
     pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
-    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateOffset>>,
+    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateKey>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -117,14 +117,14 @@ impl TypedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore<SubstateOffset> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
+impl ReadableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateKey>> {
         self.sub_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<SubstateOffset> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
+impl WriteableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateKey>) {
         self.sub_tree_nodes.insert(key, node);
     }
 

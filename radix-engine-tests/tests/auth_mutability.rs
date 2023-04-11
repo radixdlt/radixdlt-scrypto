@@ -62,7 +62,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
 
     let package = test_runner.compile_and_publish("./tests/blueprints/resource_creator");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100u32.into())
+        .lock_fee(test_runner.faucet_component(), 100u32.into())
         .create_proof_from_account(account, admin_auth)
         .call_function(package, "ResourceCreator", function, args)
         .call_method(

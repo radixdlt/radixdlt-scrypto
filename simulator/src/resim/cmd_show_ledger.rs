@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
-use radix_engine_stores::rocks_db::RadixEngineDB;
+use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use transaction::model::Instruction;
 use utils::ContextualDisplay;
 
@@ -19,11 +19,12 @@ pub struct ShowLedger {}
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+        let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+        bootstrap(&mut substate_db, &scrypto_interpreter);
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
-        for (last, package_address) in substate_store.list_packages().iter().identify_last() {
+        for (last, package_address) in substate_db.list_packages().iter().identify_last() {
             writeln!(
                 out,
                 "{} {}",
@@ -34,7 +35,7 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Components".green().bold()).map_err(Error::IOError)?;
-        for (last, component_address) in substate_store.list_components().iter().identify_last() {
+        for (last, component_address) in substate_db.list_components().iter().identify_last() {
             writeln!(
                 out,
                 "{} {}",
@@ -45,10 +46,7 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
-        for (last, resource_address) in substate_store
-            .list_resource_managers()
-            .iter()
-            .identify_last()
+        for (last, resource_address) in substate_db.list_resource_managers().iter().identify_last()
         {
             writeln!(
                 out,
@@ -60,7 +58,7 @@ impl ShowLedger {
         }
 
         // Close the database
-        drop(substate_store);
+        drop(substate_db);
 
         let current_epoch = Self::get_current_epoch(out)?;
         writeln!(out, "{}: {}", "Current Epoch".green().bold(), current_epoch)
@@ -88,7 +86,7 @@ impl ShowLedger {
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
         let blobs = vec![];
-        let initial_proofs = vec![];
+        let initial_proofs = btreeset![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
         Ok(receipt.expect_commit(true).output(0))
@@ -104,7 +102,7 @@ impl ShowLedger {
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
-        let initial_proofs = vec![];
+        let initial_proofs = btreeset![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
         Ok(receipt.expect_commit(true).output(0))

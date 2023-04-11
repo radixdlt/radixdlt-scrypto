@@ -1,9 +1,10 @@
-use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelNodeApi;
 use super::kernel_api::KernelSubstateApi;
 use super::kernel_api::KernelWasmApi;
 use crate::errors::*;
+use crate::kernel::actor::Actor;
+use crate::kernel::kernel_api::KernelInternalApi;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::*;
@@ -11,10 +12,10 @@ use radix_engine_interface::api::*;
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: KernelSubstateApi>(
+    fn resolve<Y: KernelSubstateApi + KernelInternalApi>(
         self,
         api: &mut Y,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError>;
+    ) -> Result<Box<ResolvedInvocation<Self::Exec>>, RuntimeError>;
 
     fn payload_size(&self) -> usize;
 }
@@ -24,7 +25,7 @@ pub trait Executor {
 
     fn execute<Y, W>(
         self,
-        args: IndexedScryptoValue,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where

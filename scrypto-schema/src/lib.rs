@@ -43,11 +43,15 @@ pub struct PackageSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct BlueprintSchema {
+    pub parent: Option<String>,
+
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
+    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
@@ -61,6 +65,11 @@ pub struct FunctionSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct VirtualLazyLoadSchema {
+    pub export_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum Receiver {
     SelfRef,
     SelfRefMut,
@@ -69,6 +78,7 @@ pub enum Receiver {
 impl Default for BlueprintSchema {
     fn default() -> Self {
         Self {
+            parent: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
@@ -76,6 +86,7 @@ impl Default for BlueprintSchema {
             },
             substates: Vec::default(),
             functions: BTreeMap::default(),
+            virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),
         }
     }

@@ -4,12 +4,12 @@ use crate::types::*;
 use crate::{
     errors::RuntimeError,
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
-    system::node::{RENodeInit, RENodeModuleInit},
+    system::node_init::NodeInit,
 };
+use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    AllocateEntityType, InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId,
-    SubstateOffset,
+use radix_engine_interface::types::{
+    EntityType, InvocationDebugIdentifier, LockHandle, NodeId, SubstateKey, SysModuleId,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -31,18 +31,19 @@ impl KernelModule for KernelTraceModule {
         identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
+        let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            identifier,
-            input_size
-        );
+            identifier, input_size
+        )
+        .green();
+
+        log!(api, "{}", message);
         Ok(())
     }
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -75,7 +76,7 @@ impl KernelModule for KernelTraceModule {
 
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_type: &AllocateEntityType,
+        node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
         log!(api, "Allocating node id: type = {:?}", node_type);
         Ok(())
@@ -83,23 +84,23 @@ impl KernelModule for KernelTraceModule {
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
-        node_init: &RENodeInit,
-        node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_id: &NodeId,
+        node_init: &NodeInit,
+        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Creating node: id = {:?}, init = {:?}, module_init = {:?}",
+        let message = format!(
+            "Creating node: id = {:?}, type = {:?}",
             node_id,
-            node_init,
-            node_module_init
-        );
+            node_id.entity_type()
+        )
+        .red();
+        log!(api, "{}", message);
         Ok(())
     }
 
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping node: id = {:?}", node_id);
         Ok(())
@@ -107,14 +108,14 @@ impl KernelModule for KernelTraceModule {
 
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
-        module_id: &NodeModuleId,
-        offset: &SubstateOffset,
+        node_id: &NodeId,
+        module_id: &SysModuleId,
+        offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Locking substate: node id = {:?}, module_id = {:?}, offset = {:?}, flags = {:?}",
+            "Locking substate: node id = {:?}, module_id = {:?}, substate_key = {:?}, flags = {:?}",
             node_id,
             module_id,
             offset,

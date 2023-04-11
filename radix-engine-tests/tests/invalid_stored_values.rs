@@ -1,4 +1,5 @@
-use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::kernel::call_frame::UnlockSubstateError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -11,7 +12,7 @@ fn stored_bucket_in_committed_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "InvalidInitStoredBucket",
@@ -25,10 +26,8 @@ fn stored_bucket_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
-                RESOURCE_MANAGER_PACKAGE,
-                ..
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantBeStored(_))
             ))
         )
     });
@@ -42,7 +41,7 @@ fn stored_bucket_in_owned_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "InvalidStoredBucketInOwnedComponent",
@@ -56,10 +55,8 @@ fn stored_bucket_in_owned_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidOwnership(
-                SubstateOffset::Component(ComponentOffset::State0),
-                RESOURCE_MANAGER_PACKAGE,
-                ..
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantBeStored(_))
             ))
         )
     });

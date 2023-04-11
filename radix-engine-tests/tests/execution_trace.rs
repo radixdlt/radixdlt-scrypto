@@ -1,5 +1,5 @@
 use radix_engine::system::kernel_modules::execution_trace::{
-    ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
+    ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
@@ -71,8 +71,7 @@ fn test_trace_resource_transfers() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(source_component.into())
-                && r.amount == -Decimal::from(transfer_amount)
+            |r| r.node_id == source_component.into() && r.amount == -Decimal::from(transfer_amount)
         ));
 
     // Target vault deposit
@@ -82,8 +81,7 @@ fn test_trace_resource_transfers() {
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
-            |r| r.node_id == RENodeId::GlobalObject(target_component.into())
-                && r.amount == Decimal::from(transfer_amount)
+            |r| r.node_id == target_component.into() && r.amount == Decimal::from(transfer_amount)
         ));
 
     // Fee withdrawal
@@ -92,8 +90,7 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == RENodeId::GlobalObject(account.into())
-            && r.amount == -Decimal::from(total_fee_paid)));
+        .any(|r| r.node_id == account.into() && r.amount == -Decimal::from(total_fee_paid)));
 }
 
 #[test]
@@ -104,8 +101,8 @@ fn test_trace_fee_payments() {
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -126,7 +123,7 @@ fn test_trace_fee_payments() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
@@ -147,10 +144,7 @@ fn test_trace_fee_payments() {
     assert!(resource_changes
         .into_iter()
         .flat_map(|(_, rc)| rc)
-        .any(
-            |r| r.node_id == RENodeId::GlobalObject(funded_component.into())
-                && r.amount == -total_fee_paid
-        ));
+        .any(|r| r.node_id == funded_component.into() && r.amount == -total_fee_paid));
 }
 
 #[test]
@@ -160,8 +154,8 @@ fn test_instruction_traces() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
@@ -203,7 +197,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let Origin::ScryptoMethod(FnIdentifier {
+        if let Origin::ScryptoMethod(ApplicationFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -223,7 +217,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -250,7 +244,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
@@ -273,7 +267,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
@@ -296,7 +290,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoFunction(FnIdentifier {
+            Origin::ScryptoFunction(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: PROOF_BLUEPRINT.to_string(),
                 ident: PROOF_DROP_IDENT.to_string()
@@ -319,7 +313,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -343,7 +337,7 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(FnIdentifier {
+            Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
@@ -352,7 +346,7 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let Origin::ScryptoFunction(FnIdentifier {
+        if let Origin::ScryptoFunction(ApplicationFnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin

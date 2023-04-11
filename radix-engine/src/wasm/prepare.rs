@@ -342,7 +342,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_ACTOR_FUNCTION_NAME => {
+                        GET_GLOBAL_ADDRESS_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -355,7 +355,61 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_ACTOR_FUNCTION_NAME.to_string(),
+                                        GET_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_BLUEPRINT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_BLUEPRINT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_AUTH_ZONE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_AUTH_ZONE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        ASSERT_ACCESS_RULE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        ASSERT_ACCESS_RULE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -422,7 +476,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME => {
+                        GET_OBJECT_INFO_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -434,7 +488,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                        GET_OBJECT_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -943,6 +997,7 @@ mod tests {
         package_schema.blueprints.insert(
             "Test".to_string(),
             BlueprintSchema {
+                parent: None,
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],
@@ -957,6 +1012,7 @@ mod tests {
                         export_name: "Test_f".to_string(),
                     }
                 ),
+                virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
             },
         );

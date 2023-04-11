@@ -5,9 +5,7 @@ use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::iter;
 use sbor::rust::ops::*;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::{String, ToString};
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::*;
 
 use crate::data::manifest::ManifestCustomValueKind;

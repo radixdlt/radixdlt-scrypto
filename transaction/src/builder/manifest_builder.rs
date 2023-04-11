@@ -1,5 +1,4 @@
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -10,7 +9,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
     VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+    IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
+    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -27,6 +27,7 @@ use radix_engine_interface::data::manifest::{
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -34,7 +35,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use crate::data::from_address;
 use crate::model::*;
 use crate::validation::*;
 
@@ -374,28 +374,31 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-            function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput { access_rule }),
+            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateAdvancedInput { config }),
         });
         self
     }
 
-    pub fn create_validator(
-        &mut self,
-        key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
-    ) -> &mut Self {
+    pub fn create_identity(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateInput {}),
+        });
+        self
+    }
+
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerCreateValidatorInput {
-                key,
-                owner_access_rule,
-            }),
+            args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
         });
         self
     }
@@ -525,12 +528,12 @@ impl ManifestBuilder {
 
     pub fn set_method_access_rule(
         &mut self,
-        entity_address: Address,
+        entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address: from_address(entity_address),
+            entity_address,
             key,
             rule,
         })
@@ -539,12 +542,12 @@ impl ManifestBuilder {
 
     pub fn set_metadata(
         &mut self,
-        entity_address: Address,
+        entity_address: GlobalAddress,
         key: String,
         value: MetadataEntry,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMetadata {
-            entity_address: from_address(entity_address),
+            entity_address,
             key,
             value,
         })
@@ -552,7 +555,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(
+    pub fn publish_package_advanced(
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
@@ -567,12 +570,30 @@ impl ManifestBuilder {
         let schema_hash = hash(&schema);
         self.blobs.insert(schema_hash, schema);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
             schema: ManifestBlobRef(schema_hash.0),
             royalty_config,
             metadata,
             access_rules,
+        });
+        self
+    }
+
+    /// Publishes a package with an owner badge.
+    pub fn publish_package(&mut self, code: Vec<u8>, schema: PackageSchema) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let schema = scrypto_encode(&schema).unwrap();
+        let schema_hash = hash(&schema);
+        self.blobs.insert(schema_hash, schema);
+
+        self.add_instruction(Instruction::PublishPackage {
+            code: ManifestBlobRef(code_hash.0),
+            schema: ManifestBlobRef(schema_hash.0),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
         });
         self
     }
@@ -591,7 +612,7 @@ impl ManifestBuilder {
         let schema_hash = hash(&schema);
         self.blobs.insert(schema_hash, schema);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
             schema: ManifestBlobRef(schema_hash.0),
             royalty_config: BTreeMap::new(),
@@ -685,8 +706,20 @@ impl ManifestBuilder {
         self.create_fungible_resource(0, metadata, access_rules, Some(initial_supply))
     }
 
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn_from_worktop(
+        &mut self,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+            builder
+                .add_instruction(Instruction::BurnResource { bucket_id })
+                .0
+        })
+    }
+
+    pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
+        self.take_from_worktop(resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -749,7 +782,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall(&mut self, vault_id: ObjectId, amount: Decimal) -> &mut Self {
+    pub fn recall(&mut self, vault_id: LocalAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::RecallResource { vault_id, amount });
         self
     }
@@ -769,14 +802,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: AccessRule) -> &mut Self {
+    pub fn new_account_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateGlobalInput {
-                withdraw_rule: withdraw_auth,
-            }),
+            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateAdvancedInput { config }),
         })
         .0
     }
@@ -965,11 +996,6 @@ impl ManifestBuilder {
             ),
         });
         self
-    }
-
-    pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {
-        self.add_instruction(Instruction::AssertAccessRule { access_rule })
-            .0
     }
 
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>

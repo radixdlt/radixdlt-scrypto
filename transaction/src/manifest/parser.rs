@@ -167,6 +167,12 @@ impl Parser {
                 schema: self.parse_value()?,
                 royalty_config: self.parse_value()?,
                 metadata: self.parse_value()?,
+            },
+            TokenKind::PublishPackageAdvanced => Instruction::PublishPackageAdvanced {
+                code: self.parse_value()?,
+                schema: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+                metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
             },
             TokenKind::BurnResource => Instruction::BurnResource {
@@ -246,21 +252,19 @@ impl Parser {
             }
             TokenKind::CreateValidator => Instruction::CreateValidator {
                 key: self.parse_value()?,
-                owner_access_rule: self.parse_value()?,
             },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 controlled_asset: self.parse_value()?,
                 rule_set: self.parse_value()?,
                 timed_recovery_delay_in_minutes: self.parse_value()?,
             },
-            TokenKind::CreateIdentity => Instruction::CreateIdentity {
-                access_rule: self.parse_value()?,
+            TokenKind::CreateIdentity => Instruction::CreateIdentity {},
+            TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
+                config: self.parse_value()?,
             },
-            TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
-                access_rule: self.parse_value()?,
-            },
-            TokenKind::CreateAccount => Instruction::CreateAccount {
-                withdraw_rule: self.parse_value()?,
+            TokenKind::CreateAccount => Instruction::CreateAccount {},
+            TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {
+                config: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -589,10 +593,7 @@ mod tests {
             r#"Enum(0u8>"#,
             ParserError::UnexpectedToken(Token {
                 kind: TokenKind::GreaterThan,
-                span: Span {
-                    start: (1, 10),
-                    end: (1, 10)
-                }
+                span: Span { start: 8, end: 9 }
             })
         );
         parse_value_error!(

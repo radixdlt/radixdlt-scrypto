@@ -1,7 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::AttachedMetadata;
 use crate::runtime::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
@@ -9,6 +8,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -31,8 +31,8 @@ impl BorrowedPackage {
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::SELF,
+                self.0.as_node_id(),
+                SysModuleId::ObjectState,
                 PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
             )
@@ -42,8 +42,8 @@ impl BorrowedPackage {
     pub fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::SELF,
+                self.0.as_node_id(),
+                SysModuleId::ObjectState,
                 PACKAGE_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
             )

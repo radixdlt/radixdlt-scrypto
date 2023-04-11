@@ -25,15 +25,15 @@ mod tests {
             ],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
-PUBLISH_PACKAGE
+PUBLISH_PACKAGE_ADVANCED
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(1u8), Map<Tuple, Enum>(Tuple(Enum(0u8), "claim_royalty"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(0u8), "set_royalty_config"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(2u8), "get"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))), Tuple(Enum(2u8), "set"), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Map<String, Enum>(), Enum(1u8));
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 "##,
         );
     }
@@ -47,7 +47,7 @@ PUBLISH_PACKAGE
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "withdraw"
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Decimal("5");
@@ -56,7 +56,7 @@ TAKE_FROM_WORKTOP_BY_AMOUNT
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Bucket("bucket1");
 CALL_METHOD
-    Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn")
+    Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")
     "buy_gumball"
     Bucket("bucket1");
 ASSERT_WORKTOP_CONTAINS_BY_AMOUNT
@@ -74,7 +74,7 @@ TAKE_FROM_WORKTOP_BY_IDS
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Bucket("bucket3");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
 "##,
@@ -90,7 +90,7 @@ CALL_METHOD
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "withdraw"
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Decimal("5");
@@ -108,7 +108,7 @@ DROP_PROOF
 DROP_PROOF
     Proof("proof2");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "create_proof_by_amount"
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Decimal("5");
@@ -117,7 +117,7 @@ POP_FROM_AUTH_ZONE
 DROP_PROOF
     Proof("proof3");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "create_proof_by_amount"
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Decimal("5");
@@ -136,7 +136,7 @@ CLEAR_AUTH_ZONE;
 CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
 "##,
@@ -152,7 +152,7 @@ CALL_METHOD
             vec![],
             r##"
 RECALL_RESOURCE
-    Bytes("62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000")
+    Address("internal_vault_sim1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsdm5dfg")
     Decimal("1.2");
 "##,
         );
@@ -167,7 +167,7 @@ RECALL_RESOURCE
             vec![],
             r##"
 CALL_FUNCTION
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
     "BlueprintName"
     "f"
     "string";
@@ -184,7 +184,7 @@ CALL_FUNCTION
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "complicated_method"
     Decimal("1")
     PreciseDecimal("2");
@@ -210,7 +210,7 @@ CREATE_PROOF_FROM_AUTH_ZONE
     Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k")
     Proof("proof1");
 CALL_METHOD
-    Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn")
+    Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")
     "aliases"
     Enum(0u8)
     Enum(0u8)
@@ -237,14 +237,14 @@ CALL_METHOD
     Array<Tuple>(NonFungibleGlobalId("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k:<value>"), NonFungibleGlobalId("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k:#1#"))
     Array<Tuple>(NonFungibleGlobalId("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k:<value>"), NonFungibleGlobalId("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k:#1#"));
 CALL_METHOD
-    Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn")
+    Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")
     "custom_types"
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    Address("epochmanager_sim1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7e94kj")
-    Address("clock_sim1quqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq04vnla")
-    Address("validator_sim1qcqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqsncq6gd")
-    Address("accesscontroller_sim1p5qszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs8w8kkt")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    Address("epochmanager_sim1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqf9zrm9")
+    Address("clock_sim1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzxkxrs")
+    Address("validator_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpskldua9")
+    Address("accesscontroller_sim1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsguupgz")
     Bucket("bucket1")
     Proof("proof1")
     Expression("ENTIRE_WORKTOP")
@@ -268,15 +268,15 @@ CALL_METHOD
             vec![],
             r##"
 SET_PACKAGE_ROYALTY_CONFIG
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
     Map<String, Tuple>("Blueprint", Tuple(Map<String, U32>("method", 1u32), 0u32));
 SET_COMPONENT_ROYALTY_CONFIG
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     Tuple(Map<String, U32>("method", 1u32), 0u32);
 CLAIM_PACKAGE_ROYALTY
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em");
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv");
 CLAIM_COMPONENT_ROYALTY
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh");
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v");
 "##,
         );
     }
@@ -290,26 +290,82 @@ CLAIM_COMPONENT_ROYALTY
             vec![],
             r##"
 SET_METADATA
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    "k"
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    "k"
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(1u8, true));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(2u8, 123u8));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(3u8, 123u32));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(4u8, 123u64));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(5u8, -123i32));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(6u8, -123i64));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(7u8, Decimal("10.5")));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(8u8, Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(9u8, Enum(0u8, Bytes("0000000000000000000000000000000000000000000000000000000000000000ff"))));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(10u8, NonFungibleGlobalId("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<some_string>")));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(11u8, NonFungibleLocalId("<some_string>")));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(12u8, Tuple(10000i64)));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(13u8, "https://radixdlt.com"));
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(1u8, Array<Enum>(Enum(0u8, "some_string"), Enum(0u8, "another_string"), Enum(0u8, "yet_another_string")));
 REMOVE_METADATA
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    "k";
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
+    "field_name";
 REMOVE_METADATA
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    "k";
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    "field_name";
 REMOVE_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k";
+    "field_name";
 "##,
         );
     }
@@ -323,8 +379,8 @@ REMOVE_METADATA
             vec![],
             r##"
 SET_METHOD_ACCESS_RULE
-    Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn")
-    Tuple(Enum(0u8), "test")
+    Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje")
+    Tuple(Enum(1u8), "test")
     Enum(0u8);
 "##,
         );
@@ -342,7 +398,7 @@ SET_METHOD_ACCESS_RULE
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
@@ -351,7 +407,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
     Decimal("12");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
 "##,
@@ -370,7 +426,7 @@ CALL_METHOD
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE
@@ -398,7 +454,7 @@ CREATE_FUNGIBLE_RESOURCE
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
@@ -408,7 +464,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
     Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
 "##,
@@ -429,7 +485,7 @@ CALL_METHOD
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -452,11 +508,11 @@ CREATE_NON_FUNGIBLE_RESOURCE
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "create_proof_by_amount"
     Address("resource_sim1q9g995jh0x0eaf3672kac6ruq9rr2jvwy4d82qw3cd3qlhgqer")
     Decimal("1");
@@ -464,7 +520,7 @@ MINT_FUNGIBLE
     Address("resource_sim1qtvh6xzsalqrfn57w7tsn6n5jhs6h7tvmzc5a6ysypsqjcpftz")
     Decimal("12");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
 "##,
@@ -482,11 +538,11 @@ CALL_METHOD
             vec![],
             r##"
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "lock_fee"
     Decimal("10");
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "create_proof_by_amount"
     Address("resource_sim1q9g995jh0x0eaf3672kac6ruq9rr2jvwy4d82qw3cd3qlhgqer")
     Decimal("1");
@@ -494,29 +550,9 @@ MINT_NON_FUNGIBLE
     Address("resource_sim1qtvh6xzsalqrfn57w7tsn6n5jhs6h7tvmzc5a6ysypsqjcpftz")
     Tuple(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple())));
 CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
-"##,
-        );
-    }
-
-    #[test]
-    fn test_assert_access_rule() {
-        compile_and_decompile_with_inversion_test(
-            "assert_access_rule",
-            &apply_replacements_to_manifest(
-                include_str!("../../examples/access_rule/assert_access_rule.rtm").to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-            vec![],
-            r##"
-CALL_METHOD
-    Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn")
-    "lock_fee"
-    Decimal("10");
-ASSERT_ACCESS_RULE
-    Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczqlr3jk6:#1#")))));
 "##,
         );
     }
@@ -531,8 +567,9 @@ ASSERT_ACCESS_RULE
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_ACCOUNT
-    Enum(0u8);
+CREATE_ACCOUNT_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+CREATE_ACCOUNT;
 "##,
         );
     }
@@ -547,8 +584,9 @@ CREATE_ACCOUNT
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_IDENTITY
-    Enum(0u8);
+CREATE_IDENTITY_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+CREATE_IDENTITY;
 "##,
         );
     }
@@ -649,15 +687,15 @@ CREATE_ACCESS_CONTROLLER
         let replacement_vectors = BTreeMap::from([
             (
                 "${xrd_resource_address}",
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje",
             ),
             (
-                "${account_component_address}",
-                "account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn",
+                "${account_address}",
+                "account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v",
             ),
             (
-                "${other_account_component_address}",
-                "account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh",
+                "${other_account_address}",
+                "account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v",
             ),
             (
                 "${minter_badge_resource_address}",

@@ -3,7 +3,6 @@ mod custom_payload_wrappers;
 /// Defines the custom Scrypto schema types.
 mod custom_schema;
 /// Defines custom serialization of the types.
-#[cfg(feature = "serde")]
 mod custom_serde;
 /// Defines how to traverse scrypto custom types.
 mod custom_traversal;
@@ -15,22 +14,18 @@ mod custom_value_kind;
 mod custom_well_known_types;
 /// Defines a way to uniquely identify an element within a Scrypto schema type.
 mod schema_path;
-/// Format any Scrypto value using the Manifest syntax.
-mod value_formatter;
 
 pub mod model;
 
 pub use custom_formatting::*;
 pub use custom_payload_wrappers::*;
 pub use custom_schema::*;
-#[cfg(feature = "serde")]
 pub use custom_serde::*;
 pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
 pub use schema_path::*;
-pub use value_formatter::*;
 
 use sbor::rust::vec::Vec;
 use sbor::traversal::VecTraverser;

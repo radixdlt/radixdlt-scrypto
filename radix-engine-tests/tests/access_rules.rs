@@ -1,10 +1,10 @@
-use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::AuthZoneError;
+use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+    AuthAddresses, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
@@ -175,8 +175,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     });
 }
 
-#[test]
-fn component_access_rules_can_be_mutated_through_manifest_native_call() {
+fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -201,9 +200,9 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
-                Address::Component(test_runner.component_address),
-                MethodKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
-                rule!(deny_all),
+                test_runner.component_address.into(),
+                MethodKey::new(SysModuleId::ObjectState, "borrow_funds"),
+                to_rule,
             )
             .build(),
     );
@@ -217,24 +216,40 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 }
 
 #[test]
+fn component_access_rules_can_be_mutated_to_deny_all_through_manifest() {
+    component_access_rules_can_be_mutated_through_manifest(rule!(deny_all));
+}
+
+#[test]
+fn component_access_rules_can_be_mutated_to_fungible_resource_through_manifest() {
+    component_access_rules_can_be_mutated_through_manifest(rule!(require(RADIX_TOKEN)));
+}
+
+#[test]
+fn component_access_rules_can_be_mutated_to_non_fungible_resource_through_manifest() {
+    let non_fungible_global_id = AuthAddresses::system_role();
+    component_access_rules_can_be_mutated_through_manifest(rule!(require(non_fungible_global_id)));
+}
+
+#[test]
 fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
         MethodKey::new(
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
+            SysModuleId::AccessRules,
+            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
+            SysModuleId::AccessRules,
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
         ),
         MethodKey::new(
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
+            SysModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT.to_string(),
+            SysModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
         ),
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
@@ -244,11 +259,12 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 
         let access_rules: AccessRulesConfig = manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
+            HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
-            AccessRule::AllowAll,
+            AccessRuleEntry::AccessRule(AccessRule::AllowAll),
             HashMap::<MethodKey, AccessRule>::new(),
             HashMap::<String, AccessRule>::new(),
-            AccessRule::AllowAll
+            AccessRuleEntry::AccessRule(AccessRule::AllowAll)
         );
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
@@ -258,7 +274,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let receipt = test_runner.execute_manifest(
             MutableAccessRulesTestRunner::manifest_builder()
                 .set_method_access_rule(
-                    Address::Component(test_runner.component_address),
+                    test_runner.component_address.into(),
                     access_rule_key,
                     rule!(deny_all),
                 )
@@ -273,60 +289,10 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 #[test]
-fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, _account_component) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .assert_access_rule(rule!(require(RADIX_TOKEN)))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|error: &RuntimeError| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
-        )
-    })
-}
-
-#[test]
-fn assert_access_rule_through_manifest_when_fulfilled_succeeds() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account_component, RADIX_TOKEN)
-        .assert_access_rule(rule!(require(RADIX_TOKEN)))
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
-
     let component_address = {
         let manifest = ManifestBuilder::new()
             .call_function(
@@ -337,37 +303,28 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
-        );
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
+    // Act
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(RADIX_TOKEN)), Vec::<ManifestBucket>::new()),
+            manifest_args!(rule!(require(RADIX_TOKEN))),
         )
         .build();
 
-    // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
-    );
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
         )
     })
 }
@@ -376,7 +333,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
-    let (public_key, _, account_component) = test_runner.new_account(false);
+    let (public_key, _, account) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     let component_address = {
@@ -391,7 +348,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+            [NonFungibleGlobalId::from_public_key(&public_key)],
         );
         receipt.expect_commit_success();
 
@@ -399,25 +356,18 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.call_method(
-                component_address,
-                "assert_access_rule",
-                manifest_args!(rule!(require(RADIX_TOKEN)), vec![bucket]),
-            )
-        })
+        .create_proof_from_account(account, RADIX_TOKEN)
         .call_method(
-            account_component,
-            "deposit_batch",
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            "assert_access_rule",
+            manifest_args!(rule!(require(RADIX_TOKEN))),
         )
         .build();
 
     // Act
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)].into(),
+        [NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
@@ -427,7 +377,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     component_address: ComponentAddress,
-    initial_proofs: Vec<NonFungibleGlobalId>,
+    initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
 impl MutableAccessRulesTestRunner {
@@ -451,12 +401,12 @@ impl MutableAccessRulesTestRunner {
         Self {
             test_runner,
             component_address,
-            initial_proofs: Vec::new(),
+            initial_proofs: BTreeSet::new(),
         }
     }
 
     pub fn add_initial_proof(&mut self, initial_proof: NonFungibleGlobalId) {
-        self.initial_proofs.push(initial_proof);
+        self.initial_proofs.insert(initial_proof);
     }
 
     pub fn set_method_auth(

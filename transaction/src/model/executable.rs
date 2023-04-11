@@ -1,8 +1,7 @@
-use radix_engine_common::data::scrypto::model::ResourceAddress;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::blueprints::transaction_processor::RuntimeValidationRequest;
 use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
@@ -11,14 +10,14 @@ use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AuthZoneParams {
-    pub initial_proofs: Vec<NonFungibleGlobalId>,
+    pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
     pub virtual_resources: BTreeSet<ResourceAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
-    pub pre_allocated_ids: BTreeSet<RENodeId>,
+    pub pre_allocated_ids: BTreeSet<NodeId>,
     pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
@@ -78,7 +77,7 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn pre_allocated_ids(&self) -> &BTreeSet<RENodeId> {
+    pub fn pre_allocated_ids(&self) -> &BTreeSet<NodeId> {
         &self.context.pre_allocated_ids
     }
 

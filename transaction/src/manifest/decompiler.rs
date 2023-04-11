@@ -2,13 +2,17 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_interface::address::{AddressError, Bech32Encoder};
+use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT};
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
-use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
+use radix_engine_interface::blueprints::identity::{
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -23,14 +27,12 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use sbor::rust::collections::*;
-use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
-    InvalidAddress(AddressError),
     InvalidArguments,
     EncodeError(EncodeError),
     DecodeError(DecodeError),
@@ -59,8 +61,8 @@ impl From<fmt::Error> for DecompileError {
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
-    pub bucket_names: HashMap<ManifestBucket, String>,
-    pub proof_names: HashMap<ManifestProof, String>,
+    pub bucket_names: NonIterMap<ManifestBucket, String>,
+    pub proof_names: NonIterMap<ManifestProof, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
@@ -68,8 +70,8 @@ impl<'a> DecompilationContext<'a> {
         Self {
             bech32_encoder: Some(bech32_encoder),
             id_allocator: ManifestIdAllocator::new(),
-            bucket_names: HashMap::<ManifestBucket, String>::new(),
-            proof_names: HashMap::<ManifestProof, String>::new(),
+            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
+            proof_names: NonIterMap::<ManifestProof, String>::new(),
         }
     }
 
@@ -77,8 +79,8 @@ impl<'a> DecompilationContext<'a> {
         Self {
             bech32_encoder,
             id_allocator: ManifestIdAllocator::new(),
-            bucket_names: HashMap::<ManifestBucket, String>::new(),
-            proof_names: HashMap::<ManifestProof, String>::new(),
+            bucket_names: NonIterMap::<ManifestBucket, String>::new(),
+            proof_names: NonIterMap::<ManifestProof, String>::new(),
         }
     }
 
@@ -350,8 +352,14 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT) => {
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
+                    write!(f, "CREATE_ACCOUNT_ADVANCED")?;
+                }
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT) => {
                     write!(f, "CREATE_ACCOUNT")?;
+                }
+                (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT) => {
+                    write!(f, "CREATE_IDENTITY_ADVANCED")?;
                 }
                 (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => {
                     write!(f, "CREATE_IDENTITY")?;
@@ -431,9 +439,22 @@ pub fn decompile_instruction<F: fmt::Write>(
             schema,
             royalty_config,
             metadata,
-            access_rules,
         } => {
             f.write_str("PUBLISH_PACKAGE")?;
+            format_typed_value(f, context, code)?;
+            format_typed_value(f, context, schema)?;
+            format_typed_value(f, context, royalty_config)?;
+            format_typed_value(f, context, metadata)?;
+            f.write_str(";")?;
+        }
+        Instruction::PublishPackageAdvanced {
+            code,
+            schema,
+            royalty_config,
+            metadata,
+            access_rules,
+        } => {
+            f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
             format_typed_value(f, context, code)?;
             format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;
@@ -544,11 +565,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, resource_address)?;
             f.write_str("\n    ")?;
             format_manifest_value(f, args, &context.for_value_display())?;
-            f.write_str(";")?;
-        }
-        Instruction::AssertAccessRule { access_rule } => {
-            f.write_str("ASSERT_ACCESS_RULE")?;
-            format_typed_value(f, context, access_rule)?;
             f.write_str(";")?;
         }
     }

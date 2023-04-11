@@ -3,7 +3,6 @@ use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::*;
-use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
 
 #[derive(ManifestSbor)]
@@ -24,11 +23,13 @@ impl TestTransaction {
 
     pub fn get_executable<'a>(
         &'a self,
-        initial_proofs: Vec<NonFungibleGlobalId>,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
+        // Fake transaction hash
+        let transaction_hash = hash(self.nonce.to_le_bytes());
+
         let payload = manifest_encode(self).unwrap();
         let payload_size = payload.len();
-        let transaction_hash = hash(payload);
 
         Executable::new(
             self.manifest.instructions.clone(),

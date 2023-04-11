@@ -1,7 +1,7 @@
 use super::*;
-use crate::data::scrypto::model::InternalRef;
 use crate::*;
 use sbor::representations::*;
+use sbor::rust::prelude::*;
 use sbor::traversal::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -13,13 +13,14 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
-            ScryptoCustomValue::Address(value) => (
-                SerializableType::String(value.to_string(context.custom_context.bech32_encoder)),
-                false,
+            ScryptoCustomValue::Reference(value) => (
+                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                true,
             ),
-            ScryptoCustomValue::Own(value) => {
-                (SerializableType::String(hex::encode(value.id())), true)
-            }
+            ScryptoCustomValue::Own(value) => (
+                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                true,
+            ),
             ScryptoCustomValue::Decimal(value) => {
                 (SerializableType::String(value.to_string()), false)
             }
@@ -28,9 +29,6 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
             }
             ScryptoCustomValue::NonFungibleLocalId(value) => {
                 (SerializableType::String(value.to_string()), true)
-            }
-            ScryptoCustomValue::InternalRef(InternalRef(object_id)) => {
-                (SerializableType::String(hex::encode(object_id)), true)
             }
         };
         CustomTypeSerialization {
@@ -46,12 +44,12 @@ mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
     use crate::data::scrypto::model::*;
+    use crate::data::scrypto::{scrypto_encode, ScryptoValue};
+    use crate::types::*;
     use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
     use utils::ContextualSerialize;
-
-    use crate::data::scrypto::{scrypto_encode, ScryptoValue};
 
     #[derive(ScryptoSbor)]
     pub struct Sample {
@@ -72,19 +70,20 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
+        use crate::types::NodeId;
+        let value = Reference(NodeId([0; 27]));
 
         let expected =
             json!("FungibleResource[010000000000000000000000000000000000000000000000000000]");
         let expected_invertible = json!({
-            "kind": "Address",
-            "value": "FungibleResource[010000000000000000000000000000000000000000000000000000]"
+            "kind": "Reference",
+            "value": "000000000000000000000000000000000000000000000000000000"
         });
 
         assert_natural_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
         assert_programmatic_json_matches(
             &value,
-            ScryptoValueDisplayContext::no_context(),
+            ScryptoValueSerializationContext::no_context(),
             expected_invertible,
         );
     }
@@ -92,13 +91,15 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]);
+        use crate::types::NodeId;
+
+        let value = Reference(NodeId([0; 27]));
         let encoder = Bech32Encoder::for_simulator();
 
         let expected_simple =
             json!("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
         let expected_invertible = json!({
-            "kind": "Address",
+            "kind": "Reference",
             "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
@@ -110,17 +111,16 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
         use crate::math::{Decimal, PreciseDecimal};
+        use crate::types::NodeId;
 
         let encoder = Bech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Address(Address::Resource(
-                        ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]),
-                    )),
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([0; NodeId::LENGTH]))),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Own(Own::Vault([0; OBJECT_ID_LENGTH])),
+                    value: ScryptoCustomValue::Own(Own(NodeId([0; NodeId::LENGTH]))),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -148,9 +148,6 @@ mod tests {
                     value: ScryptoCustomValue::NonFungibleLocalId(
                         NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd).unwrap(),
                     ),
-                },
-                Value::Custom {
-                    value: ScryptoCustomValue::InternalRef(InternalRef([0; OBJECT_ID_LENGTH])),
                 },
             ],
         };
@@ -241,7 +238,7 @@ mod tests {
     fn assert_natural_json_matches<
         'a,
         T: ScryptoEncode,
-        C: Into<ScryptoValueDisplayContext<'a>>,
+        C: Into<ScryptoValueSerializationContext<'a>>,
     >(
         value: &T,
         context: C,

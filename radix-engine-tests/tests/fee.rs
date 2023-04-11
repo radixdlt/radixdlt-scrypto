@@ -1,13 +1,15 @@
 use radix_engine::blueprints::resource::WorktopError;
-use radix_engine::errors::{ApplicationError, KernelError};
+use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
-use radix_engine::kernel::track::TrackError;
+use radix_engine::kernel::call_frame::LockSubstateError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_stores::interface::AcquireLockError;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
+use utils::ContextualDisplay;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
 where
@@ -63,7 +65,7 @@ fn should_be_aborted_when_loan_repaid() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
     receipt.expect_commit_failure();
 }
 
@@ -145,13 +147,14 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             )
             .build()
     });
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnNewSubstate(..))
-            ))
-        )
+
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            KernelError::CallFrameError(CallFrameError::LockSubstateError(
+                LockSubstateError::LockUnmodifiedBaseOnHeapNode,
+            )),
+        )) => true,
+        _ => false,
     });
 }
 
@@ -182,13 +185,19 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
             .build()
     });
 
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..))
-            ))
-        )
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            KernelError::CallFrameError(CallFrameError::LockSubstateError(
+                LockSubstateError::TrackError(err),
+            )),
+        )) => {
+            if let AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }
 

@@ -44,53 +44,117 @@ function get_cpus() {
     fi
 }
 
+function humanize_seconds()
+{
+   local t=$1
+   local d=$((t / 60 / 60 / 24))
+   local h=$((t / 60 / 60 % 24))
+   local m=$((t / 60 % 60))
+   local s=$((t % 60))
+
+   if [ $d -ne 0 ] ; then
+      printf '%d days %02d hours %02d minutes %02d seconds' $d $h $m $s
+   else
+      printf '%02d hours %02d minutes %02d seconds' $h $m $s
+   fi
+}
+
 target=$DFLT_TARGET
 cmd=${1:-watch}
 shift
+
+# Trying different power schedules, but keeping in mind that "fast" and "explore" are most effective ones,
+# thus they are duplicated.
+# The more CPU cores available, the more schedules possible to try.
+# More details on power schedules:
+#   https://github.com/AFLplusplus/AFLplusplus/blob/stable/docs/fuzzing_in_depth.md#c-using-multiple-cores
+#   https://github.com/AFLplusplus/AFLplusplus/blob/stable/docs/FAQ.md#what-are-power-schedules
+SCHEDULES_ARR=("fast" "explore" "fast" "explore" "exploit" "coe" "lin" "quad" "seek" "rare" "mmopt")
+SCHEDULES_LEN=${#SCHEDULES_ARR[@]}
 
 if [ $cmd = "run" ] ; then
     if [ $# -lt 1 ] ; then
         error "duration parameter is missing"
     fi
     duration=${1}
+    if ! [[ $duration =~ ^[0-9]+$ ]] ; then
+        error "given duration '$duration' is not a number"
+    fi
     cpus=${2:-1}
     timeout=${3:-$DFLT_AFL_TIMEOUT}
     if [ $cpus = "all" ] ; then
         cpus=$(get_cpus)
         echo "CPU cores available: $cpus"
     fi
+    if ! [[ $cpus =~ ^[0-9]+$ ]] ; then
+        error "given instances '$cpus' is not a number or 'all'"
+    fi
+    if ! [[ $timeout =~ ^[0-9]+$ ]] ; then
+        error "given timeout '$timeout' is not a number"
+    fi
     echo "Running $cpus AFL instances for $duration seconds"
     mkdir -p afl
 
+    # Remove dead screen sessions.
+    # Such sessions might remain if the previous run was cancelled.
+    screen -wipe || true
+
     for (( i=0; i<$cpus; i++ )) ; do
+        power_schedule=${SCHEDULES_ARR[$(( i % SCHEDULES_LEN))]}
         if [ $i -eq 0 ] ; then
-            name=main_$i
+            name=${target}_${i}_${power_schedule}
             # main fuzzer
-            fuzzer="-M $name"
+            fuzz_args="-M $name "
         else
-            name=secondary_$i
+            name=${target}_${i}_${power_schedule}
             # secondary fuzzer
-            fuzzer="-S $name"
+            fuzz_args="-S $name "
         fi
+        fuzzer+="-p $power_schedule "
         # TODO: use different fuzzing variants per instance
+        fuzz_cmd="./fuzz.sh afl run -V $duration $fuzz_args -T $name -t $timeout"
+        echo -e "Starting screen session with:\n  $fuzz_cmd"
         screen -dmS afl_$name \
-            bash -c "{ ./fuzz.sh afl run -V $duration $fuzzer -T $name -t $timeout >afl/$name.log 2>afl/$name.err ; echo \$? > afl/$name.status; }"
+            bash -c "{ $fuzz_cmd >afl/$name.log 2>afl/$name.err ; echo \$? > afl/$name.status; }"
     done
     echo "Started below screen sessions with AFL instances"
     # adding 'true', because screen returns always error, when listing sessions.
     screen -ls afl_ || true
 
+    echo "started=$(date +%s)" > afl/${target}_info
+    echo "duration=$duration" >> afl/${target}_info
+
 elif [ $cmd = "watch" ] ; then
     interval=${1:-$DFLT_INTERVAL}
-    while ! screen -ls afl_ | grep "No Sockets found" ; do
+    duration=
+    started=$(date +%s)
+    # afl/info should include most accurate info on duration and start time
+    if [ -f afl/${target}_info ] ; then
+        source afl/${target}_info
+    fi
+    # if no start time given, then get current time (it's better than nothing)
+    if [ $started = "none" ] ; then
+        stared=$(date +%s)
+    fi
+    while ! screen -ls afl_${target} | grep "No Sockets found" ; do
         sleep $interval
         # afl folder structure created with some delay after fuzz startup
         if [ -d afl/$target ] ; then
             cargo afl whatsup -d afl/$target
         fi
+        now=$(date +%s)
+        run_time=$(( now - started ))
+        echo "Fuzzing duration : $(humanize_seconds $run_time)"
+        if [ $duration != "" ] ; then
+            time_left=$(( duration - run_time ))
+            if [ $time_left -lt 0 ] ; then
+                time_left=0
+            fi
+            echo "Fuzzing ends in  : $(humanize_seconds $time_left)"
+        fi
     done
     echo "AFL instances status (0 means 'ok'):"
-    find afl -name "*.status" | xargs grep -H -v "*"
+    find afl -name "${target}_*.status" | xargs grep -H -v "*"
 else
     error "Command '$cmd' not supported"
 fi

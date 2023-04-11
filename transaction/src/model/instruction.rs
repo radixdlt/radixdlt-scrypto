@@ -1,9 +1,9 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -105,6 +105,13 @@ pub enum Instruction {
         schema: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+    },
+
+    PublishPackageAdvanced {
+        code: ManifestBlobRef,
+        schema: ManifestBlobRef,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRulesConfig,
     },
 
@@ -113,18 +120,18 @@ pub enum Instruction {
     },
 
     RecallResource {
-        vault_id: ObjectId,
+        vault_id: LocalAddress,
         amount: Decimal,
     },
 
     SetMetadata {
-        entity_address: ManifestAddress,
+        entity_address: GlobalAddress,
         key: String,
         value: MetadataEntry,
     },
 
     RemoveMetadata {
-        entity_address: ManifestAddress,
+        entity_address: GlobalAddress,
         key: String,
     },
 
@@ -147,7 +154,7 @@ pub enum Instruction {
     },
 
     SetMethodAccessRule {
-        entity_address: ManifestAddress,
+        entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     },
@@ -165,10 +172,6 @@ pub enum Instruction {
     MintUuidNonFungible {
         resource_address: ResourceAddress,
         args: ManifestValue,
-    },
-
-    AssertAccessRule {
-        access_rule: AccessRule,
     },
 
     CallFunction {

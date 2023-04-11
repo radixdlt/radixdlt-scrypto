@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-interface"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 
 [dependencies]
@@ -13,18 +13,16 @@ utils = { path = "../utils", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 bitflags = { version = "1.3" }
+serde_json = { version = "1.0", default-features = false }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-schema/std", "radix-engine-derive/std", "radix-engine-common/std", "strum/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-schema/alloc", "radix-engine-derive/alloc", "radix-engine-common/alloc", "utils/alloc"]
+std = ["hex/std", "serde_json/std", "sbor/std", "scrypto-schema/std", "radix-engine-derive/std", "radix-engine-common/std", "strum/std", "utils/std"]
+alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "scrypto-schema/alloc", "radix-engine-derive/alloc", "radix-engine-common/alloc", "utils/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]
-
-# Enable serde derives
-serde = ["utils/serde", "sbor/serde", "hex/serde", "scrypto-schema/serde"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

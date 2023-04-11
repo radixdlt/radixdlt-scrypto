@@ -1,26 +1,113 @@
+# Set String Metadata on Package
 SET_METADATA
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    "k"
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 
+# Set String Metadata on Account component
 SET_METADATA
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    "k"
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 
+# Set String Metadata on Resource
 SET_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k"
+    "field_name"
     Enum(0u8, Enum(0u8, "v"));
 
-REMOVE_METADATA
-    Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")
-    "k";
+# Set Boolean Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(1u8, true));
+
+# Set u8 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(2u8, 123u8));
+
+# Set u32 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(3u8, 123u32));
+
+# Set u64 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(4u8, 123u64));
+
+# Set i32 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(5u8, -123i32));
+
+# Set i64 Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(6u8, -123i64));
+
+# Set Decimal Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(7u8, Decimal("10.5")));
+
+# Set Address Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(8u8, Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")));
+
+# Set Public Key Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(9u8, Enum(0u8, Bytes("0000000000000000000000000000000000000000000000000000000000000000ff"))));
+
+# Set NonFungibleGlobalId Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(10u8, NonFungibleGlobalId("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<some_string>")));
+
+# Set NonFungibleLocalId Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(11u8, NonFungibleLocalId("<some_string>")));
+
+# Set Instant (or the value in seconds since unix epoch) Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(12u8, Tuple(10000i64)));
+
+# Set Url Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(0u8, Enum(13u8, "https://radixdlt.com"));
+
+# Set List Metadata on Resource
+SET_METADATA
+    Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+    "field_name"
+    Enum(1u8, Array<Enum>(Enum(0u8, "some_string"), Enum(0u8, "another_string"), Enum(0u8, "yet_another_string")));
 
 REMOVE_METADATA
-    Address("account_sim1qnkhnw506drsfhrjrzaw4aj2yrucezvj2w7jqqqm5zds7mngxh")
-    "k";
+    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")
+    "field_name";
+
+REMOVE_METADATA
+    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    "field_name";
 
 REMOVE_METADATA
     Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
-    "k";
+    "field_name";

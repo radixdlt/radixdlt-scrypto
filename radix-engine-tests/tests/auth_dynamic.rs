@@ -25,7 +25,7 @@ fn test_dynamic_auth(
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let initial_proofs: Vec<NonFungibleGlobalId> = signer_public_keys
+    let initial_proofs: BTreeSet<NonFungibleGlobalId> = signer_public_keys
         .iter()
         .map(|index| {
             NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0)
@@ -34,7 +34,7 @@ fn test_dynamic_auth(
 
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package,
             "AuthComponent",
@@ -48,7 +48,7 @@ fn test_dynamic_auth(
 
     if let Some(next_auth) = update_auth {
         let update_manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .lock_fee(test_runner.faucet_component(), 10.into())
             .call_method(
                 component,
                 "update_auth",
@@ -62,10 +62,10 @@ fn test_dynamic_auth(
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(component, "get_secret", manifest_args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs.to_vec());
+    let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs);
 
     // Assert
     if should_succeed {
@@ -93,7 +93,7 @@ fn test_dynamic_authlist(
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let initial_proofs: Vec<NonFungibleGlobalId> = signer_public_keys
+    let initial_proofs: BTreeSet<NonFungibleGlobalId> = signer_public_keys
         .iter()
         .map(|index| {
             NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0)
@@ -104,7 +104,7 @@ fn test_dynamic_authlist(
     // Arrange
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(
             package,
             "AuthListComponent",
@@ -118,7 +118,7 @@ fn test_dynamic_authlist(
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(component, "get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, initial_proofs);
@@ -232,7 +232,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     );
     let players = [non_fungible_global_id, other_non_fungible_global_id.clone()];
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package, "Chess", "create_game", manifest_args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -241,7 +241,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(component, "make_move", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_non_fungible_global_id]);
@@ -264,14 +264,14 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         other_non_fungible_global_id.clone(),
     ];
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(package, "Chess", "create_game", manifest_args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
     let component = receipt1.expect_commit(true).new_component_addresses()[0];
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(component, "make_move", manifest_args!())
         .build();
     test_runner
@@ -280,7 +280,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
 
     // Act
     let manifest3 = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(component, "make_move", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_non_fungible_global_id]);

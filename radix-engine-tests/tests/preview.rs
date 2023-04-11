@@ -15,7 +15,7 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {
@@ -55,7 +55,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
     let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-    let account = test_runner.new_account_with_auth_rule(withdraw_auth);
+    let account = test_runner.new_account_advanced(withdraw_auth.clone(), AccessRule::DenyAll);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     let preview_flags = PreviewFlags {

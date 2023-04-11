@@ -1,7 +1,7 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
     use radix_engine::kernel::interpreters::ScryptoInterpreter;
-    use radix_engine::ledger::*;
+    use radix_engine::system::bootstrap::bootstrap;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
@@ -11,6 +11,7 @@ mod multi_threaded_test {
     use radix_engine_interface::blueprints::resource::*;
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
+    use radix_engine_stores::memory_db::InMemorySubstateDatabase;
     use transaction::builder::ManifestBuilder;
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use transaction::model::TestTransaction;
@@ -28,28 +29,40 @@ mod multi_threaded_test {
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,
         };
-        let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+        let mut substate_db = InMemorySubstateDatabase::standard();
+        let receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
+        let faucet_component = receipt
+            .expect_commit_success()
+            .new_component_addresses()
+            .last()
+            .cloned()
+            .unwrap();
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
+        let config = AccessRulesConfig::new().default(
+            rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
+            AccessRule::DenyAll,
+        );
+
         // Create two accounts
         let accounts = (0..2)
             .map(|_| {
                 let manifest = ManifestBuilder::new()
-                    .lock_fee(FAUCET_COMPONENT, 100.into())
-                    .new_account(rule!(require(NonFungibleGlobalId::from_public_key(
-                        &public_key
-                    ))))
+                    .lock_fee(faucet_component, 100.into())
+                    .new_account_advanced(config.clone())
                     .build();
                 let account = execute_and_commit_transaction(
-                    &mut substate_store,
+                    &mut substate_db,
                     &mut scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
                     &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
-                        .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+                        .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
+                            &public_key
+                        )]),
                 )
                 .expect_commit(true)
                 .new_component_addresses()[0];
@@ -62,8 +75,8 @@ mod multi_threaded_test {
 
         // Fill first account
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+            .lock_fee(faucet_component, 100.into())
+            .call_method(faucet_component, "free", manifest_args!())
             .call_method(
                 account1,
                 "deposit_batch",
@@ -72,19 +85,19 @@ mod multi_threaded_test {
             .build();
         for nonce in 0..10 {
             execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
                 &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
-                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
+                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
             .expect_commit(true);
         }
 
         // Create a transfer manifest
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .lock_fee(faucet_component, 100.into())
             .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
             .call_method(
                 account2,
@@ -101,12 +114,12 @@ mod multi_threaded_test {
             for _i in 0..20 {
                 s.spawn(|_| {
                     let receipt = execute_transaction(
-                        &substate_store,
+                        &substate_db,
                         &scrypto_interpreter,
                         &FeeReserveConfig::default(),
                         &ExecutionConfig::default(),
                         &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
-                            .get_executable(vec![NonFungibleGlobalId::from_public_key(
+                            .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                                 &public_key,
                             )]),
                     );

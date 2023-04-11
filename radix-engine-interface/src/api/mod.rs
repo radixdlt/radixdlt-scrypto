@@ -4,10 +4,10 @@ pub mod kernel_modules;
 pub mod node_modules;
 pub mod object_api;
 pub mod substate_api;
-pub mod types;
 
 // Re-exports
 pub use actor_api::ClientActorApi;
+pub use kernel_modules::auth_api::ClientAuthApi;
 pub use kernel_modules::costing_api::ClientCostingApi;
 pub use kernel_modules::event_api::ClientEventApi;
 pub use kernel_modules::execution_trace_api::ClientExecutionTraceApi;
@@ -31,5 +31,6 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientTransactionLimitsApi<E>
     + ClientTransactionRuntimeApi<E>
     + ClientExecutionTraceApi<E>
+    + ClientAuthApi<E>
 {
 }

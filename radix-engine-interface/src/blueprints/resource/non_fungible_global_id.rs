@@ -3,6 +3,8 @@ use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::data::scrypto::scrypto_encode;
+use radix_engine_common::types::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;
@@ -17,6 +19,12 @@ pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 impl NonFungibleGlobalId {
     pub const fn new(resource_address: ResourceAddress, local_id: NonFungibleLocalId) -> Self {
         Self(resource_address, local_id)
+    }
+
+    pub fn package_actor(package_address: PackageAddress) -> Self {
+        let local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
+        NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id)
     }
 
     /// Returns the resource address.
@@ -45,7 +53,8 @@ impl NonFungibleGlobalId {
         if parts.len() != 2 {
             return Err(ParseNonFungibleGlobalIdError::RequiresTwoParts);
         }
-        let resource_address = bech32_decoder.validate_and_decode_resource_address(parts[0])?;
+        let resource_address = ResourceAddress::try_from_bech32(bech32_decoder, parts[0])
+            .ok_or(ParseNonFungibleGlobalIdError::InvalidResourceAddress)?;
         let local_id = NonFungibleLocalId::from_str(parts[1])?;
         Ok(NonFungibleGlobalId::new(resource_address, local_id))
     }
@@ -58,15 +67,9 @@ impl NonFungibleGlobalId {
 /// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleGlobalIdError {
-    InvalidResourceAddress(AddressError),
+    InvalidResourceAddress,
     InvalidNonFungibleLocalId(ParseNonFungibleLocalIdError),
     RequiresTwoParts,
-}
-
-impl From<AddressError> for ParseNonFungibleGlobalIdError {
-    fn from(err: AddressError) -> Self {
-        Self::InvalidResourceAddress(err)
-    }
 }
 
 impl From<ParseNonFungibleLocalIdError> for ParseNonFungibleGlobalIdError {
@@ -112,6 +115,18 @@ impl fmt::Debug for NonFungibleGlobalId {
     }
 }
 
+pub trait FromComponent: Sized {
+    fn from_component_address(component: &ComponentAddress) -> Self;
+}
+
+impl FromComponent for NonFungibleGlobalId {
+    fn from_component_address(component_address: &ComponentAddress) -> Self {
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
+        NonFungibleGlobalId::new(GLOBAL_OBJECT_TOKEN, non_fungible_local_id)
+    }
+}
+
 pub trait FromPublicKey: Sized {
     fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self;
 }
@@ -149,51 +164,51 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:<id>",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<id>",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:<id>"
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<id>"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:#123#",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:#123#",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:#123#"
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:#123#"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}"
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:<test>",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<test>",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:<test>"
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<test>"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:[010a]",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:[010a]",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:[010a]"
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:[010a]"
         );
     }
 
@@ -203,7 +218,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );
@@ -211,7 +226,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:1:2",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:1:2",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );
@@ -219,7 +234,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::UnknownType
@@ -228,7 +243,7 @@ mod tests {
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(&bech32_decoder, ":",),
-            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
+            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
         ));
 
         assert!(matches!(
@@ -236,13 +251,13 @@ mod tests {
                 &bech32_decoder,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#1#",
             ),
-            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress(_))
+            Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
         ));
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn:#notnumber#",
+                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:#notnumber#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::InvalidInteger

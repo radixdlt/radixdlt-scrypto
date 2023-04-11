@@ -9,16 +9,18 @@ use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateGlobalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT,
+    AccountCreateAdvancedInput, AccountCreateInput, ACCOUNT_BLUEPRINT,
+    ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+    IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
+    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, FungibleResourceManagerCreateInput,
+    AccessRulesConfig, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -39,6 +41,11 @@ use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::types::ComponentAddress;
+use radix_engine_interface::types::GlobalAddress;
+use radix_engine_interface::types::LocalAddress;
+use radix_engine_interface::types::PackageAddress;
+use radix_engine_interface::types::ResourceAddress;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -67,7 +74,6 @@ pub enum GeneratorError {
     InvalidPreciseDecimal(String),
     InvalidHash(String),
     InvalidNodeId(String),
-    InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
     InvalidNonFungibleLocalId(String),
     InvalidNonFungibleGlobalId,
@@ -89,7 +95,8 @@ pub enum GeneratorError {
     IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
-    InvalidAddress(String),
+    InvalidGlobalAddress(String),
+    InvalidLocalAddress(String),
     InvalidLength {
         value_type: ast::Type,
         expected_length: usize,
@@ -404,8 +411,19 @@ pub fn generate_instruction(
             schema,
             royalty_config,
             metadata,
-            access_rules,
         } => Instruction::PublishPackage {
+            code: generate_blob(code, blobs)?,
+            schema: generate_blob(schema, blobs)?,
+            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::PublishPackageAdvanced {
+            code,
+            schema,
+            royalty_config,
+            metadata,
+            access_rules,
+        } => Instruction::PublishPackageAdvanced {
             code: generate_blob(code, blobs)?,
             schema: generate_blob(schema, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
@@ -420,7 +438,7 @@ pub fn generate_instruction(
             Instruction::BurnResource { bucket_id }
         }
         ast::Instruction::RecallResource { vault_id, amount } => Instruction::RecallResource {
-            vault_id: generate_typed_value(vault_id, resolver, bech32_decoder, blobs)?,
+            vault_id: generate_local_address(vault_id, bech32_decoder)?,
             amount: generate_decimal(amount)?,
         },
         ast::Instruction::SetMetadata {
@@ -428,7 +446,7 @@ pub fn generate_instruction(
             key,
             value,
         } => Instruction::SetMetadata {
-            entity_address: generate_address(entity_address, bech32_decoder)?,
+            entity_address: generate_global_address(entity_address, bech32_decoder)?,
             key: generate_string(key)?,
             value: generate_typed_value(value, resolver, bech32_decoder, blobs)?,
         },
@@ -436,7 +454,7 @@ pub fn generate_instruction(
             entity_address,
             key,
         } => Instruction::RemoveMetadata {
-            entity_address: generate_address(entity_address, bech32_decoder)?,
+            entity_address: generate_global_address(entity_address, bech32_decoder)?,
             key: generate_string(key)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig {
@@ -468,7 +486,7 @@ pub fn generate_instruction(
             key,
             rule,
         } => Instruction::SetMethodAccessRule {
-            entity_address: generate_address(entity_address, bech32_decoder)?,
+            entity_address: generate_global_address(entity_address, bech32_decoder)?,
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
@@ -495,20 +513,11 @@ pub fn generate_instruction(
             args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
         },
 
-        ast::Instruction::CreateValidator {
-            key,
-            owner_access_rule,
-        } => Instruction::CallMethod {
+        ast::Instruction::CreateValidator { key } => Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-                owner_access_rule: generate_typed_value(
-                    owner_access_rule,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
             }),
         },
         ast::Instruction::CreateFungibleResource {
@@ -612,33 +621,38 @@ pub fn generate_instruction(
                 )?
             ),
         },
-        ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
-            access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateIdentity { access_rule } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentity {} => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput {
-                access_rule: generate_typed_value::<AccessRule>(
-                    access_rule,
+            args: to_manifest_value(&IdentityCreateInput {}),
+        },
+        ast::Instruction::CreateIdentityAdvanced { config } => Instruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateAdvancedInput {
+                config: generate_typed_value::<AccessRulesConfig>(
+                    config,
                     resolver,
                     bech32_decoder,
                     blobs,
                 )?,
             }),
         },
-        ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
+
+        ast::Instruction::CreateAccount {} => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateGlobalInput {
-                withdraw_rule: generate_typed_value(
-                    withdraw_rule,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateInput {}),
+        },
+        ast::Instruction::CreateAccountAdvanced { config } => Instruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateAdvancedInput {
+                config: generate_typed_value(config, resolver, bech32_decoder, blobs)?,
             }),
         },
     })
@@ -725,9 +739,14 @@ fn generate_package_address(
 ) -> Result<PackageAddress, GeneratorError> {
     match value {
         ast::Value::Address(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_package_address(s)
-                .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::PackageAddress),
@@ -740,9 +759,14 @@ fn generate_component_address(
 ) -> Result<ComponentAddress, GeneratorError> {
     match value {
         ast::Value::Address(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_component_address(s)
-                .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = ComponentAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::ComponentAddress, ast::Type::Address),
@@ -755,32 +779,60 @@ fn generate_resource_address(
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
         ast::Value::Address(inner) => match inner.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_resource_address(s)
-                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = ResourceAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::ResourceAddress),
     }
 }
 
-fn generate_address(
+fn generate_global_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<ManifestAddress, GeneratorError> {
+) -> Result<GlobalAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_package_address(s)
-                .map(|a| Address::Package(a))
-                .or(bech32_decoder
-                    .validate_and_decode_component_address(s)
-                    .map(|a| Address::Component(a)))
-                .or(bech32_decoder
-                    .validate_and_decode_resource_address(s)
-                    .map(|a| Address::Resource(a)))
-                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
-                .map(from_address),
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+            }
+            v => return invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(
+            v,
+            ast::Type::Address,
+            ast::Type::PackageAddress,
+            ast::Type::ResourceAddress,
+            ast::Type::ComponentAddress
+        ),
+    }
+}
+
+fn generate_local_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<LocalAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = LocalAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidLocalAddress(s.into()));
+            }
             v => return invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(
@@ -1059,9 +1111,9 @@ pub fn generate_value(
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(from_address(Address::Resource(
-                            global_id.resource_address(),
-                        ))),
+                        value: ManifestCustomValue::Address(ManifestAddress(
+                            global_id.resource_address().into(),
+                        )),
                     },
                     Value::Custom {
                         value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(
@@ -1074,9 +1126,11 @@ pub fn generate_value(
         // ==============
         // Custom Types
         // ==============
-        ast::Value::Address(_) => generate_address(value, bech32_decoder).map(|v| Value::Custom {
-            value: ManifestCustomValue::Address(v),
-        }),
+        ast::Value::Address(_) => {
+            generate_global_address(value, bech32_decoder).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(ManifestAddress(v.into())),
+            })
+        }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
             value: ManifestCustomValue::Bucket(v),
         }),
@@ -1163,13 +1217,13 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::api::types::NonFungibleData;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRulesConfig, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
+    use radix_engine_interface::types::NonFungibleData;
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]
@@ -1316,7 +1370,7 @@ mod tests {
         );
         generate_value_error!(
             r#"Address("invalid_package_address")"#,
-            GeneratorError::InvalidAddress("invalid_package_address".into())
+            GeneratorError::InvalidGlobalAddress("invalid_package_address".into())
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
@@ -1327,52 +1381,53 @@ mod tests {
     #[test]
     fn test_instructions() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let component = bech32_decoder
-            .validate_and_decode_component_address(
-                "component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn",
-            )
-            .unwrap();
-        let resource = bech32_decoder
-            .validate_and_decode_resource_address(
-                "resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn",
-            )
-            .unwrap();
+        let package_address = PackageAddress::try_from_bech32(
+            &bech32_decoder,
+            "package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv".into(),
+        )
+        .unwrap();
+        let component = ComponentAddress::try_from_bech32(
+            &bech32_decoder,
+            "component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq",
+        )
+        .unwrap();
+        let resource = ResourceAddress::try_from_bech32(
+            &bech32_decoder,
+            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje",
+        )
+        .unwrap();
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 resource_address: resource
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  Address("package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
+            r#"CALL_FUNCTION  Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                package_address: Bech32Decoder::for_simulator()
-                    .validate_and_decode_package_address(
-                        "package_sim1qr46xrzzzlgvqccwqptp9ujlqncamd6kexux05essnuqc933em".into()
-                    )
-                    .unwrap(),
+                package_address,
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
                 args: manifest_args!(500u32, pdec!("120"))
             },
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn")  "refill";"#,
+            r#"CALL_METHOD  Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")  "refill";"#,
             Instruction::CallMethod {
                 component_address: component,
                 method_name: "refill".to_string(),
@@ -1380,7 +1435,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"MINT_FUNGIBLE Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn") Decimal("100");"#,
+            r#"MINT_FUNGIBLE Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje") Decimal("100");"#,
             Instruction::MintFungible {
                 resource_address: resource,
                 amount: dec!("100")
@@ -1391,8 +1446,8 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
-            Instruction::PublishPackage {
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
+            Instruction::PublishPackageAdvanced {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
                         .unwrap()
@@ -1571,11 +1626,11 @@ mod tests {
     #[test]
     fn test_mint_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let resource = bech32_decoder
-            .validate_and_decode_resource_address(
-                "resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe",
-            )
-            .unwrap();
+        let resource = ResourceAddress::try_from_bech32(
+            &bech32_decoder,
+            "resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe",
+        )
+        .unwrap();
 
         generate_instruction_ok!(
             r##"
@@ -1603,11 +1658,11 @@ mod tests {
     #[test]
     fn test_mint_uuid_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let resource = bech32_decoder
-            .validate_and_decode_resource_address(
-                "resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe",
-            )
-            .unwrap();
+        let resource = ResourceAddress::try_from_bech32(
+            &bech32_decoder,
+            "resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe",
+        )
+        .unwrap();
 
         generate_instruction_ok!(
             r#"
@@ -1635,7 +1690,7 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             Instruction::CallMethod {
                 component_address: EPOCH_MANAGER,
@@ -1644,7 +1699,6 @@ mod tests {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),
-                    owner_access_rule: AccessRule::AllowAll,
                 }),
             },
         );

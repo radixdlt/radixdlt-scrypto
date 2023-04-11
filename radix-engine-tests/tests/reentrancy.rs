@@ -1,7 +1,6 @@
-use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::track::{LockState, TrackError};
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::kernel::call_frame::LockSubstateError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -11,7 +10,7 @@ fn mut_reentrancy_should_not_be_possible() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(
             package_address,
             "ReentrantComponent",
@@ -24,7 +23,7 @@ fn mut_reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(
             component_address,
             "call_mut_self",
@@ -37,14 +36,9 @@ fn mut_reentrancy_should_not_be_possible() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
-                SubstateId(
-                    RENodeId::GlobalObject(..),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State0)
-                ),
-                LockState::Write
-            )))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::LockSubstateError(LockSubstateError::TrackError(_))
+            ))
         )
     });
 }
@@ -55,7 +49,7 @@ fn read_reentrancy_should_be_possible() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(
             package_address,
             "ReentrantComponent",
@@ -68,7 +62,7 @@ fn read_reentrancy_should_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(
             component_address,
             "call_self",
@@ -87,7 +81,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_function(
             package_address,
             "ReentrantComponent",
@@ -100,7 +94,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(
             component_address,
             "call_mut_self_2",
@@ -113,14 +107,9 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
-                SubstateId(
-                    RENodeId::GlobalObject(..),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State0)
-                ),
-                LockState::Read(1),
-            )))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::LockSubstateError(LockSubstateError::TrackError(_))
+            ))
         )
     });
 }

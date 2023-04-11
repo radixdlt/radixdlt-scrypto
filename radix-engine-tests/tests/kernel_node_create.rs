@@ -11,7 +11,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "NodeCreate",
@@ -22,12 +22,14 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::SubstateValidationError(
-                SubstateValidationError::BlueprintNotFound(_)
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::SubstateValidationError(err)) => {
+            if let SubstateValidationError::BlueprintNotFound(_) = **err {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        _ => false,
     });
 }

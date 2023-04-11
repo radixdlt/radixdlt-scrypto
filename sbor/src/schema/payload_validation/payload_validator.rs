@@ -86,8 +86,8 @@ macro_rules! numeric_validation_match {
     ($numeric_validation: ident, $value: expr, $type: ident, $error_type: ident) => {{
         {
             let TerminalValueRef::$type(value) = *$value else {
-                                return Err(PayloadValidationError::SchemaInconsistency);
-                            };
+                                        return Err(PayloadValidationError::SchemaInconsistency);
+                                    };
             if !$numeric_validation.is_valid(value) {
                 return Err(TypeValidationError::$error_type {
                     required: *$numeric_validation,

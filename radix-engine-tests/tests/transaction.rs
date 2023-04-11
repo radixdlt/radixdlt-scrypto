@@ -16,7 +16,7 @@ fn test_manifest_with_non_existent_resource() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let non_existent_resource = ResourceAddress::Fungible([1u8; 26]);
+    let non_existent_resource = resource_address(EntityType::GlobalFungibleResource, 222);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -35,7 +35,7 @@ fn test_manifest_with_non_existent_resource() {
         matches!(
             e,
             RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-                KernelError::RENodeNotFound(..)
+                KernelError::NodeNotFound(..)
             ))
         )
     });
@@ -119,7 +119,7 @@ fn test_non_existent_blob_hash() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .add_instruction(Instruction::PublishPackage {
+        .add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef([0; 32]),
             schema: ManifestBlobRef([0; 32]),
             royalty_config: BTreeMap::new(),
@@ -182,8 +182,8 @@ fn test_faucet_drain_attempt_should_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
+        .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_method(
             account,
             "deposit_batch",

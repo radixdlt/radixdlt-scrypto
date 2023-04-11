@@ -409,6 +409,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fixedstr"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d14287b8bd26d2e2421bdd6235b421c507b1880687f1a71955bbd43d6bc9e8f9"
+
+[[package]]
 name = "generic-array"
 version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -487,9 +493,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "indexmap"
@@ -663,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -847,7 +850,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bitflags",
  "colored",
@@ -855,9 +858,13 @@ dependencies = [
  "moka",
  "native-sdk",
  "parity-wasm",
+ "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
+ "radix-engine-stores",
+ "resources-tracker-macro",
  "sbor",
+ "serde_json",
  "strum",
  "transaction",
  "utils",
@@ -868,7 +875,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-common"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bech32",
  "blake2",
@@ -881,16 +888,17 @@ dependencies = [
  "paste",
  "radix-engine-derive",
  "sbor",
+ "strum",
  "utils",
 ]
 
 [[package]]
 name = "radix-engine-constants"
-version = "0.9.0"
+version = "0.10.0"
 
 [[package]]
 name = "radix-engine-derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -900,7 +908,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bitflags",
  "hex",
@@ -908,19 +916,27 @@ dependencies = [
  "radix-engine-derive",
  "sbor",
  "scrypto-schema",
+ "serde_json",
  "strum",
  "utils",
 ]
 
 [[package]]
 name = "radix-engine-stores"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
+ "hex",
  "itertools",
- "radix-engine",
  "radix-engine-interface",
  "rocksdb",
  "sbor",
+]
+
+[[package]]
+name = "radix-engine-utils"
+version = "0.9.0"
+dependencies = [
+ "fixedstr",
 ]
 
 [[package]]
@@ -1041,6 +1057,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "resources-tracker-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "radix-engine-utils",
+ "syn",
+]
+
+[[package]]
 name = "rocksdb"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1088,7 +1114,7 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1100,7 +1126,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1108,9 +1134,10 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "const-sha1",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",
@@ -1133,7 +1160,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "scrypto-schema"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -1189,9 +1216,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.91"
+version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877c235533714907a8c2464236f5c4b2a17262ef1bd71f38f35ea592c8da6883"
+checksum = "1c533a59c9d8a93a09c6ab31f0fd5e5f4dd1b8fc9434804029839884765d04ea"
 dependencies = [
  "itoa",
  "ryu",
@@ -1225,7 +1252,7 @@ checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
 
 [[package]]
 name = "simulator"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "cargo_toml",
  "clap",
@@ -1406,7 +1433,7 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -1454,7 +1481,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

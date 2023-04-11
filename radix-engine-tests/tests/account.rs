@@ -1,22 +1,102 @@
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::account::{
+    AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
-fn can_withdraw_from_my_account_internal(use_virtual: bool) {
+#[test]
+fn can_securify_virtual_account() {
+    securify_account(true, true, true);
+}
+
+#[test]
+fn cannot_securify_virtual_account_without_key() {
+    securify_account(true, false, false);
+}
+
+#[test]
+fn cannot_securify_allocated_account() {
+    securify_account(false, true, false);
+}
+
+fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_account(use_virtual);
-    let (_, _, other_account) = test_runner.new_account(use_virtual);
+    let (key, _, account) = test_runner.new_account(is_virtual);
+
+    let (_, _, storing_account) = test_runner.new_account(true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            account,
+            ACCOUNT_SECURIFY_IDENT,
+            to_manifest_value(&AccountSecurifyInput {}),
+        )
+        .call_method(
+            storing_account,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let initial_proofs = if use_key {
+        vec![NonFungibleGlobalId::from_public_key(&key)]
+    } else {
+        vec![]
+    };
+    let receipt = test_runner.execute_manifest(manifest, initial_proofs);
+
+    // Assert
+    if expect_success {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+            )
+        });
+    }
+}
+
+#[test]
+fn can_withdraw_from_my_allocated_account() {
+    can_withdraw_from_my_account_internal(|test_runner| {
+        let (public_key, _, account) = test_runner.new_account(false);
+        (public_key, account)
+    });
+}
+
+#[test]
+fn can_withdraw_from_my_virtual_account() {
+    can_withdraw_from_my_account_internal(|test_runner| {
+        let (public_key, _, account) = test_runner.new_account(true);
+        (public_key, account)
+    });
+}
+
+fn can_withdraw_from_my_account_internal<F>(new_account: F)
+where
+    F: FnOnce(&mut TestRunner) -> (EcdsaSecp256k1PublicKey, ComponentAddress),
+{
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, account) = new_account(&mut test_runner);
+    let (_, _, other_account) = test_runner.new_account(true);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
-            "deposit_batch",
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -45,16 +125,6 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     );
 }
 
-#[test]
-fn can_withdraw_from_my_allocated_account() {
-    can_withdraw_from_my_account_internal(false);
-}
-
-#[test]
-fn can_withdraw_from_my_virtual_account() {
-    can_withdraw_from_my_account_internal(true);
-}
-
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -67,7 +137,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10.into(), resource_address, 1.into())
         .call_method(
             other_account,
-            "deposit_batch",
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -149,11 +219,30 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    let result = receipt.expect_commit_success();
+
+    let vault_id = test_runner
+        .get_component_vaults(account, RADIX_TOKEN)
+        .first()
+        .cloned()
+        .unwrap();
     assert_eq!(
-        1,
-        aggregate_resource_changes(receipt.execution_trace.resource_changes.clone()).len()
-    ); // Just the lock fee
+        receipt.execution_trace.resource_changes,
+        indexmap!(
+            0 => vec![ResourceChange {
+                node_id: account.into(),
+                vault_id,
+                resource_address: RADIX_TOKEN,
+                amount: - result.fee_summary.total_execution_cost_xrd - dec!("1")
+            }],
+            2 => vec![ResourceChange {
+                node_id: account.into(),
+                vault_id,
+                resource_address: RADIX_TOKEN,
+                amount: dec!("1")
+            }],
+        )
+    );
 }
 
 #[test]
@@ -178,37 +267,6 @@ fn assert_resource_changes_for_transfer(
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.node_id == RENodeId::GlobalObject(target_account.into())
+            && r.node_id == target_account.into()
             && r.amount == Decimal::from(transfer_amount)));
-}
-
-fn aggregate_resource_changes(
-    resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-) -> Vec<ResourceChange> {
-    let mut aggregate = index_map_new::<(RENodeId, ObjectId, ResourceAddress), Decimal>();
-    for ResourceChange {
-        node_id,
-        vault_id,
-        amount,
-        resource_address,
-    } in resource_changes
-        .into_iter()
-        .flat_map(|(_, rc)| rc)
-        .into_iter()
-    {
-        *aggregate
-            .entry((node_id, vault_id, resource_address))
-            .or_default() += amount;
-    }
-    aggregate
-        .into_iter()
-        .map(
-            |((node_id, vault_id, resource_address), amount)| ResourceChange {
-                node_id,
-                vault_id,
-                resource_address,
-                amount,
-            },
-        )
-        .collect()
 }

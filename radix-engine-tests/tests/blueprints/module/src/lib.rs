@@ -45,6 +45,7 @@ mod component_module {
                     ACCESS_RULES_CREATE_IDENT,
                     scrypto_encode(&AccessRulesCreateInput {
                         access_rules: AccessRulesConfig::new(),
+                        child_blueprint_rules: BTreeMap::new(),
                     })
                     .unwrap(),
                 )
@@ -53,16 +54,16 @@ mod component_module {
 
             let address = ScryptoEnv
                 .globalize(
-                    RENodeId::Object(component.component.0),
+                    *component.component.0.as_node_id(),
                     btreemap!(
-                        NodeModuleId::AccessRules => metadata.id(),
-                        NodeModuleId::Metadata => royalty.id(),
-                        NodeModuleId::ComponentRoyalty => access_rules.id(),
+                        SysModuleId::AccessRules => metadata.0,
+                        SysModuleId::Metadata => royalty.0,
+                        SysModuleId::Royalty => access_rules.0,
                     ),
                 )
                 .unwrap();
 
-            address.into()
+            ComponentAddress::new_unchecked(address.into())
         }
     }
 }

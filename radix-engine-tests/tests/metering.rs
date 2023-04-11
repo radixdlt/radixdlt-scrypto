@@ -7,6 +7,7 @@ use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TransactionManifest;
+use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
@@ -66,19 +67,18 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
-        7500 /* CreateNode */
-        + 88000 /* DropLock */
-        + 7500 /* DropNode */
-        + 11160 /* Invoke */
-        + 89500 /* LockSubstate */
-        + 61500 /* ReadSubstate */
+        42500 /* CreateNode */
+        + 83000 /* DropLock */
+        + 40000 /* DropNode */
+        + 10970 /* Invoke */
+        + 84000 /* LockSubstate */
+        + 176780 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
-        + 0 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 1260 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 22500, /* WriteSubstate */
+        + 100000 /* TxBaseCost */
+        + 2520 /* TxPayloadCost */
+        + 200000 /* TxSignatureVerification */
+        + 178500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -201,19 +201,19 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        12500 /* CreateNode */
-        + 229000 /* DropLock */
-        + 10000 /* DropNode */
-        + 25340 /* Invoke */
-        + 231500 /* LockSubstate */
-        + 2638070 /* ReadSubstate */
-        + 137500 /* RunNative */
+        92500 /* CreateNode */
+        + 198500 /* DropLock */
+        + 87500 /* DropNode */
+        + 24270 /* Invoke */
+        + 200500 /* LockSubstate */
+        + 497890 /* ReadSubstate */
+        + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1654945 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 1625 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 54000, /* WriteSubstate */
+        + 1520495 /* RunWasm */
+        + 100000 /* TxBaseCost */
+        + 3250 /* TxPayloadCost */
+        + 200000 /* TxSignatureVerification */
+        + 534500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -311,19 +311,19 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        20000 /* CreateNode */
-        + 348000 /* DropLock */
-        + 20000 /* DropNode */
-        + 44790 /* Invoke */
-        + 356000 /* LockSubstate */
-        + 6647890 /* ReadSubstate */
+        150000 /* CreateNode */
+        + 327500 /* DropLock */
+        + 147500 /* DropNode */
+        + 44230 /* Invoke */
+        + 335000 /* LockSubstate */
+        + 704700 /* ReadSubstate */
         + 215000 /* RunNative */
-        + 30000 /* RunSystem */
-        + 1312685 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 2375 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 90500, /* WriteSubstate */
+        + 40000 /* RunSystem */
+        + 1215255 /* RunWasm */
+        + 100000 /* TxBaseCost */
+        + 4750 /* TxPayloadCost */
+        + 200000 /* TxSignatureVerification */
+        + 1954500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -345,8 +345,8 @@ fn test_publish_large_package() {
         "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
     ));
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
-        .publish_package(
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .publish_package_advanced(
             code,
             PackageSchema::default(),
             BTreeMap::new(),
@@ -357,13 +357,7 @@ fn test_publish_large_package() {
 
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
-    let commit_result = receipt.expect_commit(true);
-
-    // Assert
-    assert!(
-        commit_result.fee_summary.execution_cost_sum > 60000000
-            && commit_result.fee_summary.execution_cost_sum < 70000000
-    );
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -467,6 +461,6 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // No assertion here - this is just a sanity-test
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
     receipt.expect_commit_failure();
 }

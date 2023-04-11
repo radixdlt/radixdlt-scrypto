@@ -18,6 +18,8 @@ pub mod math;
 pub mod network;
 /// RE time library.
 pub mod time;
+/// RE types
+pub mod types;
 
 mod macros;
 pub use macros::*;

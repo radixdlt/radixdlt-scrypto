@@ -1,6 +1,6 @@
 use crate::kernel::module::KernelModule;
 use crate::types::*;
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::types::*;
 
 #[derive(Debug, Default, Clone)]
 pub struct EventsModule(Vec<(EventTypeIdentifier, Vec<u8>)>);

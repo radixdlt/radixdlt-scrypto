@@ -167,9 +167,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 })*
 
                 let return_data = BlueprintSchema {
+                    parent: None,
                     schema: generate_full_schema(aggregator),
                     substates,
                     functions,
+                    virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema
                 };
 
@@ -308,7 +310,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let component_id: ::scrypto::prelude::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                        let component_id: ::scrypto::prelude::NodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
@@ -700,7 +702,7 @@ mod tests {
                         ::scrypto::set_up_panic_hook();
 
                         let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                        let component_id: ::scrypto::prelude::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                        let component_id: ::scrypto::prelude::NodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
                         let state: DataRef<Test> = component_data.get();
                         let return_data = Test::x(state.deref(), input.arg0);
@@ -750,9 +752,11 @@ mod tests {
                         );
                         let mut event_schema = BTreeMap::new();
                         let return_data = BlueprintSchema {
+                            parent: None,
                             schema: generate_full_schema(aggregator),
                             substates,
                             functions,
+                            virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

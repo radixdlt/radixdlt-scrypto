@@ -1,14 +1,14 @@
-use super::method_authorization::{
+use super::authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     NON_FUNGIBLE_LOCAL_ID_ID, RESOURCE_ADDRESS_ID,
 };
 use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::types::*;
 use sbor::basic_well_known_types::UNIT_ID;
 
 fn soft_to_hard_decimal(

@@ -13,12 +13,12 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(RENodeId::GlobalObject(CLOCK.into()));
+    pre_allocated_ids.insert(CLOCK.into());
     let instructions = vec![Instruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(CLOCK.to_array_without_entity_id()),
+        args: manifest_args!(Into::<[u8; 27]>::into(CLOCK)),
     }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -28,7 +28,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![AuthAddresses::system_role()]),
+        .get_executable(btreeset![AuthAddresses::system_role()]),
     );
 
     // Assert
@@ -42,12 +42,12 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(RENodeId::GlobalObject(CLOCK.into()));
+    pre_allocated_ids.insert(CLOCK.into());
     let instructions = vec![Instruction::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(CLOCK.to_array_without_entity_id()),
+        args: manifest_args!(Into::<[u8; 27]>::into(CLOCK)),
     }];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -57,7 +57,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(vec![]),
+        .get_executable(btreeset![]),
     );
 
     // Assert
@@ -74,7 +74,7 @@ fn set_current_time_should_fail_without_validator_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "ClockTest",
@@ -101,7 +101,7 @@ fn validator_can_set_current_time() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "ClockTest",
@@ -133,7 +133,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "ClockTest",
@@ -156,7 +156,7 @@ fn test_clock_comparison_methods_against_the_current_time() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "ClockTest",
@@ -184,7 +184,7 @@ fn test_date_time_conversions() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "ClockTest",

@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::transaction_processor::RuntimeValidation
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::network::NetworkDefinition;
-use sbor::rust::collections::{BTreeSet, HashSet};
+use sbor::rust::collections::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
@@ -277,13 +277,14 @@ impl NotarizedTransactionValidator {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::PublishPackage { .. } => {}
                 Instruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::RecallResource { .. }
+                Instruction::PublishPackage { .. }
+                | Instruction::PublishPackageAdvanced { .. }
+                | Instruction::RecallResource { .. }
                 | Instruction::SetMetadata { .. }
                 | Instruction::RemoveMetadata { .. }
                 | Instruction::SetPackageRoyaltyConfig { .. }
@@ -293,8 +294,7 @@ impl NotarizedTransactionValidator {
                 | Instruction::SetMethodAccessRule { .. }
                 | Instruction::MintFungible { .. }
                 | Instruction::MintNonFungible { .. }
-                | Instruction::MintUuidNonFungible { .. }
-                | Instruction::AssertAccessRule { .. } => {}
+                | Instruction::MintUuidNonFungible { .. } => {}
             }
         }
 
@@ -349,7 +349,7 @@ impl NotarizedTransactionValidator {
         }
 
         // verify intent signature
-        let mut signers = HashSet::new();
+        let mut signers = index_set_new();
         let intent_payload = transaction.signed_intent.intent.to_bytes()?;
         for sig in &transaction.signed_intent.intent_signatures {
             let public_key = recover(&intent_payload, sig)

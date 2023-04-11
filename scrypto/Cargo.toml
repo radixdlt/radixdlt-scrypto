@@ -1,6 +1,6 @@
 [package]
 name = "scrypto"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 
 [dependencies]
@@ -26,9 +26,6 @@ alloc = ["hex/alloc", "sbor/alloc", "scrypto-schema/alloc", "scrypto-derive/allo
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
-
-# Enable serde derives
-serde = ["sbor/serde", "scrypto-schema/serde", "serde/derive", "radix-engine-interface/serde"]
 
 # Disable schema gen in the output WASM.
 no-schema = ["scrypto-derive/no-schema"]

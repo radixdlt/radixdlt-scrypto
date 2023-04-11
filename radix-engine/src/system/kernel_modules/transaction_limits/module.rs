@@ -1,11 +1,9 @@
+use crate::kernel::actor::Actor;
 use crate::types::*;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
-    kernel::{
-        actor::Actor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
-        module::KernelModule,
-    },
+    kernel::{call_frame::CallFrameUpdate, kernel_api::KernelModuleApi, module::KernelModule},
     types::Vec,
 };
 
@@ -63,9 +61,9 @@ pub struct TransactionLimitsModule {
     /// Internal stack of data for each call frame.
     call_frames_stack: Vec<CallFrameLimitInfo>,
     /// Substate store read count.
-    substate_store_read_count: usize,
+    substate_db_read_count: usize,
     /// Substate store write count.
-    substate_store_write_count: usize,
+    substate_db_write_count: usize,
 }
 
 impl TransactionLimitsModule {
@@ -73,8 +71,8 @@ impl TransactionLimitsModule {
         TransactionLimitsModule {
             limits_config,
             call_frames_stack: Vec::with_capacity(8),
-            substate_store_read_count: 0,
-            substate_store_write_count: 0,
+            substate_db_read_count: 0,
+            substate_db_write_count: 0,
         }
     }
 
@@ -142,13 +140,13 @@ impl TransactionLimitsModule {
             }
         }
 
-        if self.substate_store_read_count > self.limits_config.max_substate_read_count {
+        if self.substate_db_read_count > self.limits_config.max_substate_read_count {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxSubstateReadCountExceeded,
                 ),
             ))
-        } else if self.substate_store_write_count > self.limits_config.max_substate_write_count {
+        } else if self.substate_db_write_count > self.limits_config.max_substate_write_count {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxSubstateWriteCountExceeded,
@@ -208,7 +206,7 @@ impl KernelModule for TransactionLimitsModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &Option<Actor>,
+        _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -237,7 +235,7 @@ impl KernelModule for TransactionLimitsModule {
         let tlimit = &mut api.kernel_get_module_state().transaction_limits;
 
         // Increase read coutner.
-        tlimit.substate_store_read_count += 1;
+        tlimit.substate_db_read_count += 1;
 
         // Validate
         tlimit.validate_substates(Some(size), None)
@@ -251,7 +249,7 @@ impl KernelModule for TransactionLimitsModule {
         let tlimit = &mut api.kernel_get_module_state().transaction_limits;
 
         // Increase write coutner.
-        tlimit.substate_store_write_count += 1;
+        tlimit.substate_db_write_count += 1;
 
         // Validate
         tlimit.validate_substates(None, Some(size))

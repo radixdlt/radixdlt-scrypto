@@ -1,9 +1,39 @@
 use super::*;
+use crate::address::Bech32Encoder;
 use crate::*;
 use sbor::representations::*;
 use sbor::rust::prelude::*;
 use sbor::traversal::*;
 use utils::ContextualDisplay;
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ScryptoValueDisplayContext<'a> {
+    pub bech32_encoder: Option<&'a Bech32Encoder>,
+}
+
+impl<'a> ScryptoValueDisplayContext<'a> {
+    pub fn no_context() -> Self {
+        Self {
+            bech32_encoder: None,
+        }
+    }
+
+    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self { bech32_encoder }
+    }
+}
+
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_optional_bech32(Some(self))
+    }
+}
+
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_optional_bech32(self)
+    }
+}
 
 impl<'a> CustomDisplayContext<'a> for ScryptoValueDisplayContext<'a> {
     type CustomTypeExtension = ScryptoCustomTypeExtension;
@@ -18,11 +48,11 @@ impl FormattableCustomTypeExtension for ScryptoCustomTypeExtension {
         value: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> Result<(), fmt::Error> {
         match &value.0 {
-            ScryptoCustomValue::Address(value) => {
-                write!(f, "\"{}\"", value.display(context.bech32_encoder))?;
+            ScryptoCustomValue::Reference(value) => {
+                write!(f, "\"{}\"", value.0.display(context.bech32_encoder))?;
             }
             ScryptoCustomValue::Own(value) => {
-                write!(f, "\"{}\"", hex::encode(value.to_vec()))?;
+                write!(f, "\"{}\"", value.0.display(context.bech32_encoder))?;
             }
             ScryptoCustomValue::Decimal(value) => {
                 write!(f, "\"{}\"", value)?;
@@ -32,9 +62,6 @@ impl FormattableCustomTypeExtension for ScryptoCustomTypeExtension {
             }
             ScryptoCustomValue::NonFungibleLocalId(value) => {
                 write!(f, "\"{}\"", value)?;
-            }
-            ScryptoCustomValue::InternalRef(value) => {
-                write!(f, "\"{}\"", hex::encode(value.to_vec()))?;
             }
         }
         Ok(())
@@ -46,6 +73,7 @@ mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
     use crate::data::scrypto::model::*;
+    use crate::types::NodeId;
 
     #[test]
     fn test_rustlike_string_format_with_network() {
@@ -55,12 +83,10 @@ mod tests {
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Address(Address::Resource(
-                        ResourceAddress::Fungible([0; ADDRESS_HASH_LENGTH]),
-                    )),
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([0; NodeId::LENGTH]))),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Own(Own::Vault([0; OBJECT_ID_LENGTH])),
+                    value: ScryptoCustomValue::Own(Own(NodeId([0; NodeId::LENGTH]))),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -89,13 +115,10 @@ mod tests {
                         NonFungibleLocalId::uuid(0x1f52cb1e_86c4_47ae_9847_9cdb14662ebd).unwrap(),
                     ),
                 },
-                Value::Custom {
-                    value: ScryptoCustomValue::InternalRef(InternalRef([0; OBJECT_ID_LENGTH])),
-                },
             ],
         };
 
-        let expected = "Tuple(Address(\"resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k\"), Own(\"0200000000000000000000000000000000000000000000000000000000000000\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}\"), Reference(\"00000000000000000000000000000000000000000000000000000000000000\"))";
+        let expected = "Tuple(Reference(\"package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq57ks9j\"), Own(\"package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq57ks9j\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}\"))";
 
         let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
 

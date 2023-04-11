@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::NonIterMap;
 
 macro_rules! known_enum {
     ($map: expr, enum $name:ident { $($variant:ident = $id:expr;)* }) => {
@@ -12,8 +12,8 @@ macro_rules! known_enum {
 // TODO: we need a final sanity check before mainnet launch!
 
 lazy_static! {
-    pub static ref KNOWN_ENUM_DISCRIMINATORS: HashMap<&'static str, u8> = {
-        let mut m = HashMap::new();
+    pub static ref KNOWN_ENUM_DISCRIMINATORS: NonIterMap<&'static str, u8> = {
+        let mut m = NonIterMap::new();
 
         // Protocol Buffer syntax
 
@@ -81,13 +81,12 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum NodeModuleId {
-                SELF = 0;
-                TypeInfo = 1;
+            enum TypedModuleId {
+                TypeInfo = 0;
+                ObjectState = 1;
                 Metadata = 2;
-                AccessRules = 3;
-                AccessRules1 = 4;
-                ComponentRoyalty = 5;
+                Royalty = 3;
+                AccessRules = 4;
             }
         );
 

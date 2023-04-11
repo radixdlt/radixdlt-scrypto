@@ -3,10 +3,9 @@ use crate::errors::ApplicationError;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node_init::ModuleInit;
+use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
@@ -27,7 +26,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::PackageSchema;
-use transaction::data::to_address;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
@@ -56,7 +54,7 @@ pub struct TransactionProcessorBlueprint;
 
 impl TransactionProcessorBlueprint {
     pub(crate) fn run<Y>(
-        input: IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -72,28 +70,30 @@ impl TransactionProcessorBlueprint {
         }
 
         // Create a worktop
-        let worktop_node_id = api.kernel_allocate_node_id(AllocateEntityType::Object)?;
+        let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             worktop_node_id,
-            RENodeInit::Object(btreemap!(
-                SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
+            NodeInit::Object(btreemap!(
+                WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-                    package_address: RESOURCE_MANAGER_PACKAGE,
-                    blueprint_name: WORKTOP_BLUEPRINT.to_string(),
-                    global: false,
-                })
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
+                        global: false,
+                        type_parent: None,
+                    })
+                ).to_substates()
             ),
         )?;
-        let worktop = Worktop(worktop_node_id.into());
+        let worktop = Worktop(Own(worktop_node_id));
 
         // Decode instructions
         let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
 
         // Index blobs
         // TODO: defer blob hashing to post fee payments as it's computationally costly
-        let mut blobs_by_hash = HashMap::new();
+        let mut blobs_by_hash = NonIterMap::new();
         for blob in input.blobs.as_ref() {
             blobs_by_hash.insert(hash(blob), blob);
         }
@@ -213,8 +213,8 @@ impl TransactionProcessorBlueprint {
                     // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
                     // the former will drop all named proofs before clearing the auth zone.
 
-                    for (_, real_id) in processor.proof_id_mapping.drain() {
-                        let proof = Proof(real_id);
+                    for (_, real_id) in processor.proof_id_mapping.drain(..) {
+                        let proof = Proof(Own(real_id));
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     ComponentAuthZone::sys_clear(api)?;
@@ -261,7 +261,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(component_address.into()),
+                        component_address.as_node_id(),
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -272,6 +272,43 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::PublishPackage {
+                    code,
+                    schema,
+                    royalty_config,
+                    metadata,
+                } => {
+                    let code = processor.get_blob(&code)?;
+                    let schema = processor.get_blob(&schema)?;
+                    let schema = scrypto_decode::<PackageSchema>(schema).map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::InvalidPackageSchema(e),
+                        ))
+                    })?;
+
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
+                    let result = api.call_function(
+                        PACKAGE_PACKAGE,
+                        PACKAGE_BLUEPRINT,
+                        PACKAGE_PUBLISH_WASM_IDENT,
+                        scrypto_encode(&PackagePublishWasmInput {
+                            code: code.clone(),
+                            schema: schema.clone(),
+                            royalty_config: royalty_config.clone(),
+                            metadata: metadata.clone(),
+                        })
+                        .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
+                Instruction::PublishPackageAdvanced {
                     code,
                     schema,
                     royalty_config,
@@ -290,8 +327,8 @@ impl TransactionProcessorBlueprint {
                     let result = api.call_function(
                         PACKAGE_PACKAGE,
                         PACKAGE_BLUEPRINT,
-                        PACKAGE_PUBLISH_WASM_IDENT,
-                        scrypto_encode(&PackagePublishWasmInput {
+                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+                        scrypto_encode(&PackagePublishWasmAdvancedInput {
                             package_address: None,
                             code: code.clone(),
                             schema: schema.clone(),
@@ -331,7 +368,7 @@ impl TransactionProcessorBlueprint {
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(resource_address.into()),
+                        resource_address.as_node_id(),
                         FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
                     )?;
@@ -355,7 +392,7 @@ impl TransactionProcessorBlueprint {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(resource_address.into()),
+                        resource_address.as_node_id(),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -377,7 +414,7 @@ impl TransactionProcessorBlueprint {
                     let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
                     let rtn = api.call_method(
-                        RENodeId::GlobalObject(resource_address.into()),
+                        resource_address.as_node_id(),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -390,7 +427,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
-                        RENodeId::Object(vault_id),
+                        vault_id.as_node_id(),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -406,11 +443,10 @@ impl TransactionProcessorBlueprint {
                     key,
                     value,
                 } => {
-                    let address = to_address(entity_address);
-                    let receiver = address.into();
+                    let receiver = entity_address.into();
                     let result = api.call_module_method(
-                        receiver,
-                        NodeModuleId::Metadata,
+                        &receiver,
+                        SysModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
@@ -432,11 +468,10 @@ impl TransactionProcessorBlueprint {
                     entity_address,
                     key,
                 } => {
-                    let address = to_address(entity_address);
-                    let receiver = address.into();
+                    let receiver = entity_address.into();
                     let result = api.call_module_method(
-                        receiver,
-                        NodeModuleId::Metadata,
+                        &receiver,
+                        SysModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
@@ -455,8 +490,8 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::SELF,
+                        package_address.as_node_id(),
+                        SysModuleId::ObjectState,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -478,8 +513,8 @@ impl TransactionProcessorBlueprint {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(component_address.into()),
-                        NodeModuleId::ComponentRoyalty,
+                        component_address.as_node_id(),
+                        SysModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -498,8 +533,8 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::SELF,
+                        package_address.as_node_id(),
+                        SysModuleId::ObjectState,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -515,8 +550,8 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalObject(component_address.into()),
-                        NodeModuleId::ComponentRoyalty,
+                        component_address.as_node_id(),
+                        SysModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -535,14 +570,14 @@ impl TransactionProcessorBlueprint {
                     key,
                     rule,
                 } => {
-                    let address = to_address(entity_address);
-                    let receiver = address.into();
+                    let receiver = entity_address.into();
                     let result = api.call_module_method(
-                        receiver,
-                        NodeModuleId::AccessRules,
+                        &receiver,
+                        SysModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            key: key.clone(),
+                            object_key: ObjectKey::SELF,
+                            method_key: key.clone(),
                             rule: AccessRuleEntry::AccessRule(rule.clone()),
                         })
                         .unwrap(),
@@ -557,15 +592,6 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::AssertAccessRule { access_rule } => {
-                    let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule, api)?;
-
-                    let result = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
             };
             outputs.push(result);
         }
@@ -577,17 +603,17 @@ impl TransactionProcessorBlueprint {
 }
 
 struct TransactionProcessor<'blob> {
-    proof_id_mapping: HashMap<ManifestProof, ObjectId>,
-    bucket_id_mapping: HashMap<ManifestBucket, ObjectId>,
+    proof_id_mapping: IndexMap<ManifestProof, NodeId>,
+    bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>,
+    blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>,
 }
 
 impl<'blob> TransactionProcessor<'blob> {
-    fn new(blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>) -> Self {
+    fn new(blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>) -> Self {
         Self {
-            proof_id_mapping: HashMap::new(),
-            bucket_id_mapping: HashMap::new(),
+            proof_id_mapping: index_map_new(),
+            bucket_id_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             blobs_by_hash,
         }
@@ -599,7 +625,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 TransactionProcessorError::BucketNotFound(bucket_id.0),
             )),
         )?;
-        Ok(Bucket(real_id))
+        Ok(Bucket(Own(real_id)))
     }
 
     fn take_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
@@ -611,7 +637,7 @@ impl<'blob> TransactionProcessor<'blob> {
                         TransactionProcessorError::BucketNotFound(bucket_id.0),
                     ),
                 ))?;
-        Ok(Bucket(real_id))
+        Ok(Bucket(Own(real_id)))
     }
 
     fn get_blob(&mut self, blob_ref: &ManifestBlobRef) -> Result<&'blob Vec<u8>, RuntimeError> {
@@ -636,7 +662,7 @@ impl<'blob> TransactionProcessor<'blob> {
                         TransactionProcessorError::ProofNotFound(proof_id.0),
                     ),
                 ))?;
-        Ok(Proof(real_id))
+        Ok(Proof(Own(real_id)))
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
@@ -648,7 +674,7 @@ impl<'blob> TransactionProcessor<'blob> {
                         TransactionProcessorError::ProofNotFound(proof_id.0),
                     ),
                 ))?;
-        Ok(Proof(real_id))
+        Ok(Proof(Own(real_id)))
     }
 
     fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
@@ -657,7 +683,8 @@ impl<'blob> TransactionProcessor<'blob> {
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.bucket_id_mapping.insert(new_id.clone(), bucket.0);
+        self.bucket_id_mapping
+            .insert(new_id.clone(), bucket.0.into());
         Ok(new_id)
     }
 
@@ -667,7 +694,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.proof_id_mapping.insert(new_id.clone(), proof.0);
+        self.proof_id_mapping.insert(new_id.clone(), proof.0.into());
         Ok(new_id)
     }
 
@@ -681,14 +708,17 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            let (package_address, blueprint) = api.get_object_type_info(*owned_node)?;
-            match (package_address, blueprint.as_str()) {
+            let info = api.get_object_info(owned_node)?;
+            match (
+                info.blueprint.package_address,
+                info.blueprint.blueprint_name.as_str(),
+            ) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
-                    let bucket = Bucket(owned_node.clone().into());
+                    let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }
                 (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                    let proof = Proof(owned_node.clone().into());
+                    let proof = Proof(Own(owned_node.clone()));
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
                 _ => {}
@@ -757,22 +787,22 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     for TransactionProcessorWithApi<'blob, 'a, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
-        self.processor.take_bucket(&b).map(|x| Own::Bucket(x.0))
+        self.processor.take_bucket(&b).map(|x| x.0)
     }
 
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, RuntimeError> {
-        self.processor.take_proof(&p).map(|x| Own::Proof(x.0))
+        self.processor.take_proof(&p).map(|x| x.0)
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {
                 let buckets = self.worktop.sys_drain(self.api)?;
-                Ok(buckets.into_iter().map(|b| Own::Bucket(b.0)).collect())
+                Ok(buckets.into_iter().map(|b| b.0).collect())
             }
             ManifestExpression::EntireAuthZone => {
                 let proofs = ComponentAuthZone::sys_drain(self.api)?;
-                Ok(proofs.into_iter().map(|p| Own::Proof(p.0)).collect())
+                Ok(proofs.into_iter().map(|p| p.0).collect())
             }
         }
     }

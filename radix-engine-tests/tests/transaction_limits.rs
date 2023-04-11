@@ -27,7 +27,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
         AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -54,7 +54,7 @@ fn transaction_limit_memory_exceeded() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -96,7 +96,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -106,7 +106,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
         .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(vec![]);
+    let executable = transactions.get_executable(btreeset![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate reads limit to avoid Fee limit transaction result
@@ -133,7 +133,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -143,7 +143,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
         .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable = transactions.get_executable(vec![]);
+    let executable = transactions.get_executable(btreeset![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     // lower substate writes limit to avoid Fee limit transaction result
@@ -180,7 +180,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     ));
     assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
     let manifest = ManifestBuilder::new()
-        .publish_package(
+        .publish_package_advanced(
             code,
             PackageSchema::default(),
             BTreeMap::new(),
@@ -222,7 +222,7 @@ fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
     let size = scrypto_args!(data).len()
         + blueprint_name.len()
         + function_name.len()
-        + package_address.size();
+        + package_address.as_ref().len();
 
     match err {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(

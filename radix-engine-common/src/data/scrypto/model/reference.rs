@@ -1,27 +1,31 @@
-use super::OBJECT_ID_LENGTH;
-use crate::data::scrypto::ScryptoCustomValueKind;
+use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::*;
+use crate::types::NodeId;
 use crate::*;
-#[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
-use sbor::rust::prelude::*;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct InternalRef(pub [u8; OBJECT_ID_LENGTH]);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Reference(pub NodeId);
 
-impl InternalRef {
+impl Reference {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
+
+    pub fn as_node_id(&self) -> &NodeId {
+        &self.0
+    }
 }
 
-impl TryFrom<&[u8]> for InternalRef {
+impl TryFrom<&[u8]> for Reference {
     type Error = ParseReferenceError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            OBJECT_ID_LENGTH => Ok(Self(copy_u8_array(slice))),
+            NodeId::LENGTH => Ok(Self(NodeId(copy_u8_array(slice)))),
             _ => Err(ParseReferenceError::InvalidLength(slice.len())),
         }
     }
@@ -51,9 +55,25 @@ impl fmt::Display for ParseReferenceError {
 //========
 
 well_known_scrypto_custom_type!(
-    InternalRef,
+    Reference,
     ScryptoCustomValueKind::Reference,
     Type::Reference,
-    OBJECT_ID_LENGTH,
+    NodeId::LENGTH,
     REFERENCE_ID
 );
+
+//==================
+// binary (manifest)
+//==================
+
+manifest_type!(Reference, ManifestCustomValueKind::Address, NodeId::LENGTH);
+
+//======
+// text
+//======
+
+impl fmt::Debug for Reference {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "Reference({})", hex::encode(&self.0))
+    }
+}

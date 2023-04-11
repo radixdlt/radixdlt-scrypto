@@ -1,10 +1,10 @@
-use crate::data::{to_address, to_decimal, to_non_fungible_local_id, to_precise_decimal};
+use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
 use radix_engine_interface::data::manifest::{
     model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
-use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::types::ResourceAddress;
 use radix_engine_interface::{address::Bech32Encoder, blueprints::resource::NonFungibleGlobalId};
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::NonIterMap;
 use sbor::rust::fmt;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -12,8 +12,8 @@ use utils::ContextualDisplay;
 #[derive(Clone, Copy, Debug)]
 pub struct ManifestValueDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
-    pub bucket_names: Option<&'a HashMap<ManifestBucket, String>>,
-    pub proof_names: Option<&'a HashMap<ManifestProof, String>>,
+    pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
+    pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
 }
 
 impl<'a> ManifestValueDisplayContext<'a> {
@@ -35,8 +35,8 @@ impl<'a> ManifestValueDisplayContext<'a> {
 
     pub fn with_bech32_and_names(
         bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_names: &'a HashMap<ManifestBucket, String>,
-        proof_names: &'a HashMap<ManifestProof, String>,
+        bucket_names: &'a NonIterMap<ManifestBucket, String>,
+        proof_names: &'a NonIterMap<ManifestProof, String>,
     ) -> Self {
         Self {
             bech32_encoder,
@@ -103,22 +103,24 @@ pub fn format_manifest_value<F: fmt::Write>(
             if fields.len() == 2 {
                 if let (
                     ManifestValue::Custom {
-                        value: ManifestCustomValue::Address(ManifestAddress::Resource(address)),
+                        value: ManifestCustomValue::Address(address),
                     },
                     ManifestValue::Custom {
                         value: ManifestCustomValue::NonFungibleLocalId(id),
                     },
                 ) = (&fields[0], &fields[1])
                 {
-                    let global_id = NonFungibleGlobalId::new(
-                        ResourceAddress::try_from(address.as_slice()).unwrap(),
-                        to_non_fungible_local_id(id.clone()),
-                    );
-                    return write!(
-                        f,
-                        "NonFungibleGlobalId(\"{}\")",
-                        global_id.display(context.bech32_encoder)
-                    );
+                    if let Ok(resource_address) = ResourceAddress::try_from(address.0.as_ref()) {
+                        let global_id = NonFungibleGlobalId::new(
+                            resource_address,
+                            to_non_fungible_local_id(id.clone()),
+                        );
+                        return write!(
+                            f,
+                            "NonFungibleGlobalId(\"{}\")",
+                            global_id.display(context.bech32_encoder)
+                        );
+                    }
                 }
             }
 
@@ -290,16 +292,14 @@ pub fn format_custom_value<F: fmt::Write>(
     match value {
         ManifestCustomValue::Address(value) => {
             f.write_str("Address(\"")?;
-            match to_address(value.clone()) {
-                Address::Package(a) => {
-                    a.format(f, context.bech32_encoder).unwrap();
+            if let Some(encoder) = context.bech32_encoder {
+                if let Ok(bech32) = encoder.encode(value.0.as_ref()) {
+                    f.write_str(&bech32)?;
+                } else {
+                    f.write_str(&hex::encode(value.0.as_ref()))?;
                 }
-                Address::Component(a) => {
-                    a.format(f, context.bech32_encoder).unwrap();
-                }
-                Address::Resource(a) => {
-                    a.format(f, context.bech32_encoder).unwrap();
-                }
+            } else {
+                f.write_str(&hex::encode(value.0.as_ref()))?;
             }
             f.write_str("\")")?;
         }
