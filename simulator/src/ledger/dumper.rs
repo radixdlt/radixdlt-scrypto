@@ -3,6 +3,7 @@ use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::node_substates::RuntimeSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
@@ -540,21 +541,54 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<FungibleResourceManagerSubstate> = substate_store
+    let runtime_substate = substate_store
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().into());
-    let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+        .map(|s| s.substate.to_runtime());
 
-    writeln!(
-        output,
-        "{}: {}",
-        "Total Supply".green().bold(),
-        resource_manager.total_supply
-    );
+    match runtime_substate {
+        Some(RuntimeSubstate::ResourceManager(resource_manager)) => {
+            writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
+            writeln!(
+                output,
+                "{}: {:?}",
+                "Divisibility".green().bold(),
+                resource_manager.divisibility
+            );
+            writeln!(
+                output,
+                "{}: {}",
+                "Total Supply".green().bold(),
+                resource_manager.total_supply
+            );
+        }
+        Some(RuntimeSubstate::NonFungibleResourceManager(resource_manager)) => {
+            writeln!(
+                output,
+                "{}: {}",
+                "Resource Type".green().bold(),
+                "Non-fungible"
+            );
+            writeln!(
+                output,
+                "{}: {:?}",
+                "ID Type".green().bold(),
+                resource_manager.id_type
+            );
+            writeln!(
+                output,
+                "{}: {}",
+                "Total Supply".green().bold(),
+                resource_manager.total_supply
+            );
+        }
+        _ => {
+            return Err(DisplayError::ResourceManagerNotFound);
+        }
+    };
+
     Ok(())
 }
