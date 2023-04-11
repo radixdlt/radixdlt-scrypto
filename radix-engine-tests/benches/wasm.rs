@@ -1,11 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::EntityType;
 use radix_engine::utils::extract_schema;
-use radix_engine::wasm::DefaultWasmEngine;
-use radix_engine::wasm::InstrumentedCode;
-use radix_engine::wasm::WasmEngine;
-use radix_engine::wasm::WasmMeteringConfig;
-use radix_engine::wasm::WasmValidator;
+use radix_engine::vm::wasm::DefaultWasmEngine;
+use radix_engine::vm::wasm::InstrumentedCode;
+use radix_engine::vm::wasm::WasmEngine;
+use radix_engine::vm::wasm::WasmMeteringConfig;
+use radix_engine::vm::wasm::WasmValidator;
 use radix_engine_common::types::package_address;
 use sbor::rust::sync::Arc;
 

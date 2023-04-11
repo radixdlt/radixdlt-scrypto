@@ -1,7 +1,7 @@
 use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::*;
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 
 // This file is supposed collect tests that help monitoring and debugging stack usage.
 
@@ -59,7 +59,7 @@ fn test_error_enum_sizes() {
     print_size!(KernelError);
     print_size!(CallFrameError);
     print_size!(SystemError);
-    print_size!(InterpreterError);
+    print_size!(SystemUpstreamError);
     print_size!(ModuleError);
     print_size!(ApplicationError);
     print_size!(AuthError);
@@ -70,7 +70,7 @@ fn test_error_enum_sizes() {
     check_size!(KernelError, 100);
     check_size!(CallFrameError, 100);
     check_size!(SystemError, 100);
-    check_size!(InterpreterError, 100);
+    check_size!(SystemUpstreamError, 100);
     check_size!(ModuleError, 100);
     check_size!(ApplicationError, 100);
     check_size!(AuthError, 100);

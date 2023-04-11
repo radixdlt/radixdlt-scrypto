@@ -7,7 +7,6 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -15,7 +14,8 @@ use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
+use crate::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
@@ -696,7 +696,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
 
 pub fn bootstrap<S, W>(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
 ) -> Option<TransactionReceipt>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
@@ -715,7 +715,7 @@ where
 
 pub fn bootstrap_with_genesis_data<S, W>(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     genesis_data: GenesisData,
     initial_epoch: u64,
     rounds_per_epoch: u64,

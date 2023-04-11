@@ -2,7 +2,7 @@ use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::ModuleError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;

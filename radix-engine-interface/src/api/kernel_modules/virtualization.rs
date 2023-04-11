@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::api::object_api::ObjectModuleId;
 use crate::ManifestSbor;
 use crate::ScryptoSbor;
 use radix_engine_common::data::scrypto::model::Own;
@@ -9,4 +9,4 @@ pub struct VirtualLazyLoadInput {
     pub id: [u8; 26],
 }
 
-pub type VirtualLazyLoadOutput = (Own, BTreeMap<SysModuleId, Own>);
+pub type VirtualLazyLoadOutput = BTreeMap<ObjectModuleId, Own>;

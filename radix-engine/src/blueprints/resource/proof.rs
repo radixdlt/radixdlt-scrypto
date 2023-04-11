@@ -1,4 +1,4 @@
-use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
@@ -203,7 +203,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofCloneInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -263,7 +263,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -300,7 +300,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -330,7 +330,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -347,7 +347,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ProofDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
         let proof = input.proof;
 

@@ -24,10 +24,23 @@ use strum::{EnumIter, FromRepr};
 )]
 pub enum SysModuleId {
     TypeInfo,
-    ObjectState,
     Metadata,
     Royalty,
     AccessRules,
+    ObjectTuple,
+    ObjectMap,
+}
+
+impl SysModuleId {
+    pub fn is_map(&self) -> bool {
+        match self {
+            SysModuleId::TypeInfo
+            | SysModuleId::Royalty
+            | SysModuleId::AccessRules
+            | SysModuleId::ObjectTuple => false,
+            SysModuleId::Metadata | SysModuleId::ObjectMap => true,
+        }
+    }
 }
 
 impl Into<ModuleId> for SysModuleId {

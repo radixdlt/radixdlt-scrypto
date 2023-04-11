@@ -7,30 +7,12 @@ use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct InMemorySubstateDatabase {
-    configs: BTreeMap<ModuleId, ModuleConfig>,
     substates: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
 impl InMemorySubstateDatabase {
     pub fn standard() -> Self {
         Self {
-            configs: btreemap!(
-                SysModuleId::TypeInfo.into() => ModuleConfig {
-                    iteration_enabled: false,
-                },
-                SysModuleId::ObjectState.into() => ModuleConfig {
-                    iteration_enabled: true,
-                },
-                SysModuleId::Metadata.into() => ModuleConfig {
-                    iteration_enabled: true,
-                },
-                SysModuleId::Royalty.into() => ModuleConfig {
-                    iteration_enabled: false,
-                },
-                SysModuleId::AccessRules.into() => ModuleConfig {
-                    iteration_enabled: false,
-                },
-            ),
             substates: btreemap!(),
         }
     }
@@ -43,10 +25,6 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<Vec<u8>>, GetSubstateError> {
-        if !self.configs.contains_key(&module_id) {
-            return Err(GetSubstateError::UnknownModuleId);
-        }
-
         let key = encode_substate_id(node_id, module_id, substate_key);
         let value = self
             .substates
@@ -60,17 +38,6 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError> {
-        match self.configs.get(&module_id) {
-            None => {
-                return Err(ListSubstatesError::UnknownModuleId);
-            }
-            Some(config) => {
-                if !config.iteration_enabled {
-                    return Err(ListSubstatesError::IterationNotAllowed);
-                }
-            }
-        }
-
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
         let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();

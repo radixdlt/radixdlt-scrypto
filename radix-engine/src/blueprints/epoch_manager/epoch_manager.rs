@@ -10,6 +10,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -149,35 +150,26 @@ impl EpochManagerBlueprint {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectState, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_NEXT_ROUND_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                SysModuleId::ObjectState,
-                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
-            ),
+            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                SysModuleId::ObjectState,
-                EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-            ),
+            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
             rule!(allow_all),
         );
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                SysModuleId::ObjectState,
-                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-            ),
+            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT),
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectState, EPOCH_MANAGER_SET_EPOCH_IDENT),
+            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
@@ -186,11 +178,11 @@ impl EpochManagerBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            epoch_manager_id,
             btreemap!(
-                SysModuleId::AccessRules => access_rules.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
+                ObjectModuleId::SELF => epoch_manager_id,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;

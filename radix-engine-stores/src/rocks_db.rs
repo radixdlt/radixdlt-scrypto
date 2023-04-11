@@ -12,45 +12,9 @@ pub struct RocksdbSubstateStore {
 
 impl RocksdbSubstateStore {
     pub fn standard(root: PathBuf) -> Self {
-        let configs: BTreeMap<ModuleId, ModuleConfig> = btreemap!(
-            SysModuleId::TypeInfo.into() => ModuleConfig {
-                iteration_enabled: false,
-            },
-            SysModuleId::ObjectState.into() => ModuleConfig {
-                iteration_enabled: true,
-            },
-            SysModuleId::Metadata.into() => ModuleConfig {
-                iteration_enabled: true,
-            },
-            SysModuleId::Royalty.into() => ModuleConfig {
-                iteration_enabled: false,
-            },
-            SysModuleId::AccessRules.into() => ModuleConfig {
-                iteration_enabled: false,
-            },
-        );
         let db = DB::open_default(root.as_path()).expect("IO Error");
 
-        if db.get([0]).expect("IO Error").is_none() {
-            db.put(
-                [0],
-                scrypto_encode(&configs).expect("Failed to encode configs"),
-            )
-            .expect("IO Error");
-        }
-
         Self { db }
-    }
-
-    pub fn configs(&self) -> BTreeMap<ModuleId, ModuleConfig> {
-        scrypto_decode(
-            &self
-                .db
-                .get([0])
-                .expect("IO error")
-                .expect("Missing configs"),
-        )
-        .expect("Failed to decode configs")
     }
 
     pub fn list_nodes(&self) -> Vec<NodeId> {
@@ -100,10 +64,6 @@ impl SubstateDatabase for RocksdbSubstateStore {
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<Vec<u8>>, GetSubstateError> {
-        if !self.configs().contains_key(&module_id) {
-            return Err(GetSubstateError::UnknownModuleId);
-        }
-
         let key = encode_substate_id(node_id, module_id, substate_key);
         let value = self
             .db
@@ -118,17 +78,6 @@ impl SubstateDatabase for RocksdbSubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError> {
-        match self.configs().get(&module_id) {
-            None => {
-                return Err(ListSubstatesError::UnknownModuleId);
-            }
-            Some(config) => {
-                if !config.iteration_enabled {
-                    return Err(ListSubstatesError::IterationNotAllowed);
-                }
-            }
-        }
-
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
         let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();

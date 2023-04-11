@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_init::NodeInit;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
@@ -22,17 +21,17 @@ pub enum ComposedProof {
     NonFungible(ProofInfoSubstate, NonFungibleProof),
 }
 
-impl From<ComposedProof> for NodeInit {
+impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
-            ComposedProof::Fungible(info, proof) => NodeInit::Object(btreemap!(
+            ComposedProof::Fungible(info, proof) => btreemap!(
                 ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
                 ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
-            )),
-            ComposedProof::NonFungible(info, proof) => NodeInit::Object(btreemap!(
+            ),
+            ComposedProof::NonFungible(info, proof) => btreemap!(
                 ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
                 ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
-            )),
+            ),
         }
     }
 }

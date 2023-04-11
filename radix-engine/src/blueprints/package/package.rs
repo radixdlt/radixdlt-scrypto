@@ -2,14 +2,14 @@ use super::PackageCodeTypeSubstate;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
-use crate::system::node_init::{ModuleInit, NodeInit};
+use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
-use crate::wasm::{PrepareError, WasmValidator};
+use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
@@ -124,13 +124,13 @@ where
     // Can't use the ClientApi because of chicken-and-egg issue.
 
     // Prepare node init.
-    let node_init = NodeInit::Object(btreemap!(
+    let node_init = btreemap!(
         PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
         PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type ),
         PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code ),
         PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty ),
         PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(& function_access_rules ),
-    ));
+    );
 
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
@@ -170,7 +170,7 @@ where
         let mut node = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node
             .substates
-            .remove(&SysModuleId::ObjectState)
+            .remove(&SysModuleId::ObjectTuple)
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
@@ -195,14 +195,14 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    api.kernel_create_node(
-        node_id,
-        node_init,
+    let mut modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>> =
         node_modules
             .into_iter()
             .map(|(k, v)| (k, v.to_substates()))
-            .collect(),
-    )?;
+            .collect();
+    modules.insert(SysModuleId::ObjectTuple, node_init);
+
+    api.kernel_create_node(node_id, modules)?;
 
     let package_address = PackageAddress::new_unchecked(node_id.into());
     Ok(package_address)
@@ -315,13 +315,13 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
 
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_native(
@@ -342,12 +342,12 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm(
@@ -364,12 +364,12 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm_advanced(
@@ -388,8 +388,8 @@ impl PackageNativePackage {
             PACKAGE_SET_ROYALTY_CONFIG_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
                 Self::set_royalty_config(receiver, input, api)
@@ -397,14 +397,14 @@ impl PackageNativePackage {
             PACKAGE_CLAIM_ROYALTY_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
                 Self::claim_royalty(receiver, input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -596,7 +596,7 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: PackageSetRoyaltyConfigInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         // FIXME: double check if auth is set up for any package
@@ -620,7 +620,7 @@ impl PackageNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: PackageClaimRoyaltyInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(

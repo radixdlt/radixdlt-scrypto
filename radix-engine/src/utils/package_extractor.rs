@@ -2,10 +2,10 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 
 use crate::errors::InvokeError;
-use crate::kernel::interpreters::NopWasmRuntime;
-use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
+use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
+use crate::vm::NopWasmRuntime;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {

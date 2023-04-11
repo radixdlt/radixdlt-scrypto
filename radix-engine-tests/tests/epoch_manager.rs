@@ -1,7 +1,7 @@
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::epoch_manager::*;

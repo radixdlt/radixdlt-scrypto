@@ -1,12 +1,11 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
-    use radix_engine::kernel::interpreters::ScryptoInterpreter;
     use radix_engine::system::bootstrap::bootstrap;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
-    use radix_engine::wasm::WasmInstrumenter;
-    use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
+    use radix_engine::vm::wasm::WasmInstrumenter;
+    use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
     use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
     use radix_engine_interface::blueprints::resource::*;
     use radix_engine_interface::dec;
@@ -19,12 +18,13 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
+    use radix_engine::vm::ScryptoVm;
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
     fn test_multithread_transfer() {
         // Set up environment.
-        let mut scrypto_interpreter = ScryptoInterpreter {
+        let mut scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,

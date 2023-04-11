@@ -1,11 +1,11 @@
-use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
+use crate::errors::{RuntimeError, SystemUpstreamError};
+use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
@@ -105,15 +105,15 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             CLOCK_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 Self::create(input, api)
@@ -121,29 +121,29 @@ impl ClockNativePackage {
             CLOCK_GET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::get_current_time(receiver, input, api)
             }
             CLOCK_SET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::set_current_time(receiver, input, api)
             }
             CLOCK_COMPARE_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::compare_current_time(receiver, input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -156,7 +156,7 @@ impl ClockNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         let input: ClockCreateInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let clock_id = api.new_object(
@@ -169,15 +169,15 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectState, CLOCK_SET_CURRENT_TIME_IDENT),
+            MethodKey::new(ObjectModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectState, CLOCK_GET_CURRENT_TIME_IDENT),
+            MethodKey::new(ObjectModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(SysModuleId::ObjectState, CLOCK_COMPARE_CURRENT_TIME_IDENT),
+            MethodKey::new(ObjectModuleId::SELF, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
@@ -186,11 +186,11 @@ impl ClockNativePackage {
 
         let address = ComponentAddress::new_unchecked(input.component_address);
         api.globalize_with_address(
-            clock_id,
             btreemap!(
-                SysModuleId::AccessRules => access_rules.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
+                ObjectModuleId::SELF => clock_id,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;
@@ -204,10 +204,10 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: ClockSetCurrentTimeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let current_time_ms = input.current_time_ms;
@@ -232,10 +232,10 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: ClockGetCurrentTimeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         match input.precision {
@@ -260,10 +260,10 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: ClockCompareCurrentTimeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         match input.precision {

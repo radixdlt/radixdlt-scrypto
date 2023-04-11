@@ -1,9 +1,13 @@
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
-    AccessRulesSetMethodAccessRuleAndMutabilityInput, ACCESS_RULES_BLUEPRINT,
-    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleAndMutabilityInput,
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
@@ -11,7 +15,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{NodeId, SysModuleId};
+use radix_engine_interface::types::NodeId;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
@@ -47,21 +51,65 @@ impl AccessRules {
 }
 
 impl AccessRulesObject for AccessRules {
-    fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0 .0, SysModuleId::ObjectState)
+    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
+        (&self.0 .0, ObjectModuleId::SELF)
     }
 }
 
 pub struct AttachedAccessRules(pub NodeId);
 
 impl AccessRulesObject for AttachedAccessRules {
-    fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0, SysModuleId::AccessRules)
+    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
+        (&self.0, ObjectModuleId::AccessRules)
     }
 }
 
 pub trait AccessRulesObject {
-    fn self_id(&self) -> (NodeId, SysModuleId);
+    fn self_id(&self) -> (&NodeId, ObjectModuleId);
+
+    fn set_group_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
+        &self,
+        name: &str,
+        rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(), E> {
+        let (node_id, module_id) = self.self_id();
+        let _rtn = api.call_module_method(
+            node_id,
+            module_id,
+            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                object_key: ObjectKey::SELF,
+                name: name.into(),
+                rule,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(())
+    }
+
+    fn set_method_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
+        &self,
+        method_key: MethodKey,
+        rule: AccessRuleEntry,
+        api: &mut Y,
+    ) -> Result<(), E> {
+        let (node_id, module_id) = self.self_id();
+        let _rtn = api.call_module_method(
+            node_id,
+            module_id,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                object_key: ObjectKey::SELF,
+                method_key,
+                rule,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(())
+    }
 
     fn set_method_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
         &self,
