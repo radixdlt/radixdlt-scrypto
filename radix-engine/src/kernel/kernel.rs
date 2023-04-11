@@ -15,9 +15,9 @@ use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
 use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -26,13 +26,13 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBoot<'g, 'h, W: WasmEngine, S: SubstateStore> {
+pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub upstream: &'g mut SystemCallback<'h, W>,
+    pub upstream: &'g mut SystemCallback<V>,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
+impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     /// Executes a transaction
     pub fn call_function(
         self,

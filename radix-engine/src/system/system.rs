@@ -10,10 +10,11 @@ use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
+use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -31,20 +32,19 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub struct SystemDownstream<'a, 'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + 'g> {
+pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
-    pub phantom: PhantomData<&'g W>,
+    pub phantom: PhantomData<V>,
 }
 
-impl<'a, 'g, Y, W> SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     pub fn new(api: &'a mut Y) -> Self {
         Self {
@@ -73,10 +73,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn sys_lock_substate(
         &mut self,
@@ -201,10 +201,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientObjectApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn new_object(
         &mut self,
@@ -643,10 +643,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn call_function(
         &mut self,
@@ -680,10 +680,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientCostingApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     #[trace_resources(log=units)]
     fn consume_cost_units(
@@ -724,10 +724,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientActorApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
@@ -756,10 +756,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientAuthApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -795,10 +795,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
         // No costing applied
@@ -812,10 +812,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
@@ -829,10 +829,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientEventApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
@@ -952,10 +952,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -969,10 +969,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -997,17 +997,17 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> ClientApi<RuntimeError> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> ClientApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<'g, W>>,
-    W: WasmEngine + 'g,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
 }
 
-impl<'a, 'g, Y, W> KernelNodeApi for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> KernelNodeApi for SystemDownstream<'a, Y, V>
 where
-    W: 'g + WasmEngine,
-    Y: KernelApi<SystemCallback<'g, W>>,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         self.api.kernel_drop_node(node_id)
@@ -1030,10 +1030,10 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> KernelSubstateApi for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> KernelSubstateApi for SystemDownstream<'a, Y, V>
 where
-    W: 'g + WasmEngine,
-    Y: KernelApi<SystemCallback<'g, W>>,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn kernel_lock_substate(
         &mut self,
@@ -1070,12 +1070,12 @@ where
     }
 }
 
-impl<'a, 'g, Y, W> KernelInternalApi<SystemCallback<'g, W>> for SystemDownstream<'a, 'g, Y, W>
+impl<'a, Y, V> KernelInternalApi<SystemCallback<V>> for SystemDownstream<'a, Y, V>
 where
-W: 'g + WasmEngine,
-Y: KernelApi<SystemCallback<'g, W>>,
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
-    fn kernel_get_callback(&mut self) -> &mut SystemCallback<'g, W> {
+    fn kernel_get_callback(&mut self) -> &mut SystemCallback<V> {
         self.api.kernel_get_callback()
     }
 

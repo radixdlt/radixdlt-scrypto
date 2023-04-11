@@ -3,8 +3,8 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -23,8 +23,8 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTraceModule {
-    fn before_invoke<Y: KernelApi<SystemCallback<'g, W>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceModule {
+    fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
@@ -39,7 +39,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         callee: &Actor,
         nodes_and_refs: &mut CallFrameUpdate,
@@ -50,7 +50,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
@@ -64,7 +64,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn after_invoke<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn after_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -72,7 +72,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
@@ -80,7 +80,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
@@ -95,7 +95,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_drop_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -103,7 +103,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &SysModuleId,
@@ -121,7 +121,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn after_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -130,7 +130,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_read_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -144,7 +144,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_write_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -158,7 +158,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for KernelTrace
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_drop_lock<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

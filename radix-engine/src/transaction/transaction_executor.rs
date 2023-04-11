@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::{SystemCallback, VmCallback};
 use crate::system::system_modules::costing::*;
 use crate::track::Track;
 use crate::transaction::*;
@@ -189,7 +189,9 @@ where
             executable.pre_allocated_ids().clone(),
         );
         let mut system = SystemCallback {
-            scrypto_vm: self.scrypto_vm,
+            callback_obj: VmCallback {
+                scrypto_vm: self.scrypto_vm,
+            },
             modules: SystemModuleMixer::standard(
                 transaction_hash.clone(),
                 executable.auth_zone_params().clone(),

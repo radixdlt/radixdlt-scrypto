@@ -2,19 +2,21 @@ use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation, KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{
+    KernelApi, KernelInternalApi, KernelInvocation, KernelNodeApi, KernelSubstateApi,
+};
 use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback_api::{SystemCallbackApi, VmInvoke};
+use crate::system::system_callback_api::{SystemCallbackObject, VmInvoke};
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVm, ScryptoVm};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, ClientBlueprintApi};
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientApi, ClientBlueprintApi};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -88,12 +90,12 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemCallback<'g, W: WasmEngine> {
-    pub scrypto_vm: &'g ScryptoVm<W>,
+pub struct SystemCallback<C: SystemCallbackObject> {
+    pub callback_obj: C,
     pub modules: SystemModuleMixer,
 }
 
-impl<'g, W: WasmEngine + 'g> KernelCallbackObject for SystemCallback<'g, W> {
+impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
     type Invocation = SystemInvocation;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -238,7 +240,7 @@ impl<'g, W: WasmEngine + 'g> KernelCallbackObject for SystemCallback<'g, W> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemCallback<'g, W>>,
+        Y: KernelApi<SystemCallback<C>>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
@@ -268,7 +270,10 @@ impl<'g, W: WasmEngine + 'g> KernelCallbackObject for SystemCallback<'g, W> {
             }
 
             let mut vm_instance = {
-                NativeVm::create_instance(&invocation.blueprint.package_address, &[PACKAGE_CODE_ID])?
+                NativeVm::create_instance(
+                    &invocation.blueprint.package_address,
+                    &[PACKAGE_CODE_ID],
+                )?
             };
             let output = {
                 let mut system = SystemDownstream::new(api);
@@ -372,12 +377,13 @@ impl<'g, W: WasmEngine + 'g> KernelCallbackObject for SystemCallback<'g, W> {
             // Execute
             let output = {
                 let mut system = SystemDownstream::new(api);
-                VmCallback::invoke(
+                C::invoke(
                     &invocation.blueprint.package_address,
                     invocation.receiver.as_ref().map(|x| &x.0),
                     &export_name,
                     args,
-                    &mut system)?
+                    &mut system,
+                )?
             };
 
             // Validate output
@@ -460,9 +466,11 @@ impl<'g, W: WasmEngine + 'g> KernelCallbackObject for SystemCallback<'g, W> {
     }
 }
 
-pub struct VmCallback;
+pub struct VmCallback<'g, W: WasmEngine> {
+    pub scrypto_vm: &'g ScryptoVm<W>,
+}
 
-impl<'g, W: WasmEngine + 'g> SystemCallbackApi<'g, W> for VmCallback {
+impl<'g, W: WasmEngine + 'g> SystemCallbackObject for VmCallback<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,
         receiver: Option<&NodeId>,
@@ -470,8 +478,13 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackApi<'g, W> for VmCallback {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where Y: ClientApi<RuntimeError> + KernelInternalApi<SystemCallback<'g, W>> + KernelNodeApi + KernelSubstateApi, W: WasmEngine {
-
+    where
+        Y: ClientApi<RuntimeError>
+            + KernelInternalApi<SystemCallback<Self>>
+            + KernelNodeApi
+            + KernelSubstateApi,
+        W: WasmEngine,
+    {
         let code_type = {
             let handle = api.kernel_lock_substate(
                 address.as_node_id(),
@@ -500,40 +513,20 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackApi<'g, W> for VmCallback {
 
         let output = match code_type {
             PackageCodeTypeSubstate::Native => {
-                let mut vm_instance = {
-                    NativeVm::create_instance(
-                        address,
-                        &package_code.code,
-                    )?
-                };
-                let output = {
-                    vm_instance.invoke(
-                        receiver,
-                        &export_name,
-                        input,
-                        api,
-                    )?
-                };
+                let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
+                let output = { vm_instance.invoke(receiver, &export_name, input, api)? };
 
                 output
             }
             PackageCodeTypeSubstate::Wasm => {
                 let mut scrypto_vm_instance = {
                     api.kernel_get_callback()
-                        .scrypto_vm.create_instance(
-                        address,
-                        &package_code.code,
-                        )
+                        .callback_obj
+                        .scrypto_vm
+                        .create_instance(address, &package_code.code)
                 };
 
-                let output = {
-                    scrypto_vm_instance.invoke(
-                        receiver,
-                        &export_name,
-                        input,
-                        api,
-                    )?
-                };
+                let output = { scrypto_vm_instance.invoke(receiver, &export_name, input, api)? };
 
                 output
             }

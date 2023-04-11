@@ -6,8 +6,8 @@ use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::system::SystemDownstream;
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
     transaction::AbortReason,
@@ -86,7 +86,7 @@ impl CostingModule {
     }
 }
 
-fn apply_royalty_cost<'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + 'g>(
+fn apply_royalty_cost<Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
     api: &mut Y,
     cost_units: u32,
     recipient: RoyaltyRecipient,
@@ -102,8 +102,8 @@ fn apply_royalty_cost<'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + '
         })
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModule {
-    fn on_init<Y: KernelApi<SystemCallback<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule {
+    fn on_init<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_callback().modules.costing;
         let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;
@@ -131,7 +131,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
             })
     }
 
-    fn before_invoke<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
@@ -161,7 +161,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -271,7 +271,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
@@ -288,9 +288,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelApi<SystemCallback<'g, W>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_callback()
             .modules
@@ -304,7 +302,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _module_id: &SysModuleId,
@@ -322,7 +320,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_read_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -340,7 +338,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_write_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -358,7 +356,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for CostingModu
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_drop_lock<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

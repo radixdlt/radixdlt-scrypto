@@ -1,7 +1,6 @@
+use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::SystemCallback;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]
@@ -32,7 +31,7 @@ impl TransactionRuntimeModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for TransactionRuntimeModule {}
+impl<K: KernelCallbackObject> SystemModule<K> for TransactionRuntimeModule {}
 
 #[cfg(test)]
 mod tests {

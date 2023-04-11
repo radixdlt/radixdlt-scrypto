@@ -2,8 +2,8 @@ use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
@@ -185,8 +185,8 @@ impl TransactionLimitsModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for TransactionLimitsModule {
-    fn before_invoke<Y: KernelApi<SystemCallback<'g, W>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for TransactionLimitsModule {
+    fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
@@ -209,7 +209,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         }
     }
 
-    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
@@ -224,9 +224,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelApi<SystemCallback<'g, W>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_callback()
             .modules
@@ -236,7 +234,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_read_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
@@ -250,7 +248,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         tlimit.validate_substates(Some(size), None)
     }
 
-    fn on_write_substate<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_write_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,

@@ -3,8 +3,8 @@ use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::system::SystemDownstream;
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::identity::{
 pub struct VirtualizationModule;
 
 impl VirtualizationModule {
-    pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + 'g>(
+    pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemCallback<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
         _module_id: SysModuleId,
         _offset: &SubstateKey,

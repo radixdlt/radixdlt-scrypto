@@ -8,8 +8,8 @@ use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system::SystemDownstream;
 use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
@@ -25,7 +25,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + 'g>(
+    fn prepare_move_downstream<Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -93,8 +93,8 @@ impl NodeMoveModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for NodeMoveModule {
-    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for NodeMoveModule {
+    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -108,7 +108,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for NodeMoveMod
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemCallback<'g, W>>>(
+    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,

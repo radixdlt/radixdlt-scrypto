@@ -1,11 +1,10 @@
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::SystemCallback;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
-use crate::system::system_callback::SystemCallback;
-use crate::vm::wasm::WasmEngine;
 
-pub trait SystemCallbackApi<'g, W: WasmEngine + 'g> {
+pub trait SystemCallbackObject: Sized {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
     fn invoke<Y>(
         package_address: &PackageAddress,
@@ -15,7 +14,10 @@ pub trait SystemCallbackApi<'g, W: WasmEngine + 'g> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelInternalApi<SystemCallback<'g, W>> + KernelNodeApi + KernelSubstateApi;
+        Y: ClientApi<RuntimeError>
+            + KernelInternalApi<SystemCallback<Self>>
+            + KernelNodeApi
+            + KernelSubstateApi;
 }
 
 pub trait VmInvoke {
