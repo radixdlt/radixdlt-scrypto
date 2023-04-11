@@ -72,20 +72,3 @@ impl Actor {
         Self::VirtualLazyLoad { blueprint, ident }
     }
 }
-
-/// Execution mode
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Sbor)]
-pub enum ExecutionMode {
-    Kernel,
-    DropNode,
-    AutoDrop,
-
-    /* System */
-    System,
-
-    /* Kernel modules */
-    KernelModule,
-
-    /* Clients, e.g. blueprints and node modules */
-    Client,
-}

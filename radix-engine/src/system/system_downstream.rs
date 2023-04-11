@@ -1,6 +1,9 @@
-use crate::errors::{ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError};
+use crate::errors::{
+    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType,
+    InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError,
+};
 use crate::errors::{SystemError, SystemInvokeError};
-use crate::kernel::actor::{Actor, ExecutionMode};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::heap::HeapNode;
 use crate::kernel::kernel_api::*;
@@ -49,10 +52,7 @@ where
         }
     }
 
-    fn can_substate_be_accessed(
-        actor: &Actor,
-        node_id: &NodeId,
-    ) -> bool {
+    fn can_substate_be_accessed(actor: &Actor, node_id: &NodeId) -> bool {
         // TODO: Remove
         if is_native_package(actor.blueprint().package_address) {
             return true;
@@ -100,10 +100,7 @@ where
         let actor = self.api.kernel_get_current_actor().unwrap();
 
         // TODO: Check if valid substate_key for node_id
-        if !Self::can_substate_be_accessed(
-            &actor,
-            node_id,
-        ) {
+        if !Self::can_substate_be_accessed(&actor, node_id) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                     actor: actor.clone(),
@@ -117,8 +114,7 @@ where
         let module_id = match type_info {
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::ObjectMap,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                if let Actor::Method { module_id, .. } = &actor
-                {
+                if let Actor::Method { module_id, .. } = &actor {
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
@@ -631,7 +627,6 @@ where
             if !info.blueprint.package_address.eq(actor.package_address()) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        mode: ExecutionMode::Client,
                         actor: actor.clone(),
                         node_id: node_id.clone(),
                         package_address: info.blueprint.package_address,
@@ -783,11 +778,6 @@ where
         let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         // Authenticate
-        // TODO: should we just run in `Client` model?
-        // Currently, this is to allow authentication to read auth zone substates directly without invocation.
-        //self.api.execute_in_mode(ExecutionMode::System, |api| {
-        self.api.kernel_set_mode(ExecutionMode::System);
-
         if !Authentication::verify_method_auth(
             barrier_crossings_required,
             barrier_crossings_allowed,
@@ -799,8 +789,6 @@ where
                 SystemError::AssertAccessRuleFailed,
             ));
         }
-
-        self.api.kernel_set_mode(ExecutionMode::Client);
 
         Ok(())
     }

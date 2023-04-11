@@ -1,4 +1,3 @@
-use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
@@ -7,8 +6,8 @@ use super::kernel_api::{
     LockInfo,
 };
 use crate::blueprints::resource::*;
-use crate::errors::*;
 use crate::errors::RuntimeError;
+use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
@@ -47,7 +46,6 @@ impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
         });
 
         let mut kernel = Kernel {
-            execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),
             store: self.store,
             id_allocator: self.id_allocator,
@@ -56,9 +54,7 @@ impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
             upstream: self.upstream,
         };
 
-        kernel.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-            SystemUpstream::on_init(api)
-        })?;
+        SystemUpstream::on_init(&mut kernel)?;
 
         let args = IndexedScryptoValue::from_vec(args)
             .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
@@ -136,9 +132,6 @@ pub struct Kernel<
     M: KernelUpstream,
     S: SubstateStore,
 {
-    // TODO: Remove
-    /// Current execution mode, specifies permissions into state/invocations
-    execution_mode: ExecutionMode,
     /// Stack
     current_frame: CallFrame,
     // This stack could potentially be removed and just use the native stack
@@ -163,22 +156,17 @@ where
     S: SubstateStore,
 {
     fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| {
-            api.current_frame
-                .remove_node(&mut api.heap, &node_id)
-                .map_err(|e| {
-                    RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::MoveError(e),
-                    ))
-                })
-        })
+        self.current_frame
+            .remove_node(&mut self.heap, &node_id)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
+            })
     }
 
     fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let owned_nodes = self.current_frame.owned_nodes();
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
-            M::auto_drop(owned_nodes, api)
-        })?;
+
+        M::auto_drop(owned_nodes, self)?;
 
         // Last check
         if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
@@ -202,11 +190,7 @@ where
         let args = &invocation.args;
 
         // Before push call frame
-        {
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                M::before_push_frame(actor, &mut call_frame_update, &args, api)
-            })?;
-        }
+        M::before_push_frame(actor, &mut call_frame_update, &args, self)?;
 
         // Push call frame
         {
@@ -226,11 +210,7 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            {
-                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                    M::on_execution_start(&caller, api)
-                })?;
-            }
+            M::on_execution_start(&caller, self)?;
 
             // Auto drop locks
             self.current_frame
@@ -239,9 +219,7 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
-            let output = self.execute_in_mode(ExecutionMode::Client, |api| {
-                M::invoke_upstream(sys_invocation, args, api)
-            })?;
+            let output = M::invoke_upstream(sys_invocation, args, self)?;
 
             let mut update = CallFrameUpdate {
                 nodes_to_move: output.owned_node_ids().clone(),
@@ -249,11 +227,7 @@ where
             };
 
             // Handle execution finish
-            {
-                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                    M::on_execution_finish(&caller, &mut update, api)
-                })?;
-            }
+            M::on_execution_finish(&caller, &mut update, self)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -283,48 +257,9 @@ where
         }
 
         // After pop call frame
-        {
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| M::after_pop_frame(api))?;
-        }
+        M::after_pop_frame(self)?;
 
         Ok(output)
-    }
-
-    fn verify_valid_mode_transition(
-        cur: &ExecutionMode,
-        next: &ExecutionMode,
-    ) -> Result<(), RuntimeError> {
-        match (cur, next) {
-            (ExecutionMode::Kernel, ..) => Ok(()),
-            (ExecutionMode::Client, ExecutionMode::System) => Ok(()),
-            _ => Err(RuntimeError::KernelError(
-                KernelError::InvalidModeTransition(*cur, *next),
-            )),
-        }
-    }
-
-    #[inline(always)]
-    pub fn execute_in_mode<X, RTN, E>(
-        &mut self,
-        execution_mode: ExecutionMode,
-        execute: X,
-    ) -> Result<RTN, RuntimeError>
-    where
-        RuntimeError: From<E>,
-        X: FnOnce(&mut Self) -> Result<RTN, E>,
-    {
-        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
-
-        // Save and replace kernel actor
-        let saved = self.execution_mode;
-        self.execution_mode = execution_mode;
-
-        let rtn = execute(self)?;
-
-        // Restore old kernel actor
-        self.execution_mode = saved;
-
-        Ok(rtn)
     }
 }
 
@@ -337,14 +272,7 @@ where
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
         let node = self.drop_node_internal(*node_id)?;
-
-        // Restore current mode
-        self.execution_mode = current_mode;
 
         M::after_drop_node(self)?;
 
@@ -374,10 +302,6 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &module_init, self)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
         let push_to_store = node_id.is_global();
 
         self.id_allocator.take_node_id(node_id)?;
@@ -391,9 +315,6 @@ where
             )
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
-
-        // Restore current mode
-        self.execution_mode = current_mode;
 
         M::after_create_node(&node_id, self)?;
 
@@ -420,10 +341,6 @@ where
     #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
-    }
-
-    fn kernel_set_mode(&mut self, mode: ExecutionMode) {
-        self.execution_mode = mode;
     }
 
     // TODO: Remove
@@ -627,10 +544,6 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
             self.store,
@@ -716,9 +629,6 @@ where
             }
         };
 
-        // Restore current mode
-        self.execution_mode = current_mode;
-
         // TODO: pass the right size
         M::after_lock_substate(lock_handle, 0, self)?;
 
@@ -800,14 +710,7 @@ where
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
 
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-
-        self.execution_mode = ExecutionMode::Kernel;
         let rtn = self.invoke(invocation)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
 
         M::after_invoke(
             0, // TODO: Pass the right size

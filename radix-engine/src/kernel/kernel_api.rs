@@ -1,7 +1,7 @@
 use super::call_frame::RefType;
 use super::heap::HeapNode;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, ExecutionMode};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
@@ -124,7 +124,6 @@ pub trait KernelInternalApi<M: KernelUpstream> {
     // TODO: Remove these, these are temporary until the architecture
     // TODO: gets cleaned up a little more
     fn kernel_get_current_actor(&mut self) -> Option<Actor>;
-    fn kernel_set_mode(&mut self, mode: ExecutionMode);
     fn kernel_load_package_package_dependencies(&mut self);
     fn kernel_load_common(&mut self);
 

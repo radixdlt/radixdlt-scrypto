@@ -8,7 +8,7 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::actor::{Actor, ExecutionMode};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{
     LockSubstateError, MoveError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
@@ -122,9 +122,6 @@ impl CanBeAbortion for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KernelError {
-    // Execution mode
-    InvalidModeTransition(ExecutionMode, ExecutionMode),
-
     // Call frame
     CallFrameError(CallFrameError),
 
@@ -152,7 +149,6 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropNodeAccess {
-    pub mode: ExecutionMode,
     pub actor: Actor,
     pub node_id: NodeId,
     pub package_address: PackageAddress,
