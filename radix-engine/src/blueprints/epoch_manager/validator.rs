@@ -26,7 +26,6 @@ use super::{
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
     pub manager: ComponentAddress,
-    pub address: ComponentAddress,
     pub key: EcdsaSecp256k1PublicKey,
     pub is_registered: bool,
 
@@ -635,7 +634,6 @@ impl ValidatorCreator {
         let substate = ValidatorSubstate {
             manager,
             key,
-            address,
             liquidity_token,
             unstake_nft,
             stake_xrd_vault_id: stake_vault.0,
@@ -683,7 +681,6 @@ impl ValidatorCreator {
         let substate = ValidatorSubstate {
             manager,
             key,
-            address,
             liquidity_token,
             unstake_nft,
             stake_xrd_vault_id: stake_vault.0,
