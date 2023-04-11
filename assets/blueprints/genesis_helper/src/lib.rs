@@ -28,26 +28,26 @@ pub struct GenesisValidator {
 pub struct GenesisResource {
     pub address_bytes: [u8; 26],
     pub metadata: Vec<(String, String)>,
-    pub owner_account_index: Option<usize>,
+    pub owner_account_index: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonXrdResourceBalance {
-    pub resource_index: usize,
-    pub account_index: usize,
+    pub resource_index: u32,
+    pub account_index: u32,
     pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct XrdBalance {
-    pub account_index: usize,
+    pub account_index: u32,
     pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct Stake {
-    pub validator_index: usize,
-    pub account_index: usize,
+    pub validator_index: u32,
+    pub account_index: u32,
     pub xrd_amount: Decimal,
 }
 
@@ -79,22 +79,22 @@ mod genesis_helper {
                 let mut initial_supply = Decimal::ZERO;
                 let mut initial_allocation = BTreeMap::new();
                 for (account_idx, amount) in indexed_resource_balances
-                    .remove(&resource_idx)
+                    .remove(&(resource_idx as u32))
                     .unwrap_or(BTreeMap::new())
                 {
                     // TODO: check for/handle overflows
                     initial_supply += amount;
-                    let account_component_address = genesis_data.accounts[account_idx].clone();
+                    let account_component_address = genesis_data.accounts[account_idx as usize].clone();
                     initial_allocation.insert(account_component_address, amount);
                 }
                 let owner = resource
                     .owner_account_index
-                    .map(|idx| genesis_data.accounts[idx].clone());
+                    .map(|idx| genesis_data.accounts[idx as usize].clone());
                 Self::create_resource(resource, initial_supply, initial_allocation, owner);
             }
 
             // Create the epoch manager with initial validator set...
-            let mut indexed_stakes: BTreeMap<usize, BTreeMap<usize, Decimal>> = BTreeMap::new();
+            let mut indexed_stakes = BTreeMap::new();
             for stake in genesis_data.stakes.into_iter() {
                 *indexed_stakes
                     .entry(stake.validator_index)
@@ -104,7 +104,7 @@ mod genesis_helper {
             }
             let mut validators_with_initial_stake = vec![];
             for (validator_idx, validator) in genesis_data.validators.into_iter().enumerate() {
-                let initial_stake_amount = indexed_stakes.get(&validator_idx)
+                let initial_stake_amount = indexed_stakes.get(&(validator_idx as u32))
                     .map(|stakes| {
                         stakes
                             .iter()
@@ -138,11 +138,11 @@ mod genesis_helper {
 
             // ...and distribute the LP tokens to stakers
             for (validator_idx, mut lp_bucket) in lp_buckets.into_iter().enumerate() {
-                let stakes = indexed_stakes.remove(&validator_idx).unwrap_or(BTreeMap::new());
+                let stakes = indexed_stakes.remove(&(validator_idx as u32)).unwrap_or(BTreeMap::new());
                 for (account_idx, stake_xrd_amount) in stakes {
                     // TODO: currently xrd amount matches stake tokens amount, but can this change later on?
                     let stake_bucket = lp_bucket.take(stake_xrd_amount);
-                    let account_address = genesis_data.accounts[account_idx];
+                    let account_address = genesis_data.accounts[account_idx as usize];
                     let _: () = Runtime::call_method(
                         account_address,
                         "deposit",
@@ -157,7 +157,7 @@ mod genesis_helper {
 
             // Allocate XRD
             for XrdBalance { account_index, amount } in genesis_data.xrd_balances.into_iter() {
-                let account_address = genesis_data.accounts[account_index];
+                let account_address = genesis_data.accounts[account_index as usize];
                 let bucket = whole_lotta_xrd.take(amount);
                 let _: () = Runtime::call_method(
                     account_address,

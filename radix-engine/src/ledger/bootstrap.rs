@@ -104,26 +104,26 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
 pub struct GenesisResource {
     address_bytes: [u8; 26],
     metadata: Vec<(String, String)>,
-    owner_account_index: Option<usize>,
+    owner_account_index: Option<u32>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonXrdResourceBalance {
-    resource_index: usize,
-    account_index: usize,
+    resource_index: u32,
+    account_index: u32,
     amount: Decimal,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct XrdBalance {
-    account_index: usize,
+    account_index: u32,
     amount: Decimal,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct Stake {
-    validator_index: usize,
-    account_index: usize,
+    validator_index: u32,
+    account_index: u32,
     xrd_amount: Decimal,
 }
 
