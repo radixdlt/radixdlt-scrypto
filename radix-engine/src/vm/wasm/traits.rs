@@ -39,7 +39,7 @@ pub trait WasmRuntime {
 
     fn globalize_object(
         &mut self,
-        access_rules: Vec<u8>,
+        modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn new_key_value_store(

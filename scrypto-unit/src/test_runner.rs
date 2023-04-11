@@ -22,7 +22,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine::vm::{ScryptoVm, VmCallback};
+use radix_engine::vm::{ScryptoVm, Vm};
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -1203,7 +1203,7 @@ impl TestRunner {
         };
 
         let mut system = SystemCallback {
-            callback_obj: VmCallback {
+            callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },
             modules: SystemModuleMixer::standard(

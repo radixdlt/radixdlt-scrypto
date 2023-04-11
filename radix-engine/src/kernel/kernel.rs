@@ -2,8 +2,7 @@ use super::call_frame::{CallFrame, LockSubstateError, RefType};
 use super::heap::{Heap, HeapNode};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeDownstreamApi, KernelNodeApi, KernelSubstateApi,
-    LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
 };
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
@@ -328,7 +327,7 @@ where
 
     #[trace_resources]
     fn kernel_get_callback(&mut self) -> &mut M {
-        self.callback
+        &mut self.callback
     }
 
     #[trace_resources]
@@ -691,13 +690,13 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeDownstreamApi<M::Invocation> for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi<M::Invocation> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
     #[trace_resources]
-    fn kernel_invoke_downstream(
+    fn kernel_invoke(
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {

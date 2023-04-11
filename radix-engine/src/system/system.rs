@@ -568,7 +568,7 @@ where
         };
 
         self.api
-            .kernel_invoke_downstream(Box::new(invocation))
+            .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())
     }
 
@@ -675,7 +675,7 @@ where
         };
 
         self.api
-            .kernel_invoke_downstream(Box::new(invocation))
+            .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())
     }
 }

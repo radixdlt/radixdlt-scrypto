@@ -9,7 +9,7 @@ use crate::track::Track;
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::{ScryptoVm, VmCallback};
+use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -189,7 +189,7 @@ where
             executable.pre_allocated_ids().clone(),
         );
         let mut system = SystemCallback {
-            callback_obj: VmCallback {
+            callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
             modules: SystemModuleMixer::standard(

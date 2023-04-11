@@ -224,8 +224,8 @@ fn new_key_value_store(
 
 fn globalize_object(
     mut caller: Caller<'_, HostState>,
-    access_rules_ptr: u32,
-    access_rules_len: u32,
+    modules_ptr: u32,
+    modules_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -233,8 +233,8 @@ fn globalize_object(
         .globalize_object(read_memory(
             caller.as_context_mut(),
             memory,
-            access_rules_ptr,
-            access_rules_len,
+            modules_ptr,
+            modules_len,
         )?)
         .map(|buffer| buffer.0)
 }

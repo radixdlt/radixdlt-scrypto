@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::identity::{
 #[derive(Debug, Clone)]
 pub struct VirtualizationModule;
 
+// TODO: Move into a lower layer
 impl VirtualizationModule {
     pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemCallback<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
@@ -65,7 +66,7 @@ impl VirtualizationModule {
                     payload_size: 0,
                 };
 
-                let rtn: Vec<u8> = api.kernel_invoke_downstream(Box::new(invocation))?.into();
+                let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();
 
                 let modules: BTreeMap<ObjectModuleId, Own> = scrypto_decode(&rtn).unwrap();
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();

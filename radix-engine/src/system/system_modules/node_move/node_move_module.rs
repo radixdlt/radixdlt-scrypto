@@ -6,11 +6,9 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system::SystemDownstream;
 use crate::system::system_callback::SystemCallback;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
@@ -30,13 +28,13 @@ impl NodeMoveModule {
         callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let (package_address, blueprint_name) = {
-            let mut system = SystemDownstream::new(api);
-            let blueprint = system.get_object_info(&node_id)?.blueprint;
-            (blueprint.package_address, blueprint.blueprint_name)
-        };
-        match (package_address, blueprint_name.as_str()) {
-            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+        // TODO: Make this more generic?
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+        match type_info {
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
+                if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    && blueprint.blueprint_name.eq(PROOF_BLUEPRINT) =>
+            {
                 if matches!(callee, Actor::Function { .. })
                     && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
                 {
@@ -82,6 +80,7 @@ impl NodeMoveModule {
             }
             _ => {}
         }
+
         Ok(())
     }
 

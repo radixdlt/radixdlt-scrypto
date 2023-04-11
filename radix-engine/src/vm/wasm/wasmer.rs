@@ -2,9 +2,9 @@ use super::InstrumentedCode;
 use super::MeteredCodeKey;
 use crate::errors::InvokeError;
 use crate::types::*;
-use crate::wasm::constants::*;
-use crate::wasm::errors::*;
-use crate::wasm::traits::*;
+use crate::vm::wasm::constants::*;
+use crate::vm::wasm::errors::*;
+use crate::vm::wasm::traits::*;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
@@ -256,18 +256,13 @@ impl WasmerModule {
 
         pub fn globalize_object(
             env: &WasmerInstanceEnv,
-            component_id_ptr: u32,
-            component_id_len: u32,
-            access_rules_id_ptr: u32,
-            access_rules_id_len: u32,
+            modules_ptr: u32,
+            modules_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .globalize_object(
-                    read_memory(&instance, component_id_ptr, component_id_len)?,
-                    read_memory(&instance, access_rules_id_ptr, access_rules_id_len)?,
-                )
+                .globalize_object(read_memory(&instance, modules_ptr, modules_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

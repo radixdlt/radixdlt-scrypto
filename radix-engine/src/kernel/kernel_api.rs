@@ -103,8 +103,8 @@ impl<I: Debug> KernelInvocation<I> {
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeDownstreamApi<I: Debug> {
-    fn kernel_invoke_downstream(
+pub trait KernelInvokeApi<I: Debug> {
+    fn kernel_invoke(
         &mut self,
         invocation: Box<KernelInvocation<I>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
@@ -134,6 +134,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
 {
 }

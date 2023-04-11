@@ -186,6 +186,7 @@ impl CallFrame {
             .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Substate Virtualization
+        // TODO: Move into lower virtualization layer
         if module_id.is_map() {
             if heap.contains_node(node_id) {
                 if heap
