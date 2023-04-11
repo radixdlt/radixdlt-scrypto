@@ -231,7 +231,7 @@ impl ExecutableInvocation for MethodInvocation {
 impl ExecutableInvocation for FunctionInvocation {
     type Exec = ScryptoExecutor;
 
-    #[trace_resources(info="fn", log={&self.identifier.1}, log={&self.identifier.2}, log=self.payload_size())]
+    #[trace_resources(info="fn", log={&self.identifier.0.blueprint_name}, log={&self.identifier.1}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
@@ -307,7 +307,7 @@ impl ExecutableInvocation for FunctionInvocation {
 impl ExecutableInvocation for VirtualLazyLoadInvocation {
     type Exec = ScryptoExecutor;
 
-    #[trace_resources(info="virt", log={&self.blueprint_name}, log={self.virtual_func_id}, log=self.payload_size())]
+    #[trace_resources(info="virt", log={&self.blueprint.blueprint_name}, log={self.virtual_func_id}, log=self.payload_size())]
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
@@ -340,7 +340,7 @@ pub struct ScryptoExecutor {
 impl Executor for ScryptoExecutor {
     type Output = IndexedScryptoValue;
 
-    #[trace_resources(log={format!("{:?}",self.ident)}, log=self.package_address.to_hex())]
+    #[trace_resources(log={format!("{:?}",self.ident)}, log=self.blueprint.package_address.to_hex())]
     fn execute<Y, W>(
         self,
         args: &IndexedScryptoValue,

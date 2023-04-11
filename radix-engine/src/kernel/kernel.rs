@@ -373,7 +373,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log=*node_id.entity_type())]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
