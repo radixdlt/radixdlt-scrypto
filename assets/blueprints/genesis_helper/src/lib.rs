@@ -4,35 +4,51 @@ use scrypto::blueprints::epoch_manager::*;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
-type AccountIdx = usize;
-type ResourceIdx = usize;
-type ValidatorIdx = usize;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisData {
-    validators: Vec<GenesisValidator>,
-    resources: Vec<GenesisResource>,
-    accounts: Vec<ComponentAddress>,
-    resource_balances: BTreeMap<ResourceIdx, Vec<(AccountIdx, Decimal)>>,
-    xrd_balances: BTreeMap<AccountIdx, Decimal>,
-    stakes: BTreeMap<ValidatorIdx, Vec<(AccountIdx, Decimal)>>,
+    pub validators: Vec<GenesisValidator>,
+    pub resources: Vec<GenesisResource>,
+    pub accounts: Vec<ComponentAddress>,
+    pub resource_balances: Vec<NonXrdResourceBalance>,
+    pub xrd_balances: Vec<XrdBalance>,
+    pub stakes: Vec<Stake>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
     pub component_address: ComponentAddress,
+    pub allows_delegation: bool,
+    pub is_registered: bool,
+    pub metadata: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
     pub address_bytes: [u8; 26],
-    pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
+    pub metadata: Vec<(String, String)>,
+    pub owner_account_index: Option<usize>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonXrdResourceBalance {
+    pub resource_index: usize,
+    pub account_index: usize,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct XrdBalance {
+    pub account_index: usize,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct Stake {
+    pub validator_index: usize,
+    pub account_index: usize,
+    pub xrd_amount: Decimal,
 }
 
 #[blueprint]
@@ -41,7 +57,7 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn init(
-            mut genesis_data: GenesisData,
+            genesis_data: GenesisData,
             mut whole_lotta_xrd: Bucket,
             validator_owner_token: [u8; 26], // TODO: Clean this up
             epoch_manager_component_address: [u8; 26], // TODO: Clean this up
@@ -50,13 +66,21 @@ mod genesis_helper {
             num_unstake_epochs: u64,
         ) -> Bucket {
             // Create the resources
+            let mut indexed_resource_balances = BTreeMap::new();
+            for balance in genesis_data.resource_balances.into_iter() {
+                *indexed_resource_balances
+                    .entry(balance.resource_index)
+                    .or_insert(BTreeMap::new())
+                    .entry(balance.account_index)
+                    .or_insert(Decimal::ZERO) += balance.amount;
+            }
+
             for (resource_idx, resource) in genesis_data.resources.into_iter().enumerate() {
                 let mut initial_supply = Decimal::ZERO;
                 let mut initial_allocation = BTreeMap::new();
-                for (account_idx, amount) in genesis_data
-                    .resource_balances
+                for (account_idx, amount) in indexed_resource_balances
                     .remove(&resource_idx)
-                    .unwrap_or(vec![])
+                    .unwrap_or(BTreeMap::new())
                 {
                     // TODO: check for/handle overflows
                     initial_supply += amount;
@@ -64,17 +88,23 @@ mod genesis_helper {
                     initial_allocation.insert(account_component_address, amount);
                 }
                 let owner = resource
-                    .owner_with_mint_and_burn_rights
+                    .owner_account_index
                     .map(|idx| genesis_data.accounts[idx].clone());
                 Self::create_resource(resource, initial_supply, initial_allocation, owner);
             }
 
             // Create the epoch manager with initial validator set...
+            let mut indexed_stakes: BTreeMap<usize, BTreeMap<usize, Decimal>> = BTreeMap::new();
+            for stake in genesis_data.stakes.into_iter() {
+                *indexed_stakes
+                    .entry(stake.validator_index)
+                    .or_insert(BTreeMap::new())
+                    .entry(stake.account_index)
+                    .or_insert(Decimal::ZERO) += stake.xrd_amount;
+            }
             let mut validators_with_initial_stake = vec![];
             for (validator_idx, validator) in genesis_data.validators.into_iter().enumerate() {
-                let initial_stake_amount = genesis_data
-                    .stakes
-                    .get(&validator_idx)
+                let initial_stake_amount = indexed_stakes.get(&validator_idx)
                     .map(|stakes| {
                         stakes
                             .iter()
@@ -108,7 +138,7 @@ mod genesis_helper {
 
             // ...and distribute the LP tokens to stakers
             for (validator_idx, mut lp_bucket) in lp_buckets.into_iter().enumerate() {
-                let stakes = genesis_data.stakes.remove(&validator_idx).unwrap_or(vec![]);
+                let stakes = indexed_stakes.remove(&validator_idx).unwrap_or(BTreeMap::new());
                 for (account_idx, stake_xrd_amount) in stakes {
                     // TODO: currently xrd amount matches stake tokens amount, but can this change later on?
                     let stake_bucket = lp_bucket.take(stake_xrd_amount);
@@ -126,9 +156,9 @@ mod genesis_helper {
             }
 
             // Allocate XRD
-            for (account_idx, xrd_amount) in genesis_data.xrd_balances.into_iter() {
-                let account_address = genesis_data.accounts[account_idx];
-                let bucket = whole_lotta_xrd.take(xrd_amount);
+            for XrdBalance { account_index, amount } in genesis_data.xrd_balances.into_iter() {
+                let account_address = genesis_data.accounts[account_index];
+                let bucket = whole_lotta_xrd.take(amount);
                 let _: () = Runtime::call_method(
                     account_address,
                     "deposit",
@@ -147,19 +177,6 @@ mod genesis_helper {
             owner_with_mint_and_burn_rights: Option<ComponentAddress>,
         ) -> () {
             let resource_address = ResourceAddress::Fungible(resource.address_bytes.clone());
-
-            // Just a sanity check that XRD wasn't acccidentally included in genesis resources
-            if resource.symbol.eq_ignore_ascii_case("XRD") {
-                panic!("XRD shouldn't be included in genesis resources");
-            }
-
-            let mut metadata = BTreeMap::new();
-            metadata.insert("symbol".to_owned(), resource.symbol.clone());
-            metadata.insert("name".to_owned(), resource.name);
-            metadata.insert("description".to_owned(), resource.description);
-            metadata.insert("url".to_owned(), resource.url);
-            metadata.insert("icon_url".to_owned(), resource.icon_url);
-
             let mut access_rules = BTreeMap::new();
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
@@ -170,7 +187,7 @@ mod genesis_helper {
                     .divisibility(DIVISIBILITY_NONE)
                     .metadata(
                         "name",
-                        format!("Resource Owner Badge ({})", resource.symbol),
+                        format!("Resource Owner Badge ({})", "TODO"),
                     )
                     .mint_initial_supply(1);
 
@@ -198,6 +215,8 @@ mod genesis_helper {
                     .unwrap(),
                 );
             }
+
+            let metadata = resource.metadata.into_iter().collect();
 
             let (_, mut bucket): (ResourceAddress, Bucket) = Runtime::call_function(
                 RESOURCE_MANAGER_PACKAGE,

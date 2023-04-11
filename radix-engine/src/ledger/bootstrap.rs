@@ -37,18 +37,14 @@ pub struct GenesisReceipt {
     pub faucet_component: ComponentAddress,
 }
 
-type AccountIdx = usize;
-type ResourceIdx = usize;
-type ValidatorIdx = usize;
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisData {
     validators: Vec<GenesisValidator>,
     resources: Vec<GenesisResource>,
     accounts: Vec<ComponentAddress>,
-    resource_balances: BTreeMap<ResourceIdx, Vec<(AccountIdx, Decimal)>>,
-    xrd_balances: BTreeMap<AccountIdx, Decimal>,
-    stakes: BTreeMap<ValidatorIdx, Vec<(AccountIdx, Decimal)>>,
+    resource_balances: Vec<NonXrdResourceBalance>,
+    xrd_balances: Vec<XrdBalance>,
+    stakes: Vec<Stake>,
 }
 
 impl GenesisData {
@@ -57,25 +53,26 @@ impl GenesisData {
             validators: vec![],
             resources: vec![],
             accounts: vec![],
-            resource_balances: BTreeMap::new(),
-            xrd_balances: BTreeMap::new(),
-            stakes: BTreeMap::new(),
+            resource_balances: vec![],
+            xrd_balances: vec![],
+            stakes: vec![],
         }
     }
 
     pub fn single_validator_and_staker(
         validator_key: EcdsaSecp256k1PublicKey,
-        stake_amount: Decimal,
+        stake_amount_xrd: Decimal,
         account_address: ComponentAddress,
     ) -> GenesisData {
-        let mut stakes = BTreeMap::new();
-        stakes.insert(0, vec![(0, stake_amount)]);
+        let stakes = vec![
+            Stake { validator_index: 0, account_index: 0, xrd_amount: stake_amount_xrd },
+        ];
         GenesisData {
             validators: vec![validator_key.into()],
             resources: vec![],
             accounts: vec![account_address],
-            resource_balances: BTreeMap::new(),
-            xrd_balances: BTreeMap::new(),
+            resource_balances: vec![],
+            xrd_balances: vec![],
             stakes,
         }
     }
@@ -83,8 +80,11 @@ impl GenesisData {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisValidator {
-    pub key: EcdsaSecp256k1PublicKey,
-    pub component_address: ComponentAddress,
+    key: EcdsaSecp256k1PublicKey,
+    component_address: ComponentAddress,
+    allows_delegation: bool,
+    is_registered: bool,
+    metadata: Vec<(String, String)>,
 }
 
 impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
@@ -93,19 +93,38 @@ impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
         GenesisValidator {
             key,
             component_address,
+            allows_delegation: true,
+            is_registered: true,
+            metadata: vec![],
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisResource {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
-    pub address_bytes: [u8; 26],
-    pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
+    address_bytes: [u8; 26],
+    metadata: Vec<(String, String)>,
+    owner_account_index: Option<usize>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct NonXrdResourceBalance {
+    resource_index: usize,
+    account_index: usize,
+    amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct XrdBalance {
+    account_index: usize,
+    amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct Stake {
+    validator_index: usize,
+    account_index: usize,
+    xrd_amount: Decimal,
 }
 
 pub fn create_genesis(
@@ -774,17 +793,19 @@ mod tests {
         let staker_address = ComponentAddress::virtual_account_from_public_key(
             &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
         );
-        let mut stakes = BTreeMap::new();
-        stakes.insert(0, vec![(0, Decimal::one())]);
+        let stakes = vec![Stake { validator_index: 0, account_index: 0, xrd_amount: Decimal::one() }];
         let genesis_data = GenesisData {
             validators: vec![GenesisValidator {
                 key: validator_key,
                 component_address: validator_address,
+                allows_delegation: true,
+                is_registered: true,
+                metadata: vec![],
             }],
             resources: vec![],
             accounts: vec![staker_address],
-            resource_balances: BTreeMap::new(),
-            xrd_balances: BTreeMap::new(),
+            resource_balances: vec![],
+            xrd_balances: vec![],
             stakes,
         };
         let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
@@ -819,15 +840,14 @@ mod tests {
             &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
         );
         let allocation_amount = dec!("100");
-        let mut xrd_balances = BTreeMap::new();
-        xrd_balances.insert(0, allocation_amount);
+        let xrd_balances = vec![XrdBalance { account_index: 0, amount: allocation_amount }];
         let genesis_data = GenesisData {
             validators: vec![],
             resources: vec![],
             accounts: vec![account_component_address],
-            resource_balances: BTreeMap::new(),
+            resource_balances: vec![],
             xrd_balances,
-            stakes: BTreeMap::new(),
+            stakes: vec![],
         };
         let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
 
@@ -867,25 +887,20 @@ mod tests {
             &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
         );
 
+        let metadata = vec![("symbol".to_string(), "TST".to_string())];
         let genesis_resource = GenesisResource {
-            symbol: "TST".to_string(),
-            name: "Test".to_string(),
-            description: "A test resource".to_string(),
-            url: "test".to_string(),
-            icon_url: "test".to_string(),
             address_bytes,
-            owner_with_mint_and_burn_rights: Some(1),
+            metadata,
+            owner_account_index: Some(1),
         };
-        let mut resource_balances = BTreeMap::new();
-        resource_balances.insert(0, vec![(0, allocation_amount)]);
-
+        let resource_balances = vec![NonXrdResourceBalance { resource_index: 0, account_index: 0, amount: allocation_amount }];
         let genesis_data = GenesisData {
             resources: vec![genesis_resource],
             validators: vec![],
             accounts: vec![tokenholder.clone(), owner],
             resource_balances,
-            xrd_balances: BTreeMap::new(),
-            stakes: BTreeMap::new(),
+            xrd_balances: vec![],
+            stakes: vec![],
         };
 
         let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
@@ -986,16 +1001,17 @@ mod tests {
             &EcdsaSecp256k1PrivateKey::from_u64(5).unwrap().public_key(),
         );
 
-        let mut stakes = BTreeMap::new();
-        stakes.insert(0, vec![(0, dec!("10")), (1, dec!("50000"))]);
-        stakes.insert(1, vec![(1, dec!("1"))]);
-
+        let stakes = vec![
+            Stake { validator_index: 0, account_index: 0, xrd_amount: dec!("10") },
+            Stake { validator_index: 0, account_index: 1, xrd_amount: dec!("50000") },
+            Stake { validator_index: 1, account_index: 1, xrd_amount: dec!("1") },
+        ];
         let genesis_data = GenesisData {
             resources: vec![],
             validators: vec![validator_0, validator_1],
             accounts: vec![staker_0.clone(), staker_1.clone()],
-            resource_balances: BTreeMap::new(),
-            xrd_balances: BTreeMap::new(),
+            resource_balances: vec![],
+            xrd_balances: vec![],
             stakes,
         };
 
