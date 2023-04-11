@@ -155,29 +155,6 @@ where
     M: KernelUpstream,
     S: SubstateStore,
 {
-    fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
-        self.current_frame
-            .remove_node(&mut self.heap, &node_id)
-            .map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
-            })
-    }
-
-    fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
-        let owned_nodes = self.current_frame.owned_nodes();
-
-        M::auto_drop(owned_nodes, self)?;
-
-        // Last check
-        if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                node_id,
-            )));
-        }
-
-        Ok(())
-    }
-
     fn invoke(
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
@@ -247,8 +224,17 @@ where
                 .map_err(CallFrameError::MoveError)
                 .map_err(KernelError::CallFrameError)?;
 
-            // drop proofs and check resource leak
-            self.auto_drop_nodes_in_frame()?;
+            // auto drop
+            {
+                let owned_nodes = self.current_frame.owned_nodes();
+                M::auto_drop(owned_nodes, self)?;
+                // Last check
+                if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                        node_id,
+                    )));
+                }
+            }
 
             // Restore previous frame
             self.current_frame = parent;
@@ -272,7 +258,11 @@ where
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
-        let node = self.drop_node_internal(*node_id)?;
+        let node = self.current_frame
+            .remove_node(&mut self.heap, node_id)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
+            })?;
 
         M::after_drop_node(self)?;
 

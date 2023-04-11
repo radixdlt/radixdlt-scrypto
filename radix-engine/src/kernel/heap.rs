@@ -71,6 +71,7 @@ impl Heap {
     }
 }
 
+// TODO: Remove
 #[derive(Debug, Default)]
 pub struct HeapNode {
     pub substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
