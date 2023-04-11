@@ -315,13 +315,13 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
 
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_native(
@@ -342,12 +342,12 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm(
@@ -364,12 +364,12 @@ impl PackageNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = Self::publish_wasm_advanced(
@@ -388,8 +388,8 @@ impl PackageNativePackage {
             PACKAGE_SET_ROYALTY_CONFIG_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
                 Self::set_royalty_config(receiver, input, api)
@@ -397,14 +397,14 @@ impl PackageNativePackage {
             PACKAGE_CLAIM_ROYALTY_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
                 Self::claim_royalty(receiver, input, api)
             }
-            _ => Err(RuntimeError::SystemInvokeError(
-                SystemInvokeError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -597,7 +597,7 @@ impl PackageNativePackage {
     {
         let input: PackageSetRoyaltyConfigInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         // FIXME: double check if auth is set up for any package
 
@@ -621,7 +621,7 @@ impl PackageNativePackage {
     {
         let _input: PackageClaimRoyaltyInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let handle = api.sys_lock_substate(
             receiver,

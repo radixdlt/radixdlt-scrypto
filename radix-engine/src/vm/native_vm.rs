@@ -6,7 +6,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::errors::{RuntimeError, SystemInvokeError};
+use crate::errors::{RuntimeError, SystemUpstreamError, VmError};
 use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -14,17 +14,24 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::types::*;
 use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
 use radix_engine_interface::blueprints::package::*;
+use crate::system::system_upstream_api::SystemUpstreamApi;
 
 pub struct NativeVm;
 
 impl NativeVm {
     pub fn create_instance(
         package_address: PackageAddress,
-        native_package_code_id: u8,
-    ) -> NativeVmInstance {
-        NativeVmInstance {
-            native_package_code_id
+        code: &[u8],
+    ) -> Result<NativeVmInstance, RuntimeError> {
+        if code.len() != 1 {
+            return Err(RuntimeError::VmError(VmError::InvalidCode));
         }
+
+        let instance = NativeVmInstance {
+            native_package_code_id: code[0],
+        };
+
+        Ok(instance)
     }
 }
 
@@ -32,8 +39,8 @@ pub struct NativeVmInstance {
     native_package_code_id: u8,
 }
 
-impl NativeVmInstance {
-    pub fn invoke<'r, Y>(
+impl SystemUpstreamApi for NativeVmInstance {
+    fn invoke<Y>(
         &mut self,
         receiver: Option<&NodeId>,
         export_name: &str,
@@ -74,8 +81,8 @@ impl NativeVmInstance {
             ACCESS_RULES_CODE_ID => {
                 AccessRulesNativePackage::invoke_export(export_name, receiver, input, api)
             }
-            _ => Err(RuntimeError::SystemInvokeError(
-                SystemInvokeError::NativeInvalidCodeId(self.native_package_code_id),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeInvalidCodeId(self.native_package_code_id),
             )),
         }
     }

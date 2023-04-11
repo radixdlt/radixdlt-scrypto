@@ -1,7 +1,7 @@
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, SystemInvokeError};
+use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
@@ -65,7 +65,7 @@ impl ValidatorBlueprint {
     {
         let _input: ValidatorRegisterInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
@@ -118,7 +118,7 @@ impl ValidatorBlueprint {
     {
         let _input: ValidatorUnregisterInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
@@ -166,7 +166,7 @@ impl ValidatorBlueprint {
     {
         let input: ValidatorStakeInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         // Prepare the event and emit it once the operations succeed
         let event = {
@@ -238,7 +238,7 @@ impl ValidatorBlueprint {
     {
         let input: ValidatorUnstakeInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         // Prepare event and emit it once operations finish
         let event = {
@@ -339,7 +339,7 @@ impl ValidatorBlueprint {
     {
         let input: ValidatorClaimXrdInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -408,7 +408,7 @@ impl ValidatorBlueprint {
     {
         let input: ValidatorUpdateKeyInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -455,7 +455,7 @@ impl ValidatorBlueprint {
     {
         let input: ValidatorUpdateAcceptDelegatedStakeInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let rule = if input.accept_delegated_stake {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)

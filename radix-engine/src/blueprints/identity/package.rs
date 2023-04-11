@@ -1,6 +1,6 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
-use crate::errors::SystemInvokeError;
+use crate::errors::SystemUpstreamError;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -97,12 +97,12 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_advanced(input.config, api)?;
@@ -113,12 +113,12 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create(api)?;
@@ -128,11 +128,11 @@ impl IdentityNativePackage {
             IDENTITY_SECURIFY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::securify(receiver, api)?;
@@ -143,12 +143,12 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_ecdsa_virtual(input.id, api)?;
@@ -159,20 +159,20 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_eddsa_virtual(input.id, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::SystemInvokeError(
-                SystemInvokeError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

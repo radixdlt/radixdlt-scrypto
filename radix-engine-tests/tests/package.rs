@@ -109,7 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemInvokeError(_)));
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemUpstreamError(_)));
 }
 
 #[test]

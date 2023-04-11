@@ -1,4 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemInvokeError};
+use radix_engine::errors::{RuntimeError, SystemUpstreamError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -53,7 +53,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputSchemaNotMatch { .. })
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch { .. })
                 )
             });
         }
@@ -61,7 +61,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemInvokeError(SystemInvokeError::OutputSchemaNotMatch { .. })
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch { .. })
                 )
             });
         }

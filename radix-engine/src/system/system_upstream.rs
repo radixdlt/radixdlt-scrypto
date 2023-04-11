@@ -1,17 +1,18 @@
 use crate::blueprints::package::PackageCodeTypeSubstate;
-use crate::errors::{KernelError, RuntimeError, SystemInvokeError};
+use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation, KernelUpstream};
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation, KernelNodeApi, KernelSubstateApi, KernelUpstream};
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_modules::virtualization::VirtualizationModule;
+use crate::system::system_upstream_api::SystemUpstreamApi;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmRuntime};
 use crate::vm::{NativeVm, ScryptoRuntime, ScryptoVm};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::{ClientApi, ClientBlueprintApi};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::ClientTransactionLimitsApi;
 use radix_engine_interface::blueprints::package::*;
@@ -30,13 +31,13 @@ fn validate_input(
         blueprint_schema
             .functions
             .get(fn_ident)
-            .ok_or(RuntimeError::SystemInvokeError(
-                SystemInvokeError::FunctionNotFound(fn_ident.to_string()),
+            .ok_or(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
             ))?;
 
     if function_schema.receiver.is_some() != with_receiver {
-        return Err(RuntimeError::SystemInvokeError(
-            SystemInvokeError::ReceiverNotMatch(fn_ident.to_string()),
+        return Err(RuntimeError::SystemUpstreamError(
+            SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
         ));
     }
 
@@ -46,7 +47,7 @@ fn validate_input(
         function_schema.input,
     )
     .map_err(|err| {
-        RuntimeError::SystemInvokeError(SystemInvokeError::InputSchemaNotMatch(
+        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
             fn_ident.to_string(),
             err.error_message(&blueprint_schema.schema),
         ))
@@ -71,7 +72,7 @@ fn validate_output(
         function_schema.output,
     )
     .map_err(|err| {
-        RuntimeError::SystemInvokeError(SystemInvokeError::OutputSchemaNotMatch(
+        RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
             fn_ident.to_string(),
             err.error_message(&blueprint_schema.schema),
         ))
@@ -249,8 +250,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::InvalidSystemCall,
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::InvalidSystemCall,
                     ))
                 }
             };
@@ -266,9 +267,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 api.kernel_drop_lock(handle)?;
             }
 
-            let system = SystemDownstream::new(api);
             let mut vm_instance = {
-                NativeVm::create_instance(invocation.blueprint.package_address, PACKAGE_CODE_ID)
+                NativeVm::create_instance(invocation.blueprint.package_address, &[PACKAGE_CODE_ID])?
             };
             let output = {
                 let mut system = SystemDownstream::new(api);
@@ -291,15 +291,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::InvalidSystemCall,
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::InvalidSystemCall,
                     ))
                 }
             };
 
-            let system = SystemDownstream::new(api);
             let mut vm_instance = {
-                NativeVm::create_instance(invocation.blueprint.package_address, TRANSACTION_PROCESSOR_CODE_ID)
+                NativeVm::create_instance(invocation.blueprint.package_address, &[TRANSACTION_PROCESSOR_CODE_ID])?
             };
             let output = {
                 let mut system = SystemDownstream::new(api);
@@ -340,8 +339,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     .schema
                     .blueprints
                     .get(&invocation.blueprint.blueprint_name)
-                    .ok_or(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::BlueprintNotFound(invocation.blueprint.clone()),
+                    .ok_or(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::BlueprintNotFound(invocation.blueprint.clone()),
                     ))?
                     .clone();
                 api.kernel_drop_lock(handle)?;
@@ -360,8 +359,8 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     {
                         sys_func.export_name.to_string()
                     } else {
-                        return Err(RuntimeError::SystemInvokeError(
-                            SystemInvokeError::InvalidSystemCall,
+                        return Err(RuntimeError::SystemUpstreamError(
+                            SystemUpstreamError::InvalidSystemCall,
                         ));
                     }
                 }
@@ -398,8 +397,10 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let mut vm_instance = {
-                        let native_package_code_id = package_code.code[0];
-                        NativeVm::create_instance(invocation.blueprint.package_address, native_package_code_id)
+                        NativeVm::create_instance(
+                            invocation.blueprint.package_address,
+                            &package_code.code,
+                        )?
                     };
                     let output = {
                         let mut system = SystemDownstream::new(api);
@@ -416,11 +417,10 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 PackageCodeTypeSubstate::Wasm => {
                     let mut scrypto_vm_instance = {
                         let system = api.kernel_get_system();
-                        let scrypto_vm_instance = system.scrypto_vm.create_instance(
+                        system.scrypto_vm.create_instance(
                             invocation.blueprint.package_address,
                             &package_code.code,
-                        );
-                        scrypto_vm_instance
+                        )
                     };
 
                     let output = {

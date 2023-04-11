@@ -1,4 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemInvokeError};
+use radix_engine::errors::{RuntimeError, SystemUpstreamError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -70,7 +70,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::SystemInvokeError(SystemInvokeError::BlueprintNotFound(blueprint)) = e
+        if let RuntimeError::SystemUpstreamError(SystemUpstreamError::BlueprintNotFound(blueprint)) = e
         {
             package_addr.eq(&blueprint.package_address)
                 && blueprint.blueprint_name.eq("NonExistentBlueprint")

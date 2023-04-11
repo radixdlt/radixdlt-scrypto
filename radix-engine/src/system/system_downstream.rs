@@ -2,7 +2,7 @@ use crate::errors::{
     ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType,
     InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError,
 };
-use crate::errors::{SystemError, SystemInvokeError};
+use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::heap::HeapNode;
@@ -561,7 +561,7 @@ where
                 receiver: Some(identifier),
             },
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
             payload_size,
         };
@@ -663,7 +663,7 @@ where
         let invocation = KernelInvocation {
             resolved_actor: Actor::function(identifier.clone()),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
             sys_invocation: SystemInvocation {
                 blueprint: identifier.0,

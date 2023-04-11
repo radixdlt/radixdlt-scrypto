@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
-use crate::errors::SystemInvokeError;
+use crate::errors::SystemUpstreamError;
 use crate::event_schema;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
@@ -1118,12 +1118,12 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: FungibleResourceManagerCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
                     input.divisibility,
@@ -1137,13 +1137,13 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: FungibleResourceManagerCreateWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
                     input.divisibility,
@@ -1158,13 +1158,13 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: FungibleResourceManagerCreateWithInitialSupplyAndAddressInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(
                     input.divisibility,
@@ -1179,11 +1179,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: FungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::mint(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1191,11 +1191,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::burn(receiver, input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1203,12 +1203,12 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
                 let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = FungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
@@ -1217,11 +1217,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create_vault(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1229,12 +1229,12 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: ResourceManagerGetResourceTypeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::get_resource_type(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1242,11 +1242,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::get_total_supply(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1255,13 +1255,13 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: NonFungibleResourceManagerCreateInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
                     input.id_type,
@@ -1276,13 +1276,13 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: NonFungibleResourceManagerCreateWithAddressInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
                     input.id_type,
@@ -1298,13 +1298,13 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: NonFungibleResourceManagerCreateWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
                     input.id_type,
@@ -1320,14 +1320,14 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
 
                 let input: NonFungibleResourceManagerCreateUuidWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_uuid_with_initial_supply(
@@ -1343,11 +1343,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_non_fungible(
                     receiver,
@@ -1359,12 +1359,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleResourceManagerMintUuidInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(
                     receiver,
@@ -1376,12 +1376,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleResourceManagerMintSingleUuidInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_single_uuid_non_fungible(
                     receiver,
@@ -1393,11 +1393,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::burn(receiver, input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1405,12 +1405,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
                 let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
@@ -1419,11 +1419,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_vault(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1431,12 +1431,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleResourceManagerUpdateDataInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(
                     receiver,
@@ -1450,12 +1450,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleResourceManagerExistsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(
                     receiver, input.id, api,
@@ -1465,12 +1465,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: ResourceManagerGetResourceTypeInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_resource_type(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1478,11 +1478,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_total_supply(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1490,12 +1490,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleResourceManagerGetNonFungibleInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::get_non_fungible(receiver, input.id, api)?;
@@ -1504,22 +1504,22 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: FungibleVaultLockFeeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 FungibleVaultBlueprint::lock_fee(receiver, input.amount, input.contingent, api)
             }
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::take(receiver, &input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1527,11 +1527,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::take(receiver, &input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1539,12 +1539,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleVaultTakeNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
                     receiver,
@@ -1556,11 +1556,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::recall(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1568,11 +1568,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::recall(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1580,12 +1580,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleVaultRecallNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(
                     receiver,
@@ -1597,11 +1597,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultPutInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::put(receiver, input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1609,11 +1609,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultPutInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::put(receiver, input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1621,11 +1621,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::get_amount(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1633,11 +1633,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::get_amount(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1645,12 +1645,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: NonFungibleVaultGetNonFungibleLocalIdsInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1658,11 +1658,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: VaultCreateProofOfAllInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::create_proof(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1670,11 +1670,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: VaultCreateProofOfAllInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::create_proof(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1682,11 +1682,11 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn =
                     FungibleVaultBlueprint::create_proof_by_amount(receiver, input.amount, api)?;
@@ -1695,11 +1695,11 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn =
                     NonFungibleVaultBlueprint::create_proof_by_amount(receiver, input.amount, api)?;
@@ -1708,12 +1708,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1721,12 +1721,12 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: FungibleVaultLockFungibleAmountInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleVaultBlueprint::lock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1734,12 +1734,12 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: FungibleVaultUnlockFungibleAmountInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleVaultBlueprint::unlock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1747,12 +1747,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleVaultLockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn =
                     NonFungibleVaultBlueprint::lock_non_fungibles(receiver, input.local_ids, api)?;
@@ -1762,12 +1762,12 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let input: NonFungibleVaultUnlockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(
                     receiver,
@@ -1780,8 +1780,8 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
 
@@ -1790,32 +1790,32 @@ impl ResourceManagerNativePackage {
             PROOF_CLONE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ProofBlueprint::clone(receiver, input, api)
             }
             PROOF_GET_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ProofBlueprint::get_amount(receiver, input, api)
             }
             PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ProofBlueprint::get_non_fungible_local_ids(receiver, input, api)
             }
             PROOF_GET_RESOURCE_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ProofBlueprint::get_resource_address(receiver, input, api)
             }
@@ -1823,12 +1823,12 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: BucketBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = BucketBlueprint::burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -1837,8 +1837,8 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
 
@@ -1847,88 +1847,88 @@ impl ResourceManagerNativePackage {
             BUCKET_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::put(receiver, input, api)
             }
             BUCKET_TAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::take(receiver, input, api)
             }
             BUCKET_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::take_non_fungibles(receiver, input, api)
             }
             BUCKET_GET_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::get_amount(receiver, input, api)
             }
             BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::get_non_fungible_local_ids(receiver, input, api)
             }
             BUCKET_GET_RESOURCE_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::get_resource_address(receiver, input, api)
             }
             BUCKET_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::create_proof(receiver, input, api)
             }
             BUCKET_LOCK_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::lock_amount(receiver, input, api)
             }
             BUCKET_LOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::lock_non_fungibles(receiver, input, api)
             }
             BUCKET_UNLOCK_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::unlock_amount(receiver, input, api)
             }
             BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::unlock_non_fungibles(receiver, input, api)
             }
@@ -1936,8 +1936,8 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
 
@@ -1946,133 +1946,133 @@ impl ResourceManagerNativePackage {
             WORKTOP_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::put(receiver, input, api)
             }
             WORKTOP_TAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::take(receiver, input, api)
             }
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::take_non_fungibles(receiver, input, api)
             }
             WORKTOP_TAKE_ALL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::take_all(receiver, input, api)
             }
             WORKTOP_ASSERT_CONTAINS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::assert_contains(receiver, input, api)
             }
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::assert_contains_amount(receiver, input, api)
             }
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::assert_contains_non_fungibles(receiver, input, api)
             }
             WORKTOP_DRAIN_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 WorktopBlueprint::drain(receiver, input, api)
             }
             AUTH_ZONE_POP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::pop(receiver, input, api)
             }
             AUTH_ZONE_PUSH_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::push(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
             }
             AUTH_ZONE_CLEAR_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::clear(receiver, input, api)
             }
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::clear_signature_proofs(receiver, input, api)
             }
             AUTH_ZONE_DRAIN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::drain(receiver, input, api)
             }
-            _ => Err(RuntimeError::SystemInvokeError(
-                SystemInvokeError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

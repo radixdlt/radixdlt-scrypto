@@ -67,7 +67,10 @@ pub enum RuntimeError {
     SystemError(SystemError),
 
     /// TODO: merge with `ModuleError`/`ApplicationError`
-    SystemInvokeError(SystemInvokeError),
+    SystemUpstreamError(SystemUpstreamError),
+
+    /// An error occurred in the vm layer
+    VmError(VmError),
 
     /// An error occurred within a kernel module.
     ModuleError(ModuleError),
@@ -90,9 +93,9 @@ impl From<KernelError> for RuntimeError {
     }
 }
 
-impl From<SystemInvokeError> for RuntimeError {
-    fn from(error: SystemInvokeError) -> Self {
-        RuntimeError::SystemInvokeError(error.into())
+impl From<SystemUpstreamError> for RuntimeError {
+    fn from(error: SystemUpstreamError) -> Self {
+        RuntimeError::SystemUpstreamError(error.into())
     }
 }
 
@@ -112,8 +115,9 @@ impl CanBeAbortion for RuntimeError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             RuntimeError::KernelError(err) => err.abortion(),
+            RuntimeError::VmError(_) => None,
             RuntimeError::SystemError(_) => None,
-            RuntimeError::SystemInvokeError(_) => None,
+            RuntimeError::SystemUpstreamError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
@@ -126,7 +130,7 @@ pub enum KernelError {
     CallFrameError(CallFrameError),
 
     /// Interpreter
-    InterpreterError(SystemInvokeError),
+    InterpreterError(SystemUpstreamError),
     WasmRuntimeError(WasmRuntimeError),
 
     // ID allocation
@@ -208,7 +212,7 @@ pub enum SystemError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SystemInvokeError {
+pub enum SystemUpstreamError {
     InvalidSystemCall,
 
     NativeUnexpectedReceiver(String),
@@ -224,6 +228,11 @@ pub enum SystemInvokeError {
 
     OutputDecodeError(DecodeError),
     OutputSchemaNotMatch(String, String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum VmError {
+    InvalidCode,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -1,5 +1,5 @@
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, SystemInvokeError};
+use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
@@ -42,7 +42,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopDropInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         // FIXME we must check the node type, before generic own schema validation is ready.
 
@@ -72,7 +72,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopPutInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let amount = input.bucket.sys_amount(api)?;
@@ -108,7 +108,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopTakeInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let resource_address = input.resource_address;
         let amount = input.amount;
@@ -158,7 +158,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopTakeNonFungiblesInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let resource_address = input.resource_address;
         let ids = input.ids;
@@ -209,7 +209,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopTakeAllInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let worktop_handle =
             api.sys_lock_substate(receiver, &WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
@@ -236,7 +236,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopAssertContainsInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -268,7 +268,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopAssertContainsAmountInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -300,7 +300,7 @@ impl WorktopBlueprint {
     {
         let input: WorktopAssertContainsNonFungiblesInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -333,7 +333,7 @@ impl WorktopBlueprint {
     {
         let _input: WorktopDrainInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let worktop_handle =
             api.sys_lock_substate(receiver, &WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;

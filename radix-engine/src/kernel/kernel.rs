@@ -57,7 +57,7 @@ impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
         SystemUpstream::on_init(&mut kernel)?;
 
         let args = IndexedScryptoValue::from_vec(args)
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         for node_id in args.references() {
             if node_id.is_global_virtual() {

@@ -1,6 +1,6 @@
 use super::events::*;
 use super::state_machine::*;
-use crate::errors::{ApplicationError, RuntimeError, SystemInvokeError};
+use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::event_schema;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
@@ -304,8 +304,8 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::SystemInvokeError(
-                        SystemInvokeError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 Self::create_global(input, api)
@@ -313,93 +313,93 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::create_proof(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::initiate_recovery_as_primary(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::initiate_recovery_as_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::timed_confirm_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::cancel_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::unlock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemInvokeError(
-                    SystemInvokeError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::stop_timed_recovery(receiver, input, api)
             }
-            _ => Err(RuntimeError::SystemInvokeError(
-                SystemInvokeError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -413,7 +413,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerCreateGlobalInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         // Creating a new vault and putting in it the controlled asset
         let vault = {
@@ -460,7 +460,7 @@ impl AccessControllerNativePackage {
     {
         let _input: AccessControllerCreateProofInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         let proof = transition(receiver, api, AccessControllerCreateProofStateMachineInput)?;
 
@@ -477,7 +477,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerInitiateRecoveryAsPrimaryInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -512,7 +512,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerInitiateRecoveryAsRecoveryInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -547,7 +547,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -588,7 +588,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -629,7 +629,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerTimedConfirmRecoveryInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -671,7 +671,7 @@ impl AccessControllerNativePackage {
     {
         let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -699,7 +699,7 @@ impl AccessControllerNativePackage {
     {
         let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -727,7 +727,7 @@ impl AccessControllerNativePackage {
     {
         let _input: AccessControllerLockPrimaryRoleInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -749,7 +749,7 @@ impl AccessControllerNativePackage {
     {
         let _input: AccessControllerUnlockPrimaryRoleInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
@@ -771,7 +771,7 @@ impl AccessControllerNativePackage {
     {
         let input: AccessControllerStopTimedRecoveryInput = input
             .as_typed()
-            .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::InputDecodeError(e)))?;
+            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
 
         transition_mut(
             receiver,
