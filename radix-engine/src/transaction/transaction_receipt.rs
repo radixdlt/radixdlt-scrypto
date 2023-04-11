@@ -523,7 +523,9 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             for (i, (address, resource, delta)) in balance_changes.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Entity: {}\n   Resource: {}\n   Change: {}",
+                    // NB - we use ResAddr instead of Resource to protect people who read new resources as
+                    //      `Resource: ` from the receipts (see eg resim.sh)
+                    "\n{} Entity: {}\n   ResAddr: {}\n   Change: {}",
                     prefix!(i, balance_changes),
                     address.display(address_display_context),
                     resource.display(address_display_context),
@@ -551,7 +553,9 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Vault: {}\n   Resource: {}\n   Change: {}",
+                    // NB - we use ResAddr instead of Resource to protect people who read new resources as
+                    //      `Resource: ` from the receipts (see eg resim.sh)
+                    "\n{} Vault: {}\n   ResAddr: {}\n   Change: {}",
                     prefix!(i, direct_vault_updates),
                     hex::encode(object_id),
                     resource.display(address_display_context),
