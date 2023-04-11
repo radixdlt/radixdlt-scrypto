@@ -595,9 +595,9 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageSetRoyaltyConfigInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: PackageSetRoyaltyConfigInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         // FIXME: double check if auth is set up for any package
 
@@ -619,9 +619,9 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: PackageClaimRoyaltyInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let _input: PackageClaimRoyaltyInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,

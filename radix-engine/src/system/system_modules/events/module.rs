@@ -1,5 +1,5 @@
 use crate::system::module::SystemModule;
-use crate::system::system_upstream::SystemUpstream;
+use crate::system::system_callback::SystemCallback;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::types::*;
@@ -17,4 +17,4 @@ impl EventsModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for EventsModule {}
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for EventsModule {}

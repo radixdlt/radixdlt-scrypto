@@ -2,11 +2,12 @@ use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelApi, KernelUpstream};
+use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_downstream::SystemDownstream;
-use crate::system::system_upstream::SystemUpstream;
+use crate::system::system::SystemDownstream;
+use crate::system::system_callback::SystemCallback;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::ClientObjectApi;
@@ -24,7 +25,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
+    fn prepare_move_downstream<'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + 'g>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -84,7 +85,7 @@ impl NodeMoveModule {
         Ok(())
     }
 
-    fn prepare_move_upstream<Y: KernelApi<M>, M: KernelUpstream>(
+    fn prepare_move_upstream<Y: KernelApi<M>, M: KernelCallbackObject>(
         _node_id: NodeId,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -92,8 +93,8 @@ impl NodeMoveModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for NodeMoveModule {
-    fn before_push_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for NodeMoveModule {
+    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -107,7 +108,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for NodeMoveMod
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_execution_finish<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,

@@ -53,7 +53,9 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch { .. })
+                    RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::InputSchemaNotMatch { .. }
+                    )
                 )
             });
         }
@@ -61,7 +63,9 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch { .. })
+                    RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::OutputSchemaNotMatch { .. }
+                    )
                 )
             });
         }

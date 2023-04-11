@@ -11,9 +11,9 @@ use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system_callback::SystemCallback;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::system::system_upstream::SystemUpstream;
 use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -1202,7 +1202,7 @@ impl TestRunner {
             wasm_instrumenter: WasmInstrumenter::default(),
         };
 
-        let mut system = SystemUpstream {
+        let mut system = SystemCallback {
             scrypto_vm: &scrypto_interpreter,
             modules: SystemModuleMixer::standard(
                 transaction_hash,

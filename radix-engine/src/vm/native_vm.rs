@@ -7,20 +7,20 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{RuntimeError, SystemUpstreamError, VmError};
-use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
+use crate::system::system_callback_api::SystemCallbackApi;
 use crate::types::*;
-use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
-use crate::system::system_upstream_api::SystemUpstreamApi;
 
 pub struct NativeVm;
 
 impl NativeVm {
     pub fn create_instance(
-        package_address: PackageAddress,
+        _package_address: PackageAddress,
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
         if code.len() != 1 {
@@ -39,7 +39,7 @@ pub struct NativeVmInstance {
     native_package_code_id: u8,
 }
 
-impl SystemUpstreamApi for NativeVmInstance {
+impl SystemCallbackApi for NativeVmInstance {
     fn invoke<Y>(
         &mut self,
         receiver: Option<&NodeId>,
@@ -47,8 +47,9 @@ impl SystemUpstreamApi for NativeVmInstance {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi  {
-
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi,
+    {
         match self.native_package_code_id {
             PACKAGE_CODE_ID => {
                 PackageNativePackage::invoke_export(export_name, receiver, input, api)

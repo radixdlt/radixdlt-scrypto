@@ -60,9 +60,9 @@ impl TransactionProcessorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: TransactionProcessorRunInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         // Runtime transaction validation
         for request in input.runtime_validations.as_ref() {

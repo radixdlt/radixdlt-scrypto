@@ -40,9 +40,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopDropInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopDropInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         // FIXME we must check the node type, before generic own schema validation is ready.
 
@@ -70,9 +70,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopPutInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopPutInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let amount = input.bucket.sys_amount(api)?;
@@ -106,9 +106,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopTakeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopTakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let resource_address = input.resource_address;
         let amount = input.amount;
@@ -156,9 +156,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopTakeNonFungiblesInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopTakeNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let resource_address = input.resource_address;
         let ids = input.ids;
@@ -207,9 +207,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopTakeAllInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopTakeAllInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let worktop_handle =
             api.sys_lock_substate(receiver, &WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
@@ -234,9 +234,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopAssertContainsInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopAssertContainsInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -266,9 +266,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopAssertContainsAmountInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopAssertContainsAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -298,9 +298,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopAssertContainsNonFungiblesInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: WorktopAssertContainsNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -331,9 +331,9 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: WorktopDrainInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let _input: WorktopDrainInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let worktop_handle =
             api.sys_lock_substate(receiver, &WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;

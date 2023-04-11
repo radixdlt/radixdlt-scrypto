@@ -2,19 +2,19 @@ use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation, KernelNodeApi, KernelSubstateApi, KernelUpstream};
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
+use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system_downstream::SystemDownstream;
+use crate::system::system::SystemDownstream;
+use crate::system::system_callback_api::SystemCallbackApi;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::system::system_upstream_api::SystemUpstreamApi;
 use crate::types::*;
-use crate::vm::wasm::{WasmEngine, WasmRuntime};
-use crate::vm::{NativeVm, ScryptoRuntime, ScryptoVm};
+use crate::vm::wasm::WasmEngine;
+use crate::vm::{NativeVm, ScryptoVm};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, ClientBlueprintApi};
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::ClientTransactionLimitsApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -88,12 +88,12 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemUpstream<'g, W: WasmEngine> {
+pub struct SystemCallback<'g, W: WasmEngine> {
     pub scrypto_vm: &'g ScryptoVm<W>,
     pub modules: SystemModuleMixer,
 }
 
-impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
+impl<'g, W: WasmEngine + 'g> KernelCallbackObject for SystemCallback<'g, W> {
     type Invocation = SystemInvocation;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -238,7 +238,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemUpstream<'g, W>>,
+        Y: KernelApi<SystemCallback<'g, W>>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
@@ -298,7 +298,10 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             };
 
             let mut vm_instance = {
-                NativeVm::create_instance(invocation.blueprint.package_address, &[TRANSACTION_PROCESSOR_CODE_ID])?
+                NativeVm::create_instance(
+                    invocation.blueprint.package_address,
+                    &[TRANSACTION_PROCESSOR_CODE_ID],
+                )?
             };
             let output = {
                 let mut system = SystemDownstream::new(api);
@@ -392,7 +395,6 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 api.kernel_drop_lock(handle)?;
                 package_code
             };
-
 
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {

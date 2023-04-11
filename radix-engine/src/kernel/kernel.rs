@@ -10,11 +10,12 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelUpstream};
+use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system_downstream::SystemDownstream;
+use crate::system::system::SystemDownstream;
+use crate::system::system_callback::SystemCallback;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -27,7 +28,7 @@ use sbor::rust::mem;
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, 'h, W: WasmEngine, S: SubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub upstream: &'g mut SystemUpstream<'h, W>,
+    pub upstream: &'g mut SystemCallback<'h, W>,
     pub store: &'g mut S,
 }
 
@@ -54,10 +55,11 @@ impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
             upstream: self.upstream,
         };
 
-        SystemUpstream::on_init(&mut kernel)?;
+        SystemCallback::on_init(&mut kernel)?;
 
-        let args = IndexedScryptoValue::from_vec(args)
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         for node_id in args.references() {
             if node_id.is_global_virtual() {
@@ -118,7 +120,7 @@ impl<'g, 'h, W: WasmEngine, S: SubstateStore> KernelBoot<'g, 'h, W, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        SystemUpstream::on_teardown(&mut kernel)?;
+        SystemCallback::on_teardown(&mut kernel)?;
 
         Ok(rtn)
     }
@@ -129,7 +131,7 @@ pub struct Kernel<
     M,  // Upstream System layer
     S,  // Substate store
 > where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
     /// Stack
@@ -152,7 +154,7 @@ pub struct Kernel<
 
 impl<'g, M, S> Kernel<'g, M, S>
 where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
     fn invoke(
@@ -251,14 +253,15 @@ where
 
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
 where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
     #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
-        let node = self.current_frame
+        let node = self
+            .current_frame
             .remove_node(&mut self.heap, node_id)
             .map_err(|e| {
                 RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
@@ -314,7 +317,7 @@ where
 
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
 where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
     #[trace_resources]
@@ -521,7 +524,7 @@ where
 
 impl<'g, M, S> KernelSubstateApi for Kernel<'g, M, S>
 where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
     #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
@@ -690,7 +693,7 @@ where
 
 impl<'g, M, S> KernelInvokeDownstreamApi<M::Invocation> for Kernel<'g, M, S>
 where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
     #[trace_resources]
@@ -713,7 +716,7 @@ where
 
 impl<'g, M, S> KernelApi<M> for Kernel<'g, M, S>
 where
-    M: KernelUpstream,
+    M: KernelCallbackObject,
     S: SubstateStore,
 {
 }

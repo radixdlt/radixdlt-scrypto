@@ -1,9 +1,9 @@
-use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
-use crate::errors::{InvokeError, RuntimeError, SystemUpstreamError};
-use crate::system::system_upstream_api::SystemUpstreamApi;
+use crate::errors::{RuntimeError, SystemUpstreamError};
+use crate::system::system_callback_api::SystemCallbackApi;
 use crate::types::*;
-use crate::vm::ScryptoRuntime;
 use crate::vm::wasm::*;
+use crate::vm::ScryptoRuntime;
+use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
 
 pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,
@@ -23,16 +23,17 @@ impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
     }
 }
 
-
 impl<W: WasmEngine> ScryptoVm<W> {
-    pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> ScryptoVmInstance<W::WasmInstance> {
+    pub fn create_instance(
+        &self,
+        package_address: PackageAddress,
+        code: &[u8],
+    ) -> ScryptoVmInstance<W::WasmInstance> {
         let instrumented_code =
             self.wasm_instrumenter
                 .instrument(package_address, code, self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
-        ScryptoVmInstance {
-            instance
-        }
+        ScryptoVmInstance { instance }
     }
 }
 
@@ -40,7 +41,7 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
     instance: I,
 }
 
-impl<I: WasmInstance> SystemUpstreamApi for ScryptoVmInstance<I> {
+impl<I: WasmInstance> SystemCallbackApi for ScryptoVmInstance<I> {
     fn invoke<Y>(
         &mut self,
         receiver: Option<&NodeId>,
@@ -48,7 +49,8 @@ impl<I: WasmInstance> SystemUpstreamApi for ScryptoVmInstance<I> {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where Y: ClientApi<RuntimeError> + ClientTransactionLimitsApi<RuntimeError>
+    where
+        Y: ClientApi<RuntimeError> + ClientTransactionLimitsApi<RuntimeError>,
     {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
@@ -58,8 +60,7 @@ impl<I: WasmInstance> SystemUpstreamApi for ScryptoVmInstance<I> {
                 input.push(
                     runtime
                         .allocate_buffer(
-                            scrypto_encode(node_id)
-                                .expect("Failed to encode object id"),
+                            scrypto_encode(node_id).expect("Failed to encode object id"),
                         )
                         .expect("Failed to allocate buffer"),
                 );
@@ -69,7 +70,8 @@ impl<I: WasmInstance> SystemUpstreamApi for ScryptoVmInstance<I> {
                     .allocate_buffer(args.as_slice().to_vec())
                     .expect("Failed to allocate buffer"),
             );
-            self.instance.invoke_export(func_name, input, &mut runtime)?
+            self.instance
+                .invoke_export(func_name, input, &mut runtime)?
         };
 
         let consumed = self.instance.consumed_memory()?;
@@ -82,7 +84,6 @@ impl<I: WasmInstance> SystemUpstreamApi for ScryptoVmInstance<I> {
         Ok(output)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

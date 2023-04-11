@@ -1,6 +1,6 @@
 use crate::system::module::SystemModule;
 
-use crate::system::system_upstream::SystemUpstream;
+use crate::system::system_callback::SystemCallback;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
@@ -25,4 +25,4 @@ impl LoggerModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for LoggerModule {}
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for LoggerModule {}

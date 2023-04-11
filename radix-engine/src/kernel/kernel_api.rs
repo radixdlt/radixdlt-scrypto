@@ -3,6 +3,7 @@ use super::heap::HeapNode;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
@@ -111,7 +112,7 @@ pub trait KernelInvokeDownstreamApi<I: Debug> {
 
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
-pub trait KernelInternalApi<M: KernelUpstream> {
+pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Retrieves data associated with the kernel upstream layer (system)
     fn kernel_get_system(&mut self) -> &mut M;
 
@@ -132,135 +133,7 @@ pub trait KernelInternalApi<M: KernelUpstream> {
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelApi<M: KernelUpstream>:
+pub trait KernelApi<M: KernelCallbackObject>:
     KernelNodeApi + KernelSubstateApi + KernelInvokeDownstreamApi<M::Invocation> + KernelInternalApi<M>
 {
-}
-
-pub trait KernelUpstream: Sized {
-    type Invocation: Debug;
-
-    fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_drop_node<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_create_node<Y>(
-        node_id: &NodeId,
-        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_lock_substate<Y>(
-        node_id: &NodeId,
-        module_id: &SysModuleId,
-        substate_key: &SubstateKey,
-        flags: &LockFlags,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_lock_substate<Y>(
-        handle: LockHandle,
-        size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_read_substate<Y>(
-        lock_handle: LockHandle,
-        size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_write_substate<Y>(
-        lock_handle: LockHandle,
-        size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_invoke<Y>(
-        identifier: &KernelInvocation<Self::Invocation>,
-        input_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_push_frame<Y>(
-        callee: &Actor,
-        update: &mut CallFrameUpdate,
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn invoke_upstream<Y>(
-        invocation: Self::Invocation,
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_execution_finish<Y>(
-        caller: &Option<Actor>,
-        update: &CallFrameUpdate,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_substate_lock_fault<Y>(
-        node_id: NodeId,
-        module_id: SysModuleId,
-        offset: &SubstateKey,
-        api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelApi<Self>;
 }

@@ -9,7 +9,8 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RefType;
-use crate::kernel::kernel_api::{KernelApi, KernelUpstream};
+use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_callback::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -17,9 +18,9 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system_downstream::SystemDownstream;
+use crate::system::system::SystemDownstream;
+use crate::system::system_callback::SystemCallback;
 use crate::system::system_modules::auth::convert;
-use crate::system::system_upstream::SystemUpstream;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::component::ComponentStateSubstate;
@@ -78,7 +79,7 @@ impl AuthModule {
         }
     }
 
-    fn function_auth<Y: KernelApi<M>, M: KernelUpstream>(
+    fn function_auth<Y: KernelApi<M>, M: KernelCallbackObject>(
         blueprint: &Blueprint,
         ident: &str,
         api: &mut Y,
@@ -114,7 +115,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<'g, Y: KernelApi<SystemUpstream<'g, W>>, W: WasmEngine + 'g>(
+    fn method_auth<'g, Y: KernelApi<SystemCallback<'g, W>>, W: WasmEngine + 'g>(
         node_id: &NodeId,
         module_id: &ObjectModuleId,
         ident: &str,
@@ -175,7 +176,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_authorization_stateful<Y: KernelApi<M>, M: KernelUpstream>(
+    fn method_authorization_stateful<Y: KernelApi<M>, M: KernelCallbackObject>(
         receiver: &NodeId,
         object_key: ObjectKey,
         method_key: MethodKey,
@@ -255,7 +256,7 @@ impl AuthModule {
         Ok(authorization)
     }
 
-    fn method_authorization_stateless<Y: KernelApi<M>, M: KernelUpstream>(
+    fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
         ref_type: RefType,
         receiver: &NodeId,
         object_key: ObjectKey,
@@ -304,18 +305,18 @@ impl AuthModule {
     }
 }
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for AuthModule {
+    fn on_init<Y: KernelApi<SystemCallback<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
         Self::on_execution_start(api, &None)
     }
 
-    fn on_teardown<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelApi<SystemCallback<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
         Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         _call_frame_update: &mut CallFrameUpdate,
@@ -359,7 +360,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule 
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_execution_start<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -446,7 +447,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for AuthModule 
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_execution_finish<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,

@@ -63,9 +63,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ValidatorRegisterInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
@@ -116,9 +116,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ValidatorUnregisterInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
@@ -164,9 +164,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ValidatorStakeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         // Prepare the event and emit it once the operations succeed
         let event = {
@@ -236,9 +236,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ValidatorUnstakeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         // Prepare event and emit it once operations finish
         let event = {
@@ -337,9 +337,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ValidatorClaimXrdInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -406,9 +406,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ValidatorUpdateKeyInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -453,9 +453,9 @@ impl ValidatorBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ValidatorUpdateAcceptDelegatedStakeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ValidatorUpdateAcceptDelegatedStakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let rule = if input.accept_delegated_stake {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)

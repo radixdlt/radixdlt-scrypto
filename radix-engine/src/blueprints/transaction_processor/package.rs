@@ -1,5 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -8,7 +9,6 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use resources_tracker_macro::trace_resources;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 
 use super::TransactionProcessorBlueprint;
 

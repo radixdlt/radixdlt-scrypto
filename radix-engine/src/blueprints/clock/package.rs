@@ -155,9 +155,9 @@ impl ClockNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: ClockCreateInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ClockCreateInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let clock_id = api.new_object(
             CLOCK_BLUEPRINT,
@@ -206,9 +206,9 @@ impl ClockNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: ClockSetCurrentTimeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ClockSetCurrentTimeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         let current_time_ms = input.current_time_ms;
         let current_time_rounded_to_minutes =
@@ -234,9 +234,9 @@ impl ClockNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: ClockGetCurrentTimeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ClockGetCurrentTimeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         match input.precision {
             TimePrecision::Minute => {
@@ -262,9 +262,9 @@ impl ClockNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: ClockCompareCurrentTimeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e)))?;
+        let input: ClockCompareCurrentTimeInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
         match input.precision {
             TimePrecision::Minute => {

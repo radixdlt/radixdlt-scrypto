@@ -4,6 +4,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
+use crate::system::system_callback::{SystemCallback, SystemInvocation};
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
 use crate::system::system_modules::costing::FeeTable;
@@ -18,7 +19,6 @@ use crate::system::system_modules::transaction_limits::{
 };
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::system::system_upstream::{SystemInvocation, SystemUpstream};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -132,9 +132,9 @@ impl SystemModuleMixer {
 // NOTE: Modules are applied in the reverse order of initialization!
 //====================================================================
 
-impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModuleMixer {
+impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for SystemModuleMixer {
     #[trace_resources]
-    fn on_init<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelApi<SystemCallback<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
 
         // Enable transaction limits
@@ -186,7 +186,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_teardown<Y: KernelApi<SystemUpstream<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelApi<SystemCallback<'g, W>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;
@@ -219,7 +219,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn before_invoke<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn before_invoke<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
@@ -256,7 +256,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn before_push_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn before_push_frame<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -294,7 +294,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_execution_start<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_execution_start<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -330,7 +330,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_execution_finish<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_execution_finish<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         update: &CallFrameUpdate,
@@ -367,7 +367,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn after_pop_frame<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
@@ -402,7 +402,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn after_invoke<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn after_invoke<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -438,7 +438,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_allocate_node_id<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_allocate_node_id<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
@@ -474,7 +474,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn before_create_node<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn before_create_node<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
@@ -511,7 +511,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn after_create_node<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn after_create_node<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -547,7 +547,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn before_drop_node<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn before_drop_node<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -583,7 +583,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn after_drop_node<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn after_drop_node<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
@@ -618,7 +618,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn before_lock_substate<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn before_lock_substate<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &SysModuleId,
@@ -675,7 +675,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn after_lock_substate<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn after_lock_substate<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -712,7 +712,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_read_substate<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_read_substate<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -749,7 +749,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_write_substate<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_write_substate<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -786,7 +786,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemUpstream<'g, W>> for SystemModul
     }
 
     #[trace_resources]
-    fn on_drop_lock<Y: KernelApi<SystemUpstream<'g, W>>>(
+    fn on_drop_lock<Y: KernelApi<SystemCallback<'g, W>>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
