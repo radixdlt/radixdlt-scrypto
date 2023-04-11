@@ -41,6 +41,11 @@ pub struct ValidatorSetSubstate {
     pub epoch: u64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct RegisteredValidatorsSubstate {
+    pub validators: BTreeMap<ComponentAddress, Validator>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
@@ -125,9 +130,8 @@ impl EpochManagerBlueprint {
                 validator_set: validators.clone(),
             };
 
-            let preparing_validator_set = ValidatorSetSubstate {
-                epoch: initial_epoch + 1,
-                validator_set: validators.clone(),
+            let registred_validators = RegisteredValidatorsSubstate {
+                validators: validators.clone(),
             };
 
             api.new_object(
@@ -135,7 +139,7 @@ impl EpochManagerBlueprint {
                 vec![
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
-                    scrypto_encode(&preparing_validator_set).unwrap(),
+                    scrypto_encode(&registred_validators).unwrap(),
                 ],
             )?
         };
@@ -230,17 +234,17 @@ impl EpochManagerBlueprint {
         }
 
         if round >= epoch_manager.rounds_per_epoch {
+            let next_epoch = epoch_manager.epoch + 1;
+
             let handle = api.sys_lock_substate(
                 receiver,
-                &EpochManagerOffset::PreparingValidatorSet.into(),
+                &EpochManagerOffset::RegisteredValidatorSet.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut preparing_validator_set: ValidatorSetSubstate =
+
+            let registered_validator_set: RegisteredValidatorsSubstate =
                 api.sys_read_substate_typed(handle)?;
-            let prepared_epoch = preparing_validator_set.epoch;
-            let next_validator_set = preparing_validator_set.validator_set.clone();
-            preparing_validator_set.epoch = prepared_epoch + 1;
-            api.sys_write_substate_typed(handle, &preparing_validator_set)?;
+            let next_validator_set = registered_validator_set.validators;
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
@@ -249,12 +253,12 @@ impl EpochManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
-            validator_set.epoch = prepared_epoch;
+            validator_set.epoch = next_epoch;
             validator_set.validator_set = next_validator_set.clone();
             api.sys_write_substate_typed(handle, &validator_set)?;
             api.sys_drop_lock(handle)?;
 
-            epoch_manager.epoch = prepared_epoch;
+            epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
             api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
             api.sys_drop_lock(mgr_handle)?;
@@ -262,7 +266,7 @@ impl EpochManagerBlueprint {
             Runtime::emit_event(
                 api,
                 EpochChangeEvent {
-                    epoch: prepared_epoch,
+                    epoch: next_epoch,
                     validators: next_validator_set,
                 },
             )?;
@@ -331,21 +335,21 @@ impl EpochManagerBlueprint {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &EpochManagerOffset::PreparingValidatorSet.into(),
+            &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
+        let mut registered_validators: RegisteredValidatorsSubstate = api.sys_read_substate_typed(handle)?;
         match update {
             UpdateValidator::Register(key, stake) => {
-                validator_set
-                    .validator_set
+                registered_validators
+                    .validators
                     .insert(validator_address, Validator { key, stake });
             }
             UpdateValidator::Unregister => {
-                validator_set.validator_set.remove(&validator_address);
+                registered_validators.validators.remove(&validator_address);
             }
         }
-        api.sys_write_substate_typed(handle, &validator_set)?;
+        api.sys_write_substate_typed(handle, &registered_validators)?;
 
         Ok(())
     }
