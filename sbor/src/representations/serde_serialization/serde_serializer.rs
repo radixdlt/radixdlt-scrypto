@@ -790,7 +790,7 @@ mod tests {
 
         let payload = basic_encode(&value).unwrap();
         assert_json_eq(
-            BasicSborPayload::new_from_valid_slice_with_checks(&payload)
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .serializable(SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
@@ -1160,7 +1160,7 @@ mod tests {
         });
 
         assert_json_eq(
-            BasicSborPayload::new_from_valid_slice_with_checks(&payload)
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Programmatic,
@@ -1205,7 +1205,7 @@ mod tests {
         ]);
 
         assert_json_eq(
-            BasicSborPayload::new_from_valid_slice_with_checks(&payload)
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Natural,
@@ -1443,7 +1443,7 @@ mod tests {
         });
 
         assert_json_eq(
-            BasicSborPayload::new_from_valid_slice_with_checks(&payload)
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Model,

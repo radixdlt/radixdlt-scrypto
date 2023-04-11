@@ -222,8 +222,8 @@ impl CustomTypeExtension for NoCustomTypeExtension {
     }
 }
 
-pub type BasicSborPayload<'a> = RawPayload<'a, NoCustomTypeExtension>;
-pub type BasicOwnedSborPayload = RawPayload<'static, NoCustomTypeExtension>;
+pub type BasicRawPayload<'a> = RawPayload<'a, NoCustomTypeExtension>;
+pub type BasicOwnedRawPayload = RawPayload<'static, NoCustomTypeExtension>;
 pub type BasicRawValue<'a> = RawValue<'a, NoCustomTypeExtension>;
 pub type BasicOwnedRawValue = RawValue<'static, NoCustomTypeExtension>;
 pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;

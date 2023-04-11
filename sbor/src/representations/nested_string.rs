@@ -579,7 +579,7 @@ mod tests {
             type_index,
         };
         assert_eq!(
-            &BasicSborPayload::new_from_valid_slice_with_checks(&payload)
+            &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .to_string(display_context),
             expected_annotated_single_line,
@@ -665,7 +665,7 @@ mod tests {
             type_index,
         };
         assert_eq!(
-            &BasicSborPayload::new_from_valid_slice_with_checks(&payload)
+            &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .to_string(display_context),
             expected_annotated_multi_line,
