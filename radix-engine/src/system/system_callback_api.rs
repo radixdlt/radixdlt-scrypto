@@ -4,6 +4,7 @@ use crate::system::system_callback::SystemCallback;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 
+/// Invocation callback invoked by the system layer
 pub trait SystemCallbackObject: Sized {
     fn invoke<Y>(
         package_address: &PackageAddress,
