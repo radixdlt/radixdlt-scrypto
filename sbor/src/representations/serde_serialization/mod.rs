@@ -4,13 +4,13 @@
 //! To use this module, you need to enable the `serde` feature.
 //!
 //! You can then:
-//! ```no_run
+//! ```ignore
 //!     // Ensure the ContextualSerialize trait is in scope.
 //!     // You will need to enable the "sbor" feature of utils.
 //!     use utils::*;
 //!     use sbor::representations::*;
 //!
-//!     let payload = SborPayload::new(&payload_bytes);
+//!     let payload = BasicPayload::new(&payload_bytes);
 //!     let serializable = payload.serializable(
 //!         // Provide some SerializationParameters
 //!     );
