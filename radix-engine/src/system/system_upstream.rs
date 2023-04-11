@@ -369,21 +369,25 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 api.kernel_drop_lock(handle)?;
                 code_type
             };
+
+            let package_code = {
+                let handle = api.kernel_lock_substate(
+                    invocation.blueprint.package_address.as_node_id(),
+                    SysModuleId::ObjectTuple,
+                    &PackageOffset::Code.into(),
+                    LockFlags::read_only(),
+                )?;
+                let code = api.kernel_read_substate(handle)?;
+                let package_code: PackageCodeSubstate = code.as_typed().unwrap();
+                api.kernel_drop_lock(handle)?;
+                package_code
+            };
+
+
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
-                    let handle = api.kernel_lock_substate(
-                        invocation.blueprint.package_address.as_node_id(),
-                        SysModuleId::ObjectTuple,
-                        &PackageOffset::Code.into(),
-                        LockFlags::read_only(),
-                    )?;
-                    let code = api.kernel_read_substate(handle)?;
-                    let code: PackageCodeSubstate = code.as_typed().unwrap();
-                    let native_package_code_id = code.code[0];
-                    api.kernel_drop_lock(handle)?;
-
+                    let native_package_code_id = package_code.code[0];
                     let mut system = SystemDownstream::new(api);
-
                     NativeVm::invoke_native_package(
                         native_package_code_id,
                         invocation.receiver.as_ref().map(|x| &x.0),
@@ -395,17 +399,6 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 }
                 PackageCodeTypeSubstate::Wasm => {
                     let mut scrypto_vm_instance = {
-                        let handle = api.kernel_lock_substate(
-                            invocation.blueprint.package_address.as_node_id(),
-                            SysModuleId::ObjectTuple,
-                            &PackageOffset::Code.into(),
-                            LockFlags::read_only(),
-                        )?;
-                        // TODO: check if save to unwrap
-                        let package_code: PackageCodeSubstate =
-                            api.kernel_read_substate(handle)?.as_typed().unwrap();
-                        api.kernel_drop_lock(handle)?;
-
                         let system = api.kernel_get_system();
                         let scrypto_vm_instance = system.scrypto_vm.create_instance(
                             invocation.blueprint.package_address,
@@ -414,20 +407,15 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                         scrypto_vm_instance
                     };
 
-                    let (output, consumed_memory) = {
+                    let output = {
                         let mut system = SystemDownstream::new(api);
-                        let mut runtime: Box<dyn WasmRuntime> =
-                            Box::new(ScryptoRuntime::new(&mut system));
                         scrypto_vm_instance.invoke(
                             invocation.receiver.as_ref().map(|x| &x.0),
                             &export_name,
                             args,
-                            &mut runtime,
+                            &mut system,
                         )?
                     };
-
-                    let mut system = SystemDownstream::new(api);
-                    system.update_wasm_memory_usage(consumed_memory)?;
 
                     output
                 }

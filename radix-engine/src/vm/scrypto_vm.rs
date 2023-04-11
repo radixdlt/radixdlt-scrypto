@@ -1,5 +1,7 @@
-use crate::errors::InvokeError;
+use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
+use crate::errors::{InvokeError, RuntimeError};
 use crate::types::*;
+use crate::vm::ScryptoRuntime;
 use crate::vm::wasm::*;
 
 pub struct ScryptoVm<W: WasmEngine> {
@@ -38,33 +40,41 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 }
 
 impl<I: WasmInstance> ScryptoVmInstance<I> {
-    pub fn invoke<'r>(
+    pub fn invoke<'r, Y>(
         &mut self,
         receiver: Option<&NodeId>,
         func_name: &str,
         args: &IndexedScryptoValue,
-        runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<(Vec<u8>, usize), InvokeError<WasmRuntimeError>> {
-        let mut input = Vec::new();
-        if let Some(node_id) = receiver {
+        api: &mut Y,
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>
+    where Y: ClientApi<RuntimeError> + ClientTransactionLimitsApi<RuntimeError>
+    {
+        let rtn = {
+            let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
+
+            let mut input = Vec::new();
+            if let Some(node_id) = receiver {
+                input.push(
+                    runtime
+                        .allocate_buffer(
+                            scrypto_encode(node_id)
+                                .expect("Failed to encode object id"),
+                        )
+                        .expect("Failed to allocate buffer"),
+                );
+            }
             input.push(
                 runtime
-                    .allocate_buffer(
-                        scrypto_encode(node_id)
-                            .expect("Failed to encode object id"),
-                    )
+                    .allocate_buffer(args.as_slice().to_vec())
                     .expect("Failed to allocate buffer"),
             );
-        }
-        input.push(
-            runtime
-                .allocate_buffer(args.as_slice().to_vec())
-                .expect("Failed to allocate buffer"),
-        );
+            self.instance.invoke_export(func_name, input, &mut runtime)?
+        };
 
-        let rtn = self.instance.invoke_export(func_name, input, runtime)?;
         let consumed = self.instance.consumed_memory()?;
-        Ok((rtn, consumed))
+        api.update_wasm_memory_usage(consumed)?;
+
+        Ok(rtn)
     }
 }
 
