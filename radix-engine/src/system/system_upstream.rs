@@ -8,7 +8,7 @@ use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_downstream::SystemDownstream;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
-use crate::vm::wasm::{WasmEngine, WasmInstance, WasmRuntime};
+use crate::vm::wasm::{WasmEngine, WasmRuntime};
 use crate::vm::{NativeVm, ScryptoRuntime, ScryptoVm};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -395,7 +395,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                     .into()
                 }
                 PackageCodeTypeSubstate::Wasm => {
-                    let mut wasm_instance = {
+                    let mut scrypto_vm_instance = {
                         let handle = api.kernel_lock_substate(
                             invocation.blueprint.package_address.as_node_id(),
                             SysModuleId::ObjectTuple,
@@ -408,14 +408,14 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                         api.kernel_drop_lock(handle)?;
 
                         let system = api.kernel_get_system();
-                        let wasm_instance = system.scrypto_vm.create_instance(
+                        let scrypto_vm_instance = system.scrypto_vm.create_instance(
                             invocation.blueprint.package_address,
                             &package_code.code,
                         );
-                        wasm_instance
+                        scrypto_vm_instance
                     };
 
-                    let output = {
+                    let (output, consumed_memory) = {
                         let mut system = SystemDownstream::new(api);
                         let mut runtime: Box<dyn WasmRuntime> =
                             Box::new(ScryptoRuntime::new(&mut system));
@@ -437,11 +437,11 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                                 .expect("Failed to allocate buffer"),
                         );
 
-                        wasm_instance.invoke_export(&export_name, input, &mut runtime)?
+                        scrypto_vm_instance.invoke(&export_name, input, &mut runtime)?
                     };
 
                     let mut system = SystemDownstream::new(api);
-                    system.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
+                    system.update_wasm_memory_usage(consumed_memory)?;
 
                     output
                 }

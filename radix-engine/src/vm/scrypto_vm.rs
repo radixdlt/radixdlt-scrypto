@@ -1,3 +1,4 @@
+use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::*;
 
@@ -19,14 +20,36 @@ impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
     }
 }
 
+
 impl<W: WasmEngine> ScryptoVm<W> {
-    pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> W::WasmInstance {
+    pub fn create_instance(&self, package_address: PackageAddress, code: &[u8]) -> ScryptoVmInstance<W::WasmInstance> {
         let instrumented_code =
             self.wasm_instrumenter
                 .instrument(package_address, code, self.wasm_metering_config);
-        self.wasm_engine.instantiate(&instrumented_code)
+        let instance = self.wasm_engine.instantiate(&instrumented_code);
+        ScryptoVmInstance {
+            instance
+        }
     }
 }
+
+pub struct ScryptoVmInstance<I: WasmInstance> {
+    instance: I,
+}
+
+impl<I: WasmInstance> ScryptoVmInstance<I> {
+    pub fn invoke<'r>(
+        &mut self,
+        func_name: &str,
+        args: Vec<Buffer>,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
+    ) -> Result<(Vec<u8>, usize), InvokeError<WasmRuntimeError>> {
+        let rtn = self.instance.invoke_export(func_name, args, runtime)?;
+        let consumed = self.instance.consumed_memory()?;
+        Ok((rtn, consumed))
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
