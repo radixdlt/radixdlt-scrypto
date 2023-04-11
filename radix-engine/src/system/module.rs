@@ -11,7 +11,7 @@ use sbor::rust::collections::BTreeMap;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================
-    // Kernel module setup
+    // System module setup
     //======================
     #[inline(always)]
     fn on_init<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
