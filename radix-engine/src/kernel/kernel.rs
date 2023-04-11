@@ -327,7 +327,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_system(&mut self) -> &mut M {
+    fn kernel_get_callback(&mut self) -> &mut M {
         self.upstream
     }
 

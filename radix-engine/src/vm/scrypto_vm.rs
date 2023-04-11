@@ -1,5 +1,5 @@
 use crate::errors::{RuntimeError, SystemUpstreamError};
-use crate::system::system_callback_api::SystemCallbackApi;
+use crate::system::system_callback_api::{SystemCallbackApi, VmInvoke};
 use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::ScryptoRuntime;
@@ -26,12 +26,12 @@ impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
 impl<W: WasmEngine> ScryptoVm<W> {
     pub fn create_instance(
         &self,
-        package_address: PackageAddress,
+        package_address: &PackageAddress,
         code: &[u8],
     ) -> ScryptoVmInstance<W::WasmInstance> {
         let instrumented_code =
             self.wasm_instrumenter
-                .instrument(package_address, code, self.wasm_metering_config);
+                .instrument(*package_address, code, self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoVmInstance { instance }
     }
@@ -41,7 +41,7 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
     instance: I,
 }
 
-impl<I: WasmInstance> SystemCallbackApi for ScryptoVmInstance<I> {
+impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
     fn invoke<Y>(
         &mut self,
         receiver: Option<&NodeId>,

@@ -193,7 +193,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
     ) -> Result<(), RuntimeError> {
         if input_size
             > api
-                .kernel_get_system()
+                .kernel_get_callback()
                 .modules
                 .transaction_limits
                 .limits_config
@@ -216,7 +216,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack
-        api.kernel_get_system()
+        api.kernel_get_callback()
             .modules
             .transaction_limits
             .call_frames_stack
@@ -228,7 +228,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         // pop from internal stack
-        api.kernel_get_system()
+        api.kernel_get_callback()
             .modules
             .transaction_limits
             .call_frames_stack
@@ -241,7 +241,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
@@ -255,7 +255,7 @@ impl<'g, W: WasmEngine + 'g> SystemModule<SystemCallback<'g, W>> for Transaction
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;

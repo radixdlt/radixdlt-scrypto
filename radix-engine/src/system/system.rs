@@ -31,6 +31,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
@@ -693,7 +694,7 @@ where
         // No costing applied
 
         self.api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .costing
             .apply_execution_cost(
@@ -716,7 +717,7 @@ where
         // No costing applied
 
         self.api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
@@ -763,7 +764,7 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
+        let auth_zone_id = self.api.kernel_get_callback().modules.auth.last_auth_zone();
 
         Ok(auth_zone_id.into())
     }
@@ -775,7 +776,7 @@ where
         let authorization = convert_contextless(&rule);
         let barrier_crossings_required = 1;
         let barrier_crossings_allowed = 1;
-        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
+        let auth_zone_id = self.api.kernel_get_callback().modules.auth.last_auth_zone();
 
         // Authenticate
         if !Authentication::verify_method_auth(
@@ -804,7 +805,7 @@ where
 
         let current_depth = self.api.kernel_get_current_depth();
         self.api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .transaction_limits
             .update_wasm_memory_usage(current_depth, consumed_memory)
@@ -820,7 +821,7 @@ where
         // No costing applied
 
         self.api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .execution_trace
             .update_instruction_index(new_index);
@@ -940,7 +941,7 @@ where
 
         // Adding the event to the event store
         self.api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .events
             .add_event(event_type_identifier, event_data);
@@ -960,7 +961,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .logger
             .add_log(level, message);
@@ -978,7 +979,7 @@ where
 
         Ok(self
             .api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .transaction_runtime
             .transaction_hash())
@@ -989,7 +990,7 @@ where
 
         Ok(self
             .api
-            .kernel_get_system()
+            .kernel_get_callback()
             .modules
             .transaction_runtime
             .generate_uuid())
@@ -1066,5 +1067,43 @@ where
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)
+    }
+}
+
+impl<'a, 'g, Y, W> KernelInternalApi<SystemCallback<'g, W>> for SystemDownstream<'a, 'g, Y, W>
+where
+W: 'g + WasmEngine,
+Y: KernelApi<SystemCallback<'g, W>>,
+{
+    fn kernel_get_callback(&mut self) -> &mut SystemCallback<'g, W> {
+        self.api.kernel_get_callback()
+    }
+
+    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
+        self.api.kernel_get_current_actor()
+    }
+
+    fn kernel_get_current_depth(&self) -> usize {
+        self.api.kernel_get_current_depth()
+    }
+
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
+        self.api.kernel_get_node_info(node_id)
+    }
+
+    fn kernel_load_common(&mut self) {
+        self.api.kernel_load_common()
+    }
+
+    fn kernel_load_package_package_dependencies(&mut self) {
+        self.api.kernel_load_package_package_dependencies()
+    }
+
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+        self.api.kernel_read_bucket(bucket_id)
+    }
+
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+        self.api.kernel_read_proof(proof_id)
     }
 }

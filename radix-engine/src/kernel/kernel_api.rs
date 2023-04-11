@@ -114,7 +114,7 @@ pub trait KernelInvokeDownstreamApi<I: Debug> {
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Retrieves data associated with the kernel upstream layer (system)
-    fn kernel_get_system(&mut self) -> &mut M;
+    fn kernel_get_callback(&mut self) -> &mut M;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;

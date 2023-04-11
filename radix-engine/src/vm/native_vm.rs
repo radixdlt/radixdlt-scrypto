@@ -11,7 +11,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::system_callback_api::SystemCallbackApi;
+use crate::system::system_callback_api::{SystemCallbackApi, VmInvoke};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
@@ -20,7 +20,7 @@ pub struct NativeVm;
 
 impl NativeVm {
     pub fn create_instance(
-        _package_address: PackageAddress,
+        _package_address: &PackageAddress,
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
         if code.len() != 1 {
@@ -39,7 +39,7 @@ pub struct NativeVmInstance {
     native_package_code_id: u8,
 }
 
-impl SystemCallbackApi for NativeVmInstance {
+impl VmInvoke for NativeVmInstance {
     fn invoke<Y>(
         &mut self,
         receiver: Option<&NodeId>,
