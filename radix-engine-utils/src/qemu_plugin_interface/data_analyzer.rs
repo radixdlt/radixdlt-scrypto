@@ -175,6 +175,12 @@ impl DataAnalyzer {
 
     /// Function stores passed data as xml file.
     pub fn save_xml<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
+        // ensure folder exists
+        let mut path = std::path::PathBuf::new();
+        path.push(file_name);
+        path.pop();
+        std::fs::create_dir_all(path).unwrap_or_default();
+
         if let Ok(mut file) = File::create(file_name) {
             let mut stack_fcn: Vec<&'a str> = vec!["root"];
             let mut prev_stack_depth = 0;

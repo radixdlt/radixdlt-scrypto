@@ -10,6 +10,8 @@ const SHARED_MEM_ID: &str = "/shm-scrypto";
 const OUTPUT_DATA_COUNT: usize = 500000;
 /// Tracked functions calls stack depth
 const CALL_STACK_DEPTH: usize = 30;
+/// Output directory
+const OUTPUT_DIR: &str = "/tmp/scrypto-resources-usage";
 
 std::thread_local! {
     /// Global QEMU plugin object variable
@@ -215,6 +217,25 @@ impl<'a> QemuPluginInterface<'a> {
             panic!("Unable to create {} file.", file_name)
         }
     }
+
+    fn generate_output_file_name(&self) -> String {
+        const DEFAULT_NAME: &str = "report";
+        let fname = match std::env::current_exe() {
+            Ok(exe_path) => match exe_path.file_stem() {
+                Some(fname) => match fname.to_str() {
+                    Some(s) => String::from(s),
+                    None => String::from(DEFAULT_NAME),
+                },
+                None => String::from(DEFAULT_NAME),
+            },
+            Err(_) => String::from(DEFAULT_NAME),
+        };
+        let now = std::time::SystemTime::now();
+        let timestamp = now
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap();
+        format!("{}/{}_{}.xml", OUTPUT_DIR, fname, timestamp.as_micros())
+    }
 }
 
 impl<'a> Drop for QemuPluginInterface<'a> {
@@ -224,7 +245,7 @@ impl<'a> Drop for QemuPluginInterface<'a> {
         // Uncomment following function call for plugin debug purposes
         // self.save_output_to_file("/tmp/out.txt");
 
-        DataAnalyzer::save_xml(&self.output_data, "/tmp/out.xml");
+        DataAnalyzer::save_xml(&self.output_data, &self.generate_output_file_name());
     }
 }
 

@@ -8,16 +8,20 @@ from statistics import mean, median
 from tabulate import tabulate
 import pprint
 import sys
+import os
 
 if len(sys.argv) < 2:
-    print("Usage: convert.py <INPUT_FILE_NAME> <DETAILED_OUTPUT_TABLE>\n\nwhere: <DETAILED_OUTPUT_TABLE>: 1 or 0", file=sys.stderr)
+    print("Usage: convert.py <INPUT_FOLDER> <DETAILED_OUTPUT_TABLE>\n\nwhere: <DETAILED_OUTPUT_TABLE>: 1 or 0", file=sys.stderr)
     sys.exit(-1)
 
 detailed_output = 0
 if len(sys.argv) == 3:
     detailed_output = sys.argv[2]
 
-input_file = sys.argv[1]
+input_folder = sys.argv[1]
+if not os.path.exists(os.path.dirname(input_folder)):
+    print("Path: ", input_folder, " does not exists.", file=sys.stderr)
+    sys.exit(-1)
 
 api_functions_ins = {}
 api_functions_info_data = {}
@@ -25,13 +29,23 @@ api_functions_info_data = {}
 kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
 use_max_instead_of_median = [] #["kernel_create_wasm_instance"]
 
-tree = etree.parse(input_file)
 
-for i in range(1):
-#    root = tree.xpath("/root/" + f)
-#    root = tree.xpath("//" + f)
+for path in os.listdir(input_folder):
+    input_file = os.path.join(input_folder, path)
+    if not os.path.isfile(input_file):
+        continue
 
-# Look for all "kernel..." calls
+    # parse xml file
+    tree = 0
+    try:
+        tree = etree.parse(input_file)
+    except (IOError, etree.ParseError):
+        print("Cannot parse file: ", input_file, " - skipping", file=sys.stderr)
+        continue
+
+    #print("Parsing file: ", input_file)
+
+    # Look for all "kernel..." calls
     root = tree.xpath(".//*[starts-with(local-name(), 'kernel')]")
     for child in root:
 
@@ -132,6 +146,11 @@ for i in range(1):
         else:
             api_functions_ins[key] = (info_data,[cpu_instructions]) # remove info_data?
 
+# end of xml parsing loop
+
+
+# prepare output
+
 output = {}
 output_tab = []
 
@@ -154,7 +173,9 @@ if detailed_output:
     output_tab.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
     print(tabulate(output_tab, headers="firstrow"))
 else:
-    min_ins = output_tab[0][2]
+    min_ins = 0
+    if len(output_tab) > 0 and len(output_tab[0]) > 2:
+        min_ins = output_tab[0][2]
     for row in output_tab:
         if row[2] < min_ins:
             min_ins = row[2]
