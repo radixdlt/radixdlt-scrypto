@@ -1,5 +1,4 @@
 use crate::errors::{RuntimeError, SystemInvokeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -106,7 +105,7 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             CLOCK_CREATE_IDENT => {
@@ -205,7 +204,7 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: ClockSetCurrentTimeInput = input
             .as_typed()
@@ -233,7 +232,7 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: ClockGetCurrentTimeInput = input
             .as_typed()
@@ -261,7 +260,7 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: ClockCompareCurrentTimeInput = input
             .as_typed()

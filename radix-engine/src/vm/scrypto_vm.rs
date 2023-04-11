@@ -1,5 +1,5 @@
 use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
-use crate::errors::{InvokeError, RuntimeError};
+use crate::errors::{InvokeError, RuntimeError, SystemInvokeError};
 use crate::types::*;
 use crate::vm::ScryptoRuntime;
 use crate::vm::wasm::*;
@@ -46,7 +46,7 @@ impl<I: WasmInstance> ScryptoVmInstance<I> {
         func_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where Y: ClientApi<RuntimeError> + ClientTransactionLimitsApi<RuntimeError>
     {
         let rtn = {
@@ -74,7 +74,11 @@ impl<I: WasmInstance> ScryptoVmInstance<I> {
         let consumed = self.instance.consumed_memory()?;
         api.update_wasm_memory_usage(consumed)?;
 
-        Ok(rtn)
+        let output = IndexedScryptoValue::from_vec(rtn).map_err(|e| {
+            RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e))
+        })?;
+
+        Ok(output)
     }
 }
 

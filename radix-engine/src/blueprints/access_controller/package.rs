@@ -2,7 +2,6 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError, SystemInvokeError};
 use crate::event_schema;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
@@ -298,7 +297,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
@@ -457,7 +456,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCreateProofInput = input
             .as_typed()
@@ -474,7 +473,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsPrimaryInput = input
             .as_typed()
@@ -509,7 +508,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsRecoveryInput = input
             .as_typed()
@@ -544,7 +543,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput = input
             .as_typed()
@@ -585,7 +584,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput = input
             .as_typed()
@@ -626,7 +625,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerTimedConfirmRecoveryInput = input
             .as_typed()
@@ -668,7 +667,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput = input
             .as_typed()
@@ -696,7 +695,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput = input
             .as_typed()
@@ -724,7 +723,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerLockPrimaryRoleInput = input
             .as_typed()
@@ -746,7 +745,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerUnlockPrimaryRoleInput = input
             .as_typed()
@@ -768,7 +767,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerStopTimedRecoveryInput = input
             .as_typed()
@@ -920,7 +919,7 @@ fn transition<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
@@ -944,7 +943,7 @@ fn transition_mut<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
@@ -972,7 +971,7 @@ fn update_access_rules<Y>(
     access_rules: AccessRulesConfig,
 ) -> Result<(), RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {

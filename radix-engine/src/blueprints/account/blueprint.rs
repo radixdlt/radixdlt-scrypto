@@ -1,6 +1,5 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -182,7 +181,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -234,7 +233,7 @@ impl AccountBlueprint {
 
     pub fn lock_fee<Y>(receiver: &NodeId, amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount, false, api)?;
         Ok(())
@@ -246,7 +245,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount, true, api)?;
         Ok(())
@@ -254,7 +253,7 @@ impl AccountBlueprint {
 
     pub fn deposit<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -316,7 +315,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             receiver,
@@ -385,7 +384,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<R, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -438,7 +437,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let bucket = Self::get_vault(
             receiver,
@@ -457,7 +456,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let bucket = Self::get_vault(
             receiver,
@@ -477,7 +476,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount_to_lock, false, api)?;
 
@@ -499,7 +498,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount_to_lock, false, api)?;
 
@@ -519,7 +518,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let proof = Self::get_vault(
             receiver,
@@ -538,7 +537,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let proof = Self::get_vault(
             receiver,
@@ -557,7 +556,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let proof = Self::get_vault(
             receiver,

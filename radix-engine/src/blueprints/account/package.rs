@@ -1,6 +1,5 @@
 use crate::errors::RuntimeError;
 use crate::errors::SystemInvokeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
@@ -221,7 +220,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {

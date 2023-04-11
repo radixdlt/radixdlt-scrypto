@@ -1,7 +1,6 @@
 use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint};
 use crate::errors::RuntimeError;
 use crate::errors::SystemInvokeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -10,6 +9,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 use resources_tracker_macro::trace_resources;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 
 use super::*;
 

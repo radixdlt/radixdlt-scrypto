@@ -58,18 +58,15 @@ fn validate_input(
 fn validate_output(
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
-    output: Vec<u8>,
-) -> Result<IndexedScryptoValue, RuntimeError> {
-    let value = IndexedScryptoValue::from_vec(output)
-        .map_err(|e| RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e)))?;
-
+    output: &IndexedScryptoValue,
+) -> Result<(), RuntimeError> {
     let function_schema = blueprint_schema
         .functions
         .get(fn_ident)
         .expect("Checked by `validate_input`");
 
     validate_payload_against_schema(
-        value.as_slice(),
+        output.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,
     )
@@ -80,7 +77,7 @@ fn validate_output(
         ))
     })?;
 
-    Ok(value)
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -269,14 +266,21 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 api.kernel_drop_lock(handle)?;
             }
 
-            let mut system = SystemDownstream::new(api);
-            NativeVm::invoke_native_package(
-                PACKAGE_CODE_ID,
-                invocation.receiver.as_ref().map(|x| &x.0),
-                &export_name,
-                args,
-                &mut system,
-            )?
+            let system = SystemDownstream::new(api);
+            let mut vm_instance = {
+                NativeVm::create_instance(invocation.blueprint.package_address, PACKAGE_CODE_ID)
+            };
+            let output = {
+                let mut system = SystemDownstream::new(api);
+                vm_instance.invoke(
+                    invocation.receiver.as_ref().map(|x| &x.0),
+                    &export_name,
+                    args,
+                    &mut system,
+                )?
+            };
+
+            output
         } else if invocation
             .blueprint
             .package_address
@@ -293,14 +297,21 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                 }
             };
 
-            let mut system = SystemDownstream::new(api);
-            NativeVm::invoke_native_package(
-                TRANSACTION_PROCESSOR_CODE_ID,
-                invocation.receiver.as_ref().map(|x| &x.0),
-                &export_name,
-                args,
-                &mut system,
-            )?
+            let system = SystemDownstream::new(api);
+            let mut vm_instance = {
+                NativeVm::create_instance(invocation.blueprint.package_address, TRANSACTION_PROCESSOR_CODE_ID)
+            };
+            let output = {
+                let mut system = SystemDownstream::new(api);
+                vm_instance.invoke(
+                    invocation.receiver.as_ref().map(|x| &x.0),
+                    &export_name,
+                    args,
+                    &mut system,
+                )?
+            };
+
+            output
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
@@ -386,16 +397,21 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
 
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
-                    let native_package_code_id = package_code.code[0];
-                    let mut system = SystemDownstream::new(api);
-                    NativeVm::invoke_native_package(
-                        native_package_code_id,
-                        invocation.receiver.as_ref().map(|x| &x.0),
-                        &export_name,
-                        args,
-                        &mut system,
-                    )?
-                    .into()
+                    let mut vm_instance = {
+                        let native_package_code_id = package_code.code[0];
+                        NativeVm::create_instance(invocation.blueprint.package_address, native_package_code_id)
+                    };
+                    let output = {
+                        let mut system = SystemDownstream::new(api);
+                        vm_instance.invoke(
+                            invocation.receiver.as_ref().map(|x| &x.0),
+                            &export_name,
+                            args,
+                            &mut system,
+                        )?
+                    };
+
+                    output
                 }
                 PackageCodeTypeSubstate::Wasm => {
                     let mut scrypto_vm_instance = {
@@ -422,16 +438,12 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             };
 
             // Validate output
-            let output = match invocation.ident {
-                FnIdent::Application(ident) => validate_output(&schema, &ident, output)?,
+            match invocation.ident {
+                FnIdent::Application(ident) => validate_output(&schema, &ident, &output)?,
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema
-                    let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
-                        RuntimeError::SystemInvokeError(SystemInvokeError::OutputDecodeError(e))
-                    })?;
-                    value
                 }
-            };
+            }
 
             output
         };
