@@ -20,7 +20,7 @@ pub struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
-        receiver: &Option<MethodIdentifier>,
+        receiver: Option<&NodeId>,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -28,8 +28,6 @@ impl NativeVm {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let receiver = receiver.as_ref().map(|x| &x.0);
-
         match native_package_code_id {
             PACKAGE_CODE_ID => {
                 PackageNativePackage::invoke_export(&export_name, receiver, input, api)

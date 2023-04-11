@@ -40,11 +40,29 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 impl<I: WasmInstance> ScryptoVmInstance<I> {
     pub fn invoke<'r>(
         &mut self,
+        receiver: Option<&NodeId>,
         func_name: &str,
-        args: Vec<Buffer>,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<(Vec<u8>, usize), InvokeError<WasmRuntimeError>> {
-        let rtn = self.instance.invoke_export(func_name, args, runtime)?;
+        let mut input = Vec::new();
+        if let Some(node_id) = receiver {
+            input.push(
+                runtime
+                    .allocate_buffer(
+                        scrypto_encode(node_id)
+                            .expect("Failed to encode object id"),
+                    )
+                    .expect("Failed to allocate buffer"),
+            );
+        }
+        input.push(
+            runtime
+                .allocate_buffer(args.as_slice().to_vec())
+                .expect("Failed to allocate buffer"),
+        );
+
+        let rtn = self.instance.invoke_export(func_name, input, runtime)?;
         let consumed = self.instance.consumed_memory()?;
         Ok((rtn, consumed))
     }

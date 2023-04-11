@@ -270,10 +270,9 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             }
 
             let mut system = SystemDownstream::new(api);
-
             NativeVm::invoke_native_package(
                 PACKAGE_CODE_ID,
-                &invocation.receiver,
+                invocation.receiver.as_ref().map(|x| &x.0),
                 &export_name,
                 args,
                 &mut system,
@@ -297,7 +296,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
             let mut system = SystemDownstream::new(api);
             NativeVm::invoke_native_package(
                 TRANSACTION_PROCESSOR_CODE_ID,
-                &invocation.receiver,
+                invocation.receiver.as_ref().map(|x| &x.0),
                 &export_name,
                 args,
                 &mut system,
@@ -387,7 +386,7 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
 
                     NativeVm::invoke_native_package(
                         native_package_code_id,
-                        &invocation.receiver,
+                        invocation.receiver.as_ref().map(|x| &x.0),
                         &export_name,
                         args,
                         &mut system,
@@ -419,25 +418,12 @@ impl<'g, W: WasmEngine + 'g> KernelUpstream for SystemUpstream<'g, W> {
                         let mut system = SystemDownstream::new(api);
                         let mut runtime: Box<dyn WasmRuntime> =
                             Box::new(ScryptoRuntime::new(&mut system));
-
-                        let mut input = Vec::new();
-                        if let Some(MethodIdentifier(node_id, ..)) = invocation.receiver {
-                            input.push(
-                                runtime
-                                    .allocate_buffer(
-                                        scrypto_encode(&node_id)
-                                            .expect("Failed to encode component id"),
-                                    )
-                                    .expect("Failed to allocate buffer"),
-                            );
-                        }
-                        input.push(
-                            runtime
-                                .allocate_buffer(args.as_slice().to_vec())
-                                .expect("Failed to allocate buffer"),
-                        );
-
-                        scrypto_vm_instance.invoke(&export_name, input, &mut runtime)?
+                        scrypto_vm_instance.invoke(
+                            invocation.receiver.as_ref().map(|x| &x.0),
+                            &export_name,
+                            args,
+                            &mut runtime,
+                        )?
                     };
 
                     let mut system = SystemDownstream::new(api);
