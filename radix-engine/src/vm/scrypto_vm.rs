@@ -1,8 +1,7 @@
 use crate::errors::{RuntimeError, SystemUpstreamError};
-use crate::system::system_callback_api::VmInvoke;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::ScryptoRuntime;
+use crate::vm::{ScryptoRuntime, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ClientTransactionLimitsApi};
 
 pub struct ScryptoVm<W: WasmEngine> {

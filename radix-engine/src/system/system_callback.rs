@@ -1,22 +1,18 @@
-use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvocation, KernelNodeApi, KernelSubstateApi,
-};
-use crate::kernel::kernel_callback::KernelCallbackObject;
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback_api::{SystemCallbackObject, VmInvoke};
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
-use crate::vm::{NativeVm, ScryptoVm};
+use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::{ClientApi, ClientBlueprintApi};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -463,75 +459,5 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
         Y: KernelApi<Self>,
     {
         VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
-    }
-}
-
-pub struct VmCallback<'g, W: WasmEngine> {
-    pub scrypto_vm: &'g ScryptoVm<W>,
-}
-
-impl<'g, W: WasmEngine + 'g> SystemCallbackObject for VmCallback<'g, W> {
-    fn invoke<Y>(
-        address: &PackageAddress,
-        receiver: Option<&NodeId>,
-        export_name: &str,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>
-            + KernelInternalApi<SystemCallback<Self>>
-            + KernelNodeApi
-            + KernelSubstateApi,
-        W: WasmEngine,
-    {
-        let code_type = {
-            let handle = api.kernel_lock_substate(
-                address.as_node_id(),
-                SysModuleId::ObjectTuple,
-                &PackageOffset::CodeType.into(),
-                LockFlags::read_only(),
-            )?;
-            let code_type = api.kernel_read_substate(handle)?;
-            let code_type: PackageCodeTypeSubstate = code_type.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
-            code_type
-        };
-
-        let package_code = {
-            let handle = api.kernel_lock_substate(
-                address.as_node_id(),
-                SysModuleId::ObjectTuple,
-                &PackageOffset::Code.into(),
-                LockFlags::read_only(),
-            )?;
-            let code = api.kernel_read_substate(handle)?;
-            let package_code: PackageCodeSubstate = code.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
-            package_code
-        };
-
-        let output = match code_type {
-            PackageCodeTypeSubstate::Native => {
-                let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
-                let output = { vm_instance.invoke(receiver, &export_name, input, api)? };
-
-                output
-            }
-            PackageCodeTypeSubstate::Wasm => {
-                let mut scrypto_vm_instance = {
-                    api.kernel_get_callback()
-                        .callback_obj
-                        .scrypto_vm
-                        .create_instance(address, &package_code.code)
-                };
-
-                let output = { scrypto_vm_instance.invoke(receiver, &export_name, input, api)? };
-
-                output
-            }
-        };
-
-        Ok(output)
     }
 }

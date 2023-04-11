@@ -11,7 +11,7 @@ use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system_callback::{SystemCallback, VmCallback};
+use radix_engine::system::system_callback::SystemCallback;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::track::Track;
@@ -22,7 +22,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{ScryptoVm, VmCallback};
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -1222,7 +1222,7 @@ impl TestRunner {
 
         let kernel_boot = KernelBoot {
             id_allocator: &mut id_allocator,
-            upstream: &mut system,
+            callback: &mut system,
             store: &mut track,
         };
 

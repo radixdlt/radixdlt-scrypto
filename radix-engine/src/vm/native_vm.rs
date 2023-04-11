@@ -11,8 +11,8 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::system_callback_api::VmInvoke;
 use crate::types::*;
+use crate::vm::VmInvoke;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 

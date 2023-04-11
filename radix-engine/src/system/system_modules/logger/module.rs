@@ -1,6 +1,6 @@
 use crate::system::module::SystemModule;
 
-use crate::kernel::kernel_callback::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;

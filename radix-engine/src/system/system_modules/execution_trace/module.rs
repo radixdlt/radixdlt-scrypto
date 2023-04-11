@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
-use crate::kernel::kernel_callback::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemCallback;
 use crate::system::system_callback_api::SystemCallbackObject;

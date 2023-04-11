@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::kernel_callback::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_callback::SystemInvocation;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;

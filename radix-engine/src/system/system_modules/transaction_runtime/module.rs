@@ -1,4 +1,4 @@
-use crate::kernel::kernel_callback::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::types::*;
 use radix_engine_interface::crypto::Hash;

@@ -3,13 +3,13 @@ use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system_callback::{SystemCallback, VmCallback};
+use crate::system::system_callback::SystemCallback;
 use crate::system::system_modules::costing::*;
 use crate::track::Track;
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::ScryptoVm;
+use crate::vm::{ScryptoVm, VmCallback};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -205,7 +205,7 @@ where
 
         let kernel_boot = KernelBoot {
             id_allocator: &mut id_allocator,
-            upstream: &mut system,
+            callback: &mut system,
             store: &mut track,
         };
 
