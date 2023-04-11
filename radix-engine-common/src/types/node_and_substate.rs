@@ -185,7 +185,19 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
-            return encoder.encode_to_fmt(f, self.as_ref());
+            let result = encoder.encode_to_fmt(f, self.as_ref());
+            match result {
+                Ok(_)
+                | Err(EncodeBech32AddressError::FormatError(_))
+                | Err(EncodeBech32AddressError::Bech32mEncodingError(_)) => return result,
+                // Only persistable NodeIds are guaranteed to have an address - so
+                // fall through to using hex if necessary.
+                Err(EncodeBech32AddressError::InvalidEntityTypeId(_))
+                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => {}
+            }
+            if let Ok(()) = encoder.encode_to_fmt(f, self.as_ref()) {
+                return Ok(());
+            }
         }
 
         // This could be made more performant by streaming the hex into the formatter

@@ -85,9 +85,12 @@ impl<'s, E: CustomTypeExtension> LocatedValidationError<'s, E> {
 macro_rules! numeric_validation_match {
     ($numeric_validation: ident, $value: expr, $type: ident, $error_type: ident) => {{
         {
-            let TerminalValueRef::$type(value) = *$value else {
-                                        return Err(PayloadValidationError::SchemaInconsistency);
-                                    };
+            // Note - we use this instead of a let else statement to avoid
+            // a rustfmt infinite-indent bug
+            let value = match *$value {
+                TerminalValueRef::$type(value) => value,
+                _ => return Err(PayloadValidationError::SchemaInconsistency),
+            };
             if !$numeric_validation.is_valid(value) {
                 return Err(TypeValidationError::$error_type {
                     required: *$numeric_validation,
