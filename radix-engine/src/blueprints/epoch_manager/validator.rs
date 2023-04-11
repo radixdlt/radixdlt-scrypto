@@ -89,7 +89,7 @@ impl ValidatorBlueprint {
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
                 let key = validator.key;
-                let validator_address = validator.address;
+                let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
                 let manager = validator.manager;
                 api.call_method(
                     manager.as_node_id(),
@@ -139,7 +139,7 @@ impl ValidatorBlueprint {
         // Update EpochManager
         {
             let manager = validator.manager;
-            let validator_address = validator.address;
+            let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
             api.call_method(
                 manager.as_node_id(),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
@@ -207,7 +207,7 @@ impl ValidatorBlueprint {
             if validator.is_registered {
                 let receiver = validator.manager;
                 let key = validator.key;
-                let validator_address = validator.address;
+                let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
                 let xrd_vault = Vault(validator.stake_xrd_vault_id);
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
@@ -305,7 +305,7 @@ impl ValidatorBlueprint {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
                 let manager = validator.manager;
-                let validator_address = validator.address;
+                let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
                 let update = if stake_amount.is_zero() {
                     UpdateValidator::Unregister
                 } else {
@@ -419,7 +419,7 @@ impl ValidatorBlueprint {
         validator.key = input.key;
         let key = validator.key;
         let manager = validator.manager;
-        let validator_address = validator.address;
+        let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
         api.sys_write_substate_typed(handle, &validator)?;
 
         // Update Epoch Manager
