@@ -121,17 +121,21 @@ impl AuthModule {
         ident: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = match (node_id, module_id, ident) {
+    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+        let auths = match (node_id, module_id, ident) {
             (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
-                AccessRulesNativePackage::authorization(node_id, ident, args, api)?
+                vec![AccessRulesNativePackage::authorization(node_id, ident, args, api)?]
             }
+            (node_id, module_id, ..) => {
+                let method_key = MethodKey::new(*module_id, ident);
 
-            (node_id, ..) if node_id.is_local() => {
                 let info = {
                     let mut system = SystemDownstream::new(api);
                     system.get_object_info(node_id)?
                 };
+
+                let mut auths = Vec::new();
+
                 if let Some(parent) = info.type_parent {
                     let (ref_type, _) =
                         api.kernel_get_node_info(node_id)
@@ -147,33 +151,30 @@ impl AuthModule {
                         api,
                     )?;
 
-                    auth
-                } else {
-                    MethodAuthorization::AllowAll
+                    auths.push(auth);
                 }
-            }
 
-            (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(*module_id, ident);
+                if info.global {
+                    // TODO: Clean this up
+                    let auth = if module_id.eq(&ObjectModuleId::SELF) {
+                        Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
+                    } else {
+                        Self::method_authorization_stateless(
+                            RefType::Normal,
+                            &node_id,
+                            ObjectKey::SELF,
+                            method_key,
+                            api,
+                        )?
+                    };
+                    auths.push(auth);
+                }
 
-                // TODO: Clean this up
-                let auth = if node_id.is_global() && module_id.eq(&ObjectModuleId::SELF) {
-                    Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
-                } else {
-                    Self::method_authorization_stateless(
-                        RefType::Normal,
-                        &node_id,
-                        ObjectKey::SELF,
-                        method_key,
-                        api,
-                    )?
-                };
-
-                auth
+                auths
             }
         };
 
-        Ok(auth)
+        Ok(auths)
     }
 
     fn method_authorization_stateful<Y: KernelApi<M>, M: KernelCallbackObject>(
@@ -323,7 +324,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorization = match &callee {
+        let authorizations = match &callee {
             Actor::Method {
                 node_id,
                 module_id,
@@ -331,7 +332,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
                 ..
             } => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
             Actor::Function { blueprint, ident } => {
-                Self::function_auth(blueprint, ident.as_str(), api)?
+                vec![Self::function_auth(blueprint, ident.as_str(), api)?]
             }
             Actor::VirtualLazyLoad { .. } => return Ok(()),
         };
@@ -342,19 +343,21 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
         let mut system = SystemDownstream::new(api);
 
         // Authenticate
-        if !Authentication::verify_method_auth(
-            barrier_crossings_required,
-            barrier_crossings_allowed,
-            auth_zone_id,
-            &authorization,
-            &mut system,
-        )? {
-            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(Box::new(Unauthorized {
-                    callee: callee.clone(),
-                    authorization,
-                })),
-            )));
+        for authorization in authorizations {
+            if !Authentication::verify_method_auth(
+                barrier_crossings_required,
+                barrier_crossings_allowed,
+                auth_zone_id,
+                &authorization,
+                &mut system,
+            )? {
+                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        callee: callee.clone(),
+                        authorization,
+                    })),
+                )));
+            }
         }
 
         Ok(())
