@@ -810,8 +810,7 @@ mod tests {
     #[derive(Sbor)]
     struct MyUnitStruct;
 
-    #[derive(Sbor)]
-    #[sbor(custom_value_kind = "NoCustomValueKind")]
+    #[derive(BasicSbor)]
     struct MyComplexTupleStruct(
         Vec<u16>,
         Vec<u16>,

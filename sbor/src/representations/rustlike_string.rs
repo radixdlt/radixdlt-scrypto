@@ -19,8 +19,11 @@ pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeE
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
     let mut traverser = traverse_payload_with_types(payload, context.schema, type_index);
-    if let PrintMode::MultiLine { start_indent, .. } = &context.print_mode {
-        write!(f, "{:start_indent$}", "")?;
+    if let PrintMode::MultiLine {
+        first_line_indent, ..
+    } = &context.print_mode
+    {
+        write!(f, "{:first_line_indent$}", "")?;
     }
     format_value_tree(f, &mut traverser, context)?;
     consume_end_event(&mut traverser)?;
@@ -47,8 +50,11 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
         context.schema,
         type_index,
     );
-    if let PrintMode::MultiLine { start_indent, .. } = &context.print_mode {
-        write!(f, "{:start_indent$}", "")?;
+    if let PrintMode::MultiLine {
+        first_line_indent, ..
+    } = &context.print_mode
+    {
+        write!(f, "{:first_line_indent$}", "")?;
     }
     format_value_tree(f, &mut traverser, context)?;
     if check_exact_end {
@@ -157,7 +163,7 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{} = ", field_names.get(i).unwrap())?;
+                        write!(f, "{}: ", field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                     }
                     write!(f, " ")?;
@@ -177,17 +183,18 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
             _,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
             match tuple_data.field_names {
                 Some(field_names) => {
                     for i in 0..field_count {
-                        write!(f, "{}{} = ", child_indent, field_names.get(i).unwrap())?;
+                        write!(f, "{}{}: ", child_indent, field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                         write!(f, ",\n")?;
                     }
@@ -265,7 +272,7 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{} = ", field_names.get(i).unwrap())?;
+                        write!(f, "{}: ", field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                     }
                     write!(f, " ")?;
@@ -285,17 +292,18 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
             _,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
             match enum_data.field_names {
                 Some(field_names) => {
                     for i in 0..field_length {
-                        write!(f, "{}{} = ", child_indent, field_names.get(i).unwrap())?;
+                        write!(f, "{}{}: ", child_indent, field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                         write!(f, ",\n")?;
                     }
@@ -371,12 +379,13 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
             _,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
             _,
         ) => {
             write!(f, "[")?;
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
@@ -431,10 +440,11 @@ fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
             _,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "{{\n")?;
@@ -515,8 +525,7 @@ mod tests {
     #[derive(Sbor)]
     struct MyUnitStruct;
 
-    #[derive(Sbor)]
-    #[sbor(custom_value_kind = "NoCustomValueKind")]
+    #[derive(BasicSbor)]
     struct MyComplexTupleStruct(
         Vec<u16>,
         Vec<u16>,
@@ -582,7 +591,7 @@ mod tests {
         );
         let payload = basic_encode(&value).unwrap();
 
-        let expected_annotated_single_line = r###"MyComplexTupleStruct([1u16, 2u16, 3u16], [], hex(""), hex("010203"), { TestEnum::UnitVariant => MyFieldStruct { field1 = 1u64, field2 = ["hello"] }, TestEnum::SingleFieldVariant { field = 1u8 } => MyFieldStruct { field1 = 2u64, field2 = ["world"] }, TestEnum::DoubleStructVariant { field1 = 1u8, field2 = 2u8 } => MyFieldStruct { field1 = 3u64, field2 = ["!"] } }, { "hello" => MyUnitStruct, "world" => MyUnitStruct }, TestEnum::UnitVariant, TestEnum::SingleFieldVariant { field = 1u8 }, TestEnum::DoubleStructVariant { field1 = 3u8, field2 = 5u8 }, MyFieldStruct { field1 = 21u64, field2 = ["hello", "world!"] }, [MyUnitStruct, MyUnitStruct], Tuple(Enum::[32], Enum::[21](-3i32)))"###;
+        let expected_annotated_single_line = r###"MyComplexTupleStruct([1u16, 2u16, 3u16], [], hex(""), hex("010203"), { TestEnum::UnitVariant => MyFieldStruct { field1: 1u64, field2: ["hello"] }, TestEnum::SingleFieldVariant { field: 1u8 } => MyFieldStruct { field1: 2u64, field2: ["world"] }, TestEnum::DoubleStructVariant { field1: 1u8, field2: 2u8 } => MyFieldStruct { field1: 3u64, field2: ["!"] } }, { "hello" => MyUnitStruct, "world" => MyUnitStruct }, TestEnum::UnitVariant, TestEnum::SingleFieldVariant { field: 1u8 }, TestEnum::DoubleStructVariant { field1: 3u8, field2: 5u8 }, MyFieldStruct { field1: 21u64, field2: ["hello", "world!"] }, [MyUnitStruct, MyUnitStruct], Tuple(Enum::[32], Enum::[21](-3i32)))"###;
         let display_context = ValueDisplayParameters::Annotated {
             display_mode: DisplayMode::RustLike,
             print_mode: PrintMode::SingleLine,
@@ -597,7 +606,7 @@ mod tests {
             expected_annotated_single_line,
         );
 
-        let expected_annotated_multi_line = r###"        MyComplexTupleStruct(
+        let expected_annotated_multi_line = r###"MyComplexTupleStruct(
             [
                 1u16,
                 2u16,
@@ -608,25 +617,25 @@ mod tests {
             hex("010203"),
             {
                 TestEnum::UnitVariant => MyFieldStruct {
-                    field1 = 1u64,
-                    field2 = [
+                    field1: 1u64,
+                    field2: [
                         "hello",
                     ],
                 },
                 TestEnum::SingleFieldVariant {
-                    field = 1u8,
+                    field: 1u8,
                 } => MyFieldStruct {
-                    field1 = 2u64,
-                    field2 = [
+                    field1: 2u64,
+                    field2: [
                         "world",
                     ],
                 },
                 TestEnum::DoubleStructVariant {
-                    field1 = 1u8,
-                    field2 = 2u8,
+                    field1: 1u8,
+                    field2: 2u8,
                 } => MyFieldStruct {
-                    field1 = 3u64,
-                    field2 = [
+                    field1: 3u64,
+                    field2: [
                         "!",
                     ],
                 },
@@ -637,15 +646,15 @@ mod tests {
             },
             TestEnum::UnitVariant,
             TestEnum::SingleFieldVariant {
-                field = 1u8,
+                field: 1u8,
             },
             TestEnum::DoubleStructVariant {
-                field1 = 3u8,
-                field2 = 5u8,
+                field1: 3u8,
+                field2: 5u8,
             },
             MyFieldStruct {
-                field1 = 21u64,
-                field2 = [
+                field1: 21u64,
+                field2: [
                     "hello",
                     "world!",
                 ],
@@ -665,7 +674,8 @@ mod tests {
             display_mode: DisplayMode::RustLike,
             print_mode: PrintMode::MultiLine {
                 indent_size: 4,
-                start_indent: 8,
+                base_indent: 8,
+                first_line_indent: 0,
             },
             schema: &schema,
             custom_context: Default::default(),

@@ -140,26 +140,25 @@ impl fmt::Debug for IndexedScryptoValue {
         write!(
             f,
             "{}",
-            self.display(ScryptoValueDisplayContext::no_context())
+            self.display(ValueDisplayParameters::Schemaless {
+                display_mode: DisplayMode::RustLike,
+                print_mode: PrintMode::SingleLine,
+                custom_context: ScryptoValueDisplayContext::no_context()
+            })
         )
     }
 }
 
-impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoValue {
+impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomTypeExtension>>
+    for IndexedScryptoValue
+{
     type Error = sbor::representations::FormattingError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ScryptoValueDisplayContext<'a>,
+        context: &ValueDisplayParameters<'_, '_, ScryptoCustomTypeExtension>,
     ) -> Result<(), Self::Error> {
-        ScryptoRawPayload::new_from_valid_slice(self.as_slice()).format(
-            f,
-            ValueDisplayParameters::Schemaless {
-                display_mode: DisplayMode::RustLike,
-                print_mode: PrintMode::SingleLine,
-                custom_context: *context,
-            },
-        )
+        ScryptoRawPayload::new_from_valid_slice(self.as_slice()).format(f, *context)
     }
 }

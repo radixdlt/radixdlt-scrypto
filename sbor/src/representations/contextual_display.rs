@@ -9,7 +9,8 @@ pub enum PrintMode {
     SingleLine,
     MultiLine {
         indent_size: usize,
-        start_indent: usize,
+        base_indent: usize,
+        first_line_indent: usize,
     },
 }
 
@@ -31,6 +32,7 @@ pub enum DisplayMode {
     NestedString,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomTypeExtension> {
     Schemaless {
         display_mode: DisplayMode,

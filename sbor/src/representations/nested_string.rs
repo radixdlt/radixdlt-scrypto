@@ -26,8 +26,11 @@ pub fn format_payload_as_nested_string<F: fmt::Write, E: FormattableCustomTypeEx
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
     let mut traverser = traverse_payload_with_types(payload, context.schema, type_index);
-    if let PrintMode::MultiLine { start_indent, .. } = &context.print_mode {
-        write!(f, "{:start_indent$}", "")?;
+    if let PrintMode::MultiLine {
+        first_line_indent, ..
+    } = &context.print_mode
+    {
+        write!(f, "{:first_line_indent$}", "")?;
     }
     format_value_tree(f, &mut traverser, context)?;
     consume_end_event(&mut traverser)?;
@@ -54,8 +57,11 @@ pub(crate) fn format_partial_payload_as_nested_string<
         context.schema,
         type_index,
     );
-    if let PrintMode::MultiLine { start_indent, .. } = &context.print_mode {
-        write!(f, "{:start_indent$}", "")?;
+    if let PrintMode::MultiLine {
+        first_line_indent, ..
+    } = &context.print_mode
+    {
+        write!(f, "{:first_line_indent$}", "")?;
     }
     format_value_tree(f, &mut traverser, context)?;
     if check_exact_end {
@@ -162,10 +168,11 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
             _,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
@@ -243,10 +250,11 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
             _,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
@@ -343,11 +351,12 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
             child_count,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
             _,
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
@@ -421,10 +430,11 @@ fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
             child_count,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
-                start_indent,
+                base_indent,
+                ..
             },
         ) => {
-            let child_indent_size = start_indent + spaces_per_indent * parent_depth;
+            let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
             write!(f, "\n")?;
@@ -503,8 +513,7 @@ mod tests {
     #[derive(Sbor)]
     struct MyUnitStruct;
 
-    #[derive(Sbor)]
-    #[sbor(custom_value_kind = "NoCustomValueKind")]
+    #[derive(BasicSbor)]
     struct MyComplexTupleStruct(
         Vec<u16>,
         Vec<u16>,
@@ -585,7 +594,7 @@ mod tests {
             expected_annotated_single_line,
         );
 
-        let expected_annotated_multi_line = r###"        Tuple:MyComplexTupleStruct(
+        let expected_annotated_multi_line = r###"Tuple:MyComplexTupleStruct(
             Array<U16>(
                 1u16,
                 2u16,
@@ -658,7 +667,8 @@ mod tests {
             display_mode: DisplayMode::NestedString,
             print_mode: PrintMode::MultiLine {
                 indent_size: 4,
-                start_indent: 8,
+                base_indent: 8,
+                first_line_indent: 0,
             },
             schema: &schema,
             custom_context: Default::default(),

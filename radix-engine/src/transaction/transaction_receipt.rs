@@ -323,7 +323,7 @@ pub struct TransactionReceiptDisplayContext<'a> {
 }
 
 impl<'a> TransactionReceiptDisplayContext<'a> {
-    pub fn scrypto_value_serialization_context(&self) -> ScryptoValueDisplayContext<'a> {
+    pub fn display_context(&self) -> ScryptoValueDisplayContext<'a> {
         ScryptoValueDisplayContext::with_optional_bech32(self.encoder)
     }
 
@@ -402,7 +402,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let result = &self.result;
-        let scrypto_value_serialization_context = context.scrypto_value_serialization_context();
+        let scrypto_value_display_context = context.display_context();
         let address_display_context = context.address_display_context();
 
         write!(
@@ -493,7 +493,15 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         match output {
                             InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
                                 .expect("Impossible case! Instruction output can't be decoded")
-                                .to_string(scrypto_value_serialization_context),
+                                .to_string(ValueDisplayParameters::Schemaless {
+                                    display_mode: DisplayMode::RustLike,
+                                    print_mode: PrintMode::MultiLine {
+                                        indent_size: 2,
+                                        base_indent: 3,
+                                        first_line_indent: 0
+                                    },
+                                    custom_context: scrypto_value_display_context
+                                }),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
@@ -515,7 +523,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             for (i, (address, resource, delta)) in balance_changes.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Entity: {}, Address: {}, Delta: {}",
+                    "\n{} Entity: {}\n   Resource: {}\n   Change: {}",
                     prefix!(i, balance_changes),
                     address.display(address_display_context),
                     resource.display(address_display_context),
@@ -543,7 +551,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Vault: {}, Address: {}, Delta: {}",
+                    "\n{} Vault: {}\n   Resource: {}\n   Change: {}",
                     prefix!(i, direct_vault_updates),
                     hex::encode(object_id),
                     resource.display(address_display_context),
@@ -605,13 +613,21 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
         IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
     write!(
         f,
-        "\n{} Emitter: {}, Local Type Index: {:?}, Data: {}",
+        "\n{} Emitter: {}\n   Local Type Index: {:?}\n   Data: {}",
         prefix,
         event_type_identifier
             .0
             .display(receipt_context.address_display_context()),
         event_type_identifier.1,
-        event_data_value.display(receipt_context.scrypto_value_serialization_context())
+        event_data_value.display(ValueDisplayParameters::Schemaless {
+            display_mode: DisplayMode::RustLike,
+            print_mode: PrintMode::MultiLine {
+                indent_size: 2,
+                base_indent: 3,
+                first_line_indent: 0
+            },
+            custom_context: receipt_context.display_context(),
+        })
     )?;
     Ok(())
 }
@@ -632,8 +648,12 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
     let event = ScryptoRawPayload::new_from_valid_slice(event_data).to_string(
         ValueDisplayParameters::Annotated {
             display_mode: DisplayMode::RustLike,
-            print_mode: PrintMode::SingleLine,
-            custom_context: receipt_context.scrypto_value_serialization_context(),
+            print_mode: PrintMode::MultiLine {
+                indent_size: 2,
+                base_indent: 3,
+                first_line_indent: 0,
+            },
+            custom_context: receipt_context.display_context(),
             schema: &schema,
             type_index: local_type_index,
         },
@@ -642,7 +662,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
     // Print the event information
     write!(
         f,
-        "\n{} Emitter: {}, Event: {}",
+        "\n{} Emitter: {}\n   Event: {}",
         prefix,
         event_type_identifier
             .0

@@ -38,7 +38,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
             Self::Function(node_id, module_id, blueprint_name) => {
                 write!(
                     f,
-                    "Function {{ {}, module_id: {:?}, blueprint_name: {} }}",
+                    "Function {{ node: {}, module_id: {:?}, blueprint_name: {} }}",
                     node_id.display(*context),
                     module_id,
                     blueprint_name
@@ -47,7 +47,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
             Self::Method(node_id, module_id) => {
                 write!(
                     f,
-                    "Method {{ {}, module_id: {:?} }}",
+                    "Method {{ node: {}, module_id: {:?} }}",
                     node_id.display(*context),
                     module_id,
                 )
