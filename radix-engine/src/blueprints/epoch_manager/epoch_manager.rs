@@ -209,6 +209,45 @@ impl EpochManagerBlueprint {
         Ok(epoch_manager.epoch)
     }
 
+    fn epoch_change<Y>(
+        receiver: &NodeId,
+        epoch: u64,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError> {
+        let handle = api.sys_lock_substate(
+            receiver,
+            &EpochManagerOffset::RegisteredValidatorSet.into(),
+            LockFlags::MUTABLE,
+        )?;
+
+        let registered_validator_set: RegisteredValidatorsSubstate =
+            api.sys_read_substate_typed(handle)?;
+        let next_validator_set = registered_validator_set.validators;
+        api.sys_drop_lock(handle)?;
+
+        let handle = api.sys_lock_substate(
+            receiver,
+            &EpochManagerOffset::CurrentValidatorSet.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
+        validator_set.epoch = epoch;
+        validator_set.validator_set = next_validator_set.clone();
+        api.sys_write_substate_typed(handle, &validator_set)?;
+        api.sys_drop_lock(handle)?;
+
+        Runtime::emit_event(
+            api,
+            EpochChangeEvent {
+                epoch,
+                validators: next_validator_set,
+            },
+        )?;
+
+        Ok(())
+    }
+
     pub(crate) fn next_round<Y>(
         receiver: &NodeId,
         round: u64,
@@ -235,48 +274,17 @@ impl EpochManagerBlueprint {
 
         if round >= epoch_manager.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
-
-            let handle = api.sys_lock_substate(
-                receiver,
-                &EpochManagerOffset::RegisteredValidatorSet.into(),
-                LockFlags::MUTABLE,
-            )?;
-
-            let registered_validator_set: RegisteredValidatorsSubstate =
-                api.sys_read_substate_typed(handle)?;
-            let next_validator_set = registered_validator_set.validators;
-            api.sys_drop_lock(handle)?;
-
-            let handle = api.sys_lock_substate(
-                receiver,
-                &EpochManagerOffset::CurrentValidatorSet.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let mut validator_set: ValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
-            validator_set.epoch = next_epoch;
-            validator_set.validator_set = next_validator_set.clone();
-            api.sys_write_substate_typed(handle, &validator_set)?;
-            api.sys_drop_lock(handle)?;
-
+            Self::epoch_change(receiver, next_epoch, api)?;
             epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
-            api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
-            api.sys_drop_lock(mgr_handle)?;
 
-            Runtime::emit_event(
-                api,
-                EpochChangeEvent {
-                    epoch: next_epoch,
-                    validators: next_validator_set,
-                },
-            )?;
         } else {
-            epoch_manager.round = round;
-            api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
-            api.sys_drop_lock(mgr_handle)?;
-
             Runtime::emit_event(api, RoundChangeEvent { round })?;
+            epoch_manager.round = round;
         }
+
+        api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
+        api.sys_drop_lock(mgr_handle)?;
 
         Ok(())
     }
