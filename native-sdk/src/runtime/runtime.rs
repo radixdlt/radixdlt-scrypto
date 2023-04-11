@@ -1,4 +1,3 @@
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -31,7 +30,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(EPOCH_MANAGER.into()),
+            EPOCH_MANAGER.as_node_id(),
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         )?;
@@ -45,7 +44,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(CLOCK.into()),
+            CLOCK.as_node_id(),
             CLOCK_GET_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
@@ -64,7 +63,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            &RENodeId::GlobalObject(CLOCK.into()),
+            CLOCK.as_node_id(),
             CLOCK_COMPARE_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockCompareCurrentTimeInput {
                 precision,

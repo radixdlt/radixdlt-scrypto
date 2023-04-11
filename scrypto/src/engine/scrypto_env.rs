@@ -1,12 +1,14 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
+use radix_engine_interface::api::ClientTransactionRuntimeApi;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::{Blueprint, GlobalAddress};
+use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, SysModuleId};
+use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -23,16 +25,16 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: Vec<Vec<u8>>,
-    ) -> Result<ObjectId, ClientApiError> {
-        let app_states = scrypto_encode(&app_states).unwrap();
+        object_states: Vec<Vec<u8>>,
+    ) -> Result<NodeId, ClientApiError> {
+        let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
             new_object(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
-                app_states.as_ptr(),
-                app_states.len(),
+                object_states.as_ptr(),
+                object_states.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -41,7 +43,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_key_value_store(
         &mut self,
         schema: KeyValueStoreSchema,
-    ) -> Result<KeyValueStoreId, ClientApiError> {
+    ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -49,28 +51,26 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_key_value_store_info(
         &mut self,
-        node_id: RENodeId,
+        node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, ClientApiError> {
-        let node_id = scrypto_encode(&node_id).unwrap();
-
-        let bytes =
-            copy_buffer(unsafe { get_key_value_store_info(node_id.as_ptr(), node_id.len()) });
+        let bytes = copy_buffer(unsafe {
+            get_key_value_store_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn globalize(
         &mut self,
-        node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
-    ) -> Result<Address, ClientApiError> {
-        let node_id = scrypto_encode(&node_id).unwrap();
+        node_id: NodeId,
+        modules: BTreeMap<SysModuleId, NodeId>,
+    ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
 
         let bytes = copy_buffer(unsafe {
             globalize_object(
-                node_id.as_ptr(),
-                node_id.len(),
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
                 modules.as_ptr(),
                 modules.len(),
             )
@@ -80,18 +80,17 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn globalize_with_address(
         &mut self,
-        node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, ObjectId>,
-        address: Address,
-    ) -> Result<Address, ClientApiError> {
-        let node_id = scrypto_encode(&node_id).unwrap();
+        node_id: NodeId,
+        modules: BTreeMap<SysModuleId, NodeId>,
+        address: GlobalAddress,
+    ) -> Result<(), ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();
 
         let bytes = copy_buffer(unsafe {
             globalize_with_address(
-                node_id.as_ptr(),
-                node_id.len(),
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
                 modules.as_ptr(),
                 modules.len(),
                 address.as_ptr(),
@@ -103,27 +102,25 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn call_method(
         &mut self,
-        receiver: &RENodeId,
+        receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, NodeModuleId::SELF, method_name, args)
+        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
-        receiver: &RENodeId,
-        node_module_id: NodeModuleId,
+        receiver: &NodeId,
+        module_id: SysModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        let receiver = scrypto_encode(receiver).unwrap();
-
         let return_data = copy_buffer(unsafe {
             call_method(
-                receiver.as_ptr(),
-                receiver.len(),
-                node_module_id.id(),
+                receiver.as_ref().as_ptr(),
+                receiver.as_ref().len(),
+                module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),
@@ -134,13 +131,10 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_type_info(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<(PackageAddress, String), ClientApiError> {
-        let node_id = scrypto_encode(&node_id).unwrap();
-
-        let bytes = copy_buffer(unsafe { get_object_type_info(node_id.as_ptr(), node_id.len()) });
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, ClientApiError> {
+        let bytes = copy_buffer(unsafe {
+            get_object_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
@@ -170,10 +164,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
-        let node_id = scrypto_encode(&node_id).unwrap();
-
-        unsafe { drop_object(node_id.as_ptr(), node_id.len()) };
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
+        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
 
         Ok(())
     }
@@ -182,19 +174,16 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     fn sys_lock_substate(
         &mut self,
-        node_id: RENodeId,
-        offset: SubstateOffset,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
-        let node_id = scrypto_encode(&node_id).unwrap();
-        let offset = scrypto_encode(&offset).unwrap();
-
         let handle = unsafe {
             lock_substate(
-                node_id.as_ptr(),
-                node_id.len(),
-                offset.as_ptr(),
-                offset.len(),
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                substate_key.as_ref().as_ptr(),
+                substate_key.as_ref().len(),
                 flags.bits(),
             )
         };
@@ -226,15 +215,21 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn get_fn_identifier(&mut self) -> Result<FnIdentifier, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_actor() });
+    fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+        let global_address = copy_buffer(unsafe { get_global_address() });
+
+        scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+        let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 }
 
 impl ClientAuthApi<ClientApiError> for ScryptoEnv {
-    fn get_auth_zone(&mut self) -> Result<ObjectId, ClientApiError> {
+    fn get_auth_zone(&mut self) -> Result<NodeId, ClientApiError> {
         let auth_zone = copy_buffer(unsafe { get_auth_zone() });
 
         scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)

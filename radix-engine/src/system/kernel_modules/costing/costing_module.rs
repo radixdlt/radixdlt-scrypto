@@ -1,14 +1,13 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node::RENodeModuleInit;
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
-    system::node::RENodeInit,
+    system::node_init::NodeInit,
     transaction::AbortReason,
 };
 use native_sdk::resource::ResourceManager;
@@ -16,10 +15,10 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::{api::types::RENodeId, *};
+use radix_engine_interface::{types::NodeId, *};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -42,10 +41,12 @@ pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
     pub fee_table: FeeTable,
     pub max_call_depth: usize,
+    pub payload_len: usize,
+    pub num_of_signatures: usize,
 }
 
 impl CostingModule {
-    pub fn take_fee_reserve(self) -> SystemLoanFeeReserve {
+    pub fn fee_reserve(self) -> SystemLoanFeeReserve {
         self.fee_reserve
     }
 
@@ -70,7 +71,7 @@ impl CostingModule {
 
     pub fn credit_cost_units(
         &mut self,
-        vault_id: ObjectId,
+        vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
@@ -88,7 +89,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     api: &mut Y,
     cost_units: u32,
     recipient: RoyaltyRecipient,
-    recipient_vault_id: ObjectId,
+    recipient_vault_id: NodeId,
 ) -> Result<(), RuntimeError> {
     api.kernel_get_module_state()
         .costing
@@ -100,6 +101,34 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 }
 
 impl KernelModule for CostingModule {
+    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        let costing = &mut api.kernel_get_module_state().costing;
+        let fee_reserve = &mut costing.fee_reserve;
+        let fee_table = &costing.fee_table;
+
+        fee_reserve
+            .consume_deferred(fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_payload_cost_per_byte(),
+                    costing.payload_len,
+                    CostingReason::TxPayloadCost,
+                )
+            })
+            .and_then(|()| {
+                fee_reserve.consume_deferred(
+                    fee_table.tx_signature_verification_per_sig(),
+                    costing.num_of_signatures,
+                    CostingReason::TxSignatureVerification,
+                )
+            })
+            .map_err(|e| {
+                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
+                    e,
+                )))
+            })
+    }
+
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         identifier: &InvocationDebugIdentifier,
@@ -128,68 +157,65 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientObjectApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (package_address, blueprint_name, ident, optional_component) = {
-            let Actor {
-                identifier,
-                fn_identifier,
-            } = callee;
-            let maybe_component = match &identifier {
-                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
-                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
-                    _ => None,
-                },
-                _ => None,
+        let (blueprint, ident, optional_component) = {
+            let blueprint = callee.blueprint();
+            let (maybe_component, ident) = match &callee {
+                Actor::Method { node_id, ident, .. } => {
+                    if node_id.is_global_component() {
+                        (
+                            Some(ComponentAddress::new_unchecked(node_id.clone().into())),
+                            ident,
+                        )
+                    } else {
+                        (None, ident)
+                    }
+                }
+                Actor::Function { ident, .. } => (None, ident),
+                Actor::VirtualLazyLoad { .. } => {
+                    return Ok(());
+                }
             };
 
-            let ident = match &fn_identifier.ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => return Ok(()),
-            };
-
-            (
-                fn_identifier.package_address,
-                &fn_identifier.blueprint_name,
-                ident,
-                maybe_component,
-            )
+            (blueprint, ident, maybe_component)
         };
 
         //===========================
         // Apply package royalty
         //===========================
         let handle = api.kernel_lock_substate(
-            &RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Royalty),
+            blueprint.package_address.as_node_id(),
+            SysModuleId::ObjectState,
+            &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
+        let mut substate: PackageRoyaltySubstate =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
         let royalty_charge = substate
             .blueprint_royalty_configs
-            .get(blueprint_name)
+            .get(blueprint.blueprint_name.as_str())
             .map(|x| x.get_rule(ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {
             let vault_id = if let Some(vault) = substate.royalty_vault {
-                vault.id()
+                vault
             } else {
                 let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
-                substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
                 substate.royalty_vault = Some(new_vault);
-                new_vault.id()
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
+                new_vault
             };
             apply_royalty_cost(
                 api,
                 royalty_charge,
-                RoyaltyRecipient::Package(package_address),
-                vault_id,
+                RoyaltyRecipient::Package(blueprint.package_address),
+                vault_id.0,
             )?;
         }
         api.kernel_drop_lock(handle)?;
@@ -199,38 +225,39 @@ impl KernelModule for CostingModule {
         //===========================
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
-                &RENodeId::GlobalObject(component_address.clone().into()),
-                NodeModuleId::ComponentRoyalty,
-                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                component_address.as_node_id(),
+                SysModuleId::Royalty,
+                &RoyaltyOffset::RoyaltyConfig.into(),
                 LockFlags::read_only(),
             )?;
-            let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
+            let substate: ComponentRoyaltyConfigSubstate =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
             let royalty_charge = substate.royalty_config.get_rule(ident).clone();
             api.kernel_drop_lock(handle)?;
 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
-                    &RENodeId::GlobalObject(component_address.clone().into()),
-                    NodeModuleId::ComponentRoyalty,
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    component_address.as_node_id(),
+                    SysModuleId::Royalty,
+                    &RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate: &mut ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_get_substate_ref_mut(handle)?;
+                let mut substate: ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
                 let vault_id = if let Some(vault) = substate.royalty_vault {
-                    vault.id()
+                    vault
                 } else {
                     let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
-                    substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
                     substate.royalty_vault = Some(new_vault);
-                    new_vault.id()
+                    new_vault
                 };
                 apply_royalty_cost(
                     api,
                     royalty_charge,
                     RoyaltyRecipient::Component(component_address.clone()),
-                    vault_id,
+                    vault_id.into(),
                 )?;
+                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
                 api.kernel_drop_lock(handle)?;
             }
         }
@@ -240,9 +267,9 @@ impl KernelModule for CostingModule {
 
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_id: &NodeId,
+        _node_init: &NodeInit,
+        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_module_state().costing.apply_execution_cost(
@@ -266,9 +293,9 @@ impl KernelModule for CostingModule {
 
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
-        module_id: &NodeModuleId,
-        offset: &SubstateOffset,
+        node_id: &NodeId,
+        module_id: &SysModuleId,
+        substate_key: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
@@ -277,7 +304,7 @@ impl KernelModule for CostingModule {
                 fee_table.kernel_api_cost(CostingEntry::LockSubstate {
                     node_id,
                     module_id,
-                    offset,
+                    substate_key,
                 })
             },
             1,
@@ -334,11 +361,11 @@ impl KernelModule for CostingModule {
 
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_type: &AllocateEntityType,
+        entity_type: &EntityType,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::AllocateNodeId,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { node_type }),
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { entity_type }),
             1,
         )?;
         Ok(())

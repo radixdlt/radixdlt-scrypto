@@ -11,8 +11,8 @@ mod read {
         pub fn read_global_substate(component_address: ComponentAddress) {
             ScryptoEnv
                 .sys_lock_substate(
-                    RENodeId::GlobalObject(component_address.into()),
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    component_address.as_node_id(),
+                    &TypeInfoOffset::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
                 .unwrap();

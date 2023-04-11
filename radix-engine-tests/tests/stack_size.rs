@@ -14,9 +14,9 @@ use radix_engine::system::kernel_modules::auth::AuthError;
     - before - size of CallFrameError reaches almost 100
       pub enum CallFrameError {
         OffsetDoesNotExist(OffsetDoesNotExist),      <--- OffsetDoesNotExist size 64
-        RENodeNotVisible(RENodeId),
-        RENodeNotOwned(RENodeId),
-        MovingLockedRENode(RENodeId),
+        RENodeNotVisible(NodeId),
+        RENodeNotOwned(NodeId),
+        MovingLockedRENode(NodeId),
         FailedToMoveSubstateToTrack(TrackError),     <--- TrackError size 88
       }
 
@@ -24,9 +24,9 @@ use radix_engine::system::kernel_modules::auth::AuthError;
 
       pub enum CallFrameError {
         OffsetDoesNotExist(Box<OffsetDoesNotExist>),
-        RENodeNotVisible(RENodeId),
-        RENodeNotOwned(RENodeId),
-        MovingLockedRENode(RENodeId),
+        RENodeNotVisible(NodeId),
+        RENodeNotOwned(NodeId),
+        MovingLockedRENode(NodeId),
         FailedToMoveSubstateToTrack(Box<TrackError>),
       }
 */

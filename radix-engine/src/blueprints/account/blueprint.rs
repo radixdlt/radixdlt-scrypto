@@ -58,7 +58,7 @@ impl AccountBlueprint {
     fn create_modules<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
+    ) -> Result<BTreeMap<SysModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -66,9 +66,9 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            NodeModuleId::AccessRules => access_rules.0,
-            NodeModuleId::Metadata => metadata,
-            NodeModuleId::ComponentRoyalty => royalty,
+            SysModuleId::AccessRules => access_rules.0,
+            SysModuleId::Metadata => metadata,
+            SysModuleId::Royalty => royalty,
         );
 
         Ok(modules)
@@ -110,7 +110,7 @@ impl AccountBlueprint {
         Ok((account, modules))
     }
 
-    pub fn securify<Y>(receiver: &RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -120,36 +120,30 @@ impl AccountBlueprint {
     pub fn create_advanced<Y>(
         config: AccessRulesConfig,
         api: &mut Y,
-    ) -> Result<Address, RuntimeError>
+    ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(config, api)?;
         let modules = Self::create_modules(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(RENodeId::Object(account.id()), modules)?;
+        let address = api.globalize(account.0, modules)?;
 
         Ok(address)
     }
 
-    pub fn create<Y>(api: &mut Y) -> Result<(Address, Bucket), RuntimeError>
+    pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
         let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
         let modules = Self::create_modules(access_rules, api)?;
-        let modules = modules
-            .into_iter()
-            .map(|(id, own)| (id, own.id()))
-            .collect();
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(RENodeId::Object(account.id()), modules)?;
+        let address = api.globalize(account.0, modules)?;
 
         Ok((address, bucket))
     }
@@ -162,10 +156,10 @@ impl AccountBlueprint {
             // Creating the key-value-store where the vaults will be held. This is a KVStore of
             // [`ResourceAddress`] and [`Own`]ed vaults.
             let kv_store_id =
-                api.new_key_value_store(KeyValueStoreSchema::new::<ResourceAddress, Own>(false))?;
+                api.new_key_value_store(KeyValueStoreSchema::new::<ResourceAddress, Own>(true))?;
 
             let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id),
+                vaults: Own(kv_store_id),
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
@@ -173,11 +167,11 @@ impl AccountBlueprint {
             )?
         };
 
-        Ok(Own::Object(account_id))
+        Ok(Own(account_id))
     }
 
     fn lock_fee_internal<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -187,32 +181,33 @@ impl AccountBlueprint {
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+            let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+            let handle = api.sys_lock_substate(
+                account.vaults.as_node_id(),
+                &substate_key,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: &Option<ScryptoValue> =
-                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
+            let entry: Option<ScryptoValue> =
+                api.sys_read_substate_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!")),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
@@ -232,11 +227,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn lock_fee<Y>(
-        receiver: &RENodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn lock_fee<Y>(receiver: &NodeId, amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -245,7 +236,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_contingent_fee<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -256,47 +247,49 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn deposit<Y>(receiver: &RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn deposit<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+            let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+            let handle = api.sys_lock_substate(
+                account.vaults.as_node_id(),
+                &substate_key,
+                LockFlags::MUTABLE,
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let entry: &Option<ScryptoValue> =
-                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
+            let entry: Option<ScryptoValue> =
+                api.sys_read_substate_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!"),
                 Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
+                    let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
-                    let entry: &mut Option<ScryptoValue> =
-                        api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    *entry = Option::Some(encoded_value.to_scrypto_value());
+                    api.sys_write_substate_typed(
+                        kv_store_entry_lock_handle,
+                        &Some(encoded_value.to_scrypto_value()),
+                    )?;
                     vault
                 }
             }
@@ -313,7 +306,7 @@ impl AccountBlueprint {
     }
 
     pub fn deposit_batch<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -321,8 +314,8 @@ impl AccountBlueprint {
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -333,35 +326,37 @@ impl AccountBlueprint {
         for bucket in buckets {
             let resource_address = bucket.sys_resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+            let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-                let kv_store_id = account.vaults.key_value_store_id();
-
-                let node_id = RENodeId::KeyValueStore(kv_store_id);
-                let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+                let handle = api.sys_lock_substate(
+                    account.vaults.as_node_id(),
+                    &substate_key,
+                    LockFlags::MUTABLE,
+                )?;
                 handle
             };
 
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let entry: &Option<ScryptoValue> =
-                    api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
+                let entry: Option<ScryptoValue> =
+                    api.sys_read_substate_typed(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
+                    Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
+                        .map(|own| Vault(own))
                         .expect("Impossible Case!"),
                     Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
+                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
-                        let entry: &mut Option<ScryptoValue> =
-                            api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        *entry = Option::Some(encoded_value.to_scrypto_value());
+                        api.sys_write_substate_typed(
+                            kv_store_entry_lock_handle,
+                            &Some(encoded_value.to_scrypto_value()),
+                        )?;
                         vault
                     }
                 }
@@ -379,7 +374,7 @@ impl AccountBlueprint {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -389,32 +384,33 @@ impl AccountBlueprint {
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
-            *receiver,
-            SubstateOffset::Account(AccountOffset::Account),
+            receiver,
+            &AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
-            let kv_store_id = account.vaults.key_value_store_id();
-
-            let node_id = RENodeId::KeyValueStore(kv_store_id);
-            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
+            let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+            let handle = api.sys_lock_substate(
+                account.vaults.as_node_id(),
+                &substate_key,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: &Option<ScryptoValue> =
-                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
+            let entry: Option<ScryptoValue> =
+                api.sys_read_substate_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                    .map(|own| Vault(own.vault_id()))
+                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
+                    .map(|own| Vault(own))
                     .expect("Impossible Case!")),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
@@ -431,7 +427,7 @@ impl AccountBlueprint {
     }
 
     pub fn withdraw<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -450,7 +446,7 @@ impl AccountBlueprint {
     }
 
     pub fn withdraw_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -469,7 +465,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_fee_and_withdraw<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -491,7 +487,7 @@ impl AccountBlueprint {
     }
 
     pub fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
@@ -513,7 +509,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -531,7 +527,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof_by_amount<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -550,7 +546,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_proof_by_ids<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

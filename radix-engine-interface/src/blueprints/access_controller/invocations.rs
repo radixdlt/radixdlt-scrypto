@@ -1,7 +1,7 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::resource::*;
 use crate::*;
-use radix_engine_common::data::scrypto::model::ComponentAddress;
+use radix_engine_common::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";

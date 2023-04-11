@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::types::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;

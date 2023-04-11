@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::*;
-use radix_engine_common::data::scrypto::model::ComponentAddress;
+use radix_engine_common::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";

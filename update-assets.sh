@@ -43,4 +43,15 @@ cp \
   ./target/wasm32-unknown-unknown/release/flash_loan.schema \
   ../flash_loan.schema
 
+echo "Building genesis_helper..."
+(cd genesis_helper; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../genesis_helper.wasm \
+  ./target/wasm32-unknown-unknown/release/genesis_helper.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/genesis_helper.schema \
+  ../genesis_helper.schema
+
 echo "Done!"

@@ -1,24 +1,10 @@
 use radix_engine_interface::data::manifest::model::{
-    ManifestAddress, ManifestDecimal, ManifestNonFungibleLocalId, ManifestPreciseDecimal,
+    ManifestDecimal, ManifestNonFungibleLocalId, ManifestPreciseDecimal,
 };
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 
 /* Utils for conversion between "trusted" manifest value and rust value */
-
-pub fn to_address(address: ManifestAddress) -> Address {
-    match address {
-        ManifestAddress::Package(a) => {
-            Address::Package(PackageAddress::try_from(a.as_slice()).unwrap())
-        }
-        ManifestAddress::Component(a) => {
-            Address::Component(ComponentAddress::try_from(a.as_slice()).unwrap())
-        }
-        ManifestAddress::Resource(a) => {
-            Address::Resource(ResourceAddress::try_from(a.as_slice()).unwrap())
-        }
-    }
-}
 
 pub fn to_decimal(d: ManifestDecimal) -> Decimal {
     Decimal::try_from(d.0.as_slice()).unwrap()
@@ -34,14 +20,6 @@ pub fn to_non_fungible_local_id(id: ManifestNonFungibleLocalId) -> NonFungibleLo
         ManifestNonFungibleLocalId::Integer(i) => NonFungibleLocalId::integer(i),
         ManifestNonFungibleLocalId::Bytes(i) => NonFungibleLocalId::bytes(i).unwrap(),
         ManifestNonFungibleLocalId::UUID(i) => NonFungibleLocalId::uuid(i).unwrap(),
-    }
-}
-
-pub fn from_address(address: Address) -> ManifestAddress {
-    match address {
-        Address::Package(a) => ManifestAddress::Package(a.to_vec().try_into().unwrap()),
-        Address::Component(a) => ManifestAddress::Component(a.to_vec().try_into().unwrap()),
-        Address::Resource(a) => ManifestAddress::Resource(a.to_vec().try_into().unwrap()),
     }
 }
 

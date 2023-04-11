@@ -1,6 +1,5 @@
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::FAUCET_COMPONENT;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -20,9 +19,7 @@ fn test_simple_deterministic_execution() {
     assert_eq!(public_key0, public_key1);
     assert_eq!(account0, account1);
     assert_eq!(test_runner0.get_state_hash(), test_runner1.get_state_hash());
-    test_runner0
-        .substate_store()
-        .assert_eq(test_runner1.substate_store());
+    assert_eq!(test_runner0.substate_db(), test_runner1.substate_db());
 }
 
 #[test]
@@ -51,7 +48,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
 
     // Act
     let mut builder = ManifestBuilder::new();
-    builder.lock_fee(FAUCET_COMPONENT, 10.into());
+    builder.lock_fee(test_runner.faucet_component(), 10.into());
     let proof_ids = (0..20)
         .map(|_| {
             builder

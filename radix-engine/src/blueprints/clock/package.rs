@@ -7,7 +7,6 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
@@ -78,6 +77,7 @@ impl ClockNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
+                    parent: None,
                     schema,
                     substates,
                     functions,
@@ -100,7 +100,7 @@ impl ClockNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -169,28 +169,28 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT),
+            MethodKey::new(SysModuleId::ObjectState, CLOCK_SET_CURRENT_TIME_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT),
+            MethodKey::new(SysModuleId::ObjectState, CLOCK_GET_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::SELF, CLOCK_COMPARE_CURRENT_TIME_IDENT),
+            MethodKey::new(SysModuleId::ObjectState, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
-        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
+        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let address = ComponentAddress::Clock(input.component_address);
+        let address = ComponentAddress::new_unchecked(input.component_address);
         api.globalize_with_address(
-            RENodeId::Object(clock_id),
+            clock_id,
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
+                SysModuleId::AccessRules => access_rules.0,
+                SysModuleId::Metadata => metadata.0,
+                SysModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;
@@ -199,7 +199,7 @@ impl ClockNativePackage {
     }
 
     fn set_current_time<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -215,20 +215,19 @@ impl ClockNativePackage {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let handle = api.sys_lock_substate(
-            receiver.clone(),
-            SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+            receiver,
+            &ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        let current_time_rounded_to_minutes_substate: &mut ClockSubstate =
-            api.kernel_get_substate_ref_mut(handle)?;
-        current_time_rounded_to_minutes_substate.current_time_rounded_to_minutes_ms =
-            current_time_rounded_to_minutes;
+        let mut substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
+        substate.current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
+        api.sys_write_substate_typed(handle, &substate)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn get_current_time<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -242,11 +241,11 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
-                    receiver.clone(),
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    receiver,
+                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;
+                let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
@@ -256,7 +255,7 @@ impl ClockNativePackage {
     }
 
     fn compare_current_time<Y>(
-        receiver: &RENodeId,
+        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -270,11 +269,11 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.sys_lock_substate(
-                    receiver.clone(),
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    receiver,
+                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;
+                let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );

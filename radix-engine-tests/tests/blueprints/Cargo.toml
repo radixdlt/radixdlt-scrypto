@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "access_rules",
+    "address",
     "arguments",
     "balance_changes",
     "bucket",

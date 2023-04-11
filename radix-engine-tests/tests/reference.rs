@@ -1,6 +1,6 @@
 use radix_engine::{
-    errors::{KernelError, RuntimeError},
-    kernel::track::TrackError,
+    errors::{CallFrameError, KernelError, RuntimeError},
+    kernel::call_frame::UnlockSubstateError,
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -27,8 +27,10 @@ fn verify_no_internal_ref_can_be_stored_in_track() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::TrackError(err)) => {
-            return TrackError::InternalRefNotAllowed == **err
+        RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::UnlockSubstateError(x),
+        )) => {
+            matches!(x, UnlockSubstateError::CantStoreLocalReference(_))
         }
         _ => false,
     });

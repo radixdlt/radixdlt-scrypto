@@ -1,7 +1,6 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
@@ -12,12 +11,12 @@ fn non_existing_vault_should_cause_error() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
-    let non_existing_vault_id = [0; OBJECT_ID_LENGTH];
+    let non_existing_address = local_address(EntityType::InternalFungibleVault, 5);
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(non_existing_vault_id, Decimal::one())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .recall(non_existing_address, Decimal::one())
         .call_method(
             account,
             "deposit_batch",
@@ -29,9 +28,9 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Object(
-                non_existing_vault_id,
-            ))),
+            RuntimeError::KernelError(KernelError::NodeNotFound(
+                non_existing_address.as_node_id().clone(),
+            )),
         ))
     });
 }
@@ -48,8 +47,8 @@ fn cannot_take_on_non_recallable_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(vault_id, Decimal::one())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             account,
             "deposit_batch",
@@ -80,8 +79,8 @@ fn can_take_on_recallable_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .recall(vault_id, Decimal::one())
+        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .recall(LocalAddress::new_unchecked(vault_id.into()), Decimal::one())
         .call_method(
             other_account,
             "deposit_batch",

@@ -213,10 +213,6 @@ pub enum Instruction {
         config: Value,
     },
 
-    AssertAccessRule {
-        access_rule: Value,
-    },
-
     CreateAccount {},
     CreateAccountAdvanced {
         config: Value,

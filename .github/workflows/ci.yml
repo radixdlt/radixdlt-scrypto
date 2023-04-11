@@ -51,7 +51,7 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test --features serde
+      run: cargo test
       working-directory: sbor
     - name: Run tests (no_std)
       run: cargo test --no-default-features --features alloc
@@ -161,6 +161,8 @@ jobs:
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
+    - name: Build with resource tracking
+      run: cargo build --features resource_tracker
     - name: Run tests
       run: |
         cargo nextest run \
@@ -169,7 +171,6 @@ jobs:
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests \
-          --features serde
         ./check_stack_usage.sh
 
   radix-engine-no-std:

@@ -1,10 +1,11 @@
+use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, ActorIdentifier};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node_init::NodeInit;
+use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -35,7 +36,7 @@ pub struct ExecutionTraceModule {
     kernel_call_traces_stacks: IndexMap<usize, Vec<ExecutionTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation, instruction index)
-    vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+    vault_ops: Vec<(TraceActor, NodeId, VaultOp, usize)>,
 }
 
 impl ExecutionTraceModule {
@@ -46,8 +47,8 @@ impl ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
-    pub node_id: RENodeId,
-    pub vault_id: ObjectId,
+    pub node_id: NodeId,
+    pub vault_id: NodeId,
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
@@ -159,8 +160,8 @@ impl ProofSnapshot {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: IndexMap<ObjectId, BucketSnapshot>,
-    pub proofs: IndexMap<ObjectId, ProofSnapshot>,
+    pub buckets: IndexMap<NodeId, BucketSnapshot>,
+    pub proofs: IndexMap<NodeId, ProofSnapshot>,
 }
 
 // TODO: Clean up
@@ -254,34 +255,24 @@ impl ResourceSummary {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         for node_id in &call_frame_update.nodes_to_move {
-            match &node_id {
-                RENodeId::Object(object_id) => {
-                    if let Some(x) = api.kernel_read_bucket(*object_id) {
-                        buckets.insert(*object_id, x);
-                    }
-                    if let Some(x) = api.kernel_read_proof(*object_id) {
-                        proofs.insert(*object_id, x);
-                    }
-                }
-                _ => {}
+            if let Some(x) = api.kernel_read_bucket(node_id) {
+                buckets.insert(*node_id, x);
+            }
+            if let Some(x) = api.kernel_read_proof(node_id) {
+                proofs.insert(*node_id, x);
             }
         }
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &RENodeId) -> Self {
+    pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &NodeId) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
-        match node_id {
-            RENodeId::Object(object_id) => {
-                if let Some(x) = api.kernel_read_bucket(*object_id) {
-                    buckets.insert(*object_id, x);
-                }
-                if let Some(x) = api.kernel_read_proof(*object_id) {
-                    proofs.insert(*object_id, x);
-                }
-            }
-            _ => {}
+        if let Some(x) = api.kernel_read_bucket(node_id) {
+            buckets.insert(*node_id, x);
+        }
+        if let Some(x) = api.kernel_read_proof(node_id) {
+            proofs.insert(*node_id, x);
         }
         Self { buckets, proofs }
     }
@@ -290,9 +281,9 @@ impl ResourceSummary {
 impl KernelModule for ExecutionTraceModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _node_id: &RENodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        _node_id: &NodeId,
+        _node_init: &NodeInit,
+        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state()
             .execution_trace
@@ -302,7 +293,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
@@ -315,7 +306,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        node_id: &RENodeId,
+        node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
         api.kernel_get_module_state()
@@ -446,36 +437,23 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = {
-                let Actor {
-                    fn_identifier:
-                        FnIdentifier {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                        },
-                    identifier: receiver,
-                } = callee;
-
-                match ident {
-                    FnIdent::Application(ident) => match receiver {
-                        ActorIdentifier::Method(..) => {
-                            Origin::ScryptoMethod(ApplicationFnIdentifier {
-                                package_address: *package_address,
-                                blueprint_name: blueprint_name.to_string(),
-                                ident: ident.to_string(),
-                            })
-                        }
-                        ActorIdentifier::Function(..) => {
-                            Origin::ScryptoFunction(ApplicationFnIdentifier {
-                                package_address: *package_address,
-                                blueprint_name: blueprint_name.to_string(),
-                                ident: ident.to_string(),
-                            })
-                        }
-                        _ => panic!("Should not get here"),
-                    },
-                    FnIdent::System(..) => return,
+            let origin = match &callee {
+                Actor::Method {
+                    blueprint, ident, ..
+                } => Origin::ScryptoMethod(ApplicationFnIdentifier {
+                    package_address: blueprint.package_address.clone(),
+                    blueprint_name: blueprint.blueprint_name.clone(),
+                    ident: ident.clone(),
+                }),
+                Actor::Function { blueprint, ident } => {
+                    Origin::ScryptoFunction(ApplicationFnIdentifier {
+                        package_address: blueprint.package_address.clone(),
+                        blueprint_name: blueprint.blueprint_name.clone(),
+                        ident: ident.clone(),
+                    })
+                }
+                Actor::VirtualLazyLoad { .. } => {
+                    return;
                 }
             };
             let instruction_index = self.instruction_index();
@@ -490,35 +468,23 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident: FnIdent::Application(ident),
-                    },
-                identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(VAULT_BLUEPRINT)
-                && ident.eq(VAULT_PUT_IDENT) =>
-            {
-                self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
+            Actor::Method {
+                node_id,
+                blueprint,
+                ident,
+                ..
+            } if VaultUtil::is_vault_blueprint(blueprint) && ident.eq(VAULT_PUT_IDENT) => {
+                self.handle_vault_put_input(&resource_summary, &current_actor, node_id)
             }
-            Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident: FnIdent::Application(ident),
-                    },
-                identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(VAULT_BLUEPRINT)
-                && ident.eq(VAULT_LOCK_FEE_IDENT) =>
+            Actor::Method {
+                node_id,
+                blueprint,
+                ident,
+                ..
+            } if VaultUtil::is_vault_blueprint(blueprint)
+                && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
-                self.handle_vault_lock_fee_input(&current_actor, vault_id)
+                self.handle_vault_lock_fee_input(&current_actor, node_id)
             }
             _ => {}
         }
@@ -532,29 +498,15 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         match &current_actor {
-            Some(Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ident: FnIdent::Application(ident),
-                    },
-                identifier:
-                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint_name.eq(VAULT_BLUEPRINT)
-                && ident.eq(VAULT_TAKE_IDENT) =>
-            {
-                self.handle_vault_take_output(&resource_summary, caller, vault_id)
-            }
-            Some(Actor {
-                fn_identifier:
-                    FnIdentifier {
-                        ident: FnIdent::System(..),
-                        ..
-                    },
+            Some(Actor::Method {
+                node_id,
+                blueprint,
+                ident,
                 ..
-            }) => return,
+            }) if VaultUtil::is_vault_blueprint(blueprint) && ident.eq(VAULT_TAKE_IDENT) => {
+                self.handle_vault_take_output(&resource_summary, caller, node_id)
+            }
+            Some(Actor::VirtualLazyLoad { .. }) => return,
             _ => {}
         }
 
@@ -614,18 +566,29 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_traces(
-        mut self,
-    ) -> (
-        Vec<ExecutionTrace>,
-        Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-    ) {
-        let mut execution_traces = Vec::new();
-        for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
-            execution_traces.extend(traces);
-        }
+    pub fn finalize(mut self, transaction_result: &TransactionResult) -> TransactionExecutionTrace {
+        match transaction_result {
+            TransactionResult::Commit(c) => {
+                let mut execution_traces = Vec::new();
+                for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
+                    execution_traces.extend(traces);
+                }
 
-        (execution_traces, self.vault_ops)
+                let resource_changes = calculate_resource_changes(
+                    self.vault_ops,
+                    &c.fee_payments,
+                    c.outcome.is_success(),
+                );
+
+                TransactionExecutionTrace {
+                    execution_traces,
+                    resource_changes,
+                }
+            }
+            TransactionResult::Reject(_) | TransactionResult::Abort(_) => {
+                TransactionExecutionTrace::default()
+            }
+        }
     }
 
     fn instruction_index(&self) -> usize {
@@ -636,7 +599,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &ObjectId,
+        vault_id: &NodeId,
     ) {
         let actor = caller
             .clone()
@@ -652,7 +615,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &ObjectId) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &NodeId) {
         let actor = caller
             .clone()
             .map(|a| TraceActor::Actor(a))
@@ -669,7 +632,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &ObjectId,
+        vault_id: &NodeId,
     ) {
         let actor = caller
             .clone()
@@ -687,8 +650,8 @@ impl ExecutionTraceModule {
 }
 
 pub fn calculate_resource_changes(
-    mut vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-    fee_payments: &IndexMap<ObjectId, Decimal>,
+    mut vault_ops: Vec<(TraceActor, NodeId, VaultOp, usize)>,
+    fee_payments: &IndexMap<NodeId, Decimal>,
     is_commit_success: bool,
 ) -> IndexMap<usize, Vec<ResourceChange>> {
     // Retain lock fee only if the transaction fails.
@@ -698,14 +661,9 @@ pub fn calculate_resource_changes(
 
     // Calculate per instruction index, actor, vault resource changes.
     let mut vault_changes =
-        index_map_new::<usize, IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>(
-        );
+        index_map_new::<usize, IndexMap<NodeId, IndexMap<NodeId, (ResourceAddress, Decimal)>>>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
-        if let TraceActor::Actor(Actor {
-            identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
-            ..
-        }) = actor
-        {
+        if let TraceActor::Actor(Actor::Method { node_id, .. }) = actor {
             match vault_op {
                 VaultOp::Create(_) => todo!("Not supported yet!"),
                 VaultOp::Put(resource_address, amount) => {

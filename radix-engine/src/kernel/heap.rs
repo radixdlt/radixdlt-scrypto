@@ -1,21 +1,16 @@
-use super::track::Track;
 use crate::blueprints::resource::*;
-use crate::errors::{CallFrameError, OffsetDoesNotExist};
-use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
-use crate::types::NonIterMap;
-use radix_engine_interface::api::types::{
-    BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId, SubstateOffset,
-};
+use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
 
 pub struct Heap {
-    nodes: NonIterMap<RENodeId, HeapRENode>,
+    nodes: NonIterMap<NodeId, HeapNode>,
+}
+
+pub enum MoveNodeToStoreError {
+    NodeNotFound(NodeId),
 }
 
 impl Heap {
@@ -25,122 +20,60 @@ impl Heap {
         }
     }
 
-    pub fn contains_node(&self, node_id: &RENodeId) -> bool {
+    /// Checks if the given node is in this heap.
+    pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
     }
 
+    /// Reads a substate
     pub fn get_substate(
-        &mut self,
-        node_id: &RENodeId,
-        module_id: NodeModuleId,
-        offset: &SubstateOffset,
-    ) -> Result<SubstateRef, CallFrameError> {
-        let node = self
-            .nodes
-            .get_mut(node_id)
-            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
-
-        // TODO: Will clean this up when virtual substates is cleaned up
-        match (&node_id, module_id, offset) {
-            (_, _, SubstateOffset::KeyValueStore(..)) => {
-                let entry = node
-                    .substates
-                    .entry((module_id, offset.clone()))
-                    .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
-                Ok(entry.to_ref())
-            }
-            _ => node
-                .substates
-                .get(&(module_id, offset.clone()))
-                .map(|s| s.to_ref())
-                .ok_or_else(|| {
-                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
-                        node_id.clone(),
-                        offset.clone(),
-                    )))
-                }),
-        }
+        &self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.nodes
+            .get(node_id)
+            .and_then(|node| node.substates.get(&module_id))
+            .and_then(|module| module.get(substate_key))
     }
 
-    pub fn get_substate_mut(
+    /// Inserts or overwrites a substate
+    pub fn put_substate(
         &mut self,
-        node_id: &RENodeId,
-        module_id: NodeModuleId,
-        offset: &SubstateOffset,
-    ) -> Result<SubstateRefMut, CallFrameError> {
-        let node = self
-            .nodes
-            .get_mut(node_id)
-            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))?;
-
-        // TODO: Will clean this up when virtual substates is cleaned up
-        match (&node_id, offset) {
-            (_, SubstateOffset::KeyValueStore(..)) => {
-                let entry = node
-                    .substates
-                    .entry((module_id, offset.clone()))
-                    .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
-                Ok(entry.to_ref_mut())
-            }
-            _ => node
-                .substates
-                .get_mut(&(module_id, offset.clone()))
-                .map(|s| s.to_ref_mut())
-                .ok_or_else(|| {
-                    CallFrameError::OffsetDoesNotExist(Box::new(OffsetDoesNotExist(
-                        node_id.clone(),
-                        offset.clone(),
-                    )))
-                }),
-        }
+        node_id: NodeId,
+        module_id: SysModuleId,
+        substate_key: SubstateKey,
+        substate_value: IndexedScryptoValue,
+    ) {
+        self.nodes
+            .entry(node_id)
+            .or_insert_with(|| HeapNode::default())
+            .substates
+            .entry(module_id)
+            .or_default()
+            .insert(substate_key, substate_value);
     }
 
-    pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
+    /// Inserts a new node to heap.
+    pub fn insert_node(&mut self, node_id: NodeId, node: HeapNode) {
         self.nodes.insert(node_id, node);
     }
 
-    pub fn move_nodes_to_store(
-        &mut self,
-        track: &mut Track,
-        nodes: Vec<RENodeId>,
-    ) -> Result<(), CallFrameError> {
-        for node_id in nodes {
-            self.move_node_to_store(track, node_id)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn move_node_to_store(
-        &mut self,
-        track: &mut Track,
-        node_id: RENodeId,
-    ) -> Result<(), CallFrameError> {
-        let node = self
-            .nodes
-            .remove(&node_id)
-            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id))?;
-        for ((module_id, offset), substate) in node.substates {
-            let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
-            self.move_nodes_to_store(track, owned_nodes)?;
-            track
-                .insert_substate(SubstateId(node_id, module_id, offset), substate)
-                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(Box::new(e)))?;
-        }
-
-        Ok(())
-    }
-
-    pub fn remove_node(&mut self, node_id: &RENodeId) -> Result<HeapRENode, CallFrameError> {
+    /// Removes node.
+    ///
+    /// # Panics
+    /// - If the node is not found.
+    pub fn remove_node(&mut self, node_id: &NodeId) -> HeapNode {
         self.nodes
             .remove(node_id)
-            .ok_or_else(|| CallFrameError::RENodeNotOwned(node_id.clone()))
+            .unwrap_or_else(|| panic!("Heap does not contain {:?}", node_id))
     }
 }
 
-#[derive(Debug)]
-pub struct HeapRENode {
-    pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
+#[derive(Debug, Default)]
+pub struct HeapNode {
+    pub substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
 }
 
 pub struct DroppedBucket {
@@ -162,34 +95,26 @@ impl DroppedBucket {
     }
 }
 
-impl Into<DroppedBucket> for HeapRENode {
+impl Into<DroppedBucket> for HeapNode {
     fn into(mut self) -> DroppedBucket {
-        let info: BucketInfoSubstate = self
-            .substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::Bucket(BucketOffset::Info),
-            ))
-            .unwrap()
-            .into();
+        let mut module = self.substates.remove(&SysModuleId::ObjectState).unwrap();
+
+        let info: BucketInfoSubstate = module
+            .remove(&BucketOffset::Info.into())
+            .map(|x| x.as_typed().unwrap())
+            .unwrap();
 
         let resource = match info.resource_type {
             ResourceType::Fungible { .. } => DroppedBucketResource::Fungible(
-                self.substates
-                    .remove(&(
-                        NodeModuleId::SELF,
-                        SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-                    ))
-                    .map(|s| Into::<LiquidFungibleResource>::into(s))
+                module
+                    .remove(&BucketOffset::LiquidFungible.into())
+                    .map(|x| x.as_typed().unwrap())
                     .unwrap(),
             ),
             ResourceType::NonFungible { .. } => DroppedBucketResource::NonFungible(
-                self.substates
-                    .remove(&(
-                        NodeModuleId::SELF,
-                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                    ))
-                    .map(|s| Into::<LiquidNonFungibleResource>::into(s))
+                module
+                    .remove(&BucketOffset::LiquidNonFungible.into())
+                    .map(|x| x.as_typed().unwrap())
                     .unwrap(),
             ),
         };
@@ -198,11 +123,40 @@ impl Into<DroppedBucket> for HeapRENode {
     }
 }
 
-impl Into<ProofInfoSubstate> for HeapRENode {
-    fn into(mut self) -> ProofInfoSubstate {
-        self.substates
-            .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
-            .unwrap()
-            .into()
+pub struct DroppedProof {
+    pub info: ProofInfoSubstate,
+    pub resource: DroppedProofResource,
+}
+
+pub enum DroppedProofResource {
+    Fungible(FungibleProof),
+    NonFungible(NonFungibleProof),
+}
+
+impl Into<DroppedProof> for HeapNode {
+    fn into(mut self) -> DroppedProof {
+        let mut module = self.substates.remove(&SysModuleId::ObjectState).unwrap();
+
+        let info: ProofInfoSubstate = module
+            .remove(&ProofOffset::Info.into())
+            .map(|x| x.as_typed().unwrap())
+            .unwrap();
+
+        let resource = match info.resource_type {
+            ResourceType::Fungible { .. } => DroppedProofResource::Fungible(
+                module
+                    .remove(&ProofOffset::Fungible.into())
+                    .map(|x| x.as_typed().unwrap())
+                    .unwrap(),
+            ),
+            ResourceType::NonFungible { .. } => DroppedProofResource::NonFungible(
+                module
+                    .remove(&ProofOffset::NonFungible.into())
+                    .map(|x| x.as_typed().unwrap())
+                    .unwrap(),
+            ),
+        };
+
+        DroppedProof { info, resource }
     }
 }

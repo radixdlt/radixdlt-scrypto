@@ -34,7 +34,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             account,
             ACCOUNT_SECURIFY_IDENT,
@@ -230,13 +230,13 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         receipt.execution_trace.resource_changes,
         indexmap!(
             0 => vec![ResourceChange {
-                node_id: RENodeId::GlobalObject(account.into()),
+                node_id: account.into(),
                 vault_id,
                 resource_address: RADIX_TOKEN,
                 amount: - result.fee_summary.total_execution_cost_xrd - dec!("1")
             }],
             2 => vec![ResourceChange {
-                node_id: RENodeId::GlobalObject(account.into()),
+                node_id: account.into(),
                 vault_id,
                 resource_address: RADIX_TOKEN,
                 amount: dec!("1")
@@ -267,6 +267,6 @@ fn assert_resource_changes_for_transfer(
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.node_id == RENodeId::GlobalObject(target_account.into())
+            && r.node_id == target_account.into()
             && r.amount == Decimal::from(transfer_amount)));
 }

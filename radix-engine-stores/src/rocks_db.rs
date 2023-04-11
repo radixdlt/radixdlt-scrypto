@@ -1,210 +1,174 @@
-use std::collections::HashMap;
+use crate::interface::*;
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::types::*;
+use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use sbor::rust::prelude::*;
 use std::path::PathBuf;
 
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::*;
-use radix_engine::{ledger::*, wasm::WasmEngine};
-use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::scrypto::ScryptoDecode;
-use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-
-pub struct RadixEngineDB {
+pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
 }
 
-impl RadixEngineDB {
-    pub fn new(root: PathBuf) -> Self {
-        let db = DB::open_default(root.as_path()).unwrap();
+impl RocksdbSubstateStore {
+    pub fn standard(root: PathBuf) -> Self {
+        let configs: BTreeMap<ModuleId, ModuleConfig> = btreemap!(
+            SysModuleId::TypeInfo.into() => ModuleConfig {
+                iteration_enabled: false,
+            },
+            SysModuleId::ObjectState.into() => ModuleConfig {
+                iteration_enabled: true,
+            },
+            SysModuleId::Metadata.into() => ModuleConfig {
+                iteration_enabled: true,
+            },
+            SysModuleId::Royalty.into() => ModuleConfig {
+                iteration_enabled: false,
+            },
+            SysModuleId::AccessRules.into() => ModuleConfig {
+                iteration_enabled: false,
+            },
+        );
+        let db = DB::open_default(root.as_path()).expect("IO Error");
+
+        if db.get([0]).expect("IO Error").is_none() {
+            db.put(
+                [0],
+                scrypto_encode(&configs).expect("Failed to encode configs"),
+            )
+            .expect("IO Error");
+        }
+
         Self { db }
     }
 
-    pub fn with_bootstrap<W: WasmEngine>(
-        root: PathBuf,
-        scrypto_interpreter: &ScryptoInterpreter<W>,
-    ) -> Self {
-        let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store, scrypto_interpreter);
-        substate_store
+    pub fn configs(&self) -> BTreeMap<ModuleId, ModuleConfig> {
+        scrypto_decode(
+            &self
+                .db
+                .get([0])
+                .expect("IO error")
+                .expect("Missing configs"),
+        )
+        .expect("Failed to decode configs")
+    }
+
+    pub fn list_nodes(&self) -> Vec<NodeId> {
+        let mut items = Vec::new();
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(&[], Direction::Forward));
+        while let Some(kv) = iter.next() {
+            let (key, _value) = kv.unwrap();
+            if key.len() < NodeId::LENGTH {
+                continue;
+            }
+            let (node_id, _, _) = decode_substate_id(key.as_ref()).unwrap();
+            if items.last() != Some(&node_id) {
+                items.push(node_id);
+            }
+        }
+        items
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(PackageAddress::Normal([0; 26]).into()),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
-        .unwrap();
-        let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(PackageAddress::Normal([255; 26]).into()),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
-        .unwrap();
-        let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-
-        let mut addresses = Vec::new();
-        for substate_id in substate_ids {
-            if let SubstateId(
-                RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ) = substate_id
-            {
-                addresses.push(package_address);
-            }
-        }
-
-        addresses
-    }
-
-    fn list_components_helper(
-        &self,
-        start: ComponentAddress,
-        end: ComponentAddress,
-    ) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(Address::Component(start)),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
-        .unwrap();
-        let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(Address::Component(end)),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
-        .unwrap();
-        let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-        let mut addresses = Vec::new();
-        for substate_id in substate_ids {
-            if let SubstateId(
-                RENodeId::GlobalObject(Address::Component(component_address)),
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ) = substate_id
-            {
-                addresses.push(component_address);
-            }
-        }
-
-        addresses
+        self.list_nodes()
+            .into_iter()
+            .filter_map(|x| PackageAddress::try_from(x.as_ref()).ok())
+            .collect()
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {
-        let mut addresses = Vec::new();
-        addresses.extend(self.list_components_helper(
-            ComponentAddress::Account([0u8; 26]),
-            ComponentAddress::Account([255u8; 26]),
-        ));
-        addresses.extend(self.list_components_helper(
-            ComponentAddress::Normal([0u8; 26]),
-            ComponentAddress::Normal([255u8; 26]),
-        ));
-        addresses
+        self.list_nodes()
+            .into_iter()
+            .filter_map(|x| ComponentAddress::try_from(x.as_ref()).ok())
+            .collect()
     }
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(ResourceAddress::Fungible([0; 26]).into()),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
-        .unwrap();
-        let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalObject(ResourceAddress::NonFungible([255; 26]).into()),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
-        .unwrap();
-        let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-        let mut addresses = Vec::new();
-        for substate_id in substate_ids {
-            if let SubstateId(
-                RENodeId::GlobalObject(Address::Resource(resource_address)),
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ) = substate_id
-            {
-                addresses.push(resource_address);
-            }
-        }
-
-        addresses
-    }
-
-    fn list_items<T: ScryptoDecode>(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<T> {
-        let mut iter = self
-            .db
-            .iterator(IteratorMode::From(start, Direction::Forward));
-        let mut items = Vec::new();
-        while let Some(kv) = iter.next() {
-            let (key, _value) = kv.unwrap();
-            if key.as_ref() > inclusive_end {
-                break;
-            }
-            if key.len() == start.len() {
-                items.push(scrypto_decode(key.as_ref()).unwrap());
-            }
-        }
-        items
-    }
-
-    fn read(&self, substate_id: &SubstateId) -> Option<Vec<u8>> {
-        // TODO: Use get_pinned
-        self.db
-            .get(scrypto_encode(substate_id).expect("Could not encode substate id"))
-            .unwrap()
-    }
-
-    fn write(&self, substate_id: SubstateId, value: Vec<u8>) {
-        self.db
-            .put(
-                scrypto_encode(&substate_id).expect("Could not encode substate id"),
-                value,
-            )
-            .unwrap();
+        self.list_nodes()
+            .into_iter()
+            .filter_map(|x| ResourceAddress::try_from(x.as_ref()).ok())
+            .collect()
     }
 }
 
-impl QueryableSubstateStore for RadixEngineDB {
-    fn get_kv_store_entries(
+impl SubstateDatabase for RocksdbSubstateStore {
+    fn get_substate(
         &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let mut iter = self.db.iterator(IteratorMode::Start);
-        let mut items = HashMap::new();
-        while let Some(kv) = iter.next() {
-            let (key, value) = kv.unwrap();
-            let substate_id: SubstateId = scrypto_decode(&key).unwrap();
-            if let SubstateId(
-                RENodeId::KeyValueStore(id),
-                NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
-            ) = substate_id
-            {
-                let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
-                if id == *kv_store_id {
-                    items.insert(entry_id, substate.substate);
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<Vec<u8>>, GetSubstateError> {
+        if !self.configs().contains_key(&module_id) {
+            return Err(GetSubstateError::UnknownModuleId);
+        }
+
+        let key = encode_substate_id(node_id, module_id, substate_key);
+        let value = self
+            .db
+            .get(&key)
+            .expect("IO Error")
+            .map(|x| scrypto_decode::<Vec<u8>>(&x).expect("Failed to decode value"));
+        Ok(value)
+    }
+
+    fn list_substates(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+    ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError> {
+        match self.configs().get(&module_id) {
+            None => {
+                return Err(ListSubstatesError::UnknownModuleId);
+            }
+            Some(config) => {
+                if !config.iteration_enabled {
+                    return Err(ListSubstatesError::IterationNotAllowed);
                 }
             }
         }
-        items
+
+        let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
+        let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
+        let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();
+
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(&start, Direction::Forward));
+        while let Some(kv) = iter.next() {
+            let (key, value) = kv.unwrap();
+            if key.as_ref() > &end {
+                break;
+            }
+            let (_, _, substate_key) =
+                decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
+            let value = scrypto_decode::<Vec<u8>>(value.as_ref()).expect("Failed to decode value");
+            substates.push((substate_key, value));
+        }
+
+        Ok((substates, Hash([0; Hash::LENGTH])))
     }
 }
 
-impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.read(substate_id)
-            .map(|b| scrypto_decode(&b).expect("Could not decode persisted substate"))
-    }
-}
-
-impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.write(
-            substate_id,
-            scrypto_encode(&substate).expect("Could not encode substate for persistence"),
-        );
+impl CommittableSubstateDatabase for RocksdbSubstateStore {
+    fn commit(&mut self, state_changes: &StateUpdates) -> Result<(), CommitError> {
+        for ((node_id, module_id, substate_key), substate_change) in &state_changes.substate_changes
+        {
+            let substate_id = encode_substate_id(node_id, *module_id, substate_key);
+            match substate_change {
+                StateUpdate::Create(substate_value) => {
+                    self.db
+                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
+                        .expect("IO error");
+                }
+                StateUpdate::Update(substate_value) => {
+                    self.db
+                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
+                        .expect("IO error");
+                }
+            }
+        }
+        Ok(())
     }
 }

@@ -5,7 +5,6 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
@@ -97,6 +96,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let epoch_manager_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,
@@ -190,6 +190,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
+            parent: None,
             schema,
             substates,
             functions,
@@ -220,7 +221,7 @@ impl EpochManagerNativePackage {
     #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<&RENodeId>,
+        receiver: Option<&NodeId>,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

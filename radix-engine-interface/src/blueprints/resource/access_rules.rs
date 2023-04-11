@@ -1,9 +1,9 @@
 use crate::api::node_modules::metadata::*;
-use crate::api::types::NodeModuleId;
 use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
 use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use crate::blueprints::resource::*;
 use crate::rule;
+use crate::types::*;
 use crate::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
@@ -25,15 +25,27 @@ impl FnKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum ObjectKey {
+    SELF,
+    ChildBlueprint(String),
+}
+
+impl ObjectKey {
+    pub fn child_blueprint(name: &str) -> Self {
+        ObjectKey::ChildBlueprint(name.to_string())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
-    pub node_module_id: NodeModuleId,
+    pub module_id: SysModuleId,
     pub ident: String,
 }
 
 impl MethodKey {
-    pub fn new(node_module_id: NodeModuleId, method_ident: &str) -> Self {
+    pub fn new(module_id: SysModuleId, method_ident: &str) -> Self {
         Self {
-            node_module_id,
+            module_id,
             ident: method_ident.to_string(),
         }
     }
@@ -66,6 +78,7 @@ impl From<String> for AccessRuleEntry {
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
+    direct_method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,
     default_auth: AccessRuleEntry,
@@ -77,6 +90,7 @@ pub struct AccessRulesConfig {
 impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
+            direct_method_auth: BTreeMap::new(),
             method_auth: BTreeMap::new(),
             grouped_auth: BTreeMap::new(),
             default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -93,7 +107,7 @@ impl AccessRulesConfig {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = MethodKey::new(NodeModuleId::SELF, method_name);
+        let key = MethodKey::new(SysModuleId::ObjectState, method_name);
         let mutability = mutability.into();
 
         self.method_auth
@@ -117,15 +131,15 @@ impl AccessRulesConfig {
         self.default_auth = default_auth;
     }
 
-    pub fn get_access_rule(&self, key: &MethodKey) -> AccessRule {
-        match self.method_auth.get(key) {
+    pub fn get_access_rule(&self, is_direct_access: bool, key: &MethodKey) -> AccessRule {
+        let auth = if is_direct_access {
+            &self.direct_method_auth
+        } else {
+            &self.method_auth
+        };
+        match auth.get(key) {
             None => self.get_default(),
-            Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule.clone(),
-            Some(AccessRuleEntry::Group(group_key)) => self
-                .grouped_auth
-                .get(group_key)
-                .cloned()
-                .unwrap_or(AccessRule::DenyAll),
+            Some(entry) => self.resolve_entry(entry),
         }
     }
 
@@ -137,18 +151,21 @@ impl AccessRulesConfig {
             .unwrap_or(AccessRule::DenyAll)
     }
 
+    fn resolve_entry(&self, entry: &AccessRuleEntry) -> AccessRule {
+        match entry {
+            AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
+            AccessRuleEntry::Group(name) => match self.grouped_auth.get(name) {
+                Some(access_rule) => access_rule.clone(),
+                None => AccessRule::DenyAll,
+            },
+        }
+    }
+
     pub fn get_mutability(&self, key: &MethodKey) -> AccessRule {
         self.method_auth_mutability
             .get(key)
             .cloned()
-            .map(|e| match e {
-                AccessRuleEntry::AccessRule(access_rule) => access_rule,
-                AccessRuleEntry::Group(name) => self
-                    .grouped_auth
-                    .get(&name)
-                    .cloned()
-                    .unwrap_or(AccessRule::DenyAll),
-            })
+            .map(|e| self.resolve_entry(&e))
             .unwrap_or_else(|| self.get_default_mutability())
     }
 
@@ -159,32 +176,16 @@ impl AccessRulesConfig {
             .unwrap_or_else(|| self.get_default_mutability())
     }
 
-    fn get_default_mutability(&self) -> AccessRule {
-        match &self.default_auth_mutability {
-            AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
-            AccessRuleEntry::Group(name) => match self.grouped_auth.get(name) {
-                Some(access_rule) => access_rule.clone(),
-                None => AccessRule::DenyAll,
-            },
-        }
+    pub fn get_default_mutability(&self) -> AccessRule {
+        self.resolve_entry(&self.default_auth_mutability)
     }
 
     pub fn set_mutability<A: Into<AccessRuleEntry>>(&mut self, key: MethodKey, method_auth: A) {
         self.method_auth_mutability.insert(key, method_auth.into());
     }
 
-    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
-        self.grouped_auth_mutability.insert(key, method_auth);
-    }
-
     pub fn get_default(&self) -> AccessRule {
-        match &self.default_auth {
-            AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
-            AccessRuleEntry::Group(name) => match self.grouped_auth.get(name) {
-                Some(access_rule) => access_rule.clone(),
-                None => AccessRule::DenyAll,
-            },
-        }
+        self.resolve_entry(&self.default_auth)
     }
 
     pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
@@ -197,6 +198,10 @@ impl AccessRulesConfig {
 
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {
         self.grouped_auth.insert(group_key, access_rule);
+    }
+
+    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
+        self.grouped_auth_mutability.insert(key, method_auth);
     }
 
     pub fn set_group_access_rule_and_mutability(
@@ -234,6 +239,11 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, mutability.into());
     }
 
+    pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
+        self.direct_method_auth
+            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
+    }
+
     pub fn set_method_access_rule_to_group(&mut self, key: MethodKey, group: String) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group));
@@ -246,6 +256,14 @@ impl AccessRulesConfig {
     pub fn get_all_grouped_auth(&self) -> &BTreeMap<String, AccessRule> {
         &self.grouped_auth
     }
+
+    pub fn get_all_method_mutability(&self) -> &BTreeMap<MethodKey, AccessRuleEntry> {
+        &self.method_auth_mutability
+    }
+
+    pub fn get_all_grouped_auth_mutability(&self) -> &BTreeMap<String, AccessRule> {
+        &self.grouped_auth_mutability
+    }
 }
 
 pub fn package_access_rules_from_owner_badge(
@@ -256,22 +274,22 @@ pub fn package_access_rules_from_owner_badge(
         AccessRule::DenyAll,
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
+        MethodKey::new(SysModuleId::Metadata, METADATA_GET_IDENT),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+        MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
+        MethodKey::new(SysModuleId::ObjectState, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, PACKAGE_CLAIM_ROYALTY_IDENT),
+        MethodKey::new(SysModuleId::ObjectState, PACKAGE_CLAIM_ROYALTY_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

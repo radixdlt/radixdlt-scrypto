@@ -1,5 +1,4 @@
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -28,6 +27,7 @@ use radix_engine_interface::data::manifest::{
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -35,7 +35,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use crate::data::from_address;
 use crate::model::*;
 use crate::validation::*;
 
@@ -529,12 +528,12 @@ impl ManifestBuilder {
 
     pub fn set_method_access_rule(
         &mut self,
-        entity_address: Address,
+        entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address: from_address(entity_address),
+            entity_address,
             key,
             rule,
         })
@@ -543,12 +542,12 @@ impl ManifestBuilder {
 
     pub fn set_metadata(
         &mut self,
-        entity_address: Address,
+        entity_address: GlobalAddress,
         key: String,
         value: MetadataEntry,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMetadata {
-            entity_address: from_address(entity_address),
+            entity_address,
             key,
             value,
         })
@@ -783,7 +782,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall(&mut self, vault_id: ObjectId, amount: Decimal) -> &mut Self {
+    pub fn recall(&mut self, vault_id: LocalAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::RecallResource { vault_id, amount });
         self
     }
@@ -997,11 +996,6 @@ impl ManifestBuilder {
             ),
         });
         self
-    }
-
-    pub fn assert_access_rule(&mut self, access_rule: AccessRule) -> &mut Self {
-        self.add_instruction(Instruction::AssertAccessRule { access_rule })
-            .0
     }
 
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>

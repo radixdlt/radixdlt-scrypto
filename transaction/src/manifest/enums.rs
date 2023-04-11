@@ -81,13 +81,12 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum NodeModuleId {
-                SELF = 0;
-                TypeInfo = 1;
+            enum TypedModuleId {
+                TypeInfo = 0;
+                ObjectState = 1;
                 Metadata = 2;
-                AccessRules = 3;
-                AccessRules1 = 4;
-                ComponentRoyalty = 5;
+                Royalty = 3;
+                AccessRules = 4;
             }
         );
 

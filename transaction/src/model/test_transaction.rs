@@ -25,9 +25,11 @@ impl TestTransaction {
         &'a self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
+        // Fake transaction hash
+        let transaction_hash = hash(self.nonce.to_le_bytes());
+
         let payload = manifest_encode(self).unwrap();
         let payload_size = payload.len();
-        let transaction_hash = hash(payload);
 
         Executable::new(
             self.manifest.instructions.clone(),

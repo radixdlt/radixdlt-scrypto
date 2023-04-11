@@ -1,4 +1,4 @@
 SET_METHOD_ACCESS_RULE
-    Address("resource_sim1qxntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrsxhzgyn")
-    Tuple(Enum("NodeModuleId::SELF"), "test")
+    Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje")
+    Tuple(Enum("TypedModuleId::ObjectState"), "test")
     Enum("AccessRule::AllowAll");

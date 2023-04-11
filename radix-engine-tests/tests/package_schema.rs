@@ -12,7 +12,7 @@ fn should_be_able_to_create_access_rules_with_undefined_method_name() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
             "SchemaComponent",
@@ -39,7 +39,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(package_address, "SchemaComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

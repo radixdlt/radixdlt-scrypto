@@ -8,7 +8,7 @@ fn test_hello() {
     let mut test_runner = TestRunner::builder().build();
 
     // Create an account
-    let (public_key, _private_key, account_component) = test_runner.new_allocated_account();
+    let (public_key, _private_key, account) = test_runner.new_allocated_account();
 
     // Publish package
     let package_address = test_runner.compile_and_publish(this_package!());
@@ -33,7 +33,7 @@ fn test_hello() {
     let manifest = ManifestBuilder::new()
         .call_method(component, "free_token", manifest_args!())
         .call_method(
-            account_component,
+            account,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )

@@ -76,7 +76,7 @@ scrypto test
 | Action                             | Command                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Create an account                  | ``` resim new-account ```                                                                            |
-| Change the default account         | ``` resim set-default-account <account_component_address> <account_public_key> ```                   |
+| Change the default account         | ``` resim set-default-account <account_address> <account_public_key> ```                   |
 | Create a token with fixed supply   | ``` resim new-token-fixed <amount> ```                                                               |
 | Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_address> ```                                            |
 | Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                               |

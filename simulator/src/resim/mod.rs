@@ -54,7 +54,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
@@ -67,12 +67,14 @@ use radix_engine::wasm::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
-use radix_engine_stores::rocks_db::RadixEngineDB;
+use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -84,6 +86,38 @@ use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use utils::ContextualDisplay;
+
+/// The address of the faucet component, test network only.
+/// TODO: remove
+pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
+    EntityType::GlobalGenericComponent as u8,
+    47,
+    171,
+    219,
+    117,
+    206,
+    243,
+    13,
+    82,
+    56,
+    137,
+    192,
+    143,
+    255,
+    188,
+    175,
+    135,
+    196,
+    206,
+    18,
+    120,
+    57,
+    188,
+    228,
+    71,
+    160,
+    137,
+]);
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -163,7 +197,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -174,7 +209,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     };
 
     let receipt = execute_and_commit_transaction(
-        &mut substate_store,
+        &mut substate_db,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
         &ExecutionConfig::standard().with_trace(trace),
@@ -186,12 +221,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
             .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                get_event_schema(&substate_store, event_type_identifier)
+                get_event_schema(&substate_db, event_type_identifier)
             })
             .build();
         writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
-    drop(substate_store);
+    drop(substate_db);
 
     process_receipt(receipt)
 }
@@ -229,8 +264,8 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let mut substate_store =
-                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+            let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+            bootstrap(&mut substate_db, &scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -241,7 +276,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 
             let receipt = execute_and_commit_transaction(
-                &mut substate_store,
+                &mut substate_db,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::standard().with_trace(trace),
@@ -253,12 +288,12 @@ pub fn handle_manifest<O: std::io::Write>(
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
                     .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                        get_event_schema(&substate_store, event_type_identifier)
+                        get_event_schema(&substate_db, event_type_identifier)
                     })
                     .build();
                 writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
-            drop(substate_store);
+            drop(substate_db);
 
             process_receipt(receipt).map(Option::Some)
         }
@@ -309,18 +344,20 @@ pub fn get_signing_keys(
 
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
-    let output = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Info),
-        ))
+    let substate = substate_db
+        .get_substate(
+            package_address.as_node_id(),
+            SysModuleId::ObjectState.into(),
+            &PackageOffset::Info.into(),
+        )
+        .expect("Database misconfigured")
         .ok_or(Error::PackageNotFound(package_address))?;
+    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
-    let schema = output.substate.package_info().schema.clone();
-    Ok(schema)
+    Ok(package_info.schema)
 }
 
 pub fn export_blueprint_schema(
@@ -338,102 +375,92 @@ pub fn export_blueprint_schema(
     Ok(schema)
 }
 
-pub fn get_blueprint(
-    component_address: ComponentAddress,
-) -> Result<(PackageAddress, String), Error> {
+pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    bootstrap(&mut substate_db, &scrypto_interpreter);
 
-    let output = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-        ))
+    let substate = substate_db
+        .get_substate(
+            component_address.as_node_id(),
+            SysModuleId::TypeInfo.into(),
+            &TypeInfoOffset::TypeInfo.into(),
+        )
+        .expect("Database misconfigured")
         .ok_or(Error::ComponentNotFound(component_address))?;
-    let type_info = output.substate.type_info();
+
+    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
 
     match type_info {
-        TypeInfoSubstate::Object {
-            package_address,
-            blueprint_name,
-            ..
-        } => Ok((*package_address, blueprint_name.to_string())),
+        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
     }
 }
 
-pub fn get_event_schema<S: ReadableSubstateStore>(
-    substate_store: &S,
+pub fn get_event_schema<S: SubstateDatabase>(
+    substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                SysModuleId::AccessRules => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                NodeModuleId::ComponentRoyalty => (
+                SysModuleId::Royalty => (
                     ROYALTY_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                NodeModuleId::Metadata => (
+                SysModuleId::Metadata => (
                     METADATA_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                NodeModuleId::SELF => {
-                    let type_info = substate_store
-                        .get_substate(&SubstateId(
-                            *node_id,
-                            NodeModuleId::TypeInfo,
-                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                        ))
-                        .unwrap()
-                        .substate
-                        .type_info()
-                        .clone();
-
+                SysModuleId::ObjectState => {
+                    let substate = substate_db
+                        .get_substate(
+                            node_id,
+                            SysModuleId::TypeInfo.into(),
+                            &TypeInfoOffset::TypeInfo.into(),
+                        )
+                        .expect("Database misconfigured")
+                        .unwrap();
+                    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        } => (package_address, blueprint_name, *local_type_index),
+                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
+                            blueprint.package_address,
+                            blueprint.blueprint_name,
+                            *local_type_index,
+                        ),
                         TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
-                NodeModuleId::TypeInfo => return None,
+                SysModuleId::TypeInfo => return None,
             }
         }
-        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => {
-            let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
-                return None
-            };
-            (
-                *package_address,
-                blueprint_name.to_owned(),
-                *local_type_index,
-            )
-        }
+        EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
+            PackageAddress::new_unchecked(node_id.clone().into()),
+            blueprint_name.to_owned(),
+            *local_type_index,
+        ),
     };
 
-    let substate_id = SubstateId(
-        RENodeId::GlobalObject(Address::Package(package_address)),
-        NodeModuleId::SELF,
-        SubstateOffset::Package(PackageOffset::Info),
-    );
+    let substate = substate_db
+        .get_substate(
+            package_address.as_node_id(),
+            SysModuleId::ObjectState.into(),
+            &PackageOffset::Info.into(),
+        )
+        .expect("Database misconfigured")
+        .unwrap();
+    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Some((
         local_type_index,
-        substate_store
-            .get_substate(&substate_id)
-            .unwrap()
-            .substate
-            .package_info()
+        package_info
             .schema
             .blueprints
             .get(&blueprint_name)

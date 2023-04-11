@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
+use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 
 pub const WORKTOP_BLUEPRINT: &str = "Worktop";

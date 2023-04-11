@@ -1,12 +1,13 @@
 use radix_engine::errors::RejectionError;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -20,11 +21,14 @@ use transaction::validation::{
 #[test]
 fn low_cost_unit_limit_should_result_in_rejection() {
     // Arrange
-    let transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: 1,
-        start_epoch_inclusive: 0,
-        end_epoch_exclusive: 10,
-    });
+    let transaction = create_notarized_transaction(
+        component_address(EntityType::GlobalGenericComponent, 1),
+        TransactionParams {
+            cost_unit_limit: 1,
+            start_epoch_inclusive: 0,
+            end_epoch_exclusive: 10,
+        },
+    );
 
     // Act
     let result = get_executable(&transaction);
@@ -49,11 +53,14 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 
     test_runner.set_current_epoch(CURRENT_EPOCH);
 
-    let transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        start_epoch_inclusive: VALID_FROM_EPOCH,
-        end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
-    });
+    let transaction = create_notarized_transaction(
+        test_runner.faucet_component(),
+        TransactionParams {
+            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            start_epoch_inclusive: VALID_FROM_EPOCH,
+            end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
+        },
+    );
 
     // Act
     let receipt = test_runner.execute_transaction(get_executable(&transaction).unwrap());
@@ -85,11 +92,14 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 
     test_runner.set_current_epoch(CURRENT_EPOCH);
 
-    let transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        start_epoch_inclusive: VALID_FROM_EPOCH,
-        end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
-    });
+    let transaction = create_notarized_transaction(
+        test_runner.faucet_component(),
+        TransactionParams {
+            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            start_epoch_inclusive: VALID_FROM_EPOCH,
+            end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
+        },
+    );
 
     // Act
     let receipt = test_runner.execute_transaction(get_executable(&transaction).unwrap());
@@ -118,16 +128,26 @@ fn test_normal_transaction_flow() {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
+    let faucet_component = receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .last()
+        .cloned()
+        .unwrap();
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::standard();
-    let raw_transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: 5_000_000,
-        start_epoch_inclusive: 0,
-        end_epoch_exclusive: 100,
-    })
+    let raw_transaction = create_notarized_transaction(
+        faucet_component,
+        TransactionParams {
+            cost_unit_limit: 5_000_000,
+            start_epoch_inclusive: 0,
+            end_epoch_exclusive: 100,
+        },
+    )
     .to_bytes()
     .unwrap();
 
@@ -142,7 +162,7 @@ fn test_normal_transaction_flow() {
 
     // Act
     let receipt = execute_and_commit_transaction(
-        &mut substate_store,
+        &mut substate_db,
         &mut scrypto_interpreter,
         &fee_reserve_config,
         &execution_config,
@@ -167,7 +187,10 @@ struct TransactionParams {
     end_epoch_exclusive: u64,
 }
 
-fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransaction {
+fn create_notarized_transaction(
+    faucet: ComponentAddress,
+    params: TransactionParams,
+) -> NotarizedTransaction {
     // create key pairs
     let sk1 = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
     let sk2 = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
@@ -187,7 +210,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
         })
         .manifest(
             ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 10.into())
+                .lock_fee(faucet, 10.into())
                 .clear_auth_zone()
                 .build(),
         )

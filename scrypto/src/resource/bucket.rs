@@ -1,12 +1,12 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
-use radix_engine_interface::api::types::NonFungibleData;
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::NonFungibleData;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
@@ -40,7 +40,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::GlobalObject(resource_address.into()),
+                resource_address.as_node_id(),
                 RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
                 scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
             )
@@ -82,7 +82,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_CREATE_PROOF_IDENT,
                 scrypto_encode(&BucketCreateProofInput {}).unwrap(),
             )
@@ -94,7 +94,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
             )
@@ -106,7 +106,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_TAKE_IDENT,
                 scrypto_encode(&BucketTakeInput { amount }).unwrap(),
             )
@@ -121,7 +121,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_TAKE_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&BucketTakeNonFungiblesInput {
                     ids: non_fungible_local_ids.clone(),
@@ -136,7 +136,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_PUT_IDENT,
                 scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
             )
@@ -148,7 +148,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -160,7 +160,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                &RENodeId::Object(self.0),
+                self.0.as_node_id(),
                 BUCKET_GET_AMOUNT_IDENT,
                 scrypto_encode(&BucketGetAmountInput {}).unwrap(),
             )

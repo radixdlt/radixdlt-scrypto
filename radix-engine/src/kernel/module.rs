@@ -1,11 +1,10 @@
-use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::RuntimeError;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::kernel::actor::Actor;
+use crate::system::node_init::NodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::*;
 use sbor::rust::collections::BTreeMap;
 
 pub trait KernelModule {
@@ -43,7 +42,7 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
@@ -97,7 +96,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_type: &AllocateEntityType,
+        _node_type: &EntityType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -105,9 +104,9 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        _node_id: &NodeId,
+        _node_init: &NodeInit,
+        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -115,7 +114,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn after_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -123,7 +122,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_drop_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
+        _node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -140,19 +139,19 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_lock_substate<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _node_id: &RENodeId,
-        _module_id: &NodeModuleId,
-        _offset: &SubstateOffset,
+        _node_id: &NodeId,
+        _module_id: &SysModuleId,
+        _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_substate_lock_fault<Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>>(
-        _node_id: RENodeId,
-        _module_id: NodeModuleId,
-        _offset: &SubstateOffset,
+    fn on_substate_lock_fault<Y: KernelModuleApi<RuntimeError>>(
+        _node_id: NodeId,
+        _module_id: SysModuleId,
+        _offset: &SubstateKey,
         _api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Ok(false)

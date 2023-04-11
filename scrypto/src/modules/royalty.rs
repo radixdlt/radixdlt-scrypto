@@ -6,14 +6,15 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId, RoyaltyConfig};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::types::*;
+use radix_engine_interface::types::{NodeId, RoyaltyConfig, SysModuleId};
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Royalty(pub ObjectId);
+pub struct Royalty(pub Own);
 
 impl Royalty {
     pub fn new(royalty_config: RoyaltyConfig) -> Self {
@@ -27,27 +28,27 @@ impl Royalty {
             .unwrap();
 
         let royalty: Own = scrypto_decode(&rtn).unwrap();
-        Self(royalty.id())
+        Self(royalty)
     }
 }
 
 impl RoyaltyObject for Royalty {
-    fn self_id(&self) -> (RENodeId, NodeModuleId) {
-        (RENodeId::Object(self.0), NodeModuleId::SELF)
+    fn self_id(&self) -> (NodeId, SysModuleId) {
+        (self.0.as_node_id().clone(), SysModuleId::ObjectState)
     }
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct AttachedRoyalty(pub Address);
+pub struct AttachedRoyalty(pub ComponentAddress);
 
 impl RoyaltyObject for AttachedRoyalty {
-    fn self_id(&self) -> (RENodeId, NodeModuleId) {
-        (self.0.into(), NodeModuleId::ComponentRoyalty)
+    fn self_id(&self) -> (NodeId, SysModuleId) {
+        (self.0.into(), SysModuleId::Royalty)
     }
 }
 
 pub trait RoyaltyObject {
-    fn self_id(&self) -> (RENodeId, NodeModuleId);
+    fn self_id(&self) -> (NodeId, SysModuleId);
 
     fn set_config(&self, royalty_config: RoyaltyConfig) {
         let (node_id, module_id) = self.self_id();

@@ -6,10 +6,12 @@ use well_known_scrypto_custom_types::*;
 pub mod well_known_scrypto_custom_types {
     use super::*;
 
-    pub const ADDRESS_ID: u8 = VALUE_KIND_ADDRESS;
-    pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_ADDRESS + 1;
-    pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_ADDRESS + 2;
-    pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_ADDRESS + 3;
+    pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
+    pub const GLOBAL_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 1;
+    pub const LOCAL_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 2;
+    pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 3;
+    pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 4;
+    pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 5;
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;
     pub const OWN_BUCKET_ID: u8 = VALUE_KIND_OWN + 1;
@@ -20,7 +22,6 @@ pub mod well_known_scrypto_custom_types {
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub const PRECISE_DECIMAL_ID: u8 = VALUE_KIND_PRECISE_DECIMAL;
     pub const NON_FUNGIBLE_LOCAL_ID_ID: u8 = VALUE_KIND_NON_FUNGIBLE_LOCAL_ID;
-    pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
 }
 
 fn unnamed_type_kind(
@@ -35,8 +36,16 @@ create_well_known_lookup!(
     [
         // Addresses
         (
-            ADDRESS_ID,
-            unnamed_type_kind(ScryptoCustomTypeKind::Address)
+            REFERENCE_ID,
+            unnamed_type_kind(ScryptoCustomTypeKind::Reference)
+        ),
+        (
+            GLOBAL_ADDRESS_ID,
+            unnamed_type_kind(ScryptoCustomTypeKind::GlobalAddress)
+        ),
+        (
+            LOCAL_ADDRESS_ID,
+            unnamed_type_kind(ScryptoCustomTypeKind::LocalAddress)
         ),
         (
             PACKAGE_ADDRESS_ID,

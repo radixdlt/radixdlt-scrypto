@@ -1,23 +1,25 @@
+use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::kernel::track::{PreExecutionError, Track};
-use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::kernel::track::Track;
 use crate::system::kernel_modules::costing::*;
-use crate::system::kernel_modules::execution_trace::calculate_resource_changes;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::{
     InstructionOutput, TransactionProcessorRunInput,
 };
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_engine_stores::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -111,21 +113,21 @@ impl ExecutionConfig {
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
 struct TransactionExecutor<'s, 'w, S, W>
 where
-    S: ReadableSubstateStore,
+    S: SubstateDatabase,
     W: WasmEngine,
 {
-    substate_store: &'s S,
+    substate_db: &'s S,
     scrypto_interpreter: &'w ScryptoInterpreter<W>,
 }
 
 impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
 where
-    S: ReadableSubstateStore,
+    S: SubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
+    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
         Self {
-            substate_store,
+            substate_db,
             scrypto_interpreter,
         }
     }
@@ -153,42 +155,11 @@ where
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
     }
 
-    fn apply_pre_execution_costs(
-        mut fee_reserve: SystemLoanFeeReserve,
-        fee_table: &FeeTable,
-        executable: &Executable,
-    ) -> Result<SystemLoanFeeReserve, PreExecutionError> {
-        let result = fee_reserve
-            .consume_deferred(fee_table.tx_base_fee(), 1, CostingReason::TxBaseCost)
-            .and_then(|()| {
-                fee_reserve.consume_deferred(
-                    fee_table.tx_payload_cost_per_byte(),
-                    executable.payload_size(),
-                    CostingReason::TxPayloadCost,
-                )
-            })
-            .and_then(|()| {
-                fee_reserve.consume_deferred(
-                    fee_table.tx_signature_verification_per_sig(),
-                    executable.auth_zone_params().initial_proofs.len(),
-                    CostingReason::TxSignatureVerification,
-                )
-            });
-
-        match result {
-            Ok(_) => Ok(fee_reserve),
-            Err(e) => Err(PreExecutionError {
-                fee_summary: fee_reserve.finalize(),
-                error: e,
-            }),
-        }
-    }
-
     fn execute_with_fee_reserve(
         &mut self,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        mut fee_reserve: SystemLoanFeeReserve,
+        fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = executable.transaction_hash();
@@ -211,61 +182,32 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        // Apply pre execution costing
-        if !execution_config.genesis {
-            let pre_execution_result =
-                Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
-            fee_reserve = match pre_execution_result {
-                Ok(fee_reserve) => fee_reserve,
-                Err(err) => {
-                    return TransactionReceipt {
-                        execution_trace: TransactionExecutionTrace {
-                            execution_traces: vec![],
-                            resource_changes: index_map_new(),
-                            resources_usage: ResourcesUsage::default(),
-                        },
-                        result: TransactionResult::Reject(RejectResult {
-                            error: RejectionError::ErrorBeforeFeeLoanRepaid(
-                                RuntimeError::ModuleError(ModuleError::CostingError(
-                                    CostingError::FeeReserveError(err.error),
-                                )),
-                            ),
-                        }),
-                    };
-                }
-            };
-        }
+        // Prepare
+        let mut track = Track::new(self.substate_db);
+        let mut id_allocator = IdAllocator::new(
+            transaction_hash.clone(),
+            executable.pre_allocated_ids().clone(),
+        );
+        let modules = KernelModuleMixer::standard(
+            transaction_hash.clone(),
+            executable.auth_zone_params().clone(),
+            fee_reserve,
+            fee_table,
+            executable.payload_size(),
+            executable.auth_zone_params().initial_proofs.len(),
+            execution_config,
+        );
+        let mut kernel = Kernel::new(
+            &mut id_allocator,
+            &mut track,
+            self.scrypto_interpreter,
+            modules,
+        );
+        kernel.initialize().expect("Failed to initialize kernel");
 
-        // Execute the instructions
-        let mut track = Track::new(self.substate_store);
-        let (transaction_result, execution_traces, vault_ops) = {
-            let mut id_allocator = IdAllocator::new(
-                transaction_hash.clone(),
-                executable.pre_allocated_ids().clone(),
-            );
-
-            // Create kernel
-            let modules = KernelModuleMixer::standard(
-                transaction_hash.clone(),
-                executable.auth_zone_params().clone(),
-                fee_reserve,
-                fee_table,
-                execution_config,
-            );
-            let mut kernel = Kernel::new(
-                &mut id_allocator,
-                &mut track,
-                self.scrypto_interpreter,
-                modules,
-            );
-
-            // Initialize
-            kernel.initialize().expect("Failed to initialize kernel");
-
-            // Call TransactionProcessor::Run()
-            let (global_references, local_references) =
-                extract_refs_from_manifest(executable.instructions());
-            let invoke_result = kernel
+        // Execute
+        let invoke_result = kernel.initialize().and_then(|_| {
+            kernel
                 .call_function(
                     TRANSACTION_PROCESSOR_PACKAGE,
                     TRANSACTION_PROCESSOR_BLUEPRINT,
@@ -277,40 +219,63 @@ where
                             manifest_encode(executable.instructions()).unwrap(),
                         ),
                         blobs: Cow::Borrowed(executable.blobs()),
-                        global_references,
-                        local_references,
+                        references: extract_refs_from_manifest(executable.instructions()),
                     })
                     .unwrap(),
                 )
-                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
+                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap())
+        });
 
-            // Teardown
-            let (modules, invoke_result) = kernel.teardown(invoke_result);
-            let fee_reserve = modules.costing.take_fee_reserve();
-            let application_events = modules.events.events();
-            let application_logs = modules.logger.logs();
-            let (execution_traces, vault_ops) = modules.execution_trace.collect_traces();
+        // Teardown
+        let (modules, invoke_result) = kernel.teardown(invoke_result);
+        let mut fee_reserve = modules.costing.fee_reserve();
+        let mut application_events = modules.events.events();
+        let application_logs = modules.logger.logs();
 
-            // Finalize track
-            let transaction_result = track.finalize(
-                invoke_result,
-                fee_reserve,
-                application_events,
-                application_logs,
-            );
+        // Finalize
+        let result_type = determine_result_type(invoke_result, &mut fee_reserve);
+        let transaction_result = match result_type {
+            TransactionResultType::Commit(outcome) => {
+                let is_success = outcome.is_ok();
 
-            (transaction_result, execution_traces, vault_ops)
+                // Commit/revert
+                if !is_success {
+                    fee_reserve.revert_royalty();
+                    application_events.clear();
+                    // application logs retain
+                    track.revert_non_force_write_changes();
+                }
+
+                // Finalize fees
+                let (fee_summary, fee_payments) =
+                    distribute_fees(&mut track, fee_reserve, is_success);
+
+                // Finalize track
+                let state_updates = track.finalize();
+                let state_update_summary =
+                    StateUpdateSummary::new(self.substate_db, &state_updates);
+
+                TransactionResult::Commit(CommitResult {
+                    state_updates,
+                    state_update_summary,
+                    outcome: match outcome {
+                        Ok(o) => TransactionOutcome::Success(o),
+                        Err(e) => TransactionOutcome::Failure(e),
+                    },
+                    fee_summary,
+                    fee_payments,
+                    application_events,
+                    application_logs,
+                })
+            }
+            TransactionResultType::Reject(error) => {
+                TransactionResult::Reject(RejectResult { error })
+            }
+            TransactionResultType::Abort(error) => {
+                TransactionResult::Abort(AbortResult { reason: error })
+            }
         };
-
-        // Calculate resource changes
-        let resource_changes = match &transaction_result {
-            TransactionResult::Commit(c) => calculate_resource_changes(
-                vault_ops,
-                &c.fee_payments,
-                transaction_result.is_commit_success(),
-            ),
-            TransactionResult::Reject(_) | TransactionResult::Abort(_) => index_map_new(),
-        };
+        let execution_trace = modules.execution_trace.finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -323,11 +288,8 @@ where
         // Produce final receipt
         let receipt = TransactionReceipt {
             result: transaction_result,
-            execution_trace: TransactionExecutionTrace {
-                execution_traces,
-                resource_changes,
-                resources_usage,
-            },
+            execution_trace,
+            resources_usage,
         };
 
         #[cfg(not(feature = "alloc"))]
@@ -387,38 +349,179 @@ where
 }
 
 pub fn execute_and_commit_transaction<
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 >(
-    substate_store: &mut S,
+    substate_db: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(
-        substate_store,
+        substate_db,
         scrypto_interpreter,
         fee_reserve_config,
         execution_config,
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        commit.state_updates.commit(substate_store);
+        substate_db
+            .commit(&commit.state_updates)
+            .expect("Database misconfigured");
     }
     receipt
 }
 
-pub fn execute_transaction<S: ReadableSubstateStore, W: WasmEngine>(
-    substate_store: &S,
+pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
+    substate_db: &S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_store, scrypto_interpreter).execute(
+    TransactionExecutor::new(substate_db, scrypto_interpreter).execute(
         transaction,
         fee_reserve_config,
         execution_config,
     )
+}
+
+enum TransactionResultType {
+    Commit(Result<Vec<InstructionOutput>, RuntimeError>),
+    Reject(RejectionError),
+    Abort(AbortReason),
+}
+
+fn determine_result_type(
+    mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+    fee_reserve: &mut SystemLoanFeeReserve,
+) -> TransactionResultType {
+    // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
+    // the SYSTEM_LOAN_AMOUNT is reached (which trigger a repay event) and even though
+    // enough fee has been locked.
+    //
+    // Do another `repay` try during finalization to remedy it.
+    if let Err(err) = fee_reserve.repay_all() {
+        if invoke_result.is_ok() {
+            invoke_result = Err(RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::FeeReserveError(err),
+            )));
+        }
+    }
+
+    // First - check for required rejections from explicit invoke result errors
+    match &invoke_result {
+        Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(err))) => {
+            match err {
+                TransactionProcessorError::TransactionEpochNotYetValid {
+                    valid_from,
+                    current_epoch,
+                } => {
+                    return TransactionResultType::Reject(
+                        RejectionError::TransactionEpochNotYetValid {
+                            valid_from: *valid_from,
+                            current_epoch: *current_epoch,
+                        },
+                    )
+                }
+                TransactionProcessorError::TransactionEpochNoLongerValid {
+                    valid_until,
+                    current_epoch,
+                } => {
+                    return TransactionResultType::Reject(
+                        RejectionError::TransactionEpochNoLongerValid {
+                            valid_until: *valid_until,
+                            current_epoch: *current_epoch,
+                        },
+                    )
+                }
+                _ => {}
+            }
+        }
+        Err(err) => {
+            if let Some(abort_reason) = err.abortion() {
+                return TransactionResultType::Abort(abort_reason.clone());
+            }
+        }
+        _ => {}
+    }
+
+    // Check for errors before loan is repaid - in which case, we also reject
+    if !fee_reserve.fully_repaid() {
+        return match invoke_result {
+            Ok(..) => TransactionResultType::Reject(RejectionError::SuccessButFeeLoanNotRepaid),
+            Err(error) => {
+                TransactionResultType::Reject(RejectionError::ErrorBeforeFeeLoanRepaid(error))
+            }
+        };
+    }
+
+    TransactionResultType::Commit(invoke_result)
+}
+
+fn distribute_fees(
+    track: &mut Track,
+    fee_reserve: SystemLoanFeeReserve,
+    is_success: bool,
+) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
+    // Distribute royalty
+    for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
+        let node_id = recipient_vault_id;
+        let module_id = SysModuleId::ObjectState;
+        let substate_key = FungibleVaultOffset::LiquidFungible.into();
+        let handle = track
+            .acquire_lock(
+                &node_id,
+                module_id.into(),
+                &substate_key,
+                LockFlags::MUTABLE,
+            )
+            .unwrap();
+        let mut substate: LiquidFungibleResource = track.read_substate(handle).as_typed().unwrap();
+        substate.put(LiquidFungibleResource::new(amount)).unwrap();
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
+    }
+
+    // Take fee payments
+    let fee_summary = fee_reserve.finalize();
+    let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
+    let mut required = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
+        - fee_summary.total_bad_debt_xrd;
+    for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
+        let amount = if contingent {
+            if is_success {
+                Decimal::min(locked.amount(), required)
+            } else {
+                Decimal::zero()
+            }
+        } else {
+            Decimal::min(locked.amount(), required)
+        };
+
+        // Take fees
+        locked.take_by_amount(amount).unwrap();
+        required -= amount;
+
+        // Refund overpayment
+        let handle = track
+            .acquire_lock(
+                &vault_id,
+                SysModuleId::ObjectState.into(),
+                &FungibleVaultOffset::LiquidFungible.into(),
+                LockFlags::MUTABLE,
+            )
+            .unwrap();
+        let mut substate: LiquidFungibleResource = track.read_substate(handle).as_typed().unwrap();
+        substate.put(locked).unwrap();
+        track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+        track.release_lock(handle);
+
+        // Record final payments
+        *fee_payments.entry(vault_id).or_default() += amount;
+    }
+
+    // TODO: distribute fees
+    (fee_summary, fee_payments)
 }

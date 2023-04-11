@@ -1,5 +1,5 @@
 // Re-export
-pub use radix_engine_interface::api::types::{Buffer, BufferId, Slice};
+pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
 use sbor::rust::vec::Vec;
 
@@ -42,8 +42,8 @@ extern "C" {
     pub fn new_object(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
-        app_states_ptr: *const u8,
-        app_states_len: usize,
+        object_states_ptr: *const u8,
+        object_states_len: usize,
     ) -> Buffer;
 
     pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
@@ -64,7 +64,7 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_object_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     pub fn get_key_value_store_info(
         key_value_store_id_ptr: *const u8,
@@ -75,7 +75,7 @@ extern "C" {
     pub fn call_method(
         receiver_ptr: *const u8,
         receive_len: usize,
-        node_module_id: u32,
+        module_id: u32,
         ident_ptr: *const u8,
         ident_len: usize,
         args_ptr: *const u8,
@@ -123,7 +123,9 @@ extern "C" {
     // System API
     //===============
 
-    pub fn get_actor() -> Buffer;
+    pub fn get_global_address() -> Buffer;
+
+    pub fn get_blueprint() -> Buffer;
 
     pub fn get_auth_zone() -> Buffer;
 
@@ -157,8 +159,8 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 pub unsafe fn new_object(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
-    _app_states_ptr: *const u8,
-    _app_states: usize,
+    _object_states_ptr: *const u8,
+    _object_states: usize,
 ) -> Buffer {
     unreachable!()
 }
@@ -191,10 +193,7 @@ pub unsafe fn globalize_with_address(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_object_type_info(
-    _component_id_ptr: *const u8,
-    _component_id_len: usize,
-) -> Buffer {
+pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 
@@ -210,7 +209,7 @@ pub unsafe fn get_key_value_store_info(
 pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
-    _node_module_id: u32,
+    _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,
     _args_ptr: *const u8,
@@ -263,7 +262,12 @@ pub unsafe fn drop_lock(_handle: u32) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_actor() -> Buffer {
+pub unsafe fn get_global_address() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_blueprint() -> Buffer {
     unreachable!()
 }
 

@@ -9,7 +9,7 @@
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log_message($crate::api::types::Level::Error, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -24,7 +24,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log_message($crate::api::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -39,7 +39,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log_message($crate::api::types::Level::Info, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -54,7 +54,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log_message($crate::api::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -69,7 +69,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::log_message($crate::api::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message($crate::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -182,9 +182,10 @@ macro_rules! include_schema {
 /// }
 ///
 /// fn instantiate_custom_account() -> ComponentAddress {
-///     let package_address = Bech32Decoder::for_simulator()
-///         .validate_and_decode_package_address("package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n")
-///         .unwrap();
+///     let package_address = PackageAddress::try_from_bech32(
+///         &Bech32Decoder::for_simulator(),
+///         "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n"
+///     ).unwrap();
 ///     let blueprint = CustomAccountBlueprint::at(package_address, "CustomAccount");
 ///     blueprint.instantiate_global("account_name")
 /// }
@@ -205,14 +206,14 @@ macro_rules! external_blueprint {
 
         #[derive(ScryptoSbor)]
         struct $blueprint_ident {
-            package_address: $crate::data::scrypto::model::PackageAddress,
+            package_address: $crate::types::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            fn at<S>(package_address: $crate::data::scrypto::model::PackageAddress, blueprint_name: S) -> Self
+            fn at<S>(package_address: $crate::types::PackageAddress, blueprint_name: S) -> Self
             where
                 S: Into<::sbor::rust::string::String>
             {
@@ -227,8 +228,8 @@ macro_rules! external_blueprint {
             );
         }
 
-        impl From<$blueprint_ident> for $crate::data::scrypto::model::PackageAddress {
-            fn from(a: $blueprint_ident) -> $crate::data::scrypto::model::PackageAddress {
+        impl From<$blueprint_ident> for $crate::types::PackageAddress {
+            fn from(a: $blueprint_ident) -> $crate::types::PackageAddress {
                 a.package_address
             }
         }
@@ -345,13 +346,13 @@ macro_rules! external_component {
     ) => {
         #[derive(ScryptoSbor)]
         struct $component_ident {
-            component_address: $crate::data::scrypto::model::ComponentAddress,
+            component_address: $crate::types::ComponentAddress,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: $crate::data::scrypto::model::ComponentAddress) -> Self {
+            fn at(component_address: $crate::types::ComponentAddress) -> Self {
                 Self {
                     component_address,
                 }
@@ -360,16 +361,16 @@ macro_rules! external_component {
             $crate::external_component_members!($($component_methods)*);
         }
 
-        impl From<$crate::data::scrypto::model::ComponentAddress> for $component_ident {
-            fn from(component_address: $crate::data::scrypto::model::ComponentAddress) -> Self {
+        impl From<$crate::types::ComponentAddress> for $component_ident {
+            fn from(component_address: $crate::types::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<$component_ident> for $crate::data::scrypto::model::ComponentAddress {
-            fn from(a: $component_ident) -> $crate::data::scrypto::model::ComponentAddress {
+        impl From<$component_ident> for $crate::types::ComponentAddress {
+            fn from(a: $component_ident) -> $crate::types::ComponentAddress {
                 a.component_address
             }
         }

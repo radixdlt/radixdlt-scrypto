@@ -1,12 +1,14 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "simulator/Cargo.toml",
+        "simulator/Cargo.toml"
     ],
     "cSpell.words": [
         "bech",
         "bincode",
         "btreemap",
+        "btreeset",
+        "debuggability",
         "Decompilation",
         "decompile",
         "decompiled",
@@ -20,6 +22,7 @@
         "persistable",
         "radiswap",
         "repr",
+        "Rocksdb",
         "Sbor",
         "Scrypto",
         "Secp",

@@ -15,7 +15,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package_advanced(
             code,
             single_function_package_schema("Test", "f"),
@@ -29,9 +29,9 @@ fn cannot_set_package_metadata_with_no_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .set_metadata(
-            Address::Package(package_address),
+            package_address.into(),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
@@ -56,7 +56,7 @@ fn can_set_package_metadata_with_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package(code, single_function_package_schema("Test", "f"))
         .call_method(
             account,
@@ -69,10 +69,10 @@ fn can_set_package_metadata_with_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_metadata(
-            Address::Package(package_address),
+            package_address.into(),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
@@ -100,7 +100,7 @@ fn can_lock_package_metadata_with_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .publish_package(code, single_function_package_schema("Test", "f"))
         .call_method(
             account,
@@ -113,11 +113,11 @@ fn can_lock_package_metadata_with_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_method_access_rule(
-            Address::Package(package_address),
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
+            package_address.into(),
+            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
             AccessRule::DenyAll,
         )
         .build();
@@ -129,10 +129,10 @@ fn can_lock_package_metadata_with_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_metadata(
-            Address::Package(package_address),
+            package_address.into(),
             "name".to_string(),
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )

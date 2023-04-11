@@ -2,7 +2,7 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_interface::address::{AddressError, Bech32Encoder};
+use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -27,14 +27,12 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use sbor::rust::collections::*;
-use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
-    InvalidAddress(AddressError),
     InvalidArguments,
     EncodeError(EncodeError),
     DecodeError(DecodeError),
@@ -567,11 +565,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, resource_address)?;
             f.write_str("\n    ")?;
             format_manifest_value(f, args, &context.for_value_display())?;
-            f.write_str(";")?;
-        }
-        Instruction::AssertAccessRule { access_rule } => {
-            f.write_str("ASSERT_ACCESS_RULE")?;
-            format_typed_value(f, context, access_rule)?;
             f.write_str(";")?;
         }
     }

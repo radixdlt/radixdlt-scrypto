@@ -3,16 +3,20 @@ use scrypto::prelude::*;
 #[blueprint]
 mod reference_test {
     struct ReferenceTest {
-        reference: InternalRef,
+        reference: Reference,
     }
 
     impl ReferenceTest {
-        pub fn new() -> ComponentAddress {
+        pub fn new() {
+            let bucket = Bucket::new(RADIX_TOKEN);
+
             Self {
-                reference: InternalRef([0u8; 31]),
+                reference: Reference(bucket.0.as_node_id().clone()),
             }
             .instantiate()
-            .globalize()
+            .globalize();
+
+            bucket.drop_empty();
         }
     }
 }

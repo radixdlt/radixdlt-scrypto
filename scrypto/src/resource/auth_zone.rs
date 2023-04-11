@@ -1,9 +1,9 @@
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientAuthApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -21,7 +21,7 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
+        let node_id = env.get_auth_zone().unwrap();
         env.call_method(
             &node_id,
             AUTH_ZONE_PUSH_IDENT,
@@ -32,7 +32,7 @@ impl ComponentAuthZone {
 
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
+        let node_id = env.get_auth_zone().unwrap();
         let rtn = env
             .call_method(
                 &node_id,
@@ -45,7 +45,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
+        let node_id = env.get_auth_zone().unwrap();
         let rtn = env
             .call_method(
                 &node_id,
@@ -58,7 +58,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
+        let node_id = env.get_auth_zone().unwrap();
         let rtn = env
             .call_method(
                 &node_id,
@@ -78,7 +78,7 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
-        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
+        let node_id = env.get_auth_zone().unwrap();
         let rtn = env
             .call_method(
                 &node_id,
