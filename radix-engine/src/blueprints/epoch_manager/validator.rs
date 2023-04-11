@@ -611,7 +611,7 @@ impl ValidatorCreator {
         Ok(unstake_resource_manager.0)
     }
 
-    pub fn create_with_initial_stake<Y>(
+    pub fn create_with_stake<Y>(
         manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
         initial_stake: Bucket,

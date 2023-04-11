@@ -529,7 +529,7 @@ impl TestRunner {
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let substate: ValidatorSetSubstate = scrypto_decode(
+        let substate: CurrentValidatorSetSubstate = scrypto_decode(
             &self
                 .substate_db()
                 .get_substate(

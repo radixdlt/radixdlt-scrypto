@@ -39,6 +39,14 @@ pub struct EpochManagerSetEpochInput {
 
 pub type EpochManagerSetEpochOutput = ();
 
+pub const EPOCH_MANAGER_START_IDENT: &str = "start";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct EpochManagerStartInput {
+}
+
+pub type EpochManagerStartOutput = ();
+
 pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -56,6 +64,17 @@ pub struct EpochManagerCreateValidatorInput {
 }
 
 pub type EpochManagerCreateValidatorOutput = (ComponentAddress, Bucket);
+
+pub const EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT: &str = "create_validator_with_stake";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct EpochManagerCreateValidatorWithStakeInput {
+    pub key: EcdsaSecp256k1PublicKey,
+    pub xrd_stake: Bucket,
+    pub register: bool,
+}
+
+pub type EpochManagerCreateValidatorWithStakeOutput = (ComponentAddress, Bucket, Bucket);
 
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
