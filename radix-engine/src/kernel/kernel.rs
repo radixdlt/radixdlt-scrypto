@@ -475,12 +475,10 @@ where
         Some(info)
     }
 
-    #[trace_resources]
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
 
-    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }

@@ -54,7 +54,7 @@ for path in os.listdir(input_folder):
         execute_cost = child.xpath(".//consume_cost_units")
 
         if cpu_instructions == 0 and "return" in child.attrib and child.attrib["return"] == "true":
-            print("Skipping function which returned early: ", child.tag, "\n", file=sys.stderr)
+            #print("Skipping function which returned early: ", child.tag, "\n", file=sys.stderr)
             continue
 
 #=====================================#
@@ -74,17 +74,20 @@ for path in os.listdir(input_folder):
             else:
                 key += "::" + info + "::" + blueprint_name + "::" + fcn_name
 
-        # handle node_id (from kernel_create_node, kernel_drop_node, kernel_get_node_visibility_origin, kernel_lock_substate)
-        param = child.xpath("./@node_id")
+        # handle kernel_create_node
+        param = child.xpath("./self::kernel_create_node/@arg0")
         if param:
-            if '"' in param[0]:
-                key_param = param[0].partition('"')[0]
-            elif '[' in param[0]:
-                key_param = param[0].partition('[')[0]
-            else:
-                key_param = param[0]
-            if key_param[-1] == '(': key_param = key_param[:-1]
-            key += "::" + key_param
+            key += "::" + param[0]
+
+        # handle kernel_drop_node
+        param = child.xpath("./self::kernel_drop_node/@arg0")
+        if param:
+            key += "::" + param[0]
+
+        # handle kernel_get_node_info
+        param = child.xpath("./self::kernel_get_node_info/@arg0")
+        if param:
+            key += "::" + param[0]
 
         # handle kernel_create_wasm_instance
         param = child.xpath("./self::kernel_create_wasm_instance/@package_address")
@@ -95,14 +98,15 @@ for path in os.listdir(input_folder):
             key += "::" + str(param[0])
 
         # handle kernel_lock_substate
-        param = child.xpath("./self::kernel_lock_substate[@module_id | @offset]")
+        param = child.xpath("./self::kernel_lock_substate[@module_id | @arg0 | @arg2]")
         if param:
-            key_offset = param[0].attrib["offset"].partition('[')[0]
-            if key_offset[-1] == '(': key_offset = key_offset[:-1]
-            key += "::" + param[0].attrib["module_id"] + "::" + key_offset
+            module_id = param[0].attrib["module_id"] #.partition('[')[0]
+            node_id = param[0].attrib["arg0"] #.partition('[')[0]
+            #if key_offset[-1] == '(': key_offset = key_offset[:-1]
+            key += "::" + module_id + "::" + node_id
 
         # handle kernel_allocate_node_id
-        param = child.xpath("./self::kernel_allocate_node_id/@node_type")
+        param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
         if param:
             key += "::" + param[0]
 
@@ -173,7 +177,7 @@ if detailed_output:
     output_tab.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
     print(tabulate(output_tab, headers="firstrow"))
 else:
-    min_ins = 0
+    min_ins = sys.maxsize
     if len(output_tab) > 0 and len(output_tab[0]) > 2:
         min_ins = output_tab[0][2]
     for row in output_tab:
