@@ -169,7 +169,7 @@ function generate_input() {
             echo "raw dir is not empty, skipping generation"
             popd
             if [ $mode = "raw" ] ; then
-                mv ${curr_path}/${raw_dir}/* ${curr_path}/${final_dir}
+                find ${curr_path}/${raw_dir} -type f -name "*" | xargs  -I {} mv {} ${curr_path}/${final_dir}
                 return
             fi
 
