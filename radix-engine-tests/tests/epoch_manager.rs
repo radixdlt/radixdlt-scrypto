@@ -495,17 +495,47 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
-#[test]
-fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change() {
+fn registered_validator_test(
+    num_initial_validators: usize,
+    max_validators: usize,
+    initial_stakes: Decimal,
+    validator_stake: Decimal,
+    expect_in_next_epoch: bool,
+) {
     // Arrange
     let initial_epoch = 5u64;
-    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
+    let mut stakes = BTreeMap::new();
+    let mut validators = Vec::new();
+    let mut accounts = Vec::new();
+    for k in 1usize..=num_initial_validators {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
+            .unwrap()
+            .public_key();
+        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+
+        accounts.push(validator_account_address);
+        validators.push(GenesisValidator {
+            key: pub_key,
+            component_address: validator_account_address,
+        });
+
+        stakes.insert(k - 1, vec![(k - 1, initial_stakes)]);
+    }
+
+    let genesis_data = GenesisData {
+        validators,
+        resources: Vec::new(),
+        accounts,
+        resource_balances: BTreeMap::new(),
+        xrd_balances: BTreeMap::new(),
+        stakes,
+    };
     let genesis = create_genesis(
-        GenesisData::empty(),
+        genesis_data,
         initial_epoch,
-        max_validators,
+        max_validators.try_into().unwrap(),
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -515,7 +545,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account_address, VALIDATOR_OWNER_TOKEN)
-        .withdraw_from_account(account_address, RADIX_TOKEN, Decimal::one())
+        .withdraw_from_account(account_address, RADIX_TOKEN, validator_stake)
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
@@ -547,20 +577,35 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
+            .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.0.len(), max_validators);
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
-        next_epoch.0.get(&validator_address).unwrap(),
-        &Validator {
-            key: pub_key,
-            stake: Decimal::one(),
-        }
+        next_epoch.0.contains_key(&validator_address),
+        expect_in_next_epoch
     );
+}
+
+#[test]
+fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough(
+) {
+    registered_validator_test(10, 10, 10.into(), 9.into(), false);
+}
+
+#[test]
+fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
+) {
+    registered_validator_test(9, 10, 10.into(), 9.into(), true);
+}
+
+#[test]
+fn registered_validator_with_enough_stake_does_become_part_of_validator_on_epoch_change() {
+    registered_validator_test(10, 10, 10.into(), 11.into(), true);
 }
 
 #[test]
