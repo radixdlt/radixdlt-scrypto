@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::EpochManagerSubstate;
+use crate::blueprints::epoch_manager::{EpochManagerBlueprint, EpochManagerSubstate};
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
@@ -94,8 +94,9 @@ impl ValidatorBlueprint {
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateSecondaryIndex::Create {
+                            index_key: EpochManagerBlueprint::to_index_key(stake_amount, validator_address),
+                            primary: validator_address,
                             stake: stake_amount,
-                            address: validator_address,
                             key,
                         },
                     })
@@ -154,8 +155,7 @@ impl ValidatorBlueprint {
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     update: UpdateSecondaryIndex::Remove {
-                        stake: cur_stake,
-                        address: validator_address
+                        index_key: EpochManagerBlueprint::to_index_key(cur_stake, validator_address),
                     },
                 })
                 .unwrap(),
@@ -221,14 +221,14 @@ impl ValidatorBlueprint {
 
                 let update = if stake.is_zero() {
                     UpdateSecondaryIndex::Create {
+                        index_key: EpochManagerBlueprint::to_index_key(xrd_amount, validator_address),
                         stake: xrd_amount,
-                        address: validator_address,
+                        primary: validator_address,
                         key: validator.key,
                     }
                 } else {
                     UpdateSecondaryIndex::UpdateStake {
-                        stake,
-                        address: validator_address,
+                        index_key: EpochManagerBlueprint::to_index_key(stake, validator_address),
                         new_stake_amount: xrd_amount,
                     }
                 };
@@ -327,15 +327,16 @@ impl ValidatorBlueprint {
             if validator.is_registered {
                 let new_stake_amount = stake_vault.sys_amount(api)?;
                 let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
+
+                let index_key = EpochManagerBlueprint::to_index_key(cur_stake, validator_address);
+
                 let update = if new_stake_amount.is_zero() {
                     UpdateSecondaryIndex::Remove {
-                        stake: cur_stake,
-                        address: validator_address,
+                        index_key,
                     }
                 } else {
                     UpdateSecondaryIndex::UpdateStake {
-                        stake: cur_stake,
-                        address: validator_address,
+                        index_key,
                         new_stake_amount,
                     }
                 };
@@ -456,8 +457,7 @@ impl ValidatorBlueprint {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 if !stake_amount.is_zero() {
                     let update = UpdateSecondaryIndex::UpdateKey {
-                        stake: stake_amount,
-                        address: validator_address,
+                        index_key: EpochManagerBlueprint::to_index_key(stake_amount, validator_address),
                         key,
                     };
                     api.call_method(

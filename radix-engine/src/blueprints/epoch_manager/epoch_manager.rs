@@ -51,7 +51,7 @@ pub enum EpochManagerError {
 pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
-    fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
+    pub fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
         let reverse_stake = Decimal::MAX - stake;
         let mut index_key = reverse_stake.to_be_bytes();
         index_key.extend(scrypto_encode(&address).unwrap());
@@ -348,8 +348,9 @@ impl EpochManagerBlueprint {
             Self::update_validator(
                 receiver,
                 UpdateSecondaryIndex::Create {
+                    primary: validator_address,
                     stake: stake_amount,
-                    address: validator_address,
+                    index_key: Self::to_index_key(stake_amount, validator_address),
                     key,
                 } ,
                 api,
@@ -375,21 +376,19 @@ impl EpochManagerBlueprint {
         let mut registered_validators: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
         match update {
             UpdateSecondaryIndex::Create {
-                stake,
-                address,
+                index_key,
+                primary: address,
                 key,
+                stake
             } => {
-                let index_key = Self::to_index_key(stake, address);
                 registered_validators
                     .validators
                     .insert(index_key, (address, Validator { key, stake, }));
             }
             UpdateSecondaryIndex::UpdateKey {
-                stake,
-                address,
+                index_key,
                 key,
             } => {
-                let index_key = Self::to_index_key(stake, address);
                 let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
                 validator.key = key;
                 registered_validators
@@ -397,11 +396,9 @@ impl EpochManagerBlueprint {
                     .insert(index_key, (address, validator));
             }
             UpdateSecondaryIndex::UpdateStake {
-                stake,
-                address,
+                index_key,
                 new_stake_amount,
             } => {
-                let index_key = Self::to_index_key(stake, address);
                 let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
                 validator.stake = new_stake_amount;
                 let new_index_key = Self::to_index_key(new_stake_amount, address);
@@ -409,8 +406,7 @@ impl EpochManagerBlueprint {
                     .validators
                     .insert(new_index_key, (address, validator));
             }
-            UpdateSecondaryIndex::Remove { stake, address }=> {
-                let index_key = Self::to_index_key(stake, address);
+            UpdateSecondaryIndex::Remove { index_key }=> {
                 registered_validators.validators.remove(&index_key).expect("Secondary index logic broken");
             }
         }
