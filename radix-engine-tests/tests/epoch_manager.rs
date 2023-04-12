@@ -1,6 +1,6 @@
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::bootstrap::{create_genesis, GenesisData};
+use radix_engine::system::bootstrap::{create_genesis, GenesisData, GenesisValidator};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -10,6 +10,63 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{Instruction, SystemTransaction};
+
+#[test]
+fn genesis_epoch_has_correct_initial_validators() {
+    // Arrange
+    let initial_epoch = 1u64;
+    let rounds_per_epoch = 5u64;
+    let num_unstake_epochs = 1u64;
+    let max_validators = 10u32;
+
+    let mut stakes = BTreeMap::new();
+    let mut validators = Vec::new();
+    let mut accounts = Vec::new();
+    for k in 1usize..=100usize {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
+            .unwrap()
+            .public_key();
+        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+
+        accounts.push(validator_account_address);
+        validators.push(GenesisValidator {
+            key: pub_key,
+            component_address: validator_account_address,
+        });
+
+        let stake = Decimal::from((k + 1) / 2);
+
+        stakes.insert(k - 1, vec![(k - 1, stake)]);
+    }
+
+    let genesis_data = GenesisData {
+        validators,
+        resources: Vec::new(),
+        accounts,
+        resource_balances: BTreeMap::new(),
+        xrd_balances: BTreeMap::new(),
+        stakes,
+    };
+
+    let genesis = create_genesis(
+        genesis_data,
+        initial_epoch,
+        max_validators,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+
+    // Act
+    let (_, validators) = TestRunner::builder()
+        .with_custom_genesis(genesis)
+        .build_and_get_epoch();
+
+    // Assert
+    assert_eq!(validators.len(), 10);
+    for (_, validator) in validators {
+        assert!(validator.stake >= Decimal::from(45u64) && validator.stake <= Decimal::from(50u64))
+    }
+}
 
 #[test]
 fn get_epoch_should_succeed() {

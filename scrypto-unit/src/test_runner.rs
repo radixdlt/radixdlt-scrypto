@@ -149,7 +149,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -189,7 +189,7 @@ impl TestRunnerBuilder {
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
 
-        TestRunner {
+        let runner = TestRunner {
             scrypto_interpreter,
             substate_db,
             state_hash_support: Some(self.state_hashing)
@@ -200,7 +200,16 @@ impl TestRunnerBuilder {
             next_transaction_nonce,
             trace: self.trace,
             faucet_component,
-        }
+        };
+
+        let result = transaction_receipt.expect_commit_success();
+        let next_epoch = result.next_epoch().unwrap();
+        (runner, next_epoch.0)
+    }
+
+
+    pub fn build(self) -> TestRunner {
+        self.build_and_get_epoch().0
     }
 }
 
