@@ -16,6 +16,7 @@ mod simple_fuzzer;
 //use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey, ResourceAddress};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -29,7 +30,6 @@ use rand::{thread_rng, Rng};
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use scrypto_unit::TestRunner;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use strum::EnumCount;
 use transaction::builder::ManifestBuilder;
@@ -206,7 +206,7 @@ impl Fuzzer {
         for vault_id in vaults {
             if let output = self.runner.substate_db().get_substate(
                 &vault_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::Metadata.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 if !vault_id.is_internal_fungible_vault() {
@@ -311,18 +311,15 @@ impl Fuzzer {
 
                 let receipt = self.runner.execute_manifest(
                     manifest,
-                    vec![],
-                    /*
-                                        vec![NonFungibleGlobalId::from_public_key(
-                                            &self.accounts[0].public_key,
-                                        )],
-                    */
+                    //             vec![],
+                    vec![
+                        NonFungibleGlobalId::from_public_key(&self.accounts[0].public_key),
+                        NonFungibleGlobalId::from_public_key(&self.accounts[1].public_key),
+                    ],
                 );
                 if receipt.is_commit_success() {
                     TxStatus::CommitSuccess
                 } else {
-                    println!("commit failure receipt = {:?}", receipt);
-                    receipt.expect_commit_success();
                     TxStatus::CommitFailure
                 }
             }
@@ -344,7 +341,7 @@ impl Fuzzer {
     */
     fn gen_tx_manifest(&mut self) -> TransactionManifest {
         let mut builder = ManifestBuilder::new();
-        let instruction_count = self.rng.gen_range(0u32..4u32);
+        let instruction_count = self.rng.gen_range(1u32..20u32);
         let mut buckets = Container::<ManifestBucket>::new(vec![]);
         let mut proof_ids = Container::<ManifestProof>::new(vec![]);
 
@@ -358,11 +355,11 @@ impl Fuzzer {
 
         // what about lock_fee
         let fee = Decimal::from(100);
-        match self.rng.gen_range(0..1) {
+        match self.rng.gen_range(0..3) {
             0 => {
                 println!("fee = {} ", fee);
-                builder.lock_fee(self.runner.faucet_component(), fee);
-                //builder.lock_fee(component_address, fee);
+                //builder.lock_fee(self.runner.faucet_component(), fee);
+                builder.lock_fee(component_address, fee);
             }
             1 => {
                 let d = self.get_random_decimal(Some(100u128));
@@ -380,137 +377,166 @@ impl Fuzzer {
             }
             _ => todo!(),
         };
-        /*
-                builder.set_metadata(
-                        non_fungible_address.into(),
-                        self.get_random_string(10),
-                        MetadataEntry::Value(MetadataValue::String(
-                                self.get_random_string(10)))
-                    );
-        */
-        let manifest = builder.build();
-        return manifest;
-        /*
 
-                for _ in 0..instruction_count {
-                    let next = self.rng.gen_range(0usize..ast::Instruction::COUNT);
+        let mut i = 0;
+        while i < instruction_count {
+            let next = self.rng.gen_range(0usize..ast::Instruction::COUNT);
 
-                    let instruction = match next {
-                        // AssertWorktopContains
-                        0 => Some(Instruction::AssertWorktopContains {
-                            resource_address: fungible_address,
-                        }),
-                        // AssertWorktopContainsByAmount
-                        1 => {
-                            let d = self.rng.gen_range(0u32..10_000_000u32);
-                            let amount = Decimal::from(d);
-                            Some(Instruction::AssertWorktopContainsByAmount {
-                                amount,
-                                resource_address: fungible_address,
-                            })
-                        }
-                        // AssertWorktopContainsByIds
-                        2 => {
-                            let ids: BTreeSet<NonFungibleLocalId> = self
-                                .get_non_fungible_local_id(component_address, non_fungible_address)
-                                .unwrap_or(BTreeSet::new());
+            let instruction = match next {
+                // AssertWorktopContains
+                0 => Some(Instruction::AssertWorktopContains {
+                    resource_address: fungible_address,
+                }),
+                // AssertWorktopContainsByAmount
+                1 => {
+                    let d = self.rng.gen_range(0u32..10_000_000u32);
+                    let amount = Decimal::from(d);
+                    Some(Instruction::AssertWorktopContainsByAmount {
+                        amount,
+                        resource_address: fungible_address,
+                    })
+                }
+                // AssertWorktopContainsByIds
+                2 => {
+                    let ids: BTreeSet<NonFungibleLocalId> = self
+                        .get_non_fungible_local_id(component_address, non_fungible_address)
+                        .unwrap_or(BTreeSet::new());
 
-                            Some(Instruction::AssertWorktopContainsByIds {
-                                ids,
-                                resource_address: non_fungible_address,
-                            })
-                        }
-                        // BurnResource
-                        3 => buckets
-                            .get_random(true)
-                            .map(|bucket_id| Instruction::BurnResource { bucket_id }),
-                        // CallFunction
-                        4 => {
-                            // TODO
-                            None
-                        }
-                        // CallMethod
-                        5 => {
-                            // TODO
-                            None
-                        }
-                        // ClaimComponentRoyalty
-                        6 => Some(Instruction::ClaimComponentRoyalty { component_address }),
-                        // ClaimPackageRoyalty
-                        7 => {
-                            // TODO - use other package address?
-                            Some(Instruction::ClaimPackageRoyalty {
-                                package_address: ACCOUNT_PACKAGE,
-                            })
-                        }
-                        // ClearAuthZone
-                        8 => Some(Instruction::ClearAuthZone),
-                        // ClearSignatureProofs
-                        9 => Some(Instruction::ClearSignatureProofs),
-                        // CloneProof
-                        10 => proof_ids
-                            .get_random(false)
-                            .map(|proof_id| Instruction::CloneProof {
-                                proof_id: proof_id.clone(),
-                            }),
-                        // CreateAccessController
-                        11 => buckets.get_random(true).map(|controlled_asset| {
-                            let primary_role = AccessRule::AllowAll;
-                            let recovery_role = AccessRule::AllowAll;
-                            let confirmation_role = AccessRule::AllowAll;
-                            let timed_recovery_delay_in_minutes = Some(self.rng.gen_range(0u32..1_000u32));
+                    Some(Instruction::AssertWorktopContainsByIds {
+                        ids,
+                        resource_address: non_fungible_address,
+                    })
+                }
+                // BurnResource
+                3 => buckets
+                    .get_random(true)
+                    .map(|bucket_id| Instruction::BurnResource { bucket_id }),
+                // CallFunction
+                4 => {
+                    // TODO
+                    None
+                }
+                // CallMethod
+                5 => {
+                    // TODO
+                    None
+                }
+                // ClaimComponentRoyalty
+                6 => Some(Instruction::ClaimComponentRoyalty { component_address }),
+                // ClaimPackageRoyalty
+                7 => {
+                    // TODO - use other package address?
+                    Some(Instruction::ClaimPackageRoyalty {
+                        package_address: ACCOUNT_PACKAGE,
+                    })
+                }
+                // ClearAuthZone
+                8 => Some(Instruction::ClearAuthZone),
+                // ClearSignatureProofs
+                9 => Some(Instruction::ClearSignatureProofs),
+                // CloneProof
+                10 => proof_ids
+                    .get_random(false)
+                    .map(|proof_id| Instruction::CloneProof {
+                        proof_id: proof_id.clone(),
+                    }),
+                // CreateAccessController
+                11 => buckets.get_random(true).map(|controlled_asset| {
+                    let primary_role = AccessRule::AllowAll;
+                    let recovery_role = AccessRule::AllowAll;
+                    let confirmation_role = AccessRule::AllowAll;
+                    let timed_recovery_delay_in_minutes = Some(self.rng.gen_range(0u32..1_000u32));
 
-                            Instruction::CallFunction {
-                                package_address: ACCESS_CONTROLLER_PACKAGE,
-                                blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-                                function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-                                args: manifest_args!(
-                                    controlled_asset,
-                                    RuleSet {
-                                        primary_role,
-                                        recovery_role,
-                                        confirmation_role,
-                                    },
-                                    timed_recovery_delay_in_minutes
-                                ),
-                            }
-                        }),
-                        // CreateAccount
-                        12 => Some(Instruction::CallFunction {
-                            package_address: ACCOUNT_PACKAGE,
-                            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                            function_name: ACCOUNT_CREATE_IDENT.to_string(),
-                            args: to_manifest_value(&AccountCreateInput {}),
-                        }),
-                        // CreateAccountAdvanced
-                        13 => {
-                            let config = AccessRulesConfig::new()
-                                .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    Instruction::CallFunction {
+                        package_address: ACCESS_CONTROLLER_PACKAGE,
+                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                        function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                        args: manifest_args!(
+                            controlled_asset,
+                            RuleSet {
+                                primary_role,
+                                recovery_role,
+                                confirmation_role,
+                            },
+                            timed_recovery_delay_in_minutes
+                        ),
+                    }
+                }),
+                // CreateAccount
+                12 => Some(Instruction::CallFunction {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                    function_name: ACCOUNT_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&AccountCreateInput {}),
+                }),
+                // CreateAccountAdvanced
+                13 => {
+                    let config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
 
-                            Some(Instruction::CallFunction {
-                                package_address: ACCOUNT_PACKAGE,
-                                blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                                function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-                                args: to_manifest_value(&AccountCreateAdvancedInput { config }),
-                            })
-                        }
-                        // CreateFungibleResource
-                        14 => None,
-                        // CreateFungibleResourceWithInitialSupply
-                        15 => None,
-                        // CreateIdentity
-                        16 => None,
-                        // CreateIdentityAdvanced
-                        17 => None,
-                        // CreateNonFungibleResource
-                        18 => Some(Instruction::CallFunction {
-                            package_address: RESOURCE_MANAGER_PACKAGE,
-                            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                            args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                    Some(Instruction::CallFunction {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+                        args: to_manifest_value(&AccountCreateAdvancedInput { config }),
+                    })
+                }
+                // CreateFungibleResource
+                14 => None,
+                // CreateFungibleResourceWithInitialSupply
+                15 => None,
+                // CreateIdentity
+                16 => None,
+                // CreateIdentityAdvanced
+                17 => None,
+                // CreateNonFungibleResource
+                18 => Some(Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                        ]),
+                    }),
+                }),
+                // CreateNonFungibleResourceWithInitialSupply
+                19 => {
+                    let mut entries = BTreeMap::new();
+                    let entries_len = self.rng.gen_range(0usize..100usize);
+                    for _i in 0..entries_len {
+                        entries.insert(
+                            NonFungibleLocalId::integer(self.rng.gen_range(0u64..1000u64)),
+                            (to_manifest_value(&(
+                                self.get_random_string(1000),
+                                self.get_random_decimal(None),
+                            )),),
+                        );
+                    }
+                    Some(Instruction::CallFunction {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        function_name:
+                            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                                .to_string(),
+                        args: to_manifest_value(
+                            &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                                 id_type: NonFungibleIdType::Integer,
                                 non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                                metadata: BTreeMap::from([(
+                                    "name".to_string(),
+                                    "Token".to_string(),
+                                )]),
                                 access_rules: BTreeMap::from([
                                     (
                                         ResourceMethodAuthKey::Withdraw,
@@ -521,238 +547,196 @@ impl Fuzzer {
                                         (AccessRule::AllowAll, AccessRule::DenyAll),
                                     ),
                                 ]),
-                            }),
-                        }),
-                        // CreateNonFungibleResourceWithInitialSupply
-                        19 => {
-                            let mut entries = BTreeMap::new();
-                            let entries_len = self.rng.gen_range(0usize..100usize);
-                            for _i in 0..entries_len {
-                                entries.insert(
-                                    NonFungibleLocalId::integer(self.rng.gen_range(0u64..1000u64)),
-                                    (to_manifest_value(&(
-                                        self.get_random_string(1000),
-                                        self.get_random_decimal(None),
-                                    )),),
-                                );
-                            }
-                            Some(Instruction::CallFunction {
-                                package_address: RESOURCE_MANAGER_PACKAGE,
-                                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                                function_name:
-                                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                                        .to_string(),
-                                args: to_manifest_value(
-                                    &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                                        id_type: NonFungibleIdType::Integer,
-                                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                                        metadata: BTreeMap::from([(
-                                            "name".to_string(),
-                                            "Token".to_string(),
-                                        )]),
-                                        access_rules: BTreeMap::from([
-                                            (
-                                                ResourceMethodAuthKey::Withdraw,
-                                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                                            ),
-                                            (
-                                                ResourceMethodAuthKey::Deposit,
-                                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                                            ),
-                                        ]),
-                                        entries,
-                                    },
-                                ),
-                            })
-                        }
-                        // CreateProofFromAuthZone
-                        20 => Some(Instruction::CreateProofFromAuthZone {
-                            resource_address: fungible_address,
-                        }),
-                        // CreateProofFromAuthZoneByAmount
-                        21 => Some(Instruction::CreateProofFromAuthZoneByAmount {
-                            amount: self.get_random_decimal(None),
-                            resource_address: fungible_address,
-                        }),
-                        // CreateProofFromAuthZoneByIds
-                        22 => {
-                            let ids: BTreeSet<NonFungibleLocalId> = self
-                                .get_non_fungible_local_id(self.accounts[0].address, fungible_address)
-                                .unwrap_or(BTreeSet::new());
-                            Some(Instruction::CreateProofFromAuthZoneByIds {
-                                ids,
-                                resource_address: fungible_address,
-                            })
-                        }
-                        // CreateProofFromBucket
-                        23 => buckets
-                            .get_random(false)
-                            .map(|bucket_id| Instruction::CreateProofFromBucket { bucket_id }),
-                        // CreateValidator
-                        24 => Some(Instruction::CallMethod {
-                            component_address: EPOCH_MANAGER,
-                            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                            args: to_manifest_value(&EpochManagerCreateValidatorInput {
-                                key: account.public_key,
-                            }),
-                        }),
-                        // DropAllProofs
-                        25 => Some(Instruction::DropAllProofs),
-                        // DropProof
-                        26 => proof_ids
-                            .get_random(true)
-                            .map(|proof_id| Instruction::DropProof { proof_id }),
-                        // MintFungible
-                        27 => Some(Instruction::MintFungible {
-                            resource_address: fungible_address,
-                            amount: self.get_random_decimal(None),
-                        }),
-                        // MintNonFungible
-                        28 => {
-                            let mut entries = BTreeMap::new();
-                            let entries_len = self.rng.gen_range(0usize..100usize);
-                            for _i in 0..entries_len {
-                                entries.insert(
-                                    NonFungibleLocalId::integer(self.rng.gen_range(0u64..1000u64)),
-                                    (to_manifest_value(&(
-                                        self.get_random_string(1000),
-                                        self.get_random_decimal(None),
-                                    )),),
-                                );
-                            }
-
-                            Some(Instruction::MintNonFungible {
-                                resource_address: non_fungible_address,
-                                args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
-                                    entries,
-                                }),
-                            })
-                        }
-                        // MintUuidNonFungible
-                        29 => None,
-                        // PopFromAuthZone
-                        30 => Some(Instruction::PopFromAuthZone {}),
-                        // PublishPackage
-                        31 => None,
-                        // PublishPackageAdvanced
-                        32 => None,
-                        // PushToAuthZone
-                        33 => proof_ids
-                            .get_random(true)
-                            .map(|proof_id| Instruction::PushToAuthZone { proof_id }),
-                        // RecallResource
-                        34 => self
-                            .get_random_vault(component_address, resource_address)
-                            .map(|vault_id| Instruction::RecallResource {
-                                vault_id: LocalAddress::new_unchecked(vault_id.into()),
-                                amount: self.get_random_decimal(None),
-                            }),
-                        // RemoveMetadata
-                        35 => None,
-                        // ReturnToWorktop
-                        36 => buckets
-                            .get_random(true)
-                            .map(|bucket_id| Instruction::ReturnToWorktop { bucket_id }),
-                        // SetComponentRoyaltyConfig
-                        37 => {
-                            let mut royalty_config = RoyaltyConfigBuilder::new();
-                            let rules_len = self.rng.gen_range(0usize..100usize);
-                            for _i in 0..rules_len {
-                                royalty_config = royalty_config.add_rule(
-                                    &self.get_random_string(1000),
-                                    self.rng.gen_range(0u32..1_000_000_u32),
-                                );
-                            }
-                            let royalty_config = royalty_config.default(1);
-
-                            Some(Instruction::SetComponentRoyaltyConfig {
-                                component_address,
-                                royalty_config,
-                            })
-                        }
-                        // SetMetadata
-                        38 => Some(Instruction::SetMetadata {
-                            entity_address: GlobalAddress::from(component_address),
-                            key: self.get_random_string(1000),
-                            value: MetadataEntry::Value(MetadataValue::String(
-                                self.get_random_string(1000),
-                            )),
-                        }),
-                        // SetMethodAccessRule
-                        39 => Some(Instruction::SetMethodAccessRule {
-                            entity_address: GlobalAddress::from(component_address),
-                            key: MethodKey::new(
-                                SysModuleId::ObjectState,
-                                ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
-                            ),
-                            rule: AccessRule::AllowAll,
-                        }),
-                        // SetPackageRoyaltyConfig
-                        40 => {
-                            let mut royalty_config = RoyaltyConfigBuilder::new();
-                            let rules_len = self.rng.gen_range(0usize..100usize);
-                            for _i in 0..rules_len {
-                                royalty_config = royalty_config.add_rule(
-                                    &self.get_random_string(1000),
-                                    self.rng.gen_range(0u32..1_000_000_u32),
-                                );
-                            }
-                            let royalty_config =
-                                BTreeMap::from([(self.get_random_string(1000), royalty_config.default(1))]);
-
-                            Some(Instruction::SetPackageRoyaltyConfig {
-                                package_address: RESOURCE_MANAGER_PACKAGE,
-                                royalty_config,
-                            })
-                        }
-                        // TakeFromWorktop
-                        41 => Some(Instruction::TakeFromWorktop {
-                            resource_address: fungible_address,
-                        }),
-                        // TakeFromWorktopByAmount
-                        42 => {
-                            let d = self.rng.gen_range(0u32..1_000u32);
-                            let amount = Decimal::from(d);
-                            Some(Instruction::TakeFromWorktopByAmount {
-                                amount,
-                                resource_address: fungible_address,
-                            })
-                        }
-                        // TakeFromWorktopByIds
-                        43 => {
-                            let ids: BTreeSet<NonFungibleLocalId> = self
-                                .get_non_fungible_local_id(component_address, non_fungible_address)
-                                .unwrap_or(BTreeSet::new());
-
-                            Some(Instruction::TakeFromWorktopByIds {
-                                ids: ids.clone(),
-                                resource_address: non_fungible_address,
-                            })
-                        }
-                        _ => unreachable!(
-                            "Not all instructions (current count is {}) covered by this match",
-                            ast::Instruction::COUNT
+                                entries,
+                            },
                         ),
-                    };
+                    })
+                }
+                // CreateProofFromAuthZone
+                20 => Some(Instruction::CreateProofFromAuthZone {
+                    resource_address: fungible_address,
+                }),
+                // CreateProofFromAuthZoneByAmount
+                21 => Some(Instruction::CreateProofFromAuthZoneByAmount {
+                    amount: self.get_random_decimal(None),
+                    resource_address: fungible_address,
+                }),
+                // CreateProofFromAuthZoneByIds
+                22 => {
+                    let ids: BTreeSet<NonFungibleLocalId> = self
+                        .get_non_fungible_local_id(self.accounts[0].address, fungible_address)
+                        .unwrap_or(BTreeSet::new());
+                    Some(Instruction::CreateProofFromAuthZoneByIds {
+                        ids,
+                        resource_address: fungible_address,
+                    })
+                }
+                // CreateProofFromBucket
+                23 => buckets
+                    .get_random(false)
+                    .map(|bucket_id| Instruction::CreateProofFromBucket { bucket_id }),
+                // CreateValidator
+                24 => Some(Instruction::CallMethod {
+                    component_address: EPOCH_MANAGER,
+                    method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                    args: to_manifest_value(&EpochManagerCreateValidatorInput {
+                        key: account.public_key,
+                    }),
+                }),
+                // DropAllProofs
+                25 => Some(Instruction::DropAllProofs),
+                // DropProof
+                26 => proof_ids
+                    .get_random(true)
+                    .map(|proof_id| Instruction::DropProof { proof_id }),
+                // MintFungible
+                27 => Some(Instruction::MintFungible {
+                    resource_address: fungible_address,
+                    amount: self.get_random_decimal(None),
+                }),
+                // MintNonFungible
+                28 => {
+                    let mut entries = BTreeMap::new();
+                    let entries_len = self.rng.gen_range(0usize..100usize);
+                    for _i in 0..entries_len {
+                        entries.insert(
+                            NonFungibleLocalId::integer(self.rng.gen_range(0u64..1000u64)),
+                            (to_manifest_value(&(
+                                self.get_random_string(1000),
+                                self.get_random_decimal(None),
+                            )),),
+                        );
+                    }
 
-                    match instruction {
-                        Some(instruction) => {
-                            let (_, bucket_id, proof_id) = builder.add_instruction(instruction);
-                            match bucket_id {
-                                Some(bucket_id) => buckets.push(bucket_id),
-                                None => {}
-                            }
-                            match proof_id {
-                                Some(proof_id) => proof_ids.push(proof_id),
-                                None => {}
-                            }
-                        }
+                    Some(Instruction::MintNonFungible {
+                        resource_address: non_fungible_address,
+                        args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
+                            entries,
+                        }),
+                    })
+                }
+                // MintUuidNonFungible
+                29 => None,
+                // PopFromAuthZone
+                30 => Some(Instruction::PopFromAuthZone {}),
+                // PublishPackage
+                31 => None,
+                // PublishPackageAdvanced
+                32 => None,
+                // PushToAuthZone
+                33 => proof_ids
+                    .get_random(true)
+                    .map(|proof_id| Instruction::PushToAuthZone { proof_id }),
+                // RecallResource
+                34 => self
+                    .get_random_vault(component_address, resource_address)
+                    .map(|vault_id| Instruction::RecallResource {
+                        vault_id: LocalAddress::new_unchecked(vault_id.into()),
+                        amount: self.get_random_decimal(None),
+                    }),
+                // RemoveMetadata
+                35 => None,
+                // ReturnToWorktop
+                36 => buckets
+                    .get_random(true)
+                    .map(|bucket_id| Instruction::ReturnToWorktop { bucket_id }),
+                // SetComponentRoyaltyConfig
+                37 => {
+                    let mut royalty_config = RoyaltyConfigBuilder::new();
+                    let rules_len = self.rng.gen_range(0usize..100usize);
+                    for _i in 0..rules_len {
+                        royalty_config = royalty_config.add_rule(
+                            &self.get_random_string(1000),
+                            self.rng.gen_range(0u32..1_000_000_u32),
+                        );
+                    }
+                    let royalty_config = royalty_config.default(1);
+
+                    Some(Instruction::SetComponentRoyaltyConfig {
+                        component_address,
+                        royalty_config,
+                    })
+                }
+                // SetMetadata
+                38 => Some(Instruction::SetMetadata {
+                    entity_address: GlobalAddress::from(component_address),
+                    key: self.get_random_string(1000),
+                    value: MetadataEntry::Value(MetadataValue::String(
+                        self.get_random_string(1000),
+                    )),
+                }),
+                // SetMethodAccessRule
+                39 => Some(Instruction::SetMethodAccessRule {
+                    entity_address: GlobalAddress::from(component_address),
+                    key: MethodKey::new(ObjectModuleId::SELF, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
+                    rule: AccessRule::AllowAll,
+                }),
+                // SetPackageRoyaltyConfig
+                40 => {
+                    let mut royalty_config = RoyaltyConfigBuilder::new();
+                    let rules_len = self.rng.gen_range(0usize..100usize);
+                    for _i in 0..rules_len {
+                        royalty_config = royalty_config.add_rule(
+                            &self.get_random_string(1000),
+                            self.rng.gen_range(0u32..1_000_000_u32),
+                        );
+                    }
+                    let royalty_config =
+                        BTreeMap::from([(self.get_random_string(1000), royalty_config.default(1))]);
+
+                    Some(Instruction::SetPackageRoyaltyConfig {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        royalty_config,
+                    })
+                }
+                // TakeFromWorktop
+                41 => Some(Instruction::TakeFromWorktop {
+                    resource_address: fungible_address,
+                }),
+                // TakeFromWorktopByAmount
+                42 => {
+                    let d = self.rng.gen_range(0u32..1_000u32);
+                    let amount = Decimal::from(d);
+                    Some(Instruction::TakeFromWorktopByAmount {
+                        amount,
+                        resource_address: fungible_address,
+                    })
+                }
+                // TakeFromWorktopByIds
+                43 => {
+                    let ids: BTreeSet<NonFungibleLocalId> = self
+                        .get_non_fungible_local_id(component_address, non_fungible_address)
+                        .unwrap_or(BTreeSet::new());
+
+                    Some(Instruction::TakeFromWorktopByIds {
+                        ids: ids.clone(),
+                        resource_address: non_fungible_address,
+                    })
+                }
+                _ => unreachable!(
+                    "Not all instructions (current count is {}) covered by this match",
+                    ast::Instruction::COUNT
+                ),
+            };
+
+            match instruction {
+                Some(instruction) => {
+                    let (_, bucket_id, proof_id) = builder.add_instruction(instruction);
+                    match bucket_id {
+                        Some(bucket_id) => buckets.push(bucket_id),
                         None => {}
                     }
+                    match proof_id {
+                        Some(proof_id) => proof_ids.push(proof_id),
+                        None => {}
+                    }
+                    i += 1;
                 }
-                let manifest = builder.build();
-                manifest
-        */
+                None => {}
+            }
+        }
+        let manifest = builder.build();
+        manifest
     }
 }
 
@@ -779,7 +763,7 @@ fn dump_manifest_to_file(m: &TransactionManifest) {
 // It stops when given number of successful transactions is reached.
 #[test]
 fn test_gen_tx_manifest() {
-    let needed_good_cnt = 1;
+    let needed_good_cnt = 50;
     let mut i = 0;
     let mut curr_good_cnt = 0;
 
@@ -793,10 +777,9 @@ fn test_gen_tx_manifest() {
         {
             curr_good_cnt += 1;
             println!("good instructions={} {:?} ", m.instructions.len(), m);
-
-            #[cfg(feature = "dump_manifest_to_file")]
-            dump_manifest_to_file(&m);
         }
+        #[cfg(feature = "dump_manifest_to_file")]
+        dump_manifest_to_file(&m);
         i += 1;
         //println!("{}/{} instructions={} {:?}", i, needed_good_cnt, m.instructions.len(), m);
         println!(
@@ -807,55 +790,6 @@ fn test_gen_tx_manifest() {
             m.instructions.len()
         );
     }
-}
-
-#[test]
-fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
-    // Arrange
-    let mut fuzzer = Fuzzer::new();
-    let account = &fuzzer.accounts[1];
-    let (public_key, account) = (account.public_key, account.address);
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(fuzzer.runner.faucet_component(), dec!("10"))
-        //        .create_proof_from_account(account, RADIX_TOKEN)
-        /*
-                .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
-                    builder.push_to_auth_zone(proof_id)
-                })
-                .call_method(
-                    account,
-                    "deposit_batch",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
-                .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
-                    builder.push_to_auth_zone(proof_id)
-                })
-                .call_method(
-                    account,
-                    "deposit_batch",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
-                .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
-                    builder.push_to_auth_zone(proof_id)
-                })
-                .call_method(
-                    account,
-                    "deposit_batch",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
-        */
-        .build();
-    let receipt = fuzzer.runner.execute_manifest(
-        manifest,
-        vec![],
-        //        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    println!("{:?}", receipt);
-
-    // Assert
-    receipt.expect_commit_success();
 }
 
 #[test]
