@@ -77,9 +77,14 @@ impl KernelModule for KernelTraceModule {
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         node_type: Option<EntityType>,
-        virtual_node: bool
+        virtual_node: bool,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Allocating node id: type = {:?}  virtual = {}", node_type, virtual_node);
+        log!(
+            api,
+            "Allocating node id: type = {:?}  virtual = {}",
+            node_type,
+            virtual_node
+        );
         Ok(())
     }
 
@@ -138,14 +143,12 @@ impl KernelModule for KernelTraceModule {
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
-        only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {:?}, only-get-ref = {}",
+            "Reading substate: handle = {}, size = {:?}",
             lock_handle,
-            size,
-            only_get_ref
+            size
         );
         Ok(())
     }

@@ -97,7 +97,7 @@ pub trait KernelModule {
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_type: Option<EntityType>,
-        _virtual_node: bool
+        _virtual_node: bool,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -172,7 +172,6 @@ pub trait KernelModule {
         _api: &mut Y,
         _lock_handle: LockHandle,
         _size: usize,
-        _only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

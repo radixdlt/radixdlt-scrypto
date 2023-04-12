@@ -90,9 +90,9 @@ for path in os.listdir(input_folder):
             key += "::" + param[0]
 
         # handle kernel_create_wasm_instance
-        param = child.xpath("./self::kernel_create_wasm_instance/@package_address")
+        param = child.xpath("./self::kernel_create_wasm_instance/[@arg0 | @arg1]")
         if param:
-            key += "::" + str(param[0])[:20] + "...]"
+            key += "::" + str(param[0].attrib["arg0"]) + "::" + str(param[0].attrib["arg1"])
         param = child.xpath("./self::kernel_create_wasm_instance/create_instance/@arg0")
         if param:
             key += "::" + str(param[0])
@@ -100,9 +100,8 @@ for path in os.listdir(input_folder):
         # handle kernel_lock_substate
         param = child.xpath("./self::kernel_lock_substate[@module_id | @arg0 | @arg2]")
         if param:
-            module_id = param[0].attrib["module_id"] #.partition('[')[0]
-            node_id = param[0].attrib["arg0"] #.partition('[')[0]
-            #if key_offset[-1] == '(': key_offset = key_offset[:-1]
+            module_id = param[0].attrib["module_id"]
+            node_id = param[0].attrib["arg0"]
             key += "::" + module_id + "::" + node_id
 
         # handle kernel_allocate_node_id
@@ -181,7 +180,7 @@ else:
     if len(output_tab) > 0 and len(output_tab[0]) > 2:
         min_ins = output_tab[0][2]
     for row in output_tab:
-        if row[2] < min_ins:
+        if row[2] < min_ins and row[2] > 0:
             min_ins = row[2]
     mul_div = 16
     for row in output_tab:

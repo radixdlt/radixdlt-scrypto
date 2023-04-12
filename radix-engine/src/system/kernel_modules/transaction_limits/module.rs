@@ -231,7 +231,6 @@ impl KernelModule for TransactionLimitsModule {
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
-        _only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_module_state().transaction_limits;
 

@@ -763,35 +763,34 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
-        only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            KernelTraceModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            CostingModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            NodeMoveModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            AuthModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            LoggerModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            TransactionRuntimeModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            ExecutionTraceModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            TransactionLimitsModule::on_read_substate(api, lock_handle, size)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_read_substate(api, lock_handle, size, only_get_ref)?;
+            EventsModule::on_read_substate(api, lock_handle, size)?;
         }
         Ok(())
     }

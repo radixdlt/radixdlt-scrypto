@@ -825,7 +825,7 @@ where
             len = 0;
         }
 
-        KernelModuleMixer::on_read_substate(self, lock_handle, len, false)?;
+        KernelModuleMixer::on_read_substate(self, lock_handle, len)?;
 
         Ok(self
             .current_frame
@@ -853,7 +853,7 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log=package_address.as_node_id().entity_type())]
+    #[trace_resources(log=package_address.as_node_id().entity_type(), log={format!("{:x?}",package_address.to_vec().iter().rev().take(8))})]
     fn kernel_create_wasm_instance(
         &mut self,
         package_address: PackageAddress,
@@ -862,7 +862,7 @@ where
         // TODO: check if save to unwrap
         let package_code: PackageCodeSubstate =
             self.kernel_read_substate(handle)?.as_typed().unwrap();
-
+        //package_address.to_vec().iter().rev().take(8).
         KernelModuleMixer::on_create_wasm_instance(self, package_code.code.len())?;
 
         Ok(self

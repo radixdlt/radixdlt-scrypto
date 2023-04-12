@@ -499,7 +499,7 @@ impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log=units)]
+    #[trace_resources(log=units, log=reason)]
     fn consume_cost_units(
         &mut self,
         units: u32,

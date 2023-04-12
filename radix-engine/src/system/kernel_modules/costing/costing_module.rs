@@ -316,17 +316,10 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _lock_handle: LockHandle,
         size: usize,
-        only_get_ref: bool,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::ReadSubstate,
-            |fee_table| {
-                if only_get_ref {
-                    fee_table.kernel_api_cost(CostingEntry::GetSubstateRef)
-                } else {
-                    fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 })
-                }
-            },
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 }),
             1,
         )?;
         Ok(())
@@ -362,11 +355,16 @@ impl KernelModule for CostingModule {
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         entity_type: Option<EntityType>,
-        virtual_node: bool
+        virtual_node: bool,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::AllocateNodeId,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { entity_type, virtual_node }),
+            |fee_table| {
+                fee_table.kernel_api_cost(CostingEntry::AllocateNodeId {
+                    entity_type,
+                    virtual_node,
+                })
+            },
             1,
         )?;
         Ok(())
