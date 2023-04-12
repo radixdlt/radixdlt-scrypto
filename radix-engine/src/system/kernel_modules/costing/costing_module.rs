@@ -361,11 +361,12 @@ impl KernelModule for CostingModule {
 
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        entity_type: &EntityType,
+        entity_type: Option<EntityType>,
+        virtual_node: bool
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::AllocateNodeId,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { entity_type }),
+            |fee_table| fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { entity_type, virtual_node }),
             1,
         )?;
         Ok(())

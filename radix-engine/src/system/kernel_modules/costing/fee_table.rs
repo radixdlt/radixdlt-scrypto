@@ -26,7 +26,8 @@ pub enum CostingEntry<'a> {
         size: u32,
     },
     AllocateNodeId {
-        entity_type: &'a EntityType,
+        entity_type: Option<EntityType>,
+        virtual_node: bool,
     },
 
     /* substate */
@@ -84,15 +85,48 @@ impl FeeTable {
     /// and transformed (classified and groupped) using convert.py script.
     fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         ((match entry {
-            CostingEntry::AllocateNodeId { entity_type } => match entity_type {
-                EntityType::GlobalAccount => 111,
-                EntityType::GlobalGenericComponent => 714,
-                EntityType::GlobalFungibleResource => 1093,
-                EntityType::GlobalPackage => 1197,
-                EntityType::InternalKeyValueStore => 12,
-                _ => 0,
+            CostingEntry::AllocateNodeId { entity_type, virtual_node } => if !virtual_node {
+                    if entity_type.is_some() {
+                        match entity_type.unwrap() {
+                            EntityType::GlobalAccessController | EntityType::GlobalNonFungibleResource |
+                            EntityType::GlobalIdentity | EntityType::GlobalAccount | EntityType::GlobalFungibleResource |
+                            EntityType::InternalGenericComponent | EntityType::InternalAccount | EntityType::InternalFungibleVault |
+                            EntityType::InternalNonFungibleVault => 495,
+                            EntityType::GlobalGenericComponent => 328,
+                            EntityType::InternalKeyValueStore => 366,
+                            EntityType::GlobalValidator => 384,
+                            EntityType::GlobalPackage => 475,
+                            _ => 462, // average of above values
+                        }
+                    } else {
+                        462 // average of above values
+                    }
+                } else { // virtual_node
+                    16
+                },
+            CostingEntry::CreateNode { size: _, node_id } => match node_id.entity_type() {
+                Some(EntityType::InternalKeyValueStore) => 1944,
+                Some(EntityType::GlobalClock) => 2251,
+                Some(EntityType::InternalGenericComponent) => 2258,
+                Some(EntityType::InternalFungibleVault) => 2438,
+                Some(EntityType::InternalNonFungibleVault) => 2476,
+                Some(EntityType::GlobalEpochManager) => 2648,
+                Some(EntityType::InternalAccount) => 3096,
+                Some(EntityType::GlobalPackage) => 3240,
+                Some(EntityType::GlobalIdentity) => 3424,
+                Some(EntityType::GlobalVirtualEcdsaIdentity) => 3570,
+                Some(EntityType::GlobalFungibleResource) => 3780,
+                Some(EntityType::GlobalNonFungibleResource) => 4397,
+                Some(EntityType::GlobalVirtualEcdsaAccount) => 4521,
+                Some(EntityType::GlobalValidator) => 5475,
+                Some(EntityType::GlobalAccessController) => 5572,
+                Some(EntityType::GlobalAccount) => 6001,
+                Some(EntityType::GlobalGenericComponent) => 6484,
+                _ => 3739, // average of above values
             },
-            CostingEntry::CreateNode { size: _, node_id: _ } => 0,
+
+            // old data
+
             CostingEntry::CreateWasmInstance { size } => {
                 size / 26 // approx. by average from 10 calls (2 groups)
             }
