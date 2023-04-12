@@ -469,7 +469,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    #[trace_resources(log=*entity_type)]
+    #[trace_resources(log=entity_type)]
     fn on_allocate_node_id<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         entity_type: Option<EntityType>,

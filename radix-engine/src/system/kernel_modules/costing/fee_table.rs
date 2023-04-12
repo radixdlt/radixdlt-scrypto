@@ -4,7 +4,7 @@ pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
 pub const FIXED_HIGH_FEE: u32 = 5000;
 
-const COSTING_COEFFICENT: u64 = 237;
+const COSTING_COEFFICENT: u64 = 132;
 const COSTING_COEFFICENT_DIV_BITS: u64 = 9; // used to divide by shift left operator, original value: 4
 
 pub enum CostingEntry<'a> {
@@ -124,14 +124,14 @@ impl FeeTable {
                 Some(EntityType::GlobalGenericComponent) => 6484,
                 _ => 3739, // average of above values
             },
+            CostingEntry::CreateWasmInstance { size } => {
+                size / 26 // todo
+            }
+            CostingEntry::DropLock => 278,
+            CostingEntry::DropNode { size: _ } => 5611,
 
             // old data
 
-            CostingEntry::CreateWasmInstance { size } => {
-                size / 26 // approx. by average from 10 calls (2 groups)
-            }
-            CostingEntry::DropLock => 180,
-            CostingEntry::DropNode { size: _ } => 4191,
             CostingEntry::GetSubstateRef => 169,
             CostingEntry::Invoke {
                 input_size,
