@@ -445,6 +445,13 @@ impl Decimal {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
+
+    pub fn to_be_bytes(&self) -> Vec<u8> {
+        // TODO: Implement a more efficient way of computing this
+        let mut bytes = self.0.to_le_bytes().to_vec();
+        bytes.reverse();
+        bytes
+    }
 }
 
 well_known_scrypto_custom_type!(

@@ -40,7 +40,7 @@ pub struct CurrentValidatorSetSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SecondaryIndexSubstate {
-    pub validators: BTreeMap<(Decimal, ComponentAddress), Validator>,
+    pub validators: BTreeMap<Vec<u8>, (ComponentAddress, Validator)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -51,6 +51,13 @@ pub enum EpochManagerError {
 pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
+    fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
+        let reverse_stake = Decimal::MAX - stake;
+        let mut index_key = reverse_stake.to_be_bytes();
+        index_key.extend(scrypto_encode(&address).unwrap());
+        index_key
+    }
+
     pub(crate) fn create<Y>(
         validator_token_address: [u8; 27], // TODO: Clean this up
         component_address: [u8; 27],       // TODO: Clean this up
@@ -372,34 +379,39 @@ impl EpochManagerBlueprint {
                 address,
                 key,
             } => {
+                let index_key = Self::to_index_key(stake, address);
                 registered_validators
                     .validators
-                    .insert((stake, address), Validator { key, stake, });
+                    .insert(index_key, (address, Validator { key, stake, }));
             }
             UpdateSecondaryIndex::UpdateKey {
                 stake,
                 address,
                 key,
             } => {
-                let mut validator = registered_validators.validators.remove(&(stake, address)).unwrap();
+                let index_key = Self::to_index_key(stake, address);
+                let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
                 validator.key = key;
                 registered_validators
                     .validators
-                    .insert((stake, address), validator);
+                    .insert(index_key, (address, validator));
             }
             UpdateSecondaryIndex::UpdateStake {
                 stake,
                 address,
                 new_stake_amount,
             } => {
-                let mut validator = registered_validators.validators.remove(&(stake, address)).unwrap();
+                let index_key = Self::to_index_key(stake, address);
+                let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
                 validator.stake = new_stake_amount;
+                let new_index_key = Self::to_index_key(new_stake_amount, address);
                 registered_validators
                     .validators
-                    .insert((new_stake_amount, address), validator);
+                    .insert(new_index_key, (address, validator));
             }
             UpdateSecondaryIndex::Remove { stake, address }=> {
-                registered_validators.validators.remove(&(stake, address)).unwrap();
+                let index_key = Self::to_index_key(stake, address);
+                registered_validators.validators.remove(&index_key).expect("Secondary index logic broken");
             }
         }
         api.sys_write_substate_typed(handle, &registered_validators)?;
@@ -424,7 +436,7 @@ impl EpochManagerBlueprint {
         api.sys_drop_lock(handle)?;
 
         let mut next_validator_set = BTreeMap::new();
-        for ((_stake, address), validator) in registered_validator_set.validators {
+        for (_index_key, (address, validator)) in registered_validator_set.validators {
             next_validator_set.insert(address, validator);
         }
 
