@@ -360,7 +360,6 @@ impl EpochManagerNativePackage {
 
                 let rtn = EpochManagerBlueprint::update_validator(
                     receiver,
-                    input.validator_address,
                     input.update,
                     api,
                 )?;

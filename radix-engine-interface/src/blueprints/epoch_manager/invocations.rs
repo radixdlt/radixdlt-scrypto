@@ -79,15 +79,20 @@ pub type EpochManagerCreateValidatorWithStakeOutput = (ComponentAddress, Bucket,
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub enum UpdateValidator {
-    Register(EcdsaSecp256k1PublicKey, Decimal),
-    Unregister,
+pub enum UpdateSecondaryIndex {
+    Register {
+        address: ComponentAddress,
+        key: EcdsaSecp256k1PublicKey,
+        new_stake_amount: Decimal,
+    },
+    Unregister {
+        address: ComponentAddress
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerUpdateValidatorInput {
-    pub validator_address: ComponentAddress,
-    pub update: UpdateValidator,
+    pub update: UpdateSecondaryIndex,
 }
 
 pub type EpochManagerUpdateValidatorOutput = ();

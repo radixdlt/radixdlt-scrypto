@@ -93,8 +93,11 @@ impl ValidatorBlueprint {
                     manager.as_node_id(),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        update: UpdateValidator::Register(key, stake_amount),
-                        validator_address,
+                        update: UpdateSecondaryIndex::Register {
+                            address: validator_address,
+                            key,
+                            new_stake_amount: stake_amount,
+                        },
                     })
                     .unwrap(),
                 )?;
@@ -141,8 +144,9 @@ impl ValidatorBlueprint {
                 manager.as_node_id(),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
-                    validator_address,
-                    update: UpdateValidator::Unregister,
+                    update: UpdateSecondaryIndex::Unregister {
+                        address: validator_address
+                    },
                 })
                 .unwrap(),
             )?;
@@ -212,8 +216,11 @@ impl ValidatorBlueprint {
                     manager.as_node_id(),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        validator_address,
-                        update: UpdateValidator::Register(key, xrd_amount),
+                        update: UpdateSecondaryIndex::Register {
+                            address: validator_address,
+                            key,
+                            new_stake_amount: xrd_amount,
+                        }
                     })
                     .unwrap(),
                 )?;
@@ -300,20 +307,25 @@ impl ValidatorBlueprint {
             let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
-                let stake_amount = stake_vault.sys_amount(api)?;
+                let new_stake_amount = stake_vault.sys_amount(api)?;
                 let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
                 let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
-                let update = if stake_amount.is_zero() {
-                    UpdateValidator::Unregister
+                let update = if new_stake_amount.is_zero() {
+                    UpdateSecondaryIndex::Unregister {
+                        address: validator_address,
+                    }
                 } else {
-                    UpdateValidator::Register(validator.key, stake_amount)
+                    UpdateSecondaryIndex::Register {
+                        address: validator_address,
+                        key: validator.key,
+                        new_stake_amount,
+                    }
                 };
 
                 api.call_method(
                     manager.as_node_id(),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        validator_address,
                         update,
                     })
                     .unwrap(),
@@ -423,14 +435,17 @@ impl ValidatorBlueprint {
         {
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
-                let stake_amount = stake_vault.sys_amount(api)?;
-                if !stake_amount.is_zero() {
-                    let update = UpdateValidator::Register(key, stake_amount);
+                let new_stake_amount = stake_vault.sys_amount(api)?;
+                if !new_stake_amount.is_zero() {
+                    let update = UpdateSecondaryIndex::Register {
+                        address: validator_address,
+                        key,
+                        new_stake_amount
+                    };
                     api.call_method(
                         manager.as_node_id(),
                         EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                         scrypto_encode(&EpochManagerUpdateValidatorInput {
-                            validator_address,
                             update,
                         })
                         .unwrap(),

@@ -340,8 +340,11 @@ impl EpochManagerBlueprint {
         if register {
             Self::update_validator(
                 receiver,
-                validator_address,
-                UpdateValidator::Register(key, stake_amount),
+                UpdateSecondaryIndex::Register {
+                    address: validator_address,
+                    key,
+                    new_stake_amount: stake_amount,
+                } ,
                 api,
             )?;
         }
@@ -351,8 +354,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn update_validator<Y>(
         receiver: &NodeId,
-        validator_address: ComponentAddress,
-        update: UpdateValidator,
+        update: UpdateSecondaryIndex,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -365,13 +367,17 @@ impl EpochManagerBlueprint {
         )?;
         let mut registered_validators: RegisteredValidatorsSubstate = api.sys_read_substate_typed(handle)?;
         match update {
-            UpdateValidator::Register(key, stake) => {
+            UpdateSecondaryIndex::Register {
+                address,
+                key,
+                new_stake_amount,
+            } => {
                 registered_validators
                     .validators
-                    .insert(validator_address, Validator { key, stake });
+                    .insert(address, Validator { key, stake: new_stake_amount });
             }
-            UpdateValidator::Unregister => {
-                registered_validators.validators.remove(&validator_address);
+            UpdateSecondaryIndex::Unregister { address }=> {
+                registered_validators.validators.remove(&address);
             }
         }
         api.sys_write_substate_typed(handle, &registered_validators)?;
