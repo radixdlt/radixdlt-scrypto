@@ -80,12 +80,23 @@ pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum UpdateSecondaryIndex {
-    Register {
+    Create {
+        stake: Decimal,
         address: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
+    },
+    UpdateStake {
+        stake: Decimal,
+        address: ComponentAddress,
         new_stake_amount: Decimal,
     },
-    Unregister {
+    UpdateKey {
+        stake: Decimal,
+        address: ComponentAddress,
+        key: EcdsaSecp256k1PublicKey,
+    },
+    Remove {
+        stake: Decimal,
         address: ComponentAddress
     },
 }

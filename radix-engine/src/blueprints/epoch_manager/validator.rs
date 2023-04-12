@@ -93,10 +93,10 @@ impl ValidatorBlueprint {
                     manager.as_node_id(),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        update: UpdateSecondaryIndex::Register {
+                        update: UpdateSecondaryIndex::Create {
+                            stake: stake_amount,
                             address: validator_address,
                             key,
-                            new_stake_amount: stake_amount,
                         },
                     })
                     .unwrap(),
@@ -125,16 +125,25 @@ impl ValidatorBlueprint {
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
 
         // Update state
-        {
+        let cur_stake = {
             let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            let stake_amount = stake_vault.sys_amount(api)?;
 
-            if !validator.is_registered {
+            if validator.is_registered {
+                validator.is_registered = false;
+                api.sys_write_substate_typed(handle, &validator)?;
+                Runtime::emit_event(api, UnregisterValidatorEvent)?;
+
+                if stake_amount.is_zero() {
+                    return Ok(IndexedScryptoValue::from_typed(&()));
+                }
+            } else {
                 return Ok(IndexedScryptoValue::from_typed(&()));
             }
-            validator.is_registered = false;
 
-            api.sys_write_substate_typed(handle, &validator)?;
-        }
+            stake_amount
+        };
 
         // Update EpochManager
         {
@@ -144,15 +153,14 @@ impl ValidatorBlueprint {
                 manager.as_node_id(),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
-                    update: UpdateSecondaryIndex::Unregister {
+                    update: UpdateSecondaryIndex::Remove {
+                        stake: cur_stake,
                         address: validator_address
                     },
                 })
                 .unwrap(),
             )?;
         }
-
-        Runtime::emit_event(api, UnregisterValidatorEvent)?;
 
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
@@ -182,7 +190,7 @@ impl ValidatorBlueprint {
         )?;
 
         // Stake
-        let lp_token_bucket = {
+        let (lp_token_bucket, stake) = {
             let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
@@ -199,7 +207,7 @@ impl ValidatorBlueprint {
 
             let lp_token_bucket = lp_token_resman.mint_fungible(lp_mint_amount, api)?;
             xrd_vault.sys_put(xrd_bucket, api)?;
-            lp_token_bucket
+            (lp_token_bucket, active_stake_amount)
         };
 
         // Update EpochManager
@@ -207,20 +215,29 @@ impl ValidatorBlueprint {
             let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
             if validator.is_registered {
                 let manager = api.get_object_info(receiver)?.type_parent.unwrap();
-                let key = validator.key;
                 let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
                 let xrd_vault = Vault(validator.stake_xrd_vault_id);
                 let xrd_amount = xrd_vault.sys_amount(api)?;
+
+                let update = if stake.is_zero() {
+                    UpdateSecondaryIndex::Create {
+                        stake: xrd_amount,
+                        address: validator_address,
+                        key: validator.key,
+                    }
+                } else {
+                    UpdateSecondaryIndex::UpdateStake {
+                        stake,
+                        address: validator_address,
+                        new_stake_amount: xrd_amount,
+                    }
+                };
 
                 api.call_method(
                     manager.as_node_id(),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        update: UpdateSecondaryIndex::Register {
-                            address: validator_address,
-                            key,
-                            new_stake_amount: xrd_amount,
-                        }
+                        update
                     })
                     .unwrap(),
                 )?;
@@ -261,7 +278,7 @@ impl ValidatorBlueprint {
         let manager = api.get_object_info(receiver)?.type_parent.unwrap();
 
         // Unstake
-        let (unstake_bucket, _) = {
+        let (unstake_bucket, cur_stake) = {
             let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
@@ -299,7 +316,8 @@ impl ValidatorBlueprint {
 
             let bucket = stake_vault.sys_take(xrd_amount, api)?;
             unstake_vault.sys_put(bucket, api)?;
-            nft_resman.mint_non_fungible_single_uuid(data, api)?
+            let (unstake_bucket, _) = nft_resman.mint_non_fungible_single_uuid(data, api)?;
+            (unstake_bucket, active_stake_amount)
         };
 
         // Update Epoch Manager
@@ -308,16 +326,16 @@ impl ValidatorBlueprint {
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
                 let new_stake_amount = stake_vault.sys_amount(api)?;
-                let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
                 let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
                 let update = if new_stake_amount.is_zero() {
-                    UpdateSecondaryIndex::Unregister {
+                    UpdateSecondaryIndex::Remove {
+                        stake: cur_stake,
                         address: validator_address,
                     }
                 } else {
-                    UpdateSecondaryIndex::Register {
+                    UpdateSecondaryIndex::UpdateStake {
+                        stake: cur_stake,
                         address: validator_address,
-                        key: validator.key,
                         new_stake_amount,
                     }
                 };
@@ -435,12 +453,12 @@ impl ValidatorBlueprint {
         {
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
-                let new_stake_amount = stake_vault.sys_amount(api)?;
-                if !new_stake_amount.is_zero() {
-                    let update = UpdateSecondaryIndex::Register {
+                let stake_amount = stake_vault.sys_amount(api)?;
+                if !stake_amount.is_zero() {
+                    let update = UpdateSecondaryIndex::UpdateKey {
+                        stake: stake_amount,
                         address: validator_address,
                         key,
-                        new_stake_amount
                     };
                     api.call_method(
                         manager.as_node_id(),
