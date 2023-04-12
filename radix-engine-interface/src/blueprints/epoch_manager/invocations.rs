@@ -88,9 +88,10 @@ pub enum UpdateSecondaryIndex {
     },
     UpdateStake {
         index_key: Vec<u8>,
+        new_index_key: Vec<u8>,
         new_stake_amount: Decimal,
     },
-    UpdateKey {
+    UpdatePublicKey {
         index_key: Vec<u8>,
         key: EcdsaSecp256k1PublicKey,
     },

@@ -16,6 +16,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use crate::blueprints::epoch_manager::ValidatorBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
@@ -51,13 +52,6 @@ pub enum EpochManagerError {
 pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
-    pub fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
-        let reverse_stake = Decimal::MAX - stake;
-        let mut index_key = reverse_stake.to_be_bytes();
-        index_key.extend(scrypto_encode(&address).unwrap());
-        index_key
-    }
-
     pub(crate) fn create<Y>(
         validator_token_address: [u8; 27], // TODO: Clean this up
         component_address: [u8; 27],       // TODO: Clean this up
@@ -350,7 +344,7 @@ impl EpochManagerBlueprint {
                 UpdateSecondaryIndex::Create {
                     primary: validator_address,
                     stake: stake_amount,
-                    index_key: Self::to_index_key(stake_amount, validator_address),
+                    index_key: ValidatorBlueprint::to_index_key(stake_amount, validator_address),
                     key,
                 } ,
                 api,
@@ -385,7 +379,7 @@ impl EpochManagerBlueprint {
                     .validators
                     .insert(index_key, (address, Validator { key, stake, }));
             }
-            UpdateSecondaryIndex::UpdateKey {
+            UpdateSecondaryIndex::UpdatePublicKey {
                 index_key,
                 key,
             } => {
@@ -397,11 +391,11 @@ impl EpochManagerBlueprint {
             }
             UpdateSecondaryIndex::UpdateStake {
                 index_key,
+                new_index_key,
                 new_stake_amount,
             } => {
                 let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
                 validator.stake = new_stake_amount;
-                let new_index_key = Self::to_index_key(new_stake_amount, address);
                 registered_validators
                     .validators
                     .insert(new_index_key, (address, validator));

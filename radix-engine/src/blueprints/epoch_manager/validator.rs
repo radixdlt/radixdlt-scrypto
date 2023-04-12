@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::{EpochManagerBlueprint, EpochManagerSubstate};
+use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
@@ -53,6 +53,13 @@ pub enum ValidatorError {
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
+    pub fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
+        let reverse_stake = Decimal::MAX - stake;
+        let mut index_key = reverse_stake.to_be_bytes();
+        index_key.extend(scrypto_encode(&address).unwrap());
+        index_key
+    }
+
     pub fn register<Y>(
         receiver: &NodeId,
         input: &IndexedScryptoValue,
@@ -94,7 +101,7 @@ impl ValidatorBlueprint {
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateSecondaryIndex::Create {
-                            index_key: EpochManagerBlueprint::to_index_key(stake_amount, validator_address),
+                            index_key: Self::to_index_key(stake_amount, validator_address),
                             primary: validator_address,
                             stake: stake_amount,
                             key,
@@ -155,7 +162,7 @@ impl ValidatorBlueprint {
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     update: UpdateSecondaryIndex::Remove {
-                        index_key: EpochManagerBlueprint::to_index_key(cur_stake, validator_address),
+                        index_key: Self::to_index_key(cur_stake, validator_address),
                     },
                 })
                 .unwrap(),
@@ -219,16 +226,19 @@ impl ValidatorBlueprint {
                 let xrd_vault = Vault(validator.stake_xrd_vault_id);
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
+                let new_index_key = Self::to_index_key(xrd_amount, validator_address);
+
                 let update = if stake.is_zero() {
                     UpdateSecondaryIndex::Create {
-                        index_key: EpochManagerBlueprint::to_index_key(xrd_amount, validator_address),
+                        index_key: new_index_key,
                         stake: xrd_amount,
                         primary: validator_address,
                         key: validator.key,
                     }
                 } else {
                     UpdateSecondaryIndex::UpdateStake {
-                        index_key: EpochManagerBlueprint::to_index_key(stake, validator_address),
+                        index_key: Self::to_index_key(stake, validator_address),
+                        new_index_key,
                         new_stake_amount: xrd_amount,
                     }
                 };
@@ -328,15 +338,17 @@ impl ValidatorBlueprint {
                 let new_stake_amount = stake_vault.sys_amount(api)?;
                 let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
 
-                let index_key = EpochManagerBlueprint::to_index_key(cur_stake, validator_address);
+                let index_key = Self::to_index_key(cur_stake, validator_address);
 
                 let update = if new_stake_amount.is_zero() {
                     UpdateSecondaryIndex::Remove {
                         index_key,
                     }
                 } else {
+                    let new_index_key = Self::to_index_key(new_stake_amount, validator_address);
                     UpdateSecondaryIndex::UpdateStake {
                         index_key,
+                        new_index_key,
                         new_stake_amount,
                     }
                 };
@@ -456,8 +468,8 @@ impl ValidatorBlueprint {
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 if !stake_amount.is_zero() {
-                    let update = UpdateSecondaryIndex::UpdateKey {
-                        index_key: EpochManagerBlueprint::to_index_key(stake_amount, validator_address),
+                    let update = UpdateSecondaryIndex::UpdatePublicKey {
+                        index_key: Self::to_index_key(stake_amount, validator_address),
                         key,
                     };
                     api.call_method(
