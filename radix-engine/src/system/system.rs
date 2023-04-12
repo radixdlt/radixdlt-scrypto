@@ -113,6 +113,10 @@ where
         }
 
         let module_id = match type_info {
+            TypeInfoSubstate::IterableStore => {
+                // TODO: Change to error
+                panic!("Not supported")
+            },
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::ObjectMap,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
@@ -524,7 +528,7 @@ where
                         (blueprint, global_address)
                     }
 
-                    TypeInfoSubstate::KeyValueStore(..) => {
+                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -576,7 +580,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..) => {
+            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -590,7 +594,7 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. } => {
+            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -618,7 +622,7 @@ where
             ),
         )?;
 
-        Ok(node_id.into())
+        Ok(node_id)
     }
 
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
@@ -640,6 +644,33 @@ where
         self.api.kernel_drop_node(&node_id)?;
 
         Ok(())
+    }
+}
+
+impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
+    where
+        Y: KernelApi<SystemCallback<V>>,
+        V: SystemCallbackObject,
+{
+    fn new_iterable(&mut self) -> Result<NodeId, RuntimeError> {
+        let entity_type = EntityType::InternalIterableStore;
+        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+
+        self.api.kernel_create_node(
+            node_id,
+            btreemap!(
+                SysModuleId::ObjectIterable => btreemap!(),
+                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::IterableStore
+                ).to_substates(),
+            ),
+        )?;
+
+        Ok(node_id)
+    }
+
+    fn first_count(&mut self, _receiver: NodeId, _count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        todo!()
     }
 }
 

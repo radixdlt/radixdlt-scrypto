@@ -29,15 +29,17 @@ pub enum SysModuleId {
     AccessRules,
     ObjectTuple,
     ObjectMap,
+    ObjectIterable,
 }
 
 impl SysModuleId {
-    pub fn is_map(&self) -> bool {
+    pub fn virtualize_substates(&self) -> bool {
         match self {
             SysModuleId::TypeInfo
             | SysModuleId::Royalty
             | SysModuleId::AccessRules
-            | SysModuleId::ObjectTuple => false,
+            | SysModuleId::ObjectTuple
+            | SysModuleId::ObjectIterable => false,
             SysModuleId::Metadata | SysModuleId::ObjectMap => true,
         }
     }

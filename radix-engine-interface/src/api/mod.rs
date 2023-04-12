@@ -26,6 +26,7 @@ pub use substate_api::LockFlags;
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientObjectApi<E>
+    + ClientIterableApi<E>
     + ClientBlueprintApi<E>
     + ClientSubstateApi<E>
     + ClientCostingApi<E>

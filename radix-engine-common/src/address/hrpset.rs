@@ -18,6 +18,7 @@ pub struct HrpSet {
     internal_account: String,
     internal_component: String,
     internal_key_value_store: String,
+    internal_iterable_store: String,
 }
 
 impl HrpSet {
@@ -42,6 +43,7 @@ impl HrpSet {
             EntityType::InternalAccount => &self.internal_account,
             EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
+            EntityType::InternalIterableStore => &self.internal_iterable_store,
         }
     }
 }
@@ -63,6 +65,7 @@ impl From<&NetworkDefinition> for HrpSet {
             internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),
             internal_key_value_store: format!("internal_keyvaluestore_{}", suffix),
+            internal_iterable_store: format!("internal_iterablestore_{}", suffix),
         }
     }
 }

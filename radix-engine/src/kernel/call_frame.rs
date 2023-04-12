@@ -187,7 +187,7 @@ impl CallFrame {
 
         // Substate Virtualization
         // TODO: Move into lower virtualization layer
-        if module_id.is_map() {
+        if module_id.virtualize_substates() {
             if heap.contains_node(node_id) {
                 if heap
                     .get_substate(node_id, module_id.into(), substate_key)

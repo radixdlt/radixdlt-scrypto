@@ -1,3 +1,4 @@
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use crate::types::*;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
@@ -79,4 +80,24 @@ pub trait ClientObjectApi<E> {
 
     /// Drops an object
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
+}
+
+pub trait ClientIterableApi<E> {
+    /// Creates a new key value store with a given schema
+    fn new_iterable(&mut self) -> Result<NodeId, E>;
+
+    fn first_count(&mut self, receiver: NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+
+    fn first_count_typed<S: ScryptoDecode>(
+        &mut self,
+        receiver: NodeId,
+        count: u32,
+    ) -> Result<Vec<S>, E> {
+        let entries = self.first_count(receiver, count)?.into_iter().map(|buf| {
+            let typed: S = scrypto_decode(&buf).unwrap();
+            typed
+        }).collect();
+
+        Ok(entries)
+    }
 }
