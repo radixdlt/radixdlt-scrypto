@@ -71,6 +71,10 @@ pub trait KernelSubstateApi {
     ) -> Result<(), RuntimeError>;
 }
 
+pub trait KernelIterableApi {
+    fn first_count(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
+}
+
 #[derive(Debug)]
 pub struct KernelInvocation<I: Debug> {
     pub sys_invocation: I,
@@ -134,6 +138,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi + KernelIterableApi + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
 {
 }

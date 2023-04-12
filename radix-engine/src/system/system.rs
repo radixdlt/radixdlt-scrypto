@@ -588,6 +588,27 @@ where
         Ok(object_info)
     }
 
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        // TODO: Cleanup
+        if let Some(actor) = self.api.kernel_get_current_actor() {
+            let info = self.get_object_info(&node_id)?;
+            if !info.blueprint.package_address.eq(actor.package_address()) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+                        actor: actor.clone(),
+                        node_id: node_id.clone(),
+                        package_address: info.blueprint.package_address,
+                        blueprint_name: info.blueprint.blueprint_name,
+                    })),
+                ));
+            }
+        }
+
+        self.api.kernel_drop_node(&node_id)?;
+
+        Ok(())
+    }
+
     fn get_key_value_store_info(
         &mut self,
         node_id: &NodeId,
@@ -625,26 +646,6 @@ where
         Ok(node_id)
     }
 
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        // TODO: Cleanup
-        if let Some(actor) = self.api.kernel_get_current_actor() {
-            let info = self.get_object_info(&node_id)?;
-            if !info.blueprint.package_address.eq(actor.package_address()) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        actor: actor.clone(),
-                        node_id: node_id.clone(),
-                        package_address: info.blueprint.package_address,
-                        blueprint_name: info.blueprint.blueprint_name,
-                    })),
-                ));
-            }
-        }
-
-        self.api.kernel_drop_node(&node_id)?;
-
-        Ok(())
-    }
 }
 
 impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
@@ -669,7 +670,16 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
         Ok(node_id)
     }
 
-    fn first_count(&mut self, _receiver: NodeId, _count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn first_count(&mut self, node_id: &NodeId, _count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+
+        match type_info {
+            TypeInfoSubstate::IterableStore => { },
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            },
+        }
+
         todo!()
     }
 }

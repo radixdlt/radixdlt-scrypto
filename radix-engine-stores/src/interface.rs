@@ -112,19 +112,12 @@ pub trait SubstateStore {
     /// - If the lock handle is not associated with WRITE permission
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
-    /// Returns an iterator over substates within the given substate module.
-    ///
-    /// In case the module does not exist, an empty iterator is returned.
-    ///
-    /// # Panics
-    /// - If the module ID is invalid
-    /// - If iteration is not enabled for the module
-    /// - If any of the substates within the module is WRITE locked
-    fn list_substates(
+    fn read_substates(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>>;
+        count: u32,
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

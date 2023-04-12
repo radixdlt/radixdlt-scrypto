@@ -145,6 +145,11 @@ pub enum WriteSubstateError {
     NoWritePermission,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ReadSubstatesError {
+    NodeNotInCallFrame(NodeId),
+}
+
 impl CallFrame {
     fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
@@ -451,6 +456,41 @@ impl CallFrame {
             heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
         }
         Ok(())
+    }
+
+    // Substate Virtualization does not apply to this call
+    // Should this be prevented at this layer?
+    pub fn read_substates<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, ReadSubstatesError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let substates = if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store.read_substates(node_id, module_id.into(), count)
+        };
+
+        for (id, substate) in &substates {
+            let refs = substate.references();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref.clone(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
     }
 
     pub fn new_root() -> Self {

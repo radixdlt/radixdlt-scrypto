@@ -9,7 +9,7 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInvocation, KernelIterableApi};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
@@ -685,6 +685,19 @@ where
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+}
+
+impl<'g, M, S> KernelIterableApi for Kernel<'g, M, S>
+    where
+        M: KernelCallbackObject,
+        S: SubstateStore,
+{
+    fn first_count(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.current_frame.read_substates(node_id, module_id, count, &mut self.heap, self.store)
+            .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }

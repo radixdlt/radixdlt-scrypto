@@ -354,11 +354,7 @@ impl<'s> SubstateStore for Track<'s> {
             );
     }
 
-    fn list_substates(
-        &mut self,
-        _node_id: &NodeId,
-        _module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>> {
+    fn read_substates(&mut self, node_id: &NodeId, module_id: ModuleId, count: u32) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         todo!()
     }
 }

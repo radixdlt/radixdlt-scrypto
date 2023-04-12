@@ -9,9 +9,7 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::{
-    LockSubstateError, MoveError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
-};
+use crate::kernel::call_frame::{LockSubstateError, MoveError, ReadSubstateError, ReadSubstatesError, UnlockSubstateError, WriteSubstateError};
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::system_modules::auth::AuthError;
@@ -188,6 +186,7 @@ pub enum CallFrameError {
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
+    ReadSubstatesError(ReadSubstatesError),
     MoveError(MoveError),
 }
 
@@ -196,6 +195,7 @@ pub enum SystemError {
     GlobalAddressDoesNotExist,
     NotAnObject,
     NotAKeyValueStore,
+    NotAnIterableStore,
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
