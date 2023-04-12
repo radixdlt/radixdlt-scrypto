@@ -460,6 +460,29 @@ impl CallFrame {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
+    pub fn insert_unique_substate<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        key: SubstateKey,
+        value: IndexedScryptoValue,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<(), ReadSubstatesError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let substates = if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store.create_substate(*node_id, module_id.into(), key, value);
+        };
+
+        Ok(())
+    }
+
+    // Substate Virtualization does not apply to this call
+    // Should this be prevented at this layer?
     pub fn read_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,

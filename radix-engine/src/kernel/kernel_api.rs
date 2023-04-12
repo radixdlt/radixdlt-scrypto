@@ -72,7 +72,20 @@ pub trait KernelSubstateApi {
 }
 
 pub trait KernelIterableApi {
-    fn first_count(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
+    fn kernel_insert_unique(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        unique: SubstateKey,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError>;
+
+    fn kernel_read_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }
 
 #[derive(Debug)]

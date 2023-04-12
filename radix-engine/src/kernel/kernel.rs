@@ -695,7 +695,20 @@ impl<'g, M, S> KernelIterableApi for Kernel<'g, M, S>
         M: KernelCallbackObject,
         S: SubstateStore,
 {
-    fn first_count(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    fn kernel_insert_unique(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        unique: SubstateKey,
+        value: IndexedScryptoValue
+    ) -> Result<(), RuntimeError> {
+        self.current_frame.insert_unique_substate(node_id, module_id, unique, value, &mut self.heap, self.store)
+            .map_err(CallFrameError::ReadSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_read_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.current_frame.read_substates(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)

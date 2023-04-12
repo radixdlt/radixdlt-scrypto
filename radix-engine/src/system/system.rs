@@ -670,9 +670,8 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
         Ok(node_id)
     }
 
-    fn first_count(&mut self, node_id: &NodeId, _count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn insert_into_iterable(&mut self, node_id: &NodeId, substate_key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-
         match type_info {
             TypeInfoSubstate::IterableStore => { },
             _ => {
@@ -680,7 +679,27 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
             },
         }
 
-        todo!()
+        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        self.api.kernel_insert_unique(node_id, SysModuleId::ObjectIterable, substate_key, value)
+    }
+
+    fn read_from_iterable(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::IterableStore => { },
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            },
+        }
+
+        let substates = self.api.kernel_read_substates(node_id, SysModuleId::ObjectIterable, count)?.into_iter()
+            .map(|(k, e)| e.into())
+            .collect();
+
+        Ok(substates)
     }
 }
 
