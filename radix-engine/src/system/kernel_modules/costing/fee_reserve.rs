@@ -181,7 +181,7 @@ pub fn decimal_to_u128(a: Decimal) -> u128 {
 
 impl SystemLoanFeeReserve {
     pub fn no_fee() -> Self {
-        Self::new(0, 0, DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN, false)
+        Self::new(0, 0, NO_FEE_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN, false)
     }
 
     pub fn new(

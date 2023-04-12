@@ -5,6 +5,9 @@
 /// The default cost unit limit.
 pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 
+/// Cost unit limit for "No fee" configuration
+pub const NO_FEE_COST_UNIT_LIMIT: u32 = u32::MAX;
+
 //==========================
 // Transaction validation
 //==========================
