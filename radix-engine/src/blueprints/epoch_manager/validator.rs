@@ -25,6 +25,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
+    pub index_key: Option<Vec<u8>>,
     pub key: EcdsaSecp256k1PublicKey,
     pub is_registered: bool,
 
@@ -53,11 +54,15 @@ pub enum ValidatorError {
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
-    pub fn to_index_key(stake: Decimal, address: ComponentAddress) -> Vec<u8> {
-        let reverse_stake = Decimal::MAX - stake;
-        let mut index_key = reverse_stake.to_be_bytes();
-        index_key.extend(scrypto_encode(&address).unwrap());
-        index_key
+    fn to_index_key(registered: bool, stake: Decimal, address: ComponentAddress) -> Option<Vec<u8>> {
+        if !registered || stake.is_zero() {
+            None
+        } else {
+            let reverse_stake = Decimal::MAX - stake;
+            let mut index_key = reverse_stake.to_be_bytes();
+            index_key.extend(scrypto_encode(&address).unwrap());
+            Some(index_key)
+        }
     }
 
     pub fn register<Y>(
@@ -75,43 +80,22 @@ impl ValidatorBlueprint {
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
 
-        // Update state
-        let validator = {
-            let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
-
-            if validator.is_registered {
-                return Ok(IndexedScryptoValue::from_typed(&()));
-            }
-            validator.is_registered = true;
-
-            api.sys_write_substate_typed(handle, &validator)?;
-            validator
-        };
-
-        // Update EpochManager
-        {
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
-            let stake_amount = stake_vault.sys_amount(api)?;
-            if stake_amount.is_positive() {
-                let key = validator.key;
-                let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
-                let manager = api.get_object_info(receiver)?.type_parent.unwrap();
-                api.call_method(
-                    manager.as_node_id(),
-                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                    scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        update: UpdateSecondaryIndex::Create {
-                            index_key: Self::to_index_key(stake_amount, validator_address),
-                            primary: validator_address,
-                            stake: stake_amount,
-                            key,
-                        },
-                    })
-                    .unwrap(),
-                )?;
-            }
+        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        // No update
+        if validator.is_registered {
+            return Ok(IndexedScryptoValue::from_typed(&()));
         }
 
+        let stake_amount = {
+            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            stake_vault.sys_amount(api)?
+        };
+
+        let index_key = Self::index_update(receiver, &validator, true, stake_amount, api)?;
+
+        validator.is_registered = true;
+        validator.index_key = index_key;
+        api.sys_write_substate_typed(handle, &validator)?;
         Runtime::emit_event(api, RegisterValidatorEvent)?;
 
         return Ok(IndexedScryptoValue::from_typed(&()));
@@ -132,45 +116,25 @@ impl ValidatorBlueprint {
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
 
-        // Update state
-        let cur_stake = {
-            let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
-            let stake_amount = stake_vault.sys_amount(api)?;
-
-            if validator.is_registered {
-                validator.is_registered = false;
-                api.sys_write_substate_typed(handle, &validator)?;
-                Runtime::emit_event(api, UnregisterValidatorEvent)?;
-
-                if stake_amount.is_zero() {
-                    return Ok(IndexedScryptoValue::from_typed(&()));
-                }
-            } else {
-                return Ok(IndexedScryptoValue::from_typed(&()));
-            }
-
-            stake_amount
-        };
-
-        // Update EpochManager
-        {
-            let manager = api.get_object_info(receiver)?.type_parent.unwrap();
-            let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
-            api.call_method(
-                manager.as_node_id(),
-                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                scrypto_encode(&EpochManagerUpdateValidatorInput {
-                    update: UpdateSecondaryIndex::Remove {
-                        index_key: Self::to_index_key(cur_stake, validator_address),
-                    },
-                })
-                .unwrap(),
-            )?;
+        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        if !validator.is_registered {
+            return Ok(IndexedScryptoValue::from_typed(&()));
         }
+
+        let stake_amount = {
+            let stake_vault = Vault(validator.stake_xrd_vault_id);
+            stake_vault.sys_amount(api)?
+        };
+        let index_key = Self::index_update(receiver, &validator, false, stake_amount, api)?;
+
+        validator.is_registered = false;
+        validator.index_key = index_key;
+        api.sys_write_substate_typed(handle, &validator)?;
+        Runtime::emit_event(api, UnregisterValidatorEvent)?;
 
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
+
 
     pub fn stake<Y>(
         receiver: &NodeId,
@@ -193,12 +157,13 @@ impl ValidatorBlueprint {
         let handle = api.sys_lock_substate(
             receiver,
             &ValidatorOffset::Validator.into(),
-            LockFlags::read_only(),
+            LockFlags::MUTABLE,
         )?;
 
+        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+
         // Stake
-        let (lp_token_bucket, stake) = {
-            let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let (lp_token_bucket, new_stake_amount) = {
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
@@ -214,46 +179,21 @@ impl ValidatorBlueprint {
 
             let lp_token_bucket = lp_token_resman.mint_fungible(lp_mint_amount, api)?;
             xrd_vault.sys_put(xrd_bucket, api)?;
-            (lp_token_bucket, active_stake_amount)
+            let new_stake_amount = xrd_vault.sys_amount(api)?;
+            (lp_token_bucket, new_stake_amount)
         };
 
         // Update EpochManager
-        {
-            let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
-            if validator.is_registered {
-                let manager = api.get_object_info(receiver)?.type_parent.unwrap();
-                let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
-                let xrd_vault = Vault(validator.stake_xrd_vault_id);
-                let xrd_amount = xrd_vault.sys_amount(api)?;
+        let new_index_key = Self::index_update(
+            receiver,
+            &validator,
+            validator.is_registered,
+            new_stake_amount,
+            api,
+        )?;
 
-                let new_index_key = Self::to_index_key(xrd_amount, validator_address);
-
-                let update = if stake.is_zero() {
-                    UpdateSecondaryIndex::Create {
-                        index_key: new_index_key,
-                        stake: xrd_amount,
-                        primary: validator_address,
-                        key: validator.key,
-                    }
-                } else {
-                    UpdateSecondaryIndex::UpdateStake {
-                        index_key: Self::to_index_key(stake, validator_address),
-                        new_index_key,
-                        new_stake_amount: xrd_amount,
-                    }
-                };
-
-                api.call_method(
-                    manager.as_node_id(),
-                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                    scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        update
-                    })
-                    .unwrap(),
-                )?;
-            }
-        }
-
+        validator.index_key = new_index_key;
+        api.sys_write_substate_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&lp_token_bucket))
@@ -282,14 +222,15 @@ impl ValidatorBlueprint {
         let handle = api.sys_lock_substate(
             receiver,
             &ValidatorOffset::Validator.into(),
-            LockFlags::read_only(),
+            LockFlags::MUTABLE,
         )?;
 
         let manager = api.get_object_info(receiver)?.type_parent.unwrap();
 
+        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+
         // Unstake
-        let (unstake_bucket, cur_stake) = {
-            let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let (unstake_bucket, new_stake_amount) = {
 
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
@@ -327,46 +268,83 @@ impl ValidatorBlueprint {
             let bucket = stake_vault.sys_take(xrd_amount, api)?;
             unstake_vault.sys_put(bucket, api)?;
             let (unstake_bucket, _) = nft_resman.mint_non_fungible_single_uuid(data, api)?;
-            (unstake_bucket, active_stake_amount)
+
+
+            let new_stake_amount = stake_vault.sys_amount(api)?;
+
+            (unstake_bucket, new_stake_amount)
         };
 
-        // Update Epoch Manager
-        {
-            let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
-            if validator.is_registered {
-                let new_stake_amount = stake_vault.sys_amount(api)?;
-                let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
+        // Update EpochManager
+        let new_index_key = Self::index_update(
+            receiver,
+            &validator,
+            validator.is_registered,
+            new_stake_amount,
+            api,
+        )?;
 
-                let index_key = Self::to_index_key(cur_stake, validator_address);
-
-                let update = if new_stake_amount.is_zero() {
-                    UpdateSecondaryIndex::Remove {
-                        index_key,
-                    }
-                } else {
-                    let new_index_key = Self::to_index_key(new_stake_amount, validator_address);
-                    UpdateSecondaryIndex::UpdateStake {
-                        index_key,
-                        new_index_key,
-                        new_stake_amount,
-                    }
-                };
-
-                api.call_method(
-                    manager.as_node_id(),
-                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                    scrypto_encode(&EpochManagerUpdateValidatorInput {
-                        update,
-                    })
-                    .unwrap(),
-                )?;
-            }
-        };
-
+        validator.index_key = new_index_key;
+        api.sys_write_substate_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&unstake_bucket))
+    }
+
+    fn index_update<Y>(
+        receiver: &NodeId,
+        validator: &ValidatorSubstate,
+        new_registered: bool,
+        new_stake_amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Option<Vec<u8>>, RuntimeError>
+        where Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
+        let new_index_key = Self::to_index_key(new_registered, new_stake_amount, validator_address);
+
+        let update = if let Some(cur_index_key) = &validator.index_key {
+            if let Some(new_index_key) = &new_index_key {
+                Some(
+                    UpdateSecondaryIndex::UpdateStake {
+                        index_key: cur_index_key.clone(),
+                        new_index_key: new_index_key.clone(),
+                        new_stake_amount,
+                    }
+                )
+            } else {
+                Some(
+                    UpdateSecondaryIndex::Remove {
+                        index_key: cur_index_key.clone(),
+                    }
+                )
+            }
+        } else {
+            if let Some(new_index_key) = &new_index_key {
+                Some(UpdateSecondaryIndex::Create {
+                    index_key: new_index_key.clone(),
+                    stake: new_stake_amount,
+                    primary: validator_address,
+                    key: validator.key,
+                })
+            } else {
+                None
+            }
+        };
+
+        if let Some(update) = update {
+            let manager = api.get_object_info(receiver)?.type_parent.unwrap();
+            api.call_method(
+                manager.as_node_id(),
+                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                scrypto_encode(&EpochManagerUpdateValidatorInput {
+                    update
+                })
+                    .unwrap(),
+            )?;
+        }
+
+        Ok(new_index_key)
     }
 
     pub fn claim_xrd<Y>(
@@ -456,33 +434,28 @@ impl ValidatorBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
-        validator.key = input.key;
-        let key = validator.key;
-        let manager = api.get_object_info(receiver)?.type_parent.unwrap();
-        let validator_address: ComponentAddress = ComponentAddress::new_unchecked(api.get_global_address()?.into());
-        api.sys_write_substate_typed(handle, &validator)?;
 
         // Update Epoch Manager
         {
-            let stake_vault = Vault(validator.stake_xrd_vault_id);
-            if validator.is_registered {
-                let stake_amount = stake_vault.sys_amount(api)?;
-                if !stake_amount.is_zero() {
-                    let update = UpdateSecondaryIndex::UpdatePublicKey {
-                        index_key: Self::to_index_key(stake_amount, validator_address),
-                        key,
-                    };
-                    api.call_method(
-                        manager.as_node_id(),
-                        EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                        scrypto_encode(&EpochManagerUpdateValidatorInput {
-                            update,
-                        })
+            if let Some(index_key) = &validator.index_key {
+                let manager = api.get_object_info(receiver)?.type_parent.unwrap();
+                let update = UpdateSecondaryIndex::UpdatePublicKey {
+                    index_key: index_key.clone(),
+                    key: input.key,
+                };
+                api.call_method(
+                    manager.as_node_id(),
+                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
+                    scrypto_encode(&EpochManagerUpdateValidatorInput {
+                        update,
+                    })
                         .unwrap(),
-                    )?;
-                }
+                )?;
             }
         }
+
+        validator.key = input.key;
+        api.sys_write_substate_typed(handle, &validator)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -659,7 +632,7 @@ impl ValidatorCreator {
         initial_stake: Bucket,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket, Bucket, Option<Vec<u8>>), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -673,7 +646,10 @@ impl ValidatorCreator {
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
 
+        let index_key = ValidatorBlueprint::to_index_key(is_registered, initial_liquidity_amount, address);
+
         let substate = ValidatorSubstate {
+            index_key: index_key.clone(),
             key,
             liquidity_token,
             unstake_nft,
@@ -700,7 +676,7 @@ impl ValidatorCreator {
             ),
             address.into(),
         )?;
-        Ok((address.into(), liquidity_bucket, owner_token_bucket))
+        Ok((address.into(), liquidity_bucket, owner_token_bucket, index_key))
     }
 
     pub fn create<Y>(
@@ -719,6 +695,7 @@ impl ValidatorCreator {
         let liquidity_token = Self::create_liquidity_token(api)?;
 
         let substate = ValidatorSubstate {
+            index_key: None,
             key,
             liquidity_token,
             unstake_nft,

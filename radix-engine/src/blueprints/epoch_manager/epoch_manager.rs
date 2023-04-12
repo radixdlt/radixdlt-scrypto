@@ -16,7 +16,6 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use crate::blueprints::epoch_manager::ValidatorBlueprint;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
@@ -335,16 +334,16 @@ impl EpochManagerBlueprint {
     {
         let stake_amount = xrd_stake.sys_amount(api)?;
 
-        let (validator_address, liquidity_token_bucket, owner_token_bucket) =
+        let (validator_address, liquidity_token_bucket, owner_token_bucket, index_key) =
             ValidatorCreator::create_with_stake(key, xrd_stake, register, api)?;
 
-        if register {
+        if let Some(index_key) = index_key {
             Self::update_validator(
                 receiver,
                 UpdateSecondaryIndex::Create {
                     primary: validator_address,
                     stake: stake_amount,
-                    index_key: ValidatorBlueprint::to_index_key(stake_amount, validator_address),
+                    index_key,
                     key,
                 } ,
                 api,
