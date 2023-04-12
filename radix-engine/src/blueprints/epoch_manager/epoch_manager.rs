@@ -20,7 +20,6 @@ use radix_engine_interface::rule;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
     pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
-    pub validator_owner_resource: ResourceAddress,
     pub epoch: u64,
     pub round: u64,
 
@@ -67,7 +66,7 @@ impl EpochManagerBlueprint {
     {
         let address = ComponentAddress::new_unchecked(component_address);
 
-        let owner_resman: ResourceManager = {
+        {
             let metadata: BTreeMap<String, String> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
 
@@ -82,22 +81,18 @@ impl EpochManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            let resource_manager =
-                ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
-                    NonFungibleIdType::UUID,
-                    metadata,
-                    access_rules,
-                    validator_token_address,
-                    api,
-                )?;
-
-            resource_manager
+            ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
+                NonFungibleIdType::UUID,
+                metadata,
+                access_rules,
+                validator_token_address,
+                api,
+            )?;
         };
 
         let epoch_manager_id = {
             let epoch_manager = EpochManagerSubstate {
                 address,
-                validator_owner_resource: owner_resman.0,
                 epoch: initial_epoch,
                 round: 0,
                 rounds_per_epoch,
@@ -316,23 +311,15 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        receiver: &NodeId,
+        _receiver: &NodeId,
         key: EcdsaSecp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::EpochManager.into(),
-            LockFlags::read_only(),
-        )?;
-        let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
-        let manager = epoch_manager.address;
-
         let (validator_address, owner_token_bucket) =
-            ValidatorCreator::create(manager, key, false, api)?;
+            ValidatorCreator::create(key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
     }
@@ -347,17 +334,10 @@ impl EpochManagerBlueprint {
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::EpochManager.into(),
-            LockFlags::read_only(),
-        )?;
-        let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
-        let manager = epoch_manager.address;
         let stake_amount = xrd_stake.sys_amount(api)?;
 
         let (validator_address, liquidity_token_bucket, owner_token_bucket) =
-            ValidatorCreator::create_with_stake(manager, key, xrd_stake, register, api)?;
+            ValidatorCreator::create_with_stake(key, xrd_stake, register, api)?;
 
         if register {
             Self::update_validator(

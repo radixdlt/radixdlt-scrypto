@@ -183,7 +183,9 @@ impl CallFrame {
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
-            .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
+            .ok_or_else(|| {
+                LockSubstateError::NodeNotInCallFrame(node_id.clone())
+            })?;
 
         // Substate Virtualization
         // TODO: Move into lower virtualization layer
@@ -471,6 +473,7 @@ impl CallFrame {
         frame.add_ref(EDDSA_ED25519_TOKEN.into(), RefType::Normal);
         frame.add_ref(PACKAGE_TOKEN.into(), RefType::Normal);
         frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RefType::Normal);
+        frame.add_ref(VALIDATOR_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
