@@ -19,7 +19,6 @@ use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
-    pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
     pub epoch: u64,
     pub round: u64,
 
@@ -92,7 +91,6 @@ impl EpochManagerBlueprint {
 
         let epoch_manager_id = {
             let epoch_manager = EpochManagerSubstate {
-                address,
                 epoch: initial_epoch,
                 round: 0,
                 rounds_per_epoch,
