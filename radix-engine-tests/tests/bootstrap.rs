@@ -36,7 +36,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         xrd_balances: BTreeMap::new(),
         stakes,
     };
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,
@@ -76,7 +76,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         xrd_balances,
         stakes: BTreeMap::new(),
     };
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,
@@ -135,7 +135,7 @@ fn test_genesis_resource_with_initial_allocation() {
         stakes: BTreeMap::new(),
     };
 
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,
@@ -235,7 +235,7 @@ fn test_genesis_stake_allocation() {
         stakes,
     };
 
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,

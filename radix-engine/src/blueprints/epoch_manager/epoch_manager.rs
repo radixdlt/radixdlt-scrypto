@@ -23,6 +23,7 @@ pub struct EpochManagerSubstate {
     pub round: u64,
 
     // TODO: Move configuration to an immutable substate
+    pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
 }
@@ -56,6 +57,7 @@ impl EpochManagerBlueprint {
         component_address: [u8; 27],       // TODO: Clean this up
         validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
         initial_epoch: u64,
+        max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
         api: &mut Y,
@@ -93,6 +95,7 @@ impl EpochManagerBlueprint {
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,
                 round: 0,
+                max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs,
             };

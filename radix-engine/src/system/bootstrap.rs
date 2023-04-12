@@ -111,6 +111,7 @@ pub struct GenesisResource {
 pub fn create_genesis(
     genesis_data: GenesisData,
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
 ) -> SystemTransaction {
@@ -656,6 +657,7 @@ pub fn create_genesis(
                 olympia_validator_token_address,
                 epoch_manager_component_address,
                 initial_epoch,
+                max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
@@ -712,6 +714,7 @@ where
         scrypto_interpreter,
         GenesisData::empty(),
         1u64,
+        100u32,
         1u64,
         1u64,
         false,
@@ -723,6 +726,7 @@ pub fn bootstrap_with_genesis_data<S, W>(
     scrypto_interpreter: &ScryptoVm<W>,
     genesis_data: GenesisData,
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
     trace: bool,
@@ -743,6 +747,7 @@ where
         let genesis_transaction = create_genesis(
             genesis_data,
             initial_epoch,
+            max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
         );

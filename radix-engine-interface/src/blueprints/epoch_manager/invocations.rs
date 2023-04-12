@@ -17,6 +17,7 @@ pub struct EpochManagerCreateInput {
     pub component_address: [u8; 27],     // TODO: Clean this up
     pub validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
     pub initial_epoch: u64,
+    pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
 }

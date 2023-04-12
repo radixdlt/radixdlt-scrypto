@@ -160,7 +160,7 @@ impl TestRunnerBuilder {
         // Bootstrap
         let genesis = self
             .custom_genesis
-            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 1u64, 1u64));
+            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 10u32, 1u64, 1u64));
         let transaction_receipt = {
             let transaction_receipt = execute_transaction(
                 &substate_db,

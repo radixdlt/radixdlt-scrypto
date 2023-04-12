@@ -265,6 +265,7 @@ impl EpochManagerNativePackage {
                     input.component_address,
                     input.validator_set,
                     input.initial_epoch,
+                    input.max_validators,
                     input.rounds_per_epoch,
                     input.num_unstake_epochs,
                     api,

@@ -47,6 +47,7 @@ mod genesis_helper {
             validator_owner_token: [u8; 27], // TODO: Clean this up
             epoch_manager_component_address: [u8; 27], // TODO: Clean this up
             initial_epoch: u64,
+            max_validators: u32,
             rounds_per_epoch: u64,
             num_unstake_epochs: u64,
         ) -> Bucket {
@@ -101,6 +102,7 @@ mod genesis_helper {
                     component_address: epoch_manager_component_address,
                     validator_set: validators_with_initial_stake,
                     initial_epoch,
+                    max_validators,
                     rounds_per_epoch,
                     num_unstake_epochs,
                 })
