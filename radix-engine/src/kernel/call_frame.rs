@@ -183,9 +183,7 @@ impl CallFrame {
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
-            .ok_or_else(|| {
-                LockSubstateError::NodeNotInCallFrame(node_id.clone())
-            })?;
+            .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Substate Virtualization
         // TODO: Move into lower virtualization layer

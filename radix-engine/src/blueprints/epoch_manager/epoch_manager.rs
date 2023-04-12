@@ -97,11 +97,11 @@ impl EpochManagerBlueprint {
                 num_unstake_epochs,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
-                validator_set: BTreeMap::new()
+                validator_set: BTreeMap::new(),
             };
 
             let registred_validators = SecondaryIndexSubstate {
-                validators: BTreeMap::new()
+                validators: BTreeMap::new(),
             };
 
             api.new_object(
@@ -137,7 +137,10 @@ impl EpochManagerBlueprint {
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT),
+            MethodKey::new(
+                ObjectModuleId::SELF,
+                EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT,
+            ),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
@@ -149,10 +152,8 @@ impl EpochManagerBlueprint {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        let validator_access_rules = AccessRulesConfig::new().default(
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
+        let validator_access_rules =
+            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::DenyAll);
 
         let access_rules = AccessRules::sys_new(
             access_rules,
@@ -160,7 +161,8 @@ impl EpochManagerBlueprint {
                 VALIDATOR_BLUEPRINT.to_string() => validator_access_rules
             ),
             api,
-        )?.0;
+        )?
+        .0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
@@ -185,7 +187,8 @@ impl EpochManagerBlueprint {
                         key,
                         xrd_stake: initial_stake,
                         register: true,
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )?;
                 let rtn: EpochManagerCreateValidatorWithStakeOutput = scrypto_decode(&rtn).unwrap();
                 let (_address, lp_bucket, owner_token_bucket) = rtn;
@@ -220,13 +223,10 @@ impl EpochManagerBlueprint {
         Ok(epoch_manager.epoch)
     }
 
-
-    pub(crate) fn start<Y>(
-        receiver: &NodeId,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError> {
-
+    pub(crate) fn start<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
         let mgr_handle = api.sys_lock_substate(
             receiver,
             &EpochManagerOffset::EpochManager.into(),
@@ -275,7 +275,6 @@ impl EpochManagerBlueprint {
             Self::epoch_change(receiver, next_epoch, api)?;
             epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
-
         } else {
             Runtime::emit_event(api, RoundChangeEvent { round })?;
             epoch_manager.round = round;
@@ -316,8 +315,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let (validator_address, owner_token_bucket) =
-            ValidatorCreator::create(key, false, api)?;
+        let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
     }
@@ -329,8 +327,8 @@ impl EpochManagerBlueprint {
         register: bool,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let stake_amount = xrd_stake.sys_amount(api)?;
 
@@ -345,12 +343,16 @@ impl EpochManagerBlueprint {
                     stake: stake_amount,
                     index_key,
                     key,
-                } ,
+                },
                 api,
             )?;
         }
 
-        Ok((validator_address, liquidity_token_bucket, owner_token_bucket))
+        Ok((
+            validator_address,
+            liquidity_token_bucket,
+            owner_token_bucket,
+        ))
     }
 
     pub(crate) fn update_validator<Y>(
@@ -366,23 +368,22 @@ impl EpochManagerBlueprint {
             &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut registered_validators: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
+        let mut registered_validators: SecondaryIndexSubstate =
+            api.sys_read_substate_typed(handle)?;
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
                 primary: address,
                 key,
-                stake
+                stake,
             } => {
                 registered_validators
                     .validators
-                    .insert(index_key, (address, Validator { key, stake, }));
+                    .insert(index_key, (address, Validator { key, stake }));
             }
-            UpdateSecondaryIndex::UpdatePublicKey {
-                index_key,
-                key,
-            } => {
-                let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
+            UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
+                let (address, mut validator) =
+                    registered_validators.validators.remove(&index_key).unwrap();
                 validator.key = key;
                 registered_validators
                     .validators
@@ -393,14 +394,18 @@ impl EpochManagerBlueprint {
                 new_index_key,
                 new_stake_amount,
             } => {
-                let (address, mut validator) = registered_validators.validators.remove(&index_key).unwrap();
+                let (address, mut validator) =
+                    registered_validators.validators.remove(&index_key).unwrap();
                 validator.stake = new_stake_amount;
                 registered_validators
                     .validators
                     .insert(new_index_key, (address, validator));
             }
-            UpdateSecondaryIndex::Remove { index_key }=> {
-                registered_validators.validators.remove(&index_key).expect("Secondary index logic broken");
+            UpdateSecondaryIndex::Remove { index_key } => {
+                registered_validators
+                    .validators
+                    .remove(&index_key)
+                    .expect("Secondary index logic broken");
             }
         }
         api.sys_write_substate_typed(handle, &registered_validators)?;
@@ -408,12 +413,10 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    fn epoch_change<Y>(
-        receiver: &NodeId,
-        epoch: u64,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError> {
+    fn epoch_change<Y>(receiver: &NodeId, epoch: u64, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
         let handle = api.sys_lock_substate(
             receiver,
             &EpochManagerOffset::RegisteredValidatorSet.into(),

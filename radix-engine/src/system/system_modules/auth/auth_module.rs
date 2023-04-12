@@ -124,7 +124,9 @@ impl AuthModule {
     ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
         let auths = match (node_id, module_id, ident) {
             (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
-                vec![AccessRulesNativePackage::authorization(node_id, ident, args, api)?]
+                vec![AccessRulesNativePackage::authorization(
+                    node_id, ident, args, api,
+                )?]
             }
             (node_id, module_id, ..) => {
                 let method_key = MethodKey::new(*module_id, ident);
@@ -157,7 +159,12 @@ impl AuthModule {
                 if info.global {
                     // TODO: Clean this up
                     let auth = if module_id.eq(&ObjectModuleId::SELF) {
-                        Self::method_authorization_stateful(&node_id, ObjectKey::SELF, method_key, api)?
+                        Self::method_authorization_stateful(
+                            &node_id,
+                            ObjectKey::SELF,
+                            method_key,
+                            api,
+                        )?
                     } else {
                         Self::method_authorization_stateless(
                             RefType::Normal,

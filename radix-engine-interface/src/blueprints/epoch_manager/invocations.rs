@@ -42,8 +42,7 @@ pub type EpochManagerSetEpochOutput = ();
 pub const EPOCH_MANAGER_START_IDENT: &str = "start";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct EpochManagerStartInput {
-}
+pub struct EpochManagerStartInput {}
 
 pub type EpochManagerStartOutput = ();
 
