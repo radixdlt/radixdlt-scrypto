@@ -236,7 +236,12 @@ impl EpochManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
-        Self::epoch_change(receiver, epoch_manager.epoch, api)?;
+        Self::epoch_change(
+            receiver,
+            epoch_manager.epoch,
+            epoch_manager.max_validators,
+            api,
+        )?;
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_access_rule_and_mutability(
@@ -275,7 +280,8 @@ impl EpochManagerBlueprint {
 
         if round >= epoch_manager.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
-            Self::epoch_change(receiver, next_epoch, api)?;
+            let max_validators = epoch_manager.max_validators;
+            Self::epoch_change(receiver, next_epoch, max_validators, api)?;
             epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
         } else {
@@ -416,7 +422,12 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    fn epoch_change<Y>(receiver: &NodeId, epoch: u64, api: &mut Y) -> Result<(), RuntimeError>
+    fn epoch_change<Y>(
+        receiver: &NodeId,
+        epoch: u64,
+        max_validators: u32,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -431,7 +442,12 @@ impl EpochManagerBlueprint {
         api.sys_drop_lock(handle)?;
 
         let mut next_validator_set = BTreeMap::new();
-        for (_index_key, (address, validator)) in registered_validator_set.validators {
+        let max_validators: usize = max_validators.try_into().unwrap();
+        for (_index_key, (address, validator)) in registered_validator_set
+            .validators
+            .into_iter()
+            .take(max_validators)
+        {
             next_validator_set.insert(address, validator);
         }
 

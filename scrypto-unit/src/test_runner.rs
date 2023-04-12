@@ -207,7 +207,6 @@ impl TestRunnerBuilder {
         (runner, next_epoch.0)
     }
 
-
     pub fn build(self) -> TestRunner {
         self.build_and_get_epoch().0
     }
