@@ -18,15 +18,10 @@ impl SubstateLockState {
 }
 
 #[derive(Debug)]
-pub enum ExistingMetaState {
-    Loaded,
-    Updated(Option<IndexedScryptoValue>),
-}
-
-#[derive(Debug)]
 pub enum SubstateMetaState {
     New,
-    Existing { state: ExistingMetaState },
+    Read,
+    Updated(Option<IndexedScryptoValue>),
 }
 
 #[derive(Debug)]
@@ -127,9 +122,7 @@ impl<'s> Track<'s> {
                 LoadedSubstate {
                     substate: substate_value,
                     lock_state: SubstateLockState::no_lock(),
-                    meta_state: SubstateMetaState::Existing {
-                        state: ExistingMetaState::Loaded,
-                    },
+                    meta_state: SubstateMetaState::Read,
                 },
             );
     }
@@ -141,9 +134,7 @@ impl<'s> Track<'s> {
         self.loaded_substates.retain(|_, m| {
             m.retain(|_, m| {
                 m.retain(|_, loaded| match &loaded.meta_state {
-                    SubstateMetaState::Existing {
-                        state: ExistingMetaState::Updated(Some(value)),
-                    } => {
+                    SubstateMetaState::Updated(Some(value)) => {
                         loaded.substate = value.clone();
                         true
                     }
@@ -170,8 +161,14 @@ impl<'s> Track<'s> {
             for (module_id, module) in modules {
                 for (substate_key, loaded) in module {
                     let update = match loaded.meta_state {
-                        SubstateMetaState::New => StateUpdate::Create(loaded.substate.into()),
-                        SubstateMetaState::Existing { .. } => {
+                        SubstateMetaState::New => {
+                            StateUpdate::Create(loaded.substate.into())
+                        },
+                        SubstateMetaState::Updated(..) => {
+                            StateUpdate::Update(loaded.substate.into())
+                        }
+                        SubstateMetaState::Read => {
+                            // TODO: Fix
                             StateUpdate::Update(loaded.substate.into())
                         }
                     };
@@ -220,18 +217,14 @@ impl<'s> SubstateStore for Track<'s> {
                         substate_key.clone(),
                     ))
                 }
-                SubstateMetaState::Existing {
-                    state: ExistingMetaState::Updated(..),
-                } => {
+                SubstateMetaState::Updated(..) => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         *node_id,
                         module_id,
                         substate_key.clone(),
                     ))
                 }
-                SubstateMetaState::Existing {
-                    state: ExistingMetaState::Loaded,
-                } => {}
+                SubstateMetaState::Read => {}
             }
         }
 
@@ -284,9 +277,8 @@ impl<'s> SubstateStore for Track<'s> {
 
                 if flags.contains(LockFlags::FORCE_WRITE) {
                     match &mut loaded_substate.meta_state {
-                        SubstateMetaState::Existing { state, .. } => {
-                            *state =
-                                ExistingMetaState::Updated(Some(loaded_substate.substate.clone()));
+                        state @ (SubstateMetaState::Read | SubstateMetaState::Updated(..)) => {
+                            *state = SubstateMetaState::Updated(Some(loaded_substate.substate.clone()));
                         }
                         SubstateMetaState::New => {
                             panic!("Unexpected");
@@ -295,10 +287,10 @@ impl<'s> SubstateStore for Track<'s> {
                 } else {
                     match &mut loaded_substate.meta_state {
                         SubstateMetaState::New => {}
-                        SubstateMetaState::Existing { state } => match state {
-                            ExistingMetaState::Loaded => *state = ExistingMetaState::Updated(None),
-                            ExistingMetaState::Updated(..) => {}
+                        state @ SubstateMetaState::Read => {
+                            *state = SubstateMetaState::Updated(None);
                         },
+                        SubstateMetaState::Updated(..) => {}
                     }
                 }
             }
