@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::collections::{HashMap, HashSet};
+use sbor::rust::collections::{hash_map_new, hash_set_new};
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 fn encode_new_hash_set(forward: bool) -> Vec<u8> {
-    let mut set = HashSet::new();
+    let mut set = hash_set_new();
     if forward {
         for i in 0u32..100u32 {
             set.insert(i);
@@ -27,7 +27,7 @@ fn encoding_of_hash_set_should_be_deterministic() {
 }
 
 fn encode_new_hash_map(forward: bool) -> Vec<u8> {
-    let mut set = HashMap::new();
+    let mut set = hash_map_new();
     if forward {
         for i in 0u32..100u32 {
             set.insert(i, i);

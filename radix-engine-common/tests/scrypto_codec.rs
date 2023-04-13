@@ -5,8 +5,8 @@ use sbor::rust::boxed::Box;
 use sbor::rust::cell::RefCell;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
-use sbor::rust::collections::HashSet;
+use sbor::rust::collections::{hash_map_new, HashMap};
+use sbor::rust::collections::{hash_set_new, HashSet};
 use sbor::rust::hash::Hash;
 use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
@@ -383,13 +383,13 @@ fn wrap_in_4_collections<T: Eq + Ord + Eq>(inner: Option<T>) -> FourDeepCollecti
 }
 
 fn wrap_in_hashmap<T>(inner: T) -> HashMap<u8, T> {
-    let mut value = HashMap::new();
+    let mut value = hash_map_new();
     value.insert(1, inner);
     value
 }
 
 fn wrap_in_hashset<T: Hash + Eq>(inner: T) -> HashSet<T> {
-    let mut value = HashSet::new();
+    let mut value = hash_set_new();
     value.insert(inner);
     value
 }

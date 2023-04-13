@@ -450,11 +450,11 @@ mod tests {
     pub fn test_parse_normal() {
         let mut set1 = BTreeSet::new();
         set1.insert(1);
-        let mut set2 = HashSet::new();
+        let mut set2 = hash_set_new();
         set2.insert(2);
         let mut map1 = BTreeMap::new();
         map1.insert(1, 2);
-        let mut map2 = HashMap::new();
+        let mut map2 = hash_map_new();
         map2.insert(3, 4);
 
         let data = TestData {

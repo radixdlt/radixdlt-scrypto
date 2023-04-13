@@ -86,8 +86,8 @@ use super::types::{
 };
 use crate::hash_tree::types::StorageError;
 use radix_engine_interface::crypto::Hash;
-use sbor::rust::collections::hash_map::HashMap;
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::{hash_map_new, HashMap};
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -252,7 +252,7 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
 
                 // Reuse the current `InternalNode` in memory to create a new internal node.
                 let mut old_children: Children = internal_node.into();
-                let mut new_created_children: HashMap<Nibble, Node<K>> = HashMap::new();
+                let mut new_created_children: HashMap<Nibble, Node<K>> = hash_map_new();
                 for (child_nibble, child_option) in new_children {
                     if let Some(child) = child_option {
                         new_created_children.insert(child_nibble, child);

@@ -205,74 +205,6 @@ pub mod collections {
         pub use btreeset;
     }
 
-    pub mod hash_map {
-        #[cfg(feature = "alloc")]
-        pub use hashbrown::hash_map::*;
-        #[cfg(not(feature = "alloc"))]
-        pub use std::collections::hash_map::*;
-
-        #[cfg(feature = "alloc")]
-        pub use hashbrown::HashMap;
-        #[cfg(not(feature = "alloc"))]
-        pub use std::collections::HashMap;
-
-        #[macro_export]
-        macro_rules! hashmap {
-            ( ) => ({
-                $crate::rust::collections::hash_map::HashMap::default()
-            });
-            ( $($key:expr => $value:expr),* ) => ({
-                // Note: `stringify!($key)` is just here to consume the repetition,
-                // but we throw away that string literal during constant evaluation.
-                const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);
-                let mut temp = $crate::rust::collections::hash_map::HashMap::with_capacity(CAP);
-                $(
-                    temp.insert($key, $value);
-                )*
-                temp
-            });
-            ( $($key:expr => $value:expr,)* ) => (
-                $crate::rust::collections::hash_map::hashmap!{$($key => $value),*}
-            );
-        }
-
-        pub use hashmap;
-    }
-
-    pub mod hash_set {
-        #[cfg(feature = "alloc")]
-        pub use hashbrown::hash_set::*;
-        #[cfg(not(feature = "alloc"))]
-        pub use std::collections::hash_set::*;
-
-        #[cfg(feature = "alloc")]
-        pub use hashbrown::HashSet;
-        #[cfg(not(feature = "alloc"))]
-        pub use std::collections::HashSet;
-
-        #[macro_export]
-        macro_rules! hashset {
-            ( ) => ({
-                $crate::rust::collections::hash_set::HashSet::default()
-            });
-            ( $($key:expr),* ) => ({
-                // Note: `stringify!($key)` is just here to consume the repetition,
-                // but we throw away that string literal during constant evaluation.
-                const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);
-                let mut temp = $crate::rust::collections::hash_set::HashSet::with_capacity(CAP);
-                $(
-                    temp.insert($key);
-                )*
-                temp
-            });
-            ( $($key:expr,)* ) => (
-                $crate::rust::collections::hash_set::hashset!{$($key),*}
-            );
-        }
-
-        pub use hashset;
-    }
-
     /// This is a stub implementation for Hasher (used by `IndexMap`, `IndexSet`) to get rid of non-deterministic output (caused by random seeding the hashes).
     /// This is useful when fuzz testing, where exactly the same output is expected for the same input data across different runs.
     #[cfg(feature = "radix_engine_fuzzing")]
@@ -311,6 +243,112 @@ pub mod collections {
                 StubHasher::new()
             }
         }
+    }
+
+    pub mod hash_map {
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+
+        #[cfg(feature = "alloc")]
+        pub use hashbrown::hash_map::*;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::hash_map::*;
+
+        #[cfg(feature = "alloc")]
+        pub use hashbrown::HashMap as ext_HashMap;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::HashMap as ext_HashMap;
+
+        pub type HashMap<K, V, S = DefaultHashBuilder> = ext_HashMap<K, V, S>;
+
+        /// Creates an empty map with capacity 0 and default Hasher
+        pub fn new<K, V>() -> HashMap<K, V> {
+            HashMap::with_capacity_and_hasher(0, DefaultHashBuilder::default())
+        }
+
+        /// Creates an empty map with given capacity and default Hasher
+        pub fn with_capacity<K, V>(n: usize) -> HashMap<K, V> {
+            HashMap::with_capacity_and_hasher(n, DefaultHashBuilder::default())
+        }
+
+        #[macro_export]
+        macro_rules! hashmap {
+            ( ) => ({
+                $crate::rust::collections::hash_map::HashMap::default()
+            });
+            ( $($key:expr => $value:expr),* ) => ({
+                // Note: `stringify!($key)` is just here to consume the repetition,
+                // but we throw away that string literal during constant evaluation.
+                const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);
+                let mut temp = $crate::rust::collections::hash_map::HashMap::with_capacity(CAP);
+                $(
+                    temp.insert($key, $value);
+                )*
+                temp
+            });
+            ( $($key:expr => $value:expr,)* ) => (
+                $crate::rust::collections::hash_map::hashmap!{$($key => $value),*}
+            );
+        }
+
+        pub use hashmap;
+    }
+
+    pub mod hash_set {
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+
+        #[cfg(feature = "alloc")]
+        pub use hashbrown::hash_set::*;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::hash_set::*;
+
+        #[cfg(feature = "alloc")]
+        pub use hashbrown::HashSet as ext_HashSet;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::HashSet as ext_HashSet;
+
+        pub type HashSet<K> = ext_HashSet<K, DefaultHashBuilder>;
+
+        /// Creates an empty set with capacity 0 and default Hasher
+        pub fn new<K>() -> HashSet<K> {
+            HashSet::with_capacity_and_hasher(0, DefaultHashBuilder::default())
+        }
+
+        /// Creates an empty set with given capacity and default Hasher
+        pub fn with_capacity<K>(n: usize) -> HashSet<K> {
+            HashSet::with_capacity_and_hasher(n, DefaultHashBuilder::default())
+        }
+
+        #[macro_export]
+        macro_rules! hashset {
+            ( ) => ({
+                $crate::rust::collections::hash_set::HashSet::new()
+            });
+            ( $($key:expr),* ) => ({
+                // Note: `stringify!($key)` is just here to consume the repetition,
+                // but we throw away that string literal during constant evaluation.
+                const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);
+                let mut temp = $crate::rust::collections::hash_set::HashSet::with_capacity(CAP);
+                $(
+                    temp.insert($key);
+                )*
+                temp
+            });
+            ( $($key:expr,)* ) => (
+                $crate::rust::collections::hash_set::hashset!{$($key),*}
+            );
+        }
+
+        pub use hashset;
     }
 
     /// The methods and macros provided directly in this `index_map` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
@@ -568,8 +606,10 @@ pub mod collections {
     pub use btree_set::BTreeSet;
     pub use hash_map::hashmap;
     pub use hash_map::HashMap;
+    pub use hash_map::{new as hash_map_new, with_capacity as hash_map_with_capacity};
     pub use hash_set::hashset;
     pub use hash_set::HashSet;
+    pub use hash_set::{new as hash_set_new, with_capacity as hash_set_with_capacity};
     pub use index_map::indexmap;
     pub use index_map::IndexMap;
     pub use index_map::{new as index_map_new, with_capacity as index_map_with_capacity};

@@ -160,7 +160,7 @@ fn test_invalid_input_arg_tree_map_fails() {
 
 #[test]
 fn test_input_arg_hash_set_succeeds() {
-    let mut hash_set = HashSet::new();
+    let mut hash_set = hash_set_new();
     hash_set.insert(());
     test_arg("hash_set", to_manifest_value(&hash_set), Success);
 }
