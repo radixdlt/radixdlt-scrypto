@@ -98,7 +98,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectTuple.into(),
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
             )?;
@@ -201,7 +201,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectTuple.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -234,7 +234,7 @@ impl AuthModule {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectTuple.into(),
                 &substate_key,
                 LockFlags::read_only(),
             )?;
@@ -247,7 +247,7 @@ impl AuthModule {
 
         let handle = api.kernel_lock_substate(
             receiver,
-            SysModuleId::AccessRules,
+            SysModuleId::AccessRules.into(),
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
@@ -273,7 +273,7 @@ impl AuthModule {
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            SysModuleId::AccessRules,
+            SysModuleId::AccessRules.into(),
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
         )?;
@@ -437,10 +437,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                SysModuleId::ObjectTuple => btreemap!(
+                SysModuleId::ObjectTuple.into() => btreemap!(
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                SysModuleId::TypeInfo => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     type_parent: None,

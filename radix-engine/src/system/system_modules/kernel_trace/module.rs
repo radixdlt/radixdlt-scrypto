@@ -83,7 +83,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Creating node: id = {:?}, type = {:?}",
@@ -106,7 +106,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
     fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &SysModuleId,
+        module_id: &ModuleId,
         offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

@@ -290,9 +290,9 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        M::before_create_node(&node_id, &module_init, self)?;
+        M::before_create_node(&node_id, &node_substates, self)?;
 
         let push_to_store = node_id.is_global();
 
@@ -300,7 +300,7 @@ where
         self.current_frame
             .create_node(
                 node_id,
-                module_init,
+                node_substates,
                 &mut self.heap,
                 self.store,
                 push_to_store,
@@ -386,7 +386,7 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -404,7 +404,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::ObjectTuple,
+            SysModuleId::ObjectTuple.into(),
             &BucketOffset::Info.into(),
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
@@ -415,7 +415,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::ObjectTuple.into(),
                             &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
@@ -432,7 +432,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::ObjectTuple.into(),
                             &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
@@ -454,7 +454,7 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -472,7 +472,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             proof_id,
-            SysModuleId::ObjectTuple,
+            SysModuleId::ObjectTuple.into(),
             &ProofOffset::Info.into(),
         ) {
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
@@ -483,7 +483,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::ObjectTuple.into(),
                             &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
@@ -501,7 +501,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::ObjectTuple.into(),
                             &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
@@ -530,7 +530,7 @@ where
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -605,7 +605,7 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                module_id,
+                                module_id.into(),
                                 substate_key,
                                 flags,
                             )

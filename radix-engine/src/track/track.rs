@@ -1,9 +1,7 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{
-    AcquireLockError, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
-};
+use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum SubstateLockState {
@@ -293,6 +291,14 @@ impl<'s> SubstateStore for Track<'s> {
                         SubstateMetaState::Updated(..) => {}
                     }
                 }
+            }
+        }
+    }
+
+    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
+        for (module_id, module_substates) in node_substates {
+            for (key, substate) in module_substates {
+                self.create_substate(node_id, module_id, key, substate);
             }
         }
     }

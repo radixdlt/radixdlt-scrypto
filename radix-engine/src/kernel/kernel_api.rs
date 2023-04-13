@@ -27,14 +27,14 @@ pub trait KernelNodeApi {
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError>;
 }
 
 /// Info regarding the substate locked as well as what type of lock
 pub struct LockInfo {
     pub node_id: NodeId,
-    pub module_id: SysModuleId,
+    pub module_id: ModuleId,
     pub substate_key: SubstateKey,
     pub flags: LockFlags,
 }
@@ -45,7 +45,7 @@ pub trait KernelSubstateApi {
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;

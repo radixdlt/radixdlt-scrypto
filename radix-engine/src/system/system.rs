@@ -141,7 +141,7 @@ where
         };
 
         self.api
-            .kernel_lock_substate(&node_id, module_id, substate_key, flags)
+            .kernel_lock_substate(&node_id, module_id.into(), substate_key, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -159,7 +159,7 @@ where
             node_id, module_id, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::ObjectMap) {
+        if module_id.eq(&SysModuleId::ObjectMap.into()) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -220,7 +220,7 @@ where
 
         let handle = self.api.kernel_lock_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple,
+            SysModuleId::ObjectTuple.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -309,8 +309,8 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                self_module_id => node_init,
-                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                self_module_id.into() => node_init,
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
@@ -400,7 +400,7 @@ where
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get_mut(&SysModuleId::TypeInfo)
+            .get_mut(&SysModuleId::TypeInfo.into())
             .unwrap()
             .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
@@ -412,7 +412,7 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
         node_substates
-            .get_mut(&SysModuleId::TypeInfo)
+            .get_mut(&SysModuleId::TypeInfo.into())
             .unwrap()
             .insert(
                 TypeInfoOffset::TypeInfo.into(),
@@ -436,8 +436,8 @@ where
                     }
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = access_rule_substates.remove(&SysModuleId::ObjectTuple).unwrap();
-                    node_substates.insert(SysModuleId::AccessRules, access_rules);
+                    let access_rules = access_rule_substates.remove(&SysModuleId::ObjectTuple.into()).unwrap();
+                    node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
                 ObjectModuleId::Metadata => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
@@ -452,8 +452,8 @@ where
                     }
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = metadata_substates.remove(&SysModuleId::ObjectMap).unwrap();
-                    node_substates.insert(SysModuleId::Metadata, metadata);
+                    let metadata = metadata_substates.remove(&SysModuleId::ObjectMap.into()).unwrap();
+                    node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
                 ObjectModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
@@ -468,8 +468,8 @@ where
                     }
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = royalty_substates.remove(&SysModuleId::ObjectTuple).unwrap();
-                    node_substates.insert(SysModuleId::Royalty, royalty);
+                    let royalty = royalty_substates.remove(&SysModuleId::ObjectTuple.into()).unwrap();
+                    node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
             }
         }
@@ -635,8 +635,8 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectMap => btreemap!(),
-                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                SysModuleId::ObjectMap.into() => btreemap!(),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
             ),
@@ -659,8 +659,8 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectIterable => btreemap!(),
-                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                SysModuleId::ObjectIterable.into() => btreemap!(),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::IterableStore
                 ).to_substates(),
             ),
@@ -950,7 +950,7 @@ where
 
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectTuple,
+                SysModuleId::ObjectTuple.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;
@@ -1106,9 +1106,9 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_create_node(node_id, module_init)
+        self.api.kernel_create_node(node_id, node_substates)
     }
 }
 
@@ -1120,7 +1120,7 @@ where
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {

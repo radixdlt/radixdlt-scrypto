@@ -179,6 +179,16 @@ impl Debug for NodeId {
 #[sbor(transparent)]
 pub struct ModuleId(pub u8);
 
+impl ModuleId {
+    // TODO: Need a better way to configure this
+    pub fn virtualize_substates(&self) -> bool {
+        match self.0 {
+            1u8 | 5u8 => true,
+            _ => false,
+        }
+    }
+}
+
 /// The unique identifier of a substate within a node module.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]

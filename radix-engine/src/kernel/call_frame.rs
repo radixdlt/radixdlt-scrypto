@@ -5,6 +5,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
+use crate::system::node_init::ModuleInit;
 
 use super::heap::{Heap, };
 use super::kernel_api::LockInfo;
@@ -60,7 +61,7 @@ pub enum RefType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub node_id: NodeId,
-    pub module_id: SysModuleId,
+    pub module_id: ModuleId,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
@@ -111,7 +112,7 @@ pub struct CallFrame {
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, SysModuleId, SubstateKey),
+    SubstateNotFound(NodeId, ModuleId, SubstateKey),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -151,6 +152,7 @@ pub enum ReadSubstatesError {
 }
 
 impl CallFrame {
+    // TODO: Remove
     fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
         heap: &mut Heap,
@@ -158,7 +160,7 @@ impl CallFrame {
     ) -> Option<TypeInfoSubstate> {
         if let Some(substate) = heap.get_substate(
             node_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -182,7 +184,7 @@ impl CallFrame {
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, LockSubstateError> {
@@ -676,25 +678,21 @@ impl CallFrame {
                         Self::move_node_to_store(heap, store, child_id)?;
                     }
                 }
-            }
-        }
 
-        if push_to_store {
-            for (module_id, module) in node_substates {
-                for (substate_key, substate_value) in module {
+                if push_to_store {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
                         }
                     }
-
-                    store.create_substate(node_id, module_id.into(), substate_key, substate_value);
                 }
             }
+        }
 
+        if push_to_store {
+            store.create_node(node_id, node_substates);
             self.add_ref(node_id, RefType::Normal);
         } else {
-            // Insert node into heap
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
         }
@@ -769,7 +767,7 @@ impl CallFrame {
         }
 
         let node_substates = heap.remove_node(node_id);
-        for (module_id, module) in node_substates {
+        for (module_id, module) in &node_substates {
             for (substate_key, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
@@ -781,14 +779,11 @@ impl CallFrame {
                     Self::move_node_to_store(heap, store, node)?;
                 }
 
-                store.create_substate(
-                    node_id.clone(),
-                    module_id.into(),
-                    substate_key,
-                    substate_value,
-                );
+
             }
         }
+
+        store.create_node(node_id.clone(), node_substates);
 
         Ok(())
     }

@@ -32,19 +32,6 @@ pub enum SysModuleId {
     ObjectIterable,
 }
 
-impl SysModuleId {
-    pub fn virtualize_substates(&self) -> bool {
-        match self {
-            SysModuleId::TypeInfo
-            | SysModuleId::Royalty
-            | SysModuleId::AccessRules
-            | SysModuleId::ObjectTuple
-            | SysModuleId::ObjectIterable => false,
-            SysModuleId::Metadata | SysModuleId::ObjectMap => true,
-        }
-    }
-}
-
 impl Into<ModuleId> for SysModuleId {
     fn into(self) -> ModuleId {
         ModuleId(self as u8)

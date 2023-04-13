@@ -21,6 +21,7 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -169,7 +170,7 @@ where
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
-            .remove(&SysModuleId::ObjectTuple)
+            .remove(&SysModuleId::ObjectTuple.into())
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
@@ -194,12 +195,12 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    let mut modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>> =
+    let mut modules: NodeSubstates =
         node_modules
             .into_iter()
-            .map(|(k, v)| (k, v.to_substates()))
+            .map(|(k, v)| (k.into(), v.to_substates()))
             .collect();
-    modules.insert(SysModuleId::ObjectTuple, node_init);
+    modules.insert(SysModuleId::ObjectTuple.into(), node_init);
 
     api.kernel_create_node(node_id, modules)?;
 

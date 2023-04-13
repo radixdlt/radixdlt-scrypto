@@ -195,7 +195,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::ObjectTuple,
+            SysModuleId::ObjectTuple.into(),
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
@@ -231,7 +231,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
                 component_address.as_node_id(),
-                SysModuleId::Royalty,
+                SysModuleId::Royalty.into(),
                 &RoyaltyOffset::RoyaltyConfig.into(),
                 LockFlags::read_only(),
             )?;
@@ -243,7 +243,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    SysModuleId::Royalty,
+                    SysModuleId::Royalty.into(),
                     &RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                 )?;
@@ -274,7 +274,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        _node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_callback()
@@ -305,7 +305,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
     fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _module_id: &SysModuleId,
+        _module_id: &ModuleId,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

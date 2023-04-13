@@ -61,7 +61,7 @@ pub enum AcquireLockError {
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
 }
 
-pub type NodeSubstates = BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+pub type NodeSubstates = BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 /// Represents the interface between Radix Engine and Track.
 ///
@@ -86,6 +86,12 @@ pub trait SubstateStore {
     /// # Panics
     /// - If the lock handle is invalid.
     fn release_lock(&mut self, handle: u32);
+
+    fn create_node(
+        &mut self,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+    );
 
     /// Inserts a substate into the substate store.
     ///
