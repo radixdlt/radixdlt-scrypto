@@ -88,6 +88,12 @@ pub trait ClientIterableApi<E> {
 
     fn insert_into_iterable(&mut self, node_id: &NodeId, substate_key: SubstateKey, buffer: Vec<u8>) -> Result<(), E>;
 
+    fn remove_from_iterable(
+        &mut self,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
+    ) -> Result<(), E>;
+
     fn read_from_iterable(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
     fn read_typed_from_iterable<S: ScryptoDecode>(

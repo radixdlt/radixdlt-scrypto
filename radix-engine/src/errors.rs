@@ -196,6 +196,7 @@ pub enum SystemError {
     NotAnObject,
     NotAKeyValueStore,
     NotAnIterableStore,
+    CannotStoreOwnedInIterable,
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,

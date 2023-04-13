@@ -305,6 +305,28 @@ impl<'s> SubstateStore for Track<'s> {
         }
     }
 
+    fn create_substate(
+        &mut self,
+        node_id: NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        substate_value: IndexedScryptoValue,
+    ) {
+        self.loaded_substates
+            .entry(node_id)
+            .or_default()
+            .entry(module_id)
+            .or_default()
+            .insert(
+                substate_key,
+                LoadedSubstate {
+                    substate: substate_value,
+                    lock_state: SubstateLockState::no_lock(),
+                    meta_state: SubstateMetaState::New,
+                },
+            );
+    }
+
     fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
         let (node_id, module_id, substate_key, _flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
@@ -332,26 +354,8 @@ impl<'s> SubstateStore for Track<'s> {
         .substate = substate_value;
     }
 
-    fn create_substate(
-        &mut self,
-        node_id: NodeId,
-        module_id: ModuleId,
-        substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
-    ) {
-        self.loaded_substates
-            .entry(node_id)
-            .or_default()
-            .entry(module_id)
-            .or_default()
-            .insert(
-                substate_key,
-                LoadedSubstate {
-                    substate: substate_value,
-                    lock_state: SubstateLockState::no_lock(),
-                    meta_state: SubstateMetaState::New,
-                },
-            );
+    fn delete_substate(&mut self, node_id: &NodeId, module_id: ModuleId, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
+        todo!()
     }
 
     fn read_substates(&mut self, node_id: &NodeId, module_id: ModuleId, count: u32) -> Vec<(SubstateKey, IndexedScryptoValue)> {

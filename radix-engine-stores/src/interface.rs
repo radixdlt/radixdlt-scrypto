@@ -112,6 +112,13 @@ pub trait SubstateStore {
     /// - If the lock handle is not associated with WRITE permission
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
+    fn delete_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue>;
+
     fn read_substates(
         &mut self,
         node_id: &NodeId,

@@ -670,6 +670,11 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
         Ok(node_id)
     }
 
+    // Dependency less
+    // TODO: Ensure uniqueness of keys or not?
+    // TODO: If not, then cannot contain owned objects as they may be removed from underneath due to overwrites
+    // TODO: If so, how do we ensure uniqueness while preserving query by key?
+    // TODO: Will implement the former for now as much easier to implement
     fn insert_into_iterable(&mut self, node_id: &NodeId, substate_key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
@@ -683,7 +688,11 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        self.api.kernel_insert_unique(node_id, SysModuleId::ObjectIterable, substate_key, value)
+        if !value.owned_node_ids().is_empty() {
+            return Err(RuntimeError::SystemError(SystemError::CannotStoreOwnedInIterable));
+        }
+
+        self.api.kernel_insert_into_iterable(node_id, SysModuleId::ObjectIterable, substate_key, value)
     }
 
     fn read_from_iterable(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
@@ -695,11 +704,25 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
             },
         }
 
-        let substates = self.api.kernel_read_substates(node_id, SysModuleId::ObjectIterable, count)?.into_iter()
+        let substates = self.api.kernel_read_from_iterable(node_id, SysModuleId::ObjectIterable, count)?.into_iter()
             .map(|(k, e)| e.into())
             .collect();
 
         Ok(substates)
+    }
+
+    fn remove_from_iterable(&mut self, node_id: &NodeId, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::IterableStore => { },
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            },
+        }
+
+        self.api.kernel_remove_from_iterable(node_id, SysModuleId::ObjectIterable, substate_key)?;
+
+        Ok(())
     }
 }
 

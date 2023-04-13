@@ -695,7 +695,7 @@ impl<'g, M, S> KernelIterableApi for Kernel<'g, M, S>
         M: KernelCallbackObject,
         S: SubstateStore,
 {
-    fn kernel_insert_unique(
+    fn kernel_insert_into_iterable(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -708,7 +708,19 @@ impl<'g, M, S> KernelIterableApi for Kernel<'g, M, S>
             .map_err(RuntimeError::KernelError)
     }
 
-    fn kernel_read_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    fn kernel_remove_from_iterable(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        key: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+        self.current_frame.remove_substate(node_id, module_id, key, &mut self.heap, self.store)
+            .map_err(CallFrameError::ReadSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_read_from_iterable(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.current_frame.read_substates(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)

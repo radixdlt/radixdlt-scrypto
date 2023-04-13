@@ -481,6 +481,26 @@ impl CallFrame {
         Ok(())
     }
 
+    pub fn remove_substate<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        key: &SubstateKey,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Option<IndexedScryptoValue>, ReadSubstatesError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let removed = if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store.delete_substate(node_id, module_id.into(), key)
+        };
+
+        Ok(removed)
+    }
+
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
     pub fn read_substates<'f, S: SubstateStore>(

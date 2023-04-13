@@ -72,7 +72,7 @@ pub trait KernelSubstateApi {
 }
 
 pub trait KernelIterableApi {
-    fn kernel_insert_unique(
+    fn kernel_insert_into_iterable(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -80,7 +80,14 @@ pub trait KernelIterableApi {
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
-    fn kernel_read_substates(
+    fn kernel_remove_from_iterable(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        unique: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
+
+    fn kernel_read_from_iterable(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
