@@ -509,6 +509,8 @@ where
 
     #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+        KernelModuleMixer::on_read_bucket(self);
+
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
             SysModuleId::TypeInfo,
@@ -577,6 +579,8 @@ where
 
     #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+        KernelModuleMixer::on_read_bucket(self);
+
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
             SysModuleId::TypeInfo,
@@ -862,7 +866,7 @@ where
         // TODO: check if save to unwrap
         let package_code: PackageCodeSubstate =
             self.kernel_read_substate(handle)?.as_typed().unwrap();
-        //package_address.to_vec().iter().rev().take(8).
+
         KernelModuleMixer::on_create_wasm_instance(self, package_code.code.len())?;
 
         Ok(self

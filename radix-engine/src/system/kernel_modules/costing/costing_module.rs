@@ -383,4 +383,26 @@ impl KernelModule for CostingModule {
         )?;
         Ok(())
     }
+
+    fn on_read_bucket<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) {
+        api.kernel_get_module_state()
+            .costing
+            .apply_execution_cost(
+                CostingReason::ReadBucket,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadBucket),
+                1,
+            )
+            .ok();
+    }
+
+    fn on_read_proof<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) {
+        api.kernel_get_module_state()
+            .costing
+            .apply_execution_cost(
+                CostingReason::ReadProof,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadProof),
+                1,
+            )
+            .ok();
+    }
 }

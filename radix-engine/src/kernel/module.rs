@@ -192,4 +192,14 @@ pub trait KernelModule {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    //=========================
+    // Bucket and Proof events
+    //=========================
+
+    #[inline(always)]
+    fn on_read_bucket<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) {}
+
+    #[inline(always)]
+    fn on_read_proof<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) {}
 }

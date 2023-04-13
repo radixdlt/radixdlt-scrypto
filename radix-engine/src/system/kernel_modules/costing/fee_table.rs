@@ -44,6 +44,8 @@ pub enum CostingEntry<'a> {
         size: u32,
     },
     DropLock,
+    ReadBucket,
+    ReadProof,
     // TODO: more costing after API becomes stable.
 }
 
@@ -155,14 +157,18 @@ impl FeeTable {
                         ("Faucet", "new") => 6884668,
                         ("FungibleResourceManager", "create") => 343343,
                         ("FungibleResourceManager", "create_with_initial_supply") => 414210,
-                        ("FungibleResourceManager", "create_with_initial_supply_and_address") => 387105,
+                        ("FungibleResourceManager", "create_with_initial_supply_and_address") => {
+                            387105
+                        }
                         ("GenesisHelper", "init") => 4860566,
                         ("Identity", "create") => 740089,
                         ("Identity", "create_advanced") => 311984,
                         ("Metadata", "create") => 24237,
                         ("Metadata", "create_with_data") => 24372,
                         ("NonFungibleResourceManager", "create") => 285038,
-                        ("NonFungibleResourceManager", "create_non_fungible_with_address") => 279965,
+                        ("NonFungibleResourceManager", "create_non_fungible_with_address") => {
+                            279965
+                        }
                         ("NonFungibleResourceManager", "create_with_initial_supply") => 452078,
                         ("Package", "publish_wasm") => 556374,
                         ("Proof", "Proof_drop") => 246568,
@@ -178,7 +184,9 @@ impl FeeTable {
                         (SysModuleId::AccessRules, "set_group_access_rule") => 68705,
                         (SysModuleId::AccessRules, "set_group_access_rule_and_mutability") => 83670,
                         (SysModuleId::AccessRules, "set_method_access_rule") => 69485,
-                        (SysModuleId::AccessRules, "set_method_access_rule_and_mutability") => 86304,
+                        (SysModuleId::AccessRules, "set_method_access_rule_and_mutability") => {
+                            86304
+                        }
                         (SysModuleId::Metadata, "set") => 233518,
                         (SysModuleId::ObjectState, "Bucket_create_proof") => 163783,
                         (SysModuleId::ObjectState, "Bucket_get_amount") => 88240,
@@ -197,7 +205,9 @@ impl FeeTable {
                         (SysModuleId::ObjectState, "Worktop_take_all") => 74492,
                         (SysModuleId::ObjectState, "Worktop_take_non_fungibles") => 262550,
                         (SysModuleId::ObjectState, "burn") => 264553,
-                        (SysModuleId::ObjectState, "cancel_recovery_role_recovery_proposal") => 198184,
+                        (SysModuleId::ObjectState, "cancel_recovery_role_recovery_proposal") => {
+                            198184
+                        }
                         (SysModuleId::ObjectState, "claim_xrd") => 1075226,
                         (SysModuleId::ObjectState, "clear") => 90214,
                         (SysModuleId::ObjectState, "clear_signature_proofs") => 89839,
@@ -230,14 +240,22 @@ impl FeeTable {
                         (SysModuleId::ObjectState, "pop") => 89468,
                         (SysModuleId::ObjectState, "push") => 91801,
                         (SysModuleId::ObjectState, "put") => 163825,
-                        (SysModuleId::ObjectState, "quick_confirm_primary_role_recovery_proposal") => 670369,
-                        (SysModuleId::ObjectState, "quick_confirm_recovery_role_recovery_proposal") => 632787,
+                        (
+                            SysModuleId::ObjectState,
+                            "quick_confirm_primary_role_recovery_proposal",
+                        ) => 670369,
+                        (
+                            SysModuleId::ObjectState,
+                            "quick_confirm_recovery_role_recovery_proposal",
+                        ) => 632787,
                         (SysModuleId::ObjectState, "recall") => 300435,
                         (SysModuleId::ObjectState, "securify") => 961255,
                         (SysModuleId::ObjectState, "set_current_time") => 52727,
                         (SysModuleId::ObjectState, "set_epoch") => 70550,
                         (SysModuleId::ObjectState, "set_group_access_rule_and_mutability") => 84093,
-                        (SysModuleId::ObjectState, "set_method_access_rule_and_mutability") => 80665,
+                        (SysModuleId::ObjectState, "set_method_access_rule_and_mutability") => {
+                            80665
+                        }
                         (SysModuleId::ObjectState, "stop_timed_recovery") => 290086,
                         (SysModuleId::ObjectState, "take") => 229293,
                         (SysModuleId::ObjectState, "take_non_fungibles") => 241335,
@@ -316,6 +334,8 @@ impl FeeTable {
                 (SysModuleId::TypeInfo, Some(EntityType::InternalNonFungibleVault)) => 946,
                 _ => 1465, // average of above values
             },
+            CostingEntry::ReadBucket => 191,
+            CostingEntry::ReadProof => 243,
             CostingEntry::ReadSubstate { size: _ } => 222,
             CostingEntry::WriteSubstate { size: _ } => 218,
         }) as u64
