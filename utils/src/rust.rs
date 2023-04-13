@@ -273,6 +273,45 @@ pub mod collections {
         pub use hashset;
     }
 
+    /// This is a stub implementation for Hasher (used by `IndexMap`, `IndexSet`). This is to get
+    /// rid of non-deterministic behaviour, which is useful when fuzz testing
+    pub mod stub_hasher {
+        use std::hash::{BuildHasher, Hasher};
+
+        #[derive(Clone)]
+        pub struct StubHasher {
+            seed: u64,
+        }
+
+        impl Hasher for StubHasher {
+            fn write(&mut self, _bytes: &[u8]) {}
+
+            fn finish(&self) -> u64 {
+                self.seed
+            }
+        }
+
+        impl BuildHasher for StubHasher {
+            type Hasher = StubHasher;
+
+            fn build_hasher(&self) -> Self::Hasher {
+                StubHasher { seed: self.seed }
+            }
+        }
+
+        impl StubHasher {
+            fn new() -> Self {
+                StubHasher { seed: 0 }
+            }
+        }
+
+        impl Default for StubHasher {
+            fn default() -> Self {
+                StubHasher::new()
+            }
+        }
+    }
+
     /// The methods and macros provided directly in this `index_map` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexMap` itself.
     ///
@@ -296,9 +335,11 @@ pub mod collections {
     /// let index_map = indexmap!(1u32 => "entry_one", 5u32 => "entry_two");
     /// ```
     pub mod index_map {
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(not(feature = "alloc"))]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
@@ -356,9 +397,11 @@ pub mod collections {
     /// let index_set = indexset!(1u32, 2u32);
     /// ```
     pub mod index_set {
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(not(feature = "alloc"))]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
