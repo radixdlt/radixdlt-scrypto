@@ -273,12 +273,13 @@ pub mod collections {
         pub use hashset;
     }
 
-    /// This is a stub implementation for Hasher (used by `IndexMap`, `IndexSet`). This is to get
-    /// rid of non-deterministic behaviour, which is useful when fuzz testing
+    /// This is a stub implementation for Hasher (used by `IndexMap`, `IndexSet`) to get rid of non-deterministic output (caused by random seeding the hashes).
+    /// This is useful when fuzz testing, where exactly the same output is expected for the same input data across different runs.
+    #[cfg(feature = "radix_engine_fuzzing")]
     pub mod stub_hasher {
-        use std::hash::{BuildHasher, Hasher};
+        use core::hash::{BuildHasher, Hasher};
 
-        #[derive(Clone)]
+        #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct StubHasher {
             seed: u64,
         }
@@ -458,22 +459,33 @@ pub mod collections {
         #[cfg(not(feature = "alloc"))]
         use std::borrow::Borrow;
 
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+
         /// A thin wrapper around a `HashMap`, which guarantees that a `HashMap` usage will not
         /// result in a non-deterministic execution (simply by disallowing the iteration over its
         /// elements).
         #[derive(Debug, Clone, PartialEq, Eq)]
-        pub struct NonIterMap<K: Eq + Hash, V>(HashMap<K, V>);
+        pub struct NonIterMap<K: Eq + Hash, V, S: core::hash::BuildHasher = DefaultHashBuilder>(
+            HashMap<K, V, S>,
+        );
 
         #[cfg(feature = "alloc")]
-        pub type Entry<'a, K, V> =
-            hashbrown::hash_map::Entry<'a, K, V, hashbrown::hash_map::DefaultHashBuilder>;
+        pub type Entry<'a, K, V> = hashbrown::hash_map::Entry<'a, K, V, DefaultHashBuilder>;
         #[cfg(not(feature = "alloc"))]
         pub type Entry<'a, K, V> = std::collections::hash_map::Entry<'a, K, V>;
 
         impl<K: Hash + Eq, V> NonIterMap<K, V> {
             /// Creates an empty map.
             pub fn new() -> Self {
-                Self(HashMap::new())
+                Self(HashMap::with_capacity_and_hasher(
+                    0,
+                    DefaultHashBuilder::default(),
+                ))
             }
 
             /// Gets the given key's corresponding entry in the map for in-place manipulation.
