@@ -132,4 +132,20 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelApi<Self>;
+
+    fn on_allocate_node_id<Y>(
+        entity_type: Option<EntityType>,
+        virtual_node: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_read_bucket<Y>(api: &mut Y)
+    where
+        Y: KernelApi<Self>;
+
+    fn kernel_read_proof<Y>(api: &mut Y)
+    where
+        Y: KernelApi<Self>;
 }

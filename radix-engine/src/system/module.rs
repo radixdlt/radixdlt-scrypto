@@ -181,8 +181,8 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //=========================
 
     #[inline(always)]
-    fn on_read_bucket<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) {}
+    fn on_read_bucket<Y: KernelApi<M>>(_api: &mut Y) {}
 
     #[inline(always)]
-    fn on_read_proof<Y: KernelModuleApi<RuntimeError>>(_api: &mut Y) {}
+    fn on_read_proof<Y: KernelApi<M>>(_api: &mut Y) {}
 }

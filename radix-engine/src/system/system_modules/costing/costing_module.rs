@@ -152,7 +152,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::Invoke {
                             input_size: input_size as u32,
-                            identifier,
+                            identifier: &identifier.sys_invocation,
                         })
                     },
                     1,
@@ -283,7 +283,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .costing
             .apply_execution_cost(
                 CostingReason::CreateNode,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0, node_id }),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0, node_id })
+                },
                 1,
             )?;
         Ok(())
@@ -315,11 +317,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .costing
             .apply_execution_cost(
                 CostingReason::LockSubstate,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate{
-                    node_id,
-                    module_id,
-                    substate_key,
-                }),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::LockSubstate {
+                        node_id,
+                        module_id,
+                        substate_key,
+                    })
+                },
                 1,
             )?;
         Ok(())
@@ -376,26 +380,30 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<RuntimeError>>(
+    fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         entity_type: Option<EntityType>,
         virtual_node: bool,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_module_state().costing.apply_execution_cost(
-            CostingReason::AllocateNodeId,
-            |fee_table| {
-                fee_table.kernel_api_cost(CostingEntry::AllocateNodeId {
-                    entity_type,
-                    virtual_node,
-                })
-            },
-            1,
-        )?;
+        api.kernel_get_callback()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::AllocateNodeId,
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::AllocateNodeId {
+                        entity_type,
+                        virtual_node,
+                    })
+                },
+                1,
+            )?;
         Ok(())
     }
 
-    fn on_read_bucket<Y: KernelApi<RuntimeError>>(api: &mut Y) {
-        api.kernel_get_module_state()
+    fn on_read_bucket<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) {
+        api.kernel_get_callback()
+            .modules
             .costing
             .apply_execution_cost(
                 CostingReason::ReadBucket,
@@ -405,8 +413,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .ok();
     }
 
-    fn on_read_proof<Y: KernelApi<RuntimeError>>(api: &mut Y) {
-        api.kernel_get_module_state()
+    fn on_read_proof<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) {
+        api.kernel_get_callback()
+            .modules
             .costing
             .apply_execution_cost(
                 CostingReason::ReadProof,

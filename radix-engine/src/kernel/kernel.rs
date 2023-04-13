@@ -273,7 +273,7 @@ where
 
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        KernelModuleMixer::on_allocate_node_id(self, Some(entity_type), false)?;
+        M::on_allocate_node_id(Some(entity_type), false, self)?;
 
         let node_id = self.id_allocator.allocate_node_id(entity_type)?;
 
@@ -282,7 +282,7 @@ where
 
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_allocate_node_id(self, node_id.entity_type(), true)?;
+        M::on_allocate_node_id(node_id.entity_type(), true, self)?;
 
         self.id_allocator.allocate_virtual_node_id(node_id);
 

@@ -460,4 +460,29 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
     {
         VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
     }
+
+    fn on_allocate_node_id<Y>(
+        entity_type: Option<EntityType>,
+        virtual_node: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_allocate_node_id(api, entity_type, virtual_node)
+    }
+
+    fn on_read_bucket<Y>(api: &mut Y)
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_read_bucket(api);
+    }
+
+    fn kernel_read_proof<Y>(api: &mut Y)
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_read_proof(api);
+    }
 }

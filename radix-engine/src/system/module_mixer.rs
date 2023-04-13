@@ -819,8 +819,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn on_read_bucket<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+    fn on_read_bucket<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) {
+        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_read_bucket(api);
         }
@@ -851,8 +851,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn on_read_proof<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
+    fn on_read_proof<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) {
+        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_read_proof(api);
         }

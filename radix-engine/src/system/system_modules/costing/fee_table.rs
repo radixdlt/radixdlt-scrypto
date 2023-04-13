@@ -1,5 +1,5 @@
-use crate::types::*;
 use crate::system::system_callback::SystemInvocation;
+use crate::types::*;
 
 pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
@@ -135,140 +135,12 @@ impl FeeTable {
                 Some(EntityType::InternalNonFungibleVault) => 1113,
                 _ => 1808, // average of above values
             },
-            CostingEntry::CreateWasmInstance { size } => 24 * size + 11081, // calculated using linear regression on gathered data
             CostingEntry::DropLock => 136,
             CostingEntry::DropNode { size: _ } => 2520, // average of gathered data
             CostingEntry::Invoke {
-                input_size,
-                identifier,
-            } => match identifier {
-                InvocationDebugIdentifier::Function(fn_ident) => {
-                    match (&*fn_ident.0.blueprint_name, &*fn_ident.1) {
-                        ("AccessController", "create_global") => 795969,
-                        ("AccessRules", "create") => 73544,
-                        ("Account", "create_advanced") => 325058,
-                        ("Bucket", "Bucket_drop_empty") => 149485,
-                        ("Bucket", "burn_bucket") => 181894,
-                        ("Clock", "create") => 104242,
-                        ("ComponentRoyalty", "create") => 16055,
-                        ("EpochManager", "create") => 417490,
-                        ("Faucet", "new") => 6884668,
-                        ("FungibleResourceManager", "create") => 343343,
-                        ("FungibleResourceManager", "create_with_initial_supply") => 414210,
-                        ("FungibleResourceManager", "create_with_initial_supply_and_address") => {
-                            387105
-                        }
-                        ("GenesisHelper", "init") => 4860566,
-                        ("Identity", "create") => 740089,
-                        ("Identity", "create_advanced") => 311984,
-                        ("Metadata", "create") => 24237,
-                        ("Metadata", "create_with_data") => 24372,
-                        ("NonFungibleResourceManager", "create") => 285038,
-                        ("NonFungibleResourceManager", "create_non_fungible_with_address") => {
-                            279965
-                        }
-                        ("NonFungibleResourceManager", "create_with_initial_supply") => 452078,
-                        ("Package", "publish_wasm") => 556374,
-                        ("Proof", "Proof_drop") => 246568,
-                        ("TransactionProcessor", "run") => 2036313,
-                        ("Worktop", "Worktop_drop") => 84794,
-                        ("Package", "publish_native") => 10 * input_size + 7365, // calculated using linear regression on gathered data
-                        ("Package", "publish_wasm_advanced") => 29 * input_size + 119758, // calculated using linear regression on gathered data
-                        _ => 883074, // average of above values and function invokes from all tests
-                    }
-                }
-                InvocationDebugIdentifier::Method(method_ident) => {
-                    match (method_ident.1, &*method_ident.2) {
-                        (SysModuleId::AccessRules, "set_group_access_rule") => 68705,
-                        (SysModuleId::AccessRules, "set_group_access_rule_and_mutability") => 83670,
-                        (SysModuleId::AccessRules, "set_method_access_rule") => 69485,
-                        (SysModuleId::AccessRules, "set_method_access_rule_and_mutability") => {
-                            86304
-                        }
-                        (SysModuleId::Metadata, "set") => 233518,
-                        (SysModuleId::ObjectState, "Bucket_create_proof") => 163783,
-                        (SysModuleId::ObjectState, "Bucket_get_amount") => 88240,
-                        (SysModuleId::ObjectState, "Bucket_get_non_fungible_local_ids") => 93142,
-                        (SysModuleId::ObjectState, "Bucket_get_resource_address") => 85511,
-                        (SysModuleId::ObjectState, "Bucket_put") => 97078,
-                        (SysModuleId::ObjectState, "Bucket_take") => 156423,
-                        (SysModuleId::ObjectState, "Bucket_unlock_amount") => 93832,
-                        (SysModuleId::ObjectState, "Bucket_unlock_non_fungibles") => 93187,
-                        (SysModuleId::ObjectState, "Proof_get_amount") => 88912,
-                        (SysModuleId::ObjectState, "Proof_get_non_fungible_local_ids") => 90432,
-                        (SysModuleId::ObjectState, "Proof_get_resource_address") => 85378,
-                        (SysModuleId::ObjectState, "Worktop_drain") => 87413,
-                        (SysModuleId::ObjectState, "Worktop_put") => 261330,
-                        (SysModuleId::ObjectState, "Worktop_take") => 336622,
-                        (SysModuleId::ObjectState, "Worktop_take_all") => 74492,
-                        (SysModuleId::ObjectState, "Worktop_take_non_fungibles") => 262550,
-                        (SysModuleId::ObjectState, "burn") => 264553,
-                        (SysModuleId::ObjectState, "cancel_recovery_role_recovery_proposal") => {
-                            198184
-                        }
-                        (SysModuleId::ObjectState, "claim_xrd") => 1075226,
-                        (SysModuleId::ObjectState, "clear") => 90214,
-                        (SysModuleId::ObjectState, "clear_signature_proofs") => 89839,
-                        (SysModuleId::ObjectState, "compare_current_time") => 48901,
-                        (SysModuleId::ObjectState, "create_bucket") => 232587,
-                        (SysModuleId::ObjectState, "create_proof") => 327414,
-                        (SysModuleId::ObjectState, "create_proof_by_amount") => 315575,
-                        (SysModuleId::ObjectState, "create_proof_of_all") => 238251,
-                        (SysModuleId::ObjectState, "create_proof_of_amount") => 240935,
-                        (SysModuleId::ObjectState, "create_validator") => 2001663,
-                        (SysModuleId::ObjectState, "create_vault") => 287299,
-                        (SysModuleId::ObjectState, "deposit") => 739866,
-                        (SysModuleId::ObjectState, "deposit_batch") => 638888,
-                        (SysModuleId::ObjectState, "free") => 737524,
-                        (SysModuleId::ObjectState, "get_amount") => 101070,
-                        (SysModuleId::ObjectState, "get_current_epoch") => 66552,
-                        (SysModuleId::ObjectState, "get_current_time") => 48720,
-                        (SysModuleId::ObjectState, "get_non_fungible") => 190066,
-                        (SysModuleId::ObjectState, "get_resource_type") => 168642,
-                        (SysModuleId::ObjectState, "get_total_supply") => 169726,
-                        (SysModuleId::ObjectState, "initiate_recovery_as_primary") => 201066,
-                        (SysModuleId::ObjectState, "initiate_recovery_as_recovery") => 247943,
-                        (SysModuleId::ObjectState, "lock_fee") => 245977,
-                        (SysModuleId::ObjectState, "lock_fee_and_withdraw") => 580162,
-                        (SysModuleId::ObjectState, "lock_fee_and_withdraw_non_fungibles") => 579870,
-                        (SysModuleId::ObjectState, "lock_fungible_amount") => 99990,
-                        (SysModuleId::ObjectState, "lock_primary_role") => 195280,
-                        (SysModuleId::ObjectState, "mint") => 383918,
-                        (SysModuleId::ObjectState, "mint_single_uuid") => 346602,
-                        (SysModuleId::ObjectState, "pop") => 89468,
-                        (SysModuleId::ObjectState, "push") => 91801,
-                        (SysModuleId::ObjectState, "put") => 163825,
-                        (
-                            SysModuleId::ObjectState,
-                            "quick_confirm_primary_role_recovery_proposal",
-                        ) => 670369,
-                        (
-                            SysModuleId::ObjectState,
-                            "quick_confirm_recovery_role_recovery_proposal",
-                        ) => 632787,
-                        (SysModuleId::ObjectState, "recall") => 300435,
-                        (SysModuleId::ObjectState, "securify") => 961255,
-                        (SysModuleId::ObjectState, "set_current_time") => 52727,
-                        (SysModuleId::ObjectState, "set_epoch") => 70550,
-                        (SysModuleId::ObjectState, "set_group_access_rule_and_mutability") => 84093,
-                        (SysModuleId::ObjectState, "set_method_access_rule_and_mutability") => {
-                            80665
-                        }
-                        (SysModuleId::ObjectState, "stop_timed_recovery") => 290086,
-                        (SysModuleId::ObjectState, "take") => 229293,
-                        (SysModuleId::ObjectState, "take_non_fungibles") => 241335,
-                        (SysModuleId::ObjectState, "timed_confirm_recovery") => 685974,
-                        (SysModuleId::ObjectState, "unlock_fungible_amount") => 160982,
-                        (SysModuleId::ObjectState, "unlock_non_fungibles") => 170017,
-                        (SysModuleId::ObjectState, "unlock_primary_role") => 196773,
-                        (SysModuleId::ObjectState, "unstake") => 1716311,
-                        (SysModuleId::ObjectState, "update_validator") => 61761,
-                        (SysModuleId::ObjectState, "withdraw") => 312330,
-                        _ => 289251, // average of above values
-                    }
-                }
-                InvocationDebugIdentifier::VirtualLazyLoad => 334636, // average from 2 calls
-            },
+                input_size: _,
+                identifier: _,
+            } => 0, // todo
             CostingEntry::LockSubstate {
                 node_id,
                 module_id,
@@ -291,20 +163,6 @@ impl FeeTable {
                 (SysModuleId::Metadata, Some(EntityType::GlobalPackage)) => 1506,
                 (SysModuleId::Metadata, Some(EntityType::GlobalValidator)) => 1575,
                 (SysModuleId::Metadata, Some(EntityType::GlobalVirtualEcdsaIdentity)) => 1549,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalAccessController)) => 2648,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalAccount)) => 1419,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalClock)) => 1552,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalEpochManager)) => 1602,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalFungibleResource)) => 1329,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalGenericComponent)) => 1463,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalNonFungibleResource)) => 1393,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalPackage)) => 1319,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalValidator)) => 1657,
-                (SysModuleId::ObjectState, Some(EntityType::GlobalVirtualEcdsaAccount)) => 1404,
-                (SysModuleId::ObjectState, Some(EntityType::InternalFungibleVault)) => 1621,
-                (SysModuleId::ObjectState, Some(EntityType::InternalGenericComponent)) => 999,
-                (SysModuleId::ObjectState, Some(EntityType::InternalKeyValueStore)) => 3698,
-                (SysModuleId::ObjectState, Some(EntityType::InternalNonFungibleVault)) => 1342,
                 (SysModuleId::Royalty, Some(EntityType::GlobalAccessController)) => 1364,
                 (SysModuleId::Royalty, Some(EntityType::GlobalAccount)) => 1342,
                 (SysModuleId::Royalty, Some(EntityType::GlobalClock)) => 1380,
