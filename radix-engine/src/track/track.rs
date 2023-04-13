@@ -355,18 +355,18 @@ impl<'s> SubstateStore for Track<'s> {
 
     fn delete_substate(
         &mut self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-        substate_key: &SubstateKey,
+        _node_id: &NodeId,
+        _module_id: ModuleId,
+        _substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
         todo!()
     }
 
-    fn read_substates(
+    fn read_sorted_substates(
         &mut self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-        count: u32,
+        _node_id: &NodeId,
+        _module_id: ModuleId,
+        _count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         todo!()
     }

@@ -123,7 +123,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue>;
 
-    fn read_substates(
+    fn read_sorted_substates(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,

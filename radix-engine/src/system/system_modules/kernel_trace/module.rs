@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey, SysModuleId};
+use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

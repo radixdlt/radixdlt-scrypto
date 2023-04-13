@@ -728,7 +728,7 @@ where
             .api
             .kernel_read_from_iterable(node_id, SysModuleId::ObjectIterable, count)?
             .into_iter()
-            .map(|(k, e)| e.into())
+            .map(|(_key, value)| value.into())
             .collect();
 
         Ok(substates)

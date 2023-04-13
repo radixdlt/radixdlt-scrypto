@@ -703,7 +703,7 @@ where
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.current_frame
-            .insert_unique_substate(
+            .upsert_substate(
                 node_id,
                 module_id,
                 unique,
@@ -736,7 +736,7 @@ where
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.current_frame
-            .read_substates(node_id, module_id, count, &mut self.heap, self.store)
+            .read_sorted_substates(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)

@@ -1,5 +1,4 @@
 use crate::kernel::actor::Actor;
-use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -462,7 +461,7 @@ impl CallFrame {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn insert_unique_substate<'f, S: SubstateStore>(
+    pub fn upsert_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -474,7 +473,7 @@ impl CallFrame {
         self.get_node_visibility(node_id)
             .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let substates = if heap.contains_node(node_id) {
+        if heap.contains_node(node_id) {
             todo!()
         } else {
             store.create_substate(*node_id, module_id.into(), key, value);
@@ -505,7 +504,7 @@ impl CallFrame {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn read_substates<'f, S: SubstateStore>(
+    pub fn read_sorted_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -519,10 +518,10 @@ impl CallFrame {
         let substates = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.read_substates(node_id, module_id.into(), count)
+            store.read_sorted_substates(node_id, module_id.into(), count)
         };
 
-        for (id, substate) in &substates {
+        for (_id, substate) in &substates {
             let refs = substate.references();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {
@@ -767,8 +766,8 @@ impl CallFrame {
         }
 
         let node_substates = heap.remove_node(node_id);
-        for (module_id, module) in &node_substates {
-            for (substate_key, substate_value) in module {
+        for (_module_id, module_substates) in &node_substates {
+            for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
                         return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
