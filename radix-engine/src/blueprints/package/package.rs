@@ -167,9 +167,8 @@ where
     );
 
     if let Some(access_rules) = access_rules {
-        let mut node = api.kernel_drop_node(access_rules.0.as_node_id())?;
-        let access_rules = node
-            .substates
+        let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
+        let access_rules = node_substates
             .remove(&SysModuleId::ObjectTuple)
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())

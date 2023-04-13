@@ -5,7 +5,7 @@ use crate::errors::{
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::RefType;
-use crate::kernel::heap::HeapNode;
+use crate::kernel::heap::NodeSubstates;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -396,8 +396,7 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::SELF,
             )))?;
-        let node = self.api.kernel_drop_node(&node_id)?;
-        let mut node_substates = node.substates;
+        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
@@ -436,8 +435,8 @@ where
                         )));
                     }
 
-                    let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
+                    let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
+                    let access_rules = access_rule_substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(SysModuleId::AccessRules, access_rules);
                 }
                 ObjectModuleId::Metadata => {
@@ -452,8 +451,8 @@ where
                         )));
                     }
 
-                    let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = node.substates.remove(&SysModuleId::ObjectMap).unwrap();
+                    let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
+                    let metadata = metadata_substates.remove(&SysModuleId::ObjectMap).unwrap();
                     node_substates.insert(SysModuleId::Metadata, metadata);
                 }
                 ObjectModuleId::Royalty => {
@@ -468,8 +467,8 @@ where
                         )));
                     }
 
-                    let mut node = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = node.substates.remove(&SysModuleId::ObjectTuple).unwrap();
+                    let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
+                    let royalty = royalty_substates.remove(&SysModuleId::ObjectTuple).unwrap();
                     node_substates.insert(SysModuleId::Royalty, royalty);
                 }
             }
@@ -1092,7 +1091,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
 

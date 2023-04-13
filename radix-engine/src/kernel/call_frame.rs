@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEP
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
 
-use super::heap::{Heap, HeapNode};
+use super::heap::{Heap, NodeSubstates};
 use super::kernel_api::LockInfo;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -660,12 +660,12 @@ impl CallFrame {
     pub fn create_node<'f, S: SubstateStore>(
         &mut self,
         node_id: NodeId,
-        substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
         push_to_store: bool,
     ) -> Result<(), UnlockSubstateError> {
-        for (_module_id, module) in &substates {
+        for (_module_id, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 // FIXME there is a huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
@@ -680,7 +680,7 @@ impl CallFrame {
         }
 
         if push_to_store {
-            for (module_id, module) in substates {
+            for (module_id, module) in node_substates {
                 for (substate_key, substate_value) in module {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
@@ -695,11 +695,7 @@ impl CallFrame {
             self.add_ref(node_id, RefType::Normal);
         } else {
             // Insert node into heap
-            let heap_root_node = HeapNode {
-                substates,
-                //child_nodes,
-            };
-            heap.insert_node(node_id, heap_root_node);
+            heap.insert_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
         }
 
@@ -720,10 +716,10 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<HeapNode, MoveError> {
+    ) -> Result<NodeSubstates, MoveError> {
         self.take_node_internal(node_id)?;
-        let node = heap.remove_node(node_id);
-        for (_, module) in &node.substates {
+        let node_substates = heap.remove_node(node_id);
+        for (_, module) in &node_substates {
             for (_, substate_value) in module {
                 let refs = substate_value.references();
                 let child_nodes = substate_value.owned_node_ids();
@@ -741,7 +737,7 @@ impl CallFrame {
                 }
             }
         }
-        Ok(node)
+        Ok(node_substates)
     }
 
     pub fn move_node_to_store<S: SubstateStore>(
@@ -772,8 +768,8 @@ impl CallFrame {
             return Err(UnlockSubstateError::CantBeStored(node_id.clone()));
         }
 
-        let node = heap.remove_node(node_id);
-        for (module_id, module) in node.substates {
+        let node_substates = heap.remove_node(node_id);
+        for (module_id, module) in node_substates {
             for (substate_key, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {

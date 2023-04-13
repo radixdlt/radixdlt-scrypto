@@ -1,5 +1,5 @@
 use super::call_frame::RefType;
-use super::heap::HeapNode;
+use super::heap::NodeSubstates;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -15,7 +15,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 /// API for managing nodes
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
 
     /// TODO: Remove
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;

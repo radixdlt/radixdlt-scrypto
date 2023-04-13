@@ -1,5 +1,5 @@
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::heap::{Heap, HeapNode};
+use super::heap::{Heap, NodeSubstates};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
@@ -256,7 +256,7 @@ where
     S: SubstateStore,
 {
     #[trace_resources]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
         let node = self

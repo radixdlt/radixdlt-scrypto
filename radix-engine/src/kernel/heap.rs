@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::math::Decimal;
 
 pub struct Heap {
-    nodes: NonIterMap<NodeId, HeapNode>,
+    nodes: NonIterMap<NodeId, NodeSubstates>,
 }
 
 pub enum MoveNodeToStoreError {
@@ -34,8 +34,8 @@ impl Heap {
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
             .get(node_id)
-            .and_then(|node| node.substates.get(&module_id))
-            .and_then(|module| module.get(substate_key))
+            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|module_substates| module_substates.get(substate_key))
     }
 
     /// Inserts or overwrites a substate
@@ -48,15 +48,14 @@ impl Heap {
     ) {
         self.nodes
             .entry(node_id)
-            .or_insert_with(|| HeapNode::default())
-            .substates
+            .or_insert_with(|| NodeSubstates::default())
             .entry(module_id)
             .or_default()
             .insert(substate_key, substate_value);
     }
 
     /// Inserts a new node to heap.
-    pub fn insert_node(&mut self, node_id: NodeId, node: HeapNode) {
+    pub fn insert_node(&mut self, node_id: NodeId, node: NodeSubstates) {
         self.nodes.insert(node_id, node);
     }
 
@@ -64,18 +63,14 @@ impl Heap {
     ///
     /// # Panics
     /// - If the node is not found.
-    pub fn remove_node(&mut self, node_id: &NodeId) -> HeapNode {
+    pub fn remove_node(&mut self, node_id: &NodeId) -> NodeSubstates {
         self.nodes
             .remove(node_id)
             .unwrap_or_else(|| panic!("Heap does not contain {:?}", node_id))
     }
 }
 
-// TODO: Remove
-#[derive(Debug, Default)]
-pub struct HeapNode {
-    pub substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
-}
+pub type NodeSubstates = BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 pub struct DroppedBucket {
     pub info: BucketInfoSubstate,
@@ -96,24 +91,24 @@ impl DroppedBucket {
     }
 }
 
-impl Into<DroppedBucket> for HeapNode {
+impl Into<DroppedBucket> for NodeSubstates {
     fn into(mut self) -> DroppedBucket {
-        let mut module = self.substates.remove(&SysModuleId::ObjectTuple).unwrap();
+        let mut module_substates = self.remove(&SysModuleId::ObjectTuple).unwrap();
 
-        let info: BucketInfoSubstate = module
+        let info: BucketInfoSubstate = module_substates
             .remove(&BucketOffset::Info.into())
             .map(|x| x.as_typed().unwrap())
             .unwrap();
 
         let resource = match info.resource_type {
             ResourceType::Fungible { .. } => DroppedBucketResource::Fungible(
-                module
+                module_substates
                     .remove(&BucketOffset::LiquidFungible.into())
                     .map(|x| x.as_typed().unwrap())
                     .unwrap(),
             ),
             ResourceType::NonFungible { .. } => DroppedBucketResource::NonFungible(
-                module
+                module_substates
                     .remove(&BucketOffset::LiquidNonFungible.into())
                     .map(|x| x.as_typed().unwrap())
                     .unwrap(),
@@ -134,9 +129,9 @@ pub enum DroppedProofResource {
     NonFungible(NonFungibleProof),
 }
 
-impl Into<DroppedProof> for HeapNode {
+impl Into<DroppedProof> for NodeSubstates {
     fn into(mut self) -> DroppedProof {
-        let mut module = self.substates.remove(&SysModuleId::ObjectTuple).unwrap();
+        let mut module = self.remove(&SysModuleId::ObjectTuple).unwrap();
 
         let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())
