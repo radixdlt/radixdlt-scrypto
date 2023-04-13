@@ -652,12 +652,12 @@ where
     }
 }
 
-impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSortedApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
-    fn new_iterable(&mut self) -> Result<NodeId, RuntimeError> {
+    fn new_sorted(&mut self) -> Result<NodeId, RuntimeError> {
         let entity_type = EntityType::InternalIterableStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
@@ -679,7 +679,7 @@ where
     // TODO: If not, then cannot contain owned objects as they may be removed from underneath due to overwrites
     // TODO: If so, how do we ensure uniqueness while preserving query by key?
     // TODO: Will implement the former for now as much easier to implement
-    fn insert_into_iterable(
+    fn insert_into_sorted(
         &mut self,
         node_id: &NodeId,
         substate_key: SubstateKey,
@@ -711,7 +711,7 @@ where
         )
     }
 
-    fn read_from_iterable(
+    fn read_from_sorted(
         &mut self,
         node_id: &NodeId,
         count: u32,
@@ -734,11 +734,11 @@ where
         Ok(substates)
     }
 
-    fn remove_from_iterable(
+    fn remove_from_sorted(
         &mut self,
         node_id: &NodeId,
         substate_key: &SubstateKey,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -747,10 +747,11 @@ where
             }
         }
 
-        self.api
-            .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, substate_key)?;
+        let rtn = self.api
+            .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, substate_key)?
+            .map(|v| v.into());
 
-        Ok(())
+        Ok(rtn)
     }
 }
 

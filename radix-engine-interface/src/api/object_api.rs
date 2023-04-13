@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
@@ -82,32 +82,51 @@ pub trait ClientObjectApi<E> {
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
 }
 
-pub trait ClientIterableApi<E> {
+pub trait ClientSortedApi<E> {
     /// Creates a new key value store with a given schema
-    fn new_iterable(&mut self) -> Result<NodeId, E>;
+    fn new_sorted(&mut self) -> Result<NodeId, E>;
 
-    fn insert_into_iterable(
+    fn insert_into_sorted(
         &mut self,
         node_id: &NodeId,
         substate_key: SubstateKey,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
-    fn remove_from_iterable(
+    fn insert_typed_into_sorted<V: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        substate_key: SubstateKey,
+        value: V,
+    ) -> Result<(), E> {
+        self.insert_into_sorted(node_id, substate_key, scrypto_encode(&value).unwrap())
+    }
+
+    fn remove_from_sorted(
         &mut self,
         node_id: &NodeId,
         substate_key: &SubstateKey,
-    ) -> Result<(), E>;
+    ) -> Result<Option<Vec<u8>>, E>;
 
-    fn read_from_iterable(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    fn remove_typed_from_sorted<V: ScryptoDecode>(
+        &mut self,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<V>, E> {
+        let rtn = self.remove_from_sorted(node_id, substate_key)?
+            .map(|e| scrypto_decode(&e).unwrap());
+        Ok(rtn)
+    }
 
-    fn read_typed_from_iterable<S: ScryptoDecode>(
+    fn read_from_sorted(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+
+    fn read_typed_from_sorted<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
     ) -> Result<Vec<S>, E> {
         let entries = self
-            .read_from_iterable(node_id, count)?
+            .read_from_sorted(node_id, count)?
             .into_iter()
             .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();

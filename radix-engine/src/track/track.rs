@@ -445,10 +445,23 @@ impl<'s> SubstateStore for Track<'s> {
 
     fn read_sorted_substates(
         &mut self,
-        _node_id: &NodeId,
-        _module_id: ModuleId,
-        _count: u32,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
-        todo!()
+        match self.updates.get(node_id) {
+            Some(NodeUpdate::New(modules)) => {
+                let substates = modules.get(&module_id).unwrap();
+                let count: usize = count.try_into().unwrap();
+                substates.into_iter()
+                    .take(count)
+                    .map(|(key, substate)| (key.clone(), substate.value.clone())).collect()
+            }
+            _ => {
+                let substates = self.substate_db.list_substates(node_id, module_id, count).unwrap();
+                substates.into_iter()
+                    .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap())).collect()
+            }
+        }
     }
 }

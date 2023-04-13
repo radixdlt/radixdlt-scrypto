@@ -37,18 +37,25 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError> {
+        mut count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError> {
+
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
         let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();
 
         for (k, v) in self.substates.range((Included(start), Included(end))) {
+            if count == 0u32 {
+                break;
+            }
+
             let (_, _, substate_key) = decode_substate_id(k).expect("Failed to decode substate ID");
             let value = scrypto_decode::<Vec<u8>>(v).expect("Failed to decode value");
             substates.push((substate_key, value));
+            count -= 1;
         }
 
-        Ok((substates, Hash([0; Hash::LENGTH])))
+        Ok(substates)
     }
 }
 

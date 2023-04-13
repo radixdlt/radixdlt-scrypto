@@ -41,7 +41,7 @@ pub struct CurrentValidatorSetSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SecondaryIndexSubstate {
-    pub validators: BTreeMap<Vec<u8>, (ComponentAddress, Validator)>,
+    pub validators: Own,//BTreeMap<Vec<u8>, (ComponentAddress, Validator)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -91,6 +91,11 @@ impl EpochManagerBlueprint {
             )?;
         };
 
+        let validators = {
+            let sorted_validators = api.new_sorted()?;
+            Own(sorted_validators)
+        };
+
         let epoch_manager_id = {
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,
@@ -103,8 +108,8 @@ impl EpochManagerBlueprint {
                 validator_set: BTreeMap::new(),
             };
 
-            let registred_validators = SecondaryIndexSubstate {
-                validators: BTreeMap::new(),
+            let registered_validators = SecondaryIndexSubstate {
+                validators,
             };
 
             api.new_object(
@@ -112,7 +117,7 @@ impl EpochManagerBlueprint {
                 vec![
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
-                    scrypto_encode(&registred_validators).unwrap(),
+                    scrypto_encode(&registered_validators).unwrap(),
                 ],
             )?
         };
@@ -375,10 +380,12 @@ impl EpochManagerBlueprint {
         let handle = api.sys_lock_substate(
             receiver,
             &EpochManagerOffset::RegisteredValidatorSet.into(),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
-        let mut registered_validators: SecondaryIndexSubstate =
+        let registered_validators: SecondaryIndexSubstate =
             api.sys_read_substate_typed(handle)?;
+        let secondary_index = registered_validators.validators;
+
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
@@ -386,38 +393,45 @@ impl EpochManagerBlueprint {
                 key,
                 stake,
             } => {
-                registered_validators
-                    .validators
-                    .insert(index_key, (address, Validator { key, stake }));
+                api.insert_typed_into_sorted(
+                    secondary_index.as_node_id(),
+                    SubstateKey::from_vec(index_key).unwrap(),
+                        (address, Validator { key, stake })
+                )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let (address, mut validator) =
-                    registered_validators.validators.remove(&index_key).unwrap();
+                let substate_key = SubstateKey::from_vec(index_key).unwrap();
+                let (address, mut validator) = api.remove_typed_from_sorted::<(ComponentAddress, Validator)>(
+                    secondary_index.as_node_id(),
+                    &substate_key,
+                )?.unwrap();
                 validator.key = key;
-                registered_validators
-                    .validators
-                    .insert(index_key, (address, validator));
+                api.insert_typed_into_sorted(
+                    secondary_index.as_node_id(),
+                    substate_key,
+                    (address, validator),
+                )?;
             }
             UpdateSecondaryIndex::UpdateStake {
                 index_key,
                 new_index_key,
                 new_stake_amount,
             } => {
-                let (address, mut validator) =
-                    registered_validators.validators.remove(&index_key).unwrap();
+                let (address, mut validator) = api.remove_typed_from_sorted::<(ComponentAddress, Validator)>(
+                    secondary_index.as_node_id(),
+                    &SubstateKey::from_vec(index_key).unwrap(),
+                )?.unwrap();
                 validator.stake = new_stake_amount;
-                registered_validators
-                    .validators
-                    .insert(new_index_key, (address, validator));
+                api.insert_typed_into_sorted(
+                    secondary_index.as_node_id(),
+                    SubstateKey::from_vec(new_index_key).unwrap(),
+                    (address, validator),
+                )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                registered_validators
-                    .validators
-                    .remove(&index_key)
-                    .expect("Secondary index logic broken");
+                api.remove_from_sorted(secondary_index.as_node_id(), &SubstateKey::from_vec(index_key).unwrap())?;
             }
         }
-        api.sys_write_substate_typed(handle, &registered_validators)?;
 
         Ok(())
     }
@@ -439,10 +453,15 @@ impl EpochManagerBlueprint {
 
         let registered_validator_set: SecondaryIndexSubstate =
             api.sys_read_substate_typed(handle)?;
-        api.sys_drop_lock(handle)?;
+        let secondary_index = registered_validator_set.validators;
 
-        let mut next_validator_set = BTreeMap::new();
-        let max_validators: usize = max_validators.try_into().unwrap();
+        //let mut next_validator_set = BTreeMap::new();
+        //let max_validators: usize = max_validators.try_into().unwrap();
+
+        let validators: Vec<(ComponentAddress, Validator)> = api.read_typed_from_sorted(secondary_index.as_node_id(), max_validators)?;
+        let next_validator_set: BTreeMap<ComponentAddress, Validator> = validators.into_iter().collect();
+
+        /*
         for (_index_key, (address, validator)) in registered_validator_set
             .validators
             .into_iter()
@@ -450,6 +469,7 @@ impl EpochManagerBlueprint {
         {
             next_validator_set.insert(address, validator);
         }
+         */
 
         let handle = api.sys_lock_substate(
             receiver,

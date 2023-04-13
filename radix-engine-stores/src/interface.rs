@@ -202,7 +202,8 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError>;
 }
 
 /// Interface for committing changes into a substate database.
