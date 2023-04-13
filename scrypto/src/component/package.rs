@@ -1,6 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::AttachedMetadata;
 use crate::runtime::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
@@ -32,7 +33,7 @@ impl BorrowedPackage {
         ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                SysModuleId::ObjectState,
+                ObjectModuleId::SELF,
                 PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
             )
@@ -43,7 +44,7 @@ impl BorrowedPackage {
         let rtn = ScryptoEnv
             .call_module_method(
                 self.0.as_node_id(),
-                SysModuleId::ObjectState,
+                ObjectModuleId::SELF,
                 PACKAGE_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
             )

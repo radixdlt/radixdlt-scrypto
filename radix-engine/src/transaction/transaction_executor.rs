@@ -1,16 +1,16 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::interpreters::ScryptoInterpreter;
-use crate::kernel::kernel::Kernel;
-use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::kernel::track::Track;
-use crate::system::kernel_modules::costing::*;
+use crate::kernel::kernel::KernelBoot;
+use crate::system::module_mixer::SystemModuleMixer;
+use crate::system::system_callback::SystemCallback;
+use crate::system::system_modules::costing::*;
+use crate::track::Track;
 use crate::transaction::*;
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
+use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::{
@@ -117,7 +117,7 @@ where
     W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_interpreter: &'w ScryptoInterpreter<W>,
+    scrypto_vm: &'w ScryptoVm<W>,
 }
 
 impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
@@ -125,10 +125,10 @@ where
     S: SubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
+    pub fn new(substate_db: &'s S, scrypto_vm: &'w ScryptoVm<W>) -> Self {
         Self {
             substate_db,
-            scrypto_interpreter,
+            scrypto_vm,
         }
     }
 
@@ -188,49 +188,49 @@ where
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let modules = KernelModuleMixer::standard(
-            transaction_hash.clone(),
-            executable.auth_zone_params().clone(),
-            fee_reserve,
-            fee_table,
-            executable.payload_size(),
-            executable.auth_zone_params().initial_proofs.len(),
-            execution_config,
-        );
-        let mut kernel = Kernel::new(
-            &mut id_allocator,
-            &mut track,
-            self.scrypto_interpreter,
-            modules,
-        );
-        kernel.initialize().expect("Failed to initialize kernel");
+        let mut system = SystemCallback {
+            callback_obj: Vm {
+                scrypto_vm: self.scrypto_vm,
+            },
+            modules: SystemModuleMixer::standard(
+                transaction_hash.clone(),
+                executable.auth_zone_params().clone(),
+                fee_reserve,
+                fee_table,
+                executable.payload_size(),
+                executable.auth_zone_params().initial_proofs.len(),
+                execution_config,
+            ),
+        };
 
-        // Execute
-        let invoke_result = kernel.initialize().and_then(|_| {
-            kernel
-                .call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInput {
-                        transaction_hash: transaction_hash.clone(),
-                        runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                        instructions: Cow::Owned(
-                            manifest_encode(executable.instructions()).unwrap(),
-                        ),
-                        blobs: Cow::Borrowed(executable.blobs()),
-                        references: extract_refs_from_manifest(executable.instructions()),
-                    })
-                    .unwrap(),
-                )
-                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap())
-        });
+        let kernel_boot = KernelBoot {
+            id_allocator: &mut id_allocator,
+            callback: &mut system,
+            store: &mut track,
+        };
 
-        // Teardown
-        let (modules, invoke_result) = kernel.teardown(invoke_result);
-        let mut fee_reserve = modules.costing.fee_reserve();
-        let mut application_events = modules.events.events();
-        let application_logs = modules.logger.logs();
+        let invoke_result = kernel_boot
+            .call_function(
+                TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+                TRANSACTION_PROCESSOR_RUN_IDENT,
+                scrypto_encode(&TransactionProcessorRunInput {
+                    transaction_hash: transaction_hash.clone(),
+                    runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                    instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
+                    blobs: Cow::Borrowed(executable.blobs()),
+                    references: extract_refs_from_manifest(executable.instructions()),
+                })
+                .unwrap(),
+            )
+            .map(|rtn| {
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            });
+
+        let mut fee_reserve = system.modules.costing.fee_reserve();
+        let mut application_events = system.modules.events.events();
+        let application_logs = system.modules.logger.logs();
 
         // Finalize
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
@@ -275,7 +275,7 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = modules.execution_trace.finalize(&transaction_result);
+        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -353,7 +353,7 @@ pub fn execute_and_commit_transaction<
     W: WasmEngine,
 >(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
@@ -375,7 +375,7 @@ pub fn execute_and_commit_transaction<
 
 pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
@@ -468,7 +468,7 @@ fn distribute_fees(
     // Distribute royalty
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
-        let module_id = SysModuleId::ObjectState;
+        let module_id = SysModuleId::ObjectTuple;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
         let handle = track
             .acquire_lock(
@@ -508,7 +508,7 @@ fn distribute_fees(
         let handle = track
             .acquire_lock(
                 &vault_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::ObjectTuple.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

@@ -2,11 +2,13 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
+use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
-use radix_engine_interface::types::{NodeId, SysModuleId};
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -30,8 +32,8 @@ impl Metadata {
 }
 
 impl MetadataObject for Metadata {
-    fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0.as_node_id().clone(), SysModuleId::ObjectState)
+    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
+        (self.0.as_node_id(), ObjectModuleId::SELF)
     }
 }
 
@@ -39,13 +41,13 @@ impl MetadataObject for Metadata {
 pub struct AttachedMetadata(pub GlobalAddress);
 
 impl MetadataObject for AttachedMetadata {
-    fn self_id(&self) -> (NodeId, SysModuleId) {
-        (self.0.into(), SysModuleId::Metadata)
+    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
+        (self.0.as_node_id(), ObjectModuleId::Metadata)
     }
 }
 
 pub trait MetadataObject {
-    fn self_id(&self) -> (NodeId, SysModuleId);
+    fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
     fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
         let (node_id, module_id) = self.self_id();
@@ -55,7 +57,7 @@ pub trait MetadataObject {
 
         let _rtn = ScryptoEnv
             .call_module_method(
-                &node_id,
+                node_id,
                 module_id,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -72,7 +74,7 @@ pub trait MetadataObject {
 
         let _rtn = ScryptoEnv
             .call_module_method(
-                &node_id,
+                node_id,
                 module_id,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -89,7 +91,7 @@ pub trait MetadataObject {
 
         let rtn = ScryptoEnv
             .call_module_method(
-                &node_id,
+                node_id,
                 module_id,
                 METADATA_GET_IDENT,
                 scrypto_encode(&MetadataGetInput {
@@ -112,7 +114,7 @@ pub trait MetadataObject {
 
         let rtn = ScryptoEnv
             .call_module_method(
-                &node_id,
+                node_id,
                 module_id,
                 METADATA_REMOVE_IDENT,
                 scrypto_encode(&MetadataRemoveInput {

@@ -71,6 +71,7 @@ impl Heap {
     }
 }
 
+// TODO: Remove
 #[derive(Debug, Default)]
 pub struct HeapNode {
     pub substates: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
@@ -97,7 +98,7 @@ impl DroppedBucket {
 
 impl Into<DroppedBucket> for HeapNode {
     fn into(mut self) -> DroppedBucket {
-        let mut module = self.substates.remove(&SysModuleId::ObjectState).unwrap();
+        let mut module = self.substates.remove(&SysModuleId::ObjectTuple).unwrap();
 
         let info: BucketInfoSubstate = module
             .remove(&BucketOffset::Info.into())
@@ -135,7 +136,7 @@ pub enum DroppedProofResource {
 
 impl Into<DroppedProof> for HeapNode {
     fn into(mut self) -> DroppedProof {
-        let mut module = self.substates.remove(&SysModuleId::ObjectState).unwrap();
+        let mut module = self.substates.remove(&SysModuleId::ObjectTuple).unwrap();
 
         let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())

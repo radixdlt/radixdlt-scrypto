@@ -1,16 +1,15 @@
 use super::events::*;
 use super::state_machine::*;
-use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::event_schema;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -298,15 +297,15 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 Self::create_global(input, api)
@@ -314,93 +313,93 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::create_proof(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::initiate_recovery_as_primary(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::initiate_recovery_as_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::timed_confirm_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::cancel_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::unlock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::stop_timed_recovery(receiver, input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -413,7 +412,7 @@ impl AccessControllerNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerCreateGlobalInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         // Creating a new vault and putting in it the controlled asset
@@ -441,14 +440,12 @@ impl AccessControllerNativePackage {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(
-            object_id,
-            btreemap!(
-                SysModuleId::AccessRules => access_rules.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
-            ),
-        )?;
+        let address = api.globalize(btreemap!(
+            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+        ))?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
@@ -459,10 +456,10 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof = transition(receiver, api, AccessControllerCreateProofStateMachineInput)?;
@@ -476,11 +473,11 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsPrimaryInput =
             input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
@@ -512,11 +509,11 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsRecoveryInput =
             input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
@@ -548,11 +545,11 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput =
             input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
@@ -590,11 +587,11 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput =
             input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
@@ -632,10 +629,10 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerTimedConfirmRecoveryInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
@@ -674,11 +671,11 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput =
             input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
 
         transition_mut(
@@ -703,11 +700,11 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput =
             input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
 
         transition_mut(
@@ -732,10 +729,10 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerLockPrimaryRoleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         transition_mut(
@@ -754,10 +751,10 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerUnlockPrimaryRoleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         transition_mut(
@@ -776,10 +773,10 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerStopTimedRecoveryInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         transition_mut(
@@ -821,22 +818,19 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
-        MethodKey::new(
-            SysModuleId::ObjectState,
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
-        ),
+        MethodKey::new(ObjectModuleId::SELF, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         primary_group.into(),
@@ -847,35 +841,35 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
@@ -891,7 +885,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     // Other methods
     access_rules.set_method_access_rule(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         ),
         access_rule_or(
@@ -905,14 +899,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     );
     access_rules.set_method_access_rule(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
     );
     access_rules.set_method_access_rule(
         MethodKey::new(
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
@@ -931,7 +925,7 @@ fn transition<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
@@ -955,7 +949,7 @@ fn transition_mut<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
@@ -983,34 +977,19 @@ fn update_access_rules<Y>(
     access_rules: AccessRulesConfig,
 ) -> Result<(), RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
+    let attached = AttachedAccessRules(receiver.clone());
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
-        api.call_module_method(
-            receiver,
-            SysModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                object_key: ObjectKey::SELF,
-                name: group_name.into(),
-                rule: access_rule.clone(),
-            })
-            .unwrap(),
-        )?;
+        attached.set_group_access_rule(group_name, access_rule.clone(), api)?;
     }
     for (method_key, entry) in access_rules.get_all_method_auth().iter() {
         match entry {
             AccessRuleEntry::AccessRule(access_rule) => {
-                api.call_module_method(
-                    receiver,
-                    SysModuleId::AccessRules,
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                    scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                        object_key: ObjectKey::SELF,
-                        method_key: method_key.clone(),
-                        rule: AccessRuleEntry::AccessRule(access_rule.clone()),
-                    })
-                    .unwrap(),
+                attached.set_method_access_rule(
+                    method_key.clone(),
+                    AccessRuleEntry::AccessRule(access_rule.clone()),
+                    api,
                 )?;
             }
             AccessRuleEntry::Group(..) => {} // Already updated above

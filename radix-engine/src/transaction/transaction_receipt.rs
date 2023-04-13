@@ -1,13 +1,14 @@
 use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::execution_trace::{
+use crate::system::system_modules::costing::FeeSummary;
+use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
@@ -75,8 +76,8 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
-                Emitter::Function(node_id, SysModuleId::ObjectState, ..)
-                | Emitter::Method(node_id, SysModuleId::ObjectState),
+                Emitter::Function(node_id, ObjectModuleId::SELF, ..)
+                | Emitter::Method(node_id, ObjectModuleId::SELF),
                 ..,
             ) = event_type_id
             {

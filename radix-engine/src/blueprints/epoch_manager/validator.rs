@@ -1,7 +1,7 @@
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, InterpreterError};
+use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
@@ -11,6 +11,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -63,7 +64,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let substate_key = ValidatorOffset::Validator.into();
@@ -116,7 +117,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let substate_key = ValidatorOffset::Validator.into();
@@ -164,7 +165,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         // Prepare the event and emit it once the operations succeed
@@ -236,7 +237,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         // Prepare event and emit it once operations finish
@@ -337,7 +338,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(
@@ -406,7 +407,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let handle = api.sys_lock_substate(
@@ -453,7 +454,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ValidatorUpdateAcceptDelegatedStakeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let rule = if input.accept_delegated_stake {
@@ -464,11 +465,11 @@ impl ValidatorBlueprint {
 
         api.call_module_method(
             receiver,
-            SysModuleId::AccessRules,
+            ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(SysModuleId::ObjectState, VALIDATOR_STAKE_IDENT),
+                method_key: MethodKey::new(ObjectModuleId::SELF, VALIDATOR_STAKE_IDENT),
                 rule,
             })
             .unwrap(),
@@ -652,11 +653,11 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            validator_id,
             btreemap!(
-                SysModuleId::AccessRules => access_rules.0.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
+                ObjectModuleId::SELF => validator_id,
+                ObjectModuleId::AccessRules => access_rules.0.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;
@@ -700,11 +701,11 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
-            validator_id,
             btreemap!(
-                SysModuleId::AccessRules => access_rules.0.0,
-                SysModuleId::Metadata => metadata.0,
-                SysModuleId::Royalty => royalty.0,
+                ObjectModuleId::SELF => validator_id,
+                ObjectModuleId::AccessRules => access_rules.0.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
             ),
             address.into(),
         )?;

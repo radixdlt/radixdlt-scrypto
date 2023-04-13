@@ -1,4 +1,4 @@
-use radix_engine::errors::{InterpreterError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SystemUpstreamError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -70,7 +70,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::InterpreterError(InterpreterError::ScryptoBlueprintNotFound(
+        if let RuntimeError::SystemUpstreamError(SystemUpstreamError::BlueprintNotFound(
             blueprint,
         )) = e
         {

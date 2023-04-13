@@ -62,12 +62,12 @@ impl Publish {
         .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
             bootstrap(&mut substate_db, &scrypto_interpreter);
 
             let node_id: NodeId = package_address.0.into();
-            let module_id: ModuleId = SysModuleId::ObjectState.into();
+            let module_id: ModuleId = SysModuleId::ObjectTuple.into();
             let substate_key_code: SubstateKey = PackageOffset::Code.into();
             let package_code = PackageCodeSubstate { code };
 

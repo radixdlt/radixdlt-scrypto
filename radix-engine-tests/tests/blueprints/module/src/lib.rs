@@ -53,14 +53,12 @@ mod component_module {
             let access_rules: Own = scrypto_decode(&rtn).unwrap();
 
             let address = ScryptoEnv
-                .globalize(
-                    *component.component.0.as_node_id(),
-                    btreemap!(
-                        SysModuleId::AccessRules => metadata.0,
-                        SysModuleId::Metadata => royalty.0,
-                        SysModuleId::Royalty => access_rules.0,
-                    ),
-                )
+                .globalize(btreemap!(
+                    ObjectModuleId::SELF => *component.component.0.as_node_id(),
+                    ObjectModuleId::AccessRules => metadata.0,
+                    ObjectModuleId::Metadata => royalty.0,
+                    ObjectModuleId::Royalty => access_rules.0,
+                ))
                 .unwrap();
 
             ComponentAddress::new_unchecked(address.into())

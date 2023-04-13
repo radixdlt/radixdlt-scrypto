@@ -1,9 +1,10 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataEntry, MetadataValue, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -117,7 +118,7 @@ fn can_lock_package_metadata_with_owner() {
         .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
         .set_method_access_rule(
             package_address.into(),
-            MethodKey::new(SysModuleId::Metadata, METADATA_SET_IDENT),
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
             AccessRule::DenyAll,
         )
         .build();

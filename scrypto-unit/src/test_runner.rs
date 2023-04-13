@@ -7,26 +7,27 @@ use std::process::Command;
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::kernel::kernel::Kernel;
-use radix_engine::kernel::module_mixer::KernelModuleMixer;
-use radix_engine::kernel::track::Track;
+use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
-use radix_engine::system::kernel_modules::costing::FeeTable;
-use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
+use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system_callback::SystemCallback;
+use radix_engine::system::system_modules::costing::FeeTable;
+use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
+use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::{ScryptoVm, Vm};
 use radix_engine_interface::api::component::ComponentRoyaltyAccumulatorSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
@@ -149,7 +150,7 @@ impl TestRunnerBuilder {
     }
 
     pub fn build(self) -> TestRunner {
-        let scrypto_interpreter = ScryptoInterpreter {
+        let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,
@@ -204,7 +205,7 @@ impl TestRunnerBuilder {
 }
 
 pub struct TestRunner {
-    scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
@@ -333,7 +334,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::ObjectState.into(),
+                            SysModuleId::ObjectTuple.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
@@ -353,7 +354,7 @@ impl TestRunner {
             .substate_db
             .get_substate(
                 package_address.as_node_id(),
-                SysModuleId::ObjectState.into(),
+                SysModuleId::ObjectTuple.into(),
                 &PackageOffset::Royalty.into(),
             )
             .expect("Database misconfigured")
@@ -365,7 +366,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::ObjectState.into(),
+                            SysModuleId::ObjectTuple.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
@@ -416,7 +417,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::ObjectTuple.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             )
             .expect("Database misconfigured")
@@ -434,7 +435,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::ObjectTuple.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .expect("Database misconfigured")
@@ -518,7 +519,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     address.as_node_id(),
-                    SysModuleId::ObjectState.into(),
+                    SysModuleId::ObjectTuple.into(),
                     &ValidatorOffset::Validator.into(),
                 )
                 .expect("Database misconfigured")
@@ -533,7 +534,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     EPOCH_MANAGER.as_node_id(),
-                    SysModuleId::ObjectState.into(),
+                    SysModuleId::ObjectTuple.into(),
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
                 .expect("Database misconfigured")
@@ -1195,36 +1196,41 @@ impl TestRunner {
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
-        let modules = KernelModuleMixer::standard(
-            transaction_hash,
-            AuthZoneParams {
-                initial_proofs: btreeset![],
-                virtual_resources: BTreeSet::new(),
-            },
-            SystemLoanFeeReserve::no_fee(),
-            FeeTable::new(),
-            0,
-            0,
-            &execution_config,
-        );
-        let scrypto_interpreter = ScryptoInterpreter {
+        let scrypto_interpreter = ScryptoVm {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
         };
 
-        // Create kernel
-        let mut kernel = Kernel::new(&mut id_allocator, &mut track, &scrypto_interpreter, modules);
+        let mut system = SystemCallback {
+            callback_obj: Vm {
+                scrypto_vm: &scrypto_interpreter,
+            },
+            modules: SystemModuleMixer::standard(
+                transaction_hash,
+                AuthZoneParams {
+                    initial_proofs: btreeset![],
+                    virtual_resources: BTreeSet::new(),
+                },
+                SystemLoanFeeReserve::no_fee(),
+                FeeTable::new(),
+                0,
+                0,
+                &execution_config,
+            ),
+        };
 
-        // Initialize kernel
-        kernel.initialize().expect("Failed to initialize kernel");
+        let kernel_boot = KernelBoot {
+            id_allocator: &mut id_allocator,
+            callback: &mut system,
+            store: &mut track,
+        };
 
-        // Call function
-        kernel.call_function(
+        kernel_boot.call_function(
             package_address,
             blueprint_name,
             function_name,
-            scrypto_args!(args),
+            scrypto_args!(&args),
         )
     }
 
@@ -1235,22 +1241,22 @@ impl TestRunner {
         let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
-                    SysModuleId::AccessRules => (
+                    ObjectModuleId::AccessRules => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    SysModuleId::Royalty => (
+                    ObjectModuleId::Royalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    SysModuleId::Metadata => (
+                    ObjectModuleId::Metadata => (
                         METADATA_PACKAGE,
                         METADATA_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    SysModuleId::ObjectState => {
+                    ObjectModuleId::SELF => {
                         let type_info: TypeInfoSubstate = scrypto_decode(
                             &self
                                 .substate_db()
@@ -1273,9 +1279,6 @@ impl TestRunner {
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
-                    SysModuleId::TypeInfo => {
-                        panic!("No event schema.")
-                    }
                 }
             }
             EventTypeIdentifier(
@@ -1295,7 +1298,7 @@ impl TestRunner {
                     .substate_db()
                     .get_substate(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState.into(),
+                        SysModuleId::ObjectTuple.into(),
                         &PackageOffset::Info.into(),
                     )
                     .expect("Database misconfigured")

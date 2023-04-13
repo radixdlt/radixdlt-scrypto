@@ -1,4 +1,4 @@
-use radix_engine::errors::{InterpreterError, KernelError, RuntimeError};
+use radix_engine::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -115,7 +115,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
-            RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(
                 DecodeError::MaxDepthExceeded(_)
             ))
         )

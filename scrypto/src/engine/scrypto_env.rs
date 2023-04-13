@@ -1,13 +1,14 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::ClientTransactionRuntimeApi;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{Blueprint, GlobalAddress};
-use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey, SysModuleId};
+use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -62,26 +63,17 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn globalize(
         &mut self,
-        node_id: NodeId,
-        modules: BTreeMap<SysModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
 
-        let bytes = copy_buffer(unsafe {
-            globalize_object(
-                node_id.as_ref().as_ptr(),
-                node_id.as_ref().len(),
-                modules.as_ptr(),
-                modules.len(),
-            )
-        });
+        let bytes = copy_buffer(unsafe { globalize_object(modules.as_ptr(), modules.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn globalize_with_address(
         &mut self,
-        node_id: NodeId,
-        modules: BTreeMap<SysModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), ClientApiError> {
         let modules = scrypto_encode(&modules).unwrap();
@@ -89,8 +81,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
         let bytes = copy_buffer(unsafe {
             globalize_with_address(
-                node_id.as_ref().as_ptr(),
-                node_id.as_ref().len(),
                 modules.as_ptr(),
                 modules.len(),
                 address.as_ptr(),
@@ -106,13 +96,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, SysModuleId::ObjectState, method_name, args)
+        self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
     }
 
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: SysModuleId,
+        module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
@@ -139,6 +129,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
+        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
+
+        Ok(())
+    }
+}
+
+impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
     fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -162,12 +160,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         });
 
         Ok(return_data)
-    }
-
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
-        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
-
-        Ok(())
     }
 }
 
