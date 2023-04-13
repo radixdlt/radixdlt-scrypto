@@ -5,7 +5,6 @@ use crate::errors::{
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::RefType;
-use crate::kernel::heap::NodeSubstates;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -29,6 +28,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;

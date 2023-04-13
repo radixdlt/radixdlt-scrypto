@@ -61,6 +61,8 @@ pub enum AcquireLockError {
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
 }
 
+pub type NodeSubstates = BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.

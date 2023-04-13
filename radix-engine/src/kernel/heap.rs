@@ -4,6 +4,7 @@ use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::math::Decimal;
+use radix_engine_stores::interface::NodeSubstates;
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, NodeSubstates>,
@@ -55,7 +56,7 @@ impl Heap {
     }
 
     /// Inserts a new node to heap.
-    pub fn insert_node(&mut self, node_id: NodeId, node: NodeSubstates) {
+    pub fn create_node(&mut self, node_id: NodeId, node: NodeSubstates) {
         self.nodes.insert(node_id, node);
     }
 
@@ -69,8 +70,6 @@ impl Heap {
             .unwrap_or_else(|| panic!("Heap does not contain {:?}", node_id))
     }
 }
-
-pub type NodeSubstates = BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 pub struct DroppedBucket {
     pub info: BucketInfoSubstate,

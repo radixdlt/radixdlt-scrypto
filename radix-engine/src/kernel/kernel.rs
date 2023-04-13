@@ -1,5 +1,5 @@
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::heap::{Heap, NodeSubstates};
+use super::heap::{Heap};
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
@@ -20,7 +20,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 

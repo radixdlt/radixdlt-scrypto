@@ -4,9 +4,9 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 
-use super::heap::{Heap, NodeSubstates};
+use super::heap::{Heap, };
 use super::kernel_api::LockInfo;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -695,7 +695,7 @@ impl CallFrame {
             self.add_ref(node_id, RefType::Normal);
         } else {
             // Insert node into heap
-            heap.insert_node(node_id, node_substates);
+            heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
         }
 
