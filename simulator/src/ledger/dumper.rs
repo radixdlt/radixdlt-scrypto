@@ -72,7 +72,9 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-            TypeInfoSubstate::KeyValueStore(_) => panic!("Unexpected"),
+            TypeInfoSubstate::KeyValueStore(_) | TypeInfoSubstate::IterableStore => {
+                panic!("Unexpected")
+            }
         };
 
         let mut accounter = ResourceAccounter::new(substate_db);

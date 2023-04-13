@@ -116,7 +116,7 @@ where
             TypeInfoSubstate::IterableStore => {
                 // TODO: Change to error
                 panic!("Not supported")
-            },
+            }
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::ObjectMap,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
@@ -436,7 +436,9 @@ where
                     }
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = access_rule_substates.remove(&SysModuleId::ObjectTuple.into()).unwrap();
+                    let access_rules = access_rule_substates
+                        .remove(&SysModuleId::ObjectTuple.into())
+                        .unwrap();
                     node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
                 ObjectModuleId::Metadata => {
@@ -452,7 +454,9 @@ where
                     }
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = metadata_substates.remove(&SysModuleId::ObjectMap.into()).unwrap();
+                    let metadata = metadata_substates
+                        .remove(&SysModuleId::ObjectMap.into())
+                        .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
                 ObjectModuleId::Royalty => {
@@ -468,7 +472,9 @@ where
                     }
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = royalty_substates.remove(&SysModuleId::ObjectTuple.into()).unwrap();
+                    let royalty = royalty_substates
+                        .remove(&SysModuleId::ObjectTuple.into())
+                        .unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
             }
@@ -644,13 +650,12 @@ where
 
         Ok(node_id)
     }
-
 }
 
 impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
-    where
-        Y: KernelApi<SystemCallback<V>>,
-        V: SystemCallbackObject,
+where
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn new_iterable(&mut self) -> Result<NodeId, RuntimeError> {
         let entity_type = EntityType::InternalIterableStore;
@@ -674,13 +679,18 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
     // TODO: If not, then cannot contain owned objects as they may be removed from underneath due to overwrites
     // TODO: If so, how do we ensure uniqueness while preserving query by key?
     // TODO: Will implement the former for now as much easier to implement
-    fn insert_into_iterable(&mut self, node_id: &NodeId, substate_key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+    fn insert_into_iterable(
+        &mut self,
+        node_id: &NodeId,
+        substate_key: SubstateKey,
+        buffer: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => { },
+            TypeInfoSubstate::IterableStore => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            },
+            }
         }
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
@@ -688,38 +698,57 @@ impl<'a, Y, V> ClientIterableApi<RuntimeError> for SystemDownstream<'a, Y, V>
         })?;
 
         if !value.owned_node_ids().is_empty() {
-            return Err(RuntimeError::SystemError(SystemError::CannotStoreOwnedInIterable));
+            return Err(RuntimeError::SystemError(
+                SystemError::CannotStoreOwnedInIterable,
+            ));
         }
 
-        self.api.kernel_insert_into_iterable(node_id, SysModuleId::ObjectIterable, substate_key, value)
+        self.api.kernel_insert_into_iterable(
+            node_id,
+            SysModuleId::ObjectIterable,
+            substate_key,
+            value,
+        )
     }
 
-    fn read_from_iterable(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn read_from_iterable(
+        &mut self,
+        node_id: &NodeId,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => { },
+            TypeInfoSubstate::IterableStore => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            },
+            }
         }
 
-        let substates = self.api.kernel_read_from_iterable(node_id, SysModuleId::ObjectIterable, count)?.into_iter()
+        let substates = self
+            .api
+            .kernel_read_from_iterable(node_id, SysModuleId::ObjectIterable, count)?
+            .into_iter()
             .map(|(k, e)| e.into())
             .collect();
 
         Ok(substates)
     }
 
-    fn remove_from_iterable(&mut self, node_id: &NodeId, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+    fn remove_from_iterable(
+        &mut self,
+        node_id: &NodeId,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => { },
+            TypeInfoSubstate::IterableStore => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            },
+            }
         }
 
-        self.api.kernel_remove_from_iterable(node_id, SysModuleId::ObjectIterable, substate_key)?;
+        self.api
+            .kernel_remove_from_iterable(node_id, SysModuleId::ObjectIterable, substate_key)?;
 
         Ok(())
     }

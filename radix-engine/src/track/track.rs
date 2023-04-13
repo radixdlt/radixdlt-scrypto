@@ -1,7 +1,9 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore};
+use radix_engine_stores::interface::{
+    AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum SubstateLockState {
@@ -159,9 +161,7 @@ impl<'s> Track<'s> {
             for (module_id, module) in modules {
                 for (substate_key, loaded) in module {
                     let update = match loaded.meta_state {
-                        SubstateMetaState::New => {
-                            StateUpdate::Create(loaded.substate.into())
-                        },
+                        SubstateMetaState::New => StateUpdate::Create(loaded.substate.into()),
                         SubstateMetaState::Updated(..) => {
                             StateUpdate::Update(loaded.substate.into())
                         }
@@ -276,7 +276,8 @@ impl<'s> SubstateStore for Track<'s> {
                 if flags.contains(LockFlags::FORCE_WRITE) {
                     match &mut loaded_substate.meta_state {
                         state @ (SubstateMetaState::Read | SubstateMetaState::Updated(..)) => {
-                            *state = SubstateMetaState::Updated(Some(loaded_substate.substate.clone()));
+                            *state =
+                                SubstateMetaState::Updated(Some(loaded_substate.substate.clone()));
                         }
                         SubstateMetaState::New => {
                             panic!("Unexpected");
@@ -287,7 +288,7 @@ impl<'s> SubstateStore for Track<'s> {
                         SubstateMetaState::New => {}
                         state @ SubstateMetaState::Read => {
                             *state = SubstateMetaState::Updated(None);
-                        },
+                        }
                         SubstateMetaState::Updated(..) => {}
                     }
                 }
@@ -352,11 +353,21 @@ impl<'s> SubstateStore for Track<'s> {
         .substate = substate_value;
     }
 
-    fn delete_substate(&mut self, node_id: &NodeId, module_id: ModuleId, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
+    fn delete_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
         todo!()
     }
 
-    fn read_substates(&mut self, node_id: &NodeId, module_id: ModuleId, count: u32) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    fn read_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         todo!()
     }
 }

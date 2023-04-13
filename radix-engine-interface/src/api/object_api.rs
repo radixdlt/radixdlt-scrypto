@@ -1,5 +1,5 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use crate::types::*;
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
@@ -86,7 +86,12 @@ pub trait ClientIterableApi<E> {
     /// Creates a new key value store with a given schema
     fn new_iterable(&mut self) -> Result<NodeId, E>;
 
-    fn insert_into_iterable(&mut self, node_id: &NodeId, substate_key: SubstateKey, buffer: Vec<u8>) -> Result<(), E>;
+    fn insert_into_iterable(
+        &mut self,
+        node_id: &NodeId,
+        substate_key: SubstateKey,
+        buffer: Vec<u8>,
+    ) -> Result<(), E>;
 
     fn remove_from_iterable(
         &mut self,
@@ -101,10 +106,14 @@ pub trait ClientIterableApi<E> {
         node_id: &NodeId,
         count: u32,
     ) -> Result<Vec<S>, E> {
-        let entries = self.read_from_iterable(node_id, count)?.into_iter().map(|buf| {
-            let typed: S = scrypto_decode(&buf).unwrap();
-            typed
-        }).collect();
+        let entries = self
+            .read_from_iterable(node_id, count)?
+            .into_iter()
+            .map(|buf| {
+                let typed: S = scrypto_decode(&buf).unwrap();
+                typed
+            })
+            .collect();
 
         Ok(entries)
     }

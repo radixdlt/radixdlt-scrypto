@@ -436,7 +436,9 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                        TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
+                            return None
+                        }
                     }
                 }
             }

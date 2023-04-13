@@ -87,11 +87,7 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid.
     fn release_lock(&mut self, handle: u32);
 
-    fn create_node(
-        &mut self,
-        node_id: NodeId,
-        node_substates: NodeSubstates,
-    );
+    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
 
     /// Inserts a substate into the substate store.
     ///

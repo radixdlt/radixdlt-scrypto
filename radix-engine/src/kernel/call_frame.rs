@@ -1,13 +1,13 @@
 use crate::kernel::actor::Actor;
+use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
-use crate::system::node_init::ModuleInit;
 
-use super::heap::{Heap, };
+use super::heap::Heap;
 use super::kernel_api::LockInfo;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -778,8 +778,6 @@ impl CallFrame {
                 for node in substate_value.owned_node_ids() {
                     Self::move_node_to_store(heap, store, node)?;
                 }
-
-
             }
         }
 

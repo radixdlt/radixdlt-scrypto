@@ -195,11 +195,10 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    let mut modules: NodeSubstates =
-        node_modules
-            .into_iter()
-            .map(|(k, v)| (k.into(), v.to_substates()))
-            .collect();
+    let mut modules: NodeSubstates = node_modules
+        .into_iter()
+        .map(|(k, v)| (k.into(), v.to_substates()))
+        .collect();
     modules.insert(SysModuleId::ObjectTuple.into(), node_init);
 
     api.kernel_create_node(node_id, modules)?;

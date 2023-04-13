@@ -577,7 +577,7 @@ fn registered_validator_test(
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
