@@ -853,7 +853,7 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources(log=package_address.as_node_id().entity_type(), log={format!("{:x?}",package_address.to_vec().iter().rev().take(8))})]
+    #[trace_resources(log=package_address.as_node_id().entity_type())]
     fn kernel_create_wasm_instance(
         &mut self,
         package_address: PackageAddress,

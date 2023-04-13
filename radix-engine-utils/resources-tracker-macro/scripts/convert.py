@@ -90,7 +90,7 @@ for path in os.listdir(input_folder):
             key += "::" + param[0]
 
         # handle kernel_create_wasm_instance
-        param = child.xpath("./self::kernel_create_wasm_instance/[@arg0 | @arg1]")
+        param = child.xpath("./self::kernel_create_wasm_instance[@arg0 | @arg1]")
         if param:
             key += "::" + str(param[0].attrib["arg0"]) + "::" + str(param[0].attrib["arg1"])
         param = child.xpath("./self::kernel_create_wasm_instance/create_instance/@arg0")

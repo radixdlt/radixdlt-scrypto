@@ -7,9 +7,9 @@ pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
 /// Shared memory name
 const SHARED_MEM_ID: &str = "/shm-scrypto";
 /// Maximum pre-allocated data entries
-const OUTPUT_DATA_COUNT: usize = 500000;
+const OUTPUT_DATA_COUNT: usize = 600000;
 /// Tracked functions calls stack depth
-const CALL_STACK_DEPTH: usize = 30;
+const CALL_STACK_DEPTH: usize = 40;
 /// Output directory
 const OUTPUT_DIR: &str = "/tmp/scrypto-resources-usage";
 
