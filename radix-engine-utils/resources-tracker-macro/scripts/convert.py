@@ -27,7 +27,7 @@ api_functions_ins = {}
 api_functions_info_data = {}
 
 kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
-use_max_instead_of_median = [] #["kernel_create_wasm_instance"]
+use_max_instead_of_median = ["kernel_create_wasm_instance"] # due to use of caching
 
 
 for path in os.listdir(input_folder):
@@ -90,9 +90,9 @@ for path in os.listdir(input_folder):
             key += "::" + param[0]
 
         # handle kernel_create_wasm_instance
-        param = child.xpath("./self::kernel_create_wasm_instance[@arg0 | @arg1]")
+        param = child.xpath("./self::kernel_create_wasm_instance/@arg0")
         if param:
-            key += "::" + str(param[0].attrib["arg0"]) + "::" + str(param[0].attrib["arg1"])
+            key += "::" + str(param[0])
         param = child.xpath("./self::kernel_create_wasm_instance/create_instance/@arg0")
         if param:
             key += "::" + str(param[0])
@@ -162,7 +162,7 @@ if detailed_output:
         output_tab.append([i, len(api_functions_ins[i][1]), min(api_functions_ins[i][1]), max(api_functions_ins[i][1]), round(mean(api_functions_ins[i][1])), round(median(api_functions_ins[i][1])) ])
 else:
     for i in api_functions_ins.keys():
-        if i in use_max_instead_of_median:
+        if i.split(':')[0] in use_max_instead_of_median:
             output_tab.append([i, max(api_functions_ins[i][1]), "max" ])
         else:
             output_tab.append([i, round(median(api_functions_ins[i][1])), "median" ])
