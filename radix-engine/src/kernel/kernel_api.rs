@@ -71,8 +71,8 @@ pub trait KernelSubstateApi {
     ) -> Result<(), RuntimeError>;
 }
 
-pub trait KernelIterableApi {
-    fn kernel_insert_into_iterable(
+pub trait KernelSortedApi {
+    fn kernel_insert_into_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -80,14 +80,14 @@ pub trait KernelIterableApi {
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
-    fn kernel_remove_from_iterable(
+    fn kernel_remove_from_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
         unique: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
 
-    fn kernel_read_from_iterable(
+    fn kernel_read_from_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -160,7 +160,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 pub trait KernelApi<M: KernelCallbackObject>:
     KernelNodeApi
     + KernelSubstateApi
-    + KernelIterableApi
+    + KernelSortedApi
     + KernelInvokeApi<M::Invocation>
     + KernelInternalApi<M>
 {

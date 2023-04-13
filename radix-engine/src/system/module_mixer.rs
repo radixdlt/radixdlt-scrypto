@@ -25,6 +25,7 @@ use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
+use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
@@ -475,35 +476,35 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_create_node(api, node_id, node_module_init)?;
+            KernelTraceModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_create_node(api, node_id, node_module_init)?;
+            CostingModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_create_node(api, node_id, node_module_init)?;
+            NodeMoveModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_create_node(api, node_id, node_module_init)?;
+            AuthModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_create_node(api, node_id, node_module_init)?;
+            LoggerModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_create_node(api, node_id, node_module_init)?;
+            TransactionRuntimeModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_create_node(api, node_id, node_module_init)?;
+            ExecutionTraceModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_create_node(api, node_id, node_module_init)?;
+            TransactionLimitsModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_create_node(api, node_id, node_module_init)?;
+            EventsModule::before_create_node(api, node_id, node_substates)?;
         }
         Ok(())
     }

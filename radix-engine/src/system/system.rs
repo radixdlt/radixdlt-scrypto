@@ -703,7 +703,7 @@ where
             ));
         }
 
-        self.api.kernel_insert_into_iterable(
+        self.api.kernel_insert_into_sorted(
             node_id,
             SysModuleId::ObjectIterable,
             substate_key,
@@ -726,7 +726,7 @@ where
 
         let substates = self
             .api
-            .kernel_read_from_iterable(node_id, SysModuleId::ObjectIterable, count)?
+            .kernel_read_from_sorted(node_id, SysModuleId::ObjectIterable, count)?
             .into_iter()
             .map(|(_key, value)| value.into())
             .collect();
@@ -748,7 +748,7 @@ where
         }
 
         self.api
-            .kernel_remove_from_iterable(node_id, SysModuleId::ObjectIterable, substate_key)?;
+            .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, substate_key)?;
 
         Ok(())
     }

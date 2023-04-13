@@ -9,7 +9,7 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelIterableApi};
+use crate::kernel::kernel_api::{KernelInvocation, KernelSortedApi};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
@@ -690,12 +690,12 @@ where
     }
 }
 
-impl<'g, M, S> KernelIterableApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelSortedApi for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_insert_into_iterable(
+    fn kernel_insert_into_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -716,7 +716,7 @@ where
             .map_err(RuntimeError::KernelError)
     }
 
-    fn kernel_remove_from_iterable(
+    fn kernel_remove_from_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -729,7 +729,7 @@ where
             .map_err(RuntimeError::KernelError)
     }
 
-    fn kernel_read_from_iterable(
+    fn kernel_read_from_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
