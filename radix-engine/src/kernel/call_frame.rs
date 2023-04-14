@@ -197,42 +197,6 @@ impl CallFrame {
         self.get_node_visibility(node_id)
             .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        // Substate Virtualization
-        // TODO: Move into lower virtualization layer
-        /*
-        if module_id.virtualize_substates() {
-            if heap.contains_node(node_id) {
-                if heap
-                    .get_substate(node_id, module_id.into(), substate_key)
-                    .is_none()
-                {
-
-                }
-            } else {
-                match store.acquire_lock(
-                    node_id,
-                    module_id.into(),
-                    substate_key,
-                    LockFlags::read_only(),
-                ) {
-                    Ok(handle) => {
-                        store.release_lock(handle);
-                    }
-                    Err(error) => {
-                        if matches!(error, AcquireLockError::NotFound(_, _, _)) {
-                            store.set_substate(
-                                node_id.clone(),
-                                module_id.into(),
-                                substate_key.clone(),
-                                IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
-                            ).expect("Was not found so should be no issues with upserting");
-                        }
-                    }
-                }
-            };
-        }
-         */
-
         // Lock and read the substate
         let mut store_handle = None;
         let substate_value = if heap.contains_node(node_id) {
@@ -240,24 +204,21 @@ impl CallFrame {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
-            match heap.get_substate(node_id, module_id.into(), substate_key) {
+            match heap.get_substate_virtualize(node_id, module_id.into(), substate_key, || {
+                if module_id.virtualize_substates() {
+                    let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
+                    Some(value)
+                } else {
+                    None
+                }
+            }) {
                 Some(x) => x,
                 _ => {
-                    if module_id.virtualize_substates() {
-                        heap.put_substate(
-                            node_id.clone(),
-                            module_id,
-                            substate_key.clone(),
-                            IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
-                        );
-                        heap.get_substate(node_id, module_id.into(), substate_key).unwrap()
-                    } else {
-                        return Err(LockSubstateError::SubstateNotFound(
-                            node_id.clone(),
-                            module_id,
-                            substate_key.clone(),
-                        ));
-                    }
+                    return Err(LockSubstateError::SubstateNotFound(
+                        node_id.clone(),
+                        module_id,
+                        substate_key.clone(),
+                    ));
                 }
             }
         } else {

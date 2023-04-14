@@ -1,3 +1,4 @@
+use std::collections::btree_map::Entry;
 use crate::blueprints::resource::*;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -24,6 +25,29 @@ impl Heap {
     /// Checks if the given node is in this heap.
     pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
+    }
+
+    pub fn get_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        virtualize: F,
+    ) -> Option<&IndexedScryptoValue> {
+        let entry = self.nodes.entry(*node_id)
+            .or_insert(BTreeMap::new()).entry(module_id).or_insert(BTreeMap::new())
+            .entry(substate_key.clone());
+        if let Entry::Vacant(e) = entry {
+            let value = virtualize();
+            if let Some(value) = value {
+                e.insert(value);
+            }
+        }
+
+        self.nodes
+            .get(node_id)
+            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|module_substates| module_substates.get(substate_key))
     }
 
     /// Reads a substate
