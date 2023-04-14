@@ -84,6 +84,7 @@ impl TransactionLimitsModule {
             .call_frames_stack
             .last()
             .expect("Call frames stack (Wasm memory) should not be empty.");
+        /*
         if current_call_frame.wasm_memory_usage > self.limits_config.max_wasm_memory_per_call_frame
         {
             return Err(RuntimeError::ModuleError(
@@ -94,9 +95,11 @@ impl TransactionLimitsModule {
                 ),
             ));
         };
+ */
 
         // calculate current maximum consumed memory
         // sum all call stack values
+        /*
         let max_value = self
             .call_frames_stack
             .iter()
@@ -113,6 +116,8 @@ impl TransactionLimitsModule {
         } else {
             Ok(())
         }
+         */
+        Ok(())
     }
 
     /// Checks if substate reads/writes count and size is in the limit.

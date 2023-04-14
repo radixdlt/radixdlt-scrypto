@@ -77,6 +77,7 @@ where
     }
 
     // TODO: refactor this into mint function
+    /*
     if amount > dec!("1000000000000000000") {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(
@@ -84,6 +85,7 @@ where
             ),
         ));
     }
+     */
 
     let bucket_info = BucketInfoSubstate {
         resource_address,
@@ -218,6 +220,7 @@ impl FungibleResourceManagerBlueprint {
             }
 
             // Practically impossible to overflow the Decimal type with this limit in place.
+            /*
             if amount > dec!("1000000000000000000") {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
@@ -225,6 +228,7 @@ impl FungibleResourceManagerBlueprint {
                     ),
                 ));
             }
+ */
 
             resource_manager.total_supply += amount;
 

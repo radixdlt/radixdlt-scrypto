@@ -776,6 +776,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::{BufReader, Read};
+
     use super::*;
     use crate::system::node_substates::PersistedSubstate;
     use crate::transaction::BalanceChange;
@@ -1057,4 +1060,34 @@ mod tests {
                 .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
         }
     }
+
+
+    #[test]
+    fn test_large_genesis_transaction() {
+        let f = File::open("./test-large-genesis-txn.raw").unwrap();
+        let mut reader = BufReader::new(f);
+        let mut buffer = Vec::new();
+        reader.read_to_end(&mut buffer).unwrap();
+
+        let genesis_transaction: SystemTransaction = manifest_decode(&buffer).unwrap();
+
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let mut substate_store = TypedInMemorySubstateStore::new();
+
+        println!("starting execution...");
+        let transaction_receipt = execute_transaction(
+            &substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let receipt_encoded = scrypto_encode(&transaction_receipt).unwrap();
+        println!("Encoded receipt size is {}", receipt_encoded.len());
+
+        let commit_result = transaction_receipt.expect_commit(true);
+        // commit_result.state_updates.commit(&mut substate_store);
+    }
+
 }

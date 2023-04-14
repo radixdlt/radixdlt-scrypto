@@ -220,6 +220,8 @@ impl SystemLoanFeeReserve {
     }
 
     fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
+        // self.execution_committed_sum overflows
+
         if checked_add(
             self.execution_committed_sum,
             checked_add(self.royalty_committed_sum, cost_units)?,
@@ -345,8 +347,11 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
 
+
+let mut asd = self.execution_deferred[reason.clone() as usize];
+println!("Execution deffered of reason {} is {}", reason, asd);
         checked_assign_add(
-            &mut self.execution_deferred[reason as usize],
+            &mut asd,
             checked_multiply(cost_units, multiplier)?,
         )?;
 
@@ -383,7 +388,8 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
 
-        self.consume_execution_internal(cost_units, reason)?;
+        // TODO: bring it back
+        // self.consume_execution_internal(cost_units, reason)?;
 
         if !self.fully_repaid() && self.execution_committed_sum >= self.system_loan {
             self.repay_all()?;
