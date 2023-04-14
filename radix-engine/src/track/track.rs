@@ -57,13 +57,6 @@ impl SubstateLockState {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum SubstateMeta {
-    New,
-    Read,
-    Updated,
-}
-
 #[derive(Debug)]
 pub struct RuntimeSubstate {
     value: IndexedScryptoValue,
@@ -80,20 +73,31 @@ impl RuntimeSubstate {
 }
 
 #[derive(Debug)]
+pub enum ReadOnly {
+    NonExistent,
+    Existent(RuntimeSubstate),
+}
+
+#[derive(Debug)]
 pub enum TrackedSubstateKey {
-    New(RuntimeSubstate),
-    Read(RuntimeSubstate),
+    ReadOnly(ReadOnly),
     Update(RuntimeSubstate),
+    WriteOnly(RuntimeSubstate),
     Delete,
 }
 
 impl TrackedSubstateKey {
-    fn get_runtime(&mut self) -> Option<&mut RuntimeSubstate> {
+    fn get_substate(&mut self) -> Option<&mut RuntimeSubstate> {
         match self {
-            TrackedSubstateKey::New(substate)
-            | TrackedSubstateKey::Read(substate)
-            | TrackedSubstateKey::Update(substate) => Some(substate),
-            TrackedSubstateKey::Delete => None,
+            TrackedSubstateKey::WriteOnly(substate)
+            | TrackedSubstateKey::ReadOnly(ReadOnly::Existent(substate))
+            | TrackedSubstateKey::Update(substate) => {
+                Some(substate)
+            },
+            TrackedSubstateKey::Delete
+            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => {
+                None
+            },
         }
     }
 }
@@ -173,17 +177,17 @@ impl<'s> Track<'s> {
             for (module_id, module) in node_update.modules {
                 for (substate_key, tracked) in module {
                     let update = match tracked {
-                        TrackedSubstateKey::New(substate) => {
+                        TrackedSubstateKey::WriteOnly(substate) => {
                             StateUpdate::Create(substate.value.into())
                         }
                         TrackedSubstateKey::Update(substate) => {
                             StateUpdate::Update(substate.value.into())
                         }
-                        TrackedSubstateKey::Read(substate) => {
+                        TrackedSubstateKey::ReadOnly(ReadOnly::Existent(substate)) => {
                             // TODO: Fix
                             StateUpdate::Update(substate.value.into())
                         }
-                        TrackedSubstateKey::Delete => {
+                        TrackedSubstateKey::Delete | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => {
                             todo!()
                         }
                     };
@@ -195,12 +199,12 @@ impl<'s> Track<'s> {
         StateUpdates { substate_changes }
     }
 
-    fn get_tracked_existing_substate(
+    fn get_tracked_substate(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey
-    ) -> Option<&mut TrackedSubstateKey> {
+    ) -> &mut TrackedSubstateKey {
         let module_substates = self.updates.entry(*node_id).or_insert(TrackedNode::new(false))
             .modules.entry(module_id).or_insert(BTreeMap::new());
         let entry = module_substates.entry(substate_key.clone());
@@ -210,14 +214,17 @@ impl<'s> Track<'s> {
                 let value = self.substate_db
                     .get_substate(node_id, module_id, substate_key)
                     .expect("Database misconfigured")
-                    .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))?;
-                e.insert(TrackedSubstateKey::Read(RuntimeSubstate::new(value)));
+                    .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
+                if let Some(value) = value {
+                    e.insert(TrackedSubstateKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(value))));
+                } else {
+                    e.insert(TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent));
+                }
             },
             Entry::Occupied(..) => {}
         };
 
-        let tracked = module_substates.get_mut(substate_key).unwrap();
-        Some(tracked)
+        module_substates.get_mut(substate_key).unwrap()
     }
 }
 
@@ -230,16 +237,11 @@ impl<'s> SubstateStore for Track<'s> {
         flags: LockFlags,
     ) -> Result<u32, AcquireLockError> {
         // Load the substate from state track
-        let tracked = self.get_tracked_existing_substate(node_id, module_id, substate_key)
-            .ok_or(AcquireLockError::NotFound(
-                *node_id,
-                module_id,
-                substate_key.clone(),
-            ))?;
+        let tracked = self.get_tracked_substate(node_id, module_id, substate_key);
 
         // Check substate state
         let substate = match tracked {
-            TrackedSubstateKey::New(substate) => {
+            TrackedSubstateKey::WriteOnly(substate) => {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
                         *node_id,
@@ -259,10 +261,10 @@ impl<'s> SubstateStore for Track<'s> {
                 }
                 substate
             }
-            TrackedSubstateKey::Read(substate) => {
+            TrackedSubstateKey::ReadOnly(ReadOnly::Existent(substate)) => {
                substate
             }
-            TrackedSubstateKey::Delete => {
+            TrackedSubstateKey::Delete | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => {
                 return Err(AcquireLockError::NotFound(
                     *node_id,
                     module_id,
@@ -285,15 +287,14 @@ impl<'s> SubstateStore for Track<'s> {
         let (node_id, module_id, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 
-        let tracked = self.get_tracked_existing_substate(&node_id, module_id, &substate_key)
-            .expect("Substate missing for valid lock handle");
+        let tracked = self.get_tracked_substate(&node_id, module_id, &substate_key);
 
         let (substate, update) = match tracked {
-            TrackedSubstateKey::New(substate)
+            TrackedSubstateKey::WriteOnly(substate)
             | TrackedSubstateKey::Update(substate) => {
                 (substate, None)
             },
-            TrackedSubstateKey::Read(substate) => {
+            TrackedSubstateKey::ReadOnly(ReadOnly::Existent(substate)) => {
                 let update = if flags.contains(LockFlags::MUTABLE) {
                     Some(TrackedSubstateKey::Update(RuntimeSubstate::new(substate.value.clone())))
                 } else {
@@ -301,7 +302,9 @@ impl<'s> SubstateStore for Track<'s> {
                 };
                 (substate, update)
             }
-            TrackedSubstateKey::Delete => panic!("Could not have created lock on deleted substate")
+            TrackedSubstateKey::Delete | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => {
+                panic!("Could not have created lock on non existent substate")
+            }
         };
 
         let force_write = if flags.contains(LockFlags::FORCE_WRITE) {
@@ -334,7 +337,7 @@ impl<'s> SubstateStore for Track<'s> {
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
         let node_runtime = node_substates.into_iter().map(|(module_id, module_substates)| {
             let module_substates = module_substates.into_iter()
-                .map(|(key, value)| (key, TrackedSubstateKey::New(RuntimeSubstate::new(value))))
+                .map(|(key, value)| (key, TrackedSubstateKey::WriteOnly(RuntimeSubstate::new(value))))
                 .collect();
             (module_id, module_substates)
         }).collect();
@@ -354,10 +357,10 @@ impl<'s> SubstateStore for Track<'s> {
     ) -> Result<(), AcquireLockError> {
         let node_update = self.updates.entry(node_id).or_insert(TrackedNode::new(false));
         let prev = node_update.modules.entry(module_id).or_insert(BTreeMap::new())
-            .insert(substate_key.clone(), TrackedSubstateKey::New(RuntimeSubstate::new(substate_value)));
+            .insert(substate_key.clone(), TrackedSubstateKey::WriteOnly(RuntimeSubstate::new(substate_value)));
 
         if let Some(mut prev) = prev {
-            if let Some(runtime) = prev.get_runtime() {
+            if let Some(runtime) = prev.get_substate() {
                 if runtime.lock_state.is_locked() {
                     return Err(AcquireLockError::SubstateLocked(
                         node_id,
@@ -379,9 +382,8 @@ impl<'s> SubstateStore for Track<'s> {
         let module_id = *module_id;
         let substate_key = substate_key.clone();
 
-        let tracked = self.get_tracked_existing_substate(&node_id, module_id, &substate_key)
-            .expect("Substate missing for valid lock handle");
-        &tracked.get_runtime().unwrap().value
+        let tracked = self.get_tracked_substate(&node_id, module_id, &substate_key);
+        &tracked.get_substate().expect("Could not have created lock on non existent substate").value
     }
 
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
@@ -396,9 +398,8 @@ impl<'s> SubstateStore for Track<'s> {
         let module_id = *module_id;
         let substate_key = substate_key.clone();
 
-        let tracked = self.get_tracked_existing_substate(&node_id, module_id, &substate_key)
-            .expect("Substate missing for valid lock handle");
-        tracked.get_runtime().unwrap().value = substate_value;
+        let tracked = self.get_tracked_substate(&node_id, module_id, &substate_key);
+        tracked.get_substate().expect("Could not have created lock on non existent substate").value = substate_value;
     }
 
     fn delete_substate(
@@ -422,7 +423,7 @@ impl<'s> SubstateStore for Track<'s> {
                 let count: usize = count.try_into().unwrap();
                 return substates.into_iter()
                     .take(count)
-                    .map(|(key, tracked)| (key.clone(), tracked.get_runtime().unwrap().value.clone())).collect();
+                    .map(|(key, tracked)| (key.clone(), tracked.get_substate().unwrap().value.clone())).collect();
             }
         }
 
