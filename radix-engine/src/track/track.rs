@@ -320,19 +320,47 @@ impl<'s> SubstateStore for Track<'s> {
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), AcquireLockError> {
-        let node_update = self.updates.entry(node_id).or_insert(TrackedNode::new(false));
-        let prev = node_update.modules.entry(module_id).or_insert(BTreeMap::new())
-            .insert(substate_key.clone(), TrackedSubstateKey::WriteOnly(Write::Update(RuntimeSubstate::new(substate_value))));
+        let module_substates = self.updates.entry(node_id).or_insert(TrackedNode::new(false))
+            .modules.entry(module_id).or_insert(BTreeMap::new());
+        let entry = module_substates.entry(substate_key.clone());
 
-        if let Some(mut prev) = prev {
-            if let Some(runtime) = prev.get_substate() {
-                if runtime.lock_state.is_locked() {
-                    return Err(AcquireLockError::SubstateLocked(
-                        node_id,
-                        module_id,
-                        substate_key.clone(),
-                    ));
+        match entry {
+            Entry::Vacant(e) => {
+                e.insert(TrackedSubstateKey::WriteOnly(Write::Update(RuntimeSubstate::new(substate_value))));
+            }
+            Entry::Occupied(mut e) => {
+                let tracked = e.get_mut();
+                if let Some(runtime) = tracked.get_substate() {
+                    if runtime.lock_state.is_locked() {
+                        return Err(AcquireLockError::SubstateLocked(
+                            node_id,
+                            module_id,
+                            substate_key.clone(),
+                        ));
+                    }
                 }
+
+                match tracked {
+                    TrackedSubstateKey::New(substate)
+                    | TrackedSubstateKey::WriteOnly(Write::Update(substate))
+                    | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => {
+                        substate.value = substate_value;
+                    },
+
+                    TrackedSubstateKey::ReadOnly(read_only) => {
+                        let read = match read_only {
+                            ReadOnly::Existent(..) => Read::Existent,
+                            ReadOnly::NonExistent => Read::NonExistent,
+                        };
+                        let new_tracked = TrackedSubstateKey::ReadAndWrite(read, Write::Update(RuntimeSubstate::new(substate_value)));
+                        let mut old = mem::replace(tracked, new_tracked);
+                        tracked.get_substate().unwrap().lock_state = old.get_substate().unwrap().lock_state;
+                    }
+                    TrackedSubstateKey::ReadAndWrite(_, write @ Write::Delete)
+                    | TrackedSubstateKey::WriteOnly(write @ Write::Delete)=> {
+                        *write = Write::Update(RuntimeSubstate::new(substate_value));
+                    }
+                };
             }
         }
 
