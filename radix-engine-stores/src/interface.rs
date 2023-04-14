@@ -69,24 +69,6 @@ pub type NodeSubstates = BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScrypto
 ///
 /// The trait here is for formalizing the interface and intended user flow.
 pub trait SubstateStore {
-    /// Acquires a lock over a substate.
-    ///
-    /// # Panics
-    /// - If the module ID is invalid
-    fn acquire_lock(
-        &mut self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> Result<u32, AcquireLockError>;
-
-    /// Releases a lock.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid.
-    fn release_lock(&mut self, handle: u32);
-
     /// Inserts a node into the substate store.
     ///
     /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
@@ -100,7 +82,10 @@ pub trait SubstateStore {
     );
 
     /// Inserts a substate into the substate store.
-    fn upsert_substate(
+    ///
+    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
+    /// is undefined.
+    fn set_substate(
         &mut self,
         node_id: NodeId,
         module_id: ModuleId,
@@ -108,19 +93,10 @@ pub trait SubstateStore {
         substate_value: IndexedScryptoValue,
     ) -> Result<(), AcquireLockError>;
 
-    /// Reads a substate of the given node module.
+    /// Deletes a substate from the substate store.
     ///
-    /// # Panics
-    /// - If the lock handle is invalid
-    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue;
-
-    /// Updates a substate.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid;
-    /// - If the lock handle is not associated with WRITE permission
-    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
-
+    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
+    /// is undefined.
     fn delete_substate(
         &mut self,
         node_id: &NodeId,
@@ -134,6 +110,45 @@ pub trait SubstateStore {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
+
+    /// Acquires a lock over a substate.
+    fn acquire_lock(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+    ) -> Result<u32, AcquireLockError> {
+        self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
+    }
+
+    fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+        virtualize: F,
+    ) -> Result<u32, AcquireLockError>;
+
+    /// Releases a lock.
+    ///
+    /// # Panics
+    /// - If the lock handle is invalid.
+    fn release_lock(&mut self, handle: u32);
+
+    /// Reads a substate of the given node module.
+    ///
+    /// # Panics
+    /// - If the lock handle is invalid
+    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue;
+
+    /// Updates a substate.
+    ///
+    /// # Panics
+    /// - If the lock handle is invalid;
+    /// - If the lock handle is not associated with WRITE permission
+    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -147,6 +162,8 @@ pub enum StateUpdate {
     Create(Vec<u8>),
     /// Updates a substate.
     Update(Vec<u8>),
+
+    Delete,
 }
 
 /// The configuration of a node module.

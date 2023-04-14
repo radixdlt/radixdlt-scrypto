@@ -224,7 +224,7 @@ impl CallFrame {
                     }
                     Err(error) => {
                         if matches!(error, AcquireLockError::NotFound(_, _, _)) {
-                            store.upsert_substate(
+                            store.set_substate(
                                 node_id.clone(),
                                 module_id.into(),
                                 substate_key.clone(),
@@ -482,7 +482,7 @@ impl CallFrame {
         if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.upsert_substate(*node_id, module_id.into(), key, value)
+            store.set_substate(*node_id, module_id.into(), key, value)
                 .map_err(|_| UpsertSubstatesError::FailedToUpsert)?;
         };
 

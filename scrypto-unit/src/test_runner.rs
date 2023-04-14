@@ -1374,6 +1374,7 @@ impl StateHashSupport {
                     match value {
                         StateUpdate::Create(v) => Some(hash(v)),
                         StateUpdate::Update(v) => Some(hash(v)),
+                        StateUpdate::Delete => None,
                     },
                 )
             })

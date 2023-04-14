@@ -73,6 +73,9 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
                     self.substates
                         .insert(substate_id, scrypto_encode(&substate_value).unwrap());
                 }
+                StateUpdate::Delete => {
+                    self.substates.remove(&substate_id);
+                }
             }
         }
         Ok(())
