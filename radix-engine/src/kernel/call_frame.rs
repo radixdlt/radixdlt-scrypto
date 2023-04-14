@@ -199,18 +199,14 @@ impl CallFrame {
 
         // Substate Virtualization
         // TODO: Move into lower virtualization layer
+        /*
         if module_id.virtualize_substates() {
             if heap.contains_node(node_id) {
                 if heap
                     .get_substate(node_id, module_id.into(), substate_key)
                     .is_none()
                 {
-                    heap.put_substate(
-                        node_id.clone(),
-                        module_id,
-                        substate_key.clone(),
-                        IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
-                    );
+
                 }
             } else {
                 match store.acquire_lock(
@@ -235,6 +231,7 @@ impl CallFrame {
                 }
             };
         }
+         */
 
         // Lock and read the substate
         let mut store_handle = None;
@@ -246,16 +243,33 @@ impl CallFrame {
             match heap.get_substate(node_id, module_id.into(), substate_key) {
                 Some(x) => x,
                 _ => {
-                    return Err(LockSubstateError::SubstateNotFound(
-                        node_id.clone(),
-                        module_id,
-                        substate_key.clone(),
-                    ));
+                    if module_id.virtualize_substates() {
+                        heap.put_substate(
+                            node_id.clone(),
+                            module_id,
+                            substate_key.clone(),
+                            IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
+                        );
+                        heap.get_substate(node_id, module_id.into(), substate_key).unwrap()
+                    } else {
+                        return Err(LockSubstateError::SubstateNotFound(
+                            node_id.clone(),
+                            module_id,
+                            substate_key.clone(),
+                        ));
+                    }
                 }
             }
         } else {
             let handle = store
-                .acquire_lock(node_id, module_id.into(), substate_key, flags)
+                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
+                    if module_id.virtualize_substates() {
+                        let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
+                        Some(value)
+                    } else {
+                        None
+                    }
+                })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             store.read_substate(handle)
