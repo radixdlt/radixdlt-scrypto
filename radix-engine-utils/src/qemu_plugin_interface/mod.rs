@@ -245,7 +245,8 @@ impl<'a> Drop for QemuPluginInterface<'a> {
         // Uncomment following function call for plugin debug purposes
         // self.save_output_to_file("/tmp/out.txt");
 
-        DataAnalyzer::save_xml(&self.output_data, &self.generate_output_file_name());
+        let fname = self.generate_output_file_name();
+        DataAnalyzer::save_xml(&mut self.output_data, &fname);
     }
 }
 
