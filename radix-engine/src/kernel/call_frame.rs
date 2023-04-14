@@ -150,6 +150,12 @@ pub enum ReadSubstatesError {
     NodeNotInCallFrame(NodeId),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum UpsertSubstatesError {
+    NodeNotInCallFrame(NodeId),
+    FailedToUpsert,
+}
+
 impl CallFrame {
     // TODO: Remove
     fn get_type_info<S: SubstateStore>(
@@ -218,12 +224,12 @@ impl CallFrame {
                     }
                     Err(error) => {
                         if matches!(error, AcquireLockError::NotFound(_, _, _)) {
-                            store.create_substate(
+                            store.upsert_substate(
                                 node_id.clone(),
                                 module_id.into(),
                                 substate_key.clone(),
                                 IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
-                            )
+                            ).expect("Was not found so should be no issues with upserting");
                         }
                     }
                 }
@@ -469,14 +475,15 @@ impl CallFrame {
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(), ReadSubstatesError> {
+    ) -> Result<(), UpsertSubstatesError> {
         self.get_node_visibility(node_id)
-            .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+            .ok_or_else(|| UpsertSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
 
         if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.create_substate(*node_id, module_id.into(), key, value);
+            store.upsert_substate(*node_id, module_id.into(), key, value)
+                .map_err(|_| UpsertSubstatesError::FailedToUpsert)?;
         };
 
         Ok(())

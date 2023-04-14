@@ -711,7 +711,7 @@ where
                 &mut self.heap,
                 self.store,
             )
-            .map_err(CallFrameError::ReadSubstatesError)
+            .map_err(CallFrameError::UpsertSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }

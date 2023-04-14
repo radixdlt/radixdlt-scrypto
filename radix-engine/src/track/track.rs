@@ -16,27 +16,42 @@ impl SubstateLockState {
     pub fn no_lock() -> Self {
         Self::Read(0)
     }
+
+    pub fn is_locked(&self) -> bool {
+        !matches!(self, SubstateLockState::Read(0usize))
+    }
 }
 
-#[derive(Debug)]
-pub enum SubstateMetaState {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SubstateMeta {
     New,
     Read,
     Updated,
 }
 
 #[derive(Debug)]
-pub struct LoadedSubstate {
-    substate: IndexedScryptoValue,
+pub struct SubstateUpdate {
+    substate: Substate,
+    meta_state: SubstateMeta,
+}
+
+#[derive(Debug)]
+pub struct Substate {
+    value: IndexedScryptoValue,
     lock_state: SubstateLockState,
-    meta_state: SubstateMetaState,
+}
+
+pub enum NodeUpdate {
+    New(BTreeMap<ModuleId, BTreeMap<SubstateKey, Substate>>),
+    Update(IndexMap<ModuleId, IndexMap<SubstateKey, SubstateUpdate>>),
 }
 
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
     substate_db: &'s dyn SubstateDatabase,
-    loaded_substates: IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, LoadedSubstate>>>,
-    force_substate_writes: IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, LoadedSubstate>>>,
+    updates: IndexMap<NodeId, NodeUpdate>,
+    force_updates: IndexMap<NodeId, NodeUpdate>,
+
     locks: IndexMap<u32, (NodeId, ModuleId, SubstateKey, LockFlags)>,
     next_lock_id: u32,
 }
@@ -45,8 +60,8 @@ impl<'s> Track<'s> {
     pub fn new(substate_db: &'s dyn SubstateDatabase) -> Self {
         Self {
             substate_db,
-            loaded_substates: index_map_new(),
-            force_substate_writes: index_map_new(),
+            force_updates: index_map_new(),
+            updates: index_map_new(),
             locks: index_map_new(),
             next_lock_id: 0,
         }
@@ -67,33 +82,47 @@ impl<'s> Track<'s> {
     }
 
     fn loaded_substate<'a>(
-        loaded_substates: &'a IndexMap<
-            NodeId,
-            IndexMap<ModuleId, IndexMap<SubstateKey, LoadedSubstate>>,
-        >,
+        updates: &'a IndexMap<NodeId, NodeUpdate>,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<&'a LoadedSubstate> {
-        loaded_substates
+    ) -> Option<&'a IndexedScryptoValue> {
+        updates
             .get(node_id)
-            .and_then(|m| m.get(&module_id))
-            .and_then(|m| m.get(substate_key))
+            .and_then(|update| match update {
+                NodeUpdate::New(modules) => {
+                    modules.get(&module_id)
+                        .and_then(|substates| substates.get(substate_key))
+                        .map(|s| &s.value)
+                }
+                NodeUpdate::Update(module_updates) => {
+                    module_updates.get(&module_id)
+                        .and_then(|substates| substates.get(substate_key))
+                        .map(|s| &s.substate.value)
+                }
+            })
     }
 
     fn loaded_substate_mut<'a>(
-        loaded_substates: &'a mut IndexMap<
-            NodeId,
-            IndexMap<ModuleId, IndexMap<SubstateKey, LoadedSubstate>>,
-        >,
+        updates: &'a mut IndexMap<NodeId, NodeUpdate>,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<&'a mut LoadedSubstate> {
-        loaded_substates
+    ) -> Option<(&'a mut Substate, Option<&'a mut SubstateMeta>)> {
+        updates
             .get_mut(node_id)
-            .and_then(|m| m.get_mut(&module_id))
-            .and_then(|m| m.get_mut(substate_key))
+            .and_then(|update| match update {
+                NodeUpdate::New(modules) => {
+                    modules.get_mut(&module_id)
+                        .and_then(|substates| substates.get_mut(substate_key))
+                        .map(|s| (s, None))
+                }
+                NodeUpdate::Update(module_updates) => {
+                    module_updates.get_mut(&module_id)
+                        .and_then(|substates| substates.get_mut(substate_key))
+                        .map(|s| (&mut s.substate, Some(&mut s.meta_state)))
+                }
+            })
     }
 
     fn load_substate(
@@ -115,27 +144,35 @@ impl<'s> Track<'s> {
         substate_key: &SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
-        self.loaded_substates
+        let node_update = self.updates
             .entry(*node_id)
-            .or_default()
-            .entry(module_id)
-            .or_default()
-            .insert(
-                substate_key.clone(),
-                LoadedSubstate {
-                    substate: substate_value,
-                    lock_state: SubstateLockState::no_lock(),
-                    meta_state: SubstateMetaState::Read,
-                },
-            );
+            .or_insert(NodeUpdate::Update(IndexMap::new()));
+
+        match node_update {
+            NodeUpdate::Update(update) => {
+                update.entry(module_id)
+                    .or_default()
+                    .insert(
+                        substate_key.clone(),
+                        SubstateUpdate {
+                            substate: Substate {
+                                value: substate_value,
+                                lock_state: SubstateLockState::no_lock(),
+                            },
+                            meta_state: SubstateMeta::Read,
+                        },
+                    );
+            },
+            NodeUpdate::New(..) => panic!("unexpected"),
+        }
     }
 
     /// Reverts all non force write changes.
     ///
     /// Note that dependencies will never be reverted.
     pub fn revert_non_force_write_changes(&mut self) {
-        let loaded_substates = mem::take(&mut self.force_substate_writes);
-        self.loaded_substates = loaded_substates;
+        let updates = mem::take(&mut self.force_updates);
+        self.updates = updates;
     }
 
     /// Finalizes changes captured by this substate store.
@@ -149,20 +186,31 @@ impl<'s> Track<'s> {
 
         let mut substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate> =
             index_map_new();
-        for (node_id, modules) in self.loaded_substates {
-            for (module_id, module) in modules {
-                for (substate_key, loaded) in module {
-                    let update = match loaded.meta_state {
-                        SubstateMetaState::New => StateUpdate::Create(loaded.substate.into()),
-                        SubstateMetaState::Updated => {
-                            StateUpdate::Update(loaded.substate.into())
+        for (node_id, node_update) in self.updates {
+            match node_update {
+                NodeUpdate::New(substates) => {
+                    for (module_id, module) in substates {
+                        for (substate_key, substate) in module {
+                            substate_changes.insert((node_id, module_id, substate_key.clone()), StateUpdate::Create(substate.value.into()));
                         }
-                        SubstateMetaState::Read => {
-                            // TODO: Fix
-                            StateUpdate::Update(loaded.substate.into())
+                    }
+                }
+                NodeUpdate::Update(node_update) => {
+                    for (module_id, module) in node_update {
+                        for (substate_key, loaded) in module {
+                            let update = match loaded.meta_state {
+                                SubstateMeta::New => StateUpdate::Create(loaded.substate.value.into()),
+                                SubstateMeta::Updated => {
+                                    StateUpdate::Update(loaded.substate.value.into())
+                                }
+                                SubstateMeta::Read => {
+                                    // TODO: Fix
+                                    StateUpdate::Update(loaded.substate.value.into())
+                                }
+                            };
+                            substate_changes.insert((node_id, module_id, substate_key.clone()), update);
                         }
-                    };
-                    substate_changes.insert((node_id, module_id, substate_key.clone()), update);
+                    }
                 }
             }
         }
@@ -180,7 +228,7 @@ impl<'s> SubstateStore for Track<'s> {
         flags: LockFlags,
     ) -> Result<u32, AcquireLockError> {
         // Load the substate from state track
-        if Self::loaded_substate(&self.loaded_substates, node_id, module_id, substate_key).is_none()
+        if Self::loaded_substate(&self.updates, node_id, module_id, substate_key).is_none()
         {
             let maybe_substate = self.load_substate(node_id, module_id, substate_key);
             if let Some(output) = maybe_substate {
@@ -195,31 +243,31 @@ impl<'s> SubstateStore for Track<'s> {
         }
 
         // Check substate state
-        let loaded_substate =
-            Self::loaded_substate_mut(&mut self.loaded_substates, node_id, module_id, substate_key)
+        let (substate, meta) =
+            Self::loaded_substate_mut(&mut self.updates, node_id, module_id, substate_key)
                 .unwrap();
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
-            match loaded_substate.meta_state {
-                SubstateMetaState::New => {
+            match meta {
+                None | Some(SubstateMeta::New) => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
                         *node_id,
                         module_id,
                         substate_key.clone(),
                     ))
                 }
-                SubstateMetaState::Updated => {
+                Some(SubstateMeta::Updated) => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         *node_id,
                         module_id,
                         substate_key.clone(),
                     ))
                 }
-                SubstateMetaState::Read => {}
+                Some(SubstateMeta::Read) => {}
             }
         }
 
         // Check read/write permission
-        match loaded_substate.lock_state {
+        match substate.lock_state {
             SubstateLockState::Read(n) => {
                 if flags.contains(LockFlags::MUTABLE) {
                     if n != 0 {
@@ -229,9 +277,9 @@ impl<'s> SubstateStore for Track<'s> {
                             substate_key.clone(),
                         ));
                     }
-                    loaded_substate.lock_state = SubstateLockState::Write;
+                    substate.lock_state = SubstateLockState::Write;
                 } else {
-                    loaded_substate.lock_state = SubstateLockState::Read(n + 1);
+                    substate.lock_state = SubstateLockState::Read(n + 1);
                 }
             }
             SubstateLockState::Write => {
@@ -250,53 +298,59 @@ impl<'s> SubstateStore for Track<'s> {
         let (node_id, module_id, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 
-        let loaded_substate = Self::loaded_substate_mut(
-            &mut self.loaded_substates,
+        let (substate, meta) = Self::loaded_substate_mut(
+            &mut self.updates,
             &node_id,
             module_id,
             &substate_key,
         )
         .expect("Substate missing for valid lock handle");
 
-        match loaded_substate.lock_state {
+        match substate.lock_state {
             SubstateLockState::Read(n) => {
-                loaded_substate.lock_state = SubstateLockState::Read(n - 1)
+                substate.lock_state = SubstateLockState::Read(n - 1)
             }
             SubstateLockState::Write => {
-                loaded_substate.lock_state = SubstateLockState::no_lock();
+                substate.lock_state = SubstateLockState::no_lock();
 
                 if flags.contains(LockFlags::FORCE_WRITE) {
 
-                    match &mut loaded_substate.meta_state {
-                        state @ (SubstateMetaState::Read | SubstateMetaState::Updated) => {
-                            *state =
-                                SubstateMetaState::Updated;
+                    match meta {
+                        Some(meta @ (SubstateMeta::Read | SubstateMeta::Updated)) => {
+                            *meta = SubstateMeta::Updated;
                         }
-                        SubstateMetaState::New => {
+                        _ => {
                             panic!("Unexpected");
                         }
                     }
 
-                    self.force_substate_writes
+                    let node_update = self.force_updates
                         .entry(node_id)
-                        .or_default()
-                        .entry(module_id)
-                        .or_default()
-                        .insert(
-                            substate_key.clone(),
-                            LoadedSubstate {
-                                substate: loaded_substate.substate.clone(),
-                                lock_state: SubstateLockState::no_lock(),
-                                meta_state: SubstateMetaState::Updated,
-                            },
-                        );
+                        .or_insert(NodeUpdate::Update(IndexMap::new()));
+
+                    match node_update {
+                        NodeUpdate::Update(update) => {
+                            update.entry(module_id)
+                                .or_default()
+                                .insert(
+                                    substate_key.clone(),
+                                    SubstateUpdate {
+                                        substate: Substate {
+                                            value: substate.value.clone(),
+                                            lock_state: SubstateLockState::no_lock(),
+                                        },
+                                        meta_state: SubstateMeta::Updated,
+                                    },
+                                );
+                        },
+                        NodeUpdate::New(..) => panic!("unexpected"),
+                    }
                 } else {
-                    match &mut loaded_substate.meta_state {
-                        SubstateMetaState::New => {}
-                        state @ SubstateMetaState::Read => {
-                            *state = SubstateMetaState::Updated;
+                    match meta {
+                        Some(meta@ SubstateMeta::Read) => {
+                            *meta = SubstateMeta::Updated;
                         }
-                        SubstateMetaState::Updated => {}
+                        _ => {}
                     }
                 }
             }
@@ -304,42 +358,62 @@ impl<'s> SubstateStore for Track<'s> {
     }
 
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
-        for (module_id, module_substates) in node_substates {
-            for (key, substate) in module_substates {
-                self.create_substate(node_id, module_id, key, substate);
-            }
-        }
+        let node_runtime = node_substates.into_iter().map(|(module_id, module_substates)| {
+            let module_substates = module_substates.into_iter().map(|(key, value)| (key, Substate {
+                value, lock_state: SubstateLockState::no_lock(),
+            })).collect();
+            (module_id, module_substates)
+        }).collect();
+
+        self.updates.insert(node_id, NodeUpdate::New(node_runtime));
     }
 
-    fn create_substate(
+    fn upsert_substate(
         &mut self,
         node_id: NodeId,
         module_id: ModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) {
-        self.loaded_substates
-            .entry(node_id)
-            .or_default()
-            .entry(module_id)
-            .or_default()
-            .insert(
-                substate_key,
-                LoadedSubstate {
-                    substate: substate_value,
-                    lock_state: SubstateLockState::no_lock(),
-                    meta_state: SubstateMetaState::New,
-                },
-            );
+    ) -> Result<(), AcquireLockError> {
+        let substate = Substate {
+            value: substate_value,
+            lock_state: SubstateLockState::no_lock(),
+        };
+        let node_update = self.updates.entry(node_id).or_insert(NodeUpdate::Update(IndexMap::new()));
+        let prev = match node_update {
+            NodeUpdate::New(substates) => {
+                substates.entry(module_id)
+                    .or_insert(BTreeMap::new())
+                    .insert(substate_key.clone(), substate)
+            }
+            NodeUpdate::Update(node_update) => {
+                node_update.entry(module_id).or_insert(IndexMap::new())
+                    .insert(substate_key.clone(), SubstateUpdate {
+                        substate,
+                        meta_state: SubstateMeta::New,
+                    }).map(|s| s.substate)
+            }
+        };
+
+        if let Some(prev) = prev {
+            if prev.lock_state.is_locked() {
+                return Err(AcquireLockError::SubstateLocked(
+                    node_id,
+                    module_id,
+                    substate_key.clone(),
+                ));
+            }
+        }
+
+        Ok(())
     }
 
     fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
         let (node_id, module_id, substate_key, _flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 
-        &Self::loaded_substate(&self.loaded_substates, node_id, *module_id, substate_key)
+        &Self::loaded_substate(&self.updates, node_id, *module_id, substate_key)
             .expect("Substate missing for valid lock handle")
-            .substate
     }
 
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
@@ -351,13 +425,13 @@ impl<'s> SubstateStore for Track<'s> {
         }
 
         Self::loaded_substate_mut(
-            &mut self.loaded_substates,
+            &mut self.updates,
             node_id,
             *module_id,
             substate_key,
         )
         .expect("Substate missing for valid lock handle")
-        .substate = substate_value;
+        .0.value = substate_value;
     }
 
     fn delete_substate(

@@ -87,21 +87,26 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid.
     fn release_lock(&mut self, handle: u32);
 
-    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
-
-    /// Inserts a substate into the substate store.
+    /// Inserts a node into the substate store.
     ///
     /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
     ///
     /// # Panics
     /// - If the module ID is invalid
-    fn create_substate(
+    fn create_node(
+        &mut self,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+    );
+
+    /// Inserts a substate into the substate store.
+    fn upsert_substate(
         &mut self,
         node_id: NodeId,
         module_id: ModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    );
+    ) -> Result<(), AcquireLockError>;
 
     /// Reads a substate of the given node module.
     ///
