@@ -112,7 +112,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the lock handle is invalid
-    fn read_substate(&self, handle: u32) -> &IndexedScryptoValue;
+    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue;
 
     /// Updates a substate.
     ///
