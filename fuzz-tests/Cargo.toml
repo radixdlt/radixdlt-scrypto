@@ -35,7 +35,11 @@ members = ["."]
 
 [profile.release]
 # TODO: check if really this required
-debug = 1
+# Commented out out since due to following error, when building AFLplusplus
+#  - in debug mode (see GNUmakefile:142 - Werror is set)
+#  - with some modern gcc toolchain: clang 16.0, llvm-gcc 14
+# src/afl-fuzz-redqueen.c:1603:20: warning: variable 'cons_0' set but not used [-Wunused-but-set-variable]
+#debug = 1
 
 [[bin]]
 name = "transaction"
