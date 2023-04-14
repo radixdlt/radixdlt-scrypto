@@ -1,3 +1,4 @@
+use std::mem;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
@@ -21,7 +22,7 @@ impl SubstateLockState {
 pub enum SubstateMetaState {
     New,
     Read,
-    Updated(Option<IndexedScryptoValue>),
+    Updated,
 }
 
 #[derive(Debug)]
@@ -35,6 +36,7 @@ pub struct LoadedSubstate {
 pub struct Track<'s> {
     substate_db: &'s dyn SubstateDatabase,
     loaded_substates: IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, LoadedSubstate>>>,
+    force_substate_writes: IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, LoadedSubstate>>>,
     locks: IndexMap<u32, (NodeId, ModuleId, SubstateKey, LockFlags)>,
     next_lock_id: u32,
 }
@@ -44,6 +46,7 @@ impl<'s> Track<'s> {
         Self {
             substate_db,
             loaded_substates: index_map_new(),
+            force_substate_writes: index_map_new(),
             locks: index_map_new(),
             next_lock_id: 0,
         }
@@ -131,19 +134,8 @@ impl<'s> Track<'s> {
     ///
     /// Note that dependencies will never be reverted.
     pub fn revert_non_force_write_changes(&mut self) {
-        self.loaded_substates.retain(|_, m| {
-            m.retain(|_, m| {
-                m.retain(|_, loaded| match &loaded.meta_state {
-                    SubstateMetaState::Updated(Some(value)) => {
-                        loaded.substate = value.clone();
-                        true
-                    }
-                    _ => false,
-                });
-                !m.is_empty()
-            });
-            !m.is_empty()
-        });
+        let loaded_substates = mem::take(&mut self.force_substate_writes);
+        self.loaded_substates = loaded_substates;
     }
 
     /// Finalizes changes captured by this substate store.
@@ -162,7 +154,7 @@ impl<'s> Track<'s> {
                 for (substate_key, loaded) in module {
                     let update = match loaded.meta_state {
                         SubstateMetaState::New => StateUpdate::Create(loaded.substate.into()),
-                        SubstateMetaState::Updated(..) => {
+                        SubstateMetaState::Updated => {
                             StateUpdate::Update(loaded.substate.into())
                         }
                         SubstateMetaState::Read => {
@@ -215,7 +207,7 @@ impl<'s> SubstateStore for Track<'s> {
                         substate_key.clone(),
                     ))
                 }
-                SubstateMetaState::Updated(..) => {
+                SubstateMetaState::Updated => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         *node_id,
                         module_id,
@@ -274,22 +266,37 @@ impl<'s> SubstateStore for Track<'s> {
                 loaded_substate.lock_state = SubstateLockState::no_lock();
 
                 if flags.contains(LockFlags::FORCE_WRITE) {
+
                     match &mut loaded_substate.meta_state {
-                        state @ (SubstateMetaState::Read | SubstateMetaState::Updated(..)) => {
+                        state @ (SubstateMetaState::Read | SubstateMetaState::Updated) => {
                             *state =
-                                SubstateMetaState::Updated(Some(loaded_substate.substate.clone()));
+                                SubstateMetaState::Updated;
                         }
                         SubstateMetaState::New => {
                             panic!("Unexpected");
                         }
                     }
+
+                    self.force_substate_writes
+                        .entry(node_id)
+                        .or_default()
+                        .entry(module_id)
+                        .or_default()
+                        .insert(
+                            substate_key.clone(),
+                            LoadedSubstate {
+                                substate: loaded_substate.substate.clone(),
+                                lock_state: SubstateLockState::no_lock(),
+                                meta_state: SubstateMetaState::Updated,
+                            },
+                        );
                 } else {
                     match &mut loaded_substate.meta_state {
                         SubstateMetaState::New => {}
                         state @ SubstateMetaState::Read => {
-                            *state = SubstateMetaState::Updated(None);
+                            *state = SubstateMetaState::Updated;
                         }
-                        SubstateMetaState::Updated(..) => {}
+                        SubstateMetaState::Updated => {}
                     }
                 }
             }
