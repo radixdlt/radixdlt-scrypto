@@ -503,7 +503,7 @@ impl CallFrame {
         let removed = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.delete_substate(node_id, module_id.into(), key)
+            store.delete_substate(node_id, module_id.into(), key).unwrap()
         };
 
         Ok(removed)
