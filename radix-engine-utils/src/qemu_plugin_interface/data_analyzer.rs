@@ -218,7 +218,6 @@ impl DataAnalyzer {
                     }
 
                     if !found {
-                        println!("======== Inserting: {} {} {}", v.function_name, v.stack_depth, idx);
                         data_to_insert.push( (idx, OutputData{
                             event: OutputDataEvent::FunctionExit,
                             stack_depth: v.stack_depth,
@@ -231,10 +230,24 @@ impl DataAnalyzer {
                 }
             }
 
+            if data_to_insert.len() > 1 {
+                for i in (0..data_to_insert.len()).rev() {
+                    let mut cnt = 1;
+                    if i > 0 {
+                        for j in (0..=i - 1).rev() {
+                            if data_to_insert[i].0 == data_to_insert[j].0 {
+                                data_to_insert[j].0 += cnt;
+                                cnt += 1;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             for v in data_to_insert.iter().rev() {
-                println!("======== Inserte1: {} {}", v.0, data.len());
                 data.insert( v.0, v.1.clone() );
-                println!("======== Inserte2: {} {}", v.0, data.len());
             }
 
             for (i, v) in data.iter().enumerate() {
