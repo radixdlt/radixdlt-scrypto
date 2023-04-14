@@ -41,7 +41,7 @@ pub struct CurrentValidatorSetSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SecondaryIndexSubstate {
-    pub validators: Own,//BTreeMap<Vec<u8>, (ComponentAddress, Validator)>,
+    pub validators: Own, //BTreeMap<Vec<u8>, (ComponentAddress, Validator)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -108,9 +108,7 @@ impl EpochManagerBlueprint {
                 validator_set: BTreeMap::new(),
             };
 
-            let registered_validators = SecondaryIndexSubstate {
-                validators,
-            };
+            let registered_validators = SecondaryIndexSubstate { validators };
 
             api.new_object(
                 EPOCH_MANAGER_BLUEPRINT,
@@ -382,8 +380,7 @@ impl EpochManagerBlueprint {
             &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::read_only(),
         )?;
-        let registered_validators: SecondaryIndexSubstate =
-            api.sys_read_substate_typed(handle)?;
+        let registered_validators: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
         let secondary_index = registered_validators.validators;
 
         match update {
@@ -396,15 +393,17 @@ impl EpochManagerBlueprint {
                 api.insert_typed_into_sorted(
                     secondary_index.as_node_id(),
                     SubstateKey::from_vec(index_key).unwrap(),
-                        (address, Validator { key, stake })
+                    (address, Validator { key, stake }),
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let substate_key = SubstateKey::from_vec(index_key).unwrap();
-                let (address, mut validator) = api.remove_typed_from_sorted::<(ComponentAddress, Validator)>(
-                    secondary_index.as_node_id(),
-                    &substate_key,
-                )?.unwrap();
+                let (address, mut validator) = api
+                    .remove_typed_from_sorted::<(ComponentAddress, Validator)>(
+                        secondary_index.as_node_id(),
+                        &substate_key,
+                    )?
+                    .unwrap();
                 validator.key = key;
                 api.insert_typed_into_sorted(
                     secondary_index.as_node_id(),
@@ -417,10 +416,12 @@ impl EpochManagerBlueprint {
                 new_index_key,
                 new_stake_amount,
             } => {
-                let (address, mut validator) = api.remove_typed_from_sorted::<(ComponentAddress, Validator)>(
-                    secondary_index.as_node_id(),
-                    &SubstateKey::from_vec(index_key).unwrap(),
-                )?.unwrap();
+                let (address, mut validator) = api
+                    .remove_typed_from_sorted::<(ComponentAddress, Validator)>(
+                        secondary_index.as_node_id(),
+                        &SubstateKey::from_vec(index_key).unwrap(),
+                    )?
+                    .unwrap();
                 validator.stake = new_stake_amount;
                 api.insert_typed_into_sorted(
                     secondary_index.as_node_id(),
@@ -429,7 +430,10 @@ impl EpochManagerBlueprint {
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                api.remove_from_sorted(secondary_index.as_node_id(), &SubstateKey::from_vec(index_key).unwrap())?;
+                api.remove_from_sorted(
+                    secondary_index.as_node_id(),
+                    &SubstateKey::from_vec(index_key).unwrap(),
+                )?;
             }
         }
 
@@ -458,8 +462,10 @@ impl EpochManagerBlueprint {
         //let mut next_validator_set = BTreeMap::new();
         //let max_validators: usize = max_validators.try_into().unwrap();
 
-        let validators: Vec<(ComponentAddress, Validator)> = api.read_typed_from_sorted(secondary_index.as_node_id(), max_validators)?;
-        let next_validator_set: BTreeMap<ComponentAddress, Validator> = validators.into_iter().collect();
+        let validators: Vec<(ComponentAddress, Validator)> =
+            api.read_typed_from_sorted(secondary_index.as_node_id(), max_validators)?;
+        let next_validator_set: BTreeMap<ComponentAddress, Validator> =
+            validators.into_iter().collect();
 
         /*
         for (_index_key, (address, validator)) in registered_validator_set

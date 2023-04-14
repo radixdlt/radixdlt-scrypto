@@ -107,13 +107,11 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 .entry(*module_id)
                 .or_default();
 
-            match &change  {
-                StateUpdate::Update(substate_value, ..)
-                | StateUpdate::Create(substate_value) => {
+            match &change {
+                StateUpdate::Update(substate_value, ..) | StateUpdate::Create(substate_value) => {
                     map.insert(substate_key.clone(), substate_value);
                 }
-                StateUpdate::Delete => {
-                }
+                StateUpdate::Delete => {}
             }
         }
 

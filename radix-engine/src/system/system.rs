@@ -747,7 +747,8 @@ where
             }
         }
 
-        let rtn = self.api
+        let rtn = self
+            .api
             .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, substate_key)?
             .map(|v| v.into());
 

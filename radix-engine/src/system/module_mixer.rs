@@ -27,7 +27,6 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
-use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
 
 bitflags! {

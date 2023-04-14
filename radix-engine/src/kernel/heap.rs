@@ -1,4 +1,3 @@
-use std::collections::btree_map::Entry;
 use crate::blueprints::resource::*;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -6,6 +5,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_stores::interface::NodeSubstates;
+use std::collections::btree_map::Entry;
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, NodeSubstates>,
@@ -34,8 +34,12 @@ impl Heap {
         substate_key: &SubstateKey,
         virtualize: F,
     ) -> Option<&IndexedScryptoValue> {
-        let entry = self.nodes.entry(*node_id)
-            .or_insert(BTreeMap::new()).entry(module_id).or_insert(BTreeMap::new())
+        let entry = self
+            .nodes
+            .entry(*node_id)
+            .or_insert(BTreeMap::new())
+            .entry(module_id)
+            .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
         if let Entry::Vacant(e) = entry {
             let value = virtualize();

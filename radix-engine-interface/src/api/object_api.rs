@@ -1,5 +1,7 @@
 use crate::types::*;
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_engine_common::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
+};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
@@ -113,7 +115,8 @@ pub trait ClientSortedApi<E> {
         node_id: &NodeId,
         substate_key: &SubstateKey,
     ) -> Result<Option<V>, E> {
-        let rtn = self.remove_from_sorted(node_id, substate_key)?
+        let rtn = self
+            .remove_from_sorted(node_id, substate_key)?
             .map(|e| scrypto_decode(&e).unwrap());
         Ok(rtn)
     }

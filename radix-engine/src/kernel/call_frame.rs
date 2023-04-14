@@ -457,7 +457,8 @@ impl CallFrame {
         if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.set_substate(*node_id, module_id.into(), key, value)
+            store
+                .set_substate(*node_id, module_id.into(), key, value)
                 .map_err(|_| UpsertSubstatesError::FailedToUpsert)?;
         };
 
@@ -478,7 +479,9 @@ impl CallFrame {
         let removed = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.delete_substate(node_id, module_id.into(), key).unwrap()
+            store
+                .delete_substate(node_id, module_id.into(), key)
+                .unwrap()
         };
 
         Ok(removed)

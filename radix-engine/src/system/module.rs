@@ -8,7 +8,6 @@ use crate::system::system_callback::SystemInvocation;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_stores::interface::NodeSubstates;
-use sbor::rust::collections::BTreeMap;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================

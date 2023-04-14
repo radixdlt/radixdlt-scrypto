@@ -13,7 +13,6 @@ High-level Abstraction
 */
 
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::crypto::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -75,11 +74,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the module ID is invalid
-    fn create_node(
-        &mut self,
-        node_id: NodeId,
-        node_substates: NodeSubstates,
-    );
+    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
 
     /// Inserts a substate into the substate store.
     ///

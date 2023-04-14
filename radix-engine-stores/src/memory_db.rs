@@ -1,5 +1,4 @@
 use crate::interface::*;
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Bound::Included;
@@ -39,7 +38,6 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         module_id: ModuleId,
         mut count: u32,
     ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError> {
-
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
         let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();

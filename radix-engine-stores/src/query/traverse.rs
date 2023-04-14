@@ -110,6 +110,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
+            TypeInfoSubstate::IterableStore => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
                 type_parent,
@@ -160,7 +161,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
-                        if let Ok(x) = self.substate_db.list_substates(&node_id, t.into(), u32::MAX) {
+                        if let Ok(x) = self
+                            .substate_db
+                            .list_substates(&node_id, t.into(), u32::MAX)
+                        {
                             for (substate_key, substate_value) in x {
                                 let (_, owned_nodes, _) =
                                     IndexedScryptoValue::from_vec(substate_value)
