@@ -63,16 +63,20 @@ for path in os.listdir(input_folder):
 
         # handle kernel_inovke
         invoke_size = 0
-        resolve = child.xpath("./self::kernel_invoke/resolve")
+        resolve = child.xpath("./self::kernel_invoke/before_invoke")
         if resolve:
-            info = resolve[0].attrib["info"]
             blueprint_name = resolve[0].attrib["arg1"].replace('"','')
             fcn_name = resolve[0].attrib["arg2"].replace('"','')
-            if fcn_name in kernel_invoke_divide_by_size:
-                invoke_size = resolve[0].attrib["arg3"]
-                key += "::" + info + "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+            receiver = resolve[0].attrib["arg3"].replace('"','') # not used
+            if receiver == "None":
+                receiver = ""
             else:
-                key += "::" + info + "::" + blueprint_name + "::" + fcn_name
+                receiver = "::" + receiver
+            if fcn_name in kernel_invoke_divide_by_size:
+                invoke_size = resolve[0].attrib["input_size"]
+                key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+            else:
+                key += "::" + blueprint_name + "::" + fcn_name
 
         # handle kernel_create_node
         param = child.xpath("./self::kernel_create_node/@arg0")
@@ -88,14 +92,6 @@ for path in os.listdir(input_folder):
         param = child.xpath("./self::kernel_get_node_info/@arg0")
         if param:
             key += "::" + param[0]
-
-        # handle kernel_create_wasm_instance
-        param = child.xpath("./self::kernel_create_wasm_instance/@arg0")
-        if param:
-            key += "::" + str(param[0])
-        param = child.xpath("./self::kernel_create_wasm_instance/create_instance/@arg0")
-        if param:
-            key += "::" + str(param[0])
 
         # handle kernel_lock_substate
         param = child.xpath("./self::kernel_lock_substate[@module_id | @arg0 | @arg2]")

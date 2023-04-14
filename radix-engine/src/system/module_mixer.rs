@@ -218,7 +218,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources(log=input_size)]
+    #[trace_resources(log=input_size, log={&*identifier.sys_invocation.blueprint.blueprint_name}, log=identifier.sys_invocation.ident.to_debug_string(), log={format!("{:?}", identifier.sys_invocation.receiver)})]
     fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,

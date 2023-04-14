@@ -176,7 +176,7 @@ impl DataAnalyzer {
     }
 
     /// Function stores passed data as xml file.
-    pub fn save_xml<'a>(data: &mut Vec<OutputData<'a>>, file_name: &str) {
+    pub fn save_xml<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
         // ensure folder exists
         let mut path = std::path::PathBuf::new();
         path.push(file_name);
@@ -187,68 +187,6 @@ impl DataAnalyzer {
             let mut stack_fcn: Vec<&'a str> = vec!["root"];
             let mut prev_stack_depth = 0;
             file.write_fmt(format_args!("<root>\n")).unwrap();
-
-            let mut data_to_insert: Vec<(usize, OutputData<'a>)> = Vec::new();
-
-            for (i, v) in data.iter().enumerate() {
-                // for each function enter event
-                if matches!(v.event, OutputDataEvent::FunctionEnter) {
-                    // verify function exit with same stack depth is present
-                    let mut found = false;
-                    let mut idx = 0;
-                    for (j, w) in data[i+1..].into_iter().enumerate() {
-                        if v.stack_depth == w.stack_depth
-                            && v.function_name == w.function_name
-                            && matches!(w.event, OutputDataEvent::FunctionExit)
-                        {
-                            found = true;
-                            break;
-                        } else if w.stack_depth < v.stack_depth ||
-                            (w.stack_depth == v.stack_depth && v.function_name != w.function_name) {
-                            // not found due to stack depth diff or function name diff
-                            // exit event must be added before j element
-                            idx = i + 1 + j;
-                            break;
-                        } else if w.stack_depth > v.stack_depth {
-                            // ok
-                            idx = i + 1 + j + 1; // update idx in case of stack depth 0 function missing
-                        } else {
-                            panic!("Wrong sequence of data: {}:{} (idx {}), {}:{} (idx {})", v.stack_depth, v.function_name, i, w.function_name, w.stack_depth, j)
-                        }
-                    }
-
-                    if !found {
-                        data_to_insert.push( (idx, OutputData{
-                            event: OutputDataEvent::FunctionExit,
-                            stack_depth: v.stack_depth,
-                            cpu_instructions: v.cpu_instructions,
-                            cpu_instructions_calibrated: v.cpu_instructions_calibrated,
-                            function_name: v.function_name,
-                            param: Vec::new()
-                        }) );
-                    }
-                }
-            }
-
-            if data_to_insert.len() > 1 {
-                for i in (0..data_to_insert.len()).rev() {
-                    let mut cnt = 1;
-                    if i > 0 {
-                        for j in (0..=i - 1).rev() {
-                            if data_to_insert[i].0 == data_to_insert[j].0 {
-                                data_to_insert[j].0 += cnt;
-                                cnt += 1;
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            for v in data_to_insert.iter().rev() {
-                data.insert( v.0, v.1.clone() );
-            }
 
             for (i, v) in data.iter().enumerate() {
                 let mut cpu_ins_cal = v.cpu_instructions_calibrated;
