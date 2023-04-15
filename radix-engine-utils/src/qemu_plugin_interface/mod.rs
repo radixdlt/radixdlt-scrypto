@@ -217,16 +217,17 @@ impl<'a> QemuPluginInterface<'a> {
             if matches!(v.event, OutputDataEvent::FunctionEnter) {
                 // verify function exit with same stack depth is present
                 let mut found = false;
-                let mut idx = 0;
-                for (j, w) in self.output_data[i+1..].into_iter().enumerate() {
+                let mut idx = i + 1;
+                for (j, w) in self.output_data[i + 1..].into_iter().enumerate() {
                     if v.stack_depth == w.stack_depth
                         && v.function_name == w.function_name
                         && matches!(w.event, OutputDataEvent::FunctionExit)
                     {
                         found = true;
                         break;
-                    } else if w.stack_depth < v.stack_depth ||
-                        (w.stack_depth == v.stack_depth && v.function_name != w.function_name) {
+                    } else if w.stack_depth < v.stack_depth
+                        || (w.stack_depth == v.stack_depth && v.function_name != w.function_name)
+                    {
                         // not found due to stack depth diff or function name diff
                         // exit event must be added before j element
                         idx = i + 1 + j;
@@ -235,28 +236,34 @@ impl<'a> QemuPluginInterface<'a> {
                         // ok
                         idx = i + 1 + j + 1; // update idx in case of stack depth 0 function missing
                     } else {
-                        panic!("Wrong sequence of data: {}:{} (idx {}), {}:{} (idx {})", v.stack_depth, v.function_name, i, w.function_name, w.stack_depth, j)
+                        panic!(
+                            "Wrong sequence of data: {}:{} (idx {}), {}:{} (idx {})",
+                            v.stack_depth, v.function_name, i, w.function_name, w.stack_depth, j
+                        )
                     }
                 }
 
                 if !found && idx == self.output_data.len() {
-                    data_to_insert.push( (idx, OutputData{
-                        event: OutputDataEvent::FunctionExit,
-                        stack_depth: v.stack_depth,
-                        cpu_instructions: v.cpu_instructions,
-                        cpu_instructions_calibrated: v.cpu_instructions_calibrated,
-                        function_name: v.function_name,
-                        param: vec![OutputParam {
-                            name: "return".into(),
-                            value: data_analyzer::OutputParamValue::Literal("true".into()),
-                        }]
-                    }) );
+                    data_to_insert.push((
+                        idx,
+                        OutputData {
+                            event: OutputDataEvent::FunctionExit,
+                            stack_depth: v.stack_depth,
+                            cpu_instructions: v.cpu_instructions,
+                            cpu_instructions_calibrated: v.cpu_instructions_calibrated,
+                            function_name: v.function_name,
+                            param: vec![OutputParam {
+                                name: "return".into(),
+                                value: data_analyzer::OutputParamValue::Literal("true".into()),
+                            }],
+                        },
+                    ));
                 }
             }
         }
 
         for v in data_to_insert.iter() {
-            self.output_data.insert( v.0, v.1.clone() );
+            self.output_data.insert(v.0, v.1.clone());
         }
     }
 

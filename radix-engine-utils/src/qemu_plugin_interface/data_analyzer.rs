@@ -195,7 +195,7 @@ impl DataAnalyzer {
                 // get cpu instructions and param from exit event
                 if matches!(v.event, OutputDataEvent::FunctionEnter) {
                     let mut found = false;
-                    for w in data[i+1..].into_iter() {
+                    for w in data[i + 1..].into_iter() {
                         if v.stack_depth == w.stack_depth
                             && v.function_name == w.function_name
                             && matches!(w.event, OutputDataEvent::FunctionExit)
@@ -207,7 +207,10 @@ impl DataAnalyzer {
                         }
                     }
                     if !found {
-                        println!("Function exit not found: {}:{} (idx {})", v.stack_depth, v.function_name, i)
+                        println!(
+                            "Function exit not found: {}:{} (idx {})",
+                            v.stack_depth, v.function_name, i
+                        )
                     }
                 }
 
