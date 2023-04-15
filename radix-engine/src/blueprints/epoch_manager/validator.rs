@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, SortedKey};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -25,7 +25,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
-    pub index_key: Option<Vec<u8>>,
+    pub sorted_key: Option<SortedKey>,
     pub key: EcdsaSecp256k1PublicKey,
     pub is_registered: bool,
 
@@ -116,7 +116,7 @@ impl ValidatorBlueprint {
             api,
         )?;
 
-        validator.index_key = new_index_key;
+        validator.sorted_key = new_index_key;
         api.sys_write_substate_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
@@ -201,7 +201,7 @@ impl ValidatorBlueprint {
             api,
         )?;
 
-        validator.index_key = new_index_key;
+        validator.sorted_key = new_index_key;
         api.sys_write_substate_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
@@ -234,7 +234,7 @@ impl ValidatorBlueprint {
             Self::index_update(receiver, &validator, new_registered, stake_amount, api)?;
 
         validator.is_registered = new_registered;
-        validator.index_key = index_key;
+        validator.sorted_key = index_key;
         api.sys_write_substate_typed(handle, &validator)?;
 
         if new_registered {
@@ -252,16 +252,16 @@ impl ValidatorBlueprint {
         new_registered: bool,
         new_stake_amount: Decimal,
         api: &mut Y,
-    ) -> Result<Option<Vec<u8>>, RuntimeError>
+    ) -> Result<Option<SortedKey>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
             ComponentAddress::new_unchecked(api.get_global_address()?.into());
-        let new_index_key = Self::to_index_key(new_registered, new_stake_amount, validator_address);
+        let new_sorted_key = Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 
-        let update = if let Some(cur_index_key) = &validator.index_key {
-            if let Some(new_index_key) = &new_index_key {
+        let update = if let Some(cur_index_key) = &validator.sorted_key {
+            if let Some(new_index_key) = &new_sorted_key {
                 Some(UpdateSecondaryIndex::UpdateStake {
                     index_key: cur_index_key.clone(),
                     new_index_key: new_index_key.clone(),
@@ -273,7 +273,7 @@ impl ValidatorBlueprint {
                 })
             }
         } else {
-            if let Some(new_index_key) = &new_index_key {
+            if let Some(new_index_key) = &new_sorted_key {
                 Some(UpdateSecondaryIndex::Create {
                     index_key: new_index_key.clone(),
                     stake: new_stake_amount,
@@ -294,7 +294,7 @@ impl ValidatorBlueprint {
             )?;
         }
 
-        Ok(new_index_key)
+        Ok(new_sorted_key)
     }
 
     pub fn claim_xrd<Y>(
@@ -378,7 +378,7 @@ impl ValidatorBlueprint {
 
         // Update Epoch Manager
         {
-            if let Some(index_key) = &validator.index_key {
+            if let Some(index_key) = &validator.sorted_key {
                 let manager = api.get_object_info(receiver)?.type_parent.unwrap();
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
                     index_key: index_key.clone(),
@@ -434,18 +434,20 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    fn to_index_key(
+    fn to_sorted_key(
         registered: bool,
         stake: Decimal,
         address: ComponentAddress,
-    ) -> Option<Vec<u8>> {
+    ) -> Option<SortedKey> {
         if !registered || stake.is_zero() {
             None
         } else {
-            let reverse_stake = Decimal::MAX - stake;
-            let mut index_key = reverse_stake.to_be_bytes();
-            index_key.extend(scrypto_encode(&address).unwrap());
-            Some(index_key)
+            let stake_100k = stake / Decimal::from(10).powi(Decimal::SCALE.into()) / Decimal::from(100000);
+            let stake_100k_le = stake_100k.to_vec();
+            let bytes = [stake_100k_le[1], stake_100k_le[0]];
+            let reverse_stake_u16 = u16::from_be_bytes(bytes);
+            let sorted_key = u16::MAX - reverse_stake_u16;
+            Some(SortedKey::new(sorted_key, scrypto_encode(&address).unwrap()))
         }
     }
 }
@@ -581,7 +583,7 @@ impl ValidatorCreator {
         initial_stake: Bucket,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket, Bucket, Option<Vec<u8>>), RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket, Bucket, Option<SortedKey>), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -595,11 +597,11 @@ impl ValidatorCreator {
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
 
-        let index_key =
-            ValidatorBlueprint::to_index_key(is_registered, initial_liquidity_amount, address);
+        let sorted_key =
+            ValidatorBlueprint::to_sorted_key(is_registered, initial_liquidity_amount, address);
 
         let substate = ValidatorSubstate {
-            index_key: index_key.clone(),
+            sorted_key: sorted_key.clone(),
             key,
             liquidity_token,
             unstake_nft,
@@ -630,7 +632,7 @@ impl ValidatorCreator {
             address.into(),
             liquidity_bucket,
             owner_token_bucket,
-            index_key,
+            sorted_key,
         ))
     }
 
@@ -650,7 +652,7 @@ impl ValidatorCreator {
         let liquidity_token = Self::create_liquidity_token(api)?;
 
         let substate = ValidatorSubstate {
-            index_key: None,
+            sorted_key: None,
             key,
             liquidity_token,
             unstake_nft,

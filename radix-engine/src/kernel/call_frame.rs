@@ -442,7 +442,7 @@ impl CallFrame {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn upsert_substate<'f, S: SubstateStore>(
+    pub fn set_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,

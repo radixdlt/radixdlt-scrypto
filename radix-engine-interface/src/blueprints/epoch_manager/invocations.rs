@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::types::*;
+use radix_engine_interface::api::SortedKey;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
@@ -81,22 +82,22 @@ pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum UpdateSecondaryIndex {
     Create {
-        index_key: Vec<u8>,
+        index_key: SortedKey,
         primary: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
         stake: Decimal,
     },
     UpdateStake {
-        index_key: Vec<u8>,
-        new_index_key: Vec<u8>,
+        index_key: SortedKey,
+        new_index_key: SortedKey,
         new_stake_amount: Decimal,
     },
     UpdatePublicKey {
-        index_key: Vec<u8>,
+        index_key: SortedKey,
         key: EcdsaSecp256k1PublicKey,
     },
     Remove {
-        index_key: Vec<u8>,
+        index_key: SortedKey,
     },
 }
 

@@ -392,22 +392,21 @@ impl EpochManagerBlueprint {
             } => {
                 api.insert_typed_into_sorted(
                     secondary_index.as_node_id(),
-                    SubstateKey::from_vec(index_key).unwrap(),
+                    index_key,
                     (address, Validator { key, stake }),
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let substate_key = SubstateKey::from_vec(index_key).unwrap();
                 let (address, mut validator) = api
                     .remove_typed_from_sorted::<(ComponentAddress, Validator)>(
                         secondary_index.as_node_id(),
-                        &substate_key,
+                        &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.insert_typed_into_sorted(
                     secondary_index.as_node_id(),
-                    substate_key,
+                    index_key,
                     (address, validator),
                 )?;
             }
@@ -419,20 +418,20 @@ impl EpochManagerBlueprint {
                 let (address, mut validator) = api
                     .remove_typed_from_sorted::<(ComponentAddress, Validator)>(
                         secondary_index.as_node_id(),
-                        &SubstateKey::from_vec(index_key).unwrap(),
+                        &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.insert_typed_into_sorted(
                     secondary_index.as_node_id(),
-                    SubstateKey::from_vec(new_index_key).unwrap(),
+                    new_index_key,
                     (address, validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.remove_from_sorted(
                     secondary_index.as_node_id(),
-                    &SubstateKey::from_vec(index_key).unwrap(),
+                    &index_key,
                 )?;
             }
         }
@@ -459,23 +458,10 @@ impl EpochManagerBlueprint {
             api.sys_read_substate_typed(handle)?;
         let secondary_index = registered_validator_set.validators;
 
-        //let mut next_validator_set = BTreeMap::new();
-        //let max_validators: usize = max_validators.try_into().unwrap();
-
         let validators: Vec<(ComponentAddress, Validator)> =
             api.read_typed_from_sorted(secondary_index.as_node_id(), max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
-
-        /*
-        for (_index_key, (address, validator)) in registered_validator_set
-            .validators
-            .into_iter()
-            .take(max_validators)
-        {
-            next_validator_set.insert(address, validator);
-        }
-         */
 
         let handle = api.sys_lock_substate(
             receiver,

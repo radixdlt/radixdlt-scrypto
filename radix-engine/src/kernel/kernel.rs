@@ -18,7 +18,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::{ClientBlueprintApi, SortedKey};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
@@ -699,14 +699,22 @@ where
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        unique: SubstateKey,
+        sorted_key: SortedKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
+        if !value.owned_node_ids().is_empty() {
+            return Err(RuntimeError::SystemError(
+                SystemError::CannotStoreOwnedInIterable,
+            ));
+        }
+
+        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
+
         self.current_frame
-            .upsert_substate(
+            .set_substate(
                 node_id,
                 module_id,
-                unique,
+                substate_key,
                 value,
                 &mut self.heap,
                 self.store,
@@ -720,10 +728,13 @@ where
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        key: &SubstateKey,
+        sorted_key: &SortedKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+
+        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
+
         self.current_frame
-            .remove_substate(node_id, module_id, key, &mut self.heap, self.store)
+            .remove_substate(node_id, module_id, &substate_key, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)

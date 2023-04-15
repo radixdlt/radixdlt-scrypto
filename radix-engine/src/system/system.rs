@@ -682,7 +682,7 @@ where
     fn insert_into_sorted(
         &mut self,
         node_id: &NodeId,
-        substate_key: SubstateKey,
+        sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -697,16 +697,10 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        if !value.owned_node_ids().is_empty() {
-            return Err(RuntimeError::SystemError(
-                SystemError::CannotStoreOwnedInIterable,
-            ));
-        }
-
         self.api.kernel_insert_into_sorted(
             node_id,
             SysModuleId::ObjectIterable,
-            substate_key,
+            sorted_key,
             value,
         )
     }
@@ -737,7 +731,7 @@ where
     fn remove_from_sorted(
         &mut self,
         node_id: &NodeId,
-        substate_key: &SubstateKey,
+        sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
@@ -749,7 +743,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, substate_key)?
+            .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, sorted_key)?
             .map(|v| v.into());
 
         Ok(rtn)

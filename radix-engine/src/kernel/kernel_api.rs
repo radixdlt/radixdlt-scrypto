@@ -1,3 +1,4 @@
+use radix_engine_interface::api::SortedKey;
 use super::call_frame::RefType;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -76,7 +77,7 @@ pub trait KernelSortedApi {
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        unique: SubstateKey,
+        sorted_key: SortedKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
@@ -84,7 +85,7 @@ pub trait KernelSortedApi {
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        unique: &SubstateKey,
+        sorted_key: &SortedKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_read_from_sorted(

@@ -34,7 +34,7 @@ fn genesis_epoch_has_correct_initial_validators() {
             component_address: validator_account_address,
         });
 
-        let stake = Decimal::from((k + 1) / 2);
+        let stake = Decimal::from(1000000 * ((k + 1) / 2));
 
         stakes.insert(k - 1, vec![(k - 1, stake)]);
     }
@@ -61,10 +61,11 @@ fn genesis_epoch_has_correct_initial_validators() {
         .with_custom_genesis(genesis)
         .build_and_get_epoch();
 
+
     // Assert
     assert_eq!(validators.len(), 10);
     for (_, validator) in validators {
-        assert!(validator.stake >= Decimal::from(45u64) && validator.stake <= Decimal::from(50u64))
+        assert!(validator.stake >= Decimal::from(45000000u64) && validator.stake <= Decimal::from(50000000u64))
     }
 }
 
@@ -524,12 +525,21 @@ fn registered_validator_test(
         stakes.insert(k - 1, vec![(k - 1, initial_stakes)]);
     }
 
+    let validator_account_index = num_initial_validators;
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64((validator_account_index + 1).try_into().unwrap())
+        .unwrap()
+        .public_key();
+    let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    accounts.push(account_address);
+
     let genesis_data = GenesisData {
         validators,
         resources: Vec::new(),
         accounts,
         resource_balances: BTreeMap::new(),
-        xrd_balances: BTreeMap::new(),
+        xrd_balances: btreemap!(
+            validator_account_index => validator_stake
+        ),
         stakes,
     };
     let genesis = create_genesis(
@@ -540,7 +550,6 @@ fn registered_validator_test(
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -594,18 +603,18 @@ fn registered_validator_test(
 #[test]
 fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough(
 ) {
-    registered_validator_test(10, 10, 10.into(), 9.into(), false);
+    registered_validator_test(10, 10, 1000000.into(), 900000.into(), false);
 }
 
 #[test]
 fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
 ) {
-    registered_validator_test(9, 10, 10.into(), 9.into(), true);
+    registered_validator_test(9, 10, 1000000.into(), 900000.into(), true);
 }
 
 #[test]
 fn registered_validator_with_enough_stake_does_become_part_of_validator_on_epoch_change() {
-    registered_validator_test(10, 10, 10.into(), 11.into(), true);
+    registered_validator_test(10, 10, 1000000.into(), 1100000.into(), true);
 }
 
 #[test]
