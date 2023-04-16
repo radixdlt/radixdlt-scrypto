@@ -116,7 +116,7 @@ where
 
         let module_id = match type_info {
             TypeInfoSubstate::SortedStore => {
-                // TODO: Change to error
+                // TODO: Implement in sorted store api
                 panic!("Not supported")
             }
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::VirtualizedObject,
