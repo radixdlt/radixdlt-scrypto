@@ -488,8 +488,8 @@ impl NonFungibleVault {
                 amount_to_take,
             )?;
 
-            let ids = ids.into_iter().map(|id/*(key, _value)*/| {
-                let id: NonFungibleLocalId = scrypto_decode(&id).unwrap();
+            let ids = ids.into_iter().map(|(key, _value)| {
+                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
                 id
             }).collect();
 

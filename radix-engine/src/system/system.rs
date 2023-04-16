@@ -744,8 +744,23 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
         Ok(substates)
     }
 
-    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        todo!()
+    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::IterableStore => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let substates = self
+            .api
+            .kernel_take_substates(node_id, SysModuleId::Object, count)?
+            .into_iter()
+            .map(|(key, value)| (key, value.into()))
+            .collect();
+
+        Ok(substates)
     }
 }
 
@@ -1307,6 +1322,10 @@ where
 
     fn kernel_scan_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api.kernel_scan_substates(node_id, module_id, count)
+    }
+
+    fn kernel_take_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.api.kernel_take_substates(node_id, module_id, count)
     }
 }
 

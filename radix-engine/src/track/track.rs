@@ -442,6 +442,33 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         Ok(value)
     }
 
+    fn take_substates(&mut self, node_id: &NodeId, module_id: ModuleId, count: u32) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+        if let Some(update) = self.updates.get_mut(node_id) {
+            if update.is_new {
+                let substates = update.modules.get_mut(&module_id).unwrap();
+                let count: usize = count.try_into().unwrap();
+
+                let keys: Vec<SubstateKey> = substates.iter()
+                    .map(|(key, _)| key.clone())
+                    .take(count)
+                    .collect();
+
+                let mut items = Vec::new();
+
+                for key in keys {
+                    let tracked = substates.remove(&key).unwrap();
+                    items.push((key, tracked.into_value().unwrap()));
+                }
+
+                items
+            } else {
+                todo!()
+            }
+        } else {
+            todo!()
+        }
+    }
+
     fn scan_sorted(
         &mut self,
         node_id: &NodeId,
@@ -454,8 +481,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             if update.is_new {
                 let substates = update.modules.get_mut(&module_id).unwrap();
                 let count: usize = count.try_into().unwrap();
-                return substates
-                    .iter_mut()
+                return substates.iter_mut()
                     .take(count)
                     .map(|(key, tracked)| {
                         (

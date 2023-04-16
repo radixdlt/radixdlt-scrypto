@@ -69,19 +69,19 @@ pub trait ClientIterableStoreApi<E> {
         Ok(entries)
     }
 
-    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, E>;
 
     fn take_typed<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<S>, E> {
+    ) -> Result<Vec<(SubstateKey, S)>, E> {
         let entries = self
             .take(node_id, count)?
             .into_iter()
-            .map(|buf| {
+            .map(|(key, buf)| {
                 let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+                (key, typed)
             })
             .collect();
 

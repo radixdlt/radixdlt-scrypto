@@ -745,6 +745,14 @@ where
     fn kernel_scan_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         todo!()
     }
+
+    fn kernel_take_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.current_frame
+            .take_substates(node_id, module_id, count, &mut self.heap, self.store)
+            .map_err(CallFrameError::ReadSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
 }
 
 impl<'g, M, S> KernelInvokeApi<M::Invocation> for Kernel<'g, M, S>

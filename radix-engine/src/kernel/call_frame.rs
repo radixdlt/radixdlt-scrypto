@@ -489,6 +489,41 @@ impl CallFrame {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
+    pub fn take_substates<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, ReadSubstatesError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let substates = if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store.take_substates(node_id, module_id.into(), count)
+        };
+
+        for (_id, substate) in &substates {
+            let refs = substate.references();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref.clone(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
+    }
+
+    // Substate Virtualization does not apply to this call
+    // Should this be prevented at this layer?
     pub fn scan_sorted<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
