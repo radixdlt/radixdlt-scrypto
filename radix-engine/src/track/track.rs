@@ -4,8 +4,8 @@ use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
     AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
 };
-use std::collections::btree_map::Entry;
-use std::mem;
+use sbor::rust::collections::btree_map::Entry;
+use sbor::rust::mem;
 
 pub struct SubstateLockError;
 
@@ -144,6 +144,7 @@ impl TrackedSubstateKey {
     }
 }
 
+// TODO: Add Tracked Module for module dependencies
 pub struct TrackedNode {
     pub modules: IndexMap<ModuleId, BTreeMap<SubstateKey, TrackedSubstateKey>>,
     // If true, then all SubstateUpdates under this NodeUpdate must be inserts
@@ -189,8 +190,8 @@ pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
 }
 
 /// Transaction-wide states and side effects
-pub struct Track<'s> {
-    substate_db: &'s dyn SubstateDatabase,
+pub struct Track<'s, S: SubstateDatabase> {
+    substate_db: &'s S,
     updates: IndexMap<NodeId, TrackedNode>,
     force_updates: IndexMap<NodeId, TrackedNode>,
 
@@ -198,8 +199,8 @@ pub struct Track<'s> {
     next_lock_id: u32,
 }
 
-impl<'s> Track<'s> {
-    pub fn new(substate_db: &'s dyn SubstateDatabase) -> Self {
+impl<'s, S: SubstateDatabase> Track<'s, S> {
+    pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
             force_updates: index_map_new(),
@@ -306,7 +307,7 @@ impl<'s> Track<'s> {
     }
 }
 
-impl<'s> SubstateStore for Track<'s> {
+impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
         let node_runtime = node_substates
             .into_iter()
@@ -446,6 +447,8 @@ impl<'s> SubstateStore for Track<'s> {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+        // TODO: Add module dependencies
+
         if let Some(update) = self.updates.get_mut(node_id) {
             if update.is_new {
                 let substates = update.modules.get_mut(&module_id).unwrap();

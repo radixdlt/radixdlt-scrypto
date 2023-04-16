@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_stores::interface::NodeSubstates;
-use std::collections::btree_map::Entry;
+use sbor::rust::collections::btree_map::Entry;
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, NodeSubstates>,

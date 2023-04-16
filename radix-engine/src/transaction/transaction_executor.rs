@@ -460,8 +460,8 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees(
-    track: &mut Track,
+fn distribute_fees<S: SubstateDatabase>(
+    track: &mut Track<S>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,
 ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
