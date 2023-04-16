@@ -686,19 +686,62 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
     }
 
     fn insert_into_iterable_store(&mut self, node_id: &NodeId, key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {
-        todo!()
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::IterableStore => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        if !value.owned_node_ids().is_empty() {
+            return Err(RuntimeError::SystemError(
+                SystemError::CannotStoreOwnedInIterable,
+            ));
+        }
+
+        self.api
+            .kernel_set_substate(node_id, SysModuleId::Object, key, value)
     }
 
     fn remove_from_iterable_store(&mut self, node_id: &NodeId, key: &SubstateKey) -> Result<Option<Vec<u8>>, RuntimeError> {
-        todo!()
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::IterableStore => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let rtn = self
+            .api
+            .kernel_remove_substate(node_id, SysModuleId::Object, &key)?
+            .map(|v| v.into());
+
+        Ok(rtn)
     }
 
     fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        todo!()
-    }
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::IterableStore => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
 
-    fn scap_typed_iterable_store<S: ScryptoDecode>(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<S>, RuntimeError> {
-        todo!()
+        let substates = self
+            .api
+            .kernel_scan_substates(node_id, SysModuleId::Object, count)?
+            .into_iter()
+            .map(|(_key, value)| value.into())
+            .collect();
+
+        Ok(substates)
     }
 }
 
@@ -1256,6 +1299,10 @@ where
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, module_id, count)
+    }
+
+    fn kernel_scan_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.api.kernel_scan_substates(node_id, module_id, count)
     }
 }
 

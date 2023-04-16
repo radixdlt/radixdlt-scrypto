@@ -200,6 +200,7 @@ pub enum SystemError {
     NotAnObject,
     NotAKeyValueStore,
     NotASortedStore,
+    NotAnIterableStore,
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,

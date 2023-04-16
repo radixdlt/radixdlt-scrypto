@@ -741,6 +741,10 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
+
+    fn kernel_scan_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        todo!()
+    }
 }
 
 impl<'g, M, S> KernelInvokeApi<M::Invocation> for Kernel<'g, M, S>
