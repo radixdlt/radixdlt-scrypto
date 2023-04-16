@@ -743,6 +743,10 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
 
         Ok(substates)
     }
+
+    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        todo!()
+    }
 }
 
 impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
