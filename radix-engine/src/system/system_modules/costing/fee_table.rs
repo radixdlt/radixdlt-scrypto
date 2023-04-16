@@ -7,7 +7,7 @@ pub const FIXED_HIGH_FEE: u32 = 5000;
 
 const COSTING_COEFFICENT: u64 = 335;
 const COSTING_COEFFICENT_DIV_BITS: u64 = 4; // used to divide by shift left operator
-const COSTING_COEFFICENT_DIV_BITS_ADDON: u64 = 5; // used to scale up or down all cpu instruction costing
+const COSTING_COEFFICENT_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
 
 pub enum CostingEntry<'a> {
     /* invoke */
@@ -304,7 +304,6 @@ impl FeeTable {
                         _ => 276893, // average of above values
                     }
                 }
-                _ => 365507, // average of above values
             },
             CostingEntry::LockSubstate {
                 node_id,
