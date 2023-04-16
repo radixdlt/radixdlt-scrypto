@@ -29,7 +29,6 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientObjectApi<E>
     + ClientSortedStoreApi<E>
-    + ClientSortedStoreApi<E>
     + ClientBlueprintApi<E>
     + ClientSubstateApi<E>
     + ClientCostingApi<E>

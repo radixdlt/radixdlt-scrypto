@@ -24,9 +24,10 @@ impl Into<Vec<u8>> for SortedKey {
 }
 
 pub trait ClientSortedStoreApi<E> {
-    /// Creates a new sorted map
+    /// Creates a new sorted store
     fn new_sorted_store(&mut self) -> Result<NodeId, E>;
 
+    /// Inserts an entry into a sorted store
     fn insert_into_sorted_store(
         &mut self,
         node_id: &NodeId,
@@ -34,6 +35,7 @@ pub trait ClientSortedStoreApi<E> {
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
+    /// Inserts an entry into a sorted store
     fn insert_typed_into_sorted_store<V: ScryptoEncode>(
         &mut self,
         node_id: &NodeId,
@@ -43,12 +45,14 @@ pub trait ClientSortedStoreApi<E> {
         self.insert_into_sorted_store(node_id, sorted_key, scrypto_encode(&value).unwrap())
     }
 
+    /// Removes an entry from a sorted store
     fn remove_from_sorted_store(
         &mut self,
         node_id: &NodeId,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, E>;
 
+    /// Removes an entry from a sorted store
     fn remove_typed_from_sorted_store<V: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
@@ -60,15 +64,17 @@ pub trait ClientSortedStoreApi<E> {
         Ok(rtn)
     }
 
-    fn read_from_sorted_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    /// Scans the first elements of count from a sorted store
+    fn scan_sorted_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
-    fn read_typed_from_sorted_store<S: ScryptoDecode>(
+    /// Scans the first elements of count from a sorted store
+    fn scap_typed_sorted_store<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
     ) -> Result<Vec<S>, E> {
         let entries = self
-            .read_from_sorted_store(node_id, count)?
+            .scan_sorted_store(node_id, count)?
             .into_iter()
             .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();

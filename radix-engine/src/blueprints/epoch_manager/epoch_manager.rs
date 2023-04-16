@@ -456,7 +456,7 @@ impl EpochManagerBlueprint {
         let secondary_index = registered_validator_set.validators;
 
         let validators: Vec<(ComponentAddress, Validator)> =
-            api.read_typed_from_sorted_store(secondary_index.as_node_id(), max_validators)?;
+            api.scap_typed_sorted_store(secondary_index.as_node_id(), max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 

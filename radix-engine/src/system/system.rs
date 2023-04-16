@@ -661,7 +661,7 @@ where
     V: SystemCallbackObject,
 {
     fn new_sorted_store(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalSortedMap;
+        let entity_type = EntityType::InternalSortedStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
         self.api.kernel_create_node(
@@ -687,7 +687,7 @@ where
         match type_info {
             TypeInfoSubstate::SortedStore => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
         }
 
@@ -707,7 +707,7 @@ where
             .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
     }
 
-    fn read_from_sorted_store(
+    fn scan_sorted_store(
         &mut self,
         node_id: &NodeId,
         count: u32,
@@ -716,7 +716,7 @@ where
         match type_info {
             TypeInfoSubstate::SortedStore => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
         }
 
@@ -739,7 +739,7 @@ where
         match type_info {
             TypeInfoSubstate::SortedStore => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
         }
 

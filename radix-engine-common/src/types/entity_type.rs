@@ -28,7 +28,7 @@ pub enum EntityType {
     InternalNonFungibleVault,
     InternalAccount,
     InternalKeyValueStore,
-    InternalSortedMap,
+    InternalSortedStore,
     InternalGenericComponent, // generic
 }
 
@@ -54,7 +54,7 @@ impl EntityType {
             | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore
-            | EntityType::InternalSortedMap => false,
+            | EntityType::InternalSortedStore => false,
         }
     }
 
@@ -83,7 +83,7 @@ impl EntityType {
         EntityType::InternalAccount |
         EntityType::InternalGenericComponent |
         EntityType::InternalKeyValueStore |
-        EntityType::InternalSortedMap => false,
+        EntityType::InternalSortedStore => false,
     }
     }
 

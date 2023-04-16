@@ -199,7 +199,7 @@ pub enum SystemError {
     GlobalAddressDoesNotExist,
     NotAnObject,
     NotAKeyValueStore,
-    NotAnIterableStore,
+    NotASortedStore,
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
