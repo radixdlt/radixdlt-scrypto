@@ -455,7 +455,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 let substates = update.modules.get_mut(&module_id).unwrap();
                 let count: usize = count.try_into().unwrap();
                 return substates
-                    .into_iter()
+                    .iter_mut()
                     .take(count)
                     .map(|(key, tracked)| {
                         (
@@ -464,17 +464,31 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                         )
                     })
                     .collect();
+            } else {
+                let module_updates = update.modules.get_mut(&module_id);
+                if let Some(_module_updates) = module_updates {
+                    todo!()
+                } else {
+                    let substates = self
+                        .substate_db
+                        .list_substates(node_id, module_id, count)
+                        .unwrap();
+                    substates
+                        .into_iter()
+                        .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
+                        .collect()
+                }
             }
+        } else {
+            let substates = self
+                .substate_db
+                .list_substates(node_id, module_id, count)
+                .unwrap();
+            substates
+                .into_iter()
+                .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
+                .collect()
         }
-
-        let substates = self
-            .substate_db
-            .list_substates(node_id, module_id, count)
-            .unwrap();
-        substates
-            .into_iter()
-            .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
-            .collect()
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
