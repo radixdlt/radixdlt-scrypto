@@ -12,8 +12,9 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::sorted_store_api::SortedKey;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, SortedKey};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -258,7 +259,8 @@ impl ValidatorBlueprint {
     {
         let validator_address: ComponentAddress =
             ComponentAddress::new_unchecked(api.get_global_address()?.into());
-        let new_sorted_key = Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
+        let new_sorted_key =
+            Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 
         let update = if let Some(cur_index_key) = &validator.sorted_key {
             if let Some(new_index_key) = &new_sorted_key {
@@ -442,12 +444,16 @@ impl ValidatorBlueprint {
         if !registered || stake.is_zero() {
             None
         } else {
-            let stake_100k = stake / Decimal::from(10).powi(Decimal::SCALE.into()) / Decimal::from(100000);
+            let stake_100k =
+                stake / Decimal::from(10).powi(Decimal::SCALE.into()) / Decimal::from(100000);
             let stake_100k_le = stake_100k.to_vec();
             let bytes = [stake_100k_le[1], stake_100k_le[0]];
             let reverse_stake_u16 = u16::from_be_bytes(bytes);
             let sorted_key = u16::MAX - reverse_stake_u16;
-            Some(SortedKey::new(sorted_key, scrypto_encode(&address).unwrap()))
+            Some(SortedKey::new(
+                sorted_key,
+                scrypto_encode(&address).unwrap(),
+            ))
         }
     }
 }

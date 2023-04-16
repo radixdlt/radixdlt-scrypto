@@ -1,4 +1,3 @@
-use radix_engine_interface::api::SortedKey;
 use super::call_frame::RefType;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -73,7 +72,7 @@ pub trait KernelSubstateApi {
 
     /// Sets a value to a substate without checking for the original value.
     ///
-    /// Clients must ensure that this isn't used in conjunction with virtualized
+    /// Clients must ensure that this isn't used in conjunction with shardable
     /// substates; otherwise, the behavior is undefined
     fn kernel_set_substate(
         &mut self,
@@ -93,10 +92,12 @@ pub trait KernelSubstateApi {
         module_id: SysModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
-}
 
-pub trait KernelSortedApi {
-    fn kernel_read_from_sorted(
+    /// Reads substates under a node in sorted lexicographical order
+    ///
+    /// Clients must ensure that this isn't used in conjunction with virtualized
+    /// substates; otherwise, the behavior is undefined
+    fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -167,10 +168,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi
-    + KernelSubstateApi
-    + KernelSortedApi
-    + KernelInvokeApi<M::Invocation>
-    + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
 {
 }

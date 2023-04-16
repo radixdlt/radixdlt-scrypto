@@ -61,11 +61,13 @@ fn genesis_epoch_has_correct_initial_validators() {
         .with_custom_genesis(genesis)
         .build_and_get_epoch();
 
-
     // Assert
     assert_eq!(validators.len(), 10);
     for (_, validator) in validators {
-        assert!(validator.stake >= Decimal::from(45000000u64) && validator.stake <= Decimal::from(50000000u64))
+        assert!(
+            validator.stake >= Decimal::from(45000000u64)
+                && validator.stake <= Decimal::from(50000000u64)
+        )
     }
 }
 
@@ -526,9 +528,10 @@ fn registered_validator_test(
     }
 
     let validator_account_index = num_initial_validators;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64((validator_account_index + 1).try_into().unwrap())
-        .unwrap()
-        .public_key();
+    let pub_key =
+        EcdsaSecp256k1PrivateKey::from_u64((validator_account_index + 1).try_into().unwrap())
+            .unwrap()
+            .public_key();
     let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     accounts.push(account_address);
 

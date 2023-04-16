@@ -99,7 +99,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, AcquireLockError>;
 
-    fn read_sorted_substates(
+    fn scan_sorted(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,

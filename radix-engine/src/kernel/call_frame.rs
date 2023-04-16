@@ -489,7 +489,7 @@ impl CallFrame {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn read_sorted_substates<'f, S: SubstateStore>(
+    pub fn scan_sorted<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
@@ -503,7 +503,7 @@ impl CallFrame {
         let substates = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.read_sorted_substates(node_id, module_id.into(), count)
+            store.scan_sorted(node_id, module_id.into(), count)
         };
 
         for (_id, substate) in &substates {

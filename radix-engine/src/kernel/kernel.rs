@@ -9,7 +9,7 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelInvocation, KernelSortedApi};
+use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
@@ -18,7 +18,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::{ClientBlueprintApi, SortedKey};
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
@@ -717,29 +717,26 @@ where
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .remove_substate(node_id, module_id, &substate_key, &mut self.heap, self.store)
+            .remove_substate(
+                node_id,
+                module_id,
+                &substate_key,
+                &mut self.heap,
+                self.store,
+            )
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
 
-}
-
-impl<'g, M, S> KernelSortedApi for Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: SubstateStore,
-{
-
-
-    fn kernel_read_from_sorted(
+    fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.current_frame
-            .read_sorted_substates(node_id, module_id, count, &mut self.heap, self.store)
+            .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)

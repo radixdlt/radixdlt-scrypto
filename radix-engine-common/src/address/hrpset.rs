@@ -43,7 +43,7 @@ impl HrpSet {
             EntityType::InternalAccount => &self.internal_account,
             EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
-            EntityType::InternalIterableStore => &self.internal_iterable_store,
+            EntityType::InternalSortedMap => &self.internal_iterable_store,
         }
     }
 }

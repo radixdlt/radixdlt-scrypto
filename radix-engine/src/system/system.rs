@@ -18,6 +18,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::sorted_store_api::SortedKey;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -652,13 +653,13 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSortedApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
-    fn new_sorted(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalIterableStore;
+    fn new_sorted_store(&mut self) -> Result<NodeId, RuntimeError> {
+        let entity_type = EntityType::InternalSortedMap;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
         self.api.kernel_create_node(
@@ -674,8 +675,7 @@ where
         Ok(node_id)
     }
 
-    // Dependency less
-    fn insert_into_sorted(
+    fn insert_into_sorted_store(
         &mut self,
         node_id: &NodeId,
         sorted_key: SortedKey,
@@ -701,15 +701,11 @@ where
 
         let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
 
-        self.api.kernel_set_substate(
-            node_id,
-            SysModuleId::ObjectSorted,
-            substate_key,
-            value,
-        )
+        self.api
+            .kernel_set_substate(node_id, SysModuleId::ObjectSorted, substate_key, value)
     }
 
-    fn read_from_sorted(
+    fn read_from_sorted_store(
         &mut self,
         node_id: &NodeId,
         count: u32,
@@ -724,7 +720,7 @@ where
 
         let substates = self
             .api
-            .kernel_read_from_sorted(node_id, SysModuleId::ObjectSorted, count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::ObjectSorted, count)?
             .into_iter()
             .map(|(_key, value)| value.into())
             .collect();
@@ -732,7 +728,7 @@ where
         Ok(substates)
     }
 
-    fn remove_from_sorted(
+    fn remove_from_sorted_store(
         &mut self,
         node_id: &NodeId,
         sorted_key: &SortedKey,
@@ -1182,12 +1178,35 @@ where
         self.api.kernel_write_substate(lock_handle, value)
     }
 
-    fn kernel_set_substate(&mut self, node_id: &NodeId, module_id: SysModuleId, substate_key: SubstateKey, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
-        self.api.kernel_set_substate(node_id, module_id, substate_key, value)
+    fn kernel_set_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        substate_key: SubstateKey,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
-    fn kernel_remove_substate(&mut self, node_id: &NodeId, module_id: SysModuleId, substate_key: &SubstateKey) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        self.api.kernel_remove_substate(node_id, module_id, substate_key)
+    fn kernel_remove_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+        self.api
+            .kernel_remove_substate(node_id, module_id, substate_key)
+    }
+
+    fn kernel_scan_sorted_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.api
+            .kernel_scan_sorted_substates(node_id, module_id, count)
     }
 }
 
