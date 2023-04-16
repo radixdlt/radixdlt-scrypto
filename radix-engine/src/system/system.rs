@@ -14,6 +14,7 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
+use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -616,22 +617,13 @@ where
 
         Ok(())
     }
+}
 
-    fn get_key_value_store_info(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
-        let schema = match type_info {
-            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            }
-            TypeInfoSubstate::KeyValueStore(schema) => schema,
-        };
-
-        Ok(schema)
-    }
-
+impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+where
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
+{
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
@@ -652,6 +644,21 @@ where
         )?;
 
         Ok(node_id)
+    }
+
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
+        let schema = match type_info {
+            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            }
+            TypeInfoSubstate::KeyValueStore(schema) => schema,
+        };
+
+        Ok(schema)
     }
 }
 

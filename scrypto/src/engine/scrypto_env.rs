@@ -1,5 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
@@ -38,26 +39,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
                 object_states.len(),
             )
         });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn new_key_value_store(
-        &mut self,
-        schema: KeyValueStoreSchema,
-    ) -> Result<NodeId, ClientApiError> {
-        let schema = scrypto_encode(&schema).unwrap();
-        let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn get_key_value_store_info(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, ClientApiError> {
-        let bytes = copy_buffer(unsafe {
-            get_key_value_store_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
@@ -133,6 +114,28 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
 
         Ok(())
+    }
+}
+
+impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
+    fn new_key_value_store(
+        &mut self,
+        schema: KeyValueStoreSchema,
+    ) -> Result<NodeId, ClientApiError> {
+        let schema = scrypto_encode(&schema).unwrap();
+        let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<KeyValueStoreSchema, ClientApiError> {
+        let bytes = copy_buffer(unsafe {
+            get_key_value_store_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 }
 

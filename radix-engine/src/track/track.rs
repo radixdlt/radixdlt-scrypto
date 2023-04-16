@@ -98,6 +98,7 @@ impl Write {
     }
 }
 
+// TODO: Add new virtualized
 #[derive(Clone, Debug)]
 pub enum TrackedSubstateKey {
     New(RuntimeSubstate),
@@ -447,7 +448,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
-        // TODO: Add module dependencies
+        // TODO: Add module dependencies/lock
 
         if let Some(update) = self.updates.get_mut(node_id) {
             if update.is_new {
