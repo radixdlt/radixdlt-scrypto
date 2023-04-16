@@ -151,9 +151,9 @@ pub enum ReadSubstatesError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum UpsertSubstatesError {
+pub enum SetSubstateError {
     NodeNotInCallFrame(NodeId),
-    FailedToUpsert,
+    SubstateLocked,
 }
 
 impl CallFrame {
@@ -450,16 +450,16 @@ impl CallFrame {
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(), UpsertSubstatesError> {
+    ) -> Result<(), SetSubstateError> {
         self.get_node_visibility(node_id)
-            .ok_or_else(|| UpsertSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+            .ok_or_else(|| SetSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         if heap.contains_node(node_id) {
             todo!()
         } else {
             store
                 .set_substate(*node_id, module_id.into(), key, value)
-                .map_err(|_| UpsertSubstatesError::FailedToUpsert)?;
+                .map_err(|_| SetSubstateError::SubstateLocked)?;
         };
 
         Ok(())
