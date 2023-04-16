@@ -1373,8 +1373,7 @@ impl StateHashSupport {
                 SubstateHashChange::new(
                     substate_id.clone(),
                     match value {
-                        StateUpdate::Create(v) => Some(hash(v)),
-                        StateUpdate::Update(v) => Some(hash(v)),
+                        StateUpdate::Set(v) => Some(hash(v)),
                         StateUpdate::Delete => None,
                     },
                 )

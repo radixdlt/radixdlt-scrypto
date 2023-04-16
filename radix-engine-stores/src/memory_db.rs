@@ -63,11 +63,7 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
         {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
             match substate_change {
-                StateUpdate::Create(substate_value) => {
-                    self.substates
-                        .insert(substate_id, scrypto_encode(&substate_value).unwrap());
-                }
-                StateUpdate::Update(substate_value) => {
+                StateUpdate::Set(substate_value) => {
                     self.substates
                         .insert(substate_id, scrypto_encode(&substate_value).unwrap());
                 }

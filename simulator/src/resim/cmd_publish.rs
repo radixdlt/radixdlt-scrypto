@@ -79,10 +79,10 @@ impl Publish {
             };
             let state_updates = StateUpdates {
                 substate_changes: indexmap!(
-                    (node_id, module_id, substate_key_code) => StateUpdate::Update(
+                    (node_id, module_id, substate_key_code) => StateUpdate::Set(
                         scrypto_encode(&package_code).unwrap()
                     ),
-                    (node_id, module_id, substate_key_info) => StateUpdate::Update(
+                    (node_id, module_id, substate_key_info) => StateUpdate::Set(
                         scrypto_encode(&package_info).unwrap()
                     )
                 ),

@@ -114,7 +114,7 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                         .put(substate_id, scrypto_encode(&substate_value).unwrap())
                         .expect("IO error");
                 }
-                StateUpdate::Update(substate_value) => {
+                StateUpdate::Set(substate_value) => {
                     self.db
                         .put(substate_id, scrypto_encode(&substate_value).unwrap())
                         .expect("IO error");

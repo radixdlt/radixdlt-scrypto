@@ -148,7 +148,7 @@ pub struct TrackedNode {
     pub modules: IndexMap<ModuleId, BTreeMap<SubstateKey, TrackedSubstateKey>>,
     // If true, then all SubstateUpdates under this NodeUpdate must be inserts
     // The extra information, though awkward structurally, makes for a much
-    // simpler implementation as long as the invariant is maintained
+    // simpler iteration implementation as long as the invariant is maintained
     pub is_new: bool,
 }
 
@@ -168,24 +168,23 @@ pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
         for (module_id, module) in node_update.modules {
             for (substate_key, tracked) in module {
                 let update = match tracked {
+                    TrackedSubstateKey::ReadOnly(..) => {
+                        None
+                    }
                     TrackedSubstateKey::New(substate) => {
-                        StateUpdate::Create(substate.value.into())
+                        Some(StateUpdate::Set(substate.value.into()))
                     }
-                    TrackedSubstateKey::WriteOnly(Write::Update(substate)) => {
-                        StateUpdate::Create(substate.value.into())
-                    }
-                    TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => {
-                        StateUpdate::Update(substate.value.into())
-                    }
-                    TrackedSubstateKey::ReadOnly(ReadOnly::Existent(substate)) => {
-                        // TODO: Fix
-                        StateUpdate::Update(substate.value.into())
-                    }
-                    TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent)
-                    | TrackedSubstateKey::ReadAndWrite(_, Write::Delete)
-                    | TrackedSubstateKey::WriteOnly(Write::Delete) => StateUpdate::Delete,
+                    TrackedSubstateKey::ReadAndWrite(_, write)
+                    | TrackedSubstateKey::WriteOnly(write) => {
+                        match write {
+                            Write::Delete => Some(StateUpdate::Delete),
+                            Write::Update(substate) => Some(StateUpdate::Set(substate.value.into()))
+                        }
+                    },
                 };
-                substate_changes.insert((node_id, module_id, substate_key.clone()), update);
+                if let Some(update) = update {
+                    substate_changes.insert((node_id, module_id, substate_key.clone()), update);
+                }
             }
         }
     }

@@ -153,11 +153,7 @@ pub struct StateUpdates {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StateUpdate {
-    /// Creates a substate.
-    Create(Vec<u8>),
-    /// Updates a substate.
-    Update(Vec<u8>),
-
+    Set(Vec<u8>),
     Delete,
 }
 
