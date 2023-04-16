@@ -1,3 +1,4 @@
+use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;

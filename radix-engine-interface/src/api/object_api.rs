@@ -41,12 +41,6 @@ pub trait ClientObjectApi<E> {
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
-    /// Creates a new key value store with a given schema
-    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
-
-    /// Get info regarding a visible key value store
-    fn get_key_value_store_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
-
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.
     fn globalize(&mut self, modules: BTreeMap<ObjectModuleId, NodeId>) -> Result<GlobalAddress, E>;

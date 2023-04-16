@@ -23,6 +23,7 @@ impl Into<Vec<u8>> for SortedKey {
     }
 }
 
+// TODO: Add locked entry interface
 pub trait ClientSortedStoreApi<E> {
     /// Creates a new sorted store
     fn new_sorted_store(&mut self) -> Result<NodeId, E>;
