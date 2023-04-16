@@ -8,7 +8,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::TrackedNode;
+use crate::track::{TrackedNode, TrackedSubstateKey, Write};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -329,29 +329,50 @@ impl<'a> BalanceAccounter<'a> {
                 SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
-                let old_substate = self.fetch_substate_from_database(
-                    node_id,
-                    SysModuleId::Object.into(),
-                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
-                );
 
-                let mut old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidNonFungibleVault>(&s)
-                        .unwrap()
-                        .ids().clone()
+                let mut vault = scrypto_decode::<LiquidNonFungibleVault>(substate)
+                    .unwrap();
+                let vault_updates = self.updates.get(vault.ids.as_node_id())
+                    .and_then(|n| {
+                        let module_id: ModuleId = SysModuleId::Object.into();
+                        n.modules.get(&module_id)
+                    });
+
+                if let Some(vault_updates) = vault_updates {
+                    let mut added = BTreeSet::new();
+                    let mut removed = BTreeSet::new();
+
+                    for (key, tracked) in vault_updates {
+                        match tracked {
+                            TrackedSubstateKey::New(..) => {
+                                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+                                added.insert(id);
+                            }
+                            TrackedSubstateKey::ReadAndWrite(_, write)
+                            | TrackedSubstateKey::WriteOnly(write) => {
+                                match write {
+                                    Write::Update(..) => {
+                                        let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+                                        added.insert(id);
+                                    }
+                                    Write::Delete => {
+                                        let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+                                        removed.insert(id);
+                                    }
+                                }
+                            }
+                            TrackedSubstateKey::ReadOnly(..) => {
+                            }
+                        }
+                    }
+
+                    Some(BalanceChange::NonFungible {
+                        added,
+                        removed,
+                    })
                 } else {
-                    BTreeSet::new()
-                };
-                let mut new_balance = scrypto_decode::<LiquidNonFungibleVault>(substate)
-                    .unwrap()
-                    .ids().clone();
-
-                remove_intersection(&mut new_balance, &mut old_balance);
-
-                Some(BalanceChange::NonFungible {
-                    added: new_balance,
-                    removed: old_balance,
-                })
+                    None
+                }
             } else {
                 None
             }
@@ -397,15 +418,4 @@ impl<'a> BalanceAccounter<'a> {
             .and_then(|tracked_module| tracked_module.get(substate_key))
             .and_then(|tracked_key| tracked_key.get_substate().map(|e| e.as_slice()))
     }
-}
-
-/// Removes the `left.intersection(right)` from both `left` and `right`, in place, without
-/// computing (or allocating) the intersection itself.
-/// Implementation note: since Rust has no "iterator with delete" capabilities, the implementation
-/// uses a (normally frowned-upon) side-effect of a lambda inside `.retain()`.
-/// Performance note: since the `BTreeSet`s are inherently sorted, the implementation _could_ have
-/// an `O(n+m)` runtime (i.e. traversing 2 iterators). However, it would then contain significantly
-/// more bugs than the `O(n * log(m))` one-liner below.
-fn remove_intersection<T: Ord>(left: &mut BTreeSet<T>, right: &mut BTreeSet<T>) {
-    left.retain(|id| !right.remove(id));
 }
