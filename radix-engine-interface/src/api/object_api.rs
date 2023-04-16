@@ -4,7 +4,6 @@ use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::KeyValueStoreSchema;
 
 #[repr(u8)]
 #[derive(
