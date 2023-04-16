@@ -168,18 +168,14 @@ pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
         for (module_id, module) in node_update.modules {
             for (substate_key, tracked) in module {
                 let update = match tracked {
-                    TrackedSubstateKey::ReadOnly(..) => {
-                        None
-                    }
+                    TrackedSubstateKey::ReadOnly(..) => None,
                     TrackedSubstateKey::New(substate) => {
                         Some(StateUpdate::Set(substate.value.into()))
                     }
                     TrackedSubstateKey::ReadAndWrite(_, write)
-                    | TrackedSubstateKey::WriteOnly(write) => {
-                        match write {
-                            Write::Delete => Some(StateUpdate::Delete),
-                            Write::Update(substate) => Some(StateUpdate::Set(substate.value.into()))
-                        }
+                    | TrackedSubstateKey::WriteOnly(write) => match write {
+                        Write::Delete => Some(StateUpdate::Delete),
+                        Write::Update(substate) => Some(StateUpdate::Set(substate.value.into())),
                     },
                 };
                 if let Some(update) = update {
@@ -458,7 +454,10 @@ impl<'s> SubstateStore for Track<'s> {
                     .into_iter()
                     .take(count)
                     .map(|(key, tracked)| {
-                        (key.clone(), tracked.get_runtime_substate_mut().unwrap().value.clone())
+                        (
+                            key.clone(),
+                            tracked.get_runtime_substate_mut().unwrap().value.clone(),
+                        )
                     })
                     .collect();
             }
@@ -505,11 +504,13 @@ impl<'s> SubstateStore for Track<'s> {
             }
         }
 
-        let substate = tracked.get_runtime_substate_mut().ok_or(AcquireLockError::NotFound(
-            *node_id,
-            module_id,
-            substate_key.clone(),
-        ))?;
+        let substate = tracked
+            .get_runtime_substate_mut()
+            .ok_or(AcquireLockError::NotFound(
+                *node_id,
+                module_id,
+                substate_key.clone(),
+            ))?;
 
         // Check read/write permission
         substate.lock_state.try_lock(flags).map_err(|_| {
@@ -597,7 +598,8 @@ impl<'s> SubstateStore for Track<'s> {
                     Write::Update(RuntimeSubstate::new(substate_value)),
                 );
                 let mut old = mem::replace(tracked, new_tracked);
-                tracked.get_runtime_substate_mut().unwrap().lock_state = old.get_runtime_substate_mut().unwrap().lock_state;
+                tracked.get_runtime_substate_mut().unwrap().lock_state =
+                    old.get_runtime_substate_mut().unwrap().lock_state;
             }
             TrackedSubstateKey::WriteOnly(Write::Delete)
             | TrackedSubstateKey::ReadAndWrite(_, Write::Delete) => {

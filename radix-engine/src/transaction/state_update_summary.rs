@@ -29,7 +29,6 @@ impl StateUpdateSummary {
         substate_db: &S,
         updates: &IndexMap<NodeId, TrackedNode>,
     ) -> Self {
-
         let mut new_packages = index_set_new();
         let mut new_components = index_set_new();
         let mut new_resources = index_set_new();
@@ -96,7 +95,7 @@ impl BalanceChange {
 /// from a substate.
 pub struct BalanceAccounter<'a> {
     substate_db: &'a dyn SubstateDatabase,
-    updates: &'a IndexMap<NodeId, TrackedNode>,//IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>>,
+    updates: &'a IndexMap<NodeId, TrackedNode>, //IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>>,
 }
 
 impl<'a> BalanceAccounter<'a> {
@@ -301,12 +300,12 @@ impl<'a> BalanceAccounter<'a> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    SysModuleId::ObjectTuple.into(),
+                    SysModuleId::Object.into(),
                     &FungibleVaultOffset::LiquidFungible.into(),
                 );
 
@@ -329,12 +328,12 @@ impl<'a> BalanceAccounter<'a> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    SysModuleId::ObjectTuple.into(),
+                    SysModuleId::Object.into(),
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 );
 

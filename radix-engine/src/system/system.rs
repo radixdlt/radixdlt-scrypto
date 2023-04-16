@@ -118,14 +118,16 @@ where
                 // TODO: Change to error
                 panic!("Not supported")
             }
-            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::ObjectMap,
+            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::VirtualizedObject,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::ObjectMap,
-                                _ => SysModuleId::ObjectTuple,
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                                    SysModuleId::VirtualizedObject
+                                }
+                                _ => SysModuleId::Object,
                             }
                         }
                         ObjectModuleId::Metadata => SysModuleId::Metadata,
@@ -134,8 +136,8 @@ where
                     }
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::ObjectMap,
-                        _ => SysModuleId::ObjectTuple,
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::VirtualizedObject,
+                        _ => SysModuleId::Object,
                     }
                 }
             }
@@ -160,7 +162,7 @@ where
             node_id, module_id, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::ObjectMap.into()) {
+        if module_id.eq(&SysModuleId::VirtualizedObject.into()) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -221,7 +223,7 @@ where
 
         let handle = self.api.kernel_lock_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -303,8 +305,8 @@ where
         };
 
         let self_module_id = match (package_address, blueprint_ident) {
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::ObjectMap,
-            _ => SysModuleId::ObjectTuple,
+            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::VirtualizedObject,
+            _ => SysModuleId::Object,
         };
 
         self.api.kernel_create_node(
@@ -438,7 +440,7 @@ where
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates
-                        .remove(&SysModuleId::ObjectTuple.into())
+                        .remove(&SysModuleId::Object.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
@@ -456,7 +458,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
-                        .remove(&SysModuleId::ObjectMap.into())
+                        .remove(&SysModuleId::VirtualizedObject.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
@@ -474,7 +476,7 @@ where
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates
-                        .remove(&SysModuleId::ObjectTuple.into())
+                        .remove(&SysModuleId::Object.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
@@ -642,7 +644,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectMap.into() => btreemap!(),
+                SysModuleId::VirtualizedObject.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -665,7 +667,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectSorted.into() => btreemap!(),
+                SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedStore
                 ).to_substates(),
@@ -702,7 +704,7 @@ where
         let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
 
         self.api
-            .kernel_set_substate(node_id, SysModuleId::ObjectSorted, substate_key, value)
+            .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
     }
 
     fn read_from_sorted_store(
@@ -720,7 +722,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::ObjectSorted, count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::Object, count)?
             .into_iter()
             .map(|(_key, value)| value.into())
             .collect();
@@ -745,7 +747,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::ObjectSorted, &substate_key)?
+            .kernel_remove_substate(node_id, SysModuleId::Object, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -977,7 +979,7 @@ where
 
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;

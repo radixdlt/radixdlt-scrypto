@@ -351,7 +351,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -453,7 +453,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

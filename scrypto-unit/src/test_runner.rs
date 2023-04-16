@@ -342,7 +342,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::ObjectTuple.into(),
+                            SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
@@ -362,7 +362,7 @@ impl TestRunner {
             .substate_db
             .get_substate(
                 package_address.as_node_id(),
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &PackageOffset::Royalty.into(),
             )
             .expect("Database misconfigured")
@@ -374,7 +374,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::ObjectTuple.into(),
+                            SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
@@ -425,7 +425,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             )
             .expect("Database misconfigured")
@@ -443,7 +443,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .expect("Database misconfigured")
@@ -527,7 +527,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     address.as_node_id(),
-                    SysModuleId::ObjectTuple.into(),
+                    SysModuleId::Object.into(),
                     &ValidatorOffset::Validator.into(),
                 )
                 .expect("Database misconfigured")
@@ -542,7 +542,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     EPOCH_MANAGER.as_node_id(),
-                    SysModuleId::ObjectTuple.into(),
+                    SysModuleId::Object.into(),
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
                 .expect("Database misconfigured")
@@ -1308,7 +1308,7 @@ impl TestRunner {
                     .substate_db()
                     .get_substate(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectTuple.into(),
+                        SysModuleId::Object.into(),
                         &PackageOffset::Info.into(),
                     )
                     .expect("Database misconfigured")

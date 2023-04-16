@@ -109,11 +109,6 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
         {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
             match substate_change {
-                StateUpdate::Create(substate_value) => {
-                    self.db
-                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
-                        .expect("IO error");
-                }
                 StateUpdate::Set(substate_value) => {
                     self.db
                         .put(substate_id, scrypto_encode(&substate_value).unwrap())
