@@ -448,9 +448,9 @@ impl TestRunner {
             )
             .expect("Database misconfigured")
             .map(|output| {
-                scrypto_decode::<LiquidNonFungibleResource>(&output)
+                scrypto_decode::<LiquidNonFungibleVault>(&output)
                     .unwrap()
-                    .into_ids()
+                    .ids().clone()
             })
     }
 

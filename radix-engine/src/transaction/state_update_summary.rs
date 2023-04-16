@@ -1,6 +1,4 @@
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource,
-};
+use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, LiquidNonFungibleVault};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -338,15 +336,15 @@ impl<'a> BalanceAccounter<'a> {
                 );
 
                 let mut old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidNonFungibleResource>(&s)
+                    scrypto_decode::<LiquidNonFungibleVault>(&s)
                         .unwrap()
-                        .into_ids()
+                        .ids().clone()
                 } else {
                     BTreeSet::new()
                 };
-                let mut new_balance = scrypto_decode::<LiquidNonFungibleResource>(substate)
+                let mut new_balance = scrypto_decode::<LiquidNonFungibleVault>(substate)
                     .unwrap()
-                    .into_ids();
+                    .ids().clone();
 
                 remove_intersection(&mut new_balance, &mut old_balance);
 
