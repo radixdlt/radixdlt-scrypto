@@ -435,7 +435,7 @@ impl CallFrame {
         if let Some(store_handle) = store_handle {
             store.update_substate(*store_handle, substate);
         } else {
-            heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
+            heap.set_substate(*node_id, *module_id, substate_key.clone(), substate);
         }
         Ok(())
     }
@@ -455,7 +455,7 @@ impl CallFrame {
             .ok_or_else(|| SetSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         if heap.contains_node(node_id) {
-            todo!()
+            heap.set_substate(*node_id, module_id.into(), key, value);
         } else {
             store
                 .set_substate(*node_id, module_id.into(), key, value)

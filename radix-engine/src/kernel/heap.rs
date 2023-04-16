@@ -68,7 +68,7 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn put_substate(
+    pub fn set_substate(
         &mut self,
         node_id: NodeId,
         module_id: ModuleId,
