@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemCallback;
 use crate::system::system_modules::costing::*;
-use crate::track::Track;
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -251,12 +251,12 @@ where
                     distribute_fees(&mut track, fee_reserve, is_success);
 
                 // Finalize track
-                let state_updates = track.finalize();
+                let tracked_nodes = track.finalize();
                 let state_update_summary =
-                    StateUpdateSummary::new(self.substate_db, &state_updates);
+                    StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates,
+                    state_updates: to_state_updates(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
