@@ -106,7 +106,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore | TypeInfoSubstate::SortedStore => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }

@@ -116,8 +116,8 @@ where
         }
 
         let module_id = match type_info {
-            TypeInfoSubstate::SortedStore => {
-                // TODO: Implement in sorted store api
+            TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+                    // TODO: Implement in corresponding api
                 panic!("Not supported")
             }
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::VirtualizedObject,
@@ -538,7 +538,7 @@ where
                         (blueprint, global_address)
                     }
 
-                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -590,7 +590,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -653,7 +653,7 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore => {
+            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -669,7 +669,20 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
         V: SystemCallbackObject,
 {
     fn new_iterable_store(&mut self) -> Result<NodeId, RuntimeError> {
-        todo!()
+        let entity_type = EntityType::InternalSortedStore;
+        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+
+        self.api.kernel_create_node(
+            node_id,
+            btreemap!(
+                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::IterableStore
+                ).to_substates(),
+            ),
+        )?;
+
+        Ok(node_id)
     }
 
     fn insert_into_iterable_store(&mut self, node_id: &NodeId, key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {

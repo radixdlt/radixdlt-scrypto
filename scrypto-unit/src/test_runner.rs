@@ -1284,7 +1284,7 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
                                 panic!("No event schema.")
                             }
                         }
