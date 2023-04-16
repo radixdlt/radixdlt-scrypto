@@ -830,11 +830,17 @@ impl NonFungibleResourceManagerBlueprint {
             api.sys_read_substate_typed(resman_handle)?;
         let id_type = resource_manager.id_type;
         let info = NonFungibleVaultIdTypeSubstate { id_type };
+
+        let ids = Own(api.new_iterable_store()?);
+        let vault = LiquidNonFungibleVault {
+            amount: Decimal::zero(),
+            ids,
+        };
         let vault_id = api.new_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
-                scrypto_encode(&LiquidNonFungibleVault::default()).unwrap(),
+                scrypto_encode(&vault).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;

@@ -6,6 +6,7 @@ use sbor::rust::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {
     InsufficientBalance,
+    InvalidTakeAmount,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -59,79 +60,13 @@ impl LiquidFungibleResource {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleVault {
-    amount: Decimal,
-    /// The total non-fungible ids.
-    ids: BTreeSet<NonFungibleLocalId>,
+    pub amount: Decimal,
+    pub ids: Own,
 }
 
 impl LiquidNonFungibleVault {
-    pub fn new(ids: BTreeSet<NonFungibleLocalId>) -> Self {
-        Self {
-            amount: Decimal::zero(),
-            ids,
-        }
-    }
-
-    pub fn default() -> Self {
-        Self::new(BTreeSet::new())
-    }
-
     pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
-        &self.ids
-    }
-
-    pub fn amount(&self) -> Decimal {
-        self.amount
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.amount.is_zero()
-    }
-
-    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceError> {
-        self.amount += Decimal::from(other.ids.len());
-
-        // update liquidity
-        self.ids.extend(other.ids);
-        Ok(())
-    }
-
-    pub fn take_by_amount(
-        &mut self,
-        amount_to_take: Decimal,
-    ) -> Result<LiquidNonFungibleResource, ResourceError> {
-        // deduct from liquidity pool
-        if self.amount < amount_to_take {
-            return Err(ResourceError::InsufficientBalance);
-        }
-        let n: usize = amount_to_take
-            .to_string()
-            .parse()
-            .expect("Failed to convert amount to usize");
-        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n).cloned().collect();
-        self.take_by_ids(&ids)
-    }
-
-    pub fn take_by_ids(
-        &mut self,
-        ids_to_take: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<LiquidNonFungibleResource, ResourceError> {
-        for id in ids_to_take {
-            if !self.ids.remove(&id) {
-                return Err(ResourceError::InsufficientBalance);
-            }
-            self.amount -= 1;
-        }
-        Ok(LiquidNonFungibleResource::new(ids_to_take.clone()))
-    }
-
-    pub fn take_all(&mut self) -> LiquidNonFungibleResource {
-        let resource = self.take_by_amount(self.amount())
-            .expect("Take all from `Resource` should not fail");
-
-        self.amount = Decimal::zero();
-
-        resource
+        todo!()
     }
 }
 

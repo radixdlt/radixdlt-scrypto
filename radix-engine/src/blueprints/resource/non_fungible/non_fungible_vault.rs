@@ -375,7 +375,7 @@ impl NonFungibleVault {
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
-        let amount = substate_ref.amount();
+        let amount = substate_ref.amount;
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }
@@ -407,7 +407,7 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             receiver,
@@ -415,7 +415,13 @@ impl NonFungibleVault {
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
-        let ids = substate_ref.ids().clone();
+
+        let keys = api.scan_iterable_store(&substate_ref.ids.0, u32::MAX)?;
+        let ids = keys.into_iter().map(|key| {
+            let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+            id
+        }).collect();
+
         api.sys_drop_lock(handle)?;
         Ok(ids)
     }
@@ -453,11 +459,45 @@ impl NonFungibleVault {
         )?;
         let mut substate_ref: LiquidNonFungibleVault =
             api.sys_read_substate_typed(handle)?;
-        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
-                e,
-            )))
-        })?;
+
+
+        // deduct from liquidity pool
+        if substate_ref.amount < amount {
+            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::ResourceError(ResourceError::InsufficientBalance)
+            )));
+        }
+
+        // TODO: Fix/Cleanup
+        if substate_ref.amount > Decimal::from(u32::MAX) {
+            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::ResourceError(ResourceError::InvalidTakeAmount)
+            )));
+        }
+
+        substate_ref.amount -= amount;
+
+        let amount_to_take: u32 = amount
+            .to_string()
+            .parse()
+            .expect("Failed to convert amount to u32");
+
+        let taken = {
+            let ids = api.take(
+                substate_ref.ids.as_node_id(),
+                amount_to_take,
+            )?;
+
+            let ids = ids.into_iter().map(|id/*(key, _value)*/| {
+                let id: NonFungibleLocalId = scrypto_decode(&id).unwrap();
+                id
+            }).collect();
+
+            LiquidNonFungibleResource {
+                ids
+            }
+        };
+
         api.sys_write_substate_typed(handle, &substate_ref)?;
         api.sys_drop_lock(handle)?;
 
@@ -481,16 +521,26 @@ impl NonFungibleVault {
         )?;
         let mut substate_ref: LiquidNonFungibleVault =
             api.sys_read_substate_typed(handle)?;
-        let taken = substate_ref
-            .take_by_ids(ids)
-            .map_err(VaultError::ResourceError)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e)))?;
-        api.sys_write_substate_typed(handle, &substate_ref)?;
-        api.sys_drop_lock(handle)?;
+
+
+        substate_ref.amount -= Decimal::from(ids.len());
+
+        // TODO: Batch remove
+        for id in ids {
+            let removed = api.remove_from_iterable_store(
+                substate_ref.ids.as_node_id(),
+                &SubstateKey::from_vec(scrypto_encode(id).unwrap()).unwrap(),
+            )?;
+
+            if removed.is_none() {
+                return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(ResourceError::InsufficientBalance))));
+            }
+        }
 
         Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
+        api.sys_drop_lock(handle)?;
 
-        Ok(taken)
+        Ok(LiquidNonFungibleResource::new(ids.clone()))
     }
 
     pub fn put<Y>(
@@ -512,14 +562,21 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault =
-            api.sys_read_substate_typed(handle)?;
-        substate_ref.put(resource).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
-                e,
-            )))
-        })?;
-        api.sys_write_substate_typed(handle, &substate_ref)?;
+        let mut vault: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
+
+        vault.amount += Decimal::from(resource.ids.len());
+
+        // update liquidity
+        // TODO: Batch update
+        for id in resource.ids {
+            api.insert_into_iterable_store(
+                vault.ids.as_node_id(),
+                SubstateKey::from_vec(scrypto_encode(&id).unwrap()).unwrap(),
+                scrypto_encode(&()).unwrap(),
+            )?;
+        }
+
+        api.sys_write_substate_typed(handle, &vault)?;
         api.sys_drop_lock(handle)?;
 
         Runtime::emit_event(api, event)?;
