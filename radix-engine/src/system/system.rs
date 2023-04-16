@@ -113,7 +113,7 @@ where
         }
 
         let module_id = match type_info {
-            TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::SortedStore => {
                 // TODO: Change to error
                 panic!("Not supported")
             }
@@ -533,7 +533,7 @@ where
                         (blueprint, global_address)
                     }
 
-                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
+                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -585,7 +585,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -620,7 +620,7 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -664,9 +664,9 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::ObjectIterable.into() => btreemap!(),
+                SysModuleId::ObjectSorted.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::IterableStore
+                    TypeInfoSubstate::SortedStore
                 ).to_substates(),
             ),
         )?;
@@ -675,10 +675,6 @@ where
     }
 
     // Dependency less
-    // TODO: Ensure uniqueness of keys or not?
-    // TODO: If not, then cannot contain owned objects as they may be removed from underneath due to overwrites
-    // TODO: If so, how do we ensure uniqueness while preserving query by key?
-    // TODO: Will implement the former for now as much easier to implement
     fn insert_into_sorted(
         &mut self,
         node_id: &NodeId,
@@ -687,7 +683,7 @@ where
     ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::SortedStore => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
@@ -697,10 +693,18 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        self.api.kernel_insert_into_sorted(
+        if !value.owned_node_ids().is_empty() {
+            return Err(RuntimeError::SystemError(
+                SystemError::CannotStoreOwnedInIterable,
+            ));
+        }
+
+        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
+
+        self.api.kernel_set_substate(
             node_id,
-            SysModuleId::ObjectIterable,
-            sorted_key,
+            SysModuleId::ObjectSorted,
+            substate_key,
             value,
         )
     }
@@ -712,7 +716,7 @@ where
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::SortedStore => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
@@ -720,7 +724,7 @@ where
 
         let substates = self
             .api
-            .kernel_read_from_sorted(node_id, SysModuleId::ObjectIterable, count)?
+            .kernel_read_from_sorted(node_id, SysModuleId::ObjectSorted, count)?
             .into_iter()
             .map(|(_key, value)| value.into())
             .collect();
@@ -735,15 +739,17 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::SortedStore => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
         }
 
+        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
+
         let rtn = self
             .api
-            .kernel_remove_from_sorted(node_id, SysModuleId::ObjectIterable, sorted_key)?
+            .kernel_remove_substate(node_id, SysModuleId::ObjectSorted, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1174,6 +1180,14 @@ where
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)
+    }
+
+    fn kernel_set_substate(&mut self, node_id: &NodeId, module_id: SysModuleId, substate_key: SubstateKey, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+        self.api.kernel_set_substate(node_id, module_id, substate_key, value)
+    }
+
+    fn kernel_remove_substate(&mut self, node_id: &NodeId, module_id: SysModuleId, substate_key: &SubstateKey) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+        self.api.kernel_remove_substate(node_id, module_id, substate_key)
     }
 }
 

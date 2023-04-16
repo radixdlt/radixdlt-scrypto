@@ -106,7 +106,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
+                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -688,28 +688,14 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
-}
 
-impl<'g, M, S> KernelSortedApi for Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: SubstateStore,
-{
-    fn kernel_insert_into_sorted(
+    fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        sorted_key: SortedKey,
+        substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        if !value.owned_node_ids().is_empty() {
-            return Err(RuntimeError::SystemError(
-                SystemError::CannotStoreOwnedInIterable,
-            ));
-        }
-
-        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
-
         self.current_frame
             .set_substate(
                 node_id,
@@ -724,21 +710,27 @@ where
             .map_err(RuntimeError::KernelError)
     }
 
-    fn kernel_remove_from_sorted(
+    fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        sorted_key: &SortedKey,
+        substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-
-        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
-
         self.current_frame
             .remove_substate(node_id, module_id, &substate_key, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
+
+}
+
+impl<'g, M, S> KernelSortedApi for Kernel<'g, M, S>
+where
+    M: KernelCallbackObject,
+    S: SubstateStore,
+{
+
 
     fn kernel_read_from_sorted(
         &mut self,

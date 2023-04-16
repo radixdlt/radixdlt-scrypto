@@ -72,7 +72,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-            TypeInfoSubstate::KeyValueStore(_) | TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::KeyValueStore(_) | TypeInfoSubstate::SortedStore => {
                 panic!("Unexpected")
             }
         };

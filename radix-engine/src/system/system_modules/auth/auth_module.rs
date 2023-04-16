@@ -194,7 +194,7 @@ impl AuthModule {
             let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
             let blueprint = match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore => {
+                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
                     return Err(RuntimeError::SystemError(SystemError::NotAnObject))
                 }
             };

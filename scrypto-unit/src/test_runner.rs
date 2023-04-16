@@ -1285,7 +1285,7 @@ impl TestRunner {
                                 *local_type_index,
                             ),
                             TypeInfoSubstate::KeyValueStore(..)
-                            | TypeInfoSubstate::IterableStore => panic!("No event schema."),
+                            | TypeInfoSubstate::SortedStore => panic!("No event schema."),
                         }
                     }
                 }

@@ -70,24 +70,32 @@ pub trait KernelSubstateApi {
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
-}
 
-pub trait KernelSortedApi {
-    fn kernel_insert_into_sorted(
+    /// Sets a value to a substate without checking for the original value.
+    ///
+    /// Clients must ensure that this isn't used in conjunction with virtualized
+    /// substates; otherwise, the behavior is undefined
+    fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        sorted_key: SortedKey,
+        substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
-    fn kernel_remove_from_sorted(
+    /// Removes a substate from a node and returns the original value.
+    ///
+    /// Clients must ensure that this isn't used in conjunction with virtualized
+    /// substates; otherwise, the behavior is undefined
+    fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
         module_id: SysModuleId,
-        sorted_key: &SortedKey,
+        substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
+}
 
+pub trait KernelSortedApi {
     fn kernel_read_from_sorted(
         &mut self,
         node_id: &NodeId,

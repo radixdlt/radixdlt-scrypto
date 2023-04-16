@@ -29,7 +29,7 @@ pub enum SysModuleId {
     AccessRules,
     ObjectTuple,
     ObjectMap,
-    ObjectIterable,
+    ObjectSorted,
 }
 
 impl Into<ModuleId> for SysModuleId {
