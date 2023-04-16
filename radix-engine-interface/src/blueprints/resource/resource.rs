@@ -56,10 +56,82 @@ impl LiquidFungibleResource {
     }
 }
 
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct LiquidNonFungibleVault {
+    /// The total non-fungible ids.
+    ids: BTreeSet<NonFungibleLocalId>,
+}
+
+impl LiquidNonFungibleVault {
+    pub fn new(ids: BTreeSet<NonFungibleLocalId>) -> Self {
+        Self { ids }
+    }
+
+    pub fn default() -> Self {
+        Self::new(BTreeSet::new())
+    }
+
+    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+        &self.ids
+    }
+
+    pub fn into_ids(self) -> BTreeSet<NonFungibleLocalId> {
+        self.ids
+    }
+
+    pub fn amount(&self) -> Decimal {
+        self.ids.len().into()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.ids.is_empty()
+    }
+
+    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceError> {
+        // update liquidity
+        self.ids.extend(other.ids);
+        Ok(())
+    }
+
+    pub fn take_by_amount(
+        &mut self,
+        amount_to_take: Decimal,
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
+        // deduct from liquidity pool
+        if Decimal::from(self.ids.len()) < amount_to_take {
+            return Err(ResourceError::InsufficientBalance);
+        }
+        let n: usize = amount_to_take
+            .to_string()
+            .parse()
+            .expect("Failed to convert amount to usize");
+        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n).cloned().collect();
+        self.take_by_ids(&ids)
+    }
+
+    pub fn take_by_ids(
+        &mut self,
+        ids_to_take: &BTreeSet<NonFungibleLocalId>,
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
+        for id in ids_to_take {
+            if !self.ids.remove(&id) {
+                return Err(ResourceError::InsufficientBalance);
+            }
+        }
+        Ok(LiquidNonFungibleResource::new(ids_to_take.clone()))
+    }
+
+    pub fn take_all(&mut self) -> LiquidNonFungibleResource {
+        self.take_by_amount(self.amount())
+            .expect("Take all from `Resource` should not fail")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
-    ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl LiquidNonFungibleResource {

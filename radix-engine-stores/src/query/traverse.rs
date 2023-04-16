@@ -1,8 +1,6 @@
 use super::TypeInfoSubstate;
 use crate::interface::SubstateDatabase;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{FUNGIBLE_VAULT_BLUEPRINT, LiquidNonFungibleVault, NON_FUNGIBLE_VAULT_BLUEPRINT};
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
@@ -34,7 +32,7 @@ pub trait StateTreeVisitor {
         &mut self,
         _vault_id: NodeId,
         _address: &ResourceAddress,
-        _resource: &LiquidNonFungibleResource,
+        _resource: &LiquidNonFungibleVault,
     ) {
     }
 
@@ -144,7 +142,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                     && blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 {
-                    let liquid: LiquidNonFungibleResource = scrypto_decode(
+                    let liquid: LiquidNonFungibleVault = scrypto_decode(
                         &self
                             .substate_db
                             .get_substate(

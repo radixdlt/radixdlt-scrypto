@@ -374,7 +374,7 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
@@ -414,7 +414,7 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
         let ids = substate_ref.ids().clone();
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -451,7 +451,8 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault =
+            api.sys_read_substate_typed(handle)?;
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
@@ -478,7 +479,8 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault =
+            api.sys_read_substate_typed(handle)?;
         let taken = substate_ref
             .take_by_ids(ids)
             .map_err(VaultError::ResourceError)
@@ -510,7 +512,8 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault =
+            api.sys_read_substate_typed(handle)?;
         substate_ref.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,

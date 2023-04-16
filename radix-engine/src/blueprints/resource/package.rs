@@ -529,7 +529,7 @@ impl ResourceManagerNativePackage {
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultIdTypeSubstate>(),
             );
             substates
-                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleVault>());
             substates
                 .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 

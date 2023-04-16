@@ -6,6 +6,7 @@ use radix_engine_interface::{
     math::Decimal,
     types::{NodeId, ResourceAddress},
 };
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
@@ -60,7 +61,7 @@ impl Accounting {
     pub fn add_non_fungible_vault(
         &mut self,
         address: &ResourceAddress,
-        resource: &LiquidNonFungibleResource,
+        resource: &LiquidNonFungibleVault,
     ) {
         self.non_fungibles
             .entry(*address)
@@ -83,7 +84,7 @@ impl StateTreeVisitor for Accounting {
         &mut self,
         _vault_id: NodeId,
         address: &ResourceAddress,
-        resource: &LiquidNonFungibleResource,
+        resource: &LiquidNonFungibleVault,
     ) {
         self.add_non_fungible_vault(address, resource);
     }
