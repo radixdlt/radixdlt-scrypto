@@ -21,6 +21,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_store_api::SortedKey;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
+use radix_engine_interface::api::iterable_store_api::ClientIterableStoreApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
@@ -652,6 +653,32 @@ where
         )?;
 
         Ok(node_id)
+    }
+}
+
+impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+    where
+        Y: KernelApi<SystemCallback<V>>,
+        V: SystemCallbackObject,
+{
+    fn new_iterable_store(&mut self) -> Result<NodeId, RuntimeError> {
+        todo!()
+    }
+
+    fn insert_into_iterable_store(&mut self, node_id: &NodeId, key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+        todo!()
+    }
+
+    fn remove_from_iterable_store(&mut self, node_id: &NodeId, key: &SubstateKey) -> Result<Option<Vec<u8>>, RuntimeError> {
+        todo!()
+    }
+
+    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        todo!()
+    }
+
+    fn scap_typed_iterable_store<S: ScryptoDecode>(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<S>, RuntimeError> {
+        todo!()
     }
 }
 

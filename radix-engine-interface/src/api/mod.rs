@@ -4,6 +4,7 @@ pub mod component;
 pub mod kernel_modules;
 pub mod node_modules;
 pub mod object_api;
+pub mod iterable_store_api;
 pub mod sorted_store_api;
 pub mod substate_api;
 
@@ -19,6 +20,7 @@ pub use kernel_modules::logger_api::ClientLoggerApi;
 pub use kernel_modules::transaction_limits_api::ClientTransactionLimitsApi;
 pub use kernel_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 pub use object_api::*;
+use radix_engine_interface::api::iterable_store_api::ClientIterableStoreApi;
 pub use substate_api::ClientSubstateApi;
 pub use substate_api::LockFlags;
 
@@ -29,6 +31,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientObjectApi<E>
     + ClientSortedStoreApi<E>
+    + ClientIterableStoreApi<E>
     + ClientBlueprintApi<E>
     + ClientSubstateApi<E>
     + ClientCostingApi<E>
