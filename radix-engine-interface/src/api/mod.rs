@@ -1,11 +1,11 @@
 pub mod actor_api;
 pub mod blueprint_api;
 pub mod component;
+pub mod iterable_store_api;
 pub mod kernel_modules;
 pub mod key_value_store_api;
 pub mod node_modules;
 pub mod object_api;
-pub mod iterable_store_api;
 pub mod sorted_store_api;
 pub mod substate_api;
 

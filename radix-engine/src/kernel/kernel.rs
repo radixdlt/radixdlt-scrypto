@@ -106,7 +106,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::IterableStore | TypeInfoSubstate::SortedStore => {
+                TypeInfoSubstate::KeyValueStore(..)
+                | TypeInfoSubstate::IterableStore
+                | TypeInfoSubstate::SortedStore => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -742,20 +744,25 @@ where
             .map_err(RuntimeError::KernelError)
     }
 
-    fn kernel_scan_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
-        self.current_frame.scan_substates(
-            node_id,
-            module_id.into(),
-            count,
-            &mut self.heap,
-            self.store,
-        )
+    fn kernel_scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.current_frame
+            .scan_substates(node_id, module_id.into(), count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
 
-    fn kernel_take_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    fn kernel_take_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.current_frame
             .take_substates(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)

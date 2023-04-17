@@ -1,16 +1,15 @@
 use super::TypeInfoSubstate;
 use crate::interface::SubstateDatabase;
-use radix_engine_interface::blueprints::resource::{FUNGIBLE_VAULT_BLUEPRINT, LiquidNonFungibleVault, NON_FUNGIBLE_VAULT_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
+};
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
     ObjectInfo, ResourceAddress, SubstateKey, SysModuleId,
 };
-use radix_engine_interface::{
-    blueprints::resource::LiquidFungibleResource,
-    types::NodeId,
-};
+use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {

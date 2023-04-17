@@ -440,7 +440,8 @@ impl TestRunner {
         &mut self,
         vault_id: NodeId,
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
-        let vault = self.substate_db()
+        let vault = self
+            .substate_db()
             .get_substate(
                 &vault_id,
                 SysModuleId::Object.into(),
@@ -454,7 +455,10 @@ impl TestRunner {
             });
 
         vault.map(|(amount, ids)| {
-            let substates = self.substate_db().list_substates(ids.as_node_id(), SysModuleId::Object.into(), 1u32).unwrap();
+            let substates = self
+                .substate_db()
+                .list_substates(ids.as_node_id(), SysModuleId::Object.into(), 1u32)
+                .unwrap();
             let id = substates.first().map(|(key, _value)| {
                 let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
                 id
@@ -1293,7 +1297,9 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+                            TypeInfoSubstate::KeyValueStore(..)
+                            | TypeInfoSubstate::SortedStore
+                            | TypeInfoSubstate::IterableStore => {
                                 panic!("No event schema.")
                             }
                         }

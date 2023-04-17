@@ -539,11 +539,7 @@ fn take_on_non_fungible_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_method(
-            address,
-            "take",
-            manifest_args!()
-        )
+        .call_method(address, "take", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -571,11 +567,7 @@ fn take_twice_on_non_fungible_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_method(
-            address,
-            "take_twice",
-            manifest_args!()
-        )
+        .call_method(address, "take_twice", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

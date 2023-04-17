@@ -1,4 +1,6 @@
-use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleVault};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleVault,
+};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -329,14 +331,11 @@ impl<'a> BalanceAccounter<'a> {
                 SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
-
-                let vault = scrypto_decode::<LiquidNonFungibleVault>(substate)
-                    .unwrap();
-                let vault_updates = self.updates.get(vault.ids.as_node_id())
-                    .and_then(|n| {
-                        let module_id: ModuleId = SysModuleId::Object.into();
-                        n.modules.get(&module_id)
-                    });
+                let vault = scrypto_decode::<LiquidNonFungibleVault>(substate).unwrap();
+                let vault_updates = self.updates.get(vault.ids.as_node_id()).and_then(|n| {
+                    let module_id: ModuleId = SysModuleId::Object.into();
+                    n.modules.get(&module_id)
+                });
 
                 if let Some(vault_updates) = vault_updates {
                     let mut added = BTreeSet::new();
@@ -349,27 +348,23 @@ impl<'a> BalanceAccounter<'a> {
                                 added.insert(id);
                             }
                             TrackedSubstateKey::ReadAndWrite(_, write)
-                            | TrackedSubstateKey::WriteOnly(write) => {
-                                match write {
-                                    Write::Update(..) => {
-                                        let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
-                                        added.insert(id);
-                                    }
-                                    Write::Delete => {
-                                        let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
-                                        removed.insert(id);
-                                    }
+                            | TrackedSubstateKey::WriteOnly(write) => match write {
+                                Write::Update(..) => {
+                                    let id: NonFungibleLocalId =
+                                        scrypto_decode(key.as_ref()).unwrap();
+                                    added.insert(id);
                                 }
-                            }
-                            TrackedSubstateKey::ReadOnly(..) => {
-                            }
+                                Write::Delete => {
+                                    let id: NonFungibleLocalId =
+                                        scrypto_decode(key.as_ref()).unwrap();
+                                    removed.insert(id);
+                                }
+                            },
+                            TrackedSubstateKey::ReadOnly(..) => {}
                         }
                     }
 
-                    Some(BalanceChange::NonFungible {
-                        added,
-                        removed,
-                    })
+                    Some(BalanceChange::NonFungible { added, removed })
                 } else {
                     None
                 }

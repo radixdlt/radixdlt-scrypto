@@ -47,7 +47,11 @@ pub trait ClientIterableStoreApi<E> {
     }
 
     /// Scans arbitrary elements of count from an iterable store
-    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, E>;
+    fn scan_iterable_store(
+        &mut self,
+        node_id: &NodeId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, E>;
 
     /// Scans arbitrary elements of count from an iterable store
     fn scap_typed_iterable_store<S: ScryptoDecode>(

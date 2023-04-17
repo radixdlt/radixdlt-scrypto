@@ -417,10 +417,13 @@ impl NonFungibleVault {
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
         let items = api.scan_iterable_store(&substate_ref.ids.0, u32::MAX)?;
-        let ids = items.into_iter().map(|(key, _)| {
-            let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
-            id
-        }).collect();
+        let ids = items
+            .into_iter()
+            .map(|(key, _)| {
+                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+                id
+            })
+            .collect();
 
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -457,22 +460,24 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault =
-            api.sys_read_substate_typed(handle)?;
-
+        let mut substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
         // deduct from liquidity pool
         if substate_ref.amount < amount {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceError(ResourceError::InsufficientBalance)
-            )));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::ResourceError(
+                    ResourceError::InsufficientBalance,
+                )),
+            ));
         }
 
         // TODO: Fix/Cleanup
         if substate_ref.amount > Decimal::from(u32::MAX) {
-            return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceError(ResourceError::InvalidTakeAmount)
-            )));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::ResourceError(
+                    ResourceError::InvalidTakeAmount,
+                )),
+            ));
         }
 
         substate_ref.amount -= amount;
@@ -483,19 +488,17 @@ impl NonFungibleVault {
             .expect("Failed to convert amount to u32");
 
         let taken = {
-            let ids = api.take(
-                substate_ref.ids.as_node_id(),
-                amount_to_take,
-            )?;
+            let ids = api.take(substate_ref.ids.as_node_id(), amount_to_take)?;
 
-            let ids = ids.into_iter().map(|(key, _value)| {
-                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
-                id
-            }).collect();
+            let ids = ids
+                .into_iter()
+                .map(|(key, _value)| {
+                    let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+                    id
+                })
+                .collect();
 
-            LiquidNonFungibleResource {
-                ids
-            }
+            LiquidNonFungibleResource { ids }
         };
 
         api.sys_write_substate_typed(handle, &substate_ref)?;
@@ -519,9 +522,7 @@ impl NonFungibleVault {
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault =
-            api.sys_read_substate_typed(handle)?;
-
+        let mut substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
         substate_ref.amount -= Decimal::from(ids.len());
 
@@ -533,7 +534,11 @@ impl NonFungibleVault {
             )?;
 
             if removed.is_none() {
-                return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(ResourceError::InsufficientBalance))));
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::ResourceError(
+                        ResourceError::InsufficientBalance,
+                    )),
+                ));
             }
         }
 

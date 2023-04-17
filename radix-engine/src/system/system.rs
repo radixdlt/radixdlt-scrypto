@@ -14,6 +14,7 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
+use radix_engine_interface::api::iterable_store_api::ClientIterableStoreApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -22,7 +23,6 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_store_api::SortedKey;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
-use radix_engine_interface::api::iterable_store_api::ClientIterableStoreApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
@@ -117,7 +117,7 @@ where
 
         let module_id = match type_info {
             TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
-                    // TODO: Implement in corresponding api
+                // TODO: Implement in corresponding api
                 panic!("Not supported")
             }
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::VirtualizedObject,
@@ -538,7 +538,9 @@ where
                         (blueprint, global_address)
                     }
 
-                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+                    TypeInfoSubstate::KeyValueStore(..)
+                    | TypeInfoSubstate::SortedStore
+                    | TypeInfoSubstate::IterableStore => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -590,7 +592,9 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::KeyValueStore(..)
+            | TypeInfoSubstate::SortedStore
+            | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -653,7 +657,9 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::Object { .. }
+            | TypeInfoSubstate::SortedStore
+            | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -664,9 +670,9 @@ where
 }
 
 impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
-    where
-        Y: KernelApi<SystemCallback<V>>,
-        V: SystemCallbackObject,
+where
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
 {
     fn new_iterable_store(&mut self) -> Result<NodeId, RuntimeError> {
         let entity_type = EntityType::InternalSortedStore;
@@ -685,7 +691,12 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
         Ok(node_id)
     }
 
-    fn insert_into_iterable_store(&mut self, node_id: &NodeId, key: SubstateKey, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+    fn insert_into_iterable_store(
+        &mut self,
+        node_id: &NodeId,
+        key: SubstateKey,
+        buffer: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -708,7 +719,11 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
             .kernel_set_substate(node_id, SysModuleId::Object, key, value)
     }
 
-    fn remove_from_iterable_store(&mut self, node_id: &NodeId, key: &SubstateKey) -> Result<Option<Vec<u8>>, RuntimeError> {
+    fn remove_from_iterable_store(
+        &mut self,
+        node_id: &NodeId,
+        key: &SubstateKey,
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -725,7 +740,11 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
         Ok(rtn)
     }
 
-    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
+    fn scan_iterable_store(
+        &mut self,
+        node_id: &NodeId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -744,7 +763,11 @@ impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, 
         Ok(substates)
     }
 
-    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
+    fn take(
+        &mut self,
+        node_id: &NodeId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -1320,11 +1343,21 @@ where
             .kernel_scan_sorted_substates(node_id, module_id, count)
     }
 
-    fn kernel_scan_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    fn kernel_scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api.kernel_scan_substates(node_id, module_id, count)
     }
 
-    fn kernel_take_substates(&mut self, node_id: &NodeId, module_id: SysModuleId, count: u32) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    fn kernel_take_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api.kernel_take_substates(node_id, module_id, count)
     }
 }

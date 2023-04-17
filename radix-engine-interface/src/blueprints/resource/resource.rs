@@ -57,7 +57,6 @@ impl LiquidFungibleResource {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleVault {
     pub amount: Decimal,

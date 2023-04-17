@@ -1,9 +1,9 @@
 use super::StateTreeVisitor;
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
 use radix_engine_interface::{
     blueprints::resource::LiquidFungibleResource,
     types::{NodeId, ResourceAddress},
 };
-use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 

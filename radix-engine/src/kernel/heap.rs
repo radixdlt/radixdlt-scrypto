@@ -89,7 +89,8 @@ impl Heap {
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
-        self.nodes.get_mut(node_id)
+        self.nodes
+            .get_mut(node_id)
             .and_then(|n| n.get_mut(&module_id))
             .and_then(|s| s.remove(substate_key))
     }
@@ -100,9 +101,13 @@ impl Heap {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
-        let node_substates = self.nodes.get_mut(node_id).and_then(|n| n.get_mut(&module_id));
+        let node_substates = self
+            .nodes
+            .get_mut(node_id)
+            .and_then(|n| n.get_mut(&module_id));
         if let Some(substates) = node_substates {
-            let substates: Vec<(SubstateKey, IndexedScryptoValue)> = substates.iter()
+            let substates: Vec<(SubstateKey, IndexedScryptoValue)> = substates
+                .iter()
                 .map(|(key, v)| (key.clone(), v.clone()))
                 .take(count.try_into().unwrap())
                 .collect();
@@ -119,9 +124,13 @@ impl Heap {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
-        let node_substates = self.nodes.get_mut(node_id).and_then(|n| n.get_mut(&module_id));
+        let node_substates = self
+            .nodes
+            .get_mut(node_id)
+            .and_then(|n| n.get_mut(&module_id));
         if let Some(substates) = node_substates {
-            let keys: Vec<SubstateKey> = substates.iter()
+            let keys: Vec<SubstateKey> = substates
+                .iter()
                 .map(|(key, _)| key.clone())
                 .take(count.try_into().unwrap())
                 .collect();
@@ -134,7 +143,6 @@ impl Heap {
             }
 
             items
-
         } else {
             vec![] // TODO: should this just be an error instead?
         }

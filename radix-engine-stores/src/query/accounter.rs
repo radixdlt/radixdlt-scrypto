@@ -1,11 +1,11 @@
 use super::{StateTreeTraverser, StateTreeVisitor};
 use crate::interface::SubstateDatabase;
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
 use radix_engine_interface::{
-    blueprints::resource::{LiquidFungibleResource},
+    blueprints::resource::LiquidFungibleResource,
     math::Decimal,
     types::{NodeId, ResourceAddress},
 };
-use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
