@@ -1,4 +1,4 @@
-use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, LiquidNonFungibleVault};
+use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleVault};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -330,7 +330,7 @@ impl<'a> BalanceAccounter<'a> {
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
 
-                let mut vault = scrypto_decode::<LiquidNonFungibleVault>(substate)
+                let vault = scrypto_decode::<LiquidNonFungibleVault>(substate)
                     .unwrap();
                 let vault_updates = self.updates.get(vault.ids.as_node_id())
                     .and_then(|n| {

@@ -8,7 +8,7 @@ use radix_engine_interface::types::{
     ObjectInfo, ResourceAddress, SubstateKey, SysModuleId,
 };
 use radix_engine_interface::{
-    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
+    blueprints::resource::LiquidFungibleResource,
     types::NodeId,
 };
 use sbor::rust::prelude::*;
@@ -112,7 +112,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::IterableStore | TypeInfoSubstate::SortedStore => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
                 type_parent,

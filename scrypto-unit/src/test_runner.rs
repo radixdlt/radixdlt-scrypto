@@ -455,7 +455,7 @@ impl TestRunner {
 
         vault.map(|(amount, ids)| {
             let substates = self.substate_db().list_substates(ids.as_node_id(), SysModuleId::Object.into(), 1u32).unwrap();
-            let id = substates.first().map(|(key, v)| {
+            let id = substates.first().map(|(key, _value)| {
                 let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
                 id
             });

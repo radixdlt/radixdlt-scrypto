@@ -9,4 +9,5 @@ pub enum TypeInfoSubstate {
     Object(ObjectInfo),
     KeyValueStore(KeyValueStoreSchema),
     IterableStore,
+    SortedStore,
 }

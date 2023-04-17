@@ -449,19 +449,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         if let Some(update) = self.updates.get_mut(node_id) {
             if update.is_new {
                 let substates = update.modules.get_mut(&module_id).unwrap();
-                let keys: Vec<SubstateKey> = substates.iter()
-                    .map(|(key, _)| key.clone())
+                let rtn: Vec<(SubstateKey, IndexedScryptoValue)> = substates.iter()
+                    .map(|(key, tracked)| (key.clone(), tracked.get_substate().unwrap().clone()))
                     .take(count_usize)
                     .collect();
 
-                let mut items = Vec::new();
-
-                for key in keys {
-                    let tracked = substates.get(&key).unwrap();
-                    items.push((key, tracked.get_substate().unwrap().clone()));
-                }
-
-                items
+                rtn
             } else {
                 let mut items = Vec::new();
                 let mut processed = NonIterMap::new();
@@ -591,19 +584,6 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 }
 
                 items
-
-                /*
-                let items = self
-                    .substate_store
-                    .first_in_iterable(node_id, *module_id, count);
-
-                let mut substates = index_map_new();
-                for (id, substate) in &items {
-                    substates.insert(id.2.clone(), IterableSubstateUpdate::Remove);
-                }
-                e.insert(IterableNodeUpdate::Update(substates));
-                items
-                 */
             }
         } else {
             todo!()
