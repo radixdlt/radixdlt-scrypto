@@ -104,7 +104,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     );
 
     writeln!(output, "{}", "Fungible Resources".green().bold());
-    for (last, (component_address, amount)) in resources.fungibles.iter().identify_last() {
+    for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
         writeln!(
             output,
             "{} {}: {}",

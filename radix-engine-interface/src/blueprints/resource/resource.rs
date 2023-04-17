@@ -64,12 +64,6 @@ pub struct LiquidNonFungibleVault {
     pub ids: Own,
 }
 
-impl LiquidNonFungibleVault {
-    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
-        todo!()
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.

@@ -417,7 +417,7 @@ impl TestRunner {
             self.inspect_fungible_vault(vault_id)
         } else {
             self.inspect_non_fungible_vault(vault_id)
-                .map(|ids| ids.len().into())
+                .map(|(amount, ..)| amount)
         }
     }
 
@@ -439,8 +439,8 @@ impl TestRunner {
     pub fn inspect_non_fungible_vault(
         &mut self,
         vault_id: NodeId,
-    ) -> Option<BTreeSet<NonFungibleLocalId>> {
-        self.substate_db()
+    ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
+        let vault = self.substate_db()
             .get_substate(
                 &vault_id,
                 SysModuleId::Object.into(),
@@ -448,10 +448,19 @@ impl TestRunner {
             )
             .expect("Database misconfigured")
             .map(|output| {
-                scrypto_decode::<LiquidNonFungibleVault>(&output)
-                    .unwrap()
-                    .ids().clone()
-            })
+                let vault = scrypto_decode::<LiquidNonFungibleVault>(&output).unwrap();
+                let amount = vault.amount;
+                (amount, vault.ids)
+            });
+
+        vault.map(|(amount, ids)| {
+            let substates = self.substate_db().list_substates(ids.as_node_id(), SysModuleId::Object.into(), 1u32).unwrap();
+            let id = substates.first().map(|(key, v)| {
+                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+                id
+            });
+            (amount, id)
+        })
     }
 
     pub fn get_component_resources(
@@ -461,7 +470,7 @@ impl TestRunner {
         let node_id = component_address.as_node_id();
         let mut accounter = ResourceAccounter::new(&self.substate_db);
         accounter.traverse(node_id.clone());
-        accounter.close().fungibles
+        accounter.close().balances
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {

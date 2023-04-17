@@ -35,15 +35,13 @@ impl<'s, S: SubstateDatabase> ResourceAccounter<'s, S> {
 }
 
 pub struct Accounting {
-    pub fungibles: HashMap<ResourceAddress, Decimal>,
-    pub non_fungibles: HashMap<ResourceAddress, BTreeSet<NonFungibleLocalId>>,
+    pub balances: HashMap<ResourceAddress, Decimal>,
 }
 
 impl Accounting {
     pub fn new() -> Self {
         Accounting {
-            fungibles: HashMap::new(),
-            non_fungibles: HashMap::new(),
+            balances: HashMap::new(),
         }
     }
 
@@ -52,7 +50,7 @@ impl Accounting {
         address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
-        self.fungibles
+        self.balances
             .entry(*address)
             .or_default()
             .add_assign(resource.amount())
@@ -63,10 +61,10 @@ impl Accounting {
         address: &ResourceAddress,
         resource: &LiquidNonFungibleVault,
     ) {
-        self.non_fungibles
+        self.balances
             .entry(*address)
             .or_default()
-            .extend(resource.ids().clone())
+            .add_assign(resource.amount)
     }
 }
 
