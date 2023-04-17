@@ -80,7 +80,7 @@ pub enum ReadOnly {
 #[derive(Clone, Debug)]
 pub enum Read {
     NonExistent,
-    Existent,
+    Existent(IndexedScryptoValue),
 }
 
 #[derive(Clone, Debug)]
@@ -147,7 +147,7 @@ impl TrackedSubstateKey {
             }
             TrackedSubstateKey::ReadOnly(read_only) => {
                 let read = match read_only {
-                    ReadOnly::Existent(..) => Read::Existent,
+                    ReadOnly::Existent(v) => Read::Existent(v.value.clone()),
                     ReadOnly::NonExistent => Read::NonExistent,
                 };
                 let new_tracked = TrackedSubstateKey::ReadAndWrite(
@@ -182,7 +182,7 @@ impl TrackedSubstateKey {
             }
             TrackedSubstateKey::ReadOnly(read_only) => {
                 let read = match read_only {
-                    ReadOnly::Existent(..) => Read::Existent,
+                    ReadOnly::Existent(v) => Read::Existent(v.value.clone()),
                     ReadOnly::NonExistent => Read::NonExistent,
                 };
                 let new_tracked = TrackedSubstateKey::ReadAndWrite(read, Write::Delete);
@@ -614,11 +614,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                     continue;
                 }
 
+                let value = IndexedScryptoValue::from_vec(substate).unwrap();
                 new_updates.push((
                     key,
-                    TrackedSubstateKey::ReadAndWrite(Read::Existent, Write::Delete),
+                    TrackedSubstateKey::ReadAndWrite(Read::Existent(value.clone()), Write::Delete),
                 ));
-                items.push(IndexedScryptoValue::from_vec(substate).unwrap());
+                items.push(value);
             }
             new_updates
         };
@@ -747,14 +748,17 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         let tracked = self.get_tracked_substate(&node_id, module_id, &substate_key);
 
+
         let substate = tracked
             .get_runtime_substate_mut()
             .expect("Could not have created lock on non-existent subsate");
 
         substate.lock_state.unlock();
 
+
         if flags.contains(LockFlags::FORCE_WRITE) {
-            let value = substate.value.clone();
+            let cloned_track = tracked.clone();
+
             self.force_updates
                 .entry(node_id)
                 .or_insert(TrackedNode {
@@ -767,10 +771,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 .substates
                 .insert(
                     substate_key.clone(),
-                    TrackedSubstateKey::ReadAndWrite(
-                        Read::Existent,
-                        Write::Update(RuntimeSubstate::new(value)),
-                    ),
+                    cloned_track,
                 );
         }
     }
@@ -812,7 +813,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             }
             TrackedSubstateKey::ReadOnly(read_only) => {
                 let read = match read_only {
-                    ReadOnly::Existent(..) => Read::Existent,
+                    ReadOnly::Existent(r) => Read::Existent(r.value.clone()),
                     ReadOnly::NonExistent => Read::NonExistent,
                 };
                 let new_tracked = TrackedSubstateKey::ReadAndWrite(
