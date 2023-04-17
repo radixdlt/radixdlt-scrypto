@@ -380,8 +380,6 @@ where
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        M::on_read_bucket(self);
-
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
             SysModuleId::TypeInfo,
@@ -449,8 +447,6 @@ where
     }
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        M::kernel_read_proof(self);
-
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
             SysModuleId::TypeInfo,

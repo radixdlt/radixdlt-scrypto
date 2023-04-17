@@ -140,12 +140,4 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
-
-    fn on_read_bucket<Y>(api: &mut Y)
-    where
-        Y: KernelApi<Self>;
-
-    fn kernel_read_proof<Y>(api: &mut Y)
-    where
-        Y: KernelApi<Self>;
 }

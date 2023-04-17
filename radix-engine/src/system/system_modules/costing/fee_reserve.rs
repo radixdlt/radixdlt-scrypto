@@ -104,8 +104,6 @@ pub enum CostingReason {
     ReadSubstate,
     WriteSubstate,
     DropLock,
-    ReadBucket,
-    ReadProof,
     RunWasm,
     RunNative,
     RunSystem,

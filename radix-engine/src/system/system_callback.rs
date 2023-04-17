@@ -471,18 +471,4 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
     {
         SystemModuleMixer::on_allocate_node_id(api, entity_type, virtual_node)
     }
-
-    fn on_read_bucket<Y>(api: &mut Y)
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_read_bucket(api);
-    }
-
-    fn kernel_read_proof<Y>(api: &mut Y)
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_read_proof(api);
-    }
 }

@@ -42,8 +42,6 @@ pub enum CostingEntry<'a> {
         size: u32,
     },
     DropLock,
-    ReadBucket,
-    ReadProof,
     // TODO: more costing after API becomes stable.
 }
 
@@ -372,8 +370,6 @@ impl FeeTable {
                 (SysModuleId::TypeInfo, Some(EntityType::InternalNonFungibleVault)) => 912,
                 _ => 1332, // average of above values
             },
-            CostingEntry::ReadBucket => 186,
-            CostingEntry::ReadProof => 236,
             CostingEntry::ReadSubstate { size: _ } => 220,
             CostingEntry::WriteSubstate { size: _ } => 205,
         }) as u64

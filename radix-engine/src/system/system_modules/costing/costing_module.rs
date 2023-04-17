@@ -400,28 +400,4 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             )?;
         Ok(())
     }
-
-    fn on_read_bucket<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) {
-        api.kernel_get_callback()
-            .modules
-            .costing
-            .apply_execution_cost(
-                CostingReason::ReadBucket,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadBucket),
-                1,
-            )
-            .ok();
-    }
-
-    fn on_read_proof<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) {
-        api.kernel_get_callback()
-            .modules
-            .costing
-            .apply_execution_cost(
-                CostingReason::ReadProof,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadProof),
-                1,
-            )
-            .ok();
-    }
 }

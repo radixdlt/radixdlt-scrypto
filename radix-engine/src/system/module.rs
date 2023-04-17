@@ -175,14 +175,4 @@ pub trait SystemModule<M: KernelCallbackObject> {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
-
-    //=========================
-    // Bucket and Proof events
-    //=========================
-
-    #[inline(always)]
-    fn on_read_bucket<Y: KernelApi<M>>(_api: &mut Y) {}
-
-    #[inline(always)]
-    fn on_read_proof<Y: KernelApi<M>>(_api: &mut Y) {}
 }
