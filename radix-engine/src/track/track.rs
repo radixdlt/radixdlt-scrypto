@@ -442,6 +442,81 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         Ok(value)
     }
 
+    fn scan_substates(&mut self, node_id: &NodeId, module_id: ModuleId, count: u32) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+
+        let count_usize: usize = count.try_into().unwrap();
+
+        if let Some(update) = self.updates.get_mut(node_id) {
+            if update.is_new {
+                let substates = update.modules.get_mut(&module_id).unwrap();
+                let keys: Vec<SubstateKey> = substates.iter()
+                    .map(|(key, _)| key.clone())
+                    .take(count_usize)
+                    .collect();
+
+                let mut items = Vec::new();
+
+                for key in keys {
+                    let tracked = substates.get(&key).unwrap();
+                    items.push((key, tracked.get_substate().unwrap().clone()));
+                }
+
+                items
+            } else {
+                let mut items = Vec::new();
+                let mut processed = NonIterMap::new();
+                let substates = self.get_tracked_module(node_id, module_id);
+
+                for (key, tracked) in substates.iter() {
+                    if items.len() == count_usize {
+                        return items;
+                    }
+
+                    match tracked {
+                        TrackedSubstateKey::New(substate) => {
+                            todo!()
+                        }
+                        TrackedSubstateKey::ReadOnly(..) => {
+                            todo!()
+                        }
+                        TrackedSubstateKey::WriteOnly(write)
+                        | TrackedSubstateKey::ReadAndWrite(_, write) => {
+                            match write {
+                                Write::Update(value) => {
+                                    items.push((key.clone(), value.value.clone()));
+                                    processed.insert(key.clone(), ());
+                                }
+                                Write::Delete => {
+                                    processed.insert(key.clone(), ());
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let processed_count: u32 = processed.len().try_into().unwrap();
+                let count_to_list: u32 = count.checked_add(processed_count).unwrap_or(u32::MAX);
+
+                let ranged_substates = self.substate_db.list_substates(node_id, module_id, count_to_list).unwrap();
+                for (key, substate) in ranged_substates {
+                    if items.len() == count_usize {
+                        return items;
+                    }
+
+                    if processed.contains_key(&key) {
+                        continue;
+                    }
+
+                    items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
+                }
+
+                items
+            }
+        } else {
+            todo!()
+        }
+    }
+
     fn take_substates(&mut self, node_id: &NodeId, module_id: ModuleId, count: u32) -> Vec<(SubstateKey, IndexedScryptoValue)> {
 
         let count_usize: usize = count.try_into().unwrap();
@@ -535,7 +610,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         }
     }
 
-    fn scan_sorted(
+    fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,

@@ -99,6 +99,13 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, AcquireLockError>;
 
+    fn scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
+
     fn take_substates(
         &mut self,
         node_id: &NodeId,
@@ -106,7 +113,7 @@ pub trait SubstateStore {
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
 
-    fn scan_sorted(
+    fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,

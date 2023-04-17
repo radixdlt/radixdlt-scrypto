@@ -49,20 +49,20 @@ pub trait ClientIterableStoreApi<E> {
     }
 
     /// Scans the first elements of count from an iterable store
-    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, E>;
 
     /// Scans the first elements of count from an iterable store
     fn scap_typed_iterable_store<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<S>, E> {
+    ) -> Result<Vec<(SubstateKey, S)>, E> {
         let entries = self
             .scan_iterable_store(node_id, count)?
             .into_iter()
-            .map(|buf| {
+            .map(|(key, buf)| {
                 let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+                (key, typed)
             })
             .collect();
 

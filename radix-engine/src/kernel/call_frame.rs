@@ -477,7 +477,7 @@ impl CallFrame {
             .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
 
         let removed = if heap.contains_node(node_id) {
-            todo!()
+            heap.delete_substate(node_id, module_id.into(), key)
         } else {
             store
                 .delete_substate(node_id, module_id.into(), key)
@@ -487,8 +487,39 @@ impl CallFrame {
         Ok(removed)
     }
 
-    // Substate Virtualization does not apply to this call
-    // Should this be prevented at this layer?
+    pub fn scan_substates<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, ReadSubstatesError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let substates = if heap.contains_node(node_id) {
+            heap.scan_substates(node_id, module_id.into(), count)
+        } else {
+            store.scan_substates(node_id, module_id.into(), count)
+        };
+
+        for (_id, substate) in &substates {
+            let refs = substate.references();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref.clone(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
+    }
+
     pub fn take_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
@@ -501,7 +532,7 @@ impl CallFrame {
             .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
 
         let substates = if heap.contains_node(node_id) {
-            todo!()
+            heap.take_substates(node_id, module_id.into(), count)
         } else {
             store.take_substates(node_id, module_id.into(), count)
         };
@@ -538,7 +569,7 @@ impl CallFrame {
         let substates = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.scan_sorted(node_id, module_id.into(), count)
+            store.scan_sorted_substates(node_id, module_id.into(), count)
         };
 
         for (_id, substate) in &substates {

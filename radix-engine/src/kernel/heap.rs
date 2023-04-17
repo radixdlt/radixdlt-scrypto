@@ -83,6 +83,63 @@ impl Heap {
             .insert(substate_key, substate_value);
     }
 
+    pub fn delete_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        self.nodes.get_mut(node_id)
+            .and_then(|n| n.get_mut(&module_id))
+            .and_then(|s| s.remove(substate_key))
+    }
+
+    pub fn scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+        let node_substates = self.nodes.get_mut(node_id).and_then(|n| n.get_mut(&module_id));
+        if let Some(substates) = node_substates {
+            let substates: Vec<(SubstateKey, IndexedScryptoValue)> = substates.iter()
+                .map(|(key, v)| (key.clone(), v.clone()))
+                .take(count.try_into().unwrap())
+                .collect();
+
+            substates
+        } else {
+            vec![] // TODO: should this just be an error instead?
+        }
+    }
+
+    pub fn take_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+        let node_substates = self.nodes.get_mut(node_id).and_then(|n| n.get_mut(&module_id));
+        if let Some(substates) = node_substates {
+            let keys: Vec<SubstateKey> = substates.iter()
+                .map(|(key, _)| key.clone())
+                .take(count.try_into().unwrap())
+                .collect();
+
+            let mut items = Vec::new();
+
+            for key in keys {
+                let value = substates.remove(&key).unwrap();
+                items.push((key, value));
+            }
+
+            items
+
+        } else {
+            vec![] // TODO: should this just be an error instead?
+        }
+    }
+
     /// Inserts a new node to heap.
     pub fn create_node(&mut self, node_id: NodeId, node: NodeSubstates) {
         self.nodes.insert(node_id, node);

@@ -416,9 +416,9 @@ impl NonFungibleVault {
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
-        let keys = api.scan_iterable_store(&substate_ref.ids.0, u32::MAX)?;
-        let ids = keys.into_iter().map(|key| {
-            let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+        let items = api.scan_iterable_store(&substate_ref.ids.0, u32::MAX)?;
+        let ids = items.into_iter().map(|(key, _)| {
+            let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
             id
         }).collect();
 
