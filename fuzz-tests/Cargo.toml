@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = { version = "0.4", optional = true }
-afl = { version = "0.12.16", optional = true }
+afl = { version = "0.12.16", features = ["reset_lazy_static"], optional = true }
 clap = { version = "4.1.7", optional = true }
 rand = { version = "0.8.5", optional = true }
 rand_chacha = { version = "0.3.1", optional = true }
@@ -22,6 +22,13 @@ radix-engine-interface = { path = "../radix-engine-interface", default-features 
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false, features = ["radix_engine_fuzzing"] }
 scrypto-unit = { path = "../scrypto-unit", default-features = false }
+
+[patch.crates-io]
+# Use "resettable" `lazy_static` version to prevent incorrect AFL behaviour, eg.
+# - warnings such as "Instrumentation output varies across runs"
+# - low stability reports
+# More details: https://github.com/rust-fuzz/afl.rs#lazy_static-variables
+lazy_static = { git = "https://github.com/rust-fuzz/resettable-lazy-static.rs" }
 
 [workspace]
 members = ["."]
