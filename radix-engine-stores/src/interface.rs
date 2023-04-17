@@ -118,7 +118,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
+    ) -> Vec<IndexedScryptoValue>;
 
     /// Acquires a lock over a substate.
     fn acquire_lock(

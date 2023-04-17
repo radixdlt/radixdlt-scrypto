@@ -736,7 +736,7 @@ where
         node_id: &NodeId,
         module_id: SysModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
             .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ReadSubstatesError)

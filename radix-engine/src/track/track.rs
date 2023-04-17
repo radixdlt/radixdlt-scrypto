@@ -645,7 +645,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    ) -> Vec<IndexedScryptoValue> {
         // TODO: Add module dependencies/lock
         let count: usize = count.try_into().unwrap();
         let node_updates = self.updates.get_mut(node_id);
@@ -658,14 +658,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         if is_new {
             let mut items = Vec::new();
             if let Some(tracked_module) = tracked_module {
-                for (key, tracked) in tracked_module.substates.iter() {
+                for (_key, tracked) in tracked_module.substates.iter() {
                     if items.len() == count {
                         break;
                     }
 
                     // TODO: Check that substate is not write locked
                     if let Some(substate) = tracked.get() {
-                        items.push((key.clone(), substate.clone()));
+                        items.push(substate.clone());
                     }
                 }
             }
@@ -675,9 +675,9 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         // TODO: Add interleaving updates
         let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
-        let items: Vec<(SubstateKey, IndexedScryptoValue)> = tracked_iter
+        let items: Vec<IndexedScryptoValue> = tracked_iter
             .take(count)
-            .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
+            .map(|(_key, buf)| IndexedScryptoValue::from_vec(buf).unwrap())
             .collect();
 
         // Update track

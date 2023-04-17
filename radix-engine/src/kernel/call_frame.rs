@@ -560,7 +560,7 @@ impl CallFrame {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, ReadSubstatesError> {
+    ) -> Result<Vec<IndexedScryptoValue>, ReadSubstatesError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| ReadSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
 
@@ -570,7 +570,7 @@ impl CallFrame {
             store.scan_sorted_substates(node_id, module_id.into(), count)
         };
 
-        for (_id, substate) in &substates {
+        for substate in &substates {
             let refs = substate.references();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {

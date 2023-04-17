@@ -787,6 +787,12 @@ where
     }
 }
 
+fn sorted_key_to_vec(sorted_key: SortedKey) -> Vec<u8> {
+    let mut bytes = sorted_key.0.to_be_bytes().to_vec(); // 2 bytes
+    bytes.extend(hash(sorted_key.1).0[12..32].to_vec()); // 20 bytes
+    bytes
+}
+
 impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
@@ -833,7 +839,9 @@ where
             ));
         }
 
-        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
+
+        let bytes = sorted_key_to_vec(sorted_key);
+        let substate_key = SubstateKey::from_vec(bytes).unwrap();
 
         self.api
             .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
@@ -856,7 +864,7 @@ where
             .api
             .kernel_scan_sorted_substates(node_id, SysModuleId::Object, count)?
             .into_iter()
-            .map(|(_key, value)| value.into())
+            .map(|value| value.into())
             .collect();
 
         Ok(substates)
@@ -875,7 +883,8 @@ where
             }
         }
 
-        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
+        let bytes = sorted_key_to_vec(sorted_key.clone());
+        let substate_key = SubstateKey::from_vec(bytes).unwrap();
 
         let rtn = self
             .api
@@ -1338,7 +1347,7 @@ where
         node_id: &NodeId,
         module_id: SysModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, module_id, count)
     }
