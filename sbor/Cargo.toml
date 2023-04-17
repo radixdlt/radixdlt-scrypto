@@ -10,6 +10,7 @@ sbor-derive = { path = "../sbor-derive" }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 lazy_static = "1.4.0"
+paste = { version = "1.0.7" }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
