@@ -206,9 +206,29 @@ impl TrackedSubstateKey {
     }
 }
 
-// TODO: Add Tracked Module for module dependencies
+pub struct TrackedModule {
+    pub substates: BTreeMap<SubstateKey, TrackedSubstateKey>,
+    pub range_read: Option<u32>,
+}
+
+impl TrackedModule {
+    pub fn new() -> Self {
+        Self {
+            substates: BTreeMap::new(),
+            range_read: None,
+        }
+    }
+
+    pub fn new_with_substates(substates: BTreeMap<SubstateKey, TrackedSubstateKey>) -> Self {
+        Self {
+            substates,
+            range_read: None,
+        }
+    }
+}
+
 pub struct TrackedNode {
-    pub modules: IndexMap<ModuleId, BTreeMap<SubstateKey, TrackedSubstateKey>>,
+    pub modules: IndexMap<ModuleId, TrackedModule>,
     // If true, then all SubstateUpdates under this NodeUpdate must be inserts
     // The extra information, though awkward structurally, makes for a much
     // simpler iteration implementation as long as the invariant is maintained
@@ -227,9 +247,9 @@ impl TrackedNode {
 pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
     let mut substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate> =
         index_map_new();
-    for (node_id, node_update) in index {
-        for (module_id, module) in node_update.modules {
-            for (substate_key, tracked) in module {
+    for (node_id, tracked_node) in index {
+        for (module_id, tracked_module) in tracked_node.modules {
+            for (substate_key, tracked) in tracked_module.substates {
                 let update = match tracked {
                     TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => None,
                     TrackedSubstateKey::New(substate) => {
@@ -252,13 +272,15 @@ pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
 }
 
 struct TrackedIter<'a> {
-    iter: Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + 'a>
+    iter: Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + 'a>,
+    num_iterations: u32,
 }
 
 impl<'a> TrackedIter<'a> {
     fn new(iter: Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + 'a>) -> Self {
         Self {
-            iter
+            iter,
+            num_iterations: 0u32,
         }
     }
 }
@@ -267,6 +289,7 @@ impl<'a> Iterator for TrackedIter<'a> {
     type Item = (SubstateKey, Vec<u8>);
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.num_iterations = self.num_iterations + 1;
         self.iter.next()
     }
 }
@@ -325,13 +348,15 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> &mut BTreeMap<SubstateKey, TrackedSubstateKey> {
+    ) -> &mut TrackedModule {
         self.updates
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
             .modules
             .entry(module_id)
-            .or_insert(BTreeMap::new())
+            .or_insert(TrackedModule::new());
+
+        self.updates.get_mut(node_id).unwrap().modules.get_mut(&module_id).unwrap()
     }
 
     fn get_tracked_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -341,13 +366,13 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
         substate_key: &SubstateKey,
         virtualize: F,
     ) -> &mut TrackedSubstateKey {
-        let module_substates = self
+        let module_substates = &mut self
             .updates
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
             .modules
             .entry(module_id)
-            .or_insert(BTreeMap::new());
+            .or_insert(TrackedModule::new()).substates;
         let entry = module_substates.entry(substate_key.clone());
 
         match entry {
@@ -390,21 +415,22 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
 
 impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
-        let node_runtime = node_substates
+        let tracked_modules = node_substates
             .into_iter()
             .map(|(module_id, module_substates)| {
                 let module_substates = module_substates
                     .into_iter()
                     .map(|(key, value)| (key, TrackedSubstateKey::New(RuntimeSubstate::new(value))))
                     .collect();
-                (module_id, module_substates)
+                let tracked_module = TrackedModule::new_with_substates(module_substates);
+                (module_id, tracked_module)
             })
             .collect();
 
         self.updates.insert(
             node_id,
             TrackedNode {
-                modules: node_runtime,
+                modules: tracked_modules,
                 is_new: true,
             },
         );
@@ -417,14 +443,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), AcquireLockError> {
-        let module_substates = self
+        let tracked_module = self
             .updates
             .entry(node_id)
             .or_insert(TrackedNode::new(false))
             .modules
             .entry(module_id)
-            .or_insert(BTreeMap::new());
-        let entry = module_substates.entry(substate_key.clone());
+            .or_insert(TrackedModule::new());
+        let entry = tracked_module.substates.entry(substate_key.clone());
 
         match entry {
             Entry::Vacant(e) => {
@@ -484,10 +510,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         let is_new = node_updates
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let module_updates = node_updates.and_then(|n| n.modules.get(&module_id));
+        let tracked_module = node_updates.and_then(|n| n.modules.get(&module_id));
 
-        if let Some(module_updates) = module_updates {
-            for (key, tracked) in module_updates.iter() {
+        if let Some(tracked_module) = tracked_module {
+            for (key, tracked) in tracked_module.substates.iter() {
                 if items.len() == count {
                     return items;
                 }
@@ -504,15 +530,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             return items;
         }
 
-        let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
-
-        for (key, substate) in tracked_iter {
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+        for (key, substate) in &mut tracked_iter {
             if items.len() == count {
-                return items;
+                break;
             }
 
-            if module_updates
-                .map(|u| u.contains_key(&key))
+            if tracked_module
+                .map(|tracked_module| tracked_module.substates.contains_key(&key))
                 .unwrap_or(false)
             {
                 continue;
@@ -520,6 +545,13 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
             items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
         }
+
+        // Update track
+        let num_iterations = tracked_iter.num_iterations;
+        let tracked_module = self.get_tracked_module(node_id, module_id);
+        let next_range_read = tracked_module.range_read
+            .map(|cur| u32::max(cur, num_iterations)).unwrap_or(num_iterations);
+        tracked_module.range_read = Some(next_range_read);
 
         items
     }
@@ -540,9 +572,9 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             .unwrap_or(false);
 
         // Check what we've currently got so far without going into database
-        let mut module_updates = node_updates.and_then(|n| n.modules.get_mut(&module_id));
-        if let Some(module_updates) = module_updates.as_mut() {
-            for (key, tracked) in module_updates.iter_mut() {
+        let mut tracked_module = node_updates.and_then(|n| n.modules.get_mut(&module_id));
+        if let Some(tracked_module) = tracked_module.as_mut() {
+            for (key, tracked) in tracked_module.substates.iter_mut() {
                 if items.len() == count {
                     return items;
                 }
@@ -560,18 +592,17 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         }
 
         // Read from database
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
         let new_updates = {
-            let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
-
             let mut new_updates = Vec::new();
-            for (key, substate) in tracked_iter {
+            for (key, substate) in &mut tracked_iter {
                 if items.len() == count {
                     break;
                 }
 
-                if module_updates
+                if tracked_module
                     .as_ref()
-                    .map(|u| u.contains_key(&key))
+                    .map(|tracked_module| tracked_module.substates.contains_key(&key))
                     .unwrap_or(false)
                 {
                     continue;
@@ -587,9 +618,15 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         };
 
         // Update track
-        let tracked_module = self.get_tracked_module(node_id, module_id);
-        for (key, tracked) in new_updates {
-            tracked_module.insert(key, tracked);
+        {
+            let num_iterations = tracked_iter.num_iterations;
+            let tracked_module = self.get_tracked_module(node_id, module_id);
+            let next_range_read = tracked_module.range_read
+                .map(|cur| u32::max(cur, num_iterations)).unwrap_or(num_iterations);
+            tracked_module.range_read = Some(next_range_read);
+            for (key, tracked) in new_updates {
+                tracked_module.substates.insert(key, tracked);
+            }
         }
 
         items
@@ -608,12 +645,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             .as_ref()
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let module_updates = node_updates.and_then(|n| n.modules.get(&module_id));
+        let tracked_module = node_updates.and_then(|n| n.modules.get(&module_id));
 
         if is_new {
             let mut items = Vec::new();
-            if let Some(module_updates) = module_updates {
-                for (key, tracked) in module_updates.iter() {
+            if let Some(tracked_module) = tracked_module {
+                for (key, tracked) in tracked_module.substates.iter() {
                     if items.len() == count {
                         break;
                     }
@@ -630,11 +667,21 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         // TODO: Add interleaving updates
         let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
-
-        tracked_iter
+        let items: Vec<(SubstateKey, IndexedScryptoValue)> = tracked_iter
             .take(count)
             .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
-            .collect()
+            .collect();
+
+        // Update track
+        {
+            let num_iterations: u32 = items.len().try_into().unwrap();
+            let tracked_module = self.get_tracked_module(node_id, module_id);
+            let next_range_read = tracked_module.range_read
+                .map(|cur| u32::max(cur, num_iterations)).unwrap_or(num_iterations);
+            tracked_module.range_read = Some(next_range_read);
+        }
+
+        items
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -706,7 +753,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 })
                 .modules
                 .entry(module_id)
-                .or_default()
+                .or_insert(TrackedModule::new())
+                .substates
                 .insert(
                     substate_key.clone(),
                     TrackedSubstateKey::ReadAndWrite(

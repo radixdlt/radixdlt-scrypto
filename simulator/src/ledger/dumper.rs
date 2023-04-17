@@ -25,14 +25,13 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let package = substate_db
+    let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             &PackageOffset::Code.into(),
         )
-        .expect("Database misconfigured");
-    let substate = package.ok_or(EntityDumpError::PackageNotFound)?;
+        .ok_or(EntityDumpError::PackageNotFound)?;
 
     writeln!(
         output,
@@ -67,7 +66,6 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
             )
-            .expect("Database misconfigured")
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
         let blueprint = match type_info {
@@ -131,7 +129,6 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             SysModuleId::Object.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
-        .expect("Database misconfigured")
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;
 
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {

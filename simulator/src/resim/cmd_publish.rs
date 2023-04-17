@@ -88,9 +88,7 @@ impl Publish {
                 ),
             };
 
-            substate_db
-                .commit(&state_updates)
-                .expect("Database misconfigured");
+            substate_db.commit(&state_updates);
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {

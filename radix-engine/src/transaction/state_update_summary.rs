@@ -256,7 +256,7 @@ impl<'a> BalanceAccounter<'a> {
             } else {
                 // Scan loaded substates to find children
                 for (_module_id, tracked_module) in &tracked_node.modules {
-                    for (_substate_key, tracked_key) in tracked_module {
+                    for (_substate_key, tracked_key) in &tracked_module.substates {
                         if let Some(value) = tracked_key.get() {
                             for own in value.owned_node_ids() {
                                 self.traverse_state_updates(
@@ -337,11 +337,11 @@ impl<'a> BalanceAccounter<'a> {
                     n.modules.get(&module_id)
                 });
 
-                if let Some(vault_updates) = vault_updates {
+                if let Some(tracked_module) = vault_updates {
                     let mut added = BTreeSet::new();
                     let mut removed = BTreeSet::new();
 
-                    for (key, tracked) in vault_updates {
+                    for (key, tracked) in &tracked_module.substates {
                         match tracked {
                             TrackedSubstateKey::New(..) => {
                                 let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
@@ -409,7 +409,7 @@ impl<'a> BalanceAccounter<'a> {
         self.updates
             .get(node_id)
             .and_then(|tracked_node| tracked_node.modules.get(&module_id))
-            .and_then(|tracked_module| tracked_module.get(substate_key))
+            .and_then(|tracked_module| tracked_module.substates.get(substate_key))
             .and_then(|tracked_key| tracked_key.get().map(|e| e.as_slice()))
     }
 }
