@@ -322,7 +322,6 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type())]
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
@@ -337,7 +336,6 @@ where
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
@@ -360,14 +358,12 @@ where
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_load_package_package_dependencies(&mut self) {
         self.current_frame
             .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_load_common(&mut self) {
         self.current_frame
             .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
@@ -383,7 +379,6 @@ where
             .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
-    #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         M::on_read_bucket(self);
 
@@ -453,7 +448,6 @@ where
         }
     }
 
-    #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         M::kernel_read_proof(self);
 
