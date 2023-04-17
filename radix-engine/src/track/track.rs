@@ -105,6 +105,7 @@ pub enum TrackedSubstateKey {
     ReadOnly(ReadOnly),
     ReadAndWrite(Read, Write),
     WriteOnly(Write),
+    Garbage,
 }
 
 impl TrackedSubstateKey {
@@ -116,7 +117,8 @@ impl TrackedSubstateKey {
             | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => Some(substate),
             TrackedSubstateKey::WriteOnly(Write::Delete)
             | TrackedSubstateKey::ReadAndWrite(_, Write::Delete)
-            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => None,
+            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent)
+            | TrackedSubstateKey::Garbage => None,
         }
     }
 
@@ -128,7 +130,8 @@ impl TrackedSubstateKey {
             | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => Some(&substate.value),
             TrackedSubstateKey::WriteOnly(Write::Delete)
             | TrackedSubstateKey::ReadAndWrite(_, Write::Delete)
-            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => None,
+            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent)
+            | TrackedSubstateKey::Garbage => None,
         }
     }
 
@@ -140,7 +143,8 @@ impl TrackedSubstateKey {
             | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => Some(substate.value),
             TrackedSubstateKey::WriteOnly(Write::Delete)
             | TrackedSubstateKey::ReadAndWrite(_, Write::Delete)
-            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent) => None,
+            | TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent)
+            | TrackedSubstateKey::Garbage => None,
         }
     }
 }
@@ -170,7 +174,7 @@ pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
         for (module_id, module) in node_update.modules {
             for (substate_key, tracked) in module {
                 let update = match tracked {
-                    TrackedSubstateKey::ReadOnly(..) => None,
+                    TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => None,
                     TrackedSubstateKey::New(substate) => {
                         Some(StateUpdate::Set(substate.value.into()))
                     }
@@ -365,6 +369,11 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 }
 
                 match tracked {
+                    TrackedSubstateKey::Garbage => {
+                        e.insert(TrackedSubstateKey::WriteOnly(Write::Update(
+                            RuntimeSubstate::new(substate_value),
+                        )));
+                    }
                     TrackedSubstateKey::New(substate)
                     | TrackedSubstateKey::WriteOnly(Write::Update(substate))
                     | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => {
@@ -413,11 +422,11 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         }
 
         let value = match tracked {
+            TrackedSubstateKey::Garbage => {
+                None
+            }
             TrackedSubstateKey::New(..) => {
-                let old = self
-                    .get_tracked_module(node_id, module_id)
-                    .remove(substate_key)
-                    .unwrap();
+                let old = mem::replace(tracked, TrackedSubstateKey::Garbage);
                 old.into_value()
             }
             TrackedSubstateKey::WriteOnly(_) => {
@@ -538,6 +547,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                     }
 
                     match tracked {
+                        TrackedSubstateKey::Garbage => {
+                        }
                         TrackedSubstateKey::New(substate) => {
                             todo!()
                         }
@@ -769,7 +780,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                     old.get_runtime_substate_mut().unwrap().lock_state;
             }
             TrackedSubstateKey::WriteOnly(Write::Delete)
-            | TrackedSubstateKey::ReadAndWrite(_, Write::Delete) => {
+            | TrackedSubstateKey::ReadAndWrite(_, Write::Delete)
+            | TrackedSubstateKey::Garbage => {
                 panic!("Could not have created lock on non existent substate")
             }
         };

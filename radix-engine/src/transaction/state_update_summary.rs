@@ -360,7 +360,7 @@ impl<'a> BalanceAccounter<'a> {
                                     removed.insert(id);
                                 }
                             },
-                            TrackedSubstateKey::ReadOnly(..) => {}
+                            TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => {}
                         }
                     }
 
