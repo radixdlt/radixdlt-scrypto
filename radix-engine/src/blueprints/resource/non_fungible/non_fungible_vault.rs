@@ -416,15 +416,8 @@ impl NonFungibleVault {
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
-        let items = api.scan_iterable_store(&substate_ref.ids.0, u32::MAX)?;
-        let ids = items
-            .into_iter()
-            .map(|(key, _)| {
-                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
-                id
-            })
-            .collect();
-
+        let items: Vec<NonFungibleLocalId> = api.scan_typed_iterable_store(&substate_ref.ids.0, u32::MAX)?;
+        let ids = items.into_iter().collect();
         api.sys_drop_lock(handle)?;
         Ok(ids)
     }
@@ -488,17 +481,8 @@ impl NonFungibleVault {
             .expect("Failed to convert amount to u32");
 
         let taken = {
-            let ids = api.take(substate_ref.ids.as_node_id(), amount_to_take)?;
-
-            let ids = ids
-                .into_iter()
-                .map(|(key, _value)| {
-                    let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
-                    id
-                })
-                .collect();
-
-            LiquidNonFungibleResource { ids }
+            let ids: Vec<NonFungibleLocalId> = api.take_typed(substate_ref.ids.as_node_id(), amount_to_take)?;
+            LiquidNonFungibleResource { ids: ids.into_iter().collect() }
         };
 
         api.sys_write_substate_typed(handle, &substate_ref)?;
@@ -530,7 +514,7 @@ impl NonFungibleVault {
         for id in ids {
             let removed = api.remove_from_iterable_store(
                 substate_ref.ids.as_node_id(),
-                &SubstateKey::from_vec(scrypto_encode(id).unwrap()).unwrap(),
+                scrypto_encode(id).unwrap(),
             )?;
 
             if removed.is_none() {
@@ -573,11 +557,12 @@ impl NonFungibleVault {
 
         // update liquidity
         // TODO: Batch update
+        // TODO: Rather than insert, use create_unique?
         for id in resource.ids {
-            api.insert_into_iterable_store(
+            api.insert_typed_into_iterable_store(
                 vault.ids.as_node_id(),
-                SubstateKey::from_vec(scrypto_encode(&id).unwrap()).unwrap(),
-                scrypto_encode(&()).unwrap(),
+                scrypto_encode(&id).unwrap(),
+                id,
             )?;
         }
 

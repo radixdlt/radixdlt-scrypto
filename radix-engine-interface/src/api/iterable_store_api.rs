@@ -13,7 +13,7 @@ pub trait ClientIterableStoreApi<E> {
     fn insert_into_iterable_store(
         &mut self,
         node_id: &NodeId,
-        key: SubstateKey,
+        key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
@@ -21,7 +21,7 @@ pub trait ClientIterableStoreApi<E> {
     fn insert_typed_into_iterable_store<V: ScryptoEncode>(
         &mut self,
         node_id: &NodeId,
-        key: SubstateKey,
+        key: Vec<u8>,
         value: V,
     ) -> Result<(), E> {
         self.insert_into_iterable_store(node_id, key, scrypto_encode(&value).unwrap())
@@ -31,14 +31,14 @@ pub trait ClientIterableStoreApi<E> {
     fn remove_from_iterable_store(
         &mut self,
         node_id: &NodeId,
-        key: &SubstateKey,
+        key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, E>;
 
     /// Removes an entry from an iterable store
     fn remove_typed_from_iterable_store<V: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
-        key: &SubstateKey,
+        key: Vec<u8>,
     ) -> Result<Option<V>, E> {
         let rtn = self
             .remove_from_iterable_store(node_id, key)?
@@ -51,20 +51,20 @@ pub trait ClientIterableStoreApi<E> {
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, E>;
+    ) -> Result<Vec<Vec<u8>>, E>;
 
     /// Scans arbitrary elements of count from an iterable store
-    fn scap_typed_iterable_store<S: ScryptoDecode>(
+    fn scan_typed_iterable_store<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, S)>, E> {
+    ) -> Result<Vec<S>, E> {
         let entries = self
             .scan_iterable_store(node_id, count)?
             .into_iter()
-            .map(|(key, buf)| {
+            .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();
-                (key, typed)
+                typed
             })
             .collect();
 
@@ -72,20 +72,20 @@ pub trait ClientIterableStoreApi<E> {
     }
 
     /// Removes and returns arbitrary elements of count from an iterable store
-    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<(SubstateKey, Vec<u8>)>, E>;
+    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
     /// Removes and returns arbitrary elements of count from an iterable store
     fn take_typed<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, S)>, E> {
+    ) -> Result<Vec<S>, E> {
         let entries = self
             .take(node_id, count)?
             .into_iter()
-            .map(|(key, buf)| {
+            .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();
-                (key, typed)
+                typed
             })
             .collect();
 

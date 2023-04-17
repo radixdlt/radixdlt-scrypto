@@ -104,14 +104,14 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
+    ) -> Vec<IndexedScryptoValue>;
 
     fn take_substates(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
+    ) -> Vec<IndexedScryptoValue>;
 
     fn scan_sorted_substates(
         &mut self,

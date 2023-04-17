@@ -504,7 +504,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    ) -> Vec<IndexedScryptoValue> {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -515,14 +515,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         let tracked_module = node_updates.and_then(|n| n.modules.get(&module_id));
 
         if let Some(tracked_module) = tracked_module {
-            for (key, tracked) in tracked_module.substates.iter() {
+            for (_key, tracked) in tracked_module.substates.iter() {
                 if items.len() == count {
                     return items;
                 }
 
                 // TODO: Check that substate is not write locked
                 if let Some(substate) = tracked.get() {
-                    items.push((key.clone(), substate.clone()));
+                    items.push(substate.clone());
                 }
             }
         }
@@ -546,7 +546,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 continue;
             }
 
-            items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
+            items.push(IndexedScryptoValue::from_vec(substate).unwrap());
         }
 
         // Update track
@@ -566,7 +566,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    ) -> Vec<IndexedScryptoValue> {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -579,14 +579,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         // Check what we've currently got so far without going into database
         let mut tracked_module = node_updates.and_then(|n| n.modules.get_mut(&module_id));
         if let Some(tracked_module) = tracked_module.as_mut() {
-            for (key, tracked) in tracked_module.substates.iter_mut() {
+            for (_key, tracked) in tracked_module.substates.iter_mut() {
                 if items.len() == count {
                     return items;
                 }
 
                 // TODO: Check that substate is not locked
                 if let Some(value) = tracked.take() {
-                    items.push((key.clone(), value));
+                    items.push(value);
                 }
             }
         }
@@ -615,10 +615,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 }
 
                 new_updates.push((
-                    key.clone(),
+                    key,
                     TrackedSubstateKey::ReadAndWrite(Read::Existent, Write::Delete),
                 ));
-                items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
+                items.push(IndexedScryptoValue::from_vec(substate).unwrap());
             }
             new_updates
         };

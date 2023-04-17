@@ -694,7 +694,7 @@ where
     fn insert_into_iterable_store(
         &mut self,
         node_id: &NodeId,
-        key: SubstateKey,
+        key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -716,13 +716,13 @@ where
         }
 
         self.api
-            .kernel_set_substate(node_id, SysModuleId::Object, key, value)
+            .kernel_set_substate(node_id, SysModuleId::Object, SubstateKey::from_vec(key).unwrap(), value)
     }
 
     fn remove_from_iterable_store(
         &mut self,
         node_id: &NodeId,
-        key: &SubstateKey,
+        key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
@@ -734,7 +734,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Object, &key)?
+            .kernel_remove_substate(node_id, SysModuleId::Object, &SubstateKey::from_vec(key).unwrap())?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -744,7 +744,7 @@ where
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -757,7 +757,7 @@ where
             .api
             .kernel_scan_substates(node_id, SysModuleId::Object, count)?
             .into_iter()
-            .map(|(key, value)| (key, value.into()))
+            .map(|value| value.into())
             .collect();
 
         Ok(substates)
@@ -767,7 +767,7 @@ where
         &mut self,
         node_id: &NodeId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, RuntimeError> {
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}
@@ -780,7 +780,7 @@ where
             .api
             .kernel_take_substates(node_id, SysModuleId::Object, count)?
             .into_iter()
-            .map(|(key, value)| (key, value.into()))
+            .map(|value| value.into())
             .collect();
 
         Ok(substates)
@@ -1357,7 +1357,7 @@ where
         node_id: &NodeId,
         module_id: SysModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api.kernel_scan_substates(node_id, module_id, count)
     }
 
@@ -1366,7 +1366,7 @@ where
         node_id: &NodeId,
         module_id: SysModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api.kernel_take_substates(node_id, module_id, count)
     }
 }

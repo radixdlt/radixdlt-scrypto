@@ -100,15 +100,15 @@ impl Heap {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
             .and_then(|n| n.get_mut(&module_id));
         if let Some(substates) = node_substates {
-            let substates: Vec<(SubstateKey, IndexedScryptoValue)> = substates
+            let substates: Vec<IndexedScryptoValue> = substates
                 .iter()
-                .map(|(key, v)| (key.clone(), v.clone()))
+                .map(|(_key, v)| v.clone())
                 .take(count.try_into().unwrap())
                 .collect();
 
@@ -123,7 +123,7 @@ impl Heap {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
@@ -139,7 +139,7 @@ impl Heap {
 
             for key in keys {
                 let value = substates.remove(&key).unwrap();
-                items.push((key, value));
+                items.push(value);
             }
 
             items
