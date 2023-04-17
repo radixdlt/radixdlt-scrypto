@@ -251,6 +251,26 @@ pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
     StateUpdates { substate_changes }
 }
 
+struct TrackedIter<'a> {
+    iter: Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + 'a>
+}
+
+impl<'a> TrackedIter<'a> {
+    fn new(iter: Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + 'a>) -> Self {
+        Self {
+            iter
+        }
+    }
+}
+
+impl<'a> Iterator for TrackedIter<'a> {
+    type Item = (SubstateKey, Vec<u8>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
 /// Transaction-wide states and side effects
 pub struct Track<'s, S: SubstateDatabase> {
     substate_db: &'s S,
@@ -431,7 +451,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         Ok(())
     }
 
-    fn delete_substate(
+    fn take_substate(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
@@ -484,8 +504,9 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             return items;
         }
 
-        let substate_iter = self.substate_db.list_substates(node_id, module_id);
-        for (key, substate) in substate_iter {
+        let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+
+        for (key, substate) in tracked_iter {
             if items.len() == count {
                 return items;
             }
@@ -540,10 +561,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         // Read from database
         let new_updates = {
-            let substate_iter = self.substate_db.list_substates(node_id, module_id);
+            let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
 
             let mut new_updates = Vec::new();
-            for (key, substate) in substate_iter {
+            for (key, substate) in tracked_iter {
                 if items.len() == count {
                     break;
                 }
@@ -608,8 +629,9 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         }
 
         // TODO: Add interleaving updates
-        self.substate_db
-            .list_substates(node_id, module_id)
+        let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+
+        tracked_iter
             .take(count)
             .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
             .collect()

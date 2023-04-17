@@ -480,7 +480,7 @@ impl CallFrame {
             heap.delete_substate(node_id, module_id.into(), key)
         } else {
             store
-                .delete_substate(node_id, module_id.into(), key)
+                .take_substate(node_id, module_id.into(), key)
                 .unwrap()
         };
 
