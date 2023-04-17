@@ -138,9 +138,7 @@ impl TrackedSubstateKey {
     pub fn set(&mut self, value: IndexedScryptoValue) {
         match self {
             TrackedSubstateKey::Garbage => {
-                *self = TrackedSubstateKey::WriteOnly(Write::Update(
-                    RuntimeSubstate::new(value),
-                ));
+                *self = TrackedSubstateKey::WriteOnly(Write::Update(RuntimeSubstate::new(value)));
             }
             TrackedSubstateKey::New(substate)
             | TrackedSubstateKey::WriteOnly(Write::Update(substate))
@@ -169,9 +167,7 @@ impl TrackedSubstateKey {
 
     pub fn take(&mut self) -> Option<IndexedScryptoValue> {
         match self {
-            TrackedSubstateKey::Garbage => {
-                None
-            }
+            TrackedSubstateKey::Garbage => None,
             TrackedSubstateKey::New(..) => {
                 let old = mem::replace(self, TrackedSubstateKey::Garbage);
                 old.into_value()
@@ -526,7 +522,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         let mut items = Vec::new();
 
         let node_updates = self.updates.get_mut(node_id);
-        let is_new = node_updates.as_ref()
+        let is_new = node_updates
+            .as_ref()
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
 
@@ -575,7 +572,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                     continue;
                 }
 
-                new_updates.push((key.clone(), TrackedSubstateKey::ReadAndWrite(Read::Existent, Write::Delete)));
+                new_updates.push((
+                    key.clone(),
+                    TrackedSubstateKey::ReadAndWrite(Read::Existent, Write::Delete),
+                ));
                 items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
             }
             new_updates
@@ -597,46 +597,41 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         // TODO: Add module dependencies/lock
+        let count_usize: usize = count.try_into().unwrap();
+        let node_updates = self.updates.get_mut(node_id);
+        let is_new = node_updates
+            .as_ref()
+            .map(|tracked_node| tracked_node.is_new)
+            .unwrap_or(false);
+        let module_updates = node_updates.and_then(|n| n.modules.get(&module_id));
 
-        if let Some(update) = self.updates.get_mut(node_id) {
-            if update.is_new {
-                let substates = update.modules.get_mut(&module_id).unwrap();
-                let count: usize = count.try_into().unwrap();
-                return substates
-                    .iter_mut()
-                    .take(count)
-                    .map(|(key, tracked)| {
-                        (
-                            key.clone(),
-                            tracked.get_runtime_substate_mut().unwrap().value.clone(),
-                        )
-                    })
-                    .collect();
-            } else {
-                let module_updates = update.modules.get_mut(&module_id);
-                if let Some(_module_updates) = module_updates {
-                    todo!()
-                } else {
-                    let substates = self
-                        .substate_db
-                        .list_substates(node_id, module_id, count)
-                        .unwrap();
-                    substates
-                        .into_iter()
-                        .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
-                        .collect()
+        if is_new {
+            let mut items = Vec::new();
+            if let Some(module_updates) = module_updates {
+                for (key, tracked) in module_updates.iter() {
+                    if items.len() == count_usize {
+                        break;
+                    }
+
+                    // TODO: Check that substate is not write locked
+                    if let Some(substate) = tracked.get() {
+                        items.push((key.clone(), substate.clone()));
+                    }
                 }
             }
-        } else {
-            let substates = self
-                .substate_db
-                .list_substates(node_id, module_id, count)
-                .unwrap();
-            substates
-                .into_iter()
-                .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
-                .collect()
+
+            return items;
         }
+
+        // TODO: Add updates
+        let substates = self
+            .substate_db
+            .list_substates(node_id, module_id, count)
+            .unwrap();
+        substates
+            .into_iter()
+            .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
+            .collect()
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
