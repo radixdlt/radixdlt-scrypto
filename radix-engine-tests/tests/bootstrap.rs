@@ -87,7 +87,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
     );
 
     let commit_result = transaction_receipt.expect_commit(true);
-    substate_store.commit(&commit_result.state_updates).unwrap();
+    substate_store.commit(&commit_result.state_updates);
 
     assert!(transaction_receipt
         .execution_trace
@@ -146,7 +146,7 @@ fn test_genesis_resource_with_initial_allocation() {
     );
 
     let commit_result = transaction_receipt.expect_commit(true);
-    substate_store.commit(&commit_result.state_updates).unwrap();
+    substate_store.commit(&commit_result.state_updates);
 
     let persisted_resource_manager_substate = substate_store
         .get_substate(
@@ -154,7 +154,6 @@ fn test_genesis_resource_with_initial_allocation() {
             SysModuleId::Object.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
-        .unwrap()
         .unwrap();
 
     let resource_manager_substate: FungibleResourceManagerSubstate =
@@ -167,7 +166,6 @@ fn test_genesis_resource_with_initial_allocation() {
             SysModuleId::Metadata.into(),
             &SubstateKey::from_vec(scrypto_encode("symbol").unwrap()).unwrap(),
         )
-        .unwrap()
         .unwrap();
 
     let entry: Option<MetadataEntry> = scrypto_decode(&persisted_symbol_metadata_entry).unwrap();
@@ -246,7 +244,7 @@ fn test_genesis_stake_allocation() {
     );
 
     let commit_result = transaction_receipt.expect_commit(true);
-    substate_store.commit(&commit_result.state_updates).unwrap();
+    substate_store.commit(&commit_result.state_updates);
 
     // Staker 0 should have one liquidity balance entry
     {

@@ -23,36 +23,37 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<Vec<u8>>, GetSubstateError> {
+    ) -> Option<Vec<u8>> {
         let key = encode_substate_id(node_id, module_id, substate_key);
-        let value = self
-            .substates
+        self.substates
             .get(&key)
-            .map(|x| scrypto_decode::<Vec<u8>>(x).expect("Failed to decode value"));
-        Ok(value)
+            .map(|x| scrypto_decode::<Vec<u8>>(x).expect("Failed to decode value"))
     }
 
     fn list_substates(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>, ListSubstatesError> {
+    ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_> {
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
-        let iter = self.substates.range((Included(start), Included(end)))
+        let iter = self
+            .substates
+            .range((Included(start), Included(end)))
             .into_iter()
             .map(|(k, v)| {
-                let (_, _, substate_key) = decode_substate_id(k).expect("Failed to decode substate ID");
+                let (_, _, substate_key) =
+                    decode_substate_id(k).expect("Failed to decode substate ID");
                 let value = scrypto_decode::<Vec<u8>>(v).expect("Failed to decode value");
                 (substate_key, value)
             });
 
-        Ok(Box::new(iter))
+        Box::new(iter)
     }
 }
 
 impl CommittableSubstateDatabase for InMemorySubstateDatabase {
-    fn commit(&mut self, state_changes: &StateUpdates) -> Result<(), CommitError> {
+    fn commit(&mut self, state_changes: &StateUpdates) {
         for ((node_id, module_id, substate_key), substate_change) in &state_changes.substate_changes
         {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
@@ -66,6 +67,5 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
                 }
             }
         }
-        Ok(())
     }
 }

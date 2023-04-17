@@ -83,7 +83,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     SysModuleId::TypeInfo.into(),
                     &SubstateKey::from_vec(vec![0]).unwrap(),
                 )
-                .expect("Failed to get substate")
                 .expect("Missing TypeInfo substate"),
         )
         .expect("Failed to decode TypeInfo substate");
@@ -93,7 +92,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 for (substate_key, value) in self
                     .substate_db
                     .list_substates(&node_id, SysModuleId::VirtualizedObject.into())
-                    .expect("Failed to list key value store")
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
                         .expect("Substate is not a scrypto value")
@@ -128,7 +126,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 SysModuleId::Object.into(),
                                 &FungibleVaultOffset::LiquidFungible.into(),
                             )
-                            .expect("Broken database")
                             .expect("Broken database"),
                     )
                     .expect("Failed to decode liquid fungible");
@@ -149,7 +146,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 SysModuleId::Object.into(),
                                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
-                            .expect("Broken database")
                             .expect("Broken database"),
                     )
                     .expect("Failed to decode liquid non-fungible");
@@ -162,26 +158,21 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
-                        if let Ok(x) = self
-                            .substate_db
-                            .list_substates(&node_id, t.into())
-                        {
-                            for (substate_key, substate_value) in x {
-                                let (_, owned_nodes, _) =
-                                    IndexedScryptoValue::from_vec(substate_value)
-                                        .expect("Substate is not a scrypto value")
-                                        .unpack();
-                                for child_node_id in owned_nodes {
-                                    self.traverse_recursive(
-                                        Some(&(
-                                            node_id,
-                                            SysModuleId::Object.into(),
-                                            substate_key.clone(),
-                                        )),
-                                        child_node_id,
-                                        depth + 1,
-                                    );
-                                }
+                        let x = self.substate_db.list_substates(&node_id, t.into());
+                        for (substate_key, substate_value) in x {
+                            let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
+                                .expect("Substate is not a scrypto value")
+                                .unpack();
+                            for child_node_id in owned_nodes {
+                                self.traverse_recursive(
+                                    Some(&(
+                                        node_id,
+                                        SysModuleId::Object.into(),
+                                        substate_key.clone(),
+                                    )),
+                                    child_node_id,
+                                    depth + 1,
+                                );
                             }
                         }
                     }

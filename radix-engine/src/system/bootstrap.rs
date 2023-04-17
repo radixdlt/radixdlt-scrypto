@@ -741,7 +741,6 @@ where
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         )
-        .expect("Database misconfigured")
         .is_none()
     {
         let genesis_transaction = create_genesis(
@@ -761,9 +760,7 @@ where
         );
 
         let commit_result = transaction_receipt.expect_commit(true);
-        substate_db
-            .commit(&commit_result.state_updates)
-            .expect("Database misconfigured");
+        substate_db.commit(&commit_result.state_updates);
 
         Some(transaction_receipt)
     } else {

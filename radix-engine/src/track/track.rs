@@ -335,7 +335,6 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
                 let value = self
                     .substate_db
                     .get_substate(node_id, module_id, substate_key)
-                    .expect("Database misconfigured")
                     .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
                 if let Some(value) = value {
                     e.insert(TrackedSubstateKey::ReadOnly(ReadOnly::Existent(
@@ -485,10 +484,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             return items;
         }
 
-        let substate_iter = self
-            .substate_db
-            .list_substates(node_id, module_id)
-            .unwrap();
+        let substate_iter = self.substate_db.list_substates(node_id, module_id);
         for (key, substate) in substate_iter {
             if items.len() == count {
                 return items;
@@ -544,10 +540,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         // Read from database
         let new_updates = {
-            let substate_iter = self
-                .substate_db
-                .list_substates(node_id, module_id)
-                .unwrap();
+            let substate_iter = self.substate_db.list_substates(node_id, module_id);
 
             let mut new_updates = Vec::new();
             for (key, substate) in substate_iter {
@@ -615,10 +608,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         }
 
         // TODO: Add interleaving updates
-        self
-            .substate_db
+        self.substate_db
             .list_substates(node_id, module_id)
-            .unwrap()
             .take(count)
             .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
             .collect()

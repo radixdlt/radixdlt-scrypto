@@ -171,56 +171,24 @@ pub enum StateUpdate {
     Delete,
 }
 
-/// The configuration of a node module.
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub struct ModuleConfig {
-    /// When activated, the store will allow LIST over the substates within the module.
-    pub iteration_enabled: bool,
-}
-
-/// Error when listing substates.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ListSubstatesError {
-    /// The module ID is unknown.
-    UnknownModuleId,
-    /// Iteration is not enabled for the module.
-    IterationNotAllowed,
-}
-
-/// Error when reading substates.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GetSubstateError {
-    /// The module ID is unknown.
-    UnknownModuleId,
-}
-
-/// Error when reading substates.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CommitError {
-    /// The module ID is unknown.
-    UnknownModuleId,
-}
-
 /// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
-    ///
-    /// An error is thrown in case of invalid module ID.
     fn get_substate(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<Vec<u8>>, GetSubstateError>;
+    ) -> Option<Vec<u8>>;
 
     /// Returns an iterator over substates within the given substate module
     fn list_substates(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>, ListSubstatesError>;
+    ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>;
 }
 
 /// Interface for committing changes into a substate database.
@@ -228,7 +196,7 @@ pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
     ///
     /// An error is thrown in case of invalid module ID.
-    fn commit(&mut self, state_changes: &StateUpdates) -> Result<(), CommitError>;
+    fn commit(&mut self, state_changes: &StateUpdates);
 }
 
 /// Interface for listing nodes within a substate database.

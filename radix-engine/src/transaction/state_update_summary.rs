@@ -398,7 +398,6 @@ impl<'a> BalanceAccounter<'a> {
     ) -> Option<Vec<u8>> {
         self.substate_db
             .get_substate(node_id, module_id, substate_key)
-            .expect("Database misconfigured")
     }
 
     fn fetch_substate_from_state_updates(

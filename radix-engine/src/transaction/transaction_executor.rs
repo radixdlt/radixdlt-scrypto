@@ -366,9 +366,7 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db
-            .commit(&commit.state_updates)
-            .expect("Database misconfigured");
+        substate_db.commit(&commit.state_updates);
     }
     receipt
 }

@@ -171,9 +171,7 @@ impl TestRunnerBuilder {
             );
 
             let commit_result = transaction_receipt.expect_commit(true);
-            substate_db
-                .commit(&commit_result.state_updates)
-                .expect("Database misconfigured");
+            substate_db.commit(&commit_result.state_updates);
             transaction_receipt
         };
         let faucet_component = transaction_receipt
@@ -307,7 +305,6 @@ impl TestRunner {
                 SysModuleId::Metadata.into(),
                 &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
             )
-            .expect("Database misconfigured")
             .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s).unwrap())?;
 
         let metadata_entry = match metadata_entry {
@@ -326,15 +323,11 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self
-            .substate_db
-            .get_substate(
-                component_address.as_node_id(),
-                SysModuleId::Royalty.into(),
-                &RoyaltyOffset::RoyaltyAccumulator.into(),
-            )
-            .expect("Database misconfigured")
-        {
+        if let Some(output) = self.substate_db.get_substate(
+            component_address.as_node_id(),
+            SysModuleId::Royalty.into(),
+            &RoyaltyOffset::RoyaltyAccumulator.into(),
+        ) {
             scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output)
                 .unwrap()
                 .royalty_vault
@@ -345,7 +338,6 @@ impl TestRunner {
                             SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
-                        .expect("Database misconfigured")
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output)
                                 .unwrap()
@@ -358,15 +350,11 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self
-            .substate_db
-            .get_substate(
-                package_address.as_node_id(),
-                SysModuleId::Object.into(),
-                &PackageOffset::Royalty.into(),
-            )
-            .expect("Database misconfigured")
-        {
+        if let Some(output) = self.substate_db.get_substate(
+            package_address.as_node_id(),
+            SysModuleId::Object.into(),
+            &PackageOffset::Royalty.into(),
+        ) {
             scrypto_decode::<PackageRoyaltySubstate>(&output)
                 .unwrap()
                 .royalty_vault
@@ -377,7 +365,6 @@ impl TestRunner {
                             SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
-                        .expect("Database misconfigured")
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output)
                                 .unwrap()
@@ -428,7 +415,6 @@ impl TestRunner {
                 SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             )
-            .expect("Database misconfigured")
             .map(|output| {
                 scrypto_decode::<LiquidFungibleResource>(&output)
                     .unwrap()
@@ -447,7 +433,6 @@ impl TestRunner {
                 SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
-            .expect("Database misconfigured")
             .map(|output| {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(&output).unwrap();
                 let amount = vault.amount;
@@ -457,8 +442,7 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut substate_iter = self
                 .substate_db()
-                .list_substates(ids.as_node_id(), SysModuleId::Object.into())
-                .unwrap();
+                .list_substates(ids.as_node_id(), SysModuleId::Object.into());
             let id = substate_iter.next().map(|(key, _value)| {
                 let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
                 id
@@ -543,7 +527,6 @@ impl TestRunner {
                     SysModuleId::Object.into(),
                     &ValidatorOffset::Validator.into(),
                 )
-                .expect("Database misconfigured")
                 .unwrap(),
         )
         .unwrap()
@@ -558,7 +541,6 @@ impl TestRunner {
                     SysModuleId::Object.into(),
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
-                .expect("Database misconfigured")
                 .unwrap(),
         )
         .unwrap();
@@ -784,9 +766,7 @@ impl TestRunner {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            self.substate_db
-                .commit(&commit.state_updates)
-                .expect("Database misconfigured");
+            self.substate_db.commit(&commit.state_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates);
             }
@@ -1286,7 +1266,6 @@ impl TestRunner {
                                     SysModuleId::TypeInfo.into(),
                                     &TypeInfoOffset::TypeInfo.into(),
                                 )
-                                .expect("Database misconfigured")
                                 .unwrap(),
                         )
                         .unwrap();
@@ -1326,7 +1305,6 @@ impl TestRunner {
                         SysModuleId::Object.into(),
                         &PackageOffset::Info.into(),
                     )
-                    .expect("Database misconfigured")
                     .unwrap(),
             )
             .unwrap()
