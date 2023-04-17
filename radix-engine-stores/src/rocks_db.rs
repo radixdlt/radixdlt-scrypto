@@ -1,5 +1,4 @@
 use crate::interface::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::rust::prelude::*;
@@ -64,10 +63,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
         substate_key: &SubstateKey,
     ) -> Option<Vec<u8>> {
         let key = encode_substate_id(node_id, module_id, substate_key);
-        self.db
-            .get(&key)
-            .expect("IO Error")
-            .map(|x| scrypto_decode::<Vec<u8>>(&x).expect("Failed to decode value"))
+        self.db.get(&key).expect("IO Error")
     }
 
     fn list_substates(
@@ -89,8 +85,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
                 let (key, value) = kv.unwrap();
                 let (_, _, substate_key) =
                     decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
-                let value =
-                    scrypto_decode::<Vec<u8>>(value.as_ref()).expect("Failed to decode value");
+                let value = value.as_ref().to_vec();
                 (substate_key, value)
             });
 
@@ -105,9 +100,7 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
             match substate_change {
                 StateUpdate::Set(substate_value) => {
-                    self.db
-                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
-                        .expect("IO error");
+                    self.db.put(substate_id, substate_value).expect("IO error");
                 }
                 StateUpdate::Delete => {
                     self.db.delete(substate_id).expect("IO error");

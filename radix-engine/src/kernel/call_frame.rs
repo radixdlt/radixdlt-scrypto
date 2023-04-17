@@ -479,9 +479,7 @@ impl CallFrame {
         let removed = if heap.contains_node(node_id) {
             heap.delete_substate(node_id, module_id.into(), key)
         } else {
-            store
-                .take_substate(node_id, module_id.into(), key)
-                .unwrap()
+            store.take_substate(node_id, module_id.into(), key).unwrap()
         };
 
         Ok(removed)

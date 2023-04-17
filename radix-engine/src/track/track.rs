@@ -344,11 +344,7 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
         self.updates
     }
 
-    fn get_tracked_module(
-        &mut self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-    ) -> &mut TrackedModule {
+    fn get_tracked_module(&mut self, node_id: &NodeId, module_id: ModuleId) -> &mut TrackedModule {
         self.updates
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
@@ -356,7 +352,12 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
             .entry(module_id)
             .or_insert(TrackedModule::new());
 
-        self.updates.get_mut(node_id).unwrap().modules.get_mut(&module_id).unwrap()
+        self.updates
+            .get_mut(node_id)
+            .unwrap()
+            .modules
+            .get_mut(&module_id)
+            .unwrap()
     }
 
     fn get_tracked_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -372,7 +373,8 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
             .or_insert(TrackedNode::new(false))
             .modules
             .entry(module_id)
-            .or_insert(TrackedModule::new()).substates;
+            .or_insert(TrackedModule::new())
+            .substates;
         let entry = module_substates.entry(substate_key.clone());
 
         match entry {
@@ -530,7 +532,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             return items;
         }
 
-        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+        let mut tracked_iter =
+            TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
         for (key, substate) in &mut tracked_iter {
             if items.len() == count {
                 break;
@@ -549,8 +552,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         // Update track
         let num_iterations = tracked_iter.num_iterations;
         let tracked_module = self.get_tracked_module(node_id, module_id);
-        let next_range_read = tracked_module.range_read
-            .map(|cur| u32::max(cur, num_iterations)).unwrap_or(num_iterations);
+        let next_range_read = tracked_module
+            .range_read
+            .map(|cur| u32::max(cur, num_iterations))
+            .unwrap_or(num_iterations);
         tracked_module.range_read = Some(next_range_read);
 
         items
@@ -592,7 +597,8 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         }
 
         // Read from database
-        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+        let mut tracked_iter =
+            TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
         let new_updates = {
             let mut new_updates = Vec::new();
             for (key, substate) in &mut tracked_iter {
@@ -621,8 +627,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         {
             let num_iterations = tracked_iter.num_iterations;
             let tracked_module = self.get_tracked_module(node_id, module_id);
-            let next_range_read = tracked_module.range_read
-                .map(|cur| u32::max(cur, num_iterations)).unwrap_or(num_iterations);
+            let next_range_read = tracked_module
+                .range_read
+                .map(|cur| u32::max(cur, num_iterations))
+                .unwrap_or(num_iterations);
             tracked_module.range_read = Some(next_range_read);
             for (key, tracked) in new_updates {
                 tracked_module.substates.insert(key, tracked);
@@ -676,8 +684,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         {
             let num_iterations: u32 = items.len().try_into().unwrap();
             let tracked_module = self.get_tracked_module(node_id, module_id);
-            let next_range_read = tracked_module.range_read
-                .map(|cur| u32::max(cur, num_iterations)).unwrap_or(num_iterations);
+            let next_range_read = tracked_module
+                .range_read
+                .map(|cur| u32::max(cur, num_iterations))
+                .unwrap_or(num_iterations);
             tracked_module.range_read = Some(next_range_read);
         }
 
