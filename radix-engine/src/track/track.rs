@@ -135,6 +135,35 @@ impl TrackedSubstateKey {
         }
     }
 
+    pub fn take(&mut self) -> Option<IndexedScryptoValue> {
+        match self {
+            TrackedSubstateKey::Garbage => {
+                None
+            }
+            TrackedSubstateKey::New(..) => {
+                let old = mem::replace(self, TrackedSubstateKey::Garbage);
+                old.into_value()
+            }
+            TrackedSubstateKey::WriteOnly(_) => {
+                let old = mem::replace(self, TrackedSubstateKey::WriteOnly(Write::Delete));
+                old.into_value()
+            }
+            TrackedSubstateKey::ReadAndWrite(_, write) => {
+                let write = mem::replace(write, Write::Delete);
+                write.into_value()
+            }
+            TrackedSubstateKey::ReadOnly(read_only) => {
+                let read = match read_only {
+                    ReadOnly::Existent(..) => Read::Existent,
+                    ReadOnly::NonExistent => Read::NonExistent,
+                };
+                let new_tracked = TrackedSubstateKey::ReadAndWrite(read, Write::Delete);
+                let old = mem::replace(self, new_tracked);
+                old.into_value()
+            }
+        }
+    }
+
     pub fn into_value(self) -> Option<IndexedScryptoValue> {
         match self {
             TrackedSubstateKey::New(substate)
@@ -421,34 +450,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             }
         }
 
-        let value = match tracked {
-            TrackedSubstateKey::Garbage => {
-                None
-            }
-            TrackedSubstateKey::New(..) => {
-                let old = mem::replace(tracked, TrackedSubstateKey::Garbage);
-                old.into_value()
-            }
-            TrackedSubstateKey::WriteOnly(_) => {
-                let old = mem::replace(tracked, TrackedSubstateKey::WriteOnly(Write::Delete));
-                old.into_value()
-            }
-            TrackedSubstateKey::ReadAndWrite(_, write) => {
-                let write = mem::replace(write, Write::Delete);
-                write.into_value()
-            }
-            TrackedSubstateKey::ReadOnly(read_only) => {
-                let read = match read_only {
-                    ReadOnly::Existent(..) => Read::Existent,
-                    ReadOnly::NonExistent => Read::NonExistent,
-                };
-                let new_tracked = TrackedSubstateKey::ReadAndWrite(read, Write::Delete);
-                let old = mem::replace(tracked, new_tracked);
-                old.into_value()
-            }
-        };
-
-        Ok(value)
+        Ok(tracked.take())
     }
 
     fn scan_substates(
