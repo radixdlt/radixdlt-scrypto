@@ -135,6 +135,38 @@ impl TrackedSubstateKey {
         }
     }
 
+    pub fn set(&mut self, value: IndexedScryptoValue) {
+        match self {
+            TrackedSubstateKey::Garbage => {
+                *self = TrackedSubstateKey::WriteOnly(Write::Update(
+                    RuntimeSubstate::new(value),
+                ));
+            }
+            TrackedSubstateKey::New(substate)
+            | TrackedSubstateKey::WriteOnly(Write::Update(substate))
+            | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => {
+                substate.value = value;
+            }
+            TrackedSubstateKey::ReadOnly(read_only) => {
+                let read = match read_only {
+                    ReadOnly::Existent(..) => Read::Existent,
+                    ReadOnly::NonExistent => Read::NonExistent,
+                };
+                let new_tracked = TrackedSubstateKey::ReadAndWrite(
+                    read,
+                    Write::Update(RuntimeSubstate::new(value)),
+                );
+                let mut old = mem::replace(self, new_tracked);
+                self.get_runtime_substate_mut().unwrap().lock_state =
+                    old.get_runtime_substate_mut().unwrap().lock_state;
+            }
+            TrackedSubstateKey::ReadAndWrite(_, write @ Write::Delete)
+            | TrackedSubstateKey::WriteOnly(write @ Write::Delete) => {
+                *write = Write::Update(RuntimeSubstate::new(value));
+            }
+        };
+    }
+
     pub fn take(&mut self) -> Option<IndexedScryptoValue> {
         match self {
             TrackedSubstateKey::Garbage => {
@@ -397,36 +429,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                     }
                 }
 
-                match tracked {
-                    TrackedSubstateKey::Garbage => {
-                        e.insert(TrackedSubstateKey::WriteOnly(Write::Update(
-                            RuntimeSubstate::new(substate_value),
-                        )));
-                    }
-                    TrackedSubstateKey::New(substate)
-                    | TrackedSubstateKey::WriteOnly(Write::Update(substate))
-                    | TrackedSubstateKey::ReadAndWrite(_, Write::Update(substate)) => {
-                        substate.value = substate_value;
-                    }
-
-                    TrackedSubstateKey::ReadOnly(read_only) => {
-                        let read = match read_only {
-                            ReadOnly::Existent(..) => Read::Existent,
-                            ReadOnly::NonExistent => Read::NonExistent,
-                        };
-                        let new_tracked = TrackedSubstateKey::ReadAndWrite(
-                            read,
-                            Write::Update(RuntimeSubstate::new(substate_value)),
-                        );
-                        let mut old = mem::replace(tracked, new_tracked);
-                        tracked.get_runtime_substate_mut().unwrap().lock_state =
-                            old.get_runtime_substate_mut().unwrap().lock_state;
-                    }
-                    TrackedSubstateKey::ReadAndWrite(_, write @ Write::Delete)
-                    | TrackedSubstateKey::WriteOnly(write @ Write::Delete) => {
-                        *write = Write::Update(RuntimeSubstate::new(substate_value));
-                    }
-                };
+                tracked.set(substate_value);
             }
         }
 
