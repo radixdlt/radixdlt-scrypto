@@ -458,7 +458,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
-        let count_usize: usize = count.try_into().unwrap();
+        let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
         let node_updates = self.updates.get(node_id);
@@ -469,7 +469,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         if let Some(module_updates) = module_updates {
             for (key, tracked) in module_updates.iter() {
-                if items.len() == count_usize {
+                if items.len() == count {
                     return items;
                 }
 
@@ -485,17 +485,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             return items;
         }
 
-        let processed_count: u32 = module_updates
-            .map(|u| u.len().try_into().unwrap())
-            .unwrap_or(0u32);
-        let count_to_list: u32 = count.checked_add(processed_count).unwrap_or(u32::MAX);
-
-        let ranged_substates = self
+        let substate_iter = self
             .substate_db
-            .list_substates(node_id, module_id, count_to_list)
+            .list_substates(node_id, module_id)
             .unwrap();
-        for (key, substate) in ranged_substates {
-            if items.len() == count_usize {
+        for (key, substate) in substate_iter {
+            if items.len() == count {
                 return items;
             }
 
@@ -518,7 +513,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         module_id: ModuleId,
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
-        let count_usize: usize = count.try_into().unwrap();
+        let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
         let node_updates = self.updates.get_mut(node_id);
@@ -531,7 +526,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         let mut module_updates = node_updates.and_then(|n| n.modules.get_mut(&module_id));
         if let Some(module_updates) = module_updates.as_mut() {
             for (key, tracked) in module_updates.iter_mut() {
-                if items.len() == count_usize {
+                if items.len() == count {
                     return items;
                 }
 
@@ -549,18 +544,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         // Read from database
         let new_updates = {
-            let processed_count: u32 = module_updates
-                .as_ref()
-                .map(|u| u.len().try_into().unwrap())
-                .unwrap_or(0u32);
-            let count_to_list: u32 = count.checked_add(processed_count).unwrap_or(u32::MAX);
-            let ranged_substates = self
+            let substate_iter = self
                 .substate_db
-                .list_substates(node_id, module_id, count_to_list)
+                .list_substates(node_id, module_id)
                 .unwrap();
+
             let mut new_updates = Vec::new();
-            for (key, substate) in ranged_substates {
-                if items.len() == count_usize {
+            for (key, substate) in substate_iter {
+                if items.len() == count {
                     break;
                 }
 
@@ -597,7 +588,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         // TODO: Add module dependencies/lock
-        let count_usize: usize = count.try_into().unwrap();
+        let count: usize = count.try_into().unwrap();
         let node_updates = self.updates.get_mut(node_id);
         let is_new = node_updates
             .as_ref()
@@ -609,7 +600,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             let mut items = Vec::new();
             if let Some(module_updates) = module_updates {
                 for (key, tracked) in module_updates.iter() {
-                    if items.len() == count_usize {
+                    if items.len() == count {
                         break;
                     }
 
@@ -623,13 +614,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             return items;
         }
 
-        // TODO: Add updates
-        let substates = self
+        // TODO: Add interleaving updates
+        self
             .substate_db
-            .list_substates(node_id, module_id, count)
-            .unwrap();
-        substates
-            .into_iter()
+            .list_substates(node_id, module_id)
+            .unwrap()
+            .take(count)
             .map(|(key, buf)| (key, IndexedScryptoValue::from_vec(buf).unwrap()))
             .collect()
     }

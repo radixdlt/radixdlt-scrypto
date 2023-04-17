@@ -92,7 +92,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_substates(&node_id, SysModuleId::VirtualizedObject.into(), u32::MAX)
+                    .list_substates(&node_id, SysModuleId::VirtualizedObject.into())
                     .expect("Failed to list key value store")
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
@@ -164,7 +164,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         if let Ok(x) = self
                             .substate_db
-                            .list_substates(&node_id, t.into(), u32::MAX)
+                            .list_substates(&node_id, t.into())
                         {
                             for (substate_key, substate_value) in x {
                                 let (_, owned_nodes, _) =

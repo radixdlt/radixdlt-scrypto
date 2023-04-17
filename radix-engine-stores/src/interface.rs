@@ -215,17 +215,12 @@ pub trait SubstateDatabase {
         substate_key: &SubstateKey,
     ) -> Result<Option<Vec<u8>>, GetSubstateError>;
 
-    /// Returns an iterator over substates within the given substate module, and the module's root hash.
-    ///
-    /// In case the module does not exist, an empty iterator is returned.
-    ///
-    /// If iteration is not enabled for the module ID or the module ID is invalid, an error is thrown.
+    /// Returns an iterator over substates within the given substate module
     fn list_substates(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        count: u32,
-    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError>;
+    ) -> Result<Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>, ListSubstatesError>;
 }
 
 /// Interface for committing changes into a substate database.

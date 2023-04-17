@@ -76,30 +76,26 @@ impl SubstateDatabase for RocksdbSubstateStore {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        count: u32,
-    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError> {
+    ) -> Result<Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>, ListSubstatesError> {
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
-        let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();
 
-        let count = count.try_into().unwrap();
-
-        let mut iter = self
+        let iter = self
             .db
             .iterator(IteratorMode::From(&start, Direction::Forward))
-            .take(count);
-        while let Some(kv) = iter.next() {
-            let (key, value) = kv.unwrap();
-            if key.as_ref() > &end {
-                break;
-            }
-            let (_, _, substate_key) =
-                decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
-            let value = scrypto_decode::<Vec<u8>>(value.as_ref()).expect("Failed to decode value");
-            substates.push((substate_key, value));
-        }
+            .take_while(move |kv| {
+                let (key, _value) = kv.as_ref().unwrap();
+                key.as_ref() >= &end
+            })
+            .map(|kv| {
+                let (key, value) = kv.unwrap();
+                let (_, _, substate_key) =
+                    decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
+                let value = scrypto_decode::<Vec<u8>>(value.as_ref()).expect("Failed to decode value");
+                (substate_key, value)
+            });
 
-        Ok(substates)
+        Ok(Box::new(iter))
     }
 }
 
