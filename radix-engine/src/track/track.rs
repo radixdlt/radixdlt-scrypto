@@ -449,56 +449,35 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         let count_usize: usize = count.try_into().unwrap();
-
-        if let Some(update) = self.updates.get_mut(node_id) {
-            if update.is_new {
-                let substates = update.modules.get_mut(&module_id).unwrap();
-                let rtn: Vec<(SubstateKey, IndexedScryptoValue)> = substates
-                    .iter()
-                    .map(|(key, tracked)| (key.clone(), tracked.get_substate().unwrap().clone()))
-                    .take(count_usize)
-                    .collect();
-
-                return rtn
-            }
-        }
-
         let mut items = Vec::new();
-        let mut processed = NonIterMap::new();
-        let substates = self.get_tracked_module(node_id, module_id);
 
-        for (key, tracked) in substates.iter() {
-            if items.len() == count_usize {
-                return items;
-            }
+        let node_updates = self.updates.get(node_id);
+        let is_new = node_updates
+            .map(|tracked_node| tracked_node.is_new)
+            .unwrap_or(false);
+        let module_updates = node_updates.and_then(|n| n.modules.get(&module_id));
 
-            match tracked {
-                TrackedSubstateKey::New(substate) => {
-                    items.push((key.clone(), substate.value.clone()));
+        if let Some(module_updates) = module_updates {
+            for (key, tracked) in module_updates.iter() {
+                if items.len() == count_usize {
+                    return items;
                 }
-                TrackedSubstateKey::ReadOnly(read) => match read {
-                    ReadOnly::Existent(substate) => {
-                        items.push((key.clone(), substate.value.clone()));
-                        processed.insert(key.clone(), ());
-                    }
-                    ReadOnly::NonExistent => {
-                        processed.insert(key.clone(), ());
-                    }
-                },
-                TrackedSubstateKey::WriteOnly(write)
-                | TrackedSubstateKey::ReadAndWrite(_, write) => match write {
-                    Write::Update(value) => {
-                        items.push((key.clone(), value.value.clone()));
-                        processed.insert(key.clone(), ());
-                    }
-                    Write::Delete => {
-                        processed.insert(key.clone(), ());
-                    }
-                },
+
+                // TODO: Check that substate is not write locked
+                if let Some(substate) = tracked.get_substate() {
+                    items.push((key.clone(), substate.clone()));
+                }
             }
         }
 
-        let processed_count: u32 = processed.len().try_into().unwrap();
+        // Optimization, no need to go into database if the node is just created
+        if is_new {
+            return items;
+        }
+
+        let processed_count: u32 = module_updates
+            .map(|u| u.len().try_into().unwrap())
+            .unwrap_or(0u32);
         let count_to_list: u32 = count.checked_add(processed_count).unwrap_or(u32::MAX);
 
         let ranged_substates = self
@@ -510,7 +489,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 return items;
             }
 
-            if processed.contains_key(&key) {
+            if module_updates
+                .map(|u| u.contains_key(&key))
+                .unwrap_or(false)
+            {
                 continue;
             }
 
