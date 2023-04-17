@@ -257,7 +257,7 @@ impl<'a> BalanceAccounter<'a> {
                 // Scan loaded substates to find children
                 for (_module_id, tracked_module) in &tracked_node.modules {
                     for (_substate_key, tracked_key) in tracked_module {
-                        if let Some(value) = tracked_key.get_substate() {
+                        if let Some(value) = tracked_key.get() {
                             for own in value.owned_node_ids() {
                                 self.traverse_state_updates(
                                     balance_changes,
@@ -411,6 +411,6 @@ impl<'a> BalanceAccounter<'a> {
             .get(node_id)
             .and_then(|tracked_node| tracked_node.modules.get(&module_id))
             .and_then(|tracked_module| tracked_module.get(substate_key))
-            .and_then(|tracked_key| tracked_key.get_substate().map(|e| e.as_slice()))
+            .and_then(|tracked_key| tracked_key.get().map(|e| e.as_slice()))
     }
 }

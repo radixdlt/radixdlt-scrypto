@@ -122,7 +122,7 @@ impl TrackedSubstateKey {
         }
     }
 
-    pub fn get_substate(&self) -> Option<&IndexedScryptoValue> {
+    pub fn get(&self) -> Option<&IndexedScryptoValue> {
         match self {
             TrackedSubstateKey::New(substate)
             | TrackedSubstateKey::WriteOnly(Write::Update(substate))
@@ -475,7 +475,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 }
 
                 // TODO: Check that substate is not write locked
-                if let Some(substate) = tracked.get_substate() {
+                if let Some(substate) = tracked.get() {
                     items.push((key.clone(), substate.clone()));
                 }
             }
@@ -520,88 +520,71 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         count: u32,
     ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         let count_usize: usize = count.try_into().unwrap();
+        let mut items = Vec::new();
 
-        if let Some(update) = self.updates.get_mut(node_id) {
-            if update.is_new {
-                let substates = update.modules.get_mut(&module_id).unwrap();
-                let keys: Vec<SubstateKey> = substates
-                    .iter()
-                    .map(|(key, _)| key.clone())
-                    .take(count_usize)
-                    .collect();
+        let node_updates = self.updates.get_mut(node_id);
+        let is_new = node_updates.as_ref()
+            .map(|tracked_node| tracked_node.is_new)
+            .unwrap_or(false);
 
-                let mut items = Vec::new();
-
-                for key in keys {
-                    let tracked = substates.remove(&key).unwrap();
-                    items.push((key, tracked.into_value().unwrap()));
+        // Check what we've currently got so far without going into database
+        let mut module_updates = node_updates.and_then(|n| n.modules.get_mut(&module_id));
+        if let Some(module_updates) = module_updates.as_mut() {
+            for (key, tracked) in module_updates.iter_mut() {
+                if items.len() == count_usize {
+                    return items;
                 }
 
-                items
-            } else {
-                let mut items = Vec::new();
-                let mut processed = NonIterMap::new();
-                let substates = self.get_tracked_module(node_id, module_id);
-
-                for (key, tracked) in substates.iter_mut() {
-                    if items.len() == count_usize {
-                        return items;
-                    }
-
-                    match tracked {
-                        TrackedSubstateKey::Garbage => {
-                        }
-                        TrackedSubstateKey::New(substate) => {
-                            todo!()
-                        }
-                        TrackedSubstateKey::ReadOnly(..) => {
-                            todo!()
-                        }
-                        TrackedSubstateKey::WriteOnly(write)
-                        | TrackedSubstateKey::ReadAndWrite(_, write) => match write {
-                            Write::Update(..) => {
-                                let value = mem::replace(write, Write::Delete);
-                                items.push((key.clone(), value.into_value().unwrap()));
-                                processed.insert(key.clone(), ());
-                            }
-                            Write::Delete => {
-                                processed.insert(key.clone(), ());
-                            }
-                        },
-                    }
+                // TODO: Check that substate is not locked
+                if let Some(value) = tracked.take() {
+                    items.push((key.clone(), value));
                 }
-
-                let processed_count: u32 = processed.len().try_into().unwrap();
-                let count_to_list: u32 = count + processed_count;
-
-                let ranged_substates = self
-                    .substate_db
-                    .list_substates(node_id, module_id, count_to_list)
-                    .unwrap();
-
-                let substates = self.get_tracked_module(node_id, module_id);
-                for (key, substate) in ranged_substates {
-                    if items.len() == count_usize {
-                        return items;
-                    }
-
-                    if processed.contains_key(&key) {
-                        continue;
-                    }
-
-                    substates.insert(
-                        key.clone(),
-                        TrackedSubstateKey::ReadAndWrite(Read::Existent, Write::Delete),
-                    );
-
-                    items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
-                }
-
-                items
             }
-        } else {
-            todo!()
         }
+
+        // Optimization, no need to go into database if the node is just created
+        if is_new {
+            return items;
+        }
+
+        // Read from database
+        let new_updates = {
+            let processed_count: u32 = module_updates
+                .as_ref()
+                .map(|u| u.len().try_into().unwrap())
+                .unwrap_or(0u32);
+            let count_to_list: u32 = count.checked_add(processed_count).unwrap_or(u32::MAX);
+            let ranged_substates = self
+                .substate_db
+                .list_substates(node_id, module_id, count_to_list)
+                .unwrap();
+            let mut new_updates = Vec::new();
+            for (key, substate) in ranged_substates {
+                if items.len() == count_usize {
+                    break;
+                }
+
+                if module_updates
+                    .as_ref()
+                    .map(|u| u.contains_key(&key))
+                    .unwrap_or(false)
+                {
+                    continue;
+                }
+
+                new_updates.push((key.clone(), TrackedSubstateKey::ReadAndWrite(Read::Existent, Write::Delete)));
+                items.push((key, IndexedScryptoValue::from_vec(substate).unwrap()));
+            }
+            new_updates
+        };
+
+        // Update track
+        let tracked_module = self.get_tracked_module(node_id, module_id);
+        for (key, tracked) in new_updates {
+            tracked_module.insert(key, tracked);
+        }
+
+        items
     }
 
     fn scan_sorted_substates(
