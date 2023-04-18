@@ -10,7 +10,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::{Read, TrackedNode, TrackedSubstateKey, Write};
+use crate::track::{TrackedNode, TrackedSubstateKey, Write};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -343,25 +343,16 @@ impl<'a> BalanceAccounter<'a> {
 
                     for (_key, tracked) in &tracked_module.substates {
                         match tracked {
-                            TrackedSubstateKey::New(substate) => {
+                            TrackedSubstateKey::New(substate)
+                            | TrackedSubstateKey::ReadNonExistAndWrite(substate) => {
                                 let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                                 added.insert(id);
                             }
-                            TrackedSubstateKey::ReadAndWrite(read, write) => match write {
-                                Write::Update(substate) => {
-                                    let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
-                                    added.insert(id);
-                                }
+                            TrackedSubstateKey::ReadExistAndWrite(old, write) => match write {
+                                Write::Update(..) => {}
                                 Write::Delete => {
-                                    match read {
-                                        Read::Existent(old) => {
-                                            let id: NonFungibleLocalId = old.as_typed().unwrap();
-                                            removed.insert(id);
-                                        }
-                                        Read::NonExistent => {
-                                            // TODO: Remove this state
-                                        }
-                                    }
+                                    let id: NonFungibleLocalId = old.as_typed().unwrap();
+                                    removed.insert(id);
                                 }
                             },
                             TrackedSubstateKey::WriteOnly(write) => match write {
