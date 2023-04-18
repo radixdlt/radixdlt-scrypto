@@ -602,3 +602,61 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn can_not_call_lock_fungible_amount_directly() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+    let component_address = test_runner.new_component(btreeset![], |builder| {
+        builder.call_function(
+            package_address,
+            "LockUnlockAuth",
+            "new_fungible",
+            manifest_args!(),
+        )
+    });
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            component_address,
+            "call_lock_fungible_amount_directly",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn can_not_call_unlock_fungible_amount_directly() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+    let component_address = test_runner.new_component(btreeset![], |builder| {
+        builder.call_function(
+            package_address,
+            "LockUnlockAuth",
+            "new_fungible",
+            manifest_args!(),
+        )
+    });
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            component_address,
+            "call_lock_fungible_amount_directly",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_failure();
+}
