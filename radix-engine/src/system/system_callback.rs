@@ -18,7 +18,6 @@ use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
 use radix_engine_interface::schema::BlueprintSchema;
-use radix_engine_stores::interface::SubstateKeyMapper;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,

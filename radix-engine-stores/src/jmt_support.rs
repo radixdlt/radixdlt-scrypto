@@ -1,6 +1,6 @@
+use crate::interface::SubstateKeyMapper;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::{ModuleId, SubstateKey, SysModuleId};
-use crate::interface::SubstateKeyMapper;
 
 pub struct JmtKeyMapper;
 

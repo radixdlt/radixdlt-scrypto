@@ -400,8 +400,7 @@ impl<'a> BalanceAccounter<'a> {
         module_id: ModuleId,
         db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
-        self.substate_db
-            .get_substate(node_id, module_id, db_key)
+        self.substate_db.get_substate(node_id, module_id, db_key)
     }
 
     fn fetch_substate_from_state_updates(

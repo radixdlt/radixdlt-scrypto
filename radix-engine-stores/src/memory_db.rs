@@ -1,9 +1,8 @@
-use std::ops::Bound::Unbounded;
-use itertools::Itertools;
 use crate::interface::*;
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Bound::Included;
 use sbor::rust::prelude::*;
+use std::ops::Bound::Unbounded;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct InMemorySubstateDatabase {
@@ -26,9 +25,7 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
         let key = encode_substate_id(node_id, module_id, db_key);
-        self.substates
-            .get(&key)
-            .map(|value| value.clone())
+        self.substates.get(&key).map(|value| value.clone())
     }
 
     fn list_substates(
@@ -47,9 +44,7 @@ impl SubstateDatabase for InMemorySubstateDatabase {
             })
             .take_while(move |(n, m, ..)| node_id.eq(n) && m.eq(&module_id))
             .into_iter()
-            .map(|(_, _, db_key, value)| {
-                (db_key, value.clone())
-            });
+            .map(|(_, _, db_key, value)| (db_key, value.clone()));
 
         Box::new(iter)
     }
@@ -57,13 +52,11 @@ impl SubstateDatabase for InMemorySubstateDatabase {
 
 impl CommittableSubstateDatabase for InMemorySubstateDatabase {
     fn commit(&mut self, state_changes: &StateUpdates) {
-        for ((node_id, module_id, db_key), substate_change) in &state_changes.substate_changes
-        {
+        for ((node_id, module_id, db_key), substate_change) in &state_changes.substate_changes {
             let substate_id = encode_substate_id(node_id, *module_id, db_key);
             match substate_change {
                 StateUpdate::Set(substate_value) => {
-                    self.substates
-                        .insert(substate_id, substate_value.clone());
+                    self.substates.insert(substate_id, substate_value.clone());
                 }
                 StateUpdate::Delete => {
                     self.substates.remove(&substate_id);

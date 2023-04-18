@@ -7,7 +7,7 @@ use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
-    ObjectInfo, ResourceAddress, SubstateKey, SysModuleId,
+    ObjectInfo, ResourceAddress, SysModuleId,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use sbor::rust::prelude::*;
@@ -78,11 +78,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         let type_info: TypeInfoSubstate = scrypto_decode(
             &self
                 .substate_db
-                .get_substate(
-                    &node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &vec![0],
-                )
+                .get_substate(&node_id, SysModuleId::TypeInfo.into(), &vec![0])
                 .expect("Missing TypeInfo substate"),
         )
         .expect("Failed to decode TypeInfo substate");
@@ -161,11 +157,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 .unpack();
                             for child_node_id in owned_nodes {
                                 self.traverse_recursive(
-                                    Some(&(
-                                        node_id,
-                                        SysModuleId::Tuple.into(),
-                                        db_key.clone(),
-                                    )),
+                                    Some(&(node_id, SysModuleId::Tuple.into(), db_key.clone())),
                                     child_node_id,
                                     depth + 1,
                                 );

@@ -20,11 +20,7 @@ use sbor::rust::prelude::*;
 // TODO: Add streaming support for `list_substates`
 
 /// Utility function for encoding a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
-pub fn encode_substate_id(
-    node_id: &NodeId,
-    module_id: ModuleId,
-    db_key: &Vec<u8>,
-) -> Vec<u8> {
+pub fn encode_substate_id(node_id: &NodeId, module_id: ModuleId, db_key: &Vec<u8>) -> Vec<u8> {
     let mut buffer = Vec::new();
     buffer.extend(node_id.as_ref());
     buffer.push(module_id.0);
@@ -182,12 +178,8 @@ pub trait SubstateDatabase {
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
-    fn get_substate(
-        &self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-        key: &Vec<u8>,
-    ) -> Option<Vec<u8>>;
+    fn get_substate(&self, node_id: &NodeId, module_id: ModuleId, key: &Vec<u8>)
+        -> Option<Vec<u8>>;
 
     /// Returns an iterator over substates within the given substate module
     fn list_substates(

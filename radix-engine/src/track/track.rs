@@ -1,7 +1,10 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase, SubstateKeyMapper, SubstateStore};
+use radix_engine_stores::interface::{
+    AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase,
+    SubstateKeyMapper, SubstateStore,
+};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
 
@@ -249,8 +252,7 @@ impl TrackedNode {
 }
 
 pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
-    let mut substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate> =
-        index_map_new();
+    let mut substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate> = index_map_new();
     for (node_id, tracked_node) in index {
         for (module_id, tracked_module) in tracked_node.modules {
             for (db_key, tracked) in tracked_module.substates {
@@ -720,8 +722,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         let db_key = M::map_to_db_key(module_id, substate_key.clone());
 
         // Load the substate from state track
-        let tracked =
-            self.get_tracked_substate_virtualize(node_id, module_id, &db_key, virtualize);
+        let tracked = self.get_tracked_substate_virtualize(node_id, module_id, &db_key, virtualize);
 
         // Check substate state
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -796,7 +797,9 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         let db_key = db_key.clone();
 
         let tracked = self.get_tracked_substate(&node_id, module_id, &db_key);
-        tracked.get().expect("Could not have created lock on non existent substate")
+        tracked
+            .get()
+            .expect("Could not have created lock on non existent substate")
     }
 
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {

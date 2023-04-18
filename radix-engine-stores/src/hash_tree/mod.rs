@@ -1,7 +1,7 @@
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::scrypto_encode;
-use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
+use radix_engine_interface::types::{ModuleId, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::collections::{index_map_new, IndexMap};
 use sbor::rust::vec::Vec;
@@ -271,9 +271,7 @@ impl<'s, S> NestedTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<Vec<u8>>> ReadableTreeStore<Vec<u8>>
-    for NestedTreeStore<'s, S>
-{
+impl<'s, S: ReadableTreeStore<Vec<u8>>> ReadableTreeStore<Vec<u8>> for NestedTreeStore<'s, S> {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Vec<u8>>> {
         if key.nibble_path().is_empty() {
             self.current_root.clone()
@@ -283,9 +281,7 @@ impl<'s, S: ReadableTreeStore<Vec<u8>>> ReadableTreeStore<Vec<u8>>
     }
 }
 
-impl<'s, S: WriteableTreeStore<Vec<u8>>> WriteableTreeStore<Vec<u8>>
-    for NestedTreeStore<'s, S>
-{
+impl<'s, S: WriteableTreeStore<Vec<u8>>> WriteableTreeStore<Vec<u8>> for NestedTreeStore<'s, S> {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<Vec<u8>>) {
         if key.nibble_path().is_empty() {
             self.new_root = Some(node);
