@@ -2,6 +2,13 @@ use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
+pub struct Example {
+    pub name: String,
+    #[mutable]
+    pub available: bool,
+}
+
 #[blueprint]
 mod lock_unlock_auth {
     struct LockUnlockAuth {
@@ -21,9 +28,11 @@ mod lock_unlock_auth {
 
         pub fn call_lock_fungible_amount_directly(&self) {
             ScryptoEnv
-                .call_method(self.vault.0.as_node_id(), "lock_fungible_amount", scrypto_args!(
-                    Decimal::from(1)
-                ))
+                .call_method(
+                    self.vault.0.as_node_id(),
+                    "lock_fungible_amount",
+                    scrypto_args!(Decimal::from(1)),
+                )
                 .unwrap();
         }
 
@@ -31,9 +40,49 @@ mod lock_unlock_auth {
             let _proof = self.vault.create_proof_by_amount(dec!(1));
 
             ScryptoEnv
-                .call_method(self.vault.0.as_node_id(), "unlock_fungible_amount", scrypto_args!(
-                    Decimal::from(1)
-                ))
+                .call_method(
+                    self.vault.0.as_node_id(),
+                    "unlock_fungible_amount",
+                    scrypto_args!(Decimal::from(1)),
+                )
+                .unwrap();
+        }
+
+        pub fn new_non_fungible() -> ComponentAddress {
+            let bucket = ResourceBuilder::new_integer_non_fungible().mint_initial_supply([(
+                1u64.into(),
+                Example {
+                    name: "One".to_owned(),
+                    available: true,
+                },
+            )]);
+
+            Self {
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn call_lock_non_fungibles_directly(&self) {
+            ScryptoEnv
+                .call_method(
+                    self.vault.0.as_node_id(),
+                    "lock_non_fungibles",
+                    scrypto_args!([NonFungibleLocalId::integer(1)]),
+                )
+                .unwrap();
+        }
+
+        pub fn call_unlock_non_fungibles_directly(&self) {
+            let _proof = self.vault.create_proof_by_amount(dec!(1));
+
+            ScryptoEnv
+                .call_method(
+                    self.vault.0.as_node_id(),
+                    "unlock_non_fungibles",
+                    scrypto_args!([NonFungibleLocalId::integer(1)]),
+                )
                 .unwrap();
         }
     }
