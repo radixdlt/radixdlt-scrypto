@@ -12,7 +12,7 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRulesConfig, AccessRulesConfig) {
+) -> (AccessRulesConfig, AccessRulesConfig, AccessRulesConfig) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));
@@ -265,7 +265,48 @@ fn build_access_rules(
         DenyAll,
     );
 
-    (resman_access_rules, vault_access_rules)
+    // Not that if a local reference to a bucket is passed to another actor, the recipient will be able
+    // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
+    // theoretically.
+    let mut bucket_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, BUCKET_LOCK_AMOUNT_IDENT),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, BUCKET_UNLOCK_AMOUNT_IDENT),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, BUCKET_LOCK_NON_FUNGIBLES_IDENT),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, BUCKET_UNLOCK_NON_FUNGIBLES_IDENT),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+
+    (resman_access_rules, vault_access_rules, bucket_access_rules)
 }
 
 pub fn globalize_resource_manager<Y>(
@@ -278,7 +319,8 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
+    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+        build_access_rules(access_rules);
     let vault_blueprint_name = if resource_address.as_node_id().is_global_fungible_resource() {
         FUNGIBLE_VAULT_BLUEPRINT
     } else {
@@ -288,7 +330,10 @@ where
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
-        btreemap!(vault_blueprint_name => vault_access_rules),
+        btreemap!(
+            vault_blueprint_name => vault_access_rules,
+            BUCKET_BLUEPRINT.to_string() => bucket_access_rules
+        ),
         api,
     )?
     .0;

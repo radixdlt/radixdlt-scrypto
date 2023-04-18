@@ -30,7 +30,7 @@ mod vault_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     self.vault.0.as_node_id(),
-                    "lock_fungible_amount",
+                    FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
                 )
                 .unwrap();
@@ -42,7 +42,7 @@ mod vault_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     self.vault.0.as_node_id(),
-                    "unlock_fungible_amount",
+                    FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
                 )
                 .unwrap();
@@ -68,7 +68,7 @@ mod vault_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     self.vault.0.as_node_id(),
-                    "lock_non_fungibles",
+                    NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
                 )
                 .unwrap();
@@ -80,7 +80,7 @@ mod vault_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     self.vault.0.as_node_id(),
-                    "unlock_non_fungibles",
+                    NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
                 )
                 .unwrap();
