@@ -1,4 +1,5 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
+use radix_engine_stores::interface::SubstateKeyMapper;
 use radix_engine::system::bootstrap::{
     create_genesis, GenesisData, GenesisResource, GenesisValidator,
 };
@@ -11,6 +12,7 @@ use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
+use radix_engine_stores::jmt_support::JmtKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
@@ -162,8 +164,7 @@ fn test_genesis_resource_with_initial_allocation() {
 
     // TODO: Move this to system wrapper around substate_store
     let key = scrypto_encode("symbol").unwrap();
-    let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
-    let metadata_key = SubstateKey::from_vec(bytes).unwrap();
+    let metadata_key = JmtKeyMapper::map_to_db_key(SysModuleId::Metadata.into(), SubstateKey::from_vec(key).unwrap());
 
     let persisted_symbol_metadata_entry = substate_store
         .get_substate(

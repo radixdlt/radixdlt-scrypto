@@ -1,3 +1,5 @@
+use std::ops::Bound::Unbounded;
+use itertools::Itertools;
 use crate::interface::*;
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Bound::Included;
@@ -21,9 +23,9 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
+        db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
-        let key = encode_substate_id(node_id, module_id, substate_key);
+        let key = encode_substate_id(node_id, module_id, db_key);
         self.substates
             .get(&key)
             .map(|value| value.clone())
@@ -33,17 +35,20 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_> {
-        let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
-        let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
+        let start = encode_substate_id(node_id, module_id, &SubstateKey::min().into());
+        let node_id = node_id.clone();
         let iter = self
             .substates
-            .range((Included(start), Included(end)))
+            .range((Included(start), Unbounded))
+            .map(|(k, v)| {
+                let id = decode_substate_id(k).expect("Failed to decode substate ID");
+                (id.0, id.1, id.2, v)
+            })
+            .take_while(move |(n, m, ..)| node_id.eq(n) && m.eq(&module_id))
             .into_iter()
-            .map(|(k, value)| {
-                let (_, _, substate_key) =
-                    decode_substate_id(k).expect("Failed to decode substate ID");
-                (substate_key, value.clone())
+            .map(|(_, _, db_key, value)| {
+                (db_key, value.clone())
             });
 
         Box::new(iter)
@@ -52,9 +57,9 @@ impl SubstateDatabase for InMemorySubstateDatabase {
 
 impl CommittableSubstateDatabase for InMemorySubstateDatabase {
     fn commit(&mut self, state_changes: &StateUpdates) {
-        for ((node_id, module_id, substate_key), substate_change) in &state_changes.substate_changes
+        for ((node_id, module_id, db_key), substate_change) in &state_changes.substate_changes
         {
-            let substate_id = encode_substate_id(node_id, *module_id, substate_key);
+            let substate_id = encode_substate_id(node_id, *module_id, db_key);
             match substate_change {
                 StateUpdate::Set(substate_value) => {
                     self.substates

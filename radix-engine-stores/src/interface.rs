@@ -23,17 +23,17 @@ use sbor::rust::prelude::*;
 pub fn encode_substate_id(
     node_id: &NodeId,
     module_id: ModuleId,
-    substate_key: &SubstateKey,
+    db_key: &Vec<u8>,
 ) -> Vec<u8> {
     let mut buffer = Vec::new();
     buffer.extend(node_id.as_ref());
     buffer.push(module_id.0);
-    buffer.extend(substate_key.as_ref()); // Length is marked by EOF
+    buffer.extend(db_key); // Length is marked by EOF
     buffer
 }
 
 /// Utility function for decoding a substate ID `(NodeId, ModuleId, SubstateKey)` from a `Vec<u8>`,
-pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey)> {
+pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, Vec<u8>)> {
     if slice.len() >= NodeId::LENGTH + 1 {
         // Decode node id
         let mut node_id = [0u8; NodeId::LENGTH];
@@ -43,11 +43,12 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, SubstateKey
         // Decode module id
         let module_id = ModuleId(slice[NodeId::LENGTH]);
 
-        // Decode substate key
-        if let Some(substate_key) = SubstateKey::from_slice(&slice[NodeId::LENGTH + 1..]) {
-            return Some((node_id, module_id, substate_key));
-        }
+        // Decode db key
+        let db_key = slice[NodeId::LENGTH + 1..].to_vec();
+
+        return Some((node_id, module_id, db_key));
     }
+
     return None;
 }
 
@@ -163,13 +164,17 @@ pub trait SubstateStore {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct StateUpdates {
-    pub substate_changes: IndexMap<(NodeId, ModuleId, SubstateKey), StateUpdate>,
+    pub substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StateUpdate {
     Set(Vec<u8>),
     Delete,
+}
+
+pub trait SubstateKeyMapper {
+    fn map_to_db_key(module_id: ModuleId, key: SubstateKey) -> Vec<u8>;
 }
 
 /// Represents the interface between Track and a database vendor.
@@ -181,7 +186,7 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
+        key: &Vec<u8>,
     ) -> Option<Vec<u8>>;
 
     /// Returns an iterator over substates within the given substate module
@@ -189,7 +194,7 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>;
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>;
 }
 
 /// Interface for committing changes into a substate database.

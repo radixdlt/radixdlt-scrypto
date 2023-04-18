@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_state_updates, SubstateKeyMapper, Track};
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_stores::interface::*;
+use radix_engine_stores::jmt_support::JmtKeyMapper;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -183,7 +184,7 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::<_, SystemConfig<Vm<W>>>::new(self.substate_db);
+        let mut track = Track::<_, JmtKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),

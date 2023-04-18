@@ -63,7 +63,7 @@ pub struct ReNodeModulePayload {
     /// Module ID.
     pub node_mode_id: ModuleId,
     /// An embedded root of the descendant Substate layer tree.
-    pub substates_root: TreeNode<SubstateKey>,
+    pub substates_root: TreeNode<Vec<u8>>,
 }
 
 /// A payload carried by a physical leaf.
@@ -76,7 +76,7 @@ pub trait Payload:
 
 impl Payload for ReNodeModulePayload {}
 
-impl Payload for SubstateKey {}
+impl Payload for Vec<u8> {}
 
 /// The "read" part of a physical tree node storage SPI.
 pub trait ReadableTreeStore<P: Payload> {
@@ -102,7 +102,7 @@ impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> f
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemoryTreeStore {
     pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
-    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateKey>>,
+    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<Vec<u8>>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -117,14 +117,14 @@ impl TypedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateKey>> {
+impl ReadableTreeStore<Vec<u8>> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Vec<u8>>> {
         self.sub_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateKey>) {
+impl WriteableTreeStore<Vec<u8>> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<Vec<u8>>) {
         self.sub_tree_nodes.insert(key, node);
     }
 

@@ -1,3 +1,4 @@
+use radix_engine_stores::interface::SubstateKeyMapper;
 use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fs;
@@ -52,6 +53,7 @@ use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{
     CommittableSubstateDatabase, StateUpdate, StateUpdates, SubstateDatabase,
 };
+use radix_engine_stores::jmt_support::JmtKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use radix_engine_stores::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -300,8 +302,10 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
-        let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
-        let metadata_key = SubstateKey::from_vec(bytes).unwrap();
+        let metadata_key = JmtKeyMapper::map_to_db_key(
+            SysModuleId::Metadata.into(),
+            SubstateKey::from_vec(key).unwrap(),
+        );
 
         let metadata_entry = self
             .substate_db
@@ -1198,7 +1202,7 @@ impl TestRunner {
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
         let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::<_, SystemConfig<Vm<DefaultWasmEngine>>>::new(&substate_db);
+        let mut track = Track::<_, JmtKeyMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();

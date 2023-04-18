@@ -68,10 +68,10 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
             let module_id: ModuleId = SysModuleId::Tuple.into();
-            let substate_key_code: SubstateKey = PackageOffset::Code.into();
+            let substate_key_code: Vec<u8> = PackageOffset::Code.into();
             let package_code = PackageCodeSubstate { code };
 
-            let substate_key_info: SubstateKey = PackageOffset::Info.into();
+            let substate_key_info: Vec<u8> = PackageOffset::Info.into();
             let package_info = PackageInfoSubstate {
                 schema,
                 dependent_resources: BTreeSet::new(),

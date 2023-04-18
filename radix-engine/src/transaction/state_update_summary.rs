@@ -383,37 +383,37 @@ impl<'a> BalanceAccounter<'a> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
+        db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates(node_id, module_id, substate_key)
+        self.fetch_substate_from_state_updates(node_id, module_id, db_key)
             .map(|x| x.to_vec())
-            .or_else(|| self.fetch_substate_from_database(node_id, module_id, substate_key))
+            .or_else(|| self.fetch_substate_from_database(node_id, module_id, db_key))
     }
 
     fn fetch_substate_from_database(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
+        db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
         self.substate_db
-            .get_substate(node_id, module_id, substate_key)
+            .get_substate(node_id, module_id, db_key)
     }
 
     fn fetch_substate_from_state_updates(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
+        db_key: &Vec<u8>,
     ) -> Option<&[u8]> {
         self.updates
             .get(node_id)
             .and_then(|tracked_node| tracked_node.modules.get(&module_id))
-            .and_then(|tracked_module| tracked_module.substates.get(substate_key))
+            .and_then(|tracked_module| tracked_module.substates.get(db_key))
             .and_then(|tracked_key| tracked_key.get().map(|e| e.as_slice()))
     }
 }

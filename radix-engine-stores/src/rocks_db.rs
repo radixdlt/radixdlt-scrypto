@@ -60,9 +60,9 @@ impl SubstateDatabase for RocksdbSubstateStore {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
+        db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
-        let key = encode_substate_id(node_id, module_id, substate_key);
+        let key = encode_substate_id(node_id, module_id, db_key);
         self.db.get(&key).expect("IO Error")
     }
 
@@ -70,9 +70,9 @@ impl SubstateDatabase for RocksdbSubstateStore {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_> {
-        let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
-        let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
+        let start = encode_substate_id(node_id, module_id, &SubstateKey::min().into());
+        let end = encode_substate_id(node_id, module_id, &SubstateKey::max().into());
 
         let iter = self
             .db

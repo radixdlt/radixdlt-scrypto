@@ -37,7 +37,7 @@ pub trait StateTreeVisitor {
 
     fn visit_node_id(
         &mut self,
-        _parent_id: Option<&(NodeId, ModuleId, SubstateKey)>,
+        _parent_id: Option<&(NodeId, ModuleId, Vec<u8>)>,
         _node_id: &NodeId,
         _depth: u32,
     ) {
@@ -55,7 +55,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, ModuleId, SubstateKey)>,
+        parent_node_id: Option<&(NodeId, ModuleId, Vec<u8>)>,
         node_id: NodeId,
     ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
@@ -63,7 +63,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, ModuleId, SubstateKey)>,
+        parent: Option<&(NodeId, ModuleId, Vec<u8>)>,
         node_id: NodeId,
         depth: u32,
     ) {
@@ -81,7 +81,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 .get_substate(
                     &node_id,
                     SysModuleId::TypeInfo.into(),
-                    &SubstateKey::from_vec(vec![0]).unwrap(),
+                    &vec![0],
                 )
                 .expect("Missing TypeInfo substate"),
         )
@@ -120,8 +120,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .get_substate(
                                 &node_id,
                                 SysModuleId::Tuple.into(),
-                                &SubstateKey::from_vec(FungibleVaultOffset::LiquidFungible.into())
-                                    .unwrap(),
+                                &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database"),
                     )
@@ -141,10 +140,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .get_substate(
                                 &node_id,
                                 SysModuleId::Tuple.into(),
-                                &SubstateKey::from_vec(
-                                    NonFungibleVaultOffset::LiquidNonFungible.into(),
-                                )
-                                .unwrap(),
+                                &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database"),
                     )
@@ -159,7 +155,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         let x = self.substate_db.list_substates(&node_id, t.into());
-                        for (substate_key, substate_value) in x {
+                        for (db_key, substate_value) in x {
                             let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
                                 .expect("Substate is not a scrypto value")
                                 .unpack();
@@ -168,7 +164,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                     Some(&(
                                         node_id,
                                         SysModuleId::Tuple.into(),
-                                        substate_key.clone(),
+                                        db_key.clone(),
                                     )),
                                     child_node_id,
                                     depth + 1,
