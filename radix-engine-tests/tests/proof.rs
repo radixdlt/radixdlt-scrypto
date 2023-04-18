@@ -611,7 +611,7 @@ fn can_not_call_lock_fungible_amount_directly() {
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
-            "LockUnlockAuth",
+            "VaultLockUnlockAuth",
             "new_fungible",
             manifest_args!(),
         )
@@ -640,7 +640,7 @@ fn can_not_call_unlock_fungible_amount_directly() {
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
-            "LockUnlockAuth",
+            "VaultLockUnlockAuth",
             "new_fungible",
             manifest_args!(),
         )
@@ -669,7 +669,7 @@ fn can_not_call_lock_non_fungibles_directly() {
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
-            "LockUnlockAuth",
+            "VaultLockUnlockAuth",
             "new_non_fungible",
             manifest_args!(),
         )
@@ -698,7 +698,7 @@ fn can_not_call_unlock_non_fungibles_directly() {
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
-            "LockUnlockAuth",
+            "VaultLockUnlockAuth",
             "new_non_fungible",
             manifest_args!(),
         )

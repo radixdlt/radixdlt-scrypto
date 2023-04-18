@@ -10,12 +10,12 @@ pub struct Example {
 }
 
 #[blueprint]
-mod lock_unlock_auth {
-    struct LockUnlockAuth {
+mod vault_lock_unlock_auth {
+    struct VaultLockUnlockAuth {
         vault: Vault,
     }
 
-    impl LockUnlockAuth {
+    impl VaultLockUnlockAuth {
         pub fn new_fungible() -> ComponentAddress {
             let bucket = ResourceBuilder::new_fungible().mint_initial_supply(100);
 
