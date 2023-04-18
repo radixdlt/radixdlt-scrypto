@@ -39,3 +39,26 @@ mod transaction_limits {
         }
     }
 }
+
+#[blueprint]
+mod transaction_limits_substate {
+    struct TransactionLimitSubstateTest {
+        kv_store: KeyValueStore<u32, Vec<u8>>,
+    }
+
+    impl TransactionLimitSubstateTest {
+        pub fn write_large_value(size: u32) -> ComponentAddress {
+            let kv_store = KeyValueStore::new();
+            let mut vector: Vec<u8> = Vec::new();
+            for _i in 0..size as usize {
+                vector.push(0);
+            }
+
+            kv_store.insert(0, vector);
+
+            TransactionLimitSubstateTest { kv_store }
+                .instantiate()
+                .globalize()
+        }
+    }
+}
