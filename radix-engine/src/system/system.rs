@@ -39,7 +39,7 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-fn map_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey {
+fn module_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey {
     let bytes = match module_id {
         SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {
             hash(key).0[12..32].to_vec()
@@ -47,10 +47,14 @@ fn map_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey 
         SysModuleId::Tuple | SysModuleId::AccessRules | SysModuleId::TypeInfo | SysModuleId::Royalty => {
             key
         }
+        SysModuleId::Sorted => {
+            let mut bytes = key[0..2].to_vec(); // 2 bytes
+            bytes.extend(hash(key[2..].to_vec()).0[12..32].to_vec()); // 20 bytes
+            bytes
+        }
     };
     SubstateKey::from_vec(bytes).unwrap()
 }
-
 
 pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
@@ -158,7 +162,7 @@ where
             }
         };
 
-        let substate_key = map_key_to_substate_key(module_id, key.clone());
+        let substate_key = module_key_to_substate_key(module_id, key.clone());
 
         self.api
             .kernel_lock_substate(&node_id, module_id.into(), &substate_key, flags)
@@ -691,7 +695,7 @@ where
     V: SystemCallbackObject,
 {
     fn new_iterable_store(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalSortedStore;
+        let entity_type = EntityType::InternalIterableStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
         self.api.kernel_create_node(
@@ -732,7 +736,7 @@ where
         }
 
         let module_id = SysModuleId::Iterable;
-        let substate_key = map_key_to_substate_key(module_id, key);
+        let substate_key = module_key_to_substate_key(module_id, key);
 
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -752,7 +756,7 @@ where
         }
 
         let module_id = SysModuleId::Iterable;
-        let substate_key = map_key_to_substate_key(module_id, key);
+        let substate_key = module_key_to_substate_key(module_id, key);
 
         let rtn = self
             .api
@@ -807,11 +811,6 @@ where
     }
 }
 
-fn sorted_key_to_substate_key(sorted_key: SortedKey) -> SubstateKey {
-    let mut bytes = sorted_key.0.to_be_bytes().to_vec(); // 2 bytes
-    bytes.extend(hash(sorted_key.1).0[12..32].to_vec()); // 20 bytes
-    SubstateKey::from_vec(bytes).unwrap()
-}
 
 impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
@@ -825,7 +824,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Tuple.into() => btreemap!(),
+                SysModuleId::Sorted.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedStore
                 ).to_substates(),
@@ -859,10 +858,9 @@ where
             ));
         }
 
-        let substate_key = sorted_key_to_substate_key(sorted_key);
-
-        self.api
-            .kernel_set_substate(node_id, SysModuleId::Tuple, substate_key, value)
+        let module_id = SysModuleId::Sorted;
+        let substate_key = module_key_to_substate_key(module_id, sorted_key.into());
+        self.api.kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
     fn scan_sorted_store(
@@ -880,7 +878,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::Tuple, count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::Sorted, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -901,11 +899,12 @@ where
             }
         }
 
-        let substate_key = sorted_key_to_substate_key(sorted_key.clone());
+        let module_id = SysModuleId::Sorted;
+        let substate_key = module_key_to_substate_key(module_id, sorted_key.clone().into());
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Tuple, &substate_key)?
+            .kernel_remove_substate(node_id, module_id, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)

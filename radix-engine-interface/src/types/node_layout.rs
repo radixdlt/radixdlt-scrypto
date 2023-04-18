@@ -30,6 +30,7 @@ pub enum SysModuleId {
     Tuple,
     Map,
     Iterable,
+    Sorted,
 }
 
 impl Into<ModuleId> for SysModuleId {

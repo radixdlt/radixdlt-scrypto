@@ -15,6 +15,14 @@ impl SortedKey {
     }
 }
 
+impl Into<Vec<u8>> for SortedKey {
+    fn into(self) -> Vec<u8> {
+        let mut bytes = self.0.to_be_bytes().to_vec();
+        bytes.extend(self.1);
+        bytes
+    }
+}
+
 // TODO: Add locked entry interface
 pub trait ClientSortedStoreApi<E> {
     /// Creates a new sorted store
