@@ -6,6 +6,7 @@ use radix_engine_stores::interface::{
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
+use crate::system::system::module_key_to_substate_key;
 
 pub struct SubstateLockError;
 
@@ -428,7 +429,13 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             .map(|(module_id, module_substates)| {
                 let module_substates = module_substates
                     .into_iter()
-                    .map(|(key, value)| (key, TrackedSubstateKey::New(RuntimeSubstate::new(value))))
+                    .map(|(key, value)| {
+                        let key = module_key_to_substate_key(
+                            SysModuleId::from_repr(module_id.0).unwrap(),
+                            key.into()
+                        );
+                        (key, TrackedSubstateKey::New(RuntimeSubstate::new(value)))
+                    })
                     .collect();
                 let tracked_module = TrackedModule::new_with_substates(module_substates);
                 (module_id, tracked_module)
@@ -458,6 +465,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             .modules
             .entry(module_id)
             .or_insert(TrackedModule::new());
+
+        let substate_key = module_key_to_substate_key(
+            SysModuleId::from_repr(module_id.0).unwrap(),
+            substate_key.into()
+        );
+
         let entry = tracked_module.substates.entry(substate_key.clone());
 
         match entry {
@@ -491,7 +504,12 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, AcquireLockError> {
-        let tracked = self.get_tracked_substate(node_id, module_id, substate_key);
+        let substate_key = module_key_to_substate_key(
+            SysModuleId::from_repr(module_id.0).unwrap(),
+            substate_key.clone().into()
+        );
+
+        let tracked = self.get_tracked_substate(node_id, module_id, &substate_key);
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
                 return Err(AcquireLockError::SubstateLocked(
@@ -709,9 +727,14 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         flags: LockFlags,
         virtualize: F,
     ) -> Result<u32, AcquireLockError> {
+        let substate_key = module_key_to_substate_key(
+            SysModuleId::from_repr(module_id.0).unwrap(),
+            substate_key.clone().into()
+        );
+
         // Load the substate from state track
         let tracked =
-            self.get_tracked_substate_virtualize(node_id, module_id, substate_key, virtualize);
+            self.get_tracked_substate_virtualize(node_id, module_id, &substate_key, virtualize);
 
         // Check substate state
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -745,7 +768,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             AcquireLockError::SubstateLocked(*node_id, module_id, substate_key.clone())
         })?;
 
-        Ok(self.new_lock_handle(node_id, module_id, substate_key, flags))
+        Ok(self.new_lock_handle(node_id, module_id, &substate_key, flags))
     }
 
     fn release_lock(&mut self, handle: u32) {

@@ -39,7 +39,7 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-fn module_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey {
+pub fn module_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey {
     let bytes = match module_id {
         SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {
             hash(key).0[12..32].to_vec()
@@ -162,7 +162,7 @@ where
             }
         };
 
-        let substate_key = module_key_to_substate_key(module_id, key.clone());
+        let substate_key = SubstateKey::from_vec(key.clone()).unwrap();
 
         self.api
             .kernel_lock_substate(&node_id, module_id.into(), &substate_key, flags)
@@ -736,7 +736,7 @@ where
         }
 
         let module_id = SysModuleId::Iterable;
-        let substate_key = module_key_to_substate_key(module_id, key);
+        let substate_key = SubstateKey::from_vec(key).unwrap();
 
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -756,7 +756,7 @@ where
         }
 
         let module_id = SysModuleId::Iterable;
-        let substate_key = module_key_to_substate_key(module_id, key);
+        let substate_key = SubstateKey::from_vec(key).unwrap();
 
         let rtn = self
             .api
@@ -859,7 +859,7 @@ where
         }
 
         let module_id = SysModuleId::Sorted;
-        let substate_key = module_key_to_substate_key(module_id, sorted_key.into());
+        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
         self.api.kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
@@ -900,7 +900,7 @@ where
         }
 
         let module_id = SysModuleId::Sorted;
-        let substate_key = module_key_to_substate_key(module_id, sorted_key.clone().into());
+        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
 
         let rtn = self
             .api

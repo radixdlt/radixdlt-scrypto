@@ -344,12 +344,12 @@ mod non_fungible_test {
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::integer(2)])
+                BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
                 vault.non_fungible_local_ids(),
                 BTreeSet::from([
-                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
                 ])
             );
