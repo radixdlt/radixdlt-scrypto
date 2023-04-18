@@ -1,6 +1,5 @@
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -31,7 +30,7 @@ fn get_epoch_should_succeed() {
 
     // Assert
     let epoch: u64 = receipt.expect_commit(true).output(1);
-    assert_eq!(epoch, 1);
+    assert_eq!(epoch, 2);
 }
 
 #[test]
@@ -70,12 +69,7 @@ fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        1u64,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(1u64, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
@@ -105,14 +99,10 @@ fn next_round_with_validator_auth_succeeds() {
 fn next_epoch_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
@@ -136,7 +126,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch").1;
-    assert_eq!(next_epoch, initial_epoch + 1);
+    assert_eq!(next_epoch, first_epoch_after_genesis + 1);
 }
 
 #[test]
@@ -149,12 +139,10 @@ fn register_validator_with_auth_succeeds() {
         .unwrap()
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -187,12 +175,10 @@ fn register_validator_without_auth_fails() {
         .unwrap()
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -223,12 +209,10 @@ fn unregister_validator_with_auth_succeeds() {
         .unwrap()
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -261,12 +245,10 @@ fn unregister_validator_without_auth_fails() {
         .unwrap()
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -296,12 +278,10 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         .unwrap()
         .public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -374,14 +354,10 @@ fn not_allowing_delegated_stake_should_not_let_non_owner_stake() {
 fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
@@ -417,7 +393,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.1, first_epoch_after_genesis + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
@@ -425,14 +401,10 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
 fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
@@ -477,7 +449,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.1, first_epoch_after_genesis + 1);
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap(),
         &Validator {
@@ -491,6 +463,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
 fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -498,12 +471,10 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .public_key();
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -542,7 +513,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.1, first_epoch_after_genesis + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
@@ -550,6 +521,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -557,12 +529,10 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .public_key();
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::one(),
-            validator_account_address,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::one(),
+        validator_account_address,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -608,7 +578,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.1, first_epoch_after_genesis + 1);
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap().key,
         next_validator_pub_key
@@ -628,12 +598,10 @@ fn cannot_claim_unstake_immediately() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::from(10),
-            account_with_lp,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        account_with_lp,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -681,6 +649,7 @@ fn cannot_claim_unstake_immediately() {
 fn can_claim_unstake_after_epochs() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -690,12 +659,10 @@ fn can_claim_unstake_after_epochs() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::from(10),
-            account_with_lp,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        account_with_lp,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -724,7 +691,7 @@ fn can_claim_unstake_after_epochs() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
+    test_runner.set_current_epoch(first_epoch_after_genesis + 1 + num_unstake_epochs);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -752,6 +719,7 @@ fn can_claim_unstake_after_epochs() {
 fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let first_epoch_after_genesis = initial_epoch + 1;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -761,12 +729,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::from(10),
-            account_with_lp,
-        ),
+
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        account_with_lp,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
@@ -817,7 +784,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.1, first_epoch_after_genesis + 1);
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap(),
         &Validator {
@@ -836,7 +803,6 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
-    let validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, ManifestBucket)> = vec![];
     let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
@@ -844,7 +810,6 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
         args: manifest_args!(
             Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN),
             Into::<[u8; 27]>::into(EPOCH_MANAGER),
-            validator_set,
             1u64,
             1u64,
             1u64
@@ -877,7 +842,6 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
 
-    let validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, ManifestBucket)> = vec![];
     let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
@@ -885,7 +849,6 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         args: manifest_args!(
             Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN),
             Into::<[u8; 27]>::into(EPOCH_MANAGER),
-            validator_set,
             1u64,
             1u64,
             1u64

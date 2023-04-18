@@ -243,7 +243,6 @@ impl EpochManagerNativePackage {
                 let rtn = EpochManagerBlueprint::create(
                     input.validator_owner_token,
                     input.component_address,
-                    input.validator_set,
                     input.initial_epoch,
                     input.rounds_per_epoch,
                     input.num_unstake_epochs,

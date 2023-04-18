@@ -3,11 +3,10 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::account::Account;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::{ResourceManager, SysBucket};
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -52,12 +51,11 @@ impl EpochManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address: [u8; 27], // TODO: Clean this up
         component_address: [u8; 27],       // TODO: Clean this up
-        validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
         initial_epoch: u64,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
         api: &mut Y,
-    ) -> Result<Vec<Bucket>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -90,26 +88,7 @@ impl EpochManagerBlueprint {
             resource_manager
         };
 
-        let mut validators = BTreeMap::new();
-
-        let mut lp_buckets = vec![];
-        for (key, component_address, initial_stake) in validator_set {
-            let stake = initial_stake.sys_amount(api)?;
-            let (address, lp_bucket, owner_token_bucket) =
-                ValidatorCreator::create_with_initial_stake(
-                    address,
-                    key,
-                    initial_stake,
-                    true,
-                    api,
-                )?;
-
-            let validator = Validator { key, stake };
-            validators.insert(address, validator);
-
-            Account(component_address).deposit(owner_token_bucket, api)?;
-            lp_buckets.push(lp_bucket);
-        }
+        let validators = BTreeMap::new();
 
         let epoch_manager_id = {
             let epoch_manager = EpochManagerSubstate {
@@ -187,7 +166,7 @@ impl EpochManagerBlueprint {
             address.into(),
         )?;
 
-        Ok(lp_buckets)
+        Ok(())
     }
 
     pub(crate) fn get_current_epoch<Y>(receiver: &NodeId, api: &mut Y) -> Result<u64, RuntimeError>
