@@ -96,7 +96,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let epoch_manager_schema = BlueprintSchema {
-            parent: None,
+            parent: vec![],
             schema,
             substates,
             functions,
@@ -190,7 +190,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
-            parent: None,
+            parent: vec![],
             schema,
             substates,
             functions,

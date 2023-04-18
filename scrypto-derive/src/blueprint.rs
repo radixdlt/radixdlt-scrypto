@@ -167,7 +167,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 })*
 
                 let return_data = BlueprintSchema {
-                    parent: None,
+                    parent: vec![],
                     schema: generate_full_schema(aggregator),
                     substates,
                     functions,
@@ -752,7 +752,7 @@ mod tests {
                         );
                         let mut event_schema = BTreeMap::new();
                         let return_data = BlueprintSchema {
-                            parent: None,
+                            parent: vec![],
                             schema: generate_full_schema(aggregator),
                             substates,
                             functions,

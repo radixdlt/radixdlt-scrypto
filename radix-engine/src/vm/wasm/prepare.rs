@@ -992,7 +992,7 @@ mod tests {
         package_schema.blueprints.insert(
             "Test".to_string(),
             BlueprintSchema {
-                parent: None,
+                parent: vec![],
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],

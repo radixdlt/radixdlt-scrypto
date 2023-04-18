@@ -77,7 +77,7 @@ impl ClockNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    parent: vec![],
                     schema,
                     substates,
                     functions,

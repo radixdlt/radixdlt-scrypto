@@ -185,7 +185,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                parent: vec![],
                 schema,
                 substates,
                 functions,
@@ -389,7 +389,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                parent: vec![],
                 schema,
                 substates,
                 functions,
@@ -513,7 +513,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintSchema {
-                parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                parent: vec![FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()],
                 schema,
                 substates,
                 functions,
@@ -676,7 +676,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintSchema {
-                parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                parent: vec![NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()],
                 schema,
                 substates,
                 functions,
@@ -818,7 +818,10 @@ impl ResourceManagerNativePackage {
         );
         let schema = generate_full_schema(aggregator);
         let bucket_schema = BlueprintSchema {
-            parent: None,
+            parent: vec![
+                // FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                // NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            ],
             schema,
             substates,
             functions,
@@ -885,7 +888,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let proof_schema = BlueprintSchema {
-            parent: None,
+            parent: vec![],
             schema,
             substates,
             functions,
@@ -987,7 +990,7 @@ impl ResourceManagerNativePackage {
         );
         let schema = generate_full_schema(aggregator);
         let worktop_schema = BlueprintSchema {
-            parent: None,
+            parent: vec![],
             schema,
             substates,
             functions,
@@ -1081,7 +1084,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let auth_zone_schema = BlueprintSchema {
-            parent: None,
+            parent: vec![],
             schema,
             substates,
             functions,

@@ -188,7 +188,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
-        parent: None,
+        parent: vec![],
         schema: generate_full_schema(aggregator),
         substates,
         functions,

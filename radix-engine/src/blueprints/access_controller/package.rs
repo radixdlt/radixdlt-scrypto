@@ -278,7 +278,7 @@ impl AccessControllerNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    parent: vec![],
                     schema,
                     substates,
                     functions,

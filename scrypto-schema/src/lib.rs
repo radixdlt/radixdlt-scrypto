@@ -43,7 +43,10 @@ pub struct PackageSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct BlueprintSchema {
-    pub parent: Option<String>,
+    // Changed from `Option<String>` to `Vec<String>` because the parent blueprint of `Bucket`
+    // can be either `FungibleResourceManager` or `NonFungibleResourceManager`.
+    // TODO: evaluate "either" parent is appropriate; if not, split `Bucket` blueprint.
+    pub parent: Vec<String>,
 
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
@@ -78,7 +81,7 @@ pub enum Receiver {
 impl Default for BlueprintSchema {
     fn default() -> Self {
         Self {
-            parent: None,
+            parent: vec![],
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],

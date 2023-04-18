@@ -270,7 +270,7 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    parent: vec![],
                     schema,
                     substates,
                     functions,
@@ -534,7 +534,7 @@ impl PackageNativePackage {
             ..
         } in schema.blueprints.values()
         {
-            if parent.is_some() {
+            if !parent.is_empty() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::InvalidTypeParent),
                 ));
