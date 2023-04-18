@@ -47,11 +47,7 @@ pub trait ClientIterableStoreApi<E> {
     }
 
     /// Scans arbitrary elements of count from an iterable store
-    fn scan_iterable_store(
-        &mut self,
-        node_id: &NodeId,
-        count: u32,
-    ) -> Result<Vec<Vec<u8>>, E>;
+    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
     /// Scans arbitrary elements of count from an iterable store
     fn scan_typed_iterable_store<S: ScryptoDecode>(
@@ -75,11 +71,7 @@ pub trait ClientIterableStoreApi<E> {
     fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
     /// Removes and returns arbitrary elements of count from an iterable store
-    fn take_typed<S: ScryptoDecode>(
-        &mut self,
-        node_id: &NodeId,
-        count: u32,
-    ) -> Result<Vec<S>, E> {
+    fn take_typed<S: ScryptoDecode>(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<S>, E> {
         let entries = self
             .take(node_id, count)?
             .into_iter()

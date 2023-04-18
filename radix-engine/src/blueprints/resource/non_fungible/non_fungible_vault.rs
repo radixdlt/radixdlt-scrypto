@@ -422,7 +422,8 @@ impl NonFungibleVault {
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
-        let items: Vec<NonFungibleLocalId> = api.scan_typed_iterable_store(&substate_ref.ids.0, u32::MAX)?;
+        let items: Vec<NonFungibleLocalId> =
+            api.scan_typed_iterable_store(&substate_ref.ids.0, u32::MAX)?;
         let ids = items.into_iter().collect();
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -485,8 +486,11 @@ impl NonFungibleVault {
             .expect("Failed to convert amount to u32");
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> = api.take_typed(substate_ref.ids.as_node_id(), amount_to_take)?;
-            LiquidNonFungibleResource { ids: ids.into_iter().collect() }
+            let ids: Vec<NonFungibleLocalId> =
+                api.take_typed(substate_ref.ids.as_node_id(), amount_to_take)?;
+            LiquidNonFungibleResource {
+                ids: ids.into_iter().collect(),
+            }
         };
 
         api.sys_write_substate_typed(handle, &substate_ref)?;
@@ -523,7 +527,9 @@ impl NonFungibleVault {
 
             if removed.is_none() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::MissingId(id.clone())),
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::MissingId(
+                        id.clone(),
+                    )),
                 ));
             }
         }

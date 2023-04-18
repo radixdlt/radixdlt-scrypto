@@ -363,7 +363,7 @@ impl<'a> BalanceAccounter<'a> {
                                         }
                                     }
                                 }
-                            }
+                            },
                             TrackedSubstateKey::WriteOnly(write) => match write {
                                 Write::Update(substate) => {
                                     let id: NonFungibleLocalId = substate.value.as_typed().unwrap();

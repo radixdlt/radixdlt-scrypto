@@ -150,9 +150,7 @@ where
                 let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
                 SubstateKey::from_vec(bytes).unwrap()
             }
-            _ => {
-                SubstateKey::from_vec(key.clone()).unwrap()
-            }
+            _ => SubstateKey::from_vec(key.clone()).unwrap(),
         };
 
         self.api
@@ -732,7 +730,8 @@ where
 
         let substate_key = map_key_to_substate_key(key);
 
-        self.api.kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
+        self.api
+            .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
     }
 
     fn remove_from_iterable_store(
@@ -781,11 +780,7 @@ where
         Ok(substates)
     }
 
-    fn take(
-        &mut self,
-        node_id: &NodeId,
-        count: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}

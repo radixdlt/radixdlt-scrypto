@@ -748,13 +748,11 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         let tracked = self.get_tracked_substate(&node_id, module_id, &substate_key);
 
-
         let substate = tracked
             .get_runtime_substate_mut()
             .expect("Could not have created lock on non-existent subsate");
 
         substate.lock_state.unlock();
-
 
         if flags.contains(LockFlags::FORCE_WRITE) {
             let cloned_track = tracked.clone();
@@ -769,10 +767,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 .entry(module_id)
                 .or_insert(TrackedModule::new())
                 .substates
-                .insert(
-                    substate_key.clone(),
-                    cloned_track,
-                );
+                .insert(substate_key.clone(), cloned_track);
         }
     }
 
