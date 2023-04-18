@@ -194,6 +194,14 @@ fn test_fuzz_tx() {
     ));
 }
 
+// Initialize static objects outside the fuzzing loop to assure deterministic instrumentation
+// output across runs.
+fn init_statics() {
+    // Following code initializes secp256k1::SECP256K1 global static context
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(100).unwrap();
+    let _public_key = private_key.public_key();
+}
+
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
 fuzz_target!(|data: &[u8]| {
@@ -206,6 +214,8 @@ fuzz_target!(|data: &[u8]| {
 
 #[cfg(feature = "afl")]
 fn main() {
+    init_statics();
+
     // fuzz! uses `catch_unwind` and it requires RefUnwindSafe trait, which is not auto-implemented by
     // Fuzzer members (TestRunner mainly). `AssertUnwindSafe` annotates the variable is indeed
     // unwind safe
@@ -218,6 +228,8 @@ fn main() {
 
 #[cfg(feature = "simple-fuzzer")]
 fn main() {
+    init_statics();
+
     let mut fuzzer = Fuzzer::new();
 
     simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus { fuzzer.fuzz_tx_manifest(data) });
