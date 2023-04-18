@@ -300,12 +300,12 @@ impl<'a> BalanceAccounter<'a> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::Object.into(),
+                SysModuleId::Tuple.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    SysModuleId::Object.into(),
+                    SysModuleId::Tuple.into(),
                     &FungibleVaultOffset::LiquidFungible.into(),
                 );
 
@@ -328,12 +328,12 @@ impl<'a> BalanceAccounter<'a> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::Object.into(),
+                SysModuleId::Tuple.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(substate).unwrap();
                 let vault_updates = self.updates.get(vault.ids.as_node_id()).and_then(|n| {
-                    let module_id: ModuleId = SysModuleId::Object.into();
+                    let module_id: ModuleId = SysModuleId::Iterable.into();
                     n.modules.get(&module_id)
                 });
 

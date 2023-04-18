@@ -39,6 +39,19 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
+fn map_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey {
+    let bytes = match module_id {
+        SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {
+            hash(key).0[12..32].to_vec()
+        }
+        SysModuleId::Tuple | SysModuleId::AccessRules | SysModuleId::TypeInfo | SysModuleId::Royalty => {
+            key
+        }
+    };
+    SubstateKey::from_vec(bytes).unwrap()
+}
+
+
 pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
@@ -120,16 +133,16 @@ where
                 // TODO: Implement in corresponding api
                 panic!("Not supported")
             }
-            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::VirtualizedObject,
+            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Map,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                                 (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                                    SysModuleId::VirtualizedObject
+                                    SysModuleId::Map
                                 }
-                                _ => SysModuleId::Object,
+                                _ => SysModuleId::Tuple,
                             }
                         }
                         ObjectModuleId::Metadata => SysModuleId::Metadata,
@@ -138,20 +151,14 @@ where
                     }
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::VirtualizedObject,
-                        _ => SysModuleId::Object,
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Map,
+                        _ => SysModuleId::Tuple,
                     }
                 }
             }
         };
 
-        let substate_key = match module_id {
-            SysModuleId::VirtualizedObject | SysModuleId::Metadata => {
-                let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
-                SubstateKey::from_vec(bytes).unwrap()
-            }
-            _ => SubstateKey::from_vec(key.clone()).unwrap(),
-        };
+        let substate_key = map_key_to_substate_key(module_id, key.clone());
 
         self.api
             .kernel_lock_substate(&node_id, module_id.into(), &substate_key, flags)
@@ -172,7 +179,7 @@ where
             node_id, module_id, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::VirtualizedObject.into()) {
+        if module_id.eq(&SysModuleId::Map.into()) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -233,7 +240,7 @@ where
 
         let handle = self.api.kernel_lock_substate(
             package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::Tuple.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -315,8 +322,8 @@ where
         };
 
         let self_module_id = match (package_address, blueprint_ident) {
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::VirtualizedObject,
-            _ => SysModuleId::Object,
+            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Map,
+            _ => SysModuleId::Tuple,
         };
 
         self.api.kernel_create_node(
@@ -450,7 +457,7 @@ where
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates
-                        .remove(&SysModuleId::Object.into())
+                        .remove(&SysModuleId::Tuple.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
@@ -468,7 +475,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
-                        .remove(&SysModuleId::VirtualizedObject.into())
+                        .remove(&SysModuleId::Map.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
@@ -486,7 +493,7 @@ where
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates
-                        .remove(&SysModuleId::Object.into())
+                        .remove(&SysModuleId::Tuple.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
@@ -649,7 +656,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::VirtualizedObject.into() => btreemap!(),
+                SysModuleId::Map.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -677,10 +684,6 @@ where
     }
 }
 
-fn map_key_to_substate_key(key: Vec<u8>) -> SubstateKey {
-    let bytes = hash(key).0[12..32].to_vec();
-    SubstateKey::from_vec(bytes).unwrap()
-}
 
 impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
@@ -694,7 +697,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::Iterable.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::IterableStore
                 ).to_substates(),
@@ -728,10 +731,11 @@ where
             ));
         }
 
-        let substate_key = map_key_to_substate_key(key);
+        let module_id = SysModuleId::Iterable;
+        let substate_key = map_key_to_substate_key(module_id, key);
 
         self.api
-            .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
+            .kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
     fn remove_from_iterable_store(
@@ -747,11 +751,12 @@ where
             }
         }
 
-        let substate_key = map_key_to_substate_key(key);
+        let module_id = SysModuleId::Iterable;
+        let substate_key = map_key_to_substate_key(module_id, key);
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Object, &substate_key)?
+            .kernel_remove_substate(node_id, module_id, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -770,9 +775,10 @@ where
             }
         }
 
+        let module_id = SysModuleId::Iterable;
         let substates = self
             .api
-            .kernel_scan_substates(node_id, SysModuleId::Object, count)?
+            .kernel_scan_substates(node_id, module_id, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -789,9 +795,10 @@ where
             }
         }
 
+        let module_id = SysModuleId::Iterable;
         let substates = self
             .api
-            .kernel_take_substates(node_id, SysModuleId::Object, count)?
+            .kernel_take_substates(node_id, module_id, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -818,7 +825,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::Tuple.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedStore
                 ).to_substates(),
@@ -855,7 +862,7 @@ where
         let substate_key = sorted_key_to_substate_key(sorted_key);
 
         self.api
-            .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
+            .kernel_set_substate(node_id, SysModuleId::Tuple, substate_key, value)
     }
 
     fn scan_sorted_store(
@@ -873,7 +880,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::Object, count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::Tuple, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -898,7 +905,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Object, &substate_key)?
+            .kernel_remove_substate(node_id, SysModuleId::Tuple, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1130,7 +1137,7 @@ where
 
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::Tuple.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;

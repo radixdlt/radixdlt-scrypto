@@ -466,7 +466,7 @@ fn distribute_fees<S: SubstateDatabase>(
     // Distribute royalty
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
-        let module_id = SysModuleId::Object;
+        let module_id = SysModuleId::Tuple;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
         let handle = track
             .acquire_lock(
@@ -506,7 +506,7 @@ fn distribute_fees<S: SubstateDatabase>(
         let handle = track
             .acquire_lock(
                 &vault_id,
-                SysModuleId::Object.into(),
+                SysModuleId::Tuple.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

@@ -406,7 +406,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::Object.into(),
+            SysModuleId::Tuple.into(),
             &BucketOffset::Info.into(),
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
@@ -417,7 +417,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::Object.into(),
+                            SysModuleId::Tuple.into(),
                             &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
@@ -434,7 +434,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::Object.into(),
+                            SysModuleId::Tuple.into(),
                             &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
@@ -474,7 +474,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             proof_id,
-            SysModuleId::Object.into(),
+            SysModuleId::Tuple.into(),
             &ProofOffset::Info.into(),
         ) {
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
@@ -485,7 +485,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::Object.into(),
+                            SysModuleId::Tuple.into(),
                             &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
@@ -503,7 +503,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::Object.into(),
+                            SysModuleId::Tuple.into(),
                             &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
@@ -587,7 +587,7 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = SysModuleId::Object;
+                        let module_id = SysModuleId::Tuple;
                         let handle = self
                             .store
                             .acquire_lock(
