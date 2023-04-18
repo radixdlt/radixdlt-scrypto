@@ -153,6 +153,13 @@ impl TransactionOutcome {
         }
     }
 
+    pub fn expect_failure(&self) -> &RuntimeError {
+        match self {
+            TransactionOutcome::Success(_) => panic!("Outcome was an unexpected success"),
+            TransactionOutcome::Failure(error) => error,
+        }
+    }
+
     pub fn success_or_else<E, F: Fn(&RuntimeError) -> E>(
         &self,
         f: F,
