@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 
@@ -15,7 +15,7 @@ pub trait SystemCallbackObject: Sized {
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError>
-            + KernelInternalApi<SystemCallback<Self>>
+            + KernelInternalApi<SystemConfig<Self>>
             + KernelNodeApi
             + KernelSubstateApi;
 }

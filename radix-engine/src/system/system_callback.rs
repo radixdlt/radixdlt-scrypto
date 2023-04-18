@@ -8,6 +8,7 @@ use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system::SystemDownstream;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
+use crate::track::SubstateKeyMapper;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -86,12 +87,34 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemCallback<C: SystemCallbackObject> {
+pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub modules: SystemModuleMixer,
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
+impl<C: SystemCallbackObject> SubstateKeyMapper for SystemConfig<C> {
+    fn map_to_substate_key(module_id: ModuleId, key: Vec<u8>) -> SubstateKey {
+        let module_id = SysModuleId::from_repr(module_id.0).unwrap();
+
+        let bytes = match module_id {
+            SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {
+                hash(key).0[12..32].to_vec()
+            }
+            SysModuleId::Tuple
+            | SysModuleId::AccessRules
+            | SysModuleId::TypeInfo
+            | SysModuleId::Royalty => key,
+            SysModuleId::Sorted => {
+                let mut bytes = key[0..2].to_vec(); // 2 bytes
+                bytes.extend(hash(key[2..].to_vec()).0[12..32].to_vec()); // 20 bytes
+                bytes
+            }
+        };
+        SubstateKey::from_vec(bytes).unwrap()
+    }
+}
+
+impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type Invocation = SystemInvocation;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -236,7 +259,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemCallback<C>>,
+        Y: KernelApi<SystemConfig<C>>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up

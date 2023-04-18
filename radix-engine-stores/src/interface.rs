@@ -90,8 +90,9 @@ pub trait SubstateStore {
 
     /// Deletes a substate from the substate store.
     ///
-    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
-    /// is undefined.
+    /// Clients must ensure the `node_id`/`module_id` is a node which has been created;
+    /// Clients must ensure this isn't called on a virtualized module;
+    /// Otherwise, the behavior is undefined.
     fn take_substate(
         &mut self,
         node_id: &NodeId,

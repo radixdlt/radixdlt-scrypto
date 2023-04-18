@@ -1,7 +1,7 @@
 use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::vm::vm::api::ClientApi;
@@ -24,7 +24,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError>
-            + KernelInternalApi<SystemCallback<Self>>
+            + KernelInternalApi<SystemConfig<Self>>
             + KernelNodeApi
             + KernelSubstateApi,
         W: WasmEngine,

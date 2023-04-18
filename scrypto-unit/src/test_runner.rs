@@ -11,7 +11,7 @@ use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system_callback::SystemCallback;
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::track::Track;
@@ -1198,7 +1198,7 @@ impl TestRunner {
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
         let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::new(&substate_db);
+        let mut track = Track::<_, SystemConfig<Vm<DefaultWasmEngine>>>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
@@ -1208,7 +1208,7 @@ impl TestRunner {
             wasm_instrumenter: WasmInstrumenter::default(),
         };
 
-        let mut system = SystemCallback {
+        let mut system = SystemConfig {
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },

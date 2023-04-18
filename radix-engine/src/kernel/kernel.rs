@@ -13,7 +13,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
@@ -27,7 +27,7 @@ use sbor::rust::mem;
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub callback: &'g mut SystemCallback<V>,
+    pub callback: &'g mut SystemConfig<V>,
     pub store: &'g mut S,
 }
 
@@ -54,7 +54,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             callback: self.callback,
         };
 
-        SystemCallback::on_init(&mut kernel)?;
+        SystemConfig::on_init(&mut kernel)?;
 
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -121,7 +121,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        SystemCallback::on_teardown(&mut kernel)?;
+        SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
     }

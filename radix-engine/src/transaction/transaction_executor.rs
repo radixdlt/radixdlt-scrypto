@@ -3,9 +3,9 @@ use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_state_updates, Track};
+use crate::track::{to_state_updates, SubstateKeyMapper, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -183,12 +183,12 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::new(self.substate_db);
+        let mut track = Track::<_, SystemConfig<Vm<W>>>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let mut system = SystemCallback {
+        let mut system = SystemConfig {
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
@@ -458,8 +458,8 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees<S: SubstateDatabase>(
-    track: &mut Track<S>,
+fn distribute_fees<S: SubstateDatabase, M: SubstateKeyMapper>(
+    track: &mut Track<S, M>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,
 ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {

@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
@@ -23,7 +23,7 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
+    fn prepare_move_downstream<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         node_id: NodeId,
         callee: &Actor,
         api: &mut Y,
@@ -92,8 +92,8 @@ impl NodeMoveModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for NodeMoveModule {
-    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
@@ -107,7 +107,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for NodeMoveModule
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,

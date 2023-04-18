@@ -8,7 +8,7 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
@@ -39,31 +39,14 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub fn module_key_to_substate_key(module_id: SysModuleId, key: Vec<u8>) -> SubstateKey {
-    let bytes = match module_id {
-        SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {
-            hash(key).0[12..32].to_vec()
-        }
-        SysModuleId::Tuple | SysModuleId::AccessRules | SysModuleId::TypeInfo | SysModuleId::Royalty => {
-            key
-        }
-        SysModuleId::Sorted => {
-            let mut bytes = key[0..2].to_vec(); // 2 bytes
-            bytes.extend(hash(key[2..].to_vec()).0[12..32].to_vec()); // 20 bytes
-            bytes
-        }
-    };
-    SubstateKey::from_vec(bytes).unwrap()
-}
-
-pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
+pub struct SystemDownstream<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
 
 impl<'a, Y, V> SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     pub fn new(api: &'a mut Y) -> Self {
@@ -95,7 +78,7 @@ where
 
 impl<'a, Y, V> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn sys_lock_substate(
@@ -143,9 +126,7 @@ where
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                                    SysModuleId::Map
-                                }
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Map,
                                 _ => SysModuleId::Tuple,
                             }
                         }
@@ -231,7 +212,7 @@ where
 
 impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn new_object(
@@ -478,9 +459,7 @@ where
                     }
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = metadata_substates
-                        .remove(&SysModuleId::Map.into())
-                        .unwrap();
+                    let metadata = metadata_substates.remove(&SysModuleId::Map.into()).unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
                 ObjectModuleId::Royalty => {
@@ -645,7 +624,7 @@ where
 
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
@@ -688,10 +667,9 @@ where
     }
 }
 
-
 impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn new_iterable_store(&mut self) -> Result<NodeId, RuntimeError> {
@@ -811,10 +789,9 @@ where
     }
 }
 
-
 impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn new_sorted_store(&mut self) -> Result<NodeId, RuntimeError> {
@@ -860,7 +837,8 @@ where
 
         let module_id = SysModuleId::Sorted;
         let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
-        self.api.kernel_set_substate(node_id, module_id, substate_key, value)
+        self.api
+            .kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
     fn scan_sorted_store(
@@ -913,7 +891,7 @@ where
 
 impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn call_function(
@@ -950,7 +928,7 @@ where
 
 impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources(log=units)]
@@ -994,7 +972,7 @@ where
 
 impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
@@ -1026,7 +1004,7 @@ where
 
 impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
@@ -1065,7 +1043,7 @@ where
 
 impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
@@ -1082,7 +1060,7 @@ where
 
 impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
@@ -1099,7 +1077,7 @@ where
 
 impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
@@ -1222,7 +1200,7 @@ where
 
 impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
@@ -1239,7 +1217,7 @@ where
 
 impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
@@ -1267,14 +1245,14 @@ where
 
 impl<'a, Y, V> ClientApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
 }
 
 impl<'a, Y, V> KernelNodeApi for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
@@ -1300,7 +1278,7 @@ where
 
 impl<'a, Y, V> KernelSubstateApi for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn kernel_lock_substate(
@@ -1387,12 +1365,12 @@ where
     }
 }
 
-impl<'a, Y, V> KernelInternalApi<SystemCallback<V>> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_get_callback(&mut self) -> &mut SystemCallback<V> {
+    fn kernel_get_callback(&mut self) -> &mut SystemConfig<V> {
         self.api.kernel_get_callback()
     }
 

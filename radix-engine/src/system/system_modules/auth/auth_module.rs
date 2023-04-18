@@ -19,7 +19,7 @@ use crate::system::node_modules::access_rules::{
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::convert;
 use crate::types::*;
@@ -115,7 +115,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
+    fn method_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         node_id: &NodeId,
         module_id: &ObjectModuleId,
         ident: &str,
@@ -315,18 +315,18 @@ impl AuthModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
+    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
         Self::on_execution_start(api, &None)
     }
 
-    fn on_teardown<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
         Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
         _call_frame_update: &mut CallFrameUpdate,
@@ -372,7 +372,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -459,7 +459,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for AuthModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,

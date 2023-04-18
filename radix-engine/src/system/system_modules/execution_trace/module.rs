@@ -5,7 +5,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
@@ -284,8 +284,8 @@ impl ResourceSummary {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTraceModule {
-    fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
+    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _node_substates: &NodeSubstates,
@@ -297,7 +297,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTrace
         Ok(())
     }
 
-    fn after_create_node<Y: KernelApi<SystemCallback<V>>>(
+    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -311,7 +311,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTrace
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelApi<SystemCallback<V>>>(
+    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -323,7 +323,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTrace
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         api.kernel_get_callback()
@@ -333,7 +333,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTrace
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -348,7 +348,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTrace
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         update: &CallFrameUpdate,
