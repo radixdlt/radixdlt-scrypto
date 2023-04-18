@@ -605,7 +605,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 }
 
 #[test]
-fn can_not_call_lock_fungible_amount_directly() {
+fn can_not_call_vault_lock_fungible_amount_directly() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -637,7 +637,7 @@ fn can_not_call_lock_fungible_amount_directly() {
 }
 
 #[test]
-fn can_not_call_unlock_fungible_amount_directly() {
+fn can_not_call_vault_unlock_fungible_amount_directly() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -669,7 +669,7 @@ fn can_not_call_unlock_fungible_amount_directly() {
 }
 
 #[test]
-fn can_not_call_lock_non_fungibles_directly() {
+fn can_not_call_vault_lock_non_fungibles_directly() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -701,7 +701,7 @@ fn can_not_call_lock_non_fungibles_directly() {
 }
 
 #[test]
-fn can_not_call_unlock_non_fungibles_directly() {
+fn can_not_call_vault_unlock_non_fungibles_directly() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -719,6 +719,106 @@ fn can_not_call_unlock_non_fungibles_directly() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component_address,
+            "call_lock_non_fungibles_directly",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
+}
+
+#[test]
+fn can_not_call_bucket_lock_fungible_amount_directly() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "BucketLockUnlockAuth",
+            "call_lock_fungible_amount_directly",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
+}
+
+#[test]
+fn can_not_call_bucket_unlock_fungible_amount_directly() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "BucketLockUnlockAuth",
+            "call_lock_fungible_amount_directly",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
+}
+
+#[test]
+fn can_not_call_bucket_lock_non_fungibles_directly() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "BucketLockUnlockAuth",
+            "call_lock_non_fungibles_directly",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
+}
+
+#[test]
+fn can_not_call_bucket_unlock_non_fungibles_directly() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "BucketLockUnlockAuth",
             "call_lock_non_fungibles_directly",
             manifest_args!(),
         )

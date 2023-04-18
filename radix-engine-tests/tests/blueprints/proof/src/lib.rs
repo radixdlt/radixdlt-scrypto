@@ -1,4 +1,5 @@
+pub mod bucket_lock_unlock_auth;
 pub mod bucket_proof;
 pub mod receiver;
+pub mod vault_lock_unlock_auth;
 pub mod vault_proof;
-pub mod lock_unlock_auth;
