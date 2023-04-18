@@ -110,7 +110,7 @@ if [ $cmd = "run" ] ; then
             # secondary fuzzer
             fuzz_args="-S $name "
         fi
-        fuzzer+="-p $power_schedule "
+        fuzz_args+="-p $power_schedule "
         # TODO: use different fuzzing variants per instance
         fuzz_cmd="./fuzz.sh afl run -V $duration $fuzz_args -T $name -t $timeout"
         echo -e "Starting screen session with:\n  $fuzz_cmd"
