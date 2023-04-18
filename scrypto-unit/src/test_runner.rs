@@ -443,8 +443,8 @@ impl TestRunner {
             let mut substate_iter = self
                 .substate_db()
                 .list_substates(ids.as_node_id(), SysModuleId::Object.into());
-            let id = substate_iter.next().map(|(key, _value)| {
-                let id: NonFungibleLocalId = scrypto_decode(key.as_ref()).unwrap();
+            let id = substate_iter.next().map(|(_key, value)| {
+                let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
                 id
             });
             (amount, id)

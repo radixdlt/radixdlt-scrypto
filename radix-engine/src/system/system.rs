@@ -669,6 +669,11 @@ where
     }
 }
 
+fn map_key_to_substate_key(key: Vec<u8>) -> SubstateKey {
+    let bytes = hash(key).0[12..32].to_vec();
+    SubstateKey::from_vec(bytes).unwrap()
+}
+
 impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
@@ -715,8 +720,9 @@ where
             ));
         }
 
-        self.api
-            .kernel_set_substate(node_id, SysModuleId::Object, SubstateKey::from_vec(key).unwrap(), value)
+        let substate_key = map_key_to_substate_key(key);
+
+        self.api.kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
     }
 
     fn remove_from_iterable_store(
@@ -732,9 +738,11 @@ where
             }
         }
 
+        let substate_key = map_key_to_substate_key(key);
+
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Object, &SubstateKey::from_vec(key).unwrap())?
+            .kernel_remove_substate(node_id, SysModuleId::Object, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -787,10 +795,10 @@ where
     }
 }
 
-fn sorted_key_to_vec(sorted_key: SortedKey) -> Vec<u8> {
+fn sorted_key_to_substate_key(sorted_key: SortedKey) -> SubstateKey {
     let mut bytes = sorted_key.0.to_be_bytes().to_vec(); // 2 bytes
     bytes.extend(hash(sorted_key.1).0[12..32].to_vec()); // 20 bytes
-    bytes
+    SubstateKey::from_vec(bytes).unwrap()
 }
 
 impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
@@ -839,9 +847,7 @@ where
             ));
         }
 
-
-        let bytes = sorted_key_to_vec(sorted_key);
-        let substate_key = SubstateKey::from_vec(bytes).unwrap();
+        let substate_key = sorted_key_to_substate_key(sorted_key);
 
         self.api
             .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
@@ -883,8 +889,7 @@ where
             }
         }
 
-        let bytes = sorted_key_to_vec(sorted_key.clone());
-        let substate_key = SubstateKey::from_vec(bytes).unwrap();
+        let substate_key = sorted_key_to_substate_key(sorted_key.clone());
 
         let rtn = self
             .api

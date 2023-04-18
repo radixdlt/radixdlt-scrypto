@@ -218,20 +218,20 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     assert_eq!(
         result.balance_changes(),
         &indexmap!(
-            test_runner.faucet_component().into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
-            ),
             account.into() => indexmap!(
                 resource_address => BalanceChange::NonFungible {
                     added: BTreeSet::new(),
-                    removed: btreeset!(NonFungibleLocalId::integer(1))
+                    removed: btreeset!(NonFungibleLocalId::integer(2))
                 }
             ),
             other_account.into() => indexmap!(
                 resource_address => BalanceChange::NonFungible {
-                    added: btreeset!(NonFungibleLocalId::integer(1)),
+                    added: btreeset!(NonFungibleLocalId::integer(2)),
                     removed: BTreeSet::new()
                 }
+            ),
+            test_runner.faucet_component().into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
             ),
         )
     );

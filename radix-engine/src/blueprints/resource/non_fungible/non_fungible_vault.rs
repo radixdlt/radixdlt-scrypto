@@ -10,6 +10,12 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum NonFungibleVaultError {
+    MissingId(NonFungibleLocalId),
+    NotEnoughAmount,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleVaultIdTypeSubstate {
     pub id_type: NonFungibleIdType,
 }
@@ -458,9 +464,7 @@ impl NonFungibleVault {
         // deduct from liquidity pool
         if substate_ref.amount < amount {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::ResourceError(
-                    ResourceError::InsufficientBalance,
-                )),
+                ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
             ));
         }
 
@@ -519,9 +523,7 @@ impl NonFungibleVault {
 
             if removed.is_none() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::ResourceError(
-                        ResourceError::InsufficientBalance,
-                    )),
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::MissingId(id.clone())),
                 ));
             }
         }
