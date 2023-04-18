@@ -1,4 +1,5 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -629,7 +630,10 @@ fn can_not_call_lock_fungible_amount_directly() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
 }
 
 #[test]
@@ -658,7 +662,10 @@ fn can_not_call_unlock_fungible_amount_directly() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
 }
 
 #[test]
@@ -687,7 +694,10 @@ fn can_not_call_lock_non_fungibles_directly() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
 }
 
 #[test]
@@ -716,5 +726,8 @@ fn can_not_call_unlock_non_fungibles_directly() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_))) => true,
+        _ => false,
+    })
 }
