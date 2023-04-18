@@ -91,6 +91,7 @@ jobs:
         ./process_fuzz_results.sh afl/transaction
 
     - name: Generate summary
+      if: success() || failure() || cancelled()
       working-directory: fuzz-tests
       run: |
         COMMIT=$(git rev-parse --short HEAD)
@@ -115,6 +116,7 @@ jobs:
         tar -cvzf fuzz_transaction.tgz -T list
 
     - name: Upload artifacts
+      if: success() || failure() || cancelled()
       uses: actions/upload-artifact@v3
       with:
         name: fuzz_transaction.tgz
