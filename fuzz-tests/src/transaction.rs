@@ -206,9 +206,9 @@ fn init_statics() {
 #[cfg(feature = "libfuzzer-sys")]
 fuzz_target!(|data: &[u8]| {
     unsafe {
-        static mut FUZZER: Lazy<Fuzzer> = Lazy::new(|| Fuzzer::new());
+        let mut fuzzer = Fuzzer::new();
 
-        FUZZER.fuzz_tx_manifest(data);
+        fuzzer.fuzz_tx_manifest(data);
     }
 });
 
@@ -216,12 +216,12 @@ fuzz_target!(|data: &[u8]| {
 fn main() {
     init_statics();
 
-    // fuzz! uses `catch_unwind` and it requires RefUnwindSafe trait, which is not auto-implemented by
-    // Fuzzer members (TestRunner mainly). `AssertUnwindSafe` annotates the variable is indeed
-    // unwind safe
-    let mut fuzzer = AssertUnwindSafe(Fuzzer::new());
-
     fuzz!(|data: &[u8]| {
+        // fuzz! uses `catch_unwind` and it requires RefUnwindSafe trait, which is not auto-implemented by
+        // Fuzzer members (TestRunner mainly). `AssertUnwindSafe` annotates the variable is indeed
+        // unwind safe
+        let mut fuzzer = AssertUnwindSafe(Fuzzer::new());
+
         fuzzer.fuzz_tx_manifest(data);
     });
 }
@@ -230,7 +230,8 @@ fn main() {
 fn main() {
     init_statics();
 
-    let mut fuzzer = Fuzzer::new();
-
-    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus { fuzzer.fuzz_tx_manifest(data) });
+    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus {
+        let mut fuzzer = Fuzzer::new();
+        fuzzer.fuzz_tx_manifest(data)
+    });
 }
