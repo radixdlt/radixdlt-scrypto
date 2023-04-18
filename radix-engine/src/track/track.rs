@@ -196,6 +196,23 @@ impl TrackedSubstateKey {
         }
     }
 
+    fn revert_writes(&mut self) {
+        match self {
+            TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => {}
+            TrackedSubstateKey::New(..) | TrackedSubstateKey::WriteOnly(_) => {
+                *self = TrackedSubstateKey::Garbage;
+            }
+            TrackedSubstateKey::ReadExistAndWrite(read, _) => {
+                *self = TrackedSubstateKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(
+                    read.clone(),
+                )));
+            }
+            TrackedSubstateKey::ReadNonExistAndWrite(..) => {
+                *self = TrackedSubstateKey::ReadOnly(ReadOnly::NonExistent);
+            }
+        }
+    }
+
     pub fn into_value(self) -> Option<IndexedScryptoValue> {
         match self {
             TrackedSubstateKey::New(substate)
@@ -213,6 +230,7 @@ impl TrackedSubstateKey {
     }
 }
 
+#[derive(Debug)]
 pub struct TrackedModule {
     pub substates: BTreeMap<Vec<u8>, TrackedSubstateKey>,
     pub range_read: Option<u32>,
@@ -232,10 +250,17 @@ impl TrackedModule {
             range_read: None,
         }
     }
+
+    pub fn revert_writes(&mut self) {
+        for (_key, tracked_key) in &mut self.substates {
+            tracked_key.revert_writes();
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct TrackedNode {
-    pub modules: IndexMap<ModuleId, TrackedModule>,
+    pub tracked_modules: IndexMap<ModuleId, TrackedModule>,
     // If true, then all SubstateUpdates under this NodeUpdate must be inserts
     // The extra information, though awkward structurally, makes for a much
     // simpler iteration implementation as long as the invariant is maintained
@@ -245,8 +270,14 @@ pub struct TrackedNode {
 impl TrackedNode {
     pub fn new(is_new: bool) -> Self {
         Self {
-            modules: index_map_new(),
+            tracked_modules: index_map_new(),
             is_new,
+        }
+    }
+
+    pub fn revert_writes(&mut self) {
+        for (_, tracked_module) in &mut self.tracked_modules {
+            tracked_module.revert_writes();
         }
     }
 }
@@ -254,7 +285,7 @@ impl TrackedNode {
 pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
     let mut substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate> = index_map_new();
     for (node_id, tracked_node) in index {
-        for (module_id, tracked_module) in tracked_node.modules {
+        for (module_id, tracked_module) in tracked_node.tracked_modules {
             for (db_key, tracked) in tracked_module.substates {
                 let update = match tracked {
                     TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => None,
@@ -303,8 +334,8 @@ impl<'a> Iterator for TrackedIter<'a> {
 /// Transaction-wide states and side effects
 pub struct Track<'s, S: SubstateDatabase, M: SubstateKeyMapper> {
     substate_db: &'s S,
-    updates: IndexMap<NodeId, TrackedNode>,
-    force_updates: IndexMap<NodeId, TrackedNode>,
+    tracked_nodes: IndexMap<NodeId, TrackedNode>,
+    force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
 
     locks: IndexMap<u32, (NodeId, ModuleId, Vec<u8>, LockFlags)>,
     next_lock_id: u32,
@@ -315,8 +346,8 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
-            force_updates: index_map_new(),
-            updates: index_map_new(),
+            force_write_tracked_nodes: index_map_new(),
+            tracked_nodes: index_map_new(),
             locks: index_map_new(),
             next_lock_id: 0,
             phantom_data: PhantomData::default(),
@@ -341,29 +372,43 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> Track<'s, S, M> {
     ///
     /// Note that dependencies will never be reverted.
     pub fn revert_non_force_write_changes(&mut self) {
-        let updates = mem::take(&mut self.force_updates);
-        self.updates = updates;
+        self.tracked_nodes
+            .retain(|_, tracked_node| !tracked_node.is_new);
+        for (_, tracked_node) in &mut self.tracked_nodes {
+            tracked_node.revert_writes();
+        }
+
+        let force_writes = mem::take(&mut self.force_write_tracked_nodes);
+
+        for (node_id, force_track_node) in force_writes {
+            for (module_id, force_track_module) in force_track_node.tracked_modules {
+                for (db_key, force_track_key) in force_track_module.substates {
+                    let tracked = self.get_tracked_substate(&node_id, module_id, &db_key);
+                    *tracked = force_track_key;
+                }
+            }
+        }
     }
 
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
     pub fn finalize(self) -> IndexMap<NodeId, TrackedNode> {
-        self.updates
+        self.tracked_nodes
     }
 
     fn get_tracked_module(&mut self, node_id: &NodeId, module_id: ModuleId) -> &mut TrackedModule {
-        self.updates
+        self.tracked_nodes
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
-            .modules
+            .tracked_modules
             .entry(module_id)
             .or_insert(TrackedModule::new());
 
-        self.updates
+        self.tracked_nodes
             .get_mut(node_id)
             .unwrap()
-            .modules
+            .tracked_modules
             .get_mut(&module_id)
             .unwrap()
     }
@@ -376,10 +421,10 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> Track<'s, S, M> {
         virtualize: F,
     ) -> &mut TrackedSubstateKey {
         let module_substates = &mut self
-            .updates
+            .tracked_nodes
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
-            .modules
+            .tracked_modules
             .entry(module_id)
             .or_insert(TrackedModule::new())
             .substates;
@@ -439,10 +484,10 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
             })
             .collect();
 
-        self.updates.insert(
+        self.tracked_nodes.insert(
             node_id,
             TrackedNode {
-                modules: tracked_modules,
+                tracked_modules: tracked_modules,
                 is_new: true,
             },
         );
@@ -458,10 +503,10 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         let db_key = M::map_to_db_key(module_id, substate_key.clone());
 
         let tracked_module = self
-            .updates
+            .tracked_nodes
             .entry(node_id)
             .or_insert(TrackedNode::new(false))
-            .modules
+            .tracked_modules
             .entry(module_id)
             .or_insert(TrackedModule::new());
 
@@ -524,11 +569,11 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
-        let node_updates = self.updates.get(node_id);
+        let node_updates = self.tracked_nodes.get(node_id);
         let is_new = node_updates
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let tracked_module = node_updates.and_then(|n| n.modules.get(&module_id));
+        let tracked_module = node_updates.and_then(|n| n.tracked_modules.get(&module_id));
 
         if let Some(tracked_module) = tracked_module {
             for (_key, tracked) in tracked_module.substates.iter() {
@@ -586,14 +631,14 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
-        let node_updates = self.updates.get_mut(node_id);
+        let node_updates = self.tracked_nodes.get_mut(node_id);
         let is_new = node_updates
             .as_ref()
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
 
         // Check what we've currently got so far without going into database
-        let mut tracked_module = node_updates.and_then(|n| n.modules.get_mut(&module_id));
+        let mut tracked_module = node_updates.and_then(|n| n.tracked_modules.get_mut(&module_id));
         if let Some(tracked_module) = tracked_module.as_mut() {
             for (_key, tracked) in tracked_module.substates.iter_mut() {
                 if items.len() == count {
@@ -665,12 +710,12 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
     ) -> Vec<IndexedScryptoValue> {
         // TODO: Add module dependencies/lock
         let count: usize = count.try_into().unwrap();
-        let node_updates = self.updates.get_mut(node_id);
+        let node_updates = self.tracked_nodes.get_mut(node_id);
         let is_new = node_updates
             .as_ref()
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let tracked_module = node_updates.and_then(|n| n.modules.get(&module_id));
+        let tracked_module = node_updates.and_then(|n| n.tracked_modules.get(&module_id));
 
         if is_new {
             let mut items = Vec::new();
@@ -774,13 +819,13 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         if flags.contains(LockFlags::FORCE_WRITE) {
             let cloned_track = tracked.clone();
 
-            self.force_updates
+            self.force_write_tracked_nodes
                 .entry(node_id)
                 .or_insert(TrackedNode {
-                    modules: index_map_new(),
+                    tracked_modules: index_map_new(),
                     is_new: false,
                 })
-                .modules
+                .tracked_modules
                 .entry(module_id)
                 .or_insert(TrackedModule::new())
                 .substates

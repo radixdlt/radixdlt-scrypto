@@ -18,9 +18,7 @@ pub struct StateUpdateSummary {
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-    /// This field accounts for two conditions:
-    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
-    /// 2. Fee payments for failed transactions.
+    /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
 }
 
@@ -95,38 +93,17 @@ impl BalanceChange {
 /// from a substate.
 pub struct BalanceAccounter<'a> {
     substate_db: &'a dyn SubstateDatabase,
-    updates: &'a IndexMap<NodeId, TrackedNode>, //IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>>,
+    tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a> BalanceAccounter<'a> {
     pub fn new(
         substate_db: &'a dyn SubstateDatabase,
-        updates: &'a IndexMap<NodeId, TrackedNode>,
+        tracked: &'a IndexMap<NodeId, TrackedNode>,
     ) -> Self {
-        /*
-        let mut state_updates_indexed: IndexMap<
-            NodeId,
-            IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>,
-        > = index_map_new();
-        for ((node_id, module_id, substate_key), change) in &state_updates.substate_changes {
-            let map = state_updates_indexed
-                .entry(*node_id)
-                .or_default()
-                .entry(*module_id)
-                .or_default();
-
-            match &change {
-                StateUpdate::Update(substate_value, ..) | StateUpdate::Create(substate_value) => {
-                    map.insert(substate_key.clone(), substate_value);
-                }
-                StateUpdate::Delete => {}
-            }
-        }
-         */
-
         Self {
             substate_db,
-            updates,
+            tracked,
         }
     }
 
@@ -141,7 +118,7 @@ impl<'a> BalanceAccounter<'a> {
             index_map_new();
         let mut accounted_vaults = index_set_new();
 
-        self.updates
+        self.tracked
             .keys()
             .filter_map(|x| GlobalAddress::try_from(x.as_ref()).ok())
             .for_each(|root| {
@@ -153,7 +130,7 @@ impl<'a> BalanceAccounter<'a> {
                 )
             });
 
-        self.updates
+        self.tracked
             .keys()
             .filter(|x| x.is_internal_vault() && !accounted_vaults.contains(*x))
             .for_each(|vault_node_id| {
@@ -222,7 +199,7 @@ impl<'a> BalanceAccounter<'a> {
         root: &GlobalAddress,
         current_node: &NodeId,
     ) -> () {
-        if let Some(tracked_node) = self.updates.get(current_node) {
+        if let Some(tracked_node) = self.tracked.get(current_node) {
             if current_node.is_internal_vault() {
                 accounted_vaults.insert(current_node.clone());
 
@@ -255,7 +232,7 @@ impl<'a> BalanceAccounter<'a> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for (_module_id, tracked_module) in &tracked_node.modules {
+                for (_module_id, tracked_module) in &tracked_node.tracked_modules {
                     for (_substate_key, tracked_key) in &tracked_module.substates {
                         if let Some(value) = tracked_key.get() {
                             for own in value.owned_node_ids() {
@@ -332,9 +309,9 @@ impl<'a> BalanceAccounter<'a> {
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(substate).unwrap();
-                let vault_updates = self.updates.get(vault.ids.as_node_id()).and_then(|n| {
+                let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
                     let module_id: ModuleId = SysModuleId::Iterable.into();
-                    n.modules.get(&module_id)
+                    n.tracked_modules.get(&module_id)
                 });
 
                 if let Some(tracked_module) = vault_updates {
@@ -409,9 +386,9 @@ impl<'a> BalanceAccounter<'a> {
         module_id: ModuleId,
         db_key: &Vec<u8>,
     ) -> Option<&[u8]> {
-        self.updates
+        self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.modules.get(&module_id))
+            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
             .and_then(|tracked_module| tracked_module.substates.get(db_key))
             .and_then(|tracked_key| tracked_key.get().map(|e| e.as_slice()))
     }
