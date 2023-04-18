@@ -133,7 +133,7 @@ where
 
             let non_fungible_handle = api.sys_lock_substate(
                 &nf_store_id,
-                &non_fungible_local_id.to_substate_key(),
+                &non_fungible_local_id.to_key(),
                 LockFlags::MUTABLE,
             )?;
 
@@ -387,7 +387,7 @@ impl NonFungibleResourceManagerBlueprint {
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.sys_lock_substate(
                 nf_store_id.as_node_id(),
-                &id.to_substate_key(),
+                &id.to_key(),
                 LockFlags::MUTABLE,
             )?;
 
@@ -459,7 +459,7 @@ impl NonFungibleResourceManagerBlueprint {
         {
             let non_fungible_handle = api.sys_lock_substate(
                 nf_store_id.as_node_id(),
-                &id.to_substate_key(),
+                &id.to_key(),
                 LockFlags::MUTABLE,
             )?;
             api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
@@ -533,7 +533,7 @@ impl NonFungibleResourceManagerBlueprint {
                 {
                     let non_fungible_handle = api.sys_lock_substate(
                         nf_store_id.as_node_id(),
-                        &id.to_substate_key(),
+                        &id.to_key(),
                         LockFlags::MUTABLE,
                     )?;
                     api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
@@ -613,7 +613,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             non_fungible_table_id.as_node_id(),
-            &id.to_substate_key(),
+            &id.to_key(),
             LockFlags::MUTABLE,
         )?;
 
@@ -661,7 +661,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             non_fungible_table_id.as_node_id(),
-            &id.to_substate_key(),
+            &id.to_key(),
             LockFlags::read_only(),
         )?;
         let non_fungible: Option<ScryptoValue> =
@@ -694,7 +694,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             non_fungible_table_id.as_node_id(),
-            &id.to_substate_key(),
+            &id.to_key(),
             LockFlags::read_only(),
         )?;
         let wrapper: Option<ScryptoValue> = api.sys_read_substate_typed(non_fungible_handle)?;
@@ -800,7 +800,7 @@ impl NonFungibleResourceManagerBlueprint {
                     for id in resource.into_ids() {
                         let non_fungible_handle = api.sys_lock_substate(
                             resource_manager.non_fungible_table.as_node_id(),
-                            &id.to_substate_key(),
+                            &id.to_key(),
                             LockFlags::MUTABLE,
                         )?;
 

@@ -160,11 +160,16 @@ fn test_genesis_resource_with_initial_allocation() {
         scrypto_decode(&persisted_resource_manager_substate).unwrap();
     assert_eq!(resource_manager_substate.total_supply, dec!("105"));
 
+    // TODO: Move this to system wrapper around substate_store
+    let key = scrypto_encode("symbol").unwrap();
+    let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
+    let metadata_key = SubstateKey::from_vec(bytes).unwrap();
+
     let persisted_symbol_metadata_entry = substate_store
         .get_substate(
             &resource_address,
             SysModuleId::Metadata.into(),
-            &SubstateKey::from_vec(scrypto_encode("symbol").unwrap()).unwrap(),
+            &metadata_key,
         )
         .unwrap();
 

@@ -298,12 +298,17 @@ impl TestRunner {
     }
 
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
+        // TODO: Move this to system wrapper around substate_store
+        let key = scrypto_encode(key).unwrap();
+        let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
+        let metadata_key = SubstateKey::from_vec(bytes).unwrap();
+
         let metadata_entry = self
             .substate_db
             .get_substate(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
-                &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
+                &metadata_key,
             )
             .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s).unwrap())?;
 

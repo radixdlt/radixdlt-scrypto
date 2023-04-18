@@ -185,7 +185,6 @@ impl AccountBlueprint {
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -198,7 +197,7 @@ impl AccountBlueprint {
             let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
             let handle = api.sys_lock_substate(
                 account.vaults.as_node_id(),
-                &substate_key,
+                &encoded_key,
                 LockFlags::read_only(),
             )?;
             handle
@@ -257,7 +256,6 @@ impl AccountBlueprint {
     {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -270,7 +268,7 @@ impl AccountBlueprint {
             let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
             let handle = api.sys_lock_substate(
                 account.vaults.as_node_id(),
-                &substate_key,
+                &encoded_key,
                 LockFlags::MUTABLE,
             )?;
             handle
@@ -330,14 +328,13 @@ impl AccountBlueprint {
         for bucket in buckets {
             let resource_address = bucket.sys_resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-            let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
                 let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
                 let handle = api.sys_lock_substate(
                     account.vaults.as_node_id(),
-                    &substate_key,
+                    &encoded_key,
                     LockFlags::MUTABLE,
                 )?;
                 handle
@@ -388,7 +385,6 @@ impl AccountBlueprint {
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-        let substate_key = SubstateKey::from_vec(encoded_key).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -401,7 +397,7 @@ impl AccountBlueprint {
             let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
             let handle = api.sys_lock_substate(
                 account.vaults.as_node_id(),
-                &substate_key,
+                &encoded_key,
                 LockFlags::read_only(),
             )?;
             handle

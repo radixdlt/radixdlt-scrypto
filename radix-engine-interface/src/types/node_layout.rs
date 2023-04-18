@@ -164,6 +164,12 @@ macro_rules! into_substate_key {
                     .expect("Failed to convert offset into substate key")
             }
         }
+
+        impl Into<Vec<u8>> for $t {
+            fn into(self) -> Vec<u8> {
+                vec![self as u8]
+            }
+        }
     };
 }
 

@@ -172,18 +172,16 @@ where
     fn lock_substate(
         &mut self,
         node_id: Vec<u8>,
-        substate_key: Vec<u8>,
+        key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let node_id = NodeId(
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let substate_key =
-            SubstateKey::from_vec(substate_key).ok_or(WasmRuntimeError::InvalidSubstateKey)?;
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.sys_lock_substate(&node_id, &substate_key, flags)?;
+        let handle = self.api.sys_lock_substate(&node_id, &key, flags)?;
 
         Ok(handle)
     }

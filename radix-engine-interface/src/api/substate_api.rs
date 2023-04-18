@@ -35,7 +35,7 @@ pub trait ClientSubstateApi<E: Debug> {
     fn sys_lock_substate(
         &mut self,
         node_id: &NodeId,
-        substate_key: &SubstateKey,
+        key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 

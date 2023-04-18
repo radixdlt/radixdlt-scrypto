@@ -23,7 +23,7 @@ mod cyclic_map {
             };
 
             let node_id = kv_store1_id.as_node_id();
-            let substate_key = SubstateKey::from_vec(scrypto_encode(&0u32).unwrap()).unwrap();
+            let key = scrypto_encode(&0u32).unwrap();
             let substate: Option<ScryptoValue> = Option::Some(
                 scrypto_decode(
                     &scrypto_encode(&KeyValueStore::<(), ()> {
@@ -37,7 +37,7 @@ mod cyclic_map {
             );
 
             let handle = ScryptoEnv
-                .sys_lock_substate(node_id, &substate_key, LockFlags::MUTABLE)
+                .sys_lock_substate(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
                 .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
@@ -51,7 +51,7 @@ mod cyclic_map {
             let kv_store_id = kv_store.id.clone();
 
             let node_id = kv_store_id.as_node_id();
-            let substate_key = SubstateKey::from_vec(scrypto_encode(&0u32).unwrap()).unwrap();
+            let key = scrypto_encode(&0u32).unwrap();
             let substate: Option<ScryptoValue> = Option::Some(
                 scrypto_decode(
                     &scrypto_encode(&KeyValueStore::<(), ()> {
@@ -65,7 +65,7 @@ mod cyclic_map {
             );
 
             let handle = ScryptoEnv
-                .sys_lock_substate(node_id, &substate_key, LockFlags::MUTABLE)
+                .sys_lock_substate(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
                 .sys_write_substate(handle, scrypto_encode(&substate).unwrap())

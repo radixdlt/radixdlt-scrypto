@@ -124,7 +124,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .get_substate(
                                 &node_id,
                                 SysModuleId::Object.into(),
-                                &FungibleVaultOffset::LiquidFungible.into(),
+                                &SubstateKey::from_vec(FungibleVaultOffset::LiquidFungible.into()).unwrap(),
                             )
                             .expect("Broken database"),
                     )
@@ -144,7 +144,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .get_substate(
                                 &node_id,
                                 SysModuleId::Object.into(),
-                                &NonFungibleVaultOffset::LiquidNonFungible.into(),
+                                &SubstateKey::from_vec(NonFungibleVaultOffset::LiquidNonFungible.into()).unwrap(),
                             )
                             .expect("Broken database"),
                     )

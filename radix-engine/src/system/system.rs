@@ -84,7 +84,7 @@ where
     fn sys_lock_substate(
         &mut self,
         node_id: &NodeId,
-        substate_key: &SubstateKey,
+        key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -109,7 +109,7 @@ where
                 KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
                     actor: actor.clone(),
                     node_id: node_id.clone(),
-                    substate_key: substate_key.clone(),
+                    key: key.clone(),
                     flags,
                 })),
             ));
@@ -145,8 +145,18 @@ where
             }
         };
 
+        let substate_key = match module_id {
+            SysModuleId::VirtualizedObject | SysModuleId::Metadata => {
+                let bytes = hash(key).0[12..32].to_vec(); // 20 bytes
+                SubstateKey::from_vec(bytes).unwrap()
+            }
+            _ => {
+                SubstateKey::from_vec(key.clone()).unwrap()
+            }
+        };
+
         self.api
-            .kernel_lock_substate(&node_id, module_id.into(), substate_key, flags)
+            .kernel_lock_substate(&node_id, module_id.into(), &substate_key, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {

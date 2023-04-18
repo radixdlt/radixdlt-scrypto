@@ -164,7 +164,7 @@ pub struct InvalidDropNodeAccess {
 pub struct InvalidSubstateAccess {
     pub actor: Actor,
     pub node_id: NodeId,
-    pub substate_key: SubstateKey,
+    pub key: Vec<u8>,
     pub flags: LockFlags,
 }
 

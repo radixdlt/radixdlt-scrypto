@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{Blueprint, GlobalAddress};
-use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -170,15 +170,15 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     fn sys_lock_substate(
         &mut self,
         node_id: &NodeId,
-        substate_key: &SubstateKey,
+        key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
         let handle = unsafe {
             lock_substate(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
-                substate_key.as_ref().as_ptr(),
-                substate_key.as_ref().len(),
+                key.as_ptr(),
+                key.len(),
                 flags.bits(),
             )
         };

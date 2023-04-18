@@ -124,7 +124,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let lock_handle = env
             .sys_lock_substate(
                 &self.node_id,
-                &SubstateKey::from_vec(vec![ComponentOffset::State0 as u8]).unwrap(),
+                &vec![ComponentOffset::State0 as u8],
                 LockFlags::read_only(),
             )
             .unwrap();
@@ -138,7 +138,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let lock_handle = env
             .sys_lock_substate(
                 &self.node_id,
-                &SubstateKey::from_vec(vec![ComponentOffset::State0 as u8]).unwrap(),
+                &vec![ComponentOffset::State0 as u8],
                 LockFlags::MUTABLE,
             )
             .unwrap();
