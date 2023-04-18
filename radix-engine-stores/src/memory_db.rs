@@ -1,5 +1,4 @@
 use crate::interface::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Bound::Included;
 use sbor::rust::prelude::*;
@@ -27,7 +26,7 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         let key = encode_substate_id(node_id, module_id, substate_key);
         self.substates
             .get(&key)
-            .map(|x| scrypto_decode::<Vec<u8>>(x).expect("Failed to decode value"))
+            .map(|value| value.clone())
     }
 
     fn list_substates(
@@ -41,11 +40,10 @@ impl SubstateDatabase for InMemorySubstateDatabase {
             .substates
             .range((Included(start), Included(end)))
             .into_iter()
-            .map(|(k, v)| {
+            .map(|(k, value)| {
                 let (_, _, substate_key) =
                     decode_substate_id(k).expect("Failed to decode substate ID");
-                let value = scrypto_decode::<Vec<u8>>(v).expect("Failed to decode value");
-                (substate_key, value)
+                (substate_key, value.clone())
             });
 
         Box::new(iter)
@@ -60,7 +58,7 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
             match substate_change {
                 StateUpdate::Set(substate_value) => {
                     self.substates
-                        .insert(substate_id, scrypto_encode(&substate_value).unwrap());
+                        .insert(substate_id, substate_value.clone());
                 }
                 StateUpdate::Delete => {
                     self.substates.remove(&substate_id);
