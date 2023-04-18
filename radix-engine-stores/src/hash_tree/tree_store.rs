@@ -99,7 +99,7 @@ pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
 impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
     pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
     pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateKey>>,
