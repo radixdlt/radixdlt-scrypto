@@ -382,7 +382,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
 
     fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        entity_type: Option<EntityType>,
+        _entity_type: Option<EntityType>,
         virtual_node: bool,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_callback()
@@ -392,7 +392,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
                 CostingReason::AllocateNodeId,
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::AllocateNodeId {
-                        entity_type,
                         virtual_node,
                     })
                 },

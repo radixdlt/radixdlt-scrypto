@@ -25,7 +25,6 @@ pub enum CostingEntry<'a> {
         size: u32,
     },
     AllocateNodeId {
-        entity_type: Option<EntityType>,
         virtual_node: bool,
     },
 
@@ -84,33 +83,12 @@ impl FeeTable {
     fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         ((match entry {
             CostingEntry::AllocateNodeId {
-                entity_type,
                 virtual_node,
             } => {
-                if !virtual_node {
-                    if entity_type.is_some() {
-                        match entity_type.unwrap() {
-                            EntityType::GlobalAccessController => 287,
-                            EntityType::GlobalAccount => 278,
-                            EntityType::GlobalFungibleResource => 287,
-                            EntityType::GlobalGenericComponent => 198,
-                            EntityType::GlobalIdentity => 276,
-                            EntityType::GlobalNonFungibleResource => 283,
-                            EntityType::GlobalPackage => 264,
-                            EntityType::GlobalValidator => 212,
-                            EntityType::InternalAccount => 278,
-                            EntityType::InternalFungibleVault => 284,
-                            EntityType::InternalGenericComponent => 283,
-                            EntityType::InternalKeyValueStore => 210,
-                            EntityType::InternalNonFungibleVault => 292,
-                            _ => 264, // average of above values
-                        }
-                    } else {
-                        264 // average of above values
-                    }
-                } else {
-                    // virtual_node
+                if *virtual_node {
                     106
+                } else {
+                    264
                 }
             }
             CostingEntry::CreateNode { size: _, node_id } => match node_id.entity_type() {

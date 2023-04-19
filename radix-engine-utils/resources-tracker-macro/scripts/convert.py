@@ -100,11 +100,6 @@ for path in os.listdir(input_folder):
             node_id = param[0].attrib["arg0"]
             key += "::" + module_id + "::" + node_id
 
-        # handle kernel_allocate_node_id
-        param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
-        if param:
-            key += "::" + param[0]
-
         # correcting parenthesis
         c1 = key.count('(')
         c2 = key.count(')')
