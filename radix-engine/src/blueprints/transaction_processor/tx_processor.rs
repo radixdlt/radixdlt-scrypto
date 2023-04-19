@@ -350,14 +350,9 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = api.call_function(
-                        RESOURCE_MANAGER_PACKAGE,
-                        BUCKET_BLUEPRINT,
-                        BUCKET_BURN_IDENT,
-                        scrypto_encode(&BucketBurnInput { bucket }).unwrap(),
-                    )?;
+                    let rtn = bucket.sys_burn(api)?;
 
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;

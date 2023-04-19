@@ -94,7 +94,7 @@ impl FungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                    LocalRef::Bucket(_) => FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                 },
                 scrypto_args!(locked_amount),
@@ -111,7 +111,7 @@ impl FungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
+                    LocalRef::Bucket(_) => FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
                 },
                 scrypto_args!(locked_amount),
@@ -156,7 +156,7 @@ impl NonFungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Bucket(_) => NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                 },
                 scrypto_args!(locked_ids),
@@ -173,7 +173,7 @@ impl NonFungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Bucket(_) => NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                 },
                 scrypto_args!(locked_ids),
