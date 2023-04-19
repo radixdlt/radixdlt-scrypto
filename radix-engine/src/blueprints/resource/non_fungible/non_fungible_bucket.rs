@@ -322,13 +322,12 @@ impl NonFungibleBucketBlueprint {
             ));
         }
 
-        let bucket = {
-            // Take
-            let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
+        // Take
+        let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
 
-            // Create node
-            ResourceManager(info.resource_address).new_non_fungible_bucket(taken.into_ids(), api)?
-        };
+        // Create node
+        let bucket = ResourceManager(info.resource_address)
+            .new_non_fungible_bucket(taken.into_ids(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }

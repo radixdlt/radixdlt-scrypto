@@ -180,9 +180,11 @@ impl FungibleVaultBlueprint {
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let taken = FungibleVault::take(receiver, amount, api)?;
+
         let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+
         Ok(bucket)
     }
 

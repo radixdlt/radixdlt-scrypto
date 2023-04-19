@@ -199,13 +199,12 @@ impl FungibleBucketBlueprint {
             ));
         }
 
-        let bucket = {
-            // Take
-            let taken = FungibleBucket::take(receiver, input.amount, api)?;
+        // Take
+        let taken = FungibleBucket::take(receiver, input.amount, api)?;
 
-            // Create node
-            ResourceManager(info.resource_address).new_fungible_bucket(taken.amount(), api)?
-        };
+        // Create node
+        let bucket =
+            ResourceManager(info.resource_address).new_fungible_bucket(taken.amount(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }

@@ -166,25 +166,20 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let bucket = {
-            let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
-            let mut resource_manager: FungibleResourceManagerSubstate =
-                api.sys_read_substate_typed(resman_handle)?;
-            let divisibility = resource_manager.divisibility;
+        let mut resource_manager: FungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        let divisibility = resource_manager.divisibility;
 
-            // check amount
-            check_new_amount(divisibility, amount)?;
+        // check amount
+        check_new_amount(divisibility, amount)?;
 
-            resource_manager.total_supply += amount;
+        resource_manager.total_supply += amount;
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
+        api.sys_drop_lock(resman_handle)?;
 
-            let bucket = ResourceManager(resource_address).new_fungible_bucket(amount, api)?;
-
-            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-            api.sys_drop_lock(resman_handle)?;
-
-            bucket
-        };
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(amount, api)?;
 
         Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
@@ -261,31 +256,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
-            LockFlags::read_only(),
-        )?;
-        let resource_manager: FungibleResourceManagerSubstate =
-            api.sys_read_substate_typed(resman_handle)?;
-        let divisibility = resource_manager.divisibility;
-        let bucket_id = api.new_object(
-            FUNGIBLE_BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        Self::create_bucket(receiver, 0.into(), api)
     }
 
     pub(crate) fn create_bucket<Y>(

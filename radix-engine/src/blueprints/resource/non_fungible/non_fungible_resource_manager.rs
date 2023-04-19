@@ -361,9 +361,9 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids: ids.clone() })?;
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
 
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok(bucket)
     }
@@ -414,9 +414,9 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids: ids.clone() })?;
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
 
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok((bucket, id))
     }
@@ -469,9 +469,9 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids: ids.clone() })?;
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
 
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok(bucket)
     }
@@ -627,32 +627,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
-            LockFlags::read_only(),
-        )?;
-
-        let resource_manager: NonFungibleResourceManagerSubstate =
-            api.sys_read_substate_typed(resman_handle)?;
-        let id_type = resource_manager.id_type;
-        let bucket_id = api.new_object(
-            NON_FUNGIBLE_BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        Self::create_bucket(receiver, BTreeSet::new(), api)
     }
 
     pub(crate) fn create_bucket<Y>(
