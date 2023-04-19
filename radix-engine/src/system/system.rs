@@ -280,19 +280,13 @@ where
             })
             .collect();
 
-        let type_parent = if !schema.parent.is_empty() {
+        let type_parent = if let Some(parent) = &schema.parent {
             match actor {
                 Actor::Method {
                     global_address: Some(address),
                     blueprint,
                     ..
-                } if schema
-                    .parent
-                    .iter()
-                    .any(|parent| parent.eq(blueprint.blueprint_name.as_str())) =>
-                {
-                    Some(address)
-                }
+                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
