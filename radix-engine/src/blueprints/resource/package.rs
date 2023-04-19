@@ -948,7 +948,7 @@ impl ResourceManagerNativePackage {
             );
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                parent: Some(NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -1016,7 +1016,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let proof_schema = BlueprintSchema {
-            parent: None,
+            parent: Some(FUNGIBLE_BUCKET_BLUEPRINT.to_string()),
             schema,
             substates,
             functions,

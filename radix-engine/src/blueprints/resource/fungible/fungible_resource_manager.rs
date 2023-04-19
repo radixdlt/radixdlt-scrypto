@@ -5,6 +5,7 @@ use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -49,16 +50,7 @@ impl FungibleResourceManagerSubstate {
     }
 }
 
-fn build_fungible_bucket<Y>(
-    resource_address: ResourceAddress,
-    divisibility: u8,
-    amount: Decimal,
-    api: &mut Y,
-) -> Result<Bucket, RuntimeError>
-where
-    Y: ClientApi<RuntimeError>,
-{
-    // check amount
+fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
     let resource_type = ResourceType::Fungible { divisibility };
     if !resource_type.check_amount(amount) {
         return Err(RuntimeError::ApplicationError(
@@ -78,23 +70,7 @@ where
         ));
     }
 
-    let bucket_info = BucketInfoSubstate {
-        resource_address,
-        resource_type: ResourceType::Fungible { divisibility },
-    };
-    let liquid_resource = LiquidFungibleResource::new(amount);
-    let bucket_id = api.new_object(
-        FUNGIBLE_BUCKET_BLUEPRINT,
-        vec![
-            scrypto_encode(&bucket_info).unwrap(),
-            scrypto_encode(&liquid_resource).unwrap(),
-            scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-            scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-            scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-        ],
-    )?;
-
-    Ok(Bucket(Own(bucket_id)))
+    Ok(())
 }
 
 pub struct FungibleResourceManagerBlueprint;
@@ -167,9 +143,11 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         let resource_address = ResourceAddress::new_unchecked(resource_address);
-        let bucket = build_fungible_bucket(resource_address, divisibility, initial_supply, api)?;
+        check_new_amount(divisibility, initial_supply)?;
 
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
+
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(initial_supply, api)?;
 
         Ok((resource_address, bucket))
     }
@@ -194,25 +172,9 @@ impl FungibleResourceManagerBlueprint {
             let mut resource_manager: FungibleResourceManagerSubstate =
                 api.sys_read_substate_typed(resman_handle)?;
             let divisibility = resource_manager.divisibility;
-            let resource_type = ResourceType::Fungible { divisibility };
 
             // check amount
-            if !resource_type.check_amount(amount) {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        FungibleResourceManagerError::InvalidAmount(amount, divisibility),
-                    ),
-                ));
-            }
-
-            // Practically impossible to overflow the Decimal type with this limit in place.
-            if amount > dec!("1000000000000000000") {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        FungibleResourceManagerError::MaxMintAmountExceeded,
-                    ),
-                ));
-            }
+            check_new_amount(divisibility, amount)?;
 
             resource_manager.total_supply += amount;
 
