@@ -60,6 +60,7 @@ pub struct TransactionLimitsConfig {
 /// Tracks and verifies transaction limits during transactino execution,
 /// if exceeded breaks execution with appropriate error.
 /// Default limits values are defined in radix-engine-constants lib.
+/// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct TransactionLimitsModule {
     /// Definitions of the limits levels.
     limits_config: TransactionLimitsConfig,
@@ -73,8 +74,10 @@ pub struct TransactionLimitsModule {
     substate_db_read_size_total: usize,
     /// Substate store write size total.
     substate_db_write_size_total: usize,
-    /// Maximum WASM
+    /// Maximum WASM.
     wasm_max_memory: usize,
+    /// Maximum Invoke payload size.
+    invoke_payload_max_size: usize,
 }
 
 impl TransactionLimitsModule {
@@ -87,15 +90,18 @@ impl TransactionLimitsModule {
             substate_db_read_size_total: 0,
             substate_db_write_size_total: 0,
             wasm_max_memory: 0,
+            invoke_payload_max_size: 0,
         }
     }
 
+    /// Exports metrics to transaction receipt.
     pub fn finalize(&self, transaction_metrics: &mut ExecutionMetrics) {
         transaction_metrics.substate_read_count = self.substate_db_read_count;
         transaction_metrics.substate_write_count = self.substate_db_write_count;
         transaction_metrics.substate_read_size = self.substate_db_read_size_total;
         transaction_metrics.substate_write_size = self.substate_db_write_size_total;
         transaction_metrics.max_wasm_memory_used = self.wasm_max_memory;
+        transaction_metrics.max_invoke_payload_size = self.invoke_payload_max_size;
     }
 
     /// Checks if maximum WASM memory limit for one instance was exceeded and then
@@ -213,14 +219,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for TransactionLim
         _identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        if input_size
-            > api
-                .kernel_get_callback()
-                .modules
-                .transaction_limits
-                .limits_config
-                .max_invoke_payload_size
-        {
+        let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
+
+        if input_size > tlimit.invoke_payload_max_size {
+            tlimit.invoke_payload_max_size = input_size;
+        }
+
+        if input_size > tlimit.limits_config.max_invoke_payload_size {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxInvokePayloadSizeExceeded(input_size),

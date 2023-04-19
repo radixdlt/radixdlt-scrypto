@@ -48,42 +48,25 @@ impl ExecutionTraceModule {
 }
 
 /// Metrics gathered during transaction execution.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct ExecutionMetrics {
     /// Consumed cost units (excluding royalties)
     pub execution_cost_units_consumed: usize,
-
     /// Consumed royalties cost units
     pub royalties_cost_units_consumed: usize,
-
     /// Total substate read size in bytes.
     pub substate_read_size: usize,
-
     /// Substate read count.
     pub substate_read_count: usize,
-
     /// Total substate write size in bytes.
     pub substate_write_size: usize,
-
     /// Substate write count.
     pub substate_write_count: usize,
-
-    /// Peak memory usage by WASM.
+    /// Peak WASM memory usage during transactino execution.
+    /// This is the highest sum of all nested WASM instances.
     pub max_wasm_memory_used: usize,
-}
-
-impl Default for ExecutionMetrics {
-    fn default() -> Self {
-        Self {
-            execution_cost_units_consumed: 0,
-            royalties_cost_units_consumed: 0,
-            substate_read_size: 0,
-            substate_read_count: 0,
-            substate_write_size: 0,
-            substate_write_count: 0,
-            max_wasm_memory_used: 0,
-        }
-    }
+    /// The highest invoke payload size during transaction execution.
+    pub max_invoke_payload_size: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
