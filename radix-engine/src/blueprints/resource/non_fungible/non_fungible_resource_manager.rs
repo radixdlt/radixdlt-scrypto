@@ -27,6 +27,7 @@ pub enum NonFungibleResourceManagerError {
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
     NonFungibleLocalIdProvidedForUUIDType,
+    DropNonEmptyBucket,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -737,6 +738,27 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn drop_empty_bucket<Y>(
+        _receiver: &NodeId,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // FIXME: check if the bucket is locked
+        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
+        if dropped_bucket.amount().is_zero() {
+            Ok(())
+        } else {
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::DropNonEmptyBucket,
+                ),
+            ))
+        }
     }
 
     pub(crate) fn create_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>

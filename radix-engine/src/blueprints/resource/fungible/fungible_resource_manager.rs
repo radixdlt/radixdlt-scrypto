@@ -23,6 +23,7 @@ pub enum FungibleResourceManagerError {
     MaxMintAmountExceeded,
     MismatchingBucketResource,
     InvalidDivisibility(u8),
+    DropNonEmptyBucket,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -247,6 +248,27 @@ impl FungibleResourceManagerBlueprint {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn drop_empty_bucket<Y>(
+        _receiver: &NodeId,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        // FIXME: check if the bucket is locked
+        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
+        if dropped_bucket.amount().is_zero() {
+            Ok(())
+        } else {
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(
+                    FungibleResourceManagerError::DropNonEmptyBucket,
+                ),
+            ))
+        }
     }
 
     pub(crate) fn create_empty_bucket<Y>(
