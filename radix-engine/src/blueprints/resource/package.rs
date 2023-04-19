@@ -78,6 +78,7 @@ pub const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFung
 pub const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleBucket";
 pub const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
+
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
@@ -911,9 +912,10 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<BucketLockNonFungiblesInput>(),
+                        .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<BucketLockNonFungiblesOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
+                        ),
                     export_name: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );
@@ -922,9 +924,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<BucketUnlockNonFungiblesInput>(),
+                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<BucketUnlockNonFungiblesOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>(),
                     export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
                 },
             );

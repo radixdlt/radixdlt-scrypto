@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::resource::SysBucket;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
@@ -179,42 +179,6 @@ impl FungibleBucket {
 pub struct FungibleBucketBlueprint;
 
 impl FungibleBucketBlueprint {
-    pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        if bucket.sys_amount(api)?.is_zero() {
-            api.kernel_drop_node(bucket.0.as_node_id())?;
-        } else {
-            let resource_address = bucket.sys_resource_address(api)?;
-            native_sdk::resource::ResourceManager(resource_address).burn(bucket, api)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn drop_empty<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: BucketDropEmptyInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
-        let amount = input.bucket.sys_amount(api)?;
-        if amount.is_zero() {
-            api.kernel_drop_node(input.bucket.0.as_node_id())?;
-            Ok(IndexedScryptoValue::from_typed(&()))
-        } else {
-            Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::NotEmpty),
-            ))
-        }
-    }
-
     pub fn take<Y>(
         receiver: &NodeId,
         input: &IndexedScryptoValue,
@@ -235,43 +199,15 @@ impl FungibleBucketBlueprint {
             ));
         }
 
-        let node_id = if info.resource_type.is_fungible() {
+        let bucket = {
             // Take
             let taken = FungibleBucket::take(receiver, input.amount, api)?;
 
             // Create node
-            let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&info).unwrap(),
-                    scrypto_encode(&taken).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            bucket_id
-        } else {
-            // Take
-            let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
-
-            // Create node
-            let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&info).unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&taken).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            bucket_id
+            ResourceManager(info.resource_address).new_fungible_bucket(taken.amount(), api)?
         };
 
-        Ok(IndexedScryptoValue::from_typed(&Bucket(Own(node_id))))
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
     pub fn put<Y>(
@@ -298,41 +234,15 @@ impl FungibleBucketBlueprint {
         }
 
         // Put
-        match other_bucket.resource {
-            DroppedBucketResource::Fungible(r) => {
-                FungibleBucket::put(receiver, r, api)?;
-            }
-            DroppedBucketResource::NonFungible(r) => {
-                NonFungibleBucket::put(receiver, r, api)?;
-            }
-        }
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-
-    pub fn get_non_fungible_local_ids<Y>(
-        receiver: &NodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
-        let info = BucketInfoSubstate::of(receiver, api)?;
-        if info.resource_type.is_fungible() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
-            ));
-        } else {
-            let mut ids = NonFungibleBucket::liquid_non_fungible_local_ids(receiver, api)?;
-            ids.extend(NonFungibleBucket::locked_non_fungible_local_ids(
-                receiver, api,
-            )?);
-            Ok(IndexedScryptoValue::from_typed(&ids))
-        }
+        let rtn = FungibleBucket::put(
+            receiver,
+            match other_bucket.resource {
+                DroppedBucketResource::Fungible(x) => x,
+                DroppedBucketResource::NonFungible(_) => unreachable!(),
+            },
+            api,
+        )?;
+        Ok(IndexedScryptoValue::from_typed(&rtn))
     }
 
     pub fn get_amount<Y>(
@@ -347,14 +257,8 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let info = BucketInfoSubstate::of(receiver, api)?;
-        let amount = if info.resource_type.is_fungible() {
-            FungibleBucket::liquid_amount(receiver, api)?
-                + FungibleBucket::locked_amount(receiver, api)?
-        } else {
-            NonFungibleBucket::liquid_amount(receiver, api)?
-                + NonFungibleBucket::locked_amount(receiver, api)?
-        };
+        let amount = FungibleBucket::liquid_amount(receiver, api)?
+            + FungibleBucket::locked_amount(receiver, api)?;
 
         Ok(IndexedScryptoValue::from_typed(&amount))
     }
@@ -389,7 +293,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
-        let node_id = if info.resource_type.is_fungible() {
+        let node_id = {
             let amount = FungibleBucket::locked_amount(receiver, api)?
                 + FungibleBucket::liquid_amount(receiver, api)?;
 
@@ -409,25 +313,6 @@ impl FungibleBucketBlueprint {
                 ],
             )?;
             proof_id
-        } else {
-            let amount = NonFungibleBucket::locked_amount(receiver, api)?
-                + NonFungibleBucket::liquid_amount(receiver, api)?;
-
-            let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: false,
-            };
-            let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
-            let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&FungibleProof::default()).unwrap(),
-                    scrypto_encode(&proof).unwrap(),
-                ],
-            )?;
-            proof_id
         };
 
         Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
@@ -437,8 +322,6 @@ impl FungibleBucketBlueprint {
     // Protected method
     //===================
 
-    // FIXME: set up auth
-
     pub fn lock_amount<Y>(
         receiver: &NodeId,
         input: &IndexedScryptoValue,
@@ -447,7 +330,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: BucketLockAmountInput = input.as_typed().map_err(|e| {
+        let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
@@ -464,7 +347,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: BucketUnlockAmountInput = input.as_typed().map_err(|e| {
+        let input: FungibleBucketUnlockAmountInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 

@@ -10,7 +10,6 @@ use radix_engine_interface::blueprints::resource::*;
 pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
-    NonFungibleOperationNotSupported,
     MismatchingResource,
     NotEmpty,
     InvalidAmount,

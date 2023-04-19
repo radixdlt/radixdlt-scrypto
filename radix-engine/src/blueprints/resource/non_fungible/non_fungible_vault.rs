@@ -50,7 +50,6 @@ impl NonFungibleVaultBlueprint {
 
         // Take
         let taken = NonFungibleVault::take(receiver, *amount, api)?;
-        let id_type = Self::get_id_type(receiver, api)?;
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
@@ -73,7 +72,6 @@ impl NonFungibleVaultBlueprint {
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        let id_type = Self::get_id_type(receiver, api)?;
 
         // Create node
         ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
@@ -147,7 +145,6 @@ impl NonFungibleVaultBlueprint {
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        let id_type = Self::get_id_type(receiver, api)?;
         let taken = NonFungibleVault::take(receiver, amount, api)?;
         let bucket =
             ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
@@ -170,7 +167,6 @@ impl NonFungibleVaultBlueprint {
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        let id_type = Self::get_id_type(receiver, api)?;
 
         let bucket =
             ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;

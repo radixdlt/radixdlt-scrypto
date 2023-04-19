@@ -708,7 +708,8 @@ impl<'blob> TransactionProcessor<'blob> {
                 info.blueprint.package_address,
                 info.blueprint.blueprint_name.as_str(),
             ) {
-                (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
+                | (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }
