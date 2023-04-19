@@ -92,6 +92,7 @@ impl Fuzzer {
     // Smartly replace some data in the manifest using some preallocated resources.
     // This is to let fuzzing go "deeper" into the manifest instructions and not to reject the
     // transaction on the very early stage
+    #[cfg(feature = "smart_mutate")]
     fn smart_mutate_manifest(&mut self, manifest: &mut TransactionManifest) {
         for i in &mut manifest.instructions {
             match i {
@@ -148,8 +149,11 @@ impl Fuzzer {
     fn fuzz_tx_manifest(&mut self, data: &[u8]) -> TxStatus {
         let result = manifest_decode::<TransactionManifest>(data);
         match result {
+            #[allow(unused_mut)]
             Ok(mut manifest) => {
+                #[cfg(feature = "smart_mutate")]
                 self.smart_mutate_manifest(&mut manifest);
+
                 let receipt = self.runner.execute_manifest(
                     manifest,
                     vec![NonFungibleGlobalId::from_public_key(
