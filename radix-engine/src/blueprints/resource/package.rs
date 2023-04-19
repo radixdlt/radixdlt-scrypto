@@ -20,15 +20,34 @@ const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NA
     "create_with_initial_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_FungibleResourceManager";
-
-const FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
-    "create_vault_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
+    "create_empty_vault_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME: &str =
+    "create_empty_bucket_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
     "create_bucket_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
+
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
+    "create_with_initial_supply_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
+    "mint_uuid_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
+    "create_empty_vault_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME: &str =
+    "create_empty_bucket_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
+    "create_bucket_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
+    "get_resource_type_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
+    "get_total_supply_NonFungibleResourceManager";
 
 const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
 const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
@@ -38,21 +57,6 @@ const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVaul
 const FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
     "create_proof_by_amount_FungibleVault";
 
-const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
-    "create_with_initial_supply_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
-    "mint_uuid_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
-    "create_vault_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
-    "create_bucket_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
-    "get_resource_type_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
-    "get_total_supply_NonFungibleResourceManager";
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
@@ -154,14 +158,15 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+                RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
+                        .to_string(),
                 },
             );
 
@@ -358,14 +363,15 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+                RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
+                        .to_string(),
                 },
             );
             functions.insert(
@@ -1298,7 +1304,7 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1500,7 +1506,7 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(

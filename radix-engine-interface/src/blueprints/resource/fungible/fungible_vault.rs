@@ -14,6 +14,8 @@ pub struct FungibleVaultLockFeeInput {
 
 pub type FungibleVaultLockFeeOutput = ();
 
+// Protected
+
 pub const FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT: &str = "lock_fungible_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -22,6 +24,8 @@ pub struct FungibleVaultLockFungibleAmountInput {
 }
 
 pub type FungibleVaultLockFungibleAmountOutput = ();
+
+// Protected
 
 pub const FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT: &str = "unlock_fungible_amount";
 

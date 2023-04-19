@@ -120,7 +120,7 @@ impl SysBucket for Bucket {
     {
         let rtn = api.call_method(
             receiver.as_node_id(),
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())

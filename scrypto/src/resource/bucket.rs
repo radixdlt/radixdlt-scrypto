@@ -41,7 +41,7 @@ impl ScryptoBucket for Bucket {
         let rtn = env
             .call_method(
                 resource_address.as_node_id(),
-                RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+                RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
                 scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
             )
             .unwrap();

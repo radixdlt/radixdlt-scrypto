@@ -22,6 +22,8 @@ pub struct BucketGetNonFungibleLocalIdsInput {}
 
 pub type BucketGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
 
+// Protected
+
 pub const NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT: &str = "lock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -30,6 +32,8 @@ pub struct BucketLockNonFungiblesInput {
 }
 
 pub type BucketLockNonFungiblesOutput = ();
+
+// Protected
 
 pub const NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT: &str = "unlock_non_fungibles";
 

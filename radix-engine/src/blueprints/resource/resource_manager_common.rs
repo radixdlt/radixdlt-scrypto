@@ -108,7 +108,10 @@ fn build_access_rules(
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_CREATE_VAULT_IDENT),
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+        ),
         AllowAll,
         DenyAll,
     );

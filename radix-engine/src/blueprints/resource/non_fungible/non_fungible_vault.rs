@@ -4,6 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -55,22 +56,7 @@ impl NonFungibleVaultBlueprint {
         );
 
         // Create node
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
     }
 
     pub fn take_non_fungibles<Y>(
