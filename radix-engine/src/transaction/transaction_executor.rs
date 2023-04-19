@@ -304,6 +304,7 @@ where
         receipt
     }
 
+    #[cfg(not(feature = "alloc"))]
     fn print_execution_summary(receipt: &TransactionReceipt) {
         match &receipt.result {
             TransactionResult::Commit(commit) => {
