@@ -166,7 +166,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let bucket_id = {
+        let bucket = {
             let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
             let mut resource_manager: FungibleResourceManagerSubstate =
@@ -178,31 +178,17 @@ impl FungibleResourceManagerBlueprint {
 
             resource_manager.total_supply += amount;
 
-            let bucket_info = BucketInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::Fungible { divisibility },
-            };
-            let liquid_resource = LiquidFungibleResource::new(amount);
-            let bucket_id = api.new_object(
-                FUNGIBLE_BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&bucket_info).unwrap(),
-                    scrypto_encode(&liquid_resource).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
+            let bucket = ResourceManager(resource_address).new_fungible_bucket(amount, api)?;
 
             api.sys_write_substate_typed(resman_handle, &resource_manager)?;
             api.sys_drop_lock(resman_handle)?;
 
-            bucket_id
+            bucket
         };
 
         Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
-        Ok(Bucket(Own(bucket_id)))
+        Ok(bucket)
     }
 
     pub(crate) fn burn<Y>(
