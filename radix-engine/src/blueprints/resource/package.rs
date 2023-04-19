@@ -56,6 +56,8 @@ const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
     "create_proof_by_amount_FungibleVault";
+const FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleVault";
+const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVault";
 
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
@@ -64,20 +66,33 @@ const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
     "create_proof_by_amount_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "unlock_non_fungibles_NonFungibleVault";
 
-pub const FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_FungibleBucket";
-pub const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
-pub const FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleBucket";
-pub const FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
+const FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_FungibleBucket";
+const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
+const FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleBucket";
+const FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_FungibleBucket";
-pub const FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleBucket";
+const FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleBucket";
+const FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleBucket";
+const FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleBucket";
 
-pub const NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_NonFungibleBucket";
-pub const NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_NonFungibleBucket";
-pub const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleBucket";
-pub const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
+const NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleBucket";
-pub const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "unlock_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "unlock_non_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "take_non_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
+    "get_non_fungible_local_ids_NonFungibleBucket";
 
 pub struct ResourceManagerNativePackage;
 
@@ -530,7 +545,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>(),
-                    export_name: FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -542,7 +557,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(
                         ),
-                    export_name: FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -692,7 +707,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -705,7 +720,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -799,7 +814,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleBucketLockAmountOutput>(),
-                    export_name: FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -810,7 +825,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountOutput>(),
-                    export_name: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             let schema = generate_full_schema(aggregator);
@@ -893,7 +908,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -904,7 +919,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME
+                        .to_string(),
                 },
             );
             functions.insert(
@@ -916,7 +932,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -927,7 +943,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             let schema = generate_full_schema(aggregator);
@@ -1873,7 +1889,7 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => {
+            FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1886,7 +1902,7 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::lock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => {
+            FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1899,7 +1915,7 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::unlock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1914,7 +1930,7 @@ impl ResourceManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -2015,7 +2031,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 FungibleBucketBlueprint::create_proof(receiver, input, api)
             }
-            FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => {
+            FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -2023,7 +2039,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 FungibleBucketBlueprint::lock_amount(receiver, input, api)
             }
-            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => {
+            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -2073,7 +2089,7 @@ impl ResourceManagerNativePackage {
                 FungibleBucketBlueprint::create_proof(receiver, input, api)
             }
 
-            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -2081,7 +2097,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 NonFungibleBucketBlueprint::get_non_fungible_local_ids(receiver, input, api)
             }
-            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -2089,7 +2105,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 NonFungibleBucketBlueprint::take_non_fungibles(receiver, input, api)
             }
-            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -2097,7 +2113,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 NonFungibleBucketBlueprint::lock_non_fungibles(receiver, input, api)
             }
-            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
