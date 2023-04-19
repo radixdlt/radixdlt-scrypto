@@ -9,15 +9,6 @@ use sbor::*;
 
 use super::Proof;
 
-pub const BUCKET_DROP_EMPTY_IDENT: &str = "drop_empty";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct BucketDropEmptyInput {
-    pub bucket: Bucket,
-}
-
-pub type BucketDropEmptyOutput = ();
-
 pub const BUCKET_TAKE_IDENT: &str = "take";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
