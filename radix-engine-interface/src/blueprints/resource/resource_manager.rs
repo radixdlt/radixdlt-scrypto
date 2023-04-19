@@ -36,7 +36,7 @@ pub struct ResourceManagerCreateBucketInput {}
 
 pub type ResourceManagerCreateBucketOutput = Bucket;
 
-pub const BUCKET_DROP_EMPTY_IDENT: &str = "drop_empty_bucket";
+pub const RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT: &str = "drop_empty_bucket";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerDropEmptyBucketInput {
