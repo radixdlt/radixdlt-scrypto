@@ -47,6 +47,45 @@ impl ExecutionTraceModule {
     }
 }
 
+/// Metrics gathered during transaction execution.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ExecutionMetrics {
+    /// Consumed cost units (excluding royalties)
+    pub execution_cost_units_consumed: usize,
+
+    /// Consumed royalties cost units
+    pub royalties_cost_units_consumed: usize,
+
+    /// Total substate read size in bytes.
+    pub substate_read_size: usize,
+
+    /// Substate read count.
+    pub substate_read_count: usize,
+
+    /// Total substate write size in bytes.
+    pub substate_write_size: usize,
+
+    /// Substate write count.
+    pub substate_write_count: usize,
+
+    /// Peak memory usage by WASM.
+    pub max_wasm_memory_used: usize,
+}
+
+impl Default for ExecutionMetrics {
+    fn default() -> Self {
+        Self {
+            execution_cost_units_consumed: 0,
+            royalties_cost_units_consumed: 0,
+            substate_read_size: 0,
+            substate_read_count: 0,
+            substate_write_size: 0,
+            substate_write_count: 0,
+            max_wasm_memory_used: 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub node_id: NodeId,
@@ -593,6 +632,11 @@ impl ExecutionTraceModule {
                 TransactionExecutionTrace {
                     execution_traces,
                     resource_changes,
+                    execution_metrics: ExecutionMetrics {
+                        execution_cost_units_consumed: c.fee_summary.execution_cost_sum as usize,
+                        royalties_cost_units_consumed: c.fee_summary.royalty_cost_sum as usize,
+                        ..Default::default()
+                    },
                 }
             }
             TransactionResult::Reject(_) | TransactionResult::Abort(_) => {

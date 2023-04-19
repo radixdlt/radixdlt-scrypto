@@ -3,7 +3,7 @@ use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::system::system_modules::costing::FeeSummary;
 use crate::system::system_modules::execution_trace::{
-    ExecutionTrace, ResourceChange, WorktopChange,
+    ExecutionMetrics, ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::types::*;
 use colored::*;
@@ -31,6 +31,7 @@ pub struct ResourcesUsage {
 pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
+    pub execution_metrics: ExecutionMetrics,
 }
 
 impl TransactionExecutionTrace {

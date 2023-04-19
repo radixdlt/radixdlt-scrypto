@@ -3,6 +3,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::execution_trace::ExecutionMetrics;
 use crate::types::*;
 use crate::{
     errors::ModuleError,
@@ -68,6 +69,12 @@ pub struct TransactionLimitsModule {
     substate_db_read_count: usize,
     /// Substate store write count.
     substate_db_write_count: usize,
+    /// Substate store read size total.
+    substate_db_read_size_total: usize,
+    /// Substate store write size total.
+    substate_db_write_size_total: usize,
+    /// Maximum WASM
+    wasm_max_memory: usize,
 }
 
 impl TransactionLimitsModule {
@@ -77,12 +84,23 @@ impl TransactionLimitsModule {
             call_frames_stack: Vec::with_capacity(8),
             substate_db_read_count: 0,
             substate_db_write_count: 0,
+            substate_db_read_size_total: 0,
+            substate_db_write_size_total: 0,
+            wasm_max_memory: 0,
         }
+    }
+
+    pub fn finalize(&self, transaction_metrics: &mut ExecutionMetrics) {
+        transaction_metrics.substate_read_count = self.substate_db_read_count;
+        transaction_metrics.substate_write_count = self.substate_db_write_count;
+        transaction_metrics.substate_read_size = self.substate_db_read_size_total;
+        transaction_metrics.substate_write_size = self.substate_db_write_size_total;
+        transaction_metrics.max_wasm_memory_used = self.wasm_max_memory;
     }
 
     /// Checks if maximum WASM memory limit for one instance was exceeded and then
     /// checks if memory limit for all instances was exceeded.
-    fn validate_wasm_memory(&self) -> Result<(), RuntimeError> {
+    fn validate_wasm_memory(&mut self) -> Result<(), RuntimeError> {
         // check last (current) call frame
         let current_call_frame = self
             .call_frames_stack
@@ -106,6 +124,10 @@ impl TransactionLimitsModule {
             .iter()
             .map(|item| item.wasm_memory_usage)
             .sum();
+
+        if max_value > self.wasm_max_memory {
+            self.wasm_max_memory = max_value;
+        }
 
         // validate if limit was exceeded
         if max_value > self.limits_config.max_wasm_memory {
@@ -244,6 +266,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for TransactionLim
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
 
+        // Increase total size.
+        tlimit.substate_db_read_size_total += size;
+
         // Validate
         tlimit.validate_substates(Some(size), None)
     }
@@ -257,6 +282,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for TransactionLim
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;
+
+        // Increase total size.
+        tlimit.substate_db_write_size_total += size;
 
         // Validate
         tlimit.validate_substates(None, Some(size))

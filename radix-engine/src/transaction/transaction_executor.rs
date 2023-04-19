@@ -275,7 +275,11 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
+        let mut execution_trace = system.modules.execution_trace.finalize(&transaction_result);
+        system
+            .modules
+            .transaction_limits
+            .finalize(&mut execution_trace.execution_metrics);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -314,6 +318,10 @@ where
                     );
                     println!(
                         "{:<30}: {:>10}",
+                        "Total Royalty Units Consumed", commit.fee_summary.royalty_cost_sum
+                    );
+                    println!(
+                        "{:<30}: {:>10}",
                         "Cost Unit Limit", commit.fee_summary.cost_unit_limit
                     );
                     // NB - we use "to_string" to ensure they align correctly
@@ -326,6 +334,36 @@ where
                         "{:<30}: {:>10}",
                         "Royalty XRD",
                         commit.fee_summary.total_royalty_cost_xrd.to_string()
+                    );
+                    println!("{:-^80}", "Execution Metrics");
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Total Substate Read Bytes",
+                        receipt.execution_trace.execution_metrics.substate_read_size
+                    );
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Total Substate Write Bytes",
+                        receipt
+                            .execution_trace
+                            .execution_metrics
+                            .substate_write_size
+                    );
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Substate Read Count",
+                        receipt
+                            .execution_trace
+                            .execution_metrics
+                            .substate_read_count
+                    );
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Substate Write Count",
+                        receipt
+                            .execution_trace
+                            .execution_metrics
+                            .substate_write_count
                     );
                     println!("{:-^80}", "Application Logs");
                     for (level, message) in &commit.application_logs {
