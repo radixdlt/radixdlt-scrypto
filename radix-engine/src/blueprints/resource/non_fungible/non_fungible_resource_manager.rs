@@ -5,6 +5,7 @@ use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -25,6 +26,7 @@ pub enum NonFungibleResourceManagerError {
     MismatchingBucketResource,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
+    NonFungibleLocalIdProvidedForUUIDType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -107,61 +109,58 @@ where
     Ok((resource_manager, nf_store_id))
 }
 
-fn build_non_fungible_bucket<Y>(
+fn create_non_fungibles<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     nf_store_id: NodeId,
     entries: BTreeMap<NonFungibleLocalId, ScryptoValue>,
+    check_non_existence: bool,
     api: &mut Y,
-) -> Result<Bucket, RuntimeError>
+) -> Result<(), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let bucket = {
-        let mut ids = BTreeSet::new();
-        for (non_fungible_local_id, value) in entries {
-            if non_fungible_local_id.id_type() != id_type {
+    let mut ids = BTreeSet::new();
+    for (non_fungible_local_id, value) in entries {
+        if non_fungible_local_id.id_type() != id_type {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                        non_fungible_local_id.id_type(),
+                        id_type,
+                    ),
+                ),
+            ));
+        }
+
+        let non_fungible_handle = api.sys_lock_substate(
+            &nf_store_id,
+            &non_fungible_local_id.to_substate_key(),
+            LockFlags::MUTABLE,
+        )?;
+
+        if check_non_existence {
+            let cur_non_fungible: Option<ScryptoValue> =
+                api.sys_read_substate_typed(non_fungible_handle)?;
+
+            if let Some(..) = cur_non_fungible {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                            non_fungible_local_id.id_type(),
-                            id_type,
-                        ),
+                        NonFungibleResourceManagerError::NonFungibleAlreadyExists(Box::new(
+                            NonFungibleGlobalId::new(resource_address, non_fungible_local_id),
+                        )),
                     ),
                 ));
             }
-
-            let non_fungible_handle = api.sys_lock_substate(
-                &nf_store_id,
-                &non_fungible_local_id.to_substate_key(),
-                LockFlags::MUTABLE,
-            )?;
-
-            // TODO: Change interface so that we accept Option instead
-            api.sys_write_substate(non_fungible_handle, scrypto_encode(&Some(value)).unwrap())?;
-            api.sys_drop_lock(non_fungible_handle)?;
-            ids.insert(non_fungible_local_id);
         }
 
-        let info = BucketInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-        };
-        let bucket_id = api.new_object(
-            NON_FUNGIBLE_BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&info).unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
+        // TODO: Change interface so that we accept Option instead
+        api.sys_write_substate(non_fungible_handle, scrypto_encode(&Some(value)).unwrap())?;
+        api.sys_drop_lock(non_fungible_handle)?;
+        ids.insert(non_fungible_local_id);
+    }
 
-        Bucket(Own(bucket_id))
-    };
-
-    Ok(bucket)
+    Ok(())
 }
 
 pub struct NonFungibleResourceManagerBlueprint;
@@ -231,7 +230,7 @@ impl NonFungibleResourceManagerBlueprint {
         if id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::InvalidNonFungibleIdType,
+                    NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForUUIDType,
                 ),
             ));
         }
@@ -243,23 +242,30 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
-        let entries = entries
-            .into_iter()
-            .map(|(id, (value,))| (id, value))
-            .collect();
-
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
-        let bucket =
-            build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
+        let ids = entries.keys().cloned().collect();
+        let non_fungibles = entries
+            .into_iter()
+            .map(|(id, (value,))| (id, value))
+            .collect();
+        create_non_fungibles(
+            resource_address,
+            id_type,
+            nf_store_id,
+            non_fungibles,
+            false,
+            api,
+        )?;
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager).unwrap()],
         )?;
-
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
+
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
 
         Ok((resource_address, bucket))
     }
@@ -274,16 +280,18 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mut non_fungible_entries = BTreeMap::new();
+        let mut ids = BTreeSet::new();
+        let mut non_fungibles = BTreeMap::new();
         for (entry,) in entries {
             let uuid = Runtime::generate_uuid(api)?;
             let id = NonFungibleLocalId::uuid(uuid).unwrap();
-            non_fungible_entries.insert(id, entry);
+            ids.insert(id.clone());
+            non_fungibles.insert(id, entry);
         }
 
         let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
             NonFungibleIdType::UUID,
-            non_fungible_entries.len(),
+            non_fungibles.len(),
             non_fungible_schema,
             api,
         )?;
@@ -291,11 +299,12 @@ impl NonFungibleResourceManagerBlueprint {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
-        let bucket = build_non_fungible_bucket(
+        create_non_fungibles(
             resource_address,
             NonFungibleIdType::UUID,
             nf_store_id,
-            non_fungible_entries,
+            non_fungibles,
+            false,
             api,
         )?;
 
@@ -303,8 +312,9 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager).unwrap()],
         )?;
-
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
+
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
 
         Ok((resource_address, bucket))
     }
@@ -325,100 +335,37 @@ impl NonFungibleResourceManagerBlueprint {
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
-
         let mut resource_manager: NonFungibleResourceManagerSubstate =
             api.sys_read_substate_typed(resman_handle)?;
 
-        let (bucket_id, non_fungibles) = {
-            if resource_manager.id_type == NonFungibleIdType::UUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-
-            let amount: Decimal = entries.len().into();
-            resource_manager.total_supply += amount;
-
-            // Allocate non-fungibles
-            let mut ids = BTreeSet::new();
-            let mut non_fungibles = BTreeMap::new();
-            for (id, (non_fungible,)) in entries.clone().into_iter() {
-                if id.id_type() != resource_manager.id_type {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::NonFungibleResourceManagerError(
-                            NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                                id.id_type(),
-                                resource_manager.id_type,
-                            ),
-                        ),
-                    ));
-                }
-
-                ids.insert(id.clone());
-                non_fungibles.insert(id, non_fungible);
-            }
-
-            let info = BucketInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::NonFungible {
-                    id_type: resource_manager.id_type,
-                },
-            };
-            let bucket_id = api.new_object(
-                NON_FUNGIBLE_BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&info).unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-
-            (bucket_id, non_fungibles)
-        };
-
-        let nf_store_id = { resource_manager.non_fungible_table };
-
-        for (id, non_fungible) in non_fungibles {
-            let non_fungible_handle = api.sys_lock_substate(
-                nf_store_id.as_node_id(),
-                &id.to_substate_key(),
-                LockFlags::MUTABLE,
-            )?;
-
-            {
-                let cur_non_fungible: Option<ScryptoValue> =
-                    api.sys_read_substate_typed(non_fungible_handle)?;
-
-                if let Some(..) = cur_non_fungible {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::NonFungibleResourceManagerError(
-                            NonFungibleResourceManagerError::NonFungibleAlreadyExists(Box::new(
-                                NonFungibleGlobalId::new(resource_address, id),
-                            )),
-                        ),
-                    ));
-                }
-
-                api.sys_write_substate_typed(non_fungible_handle, Some(non_fungible))?;
-            }
-
-            api.sys_drop_lock(non_fungible_handle)?;
+        let id_type = resource_manager.id_type.clone();
+        if id_type == NonFungibleIdType::UUID {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForUUIDType,
+                ),
+            ));
         }
+        resource_manager.total_supply += entries.len();
+        let nf_store_id = resource_manager.non_fungible_table.as_node_id().clone();
+        api.sys_write_substate_typed(resman_handle, resource_manager)?;
 
-        Runtime::emit_event(
+        let ids: BTreeSet<NonFungibleLocalId> = entries.keys().cloned().collect();
+        let non_fungibles = entries.into_iter().map(|(k, v)| (k, v.0)).collect();
+        create_non_fungibles(
+            resource_address,
+            id_type,
+            nf_store_id,
+            non_fungibles,
+            true,
             api,
-            MintNonFungibleResourceEvent {
-                ids: entries.into_iter().map(|(k, _)| k).collect(),
-            },
         )?;
 
-        Ok(Bucket(Own(bucket_id)))
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids: ids.clone() })?;
+
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
+
+        Ok(bucket)
     }
 
     pub(crate) fn mint_single_uuid_non_fungible<Y>(
@@ -450,44 +397,28 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         resource_manager.total_supply += 1;
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
 
         // TODO: Is this enough bits to prevent hash collisions?
         // TODO: Possibly use an always incrementing timestamp
-        let uuid = Runtime::generate_uuid(api)?;
-        let id = NonFungibleLocalId::uuid(uuid).unwrap();
+        let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
+        let ids = btreeset!(id.clone());
+        let non_fungibles = btreemap!(id.clone() => value);
 
-        {
-            let non_fungible_handle = api.sys_lock_substate(
-                nf_store_id.as_node_id(),
-                &id.to_substate_key(),
-                LockFlags::MUTABLE,
-            )?;
-            api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
-
-            api.sys_drop_lock(non_fungible_handle)?;
-        }
-
-        let info = BucketInfoSubstate {
+        create_non_fungibles(
             resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-        };
-        let ids = BTreeSet::from([id.clone()]);
-        let bucket_id = api.new_object(
-            NON_FUNGIBLE_BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&info).unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
+            id_type,
+            nf_store_id.as_node_id().clone(),
+            non_fungibles,
+            false,
+            api,
         )?;
 
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids: ids.clone() })?;
 
-        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
 
-        Ok((Bucket(Own(bucket_id)), id))
+        Ok((bucket, id))
     }
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
@@ -505,66 +436,44 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let (bucket_id, ids) = {
-            let mut resource_manager: NonFungibleResourceManagerSubstate =
-                api.sys_read_substate_typed(resman_handle)?;
-            let nf_store_id = resource_manager.non_fungible_table;
-            let id_type = resource_manager.id_type;
+        let mut resource_manager: NonFungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        let nf_store_id = resource_manager.non_fungible_table;
+        let id_type = resource_manager.id_type;
 
-            if id_type != NonFungibleIdType::UUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
+        if id_type != NonFungibleIdType::UUID {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleIdType,
+                ),
+            ));
+        }
 
-            let amount: Decimal = entries.len().into();
-            resource_manager.total_supply += amount;
-            // Allocate non-fungibles
-            let mut ids = BTreeSet::new();
-            for (value,) in entries {
-                // TODO: Is this enough bits to prevent hash collisions?
-                // TODO: Possibly use an always incrementing timestamp
-                let uuid = Runtime::generate_uuid(api)?;
-                let id = NonFungibleLocalId::uuid(uuid).unwrap();
-                ids.insert(id.clone());
+        let amount: Decimal = entries.len().into();
+        resource_manager.total_supply += amount;
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
 
-                {
-                    let non_fungible_handle = api.sys_lock_substate(
-                        nf_store_id.as_node_id(),
-                        &id.to_substate_key(),
-                        LockFlags::MUTABLE,
-                    )?;
-                    api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
+        let mut ids = BTreeSet::new();
+        let mut non_fungibles = BTreeMap::new();
+        for value in entries {
+            let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
+            ids.insert(id.clone());
+            non_fungibles.insert(id, value.0);
+        }
+        create_non_fungibles(
+            resource_address,
+            id_type,
+            nf_store_id.as_node_id().clone(),
+            non_fungibles,
+            false,
+            api,
+        )?;
 
-                    api.sys_drop_lock(non_fungible_handle)?;
-                }
-            }
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids: ids.clone() })?;
 
-            let info = BucketInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::NonFungible { id_type },
-            };
-            let bucket_id = api.new_object(
-                NON_FUNGIBLE_BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&info).unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
+        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
 
-            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-
-            (bucket_id, ids)
-        };
-
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
-
-        Ok(Bucket(Own(bucket_id)))
+        Ok(bucket)
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
@@ -722,7 +631,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
@@ -758,7 +667,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
 
         let resource_manager: NonFungibleResourceManagerSubstate =
