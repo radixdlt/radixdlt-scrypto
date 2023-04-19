@@ -148,7 +148,7 @@ where
             resource_type: ResourceType::NonFungible { id_type },
         };
         let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -367,7 +367,7 @@ impl NonFungibleResourceManagerBlueprint {
                 },
             };
             let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
+                NON_FUNGIBLE_BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
                     scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -473,7 +473,7 @@ impl NonFungibleResourceManagerBlueprint {
         };
         let ids = BTreeSet::from([id.clone()]);
         let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -547,7 +547,7 @@ impl NonFungibleResourceManagerBlueprint {
                 resource_type: ResourceType::NonFungible { id_type },
             };
             let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
+                NON_FUNGIBLE_BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
                     scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -711,7 +711,10 @@ impl NonFungibleResourceManagerBlueprint {
         }
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_empty_bucket<Y>(
+        receiver: &NodeId,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -726,7 +729,7 @@ impl NonFungibleResourceManagerBlueprint {
             api.sys_read_substate_typed(resman_handle)?;
         let id_type = resource_manager.id_type;
         let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
                     resource_address,
@@ -736,6 +739,42 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Ok(Bucket(Own(bucket_id)))
+    }
+
+    pub(crate) fn create_bucket<Y>(
+        receiver: &NodeId,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            &ResourceManagerOffset::ResourceManager.into(),
+            LockFlags::MUTABLE,
+        )?;
+
+        let resource_manager: NonFungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        let id_type = resource_manager.id_type;
+        let bucket_id = api.new_object(
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
+                })
+                .unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;

@@ -84,7 +84,7 @@ where
     };
     let liquid_resource = LiquidFungibleResource::new(amount);
     let bucket_id = api.new_object(
-        BUCKET_BLUEPRINT,
+        FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
             scrypto_encode(&bucket_info).unwrap(),
             scrypto_encode(&liquid_resource).unwrap(),
@@ -222,7 +222,7 @@ impl FungibleResourceManagerBlueprint {
             };
             let liquid_resource = LiquidFungibleResource::new(amount);
             let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
+                FUNGIBLE_BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&bucket_info).unwrap(),
                     scrypto_encode(&liquid_resource).unwrap(),
@@ -306,7 +306,10 @@ impl FungibleResourceManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_empty_bucket<Y>(
+        receiver: &NodeId,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -320,7 +323,7 @@ impl FungibleResourceManagerBlueprint {
             api.sys_read_substate_typed(resman_handle)?;
         let divisibility = resource_manager.divisibility;
         let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
+            FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
                     resource_address,
@@ -337,7 +340,42 @@ impl FungibleResourceManagerBlueprint {
         Ok(Bucket(Own(bucket_id)))
     }
 
-    pub(crate) fn create_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_bucket<Y>(
+        receiver: &NodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            &ResourceManagerOffset::ResourceManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let resource_manager: FungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        let divisibility = resource_manager.divisibility;
+        let bucket_id = api.new_object(
+            FUNGIBLE_BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address,
+                    resource_type: ResourceType::Fungible { divisibility },
+                })
+                .unwrap(),
+                scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Ok(Bucket(Own(bucket_id)))
+    }
+
+    pub(crate) fn create_empty_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {

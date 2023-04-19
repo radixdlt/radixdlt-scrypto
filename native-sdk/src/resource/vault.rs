@@ -20,7 +20,7 @@ impl Vault {
         let rtn = api.call_method(
             resource_address.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
-            scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
+            scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
         )?;
 
         let own: Own = scrypto_decode(&rtn).unwrap();

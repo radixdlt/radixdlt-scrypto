@@ -228,7 +228,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+            scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
@@ -240,7 +240,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
-            scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
+            scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

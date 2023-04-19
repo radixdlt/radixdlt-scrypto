@@ -42,7 +42,7 @@ impl ScryptoBucket for Bucket {
             .call_method(
                 resource_address.as_node_id(),
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
-                scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+                scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

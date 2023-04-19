@@ -87,8 +87,43 @@ fn build_access_rules(
         update_non_fungible_data_mutability,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_CREATE_BUCKET_IDENT),
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+        ),
         AllowAll,
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+        ),
+        AllowAll,
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+        ),
+        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
+                RESOURCE_MANAGER_PACKAGE,
+            )),
+        ))),
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+        ),
+        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
+                RESOURCE_MANAGER_PACKAGE,
+            )),
+        ))),
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
@@ -103,14 +138,6 @@ fn build_access_rules(
         MethodKey::new(
             ObjectModuleId::SELF,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
         ),
         AllowAll,
         DenyAll,
