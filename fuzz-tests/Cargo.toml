@@ -58,6 +58,8 @@ cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
 
 simple-fuzzer = [ "clap", "rand", "rand_chacha", "log" ]
+dump_manifest_to_file = []
+smart_mutate = []
 
 #fuzzer = [ "libfuzzer-sys" ]
 #fuzzer = [ "afl" ]
