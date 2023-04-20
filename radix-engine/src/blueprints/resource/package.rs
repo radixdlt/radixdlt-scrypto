@@ -1044,7 +1044,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let proof_schema = BlueprintSchema {
-            parent: Some(FUNGIBLE_BUCKET_BLUEPRINT.to_string()),
+            parent: None,
             schema,
             substates,
             functions,
@@ -2114,7 +2114,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleBucketBlueprint::put(receiver, input, api)
+                NonFungibleBucketBlueprint::put(receiver, input, api)
             }
             NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2122,7 +2122,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleBucketBlueprint::take(receiver, input, api)
+                NonFungibleBucketBlueprint::take(receiver, input, api)
             }
             NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2130,7 +2130,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleBucketBlueprint::get_amount(receiver, input, api)
+                NonFungibleBucketBlueprint::get_amount(receiver, input, api)
             }
             NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2138,7 +2138,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleBucketBlueprint::get_resource_address(receiver, input, api)
+                NonFungibleBucketBlueprint::get_resource_address(receiver, input, api)
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2146,7 +2146,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleBucketBlueprint::create_proof(receiver, input, api)
+                NonFungibleBucketBlueprint::create_proof(receiver, input, api)
             }
 
             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME => {
