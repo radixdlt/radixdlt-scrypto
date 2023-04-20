@@ -2,7 +2,7 @@ use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -130,7 +130,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + KernelSubstateApi,
     {
         // Prepare event and emit it once operations finish
         let event = {
@@ -168,8 +168,9 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.lock_field(
+            let manager_handle = api.kernel_lock_substate(
                 manager.as_node_id(),
+                SysModuleId::Object.into(),
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -305,7 +306,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + KernelSubstateApi,
     {
         let handle = api.lock_field(
             receiver,
@@ -326,8 +327,9 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.lock_field(
+            let mgr_handle = api.kernel_lock_substate(
                 manager.as_node_id(),
+                SysModuleId::Object.into(),
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;

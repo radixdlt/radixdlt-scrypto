@@ -84,34 +84,52 @@ where
     #[trace_resources]
     fn lock_field(
         &mut self,
-        node_id: &NodeId,
+        orig_node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        match actor {
+        let (node_id, object_module_id, blueprint) = match &actor {
             Actor::Function { .. }
             | Actor::VirtualLazyLoad { .. }
                 => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
-            Actor::Method { .. } => {}
+            Actor::Method { node_id, module_id, blueprint, .. } => (node_id, module_id, blueprint),
+        };
+
+        if !orig_node_id.eq(node_id) {
+            panic!("Not the original id");
         }
 
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            match &type_info {
-                TypeInfoSubstate::Object(info)
-                    if info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) => {}
-                _ => {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
-                }
+            if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)) {
+
+                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
 
+        let sys_module_id = match object_module_id {
+            ObjectModuleId::SELF => {
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                    (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                        return Err(RuntimeError::SystemError(SystemError::NotATuple));
+                    }
+                    _ => SysModuleId::Object,
+                }
+            }
+            ObjectModuleId::Metadata => {
+                return Err(RuntimeError::SystemError(SystemError::NotATuple));
+            }
+            ObjectModuleId::Royalty => SysModuleId::Royalty,
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+        };
+
 
         // TODO: Check if valid substate_key for node_id
+        /*
         if !Self::can_substate_be_accessed(&actor, node_id) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
@@ -131,21 +149,7 @@ where
             }
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
-                    match module_id {
-                        ObjectModuleId::SELF => {
-                            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                                    return Err(RuntimeError::SystemError(SystemError::NotATuple));
-                                }
-                                _ => SysModuleId::Object,
-                            }
-                        }
-                        ObjectModuleId::Metadata => {
-                            return Err(RuntimeError::SystemError(SystemError::NotATuple));
-                        }
-                        ObjectModuleId::Royalty => SysModuleId::Royalty,
-                        ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-                    }
+
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
@@ -156,11 +160,12 @@ where
                 }
             }
         };
+         */
 
         let substate_key = SubstateKey::Key(key.clone());
 
         self.api
-            .kernel_lock_substate(&node_id, module_id.into(), &substate_key, flags)
+            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
     }
 
     #[trace_resources]
