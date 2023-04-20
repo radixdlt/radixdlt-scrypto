@@ -153,12 +153,28 @@ elif [ $cmd = "watch" ] ; then
             echo "Fuzzing ends in  : $(humanize_seconds $time_left)"
         fi
     done
-    echo "AFL instances stdout:"
+    echo "AFL sessions stdout:"
     find afl -name "${target}_*.log"  | sort | xargs tail -n50
-    echo "AFL instances stderr:"
+    echo "AFL sessions stderr:"
     find afl -name "${target}_*.err"  | sort | xargs tail -n50
-    echo "AFL instances status (0 means 'ok'):"
-    find afl -name "${target}_*.status" | sort | xargs cat
+    list=$(find afl -name "${target}_*.status" | sort)
+    echo "AFL sessions info:"
+
+    for f in $list ; do
+        name=$(basename ${f%.status})
+        stats_file=afl/${target}/${name}/fuzzer_stats
+        stability="n/a"
+        coverage="n/a"
+        if [ -f $stats_file ] ; then
+            stability=$(grep stability $stats_file | awk '{print $3}')
+            coverage=$(grep bitmap_cvg $stats_file | awk '{print $3}')
+        fi
+        d=$(dirname $f)
+        printf "%s\n" $name
+        printf "  %-20s: %s\n" "status (0 -> ok)" $(cat $f)
+        printf "  %-20s: %s\n" "coverage" $coverage
+        printf "  %-20s: %s\n" "stability" $stability
+    done | tee afl/sessions_info
 else
     error "Command '$cmd' not supported"
 fi

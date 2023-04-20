@@ -102,8 +102,15 @@ jobs:
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
         ## Status:\n \
         \n\`\`\`\n \
-         $(cargo afl whatsup -d afl/transaction) \
-        \n\`\`\`\n" > afl/summary
+         $(cat afl/sessions_info) \
+        \n\`\`\`\n \
+        ## Details:\n \
+        <details>\n
+          <summary>More details</summary>\n
+        \n\`\`\`\n \
+        $(cargo afl whatsup -d afl/transaction) \
+        \n\`\`\`\n
+        </details>\n" > afl/summary
         cat afl/summary >> $GITHUB_STEP_SUMMARY
 
         echo -e \
