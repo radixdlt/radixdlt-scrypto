@@ -29,14 +29,20 @@ impl ComponentAddress {
     ) -> ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
-                let mut temp = hash(public_key.to_vec()).lower_27_bytes();
-                temp[0] = EntityType::GlobalVirtualEcdsaAccount as u8;
-                Self(NodeId(temp))
+                let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).0
+                    [(32 - NodeId::LENGTH)..32]
+                    .try_into()
+                    .unwrap();
+                node_id[0] = EntityType::GlobalVirtualEcdsaAccount as u8;
+                Self(NodeId(node_id))
             }
             PublicKey::EddsaEd25519(public_key) => {
-                let mut temp = hash(public_key.to_vec()).lower_27_bytes();
-                temp[0] = EntityType::GlobalVirtualEddsaAccount as u8;
-                Self(NodeId(temp))
+                let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).0
+                    [(32 - NodeId::LENGTH)..32]
+                    .try_into()
+                    .unwrap();
+                node_id[0] = EntityType::GlobalVirtualEddsaAccount as u8;
+                Self(NodeId(node_id))
             }
         }
     }
@@ -46,14 +52,22 @@ impl ComponentAddress {
     ) -> ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
-                let mut temp = hash(public_key.to_vec()).lower_27_bytes();
-                temp[0] = EntityType::GlobalVirtualEcdsaIdentity as u8;
-                Self(NodeId(temp))
+                let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).0
+                    [(32 - NodeId::LENGTH)..32]
+                    .try_into()
+                    .unwrap();
+                node_id[0] = EntityType::GlobalVirtualEcdsaIdentity as u8;
+                Self(NodeId(node_id))
             }
             PublicKey::EddsaEd25519(public_key) => {
-                let mut temp = hash(public_key.to_vec()).lower_27_bytes();
-                temp[0] = EntityType::GlobalVirtualEddsaIdentity as u8;
-                Self(NodeId(temp))
+                let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).0
+                    [(32 - NodeId::LENGTH)..32]
+                    .try_into()
+                    .unwrap();
+                node_id[0] = EntityType::GlobalVirtualEddsaIdentity as u8;
+                //let mut temp = hash(public_key.to_vec()).lower_27_bytes();
+                //temp[0] = EntityType::GlobalVirtualEddsaIdentity as u8;
+                Self(NodeId(node_id))
             }
         }
     }

@@ -24,7 +24,7 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedInput {
-    pub package_address: Option<[u8; 27]>, // TODO: Clean this up
+    pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -38,7 +38,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishNativeInput {
-    pub package_address: Option<[u8; 27]>, // TODO: Clean this up
+    pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub schema: PackageSchema,
     pub dependent_resources: Vec<ResourceAddress>,

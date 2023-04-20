@@ -13,7 +13,7 @@ use sbor::rust::prelude::*;
 pub struct NodeId(pub [u8; Self::LENGTH]);
 
 impl NodeId {
-    pub const LENGTH: usize = 27;
+    pub const LENGTH: usize = 30;
 
     pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 1]) -> Self {
         let mut buf = [0u8; Self::LENGTH];

@@ -221,7 +221,7 @@ impl IdentityBlueprint {
     }
 
     pub fn create_ecdsa_virtual<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::LENGTH - 1],
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
@@ -237,7 +237,7 @@ impl IdentityBlueprint {
     }
 
     pub fn create_eddsa_virtual<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::LENGTH - 1],
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where

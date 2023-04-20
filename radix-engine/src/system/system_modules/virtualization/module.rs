@@ -52,7 +52,7 @@ impl VirtualizationModule {
                     _ => return Ok(false),
                 };
 
-                let mut args = [0u8; 26];
+                let mut args = [0u8; NodeId::LENGTH - 1];
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {

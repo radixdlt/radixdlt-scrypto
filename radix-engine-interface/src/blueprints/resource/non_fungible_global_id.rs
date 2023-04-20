@@ -137,11 +137,17 @@ impl FromPublicKey for NonFungibleGlobalId {
         match public_key {
             PublicKey::EcdsaSecp256k1(public_key) => NonFungibleGlobalId::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleLocalId::bytes(hash(public_key.to_vec()).lower_26_bytes()).unwrap(),
+                NonFungibleLocalId::bytes(
+                    hash(public_key.to_vec()).0[32 - NodeId::LENGTH + 1..32].to_vec(),
+                )
+                .unwrap(),
             ),
             PublicKey::EddsaEd25519(public_key) => NonFungibleGlobalId::new(
                 EDDSA_ED25519_TOKEN,
-                NonFungibleLocalId::bytes(hash(public_key.to_vec()).lower_26_bytes()).unwrap(),
+                NonFungibleLocalId::bytes(
+                    hash(public_key.to_vec()).0[32 - NodeId::LENGTH + 1..32].to_vec(),
+                )
+                .unwrap(),
             ),
         }
     }
@@ -164,51 +170,51 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<id>",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<id>",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<id>"
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<id>"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:#123#",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#123#",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:#123#"
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#123#"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}"
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<test>",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<test>",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:<test>"
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<test>"
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:[010a]",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[010a]",
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:[010a]"
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[010a]"
         );
     }
 
@@ -218,7 +224,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );
@@ -226,7 +232,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:1:2",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:1:2",
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );
@@ -234,7 +240,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::UnknownType
@@ -257,7 +263,7 @@ mod tests {
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:#notnumber#",
+                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#notnumber#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::InvalidInteger

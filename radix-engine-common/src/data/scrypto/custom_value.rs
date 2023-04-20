@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn test_custom_types_group1() {
-        let values = (Reference(NodeId([1u8; 27])),);
+        let values = (Reference(NodeId([1u8; NodeId::LENGTH])),);
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
@@ -90,14 +90,14 @@ mod tests {
                 33, // tuple
                 1,  // length
                 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, // reference
+                1, 1, 1, 1, // reference
             ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
             ScryptoValue::Tuple {
                 fields: vec![ScryptoValue::Custom {
-                    value: ScryptoCustomValue::Reference(Reference(NodeId([1u8; 27]))),
+                    value: ScryptoCustomValue::Reference(Reference(NodeId([1u8; NodeId::LENGTH]))),
                 },]
             }
         );
@@ -114,7 +114,7 @@ mod tests {
                 33, // tuple
                 1,  // length
                 144, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, // own
+                1, 1, 1, 1, // own
             ]
         );
         assert_eq!(
