@@ -23,6 +23,7 @@ function usage() {
     echo "    watch <interval>"
     echo "            Monitor AFL instances until they are finished."
     echo "            One can specify interval (default: $DFLT_INTERVAL) to output the status"
+    echo "    quit    Quit all AFL instances"
 }
 
 function error() {
@@ -175,6 +176,14 @@ elif [ $cmd = "watch" ] ; then
         printf "  %-20s: %s\n" "coverage" $coverage
         printf "  %-20s: %s\n" "stability" $stability
     done | tee afl/sessions_info
+elif [ $cmd = "quit" ] ; then
+    list=$(screen -ls | grep afl | awk '{print $1}')
+    if [ "$list" != "" ] ; then
+        # terminate the afl-fuzz process, so it's status is written to the *.status file
+        pkill afl-fuzz
+    else
+        echo "nothing to be done"
+    fi
 else
     error "Command '$cmd' not supported"
 fi
