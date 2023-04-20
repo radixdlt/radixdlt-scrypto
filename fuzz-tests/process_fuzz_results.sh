@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#set -x
 set -e
 set -u
 
@@ -158,6 +159,7 @@ if [ -d $url_or_dir ] ; then
         work_dir=local_$(date -u  +%Y%m%d%H%M%S)
     else
         echo "This is not AFL output directory"
+        exit 1
     fi
 else
     gh_run_id=${url_or_dir##*/}
