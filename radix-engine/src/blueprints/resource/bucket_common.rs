@@ -1,9 +1,10 @@
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
+use crate::errors::{KernelError, RuntimeError};
+use crate::kernel::heap::{DroppedFungibleBucket, HeapNode};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -32,4 +33,76 @@ impl BucketInfoSubstate {
         api.sys_drop_lock(handle)?;
         Ok(info)
     }
+}
+
+fn drop_fungible_bucket_of_address<Y>(
+    expected_address: ResourceAddress,
+    bucket_node_id: &NodeId,
+    api: &mut Y,
+) -> Result<DroppedFungibleBucket, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    let node: HeapNode = api.kernel_drop_node(bucket_node_id)?;
+
+    // Note that we assume the input is indeed a bucket; we're just not sure if it's
+    // fungible or non-fungible, because schema type allows either.
+    let info: BucketInfoSubstate = node
+        .substates
+        .get(&SysModuleId::ObjectTuple)
+        .unwrap()
+        .get(&BucketOffset::Info.into())
+        .map(|x| x.as_typed().unwrap())
+        .unwrap();
+
+    if info.resource_address != expected_address {
+        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+            bucket_node_id.clone(),
+        )));
+    }
+
+    let bucket: DroppedFungibleBucket = node.into();
+    if bucket.locked.is_locked() {
+        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+            bucket_node_id.clone(),
+        )));
+    }
+
+    Ok(bucket)
+}
+
+fn drop_non_fungible_bucket_of_address<Y>(
+    expected_address: ResourceAddress,
+    bucket_node_id: &NodeId,
+    api: &mut Y,
+) -> Result<DroppedFungibleBucket, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    let node: HeapNode = api.kernel_drop_node(bucket_node_id)?;
+
+    // Note that we assume the input is indeed a bucket; we're just not sure if it's
+    // fungible or non-fungible, because schema type allows either.
+    let info: BucketInfoSubstate = node
+        .substates
+        .get(&SysModuleId::ObjectTuple)
+        .unwrap()
+        .get(&BucketOffset::Info.into())
+        .map(|x| x.as_typed().unwrap())
+        .unwrap();
+
+    if info.resource_address != expected_address {
+        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+            bucket_node_id.clone(),
+        )));
+    }
+
+    let bucket: DroppedFungibleBucket = node.into();
+    if bucket.locked.is_locked() {
+        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+            bucket_node_id.clone(),
+        )));
+    }
+
+    Ok(bucket)
 }
