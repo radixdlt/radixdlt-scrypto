@@ -273,12 +273,11 @@ impl NonFungibleBucket {
     }
 
     pub fn take<Y>(
-        receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
             &BucketOffset::LiquidNonFungible.into(),
@@ -296,12 +295,11 @@ impl NonFungibleBucket {
     }
 
     pub fn take_non_fungibles<Y>(
-        receiver: &NodeId,
         ids: &BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
             &BucketOffset::LiquidNonFungible.into(),
@@ -322,7 +320,7 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: ClientSubstateApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
@@ -362,7 +360,7 @@ impl NonFungibleBucket {
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount - max_locked;
-            let resource = NonFungibleBucket::take(receiver, delta, api)?;
+            let resource = NonFungibleBucket::take(delta, api)?;
 
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
@@ -417,7 +415,7 @@ impl NonFungibleBucket {
             .cloned()
             .filter(|id| !locked.ids.contains_key(id))
             .collect();
-        NonFungibleBucket::take_non_fungibles(receiver, &delta, api)?;
+        NonFungibleBucket::take_non_fungibles(&delta, api)?;
 
         // Increase lock count
         for id in &ids {
@@ -554,7 +552,7 @@ impl BucketBlueprint {
             bucket_id
         } else {
             // Take
-            let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
+            let taken = NonFungibleBucket::take(input.amount, api)?;
 
             // Create node
             let bucket_id = api.new_object(
@@ -594,7 +592,7 @@ impl BucketBlueprint {
             ));
         } else {
             // Take
-            let taken = NonFungibleBucket::take_non_fungibles(receiver, &input.ids, api)?;
+            let taken = NonFungibleBucket::take_non_fungibles(&input.ids, api)?;
 
             // Create node
             let bucket_id = api.new_object(

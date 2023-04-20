@@ -310,13 +310,11 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_non_fungible<Y>(
-        receiver: &NodeId,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
@@ -421,12 +419,11 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_single_uuid_non_fungible<Y>(
-        receiver: &NodeId,
         value: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
@@ -489,12 +486,11 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
-        receiver: &NodeId,
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
@@ -565,14 +561,13 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
-        receiver: &NodeId,
         id: NonFungibleLocalId,
         field_name: String,
         data: ScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
@@ -638,12 +633,11 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn non_fungible_exists<Y>(
-        receiver: &NodeId,
         id: NonFungibleLocalId,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
             &ResourceManagerOffset::ResourceManager.into(),
@@ -667,12 +661,11 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_non_fungible<Y>(
-        receiver: &NodeId,
         id: NonFungibleLocalId,
         api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
@@ -705,9 +698,9 @@ impl NonFungibleResourceManagerBlueprint {
         }
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_bucket<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
@@ -737,7 +730,6 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(
-        receiver: &NodeId,
         bucket: Bucket,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -808,9 +800,9 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_vault<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
             &ResourceManagerOffset::ResourceManager.into(),
@@ -842,11 +834,10 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_resource_type<Y>(
-        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<ResourceType, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
             &ResourceManagerOffset::ResourceManager.into(),
@@ -863,11 +854,10 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn get_total_supply<Y>(
-        receiver: &NodeId,
         api: &mut Y,
     ) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
             &ResourceManagerOffset::ResourceManager.into(),

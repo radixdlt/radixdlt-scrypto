@@ -43,8 +43,7 @@ pub struct ProofInfoSubstate {
 }
 
 impl ProofInfoSubstate {
-    pub fn of<Y: KernelSubstateApi + ClientSubstateApi<RuntimeError>>(
-        receiver: &NodeId,
+    pub fn of_self<Y: ClientSubstateApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
         let handle =
@@ -195,18 +194,17 @@ pub struct ProofBlueprint;
 
 impl ProofBlueprint {
     pub(crate) fn clone<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: ProofCloneInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let proof_info = ProofInfoSubstate::of_self(api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
             let handle = api.lock_field(
                 &ProofOffset::Fungible.into(),
@@ -253,18 +251,17 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let proof_info = ProofInfoSubstate::of_self(api)?;
         let amount = if proof_info.resource_type.is_fungible() {
             let handle = api.lock_field(
                 &ProofOffset::Fungible.into(),
@@ -288,18 +285,17 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let proof_info = ProofInfoSubstate::of_self(api)?;
         if proof_info.resource_type.is_fungible() {
             Err(RuntimeError::ApplicationError(
                 ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
@@ -317,7 +313,6 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -328,7 +323,7 @@ impl ProofBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let proof_info = ProofInfoSubstate::of_self(api)?;
         Ok(IndexedScryptoValue::from_typed(
             &proof_info.resource_address,
         ))
