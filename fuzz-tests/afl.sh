@@ -159,8 +159,8 @@ elif [ $cmd = "watch" ] ; then
     echo "AFL sessions stderr:"
     find afl -name "${target}_*.err"  | sort | xargs tail -n50
     list=$(find afl -name "${target}_*.status" | sort)
-    echo "AFL sessions info:"
 
+    echo "AFL sessions info:" | tee afl/sessions_info
     for f in $list ; do
         name=$(basename ${f%.status})
         stats_file=afl/${target}/${name}/fuzzer_stats
@@ -171,11 +171,8 @@ elif [ $cmd = "watch" ] ; then
             coverage=$(grep bitmap_cvg $stats_file | awk '{print $3}')
         fi
         d=$(dirname $f)
-        printf "%s\n" $name
-        printf "  %-20s: %s\n" "status (0 -> ok)" $(cat $f)
-        printf "  %-20s: %s\n" "coverage" $coverage
-        printf "  %-20s: %s\n" "stability" $stability
-    done | tee afl/sessions_info
+        printf "  %-30s status:%-2s coverage:%-7s stability:%-7s\n" $name $(cat $f) $coverage $stability
+    done | tee -a afl/sessions_info
 elif [ $cmd = "quit" ] ; then
     list=$(screen -ls | grep afl | awk '{print $1}')
     if [ "$list" != "" ] ; then
