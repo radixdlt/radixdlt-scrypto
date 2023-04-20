@@ -202,6 +202,7 @@ pub enum CallFrameError {
 pub enum SystemError {
     GlobalAddressDoesNotExist,
     NotAnObject,
+    NotATuple,
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,

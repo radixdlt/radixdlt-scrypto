@@ -195,7 +195,7 @@ impl AccountBlueprint {
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_key_value_store_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
                 LockFlags::read_only(),
@@ -266,7 +266,7 @@ impl AccountBlueprint {
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_key_value_store_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
                 LockFlags::MUTABLE,
@@ -332,7 +332,7 @@ impl AccountBlueprint {
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
                 let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
-                let handle = api.sys_lock_substate(
+                let handle = api.lock_key_value_store_entry(
                     account.vaults.as_node_id(),
                     &encoded_key,
                     LockFlags::MUTABLE,
@@ -395,7 +395,7 @@ impl AccountBlueprint {
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_key_value_store_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
                 LockFlags::read_only(),

@@ -169,6 +169,23 @@ where
         Ok(())
     }
 
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+        flags: u32,
+    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+
+        let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
+        let handle = self.api.lock_key_value_store_entry(&node_id, &key, flags)?;
+
+        Ok(handle)
+    }
+
     fn lock_substate(
         &mut self,
         node_id: Vec<u8>,
@@ -377,6 +394,15 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: Vec<u8>,
+        offset: Vec<u8>,
+        flags: u32,
+    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

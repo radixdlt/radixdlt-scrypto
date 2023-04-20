@@ -117,27 +117,33 @@ where
         }
 
         let module_id = match type_info {
-            TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
-                // TODO: Implement in corresponding api
-                panic!("Not supported")
+            TypeInfoSubstate::SortedStore
+            | TypeInfoSubstate::IterableStore
+            | TypeInfoSubstate::KeyValueStore(..) => {
+                return Err(RuntimeError::SystemError(SystemError::NotATuple));
             }
-            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Virtualized,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                                    return Err(RuntimeError::SystemError(SystemError::NotATuple));
+                                }
                                 _ => SysModuleId::Object,
                             }
                         }
-                        ObjectModuleId::Metadata => SysModuleId::Metadata,
+                        ObjectModuleId::Metadata => {
+                            return Err(RuntimeError::SystemError(SystemError::NotATuple));
+                        }
                         ObjectModuleId::Royalty => SysModuleId::Royalty,
                         ObjectModuleId::AccessRules => SysModuleId::AccessRules,
                     }
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                            return Err(RuntimeError::SystemError(SystemError::NotATuple));
+                        }
                         _ => SysModuleId::Object,
                     }
                 }
@@ -679,6 +685,62 @@ where
         };
 
         Ok(schema)
+    }
+
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+        }
+
+        let actor = self.api.kernel_get_current_actor().unwrap();
+
+        let module_id = match type_info {
+            TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            }
+            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Virtualized,
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                if let Actor::Method { module_id, .. } = &actor {
+                    match module_id {
+                        ObjectModuleId::SELF => {
+                            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                                _ => {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::NotAKeyValueStore,
+                                    ))
+                                }
+                            }
+                        }
+                        ObjectModuleId::Metadata => SysModuleId::Metadata,
+                        ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
+                            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+                        }
+                    }
+                } else {
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                        _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
+                    }
+                }
+            }
+        };
+
+        let substate_key = SubstateKey::Key(key.clone());
+
+        self.api.kernel_lock_substate_with_default(
+            &node_id,
+            module_id.into(),
+            &substate_key,
+            flags,
+            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+        )
     }
 }
 
@@ -1317,7 +1379,8 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
-        self.api.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default)
+        self.api
+            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default)
     }
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {

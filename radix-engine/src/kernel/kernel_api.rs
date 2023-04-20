@@ -58,19 +58,7 @@ pub trait KernelSubstateApi {
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        self.kernel_lock_substate_with_default(
-            node_id,
-            module_id,
-            substate_key,
-            flags,
-            if module_id.virtualize_substates() {
-                Some(|| {
-                    IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)
-                })
-            } else {
-                None
-            }
-        )
+        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None)
     }
 
     /// Retrieves info related to a lock

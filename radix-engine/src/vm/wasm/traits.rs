@@ -47,6 +47,13 @@ pub trait WasmRuntime {
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+        flags: u32,
+    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
+
     fn get_object_info(
         &mut self,
         component_id: Vec<u8>,

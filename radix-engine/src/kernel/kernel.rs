@@ -560,7 +560,7 @@ where
                                 module_id,
                                 &substate_key,
                                 flags,
-                                None
+                                None,
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -608,7 +608,7 @@ where
                                 module_id.into(),
                                 substate_key,
                                 flags,
-                                None
+                                None,
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?

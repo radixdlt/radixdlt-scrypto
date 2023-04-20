@@ -131,7 +131,7 @@ where
                 ));
             }
 
-            let non_fungible_handle = api.sys_lock_substate(
+            let non_fungible_handle = api.lock_key_value_store_entry(
                 &nf_store_id,
                 &non_fungible_local_id.to_key(),
                 LockFlags::MUTABLE,
@@ -385,8 +385,11 @@ impl NonFungibleResourceManagerBlueprint {
         let nf_store_id = { resource_manager.non_fungible_table };
 
         for (id, non_fungible) in non_fungibles {
-            let non_fungible_handle =
-                api.sys_lock_substate(nf_store_id.as_node_id(), &id.to_key(), LockFlags::MUTABLE)?;
+            let non_fungible_handle = api.lock_key_value_store_entry(
+                nf_store_id.as_node_id(),
+                &id.to_key(),
+                LockFlags::MUTABLE,
+            )?;
 
             {
                 let cur_non_fungible: Option<ScryptoValue> =
@@ -454,8 +457,11 @@ impl NonFungibleResourceManagerBlueprint {
         let id = NonFungibleLocalId::uuid(uuid).unwrap();
 
         {
-            let non_fungible_handle =
-                api.sys_lock_substate(nf_store_id.as_node_id(), &id.to_key(), LockFlags::MUTABLE)?;
+            let non_fungible_handle = api.lock_key_value_store_entry(
+                nf_store_id.as_node_id(),
+                &id.to_key(),
+                LockFlags::MUTABLE,
+            )?;
             api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -525,7 +531,7 @@ impl NonFungibleResourceManagerBlueprint {
                 ids.insert(id.clone());
 
                 {
-                    let non_fungible_handle = api.sys_lock_substate(
+                    let non_fungible_handle = api.lock_key_value_store_entry(
                         nf_store_id.as_node_id(),
                         &id.to_key(),
                         LockFlags::MUTABLE,
@@ -605,7 +611,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle = api.sys_lock_substate(
+        let non_fungible_handle = api.lock_key_value_store_entry(
             non_fungible_table_id.as_node_id(),
             &id.to_key(),
             LockFlags::MUTABLE,
@@ -653,7 +659,7 @@ impl NonFungibleResourceManagerBlueprint {
             api.sys_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
-        let non_fungible_handle = api.sys_lock_substate(
+        let non_fungible_handle = api.lock_key_value_store_entry(
             non_fungible_table_id.as_node_id(),
             &id.to_key(),
             LockFlags::read_only(),
@@ -686,7 +692,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
 
-        let non_fungible_handle = api.sys_lock_substate(
+        let non_fungible_handle = api.lock_key_value_store_entry(
             non_fungible_table_id.as_node_id(),
             &id.to_key(),
             LockFlags::read_only(),
@@ -792,7 +798,7 @@ impl NonFungibleResourceManagerBlueprint {
                     resource_manager.total_supply -= resource.amount();
 
                     for id in resource.into_ids() {
-                        let non_fungible_handle = api.sys_lock_substate(
+                        let non_fungible_handle = api.lock_key_value_store_entry(
                             resource_manager.non_fungible_table.as_node_id(),
                             &id.to_key(),
                             LockFlags::MUTABLE,

@@ -1,3 +1,4 @@
+use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
 use scrypto::api::substate_api::LockFlags;
 use scrypto::api::ClientSubstateApi;
 use scrypto::engine::scrypto_env::*;
@@ -37,7 +38,7 @@ mod cyclic_map {
             );
 
             let handle = ScryptoEnv
-                .sys_lock_substate(node_id, &key, LockFlags::MUTABLE)
+                .lock_key_value_store_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
                 .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
@@ -65,7 +66,7 @@ mod cyclic_map {
             );
 
             let handle = ScryptoEnv
-                .sys_lock_substate(node_id, &key, LockFlags::MUTABLE)
+                .lock_key_value_store_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
                 .sys_write_substate(handle, scrypto_encode(&substate).unwrap())

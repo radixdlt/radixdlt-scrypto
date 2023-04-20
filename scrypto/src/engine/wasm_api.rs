@@ -46,8 +46,6 @@ extern "C" {
         object_states_len: usize,
     ) -> Buffer;
 
-    pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
-
     pub fn globalize_object(modules_ptr: *const u8, modules_len: usize) -> Buffer;
 
     pub fn globalize_with_address(
@@ -59,10 +57,20 @@ extern "C" {
 
     pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
+    pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
+
     pub fn get_key_value_store_info(
         key_value_store_id_ptr: *const u8,
         key_value_store_id_len: usize,
     ) -> Buffer;
+
+    pub fn lock_key_value_store_entry(
+        key_value_store_id_ptr: *const u8,
+        key_value_store_id_len: usize,
+        offset: *const u8,
+        offset_len: usize,
+        flags: u32,
+    ) -> u32;
 
     /// Invokes a method on a component.
     pub fn call_method(
@@ -159,11 +167,6 @@ pub unsafe fn new_object(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn globalize_object(_modules_ptr: *const u8, _modules_len: usize) -> Buffer {
     unreachable!()
 }
@@ -184,10 +187,26 @@ pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: u
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_key_value_store_info(
     _key_value_store_id_ptr: *const u8,
     _key_value_store_id_len: usize,
 ) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn lock_key_value_store_entry(
+    _key_value_store_id_ptr: *const u8,
+    _key_value_store_id_len: usize,
+    _offset: *const u8,
+    _offset_len: usize,
+    _flags: u32,
+) -> u32 {
     unreachable!()
 }
 

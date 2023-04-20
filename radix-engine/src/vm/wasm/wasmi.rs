@@ -268,6 +268,22 @@ fn drop_object(
     runtime.drop_object(node_id)
 }
 
+fn lock_key_value_store_entry(
+    mut caller: Caller<'_, HostState>,
+    node_id_ptr: u32,
+    node_id_len: u32,
+    offset_ptr: u32,
+    offset_len: u32,
+    flags: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
+    let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
+
+    runtime.lock_key_value_store_entry(node_id, substate_key, flags)
+}
+
 fn lock_substate(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
@@ -559,6 +575,27 @@ impl WasmiModule {
             },
         );
 
+        let host_lock_key_value_store_entry = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             node_id_ptr: u32,
+             node_id_len: u32,
+             offset_ptr: u32,
+             offset_len: u32,
+             mutable: u32|
+             -> Result<u32, Trap> {
+                lock_key_value_store_entry(
+                    caller,
+                    node_id_ptr,
+                    node_id_len,
+                    offset_ptr,
+                    offset_len,
+                    mutable,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
         let host_lock_substate = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -704,6 +741,11 @@ impl WasmiModule {
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
+        linker_define!(
+            linker,
+            LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME,
+            host_lock_key_value_store_entry
+        );
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
         linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);

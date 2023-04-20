@@ -137,6 +137,25 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
+
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, ClientApiError> {
+        let handle = unsafe {
+            lock_key_value_store_entry(
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                key.as_ptr(),
+                key.len(),
+                flags.bits(),
+            )
+        };
+
+        Ok(handle)
+    }
 }
 
 impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {

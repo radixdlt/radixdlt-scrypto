@@ -224,7 +224,12 @@ impl CallFrame {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
             if let Some(compute_default) = default {
-                heap.get_substate_virtualize(node_id, module_id.into(), substate_key, compute_default)
+                heap.get_substate_virtualize(
+                    node_id,
+                    module_id.into(),
+                    substate_key,
+                    compute_default,
+                )
             } else {
                 heap.get_substate(node_id, module_id.into(), substate_key)
                     .ok_or_else(|| {
@@ -237,9 +242,9 @@ impl CallFrame {
             }
         } else {
             let handle = store
-                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags,
-                    || { default.map(|f| f()) }
-                )
+                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
+                    default.map(|f| f())
+                })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             store.read_substate(handle)
@@ -297,7 +302,6 @@ impl CallFrame {
 
         Ok(lock_handle)
     }
-
 
     pub fn drop_lock<S: SubstateStore>(
         &mut self,

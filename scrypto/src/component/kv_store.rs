@@ -48,7 +48,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &key_payload, LockFlags::read_only())
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -70,7 +70,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -98,7 +98,7 @@ impl<
         let key_payload = scrypto_encode(&key).unwrap();
         let value_payload = scrypto_encode(&value).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
         env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
@@ -111,7 +111,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
 
         let raw_bytes = env.sys_read_substate(handle).unwrap();

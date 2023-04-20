@@ -264,6 +264,30 @@ impl WasmModule {
                                 ));
                             }
                         }
+                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I32],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
                         LOCK_SUBSTATE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
