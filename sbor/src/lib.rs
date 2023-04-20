@@ -27,19 +27,20 @@ pub mod encoded_wrappers;
 pub mod encoder;
 /// SBOR paths.
 pub mod path;
+/// SBOR payload validation.
+pub mod payload_validation;
+/// SBOR textual representations
+pub mod representations;
 /// A facade of Rust types.
 pub mod rust;
-/// SBOR structured payload traversal.
-pub mod traversal;
-
 /// SBOR Schema
 pub mod schema;
+/// SBOR structured payload traversal.
+pub mod traversal;
 /// SBOR value model and any decoding/encoding.
 pub mod value;
 /// SBOR value kinds - ie the types of value that are supported.
 pub mod value_kind;
-
-pub mod representations;
 
 pub use basic::*;
 pub use categorize::Categorize;
@@ -52,6 +53,7 @@ pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
 
 pub use encoded_wrappers::*;
+pub use payload_validation::*;
 pub use schema::*;
 pub use value::*;
 pub use value_kind::*;
