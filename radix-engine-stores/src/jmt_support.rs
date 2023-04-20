@@ -7,7 +7,9 @@ pub struct JmtKeyMapper;
 impl SubstateKeyMapper for JmtKeyMapper {
     fn map_to_db_key(module_id: ModuleId, key: SubstateKey) -> Vec<u8> {
         let module_id = SysModuleId::from_repr(module_id.0).unwrap();
-        let key = key.into();
+        let key = match key {
+            SubstateKey::Key(key) => key
+        };
 
         let bytes = match module_id {
             SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {

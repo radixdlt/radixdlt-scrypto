@@ -33,7 +33,7 @@ impl SubstateDatabase for InMemorySubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let start = encode_substate_id(node_id, module_id, &SubstateKey::min().into());
+        let start = encode_substate_id(node_id, module_id, &vec![0]);
         let node_id = node_id.clone();
         let iter = self
             .substates

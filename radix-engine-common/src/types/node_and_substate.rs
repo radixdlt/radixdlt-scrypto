@@ -190,21 +190,14 @@ impl ModuleId {
 }
 
 /// The unique identifier of a substate within a node module.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-#[sbor(transparent)]
-pub struct SubstateKey(Vec<u8>);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+pub enum SubstateKey {
+    Key(Vec<u8>)
+}
 
 impl SubstateKey {
     pub const MIN_LENGTH: usize = 1;
     pub const MAX_LENGTH: usize = 128;
-
-    pub fn min() -> Self {
-        Self(vec![u8::MIN; Self::MIN_LENGTH])
-    }
-
-    pub fn max() -> Self {
-        Self(vec![u8::MAX; Self::MAX_LENGTH])
-    }
 
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Self::from_vec(slice.to_vec())
@@ -214,15 +207,12 @@ impl SubstateKey {
         if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
             None
         } else {
-            Some(Self(bytes))
+            Some(Self::Key(bytes))
         }
-    }
-
-    pub fn to_hex(&self) -> String {
-        hex::encode(&self.0)
     }
 }
 
+/*
 impl Debug for SubstateKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("SubstateKey")
@@ -230,7 +220,9 @@ impl Debug for SubstateKey {
             .finish()
     }
 }
+ */
 
+/*
 impl AsRef<[u8]> for SubstateKey {
     fn as_ref(&self) -> &[u8] {
         &self.0
@@ -242,3 +234,4 @@ impl Into<Vec<u8>> for SubstateKey {
         self.0
     }
 }
+ */

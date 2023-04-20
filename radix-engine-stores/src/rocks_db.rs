@@ -71,15 +71,18 @@ impl SubstateDatabase for RocksdbSubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let start = encode_substate_id(node_id, module_id, &SubstateKey::min().into());
-        let end = encode_substate_id(node_id, module_id, &SubstateKey::max().into());
+        let mut index_id = Vec::new();
+        index_id.extend(node_id.as_ref());
+        index_id.push(module_id.0);
+        let index_id: [u8; NodeId::LENGTH + 1] = index_id.try_into().unwrap();
+        let start = encode_substate_id(node_id, module_id, &SubstateKey::from_vec(vec![0]).into());
 
         let iter = self
             .db
             .iterator(IteratorMode::From(&start, Direction::Forward))
             .take_while(move |kv| {
                 let (key, _value) = kv.as_ref().unwrap();
-                key.as_ref() >= &end
+                key[0..(NodeId::LENGTH + 1)].eq(&index_id)
             })
             .map(|kv| {
                 let (key, value) = kv.unwrap();
