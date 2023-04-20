@@ -6,19 +6,25 @@ use TypedTraversalEvent::*;
 // TODO - This file could do with a minor refactor to commonize logic to print fields
 
 #[derive(Debug, Clone, Copy)]
-pub struct RustLikeDisplayContext<'s, 'a, E: FormattableCustomTypeExtension> {
+pub struct RustLikeDisplayContext<'s, 'a, 'c, E: FormattableCustomTypeExtension> {
     pub schema: &'s Schema<E>,
     pub custom_display_context: E::CustomDisplayContext<'a>,
+    pub custom_validation_context: &'c E::CustomValidationContext,
     pub print_mode: PrintMode,
 }
 
 pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     payload: &'_ [u8],
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
-    let mut traverser = traverse_payload_with_types(payload, context.schema, type_index, ());
+    let mut traverser = traverse_payload_with_types(
+        payload,
+        context.schema,
+        type_index,
+        context.custom_validation_context,
+    );
     if let PrintMode::MultiLine {
         first_line_indent, ..
     } = &context.print_mode
@@ -39,7 +45,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
     expected_start: ExpectedStart<E::CustomValueKind>,
     check_exact_end: bool,
     current_depth: usize,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
     let mut traverser = traverse_partial_payload_with_types(
@@ -49,7 +55,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
         current_depth,
         context.schema,
         type_index,
-        (),
+        context.custom_validation_context,
     );
     if let PrintMode::MultiLine {
         first_line_indent, ..
@@ -65,13 +71,13 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
 }
 
 pub fn consume_end_event<E: FormattableCustomTypeExtension>(
-    traverser: &mut TypedTraverser<E, ()>,
+    traverser: &mut TypedTraverser<E>,
 ) -> Result<(), FormattingError> {
     traverser.consume_end_event().map_err(FormattingError::Sbor)
 }
 
 fn consume_container_end<E: FormattableCustomTypeExtension>(
-    traverser: &mut TypedTraverser<E, ()>,
+    traverser: &mut TypedTraverser<E>,
 ) -> Result<(), FormattingError> {
     traverser
         .consume_container_end_event()
@@ -80,8 +86,8 @@ fn consume_container_end<E: FormattableCustomTypeExtension>(
 
 fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E, ()>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    traverser: &mut TypedTraverser<E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
 ) -> Result<(), FormattingError> {
     let typed_event = traverser.next_event();
     match typed_event.event {
@@ -114,8 +120,8 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E, ()>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    traverser: &mut TypedTraverser<E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     type_index: LocalTypeIndex,
     tuple_header: TupleHeader,
     parent_depth: usize,
@@ -219,8 +225,8 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E, ()>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    traverser: &mut TypedTraverser<E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     type_index: LocalTypeIndex,
     variant_header: EnumVariantHeader,
     parent_depth: usize,
@@ -328,8 +334,8 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E, ()>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    traverser: &mut TypedTraverser<E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     type_index: LocalTypeIndex,
     array_header: ArrayHeader<E::CustomValueKind>,
     parent_depth: usize,
@@ -409,8 +415,8 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E, ()>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    traverser: &mut TypedTraverser<E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     type_index: LocalTypeIndex,
     map_header: MapHeader<E::CustomValueKind>,
     parent_depth: usize,
@@ -470,7 +476,7 @@ fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_terminal_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &RustLikeDisplayContext<'_, '_, '_, E>,
     type_index: LocalTypeIndex,
     value_ref: TerminalValueRef<E::CustomTraversal>,
 ) -> Result<(), FormattingError> {

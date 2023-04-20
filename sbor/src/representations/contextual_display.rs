@@ -33,38 +33,42 @@ pub enum DisplayMode {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomTypeExtension> {
+pub enum ValueDisplayParameters<'s, 'a, 'c, E: FormattableCustomTypeExtension> {
     Schemaless {
         display_mode: DisplayMode,
         print_mode: PrintMode,
         custom_display_context: E::CustomDisplayContext<'a>,
+        custom_validation_context: &'c E::CustomValidationContext,
     },
     Annotated {
         display_mode: DisplayMode,
         print_mode: PrintMode,
         custom_display_context: E::CustomDisplayContext<'a>,
+        custom_validation_context: &'c E::CustomValidationContext,
         schema: &'s Schema<E>,
         type_index: LocalTypeIndex,
     },
 }
 
-enum Context<'s, 'a, E: FormattableCustomTypeExtension> {
-    Nested(NestedStringDisplayContext<'s, 'a, E>, LocalTypeIndex),
-    RustLike(RustLikeDisplayContext<'s, 'a, E>, LocalTypeIndex),
+enum Context<'s, 'a, 'c, E: FormattableCustomTypeExtension> {
+    Nested(NestedStringDisplayContext<'s, 'a, 'c, E>, LocalTypeIndex),
+    RustLike(RustLikeDisplayContext<'s, 'a, 'c, E>, LocalTypeIndex),
 }
 
-impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E> {
-    fn get_context_and_type_index(&self) -> Context<'s, 'a, E> {
+impl<'s, 'a, 'c, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, 'c, E> {
+    fn get_context_and_type_index(&self) -> Context<'s, 'a, 'c, E> {
         match self {
             Self::Schemaless {
                 display_mode: DisplayMode::NestedString,
                 print_mode,
                 custom_display_context,
+                custom_validation_context,
             } => Context::Nested(
                 NestedStringDisplayContext {
                     schema: E::empty_schema(),
                     print_mode: *print_mode,
                     custom_display_context: *custom_display_context,
+                    custom_validation_context: *custom_validation_context,
                 },
                 LocalTypeIndex::any(),
             ),
@@ -72,6 +76,7 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                 display_mode: DisplayMode::NestedString,
                 print_mode,
                 custom_display_context,
+                custom_validation_context,
                 schema,
                 type_index,
             } => Context::Nested(
@@ -79,6 +84,7 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                     schema: *schema,
                     print_mode: *print_mode,
                     custom_display_context: *custom_display_context,
+                    custom_validation_context: *custom_validation_context,
                 },
                 *type_index,
             ),
@@ -86,11 +92,13 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                 display_mode: DisplayMode::RustLike,
                 print_mode,
                 custom_display_context,
+                custom_validation_context,
             } => Context::RustLike(
                 RustLikeDisplayContext {
                     schema: E::empty_schema(),
                     print_mode: *print_mode,
                     custom_display_context: *custom_display_context,
+                    custom_validation_context: *custom_validation_context,
                 },
                 LocalTypeIndex::any(),
             ),
@@ -98,6 +106,7 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                 display_mode: DisplayMode::RustLike,
                 print_mode,
                 custom_display_context,
+                custom_validation_context,
                 schema,
                 type_index,
             } => Context::RustLike(
@@ -105,6 +114,7 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                     schema: *schema,
                     print_mode: *print_mode,
                     custom_display_context: *custom_display_context,
+                    custom_validation_context: *custom_validation_context,
                 },
                 *type_index,
             ),
@@ -118,15 +128,15 @@ pub enum FormattingError {
     Sbor(String),
 }
 
-impl<'s, 'a, 'b, E: FormattableCustomTypeExtension>
-    ContextualDisplay<ValueDisplayParameters<'s, 'a, E>> for RawPayload<'b, E>
+impl<'s, 'a, 'b, 'c, E: FormattableCustomTypeExtension>
+    ContextualDisplay<ValueDisplayParameters<'s, 'a, 'c, E>> for RawPayload<'b, E>
 {
     type Error = FormattingError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        options: &ValueDisplayParameters<'s, 'a, E>,
+        options: &ValueDisplayParameters<'s, 'a, 'c, E>,
     ) -> Result<(), Self::Error> {
         let context = options.get_context_and_type_index();
         match context {
@@ -140,15 +150,15 @@ impl<'s, 'a, 'b, E: FormattableCustomTypeExtension>
     }
 }
 
-impl<'s, 'a, 'b, E: FormattableCustomTypeExtension>
-    ContextualDisplay<ValueDisplayParameters<'s, 'a, E>> for RawValue<'b, E>
+impl<'s, 'a, 'b, 'c, E: FormattableCustomTypeExtension>
+    ContextualDisplay<ValueDisplayParameters<'s, 'a, 'c, E>> for RawValue<'b, E>
 {
     type Error = FormattingError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        options: &ValueDisplayParameters<'s, 'a, E>,
+        options: &ValueDisplayParameters<'s, 'a, 'c, E>,
     ) -> Result<(), Self::Error> {
         let context = options.get_context_and_type_index();
         match context {

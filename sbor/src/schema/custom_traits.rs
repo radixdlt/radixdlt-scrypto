@@ -23,6 +23,7 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
     >;
     type CustomTypeValidation: CustomTypeValidation;
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
+    type CustomValidationContext;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
@@ -51,10 +52,10 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         type_validation: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError>;
 
-    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink, C>(
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
         custom_type_kind: &Self::CustomTypeKind<L>,
         value_kind: ValueKind<Self::CustomValueKind>,
-        context: &C,
+        context: &Self::CustomValidationContext,
     ) -> bool;
 
     fn empty_schema() -> &'static Schema<Self>;

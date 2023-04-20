@@ -5,7 +5,7 @@ use serde::ser::*;
 use utils::*;
 
 // See https://www.possiblerust.com/pattern/3-things-to-try-when-you-can-t-make-a-trait-object
-pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtension> {
+pub enum SerializableType<'a, 't, 'de, 's1, 's2, 'c, E: SerializableCustomTypeExtension> {
     String(String),
     Str(&'a str),
     Bool(bool),
@@ -15,19 +15,19 @@ pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtens
     U8(u8),
     U16(u16),
     U32(u32),
-    SerializableFields(SerializableFields<'t, 'de, 's1, 's2, E>),
-    SerializableArrayElements(SerializableArrayElements<'t, 'de, 's1, E>),
-    SerializableMapElements(SerializableMapElements<'t, 'de, 's1, E>),
+    SerializableFields(SerializableFields<'t, 'de, 's1, 's2, 'c, E>),
+    SerializableArrayElements(SerializableArrayElements<'t, 'de, 's1, 'c, E>),
+    SerializableMapElements(SerializableMapElements<'t, 'de, 's1, 'c, E>),
 }
 
-impl<'a, 'a2, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtension>
-    ContextualSerialize<SerializationContext<'s2, 'a2, E>>
-    for SerializableType<'a, 't, 'de, 's1, 's2, E>
+impl<'a, 'a2, 't, 'de, 's1, 's2, 'c, E: SerializableCustomTypeExtension>
+    ContextualSerialize<SerializationContext<'s2, 'a2, 'c, E>>
+    for SerializableType<'a, 't, 'de, 's1, 's2, 'c, E>
 {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &SerializationContext<'s2, 'a2, E>,
+        context: &SerializationContext<'s2, 'a2, 'c, E>,
     ) -> Result<S::Ok, S::Error> {
         match context.mode {
             SerializationMode::Programmatic => match self {
@@ -70,19 +70,20 @@ pub struct SerdeValueMapAggregator<
     's,
     's1,
     's2,
+    'c,
     E: SerializableCustomTypeExtension,
 > {
-    context: &'a SerializationContext<'s, 'a2, E>,
+    context: &'a SerializationContext<'s, 'a2, 'c, E>,
     opt_into_kind_tag_in_simple_mode: bool,
     value_context: &'a ValueContext,
-    fields: Vec<(&'a str, SerializableType<'a, 't, 'de, 's1, 's2, E>)>,
+    fields: Vec<(&'a str, SerializableType<'a, 't, 'de, 's1, 's2, 'c, E>)>,
 }
 
-impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
-    SerdeValueMapAggregator<'a, 'a2, 't, 'de, 's, 's1, 's2, E>
+impl<'a, 'a2, 't, 'de, 's, 's1, 's2, 'c, E: SerializableCustomTypeExtension>
+    SerdeValueMapAggregator<'a, 'a2, 't, 'de, 's, 's1, 's2, 'c, E>
 {
     pub fn new(
-        context: &'a SerializationContext<'s, 'a2, E>,
+        context: &'a SerializationContext<'s, 'a2, 'c, E>,
         value_context: &'a ValueContext,
     ) -> Self {
         Self {
@@ -94,7 +95,7 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
     }
 
     pub fn new_with_kind_tag(
-        context: &'a SerializationContext<'s, 'a2, E>,
+        context: &'a SerializationContext<'s, 'a2, 'c, E>,
         value_context: &'a ValueContext,
     ) -> Self {
         Self {
@@ -209,7 +210,7 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
     pub fn add_field(
         &mut self,
         field_name: &'static str,
-        value: SerializableType<'a, 't, 'de, 's1, 's2, E>,
+        value: SerializableType<'a, 't, 'de, 's1, 's2, 'c, E>,
     ) {
         self.fields.push((field_name, value));
     }

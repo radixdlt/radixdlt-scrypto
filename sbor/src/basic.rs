@@ -111,6 +111,9 @@ impl CustomTerminalValueRef for NoCustomTerminalValueRef {
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTraversal {}
 
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
+pub struct NoCustomValidationContext {}
+
 impl CustomTraversal for NoCustomTraversal {
     type CustomValueKind = NoCustomValueKind;
     type CustomTerminalValueRef<'de> = NoCustomTerminalValueRef;
@@ -168,6 +171,7 @@ impl CustomTypeExtension for NoCustomTypeExtension {
     type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
     type CustomTypeValidation = NoCustomTypeValidation;
     type CustomTraversal = NoCustomTraversal;
+    type CustomValidationContext = NoCustomValidationContext;
 
     fn linearize_type_kind(
         _: Self::CustomTypeKind<GlobalTypeId>,
@@ -210,10 +214,10 @@ impl CustomTypeExtension for NoCustomTypeExtension {
         unreachable!("No custom type kinds exist")
     }
 
-    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink, C>(
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
         _: &Self::CustomTypeKind<L>,
         _: ValueKind<Self::CustomValueKind>,
-        _: &C,
+        _: &Self::CustomValidationContext,
     ) -> bool {
         unreachable!("No custom value kinds exist")
     }
