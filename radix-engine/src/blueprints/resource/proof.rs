@@ -48,7 +48,7 @@ impl ProofInfoSubstate {
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
         let handle =
-            api.sys_lock_substate(receiver, &ProofOffset::Info.into(), LockFlags::read_only())?;
+            api.lock_field(receiver, &ProofOffset::Info.into(), LockFlags::read_only())?;
         let substate_ref: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -208,7 +208,7 @@ impl ProofBlueprint {
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 receiver,
                 &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
@@ -229,7 +229,7 @@ impl ProofBlueprint {
 
             proof_id
         } else {
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 receiver,
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
@@ -268,7 +268,7 @@ impl ProofBlueprint {
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 receiver,
                 &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
@@ -278,7 +278,7 @@ impl ProofBlueprint {
             api.sys_drop_lock(handle)?;
             amount
         } else {
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 receiver,
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
@@ -309,7 +309,7 @@ impl ProofBlueprint {
                 ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
             ))
         } else {
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 receiver,
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),

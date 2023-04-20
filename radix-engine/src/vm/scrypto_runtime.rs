@@ -198,7 +198,7 @@ where
         );
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.sys_lock_substate(&node_id, &key, flags)?;
+        let handle = self.api.lock_field(&node_id, &key, flags)?;
 
         Ok(handle)
     }

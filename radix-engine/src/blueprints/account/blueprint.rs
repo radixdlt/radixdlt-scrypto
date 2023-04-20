@@ -186,7 +186,7 @@ impl AccountBlueprint {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &AccountOffset::Account.into(),
             LockFlags::read_only(),
@@ -257,7 +257,7 @@ impl AccountBlueprint {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &AccountOffset::Account.into(),
             LockFlags::read_only(),
@@ -315,7 +315,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &AccountOffset::Account.into(),
             LockFlags::read_only(),
@@ -386,7 +386,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &AccountOffset::Account.into(),
             LockFlags::read_only(),

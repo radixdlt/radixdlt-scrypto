@@ -79,7 +79,7 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
@@ -140,7 +140,7 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
@@ -168,7 +168,7 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.sys_lock_substate(
+            let manager_handle = api.lock_field(
                 manager.as_node_id(),
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
@@ -218,7 +218,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorOffset::Validator.into();
-        let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
+        let handle = api.lock_field(receiver, &substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         // No update
@@ -307,7 +307,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::read_only(),
@@ -326,7 +326,7 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.sys_lock_substate(
+            let mgr_handle = api.lock_field(
                 manager.as_node_id(),
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
@@ -371,7 +371,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,

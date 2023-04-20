@@ -32,7 +32,7 @@ impl LockFlags {
 /// A high level api to read/write substates
 pub trait ClientSubstateApi<E: Debug> {
     // TODO: expose non-SELF?
-    fn sys_lock_substate(
+    fn lock_field(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,

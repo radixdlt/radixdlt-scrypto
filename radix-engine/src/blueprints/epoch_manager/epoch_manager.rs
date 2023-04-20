@@ -218,7 +218,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
@@ -233,7 +233,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mgr_handle = api.sys_lock_substate(
+        let mgr_handle = api.lock_field(
             receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
@@ -265,7 +265,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mgr_handle = api.sys_lock_substate(
+        let mgr_handle = api.lock_field(
             receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
@@ -306,7 +306,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
@@ -375,7 +375,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::read_only(),
@@ -445,7 +445,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::MUTABLE,
@@ -460,7 +460,7 @@ impl EpochManagerBlueprint {
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &EpochManagerOffset::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,

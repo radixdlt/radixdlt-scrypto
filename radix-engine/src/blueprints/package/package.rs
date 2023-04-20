@@ -597,7 +597,7 @@ impl PackageNativePackage {
         // FIXME: double check if auth is set up for any package
 
         let handle =
-            api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+            api.lock_field(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
         let mut substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -618,7 +618,7 @@ impl PackageNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &PackageOffset::Royalty.into(),
             LockFlags::read_only(),

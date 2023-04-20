@@ -143,7 +143,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     // calculate the max locked amount of each container
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             proof.0.as_node_id(),
             &ProofOffset::Info.into(),
             LockFlags::read_only(),
@@ -152,7 +152,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         if proof_info.resource_address == resource_address {
             api.sys_drop_lock(handle)?;
 
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 proof.0.as_node_id(),
                 &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
@@ -194,7 +194,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     // calculate the max locked non-fungibles of each container
     let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             proof.0.as_node_id(),
             &ProofOffset::Info.into(),
             LockFlags::read_only(),
@@ -203,7 +203,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         if proof_info.resource_address == resource_address {
             api.sys_drop_lock(handle)?;
 
-            let handle = api.sys_lock_substate(
+            let handle = api.lock_field(
                 proof.0.as_node_id(),
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
@@ -246,7 +246,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
     'outer: for proof in proofs {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             proof.0.as_node_id(),
             &ProofOffset::Fungible.into(),
             LockFlags::read_only(),
@@ -329,7 +329,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
     'outer: for proof in proofs {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             proof.0.as_node_id(),
             &ProofOffset::NonFungible.into(),
             LockFlags::read_only(),

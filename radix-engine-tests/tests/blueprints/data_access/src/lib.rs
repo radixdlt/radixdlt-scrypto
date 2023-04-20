@@ -11,7 +11,7 @@ mod data_access {
         pub fn create_component_and_read_state() {
             let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = ScryptoEnv
-                .sys_lock_substate(
+                .lock_field(
                     component_address.as_node_id(),
                     &ComponentOffset::State0.into(),
                     LockFlags::read_only(),
@@ -23,7 +23,7 @@ mod data_access {
         pub fn create_component_and_write_state() {
             let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = ScryptoEnv
-                .sys_lock_substate(
+                .lock_field(
                     component_address.as_node_id(),
                     &ComponentOffset::State0.into(),
                     LockFlags::MUTABLE,

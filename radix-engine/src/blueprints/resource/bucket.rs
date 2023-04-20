@@ -32,7 +32,7 @@ impl BucketInfoSubstate {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle =
-            api.sys_lock_substate(receiver, &BucketOffset::Info.into(), LockFlags::read_only())?;
+            api.lock_field(receiver, &BucketOffset::Info.into(), LockFlags::read_only())?;
         let substate_ref: BucketInfoSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -47,7 +47,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidFungible.into(),
             LockFlags::read_only(),
@@ -62,7 +62,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedFungible.into(),
             LockFlags::read_only(),
@@ -88,7 +88,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
@@ -116,7 +116,7 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
@@ -141,7 +141,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
@@ -183,7 +183,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
@@ -213,7 +213,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
@@ -228,7 +228,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
@@ -253,7 +253,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
@@ -271,7 +271,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
@@ -290,7 +290,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
@@ -314,7 +314,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
@@ -341,7 +341,7 @@ impl NonFungibleBucket {
             return Ok(());
         }
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
@@ -366,7 +366,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
@@ -420,7 +420,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
@@ -465,7 +465,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &BucketOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,

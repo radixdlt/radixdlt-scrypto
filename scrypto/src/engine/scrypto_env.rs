@@ -186,7 +186,7 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
-    fn sys_lock_substate(
+    fn lock_field(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,

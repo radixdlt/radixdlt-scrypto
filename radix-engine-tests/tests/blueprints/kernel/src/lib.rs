@@ -10,7 +10,7 @@ mod read {
     impl Read {
         pub fn read_global_substate(component_address: ComponentAddress) {
             ScryptoEnv
-                .sys_lock_substate(
+                .lock_field(
                     component_address.as_node_id(),
                     &TypeInfoOffset::TypeInfo.into(),
                     LockFlags::read_only(),

@@ -30,7 +30,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let auth_zone_handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -58,7 +58,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let auth_zone_handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -85,7 +85,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let auth_zone_handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -125,7 +125,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let auth_zone_handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::read_only(),
@@ -165,7 +165,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let auth_zone_handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -205,7 +205,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -235,7 +235,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
+        let handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -260,7 +260,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let auth_zone_handle = api.lock_field(
             receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,

@@ -82,12 +82,20 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn sys_lock_substate(
+    fn lock_field(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        match actor {
+            Actor::Function { .. }
+            | Actor::VirtualLazyLoad { .. }
+                => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
+            Actor::Method { .. } => {}
+        }
+
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
 
         // TODO: Remove
@@ -102,7 +110,6 @@ where
             }
         }
 
-        let actor = self.api.kernel_get_current_actor().unwrap();
 
         // TODO: Check if valid substate_key for node_id
         if !Self::can_substate_be_accessed(&actor, node_id) {
