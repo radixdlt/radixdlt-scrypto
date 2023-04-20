@@ -152,7 +152,7 @@ impl Into<DroppedProof> for HeapNode {
             .map(|x| x.as_typed().unwrap())
             .unwrap();
 
-        let resource = match info.resource_type {
+        let proof = match info.resource_type {
             ResourceType::Fungible { .. } => DroppedProofResource::Fungible(
                 module
                     .remove(&ProofOffset::Fungible.into())
@@ -167,9 +167,6 @@ impl Into<DroppedProof> for HeapNode {
             ),
         };
 
-        DroppedProof {
-            info,
-            proof: resource,
-        }
+        DroppedProof { info, proof }
     }
 }

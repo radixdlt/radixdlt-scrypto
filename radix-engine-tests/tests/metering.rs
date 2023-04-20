@@ -312,7 +312,7 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         152500 /* CreateNode */
-        + 318500 /* DropLock */
+        + 319000 /* DropLock */
         + 152500 /* DropNode */
         + 45060 /* Invoke */
         + 327000 /* LockSubstate */

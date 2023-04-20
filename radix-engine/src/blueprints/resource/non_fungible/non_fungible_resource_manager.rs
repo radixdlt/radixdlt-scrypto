@@ -728,8 +728,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // FIXME: check if the bucket is locked
-
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let other_bucket =
             drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
