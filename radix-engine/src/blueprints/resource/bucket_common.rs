@@ -11,7 +11,6 @@ pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
     MismatchingResource,
-    NotEmpty,
     InvalidAmount,
 }
 

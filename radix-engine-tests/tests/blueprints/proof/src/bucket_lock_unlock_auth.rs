@@ -22,7 +22,7 @@ mod bucket_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     bucket.0.as_node_id(),
-                    BUCKET_LOCK_AMOUNT_IDENT,
+                    FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
                 )
                 .unwrap();
@@ -36,7 +36,7 @@ mod bucket_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     bucket.0.as_node_id(),
-                    BUCKET_UNLOCK_AMOUNT_IDENT,
+                    FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
                 )
                 .unwrap();
@@ -54,7 +54,7 @@ mod bucket_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     bucket.0.as_node_id(),
-                    BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                    NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
                 )
                 .unwrap();
@@ -74,7 +74,7 @@ mod bucket_lock_unlock_auth {
             ScryptoEnv
                 .call_method(
                     bucket.0.as_node_id(),
-                    BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+                    NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
                 )
                 .unwrap();

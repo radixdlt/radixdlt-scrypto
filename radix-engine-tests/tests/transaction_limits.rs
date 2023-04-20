@@ -185,6 +185,7 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
     let mut execution_config = ExecutionConfig::default();
     // Setting maximum substate size to small value to activate transaction limit
     execution_config.max_substate_size = 10;
+    execution_config.kernel_trace = true;
     let receipt =
         test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
 
@@ -205,11 +206,11 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
-    const SIZE: u32 = 2000;
+    const SIZE: u32 = 5000;
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 100.into())
         .call_function(
             package_address,
             "TransactionLimitSubstateTest",
@@ -223,6 +224,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
     execution_config.max_substate_size = SIZE as usize + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
+    execution_config.kernel_trace = true;
     let receipt =
         test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
 

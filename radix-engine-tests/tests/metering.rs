@@ -67,13 +67,13 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
-        40000 /* CreateNode */
-        + 75500 /* DropLock */
-        + 40000 /* DropNode */
-        + 10970 /* Invoke */
-        + 76500 /* LockSubstate */
-        + 178090 /* ReadSubstate */
-        + 62500 /* RunNative */
+        42500 /* CreateNode */
+        + 82000 /* DropLock */
+        + 42500 /* DropNode */
+        + 11750 /* Invoke */
+        + 83500 /* LockSubstate */
+        + 318670 /* ReadSubstate */
+        + 75000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1260 /* TxPayloadCost */
@@ -201,15 +201,15 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        90000 /* CreateNode */
-        + 185500 /* DropLock */
-        + 87500 /* DropNode */
-        + 24270 /* Invoke */
-        + 187500 /* LockSubstate */
-        + 530060 /* ReadSubstate */
-        + 135000 /* RunNative */
+        95000 /* CreateNode */
+        + 197500 /* DropLock */
+        + 92500 /* DropNode */
+        + 25750 /* Invoke */
+        + 200500 /* LockSubstate */
+        + 914990 /* ReadSubstate */
+        + 160000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1520495 /* RunWasm */
+        + 1544410 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -311,15 +311,15 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        147500 /* CreateNode */
-        + 300500 /* DropLock */
-        + 147500 /* DropNode */
-        + 44230 /* Invoke */
-        + 308000 /* LockSubstate */
-        + 723390 /* ReadSubstate */
-        + 215000 /* RunNative */
+        152500 /* CreateNode */
+        + 318500 /* DropLock */
+        + 152500 /* DropNode */
+        + 45060 /* Invoke */
+        + 327000 /* LockSubstate */
+        + 1366710 /* ReadSubstate */
+        + 250000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1215255 /* RunWasm */
+        + 1226430 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

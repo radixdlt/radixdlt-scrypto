@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::BucketError;
+use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
@@ -26,7 +26,9 @@ fn test_worktop_resource_leak() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty))
+            RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                FungibleResourceManagerError::DropNonEmptyBucket
+            ))
         )
     });
 }

@@ -362,6 +362,8 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
+        api.sys_drop_lock(resman_handle)?;
+
         let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
 
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
@@ -414,6 +416,8 @@ impl NonFungibleResourceManagerBlueprint {
             false,
             api,
         )?;
+
+        api.sys_drop_lock(resman_handle)?;
 
         let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
 
@@ -469,6 +473,8 @@ impl NonFungibleResourceManagerBlueprint {
             false,
             api,
         )?;
+
+        api.sys_drop_lock(resman_handle)?;
 
         let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
 
