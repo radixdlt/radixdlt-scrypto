@@ -66,7 +66,7 @@ pub enum SerializationMode {
 pub struct SerializationContext<'s, 'a, E: SerializableCustomTypeExtension> {
     pub schema: &'s Schema<E>,
     pub mode: SerializationMode,
-    pub custom_context: E::CustomDisplayContext<'a>,
+    pub custom_display_context: E::CustomDisplayContext<'a>,
 }
 
 pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomTypeExtension>(
@@ -798,7 +798,7 @@ mod tests {
                 .unwrap()
                 .serializable(SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
-                    custom_context: (),
+                    custom_display_context: (),
                 }),
             expected_simple,
         );
@@ -1168,7 +1168,7 @@ mod tests {
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Programmatic,
                     schema: &schema,
-                    custom_context: (),
+                    custom_display_context: (),
                     type_index,
                 }),
             expected_programmatic,
@@ -1213,7 +1213,7 @@ mod tests {
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Natural,
                     schema: &schema,
-                    custom_context: (),
+                    custom_display_context: (),
                     type_index,
                 }),
             expected_natural,
@@ -1451,7 +1451,7 @@ mod tests {
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Model,
                     schema: &schema,
-                    custom_context: (),
+                    custom_display_context: (),
                     type_index,
                 }),
             expected_model,

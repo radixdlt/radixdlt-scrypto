@@ -14,11 +14,11 @@ impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
             ScryptoCustomValue::Reference(value) => (
-                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                SerializableType::String(value.0.to_string(context.custom_display_context.bech32_encoder)),
                 true,
             ),
             ScryptoCustomValue::Own(value) => (
-                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                SerializableType::String(value.0.to_string(context.custom_display_context.bech32_encoder)),
                 true,
             ),
             ScryptoCustomValue::Decimal(value) => {
@@ -250,7 +250,7 @@ mod tests {
             ScryptoRawPayload::new_from_valid_slice(&payload).serializable(
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
-                    custom_context: context.into(),
+                    custom_display_context: context.into(),
                 },
             ),
             expected,
@@ -272,7 +272,7 @@ mod tests {
             ScryptoRawPayload::new_from_valid_slice(&payload).serializable(
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Programmatic,
-                    custom_context: context.into(),
+                    custom_display_context: context.into(),
                 },
             ),
             expected,

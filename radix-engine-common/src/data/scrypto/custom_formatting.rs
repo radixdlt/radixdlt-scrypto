@@ -127,12 +127,12 @@ mod tests {
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
             display_mode: DisplayMode::RustLike,
             print_mode: PrintMode::SingleLine,
-            custom_context: context,
+            custom_display_context: context,
         });
         let actual_nested = payload.to_string(ValueDisplayParameters::Schemaless {
             display_mode: DisplayMode::RustLike,
             print_mode: PrintMode::SingleLine,
-            custom_context: context,
+            custom_display_context: context,
         });
 
         // They're both the same

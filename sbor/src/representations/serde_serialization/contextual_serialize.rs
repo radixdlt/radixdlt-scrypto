@@ -8,11 +8,11 @@ use utils::*;
 pub enum SerializationParameters<'s, 'a, E: SerializableCustomTypeExtension> {
     Schemaless {
         mode: SerializationMode,
-        custom_context: E::CustomDisplayContext<'a>,
+        custom_display_context: E::CustomDisplayContext<'a>,
     },
     WithSchema {
         mode: SerializationMode,
-        custom_context: E::CustomDisplayContext<'a>,
+        custom_display_context: E::CustomDisplayContext<'a>,
         schema: &'s Schema<E>,
         type_index: LocalTypeIndex,
     },
@@ -23,25 +23,25 @@ impl<'s, 'a, E: SerializableCustomTypeExtension> SerializationParameters<'s, 'a,
         match self {
             SerializationParameters::Schemaless {
                 mode,
-                custom_context,
+                custom_display_context,
             } => (
                 SerializationContext {
                     schema: E::empty_schema(),
                     mode: *mode,
-                    custom_context: *custom_context,
+                    custom_display_context: *custom_display_context,
                 },
                 LocalTypeIndex::any(),
             ),
             SerializationParameters::WithSchema {
                 mode,
-                custom_context,
+                custom_display_context,
                 schema,
                 type_index,
             } => (
                 SerializationContext {
                     schema: *schema,
                     mode: *mode,
-                    custom_context: *custom_context,
+                    custom_display_context: *custom_display_context,
                 },
                 *type_index,
             ),

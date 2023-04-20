@@ -37,12 +37,12 @@ pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomTypeExtension> {
     Schemaless {
         display_mode: DisplayMode,
         print_mode: PrintMode,
-        custom_context: E::CustomDisplayContext<'a>,
+        custom_display_context: E::CustomDisplayContext<'a>,
     },
     Annotated {
         display_mode: DisplayMode,
         print_mode: PrintMode,
-        custom_context: E::CustomDisplayContext<'a>,
+        custom_display_context: E::CustomDisplayContext<'a>,
         schema: &'s Schema<E>,
         type_index: LocalTypeIndex,
     },
@@ -59,52 +59,52 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
             Self::Schemaless {
                 display_mode: DisplayMode::NestedString,
                 print_mode,
-                custom_context,
+                custom_display_context,
             } => Context::Nested(
                 NestedStringDisplayContext {
                     schema: E::empty_schema(),
                     print_mode: *print_mode,
-                    custom_context: *custom_context,
+                    custom_display_context: *custom_display_context,
                 },
                 LocalTypeIndex::any(),
             ),
             Self::Annotated {
                 display_mode: DisplayMode::NestedString,
                 print_mode,
-                custom_context,
+                custom_display_context,
                 schema,
                 type_index,
             } => Context::Nested(
                 NestedStringDisplayContext {
                     schema: *schema,
                     print_mode: *print_mode,
-                    custom_context: *custom_context,
+                    custom_display_context: *custom_display_context,
                 },
                 *type_index,
             ),
             Self::Schemaless {
                 display_mode: DisplayMode::RustLike,
                 print_mode,
-                custom_context,
+                custom_display_context,
             } => Context::RustLike(
                 RustLikeDisplayContext {
                     schema: E::empty_schema(),
                     print_mode: *print_mode,
-                    custom_context: *custom_context,
+                    custom_display_context: *custom_display_context,
                 },
                 LocalTypeIndex::any(),
             ),
             Self::Annotated {
                 display_mode: DisplayMode::RustLike,
                 print_mode,
-                custom_context,
+                custom_display_context,
                 schema,
                 type_index,
             } => Context::RustLike(
                 RustLikeDisplayContext {
                     schema: *schema,
                     print_mode: *print_mode,
-                    custom_context: *custom_context,
+                    custom_display_context: *custom_display_context,
                 },
                 *type_index,
             ),

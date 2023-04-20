@@ -9,7 +9,7 @@ use TypedTraversalEvent::*;
 #[derive(Debug, Clone, Copy)]
 pub struct NestedStringDisplayContext<'s, 'a, E: FormattableCustomTypeExtension> {
     pub schema: &'s Schema<E>,
-    pub custom_context: E::CustomDisplayContext<'a>,
+    pub custom_display_context: E::CustomDisplayContext<'a>,
     pub print_mode: PrintMode,
 }
 
@@ -485,7 +485,7 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
                     write!(f, "{}(", value_ref.value_kind())?;
                 }
             }
-            E::display_string_content(f, &context.custom_context, value)?;
+            E::display_string_content(f, &context.custom_display_context, value)?;
             write!(f, ")")?;
             return Ok(());
         }
@@ -585,7 +585,7 @@ mod tests {
             display_mode: DisplayMode::NestedString,
             print_mode: PrintMode::SingleLine,
             schema: &schema,
-            custom_context: Default::default(),
+            custom_display_context: Default::default(),
             type_index,
         };
         assert_eq!(
@@ -672,7 +672,7 @@ mod tests {
                 first_line_indent: 0,
             },
             schema: &schema,
-            custom_context: Default::default(),
+            custom_display_context: Default::default(),
             type_index,
         };
         assert_eq!(
