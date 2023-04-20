@@ -92,6 +92,9 @@ use utils::ContextualDisplay;
 /// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
+    59,
+    99,
+    48,
     95,
     132,
     112,

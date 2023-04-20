@@ -16,25 +16,8 @@ pub struct Hash(pub [u8; Self::LENGTH]);
 impl Hash {
     pub const LENGTH: usize = 32;
 
-    /// Returns the lower 27 bytes.
-    pub fn lower_27_bytes(&self) -> [u8; 27] {
-        let mut result = [0u8; 27];
-        result.copy_from_slice(&self.0[5..32]);
-        result
-    }
-
-    /// Returns the lower 26 bytes.
-    pub fn lower_26_bytes(&self) -> [u8; 26] {
-        let mut result = [0u8; 26];
-        result.copy_from_slice(&self.0[6..32]);
-        result
-    }
-
-    /// Returns the lower 16 bytes.
-    pub fn lower_16_bytes(&self) -> [u8; 16] {
-        let mut result = [0u8; 16];
-        result.copy_from_slice(&self.0[16..32]);
-        result
+    pub fn lower_bytes<const N: usize>(&self) -> [u8; N] {
+        self.0[(Self::LENGTH - N)..Self::LENGTH].try_into().unwrap()
     }
 }
 

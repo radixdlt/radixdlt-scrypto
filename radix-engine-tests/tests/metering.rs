@@ -70,15 +70,15 @@ fn test_basic_transfer() {
         40000 /* CreateNode */
         + 77000 /* DropLock */
         + 40000 /* DropNode */
-        + 10970 /* Invoke */
+        + 11150 /* Invoke */
         + 78000 /* LockSubstate */
-        + 172570 /* ReadSubstate */
+        + 175690 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1260 /* TxPayloadCost */
+        + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 178500, /* WriteSubstate */
+        + 184500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -204,16 +204,16 @@ fn test_radiswap() {
         90000 /* CreateNode */
         + 188500 /* DropLock */
         + 87500 /* DropNode */
-        + 24270 /* Invoke */
+        + 24570 /* Invoke */
         + 190500 /* LockSubstate */
-        + 499470 /* ReadSubstate */
+        + 506550 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1520495 /* RunWasm */
+        + 1527895 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1625 /* TxPayloadCost */
+        + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 534500, /* WriteSubstate */
+        + 561500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -314,16 +314,16 @@ fn test_flash_loan() {
         147500 /* CreateNode */
         + 304500 /* DropLock */
         + 147500 /* DropNode */
-        + 44230 /* Invoke */
+        + 44920 /* Invoke */
         + 312000 /* LockSubstate */
-        + 692000 /* ReadSubstate */
+        + 704090 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1215255 /* RunWasm */
+        + 1233805 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2375 /* TxPayloadCost */
+        + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1954500, /* WriteSubstate */
+        + 2074500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

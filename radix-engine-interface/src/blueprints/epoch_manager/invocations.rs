@@ -14,8 +14,8 @@ pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct EpochManagerCreateInput {
-    pub validator_owner_token: [u8; 27], // TODO: Clean this up
-    pub component_address: [u8; 27],     // TODO: Clean this up
+    pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
+    pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
     pub validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
     pub initial_epoch: u64,
     pub max_validators: u32,

@@ -88,7 +88,7 @@ impl IdAllocator {
         let hash = hash(buf);
 
         // Install the entity type
-        let mut node_id = hash.lower_27_bytes();
+        let mut node_id: [u8; NodeId::LENGTH] = hash.lower_bytes();
         node_id[0] = entity_type as u8;
 
         Ok(NodeId(node_id))

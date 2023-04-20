@@ -40,7 +40,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: [u8; 27], // TODO: Clean this up
+    pub resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
 }
 
 pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);
