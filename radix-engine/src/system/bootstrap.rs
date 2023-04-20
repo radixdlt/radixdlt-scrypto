@@ -104,7 +104,7 @@ pub struct GenesisResource {
     pub description: String,
     pub url: String,
     pub icon_url: String,
-    pub address_bytes: [u8; 27],
+    pub address_bytes: [u8; NodeId::LENGTH],
     pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
 }
 
@@ -629,8 +629,8 @@ pub fn create_genesis(
             pre_allocated_ids.insert(resource.address_bytes.into());
         }
 
-        let epoch_manager_component_address: [u8; 27] = EPOCH_MANAGER.into();
-        let olympia_validator_token_address: [u8; 27] = VALIDATOR_OWNER_TOKEN.into();
+        let epoch_manager_component_address: [u8; NodeId::LENGTH] = EPOCH_MANAGER.into();
+        let olympia_validator_token_address: [u8; NodeId::LENGTH] = VALIDATOR_OWNER_TOKEN.into();
         pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
 

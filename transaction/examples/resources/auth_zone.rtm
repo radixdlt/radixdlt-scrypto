@@ -1,23 +1,23 @@
 # Withdraw XRD from account
-CALL_METHOD Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v") "withdraw" Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Decimal("5.0");
+CALL_METHOD Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt") "withdraw" Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Decimal("5.0");
 
 # Create a proof from bucket, clone it and drop both
-TAKE_FROM_WORKTOP Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Bucket("some_xrd");
+TAKE_FROM_WORKTOP Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Bucket("some_xrd");
 CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
 CLONE_PROOF Proof("proof1") Proof("proof2");
 DROP_PROOF Proof("proof1");
 DROP_PROOF Proof("proof2");
 
 # Create a proof from account and drop it
-CALL_METHOD Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v") "create_proof_by_amount" Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Decimal("5.0");
+CALL_METHOD Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt") "create_proof_by_amount" Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Decimal("5.0");
 POP_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF Proof("proof3");
 
 # Compose proofs
-CALL_METHOD Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v") "create_proof_by_amount" Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Decimal("5.0");
-CREATE_PROOF_FROM_AUTH_ZONE Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Proof("Proof Name");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("1") Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Proof("proof4");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Proof("proof5");
+CALL_METHOD Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt") "create_proof_by_amount" Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Decimal("5.0");
+CREATE_PROOF_FROM_AUTH_ZONE Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Proof("Proof Name");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("1") Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Proof("proof4");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Proof("proof5");
 CLEAR_AUTH_ZONE;
 
 # Drop all virtual proofs in the auth zone.
@@ -25,4 +25,4 @@ CLEAR_SIGNATURE_PROOFS;
 
 # Drop all proofs, and move resources to account
 DROP_ALL_PROOFS;
-CALL_METHOD Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v") "deposit_batch" Expression("ENTIRE_WORKTOP");
+CALL_METHOD Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt") "deposit_batch" Expression("ENTIRE_WORKTOP");
