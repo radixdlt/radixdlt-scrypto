@@ -304,8 +304,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                     let input: #input_struct_ident = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
 
-                let is_method = get_state.is_some();
-
                 // load component state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
@@ -331,29 +329,15 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
 
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
                 let extern_function = {
-                    if is_method {
-                        quote! {
-                            #[no_mangle]
-                            pub extern "C" fn #fn_ident(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                                use ::sbor::rust::ops::{Deref, DerefMut};
+                    quote! {
+                        #[no_mangle]
+                        pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
+                            use ::sbor::rust::ops::{Deref, DerefMut};
 
-                                // Set up panic hook
-                                ::scrypto::set_up_panic_hook();
+                            // Set up panic hook
+                            ::scrypto::set_up_panic_hook();
 
-                                #(#stmts)*
-                            }
-                        }
-                    } else {
-                        quote! {
-                            #[no_mangle]
-                            pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                                use ::sbor::rust::ops::{Deref, DerefMut};
-
-                                // Set up panic hook
-                                ::scrypto::set_up_panic_hook();
-
-                                #(#stmts)*
-                            }
+                            #(#stmts)*
                         }
                     }
                 };

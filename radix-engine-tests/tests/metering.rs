@@ -322,7 +322,7 @@ fn test_flash_loan() {
         + 450122 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1188275 /* RunWasm */
+        + 1188265 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

@@ -43,7 +43,7 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
     fn invoke<Y>(
         &mut self,
-        receiver: Option<&NodeId>,
+        _receiver: Option<&NodeId>,
         func_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -55,15 +55,6 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
             let mut input = Vec::new();
-            if let Some(node_id) = receiver {
-                input.push(
-                    runtime
-                        .allocate_buffer(
-                            scrypto_encode(node_id).expect("Failed to encode object id"),
-                        )
-                        .expect("Failed to allocate buffer"),
-                );
-            }
             input.push(
                 runtime
                     .allocate_buffer(args.as_slice().to_vec())
