@@ -183,4 +183,15 @@ else:
     print("\nCost function coeff: ", min_ins, "\n")
     print("Cost calculation = ( F *", min_ins, ") /", mul_div, "\n")
 
+    f = open("/tmp/_out_table.csv", "w")
+    for row in output_tab:
+        for col in row:
+            if type(col) == str and col.count(';') > 0:
+                f.write("\"")
+                f.write(col)
+                f.write("\";")
+            else:
+                f.write(str(col))
+                f.write(";")
+        f.write("\n")
 

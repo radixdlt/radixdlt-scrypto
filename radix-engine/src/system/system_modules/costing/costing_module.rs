@@ -391,9 +391,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .apply_execution_cost(
                 CostingReason::AllocateNodeId,
                 |fee_table| {
-                    fee_table.kernel_api_cost(CostingEntry::AllocateNodeId {
-                        virtual_node,
-                    })
+                    fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { virtual_node })
                 },
                 1,
             )?;
