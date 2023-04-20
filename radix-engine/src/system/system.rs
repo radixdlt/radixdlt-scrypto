@@ -55,25 +55,6 @@ where
             phantom: PhantomData::default(),
         }
     }
-
-    fn can_substate_be_accessed(actor: &Actor, node_id: &NodeId) -> bool {
-        // TODO: Remove
-        if is_native_package(actor.blueprint().package_address) {
-            return true;
-        }
-
-        if node_id.is_internal_kv_store() {
-            return true;
-        }
-
-        match actor {
-            Actor::Method {
-                node_id: actor_node_id,
-                ..
-            } if actor_node_id == node_id => true,
-            _ => false,
-        }
-    }
 }
 
 impl<'a, Y, V> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, Y, V>
@@ -122,40 +103,7 @@ where
             ObjectModuleId::AccessRules => SysModuleId::AccessRules,
         };
 
-
         // TODO: Check if valid substate_key for node_id
-        /*
-        if !Self::can_substate_be_accessed(&actor, node_id) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
-                    actor: actor.clone(),
-                    node_id: node_id.clone(),
-                    key: key.clone(),
-                    flags,
-                })),
-            ));
-        }
-
-        let module_id = match type_info {
-            TypeInfoSubstate::SortedStore
-            | TypeInfoSubstate::IterableStore
-            | TypeInfoSubstate::KeyValueStore(..) => {
-                return Err(RuntimeError::SystemError(SystemError::NotATuple));
-            }
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                if let Actor::Method { module_id, .. } = &actor {
-
-                } else {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                            return Err(RuntimeError::SystemError(SystemError::NotATuple));
-                        }
-                        _ => SysModuleId::Object,
-                    }
-                }
-            }
-        };
-         */
 
         let substate_key = SubstateKey::Key(key.clone());
 

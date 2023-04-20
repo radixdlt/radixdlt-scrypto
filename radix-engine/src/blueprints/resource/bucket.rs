@@ -318,7 +318,6 @@ impl NonFungibleBucket {
     }
 
     pub fn put<Y>(
-        receiver: &NodeId,
         resource: LiquidNonFungibleResource,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -443,7 +442,6 @@ impl NonFungibleBucket {
 
     // protected method
     pub fn unlock_non_fungibles<Y>(
-        receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -472,7 +470,6 @@ impl NonFungibleBucket {
         api.sys_write_substate_typed(handle, &locked)?;
 
         NonFungibleBucket::put(
-            receiver,
             LiquidNonFungibleResource::new(liquid_non_fungibles),
             api,
         )
@@ -644,7 +641,7 @@ impl BucketBlueprint {
                 FungibleBucket::put(receiver, r, api)?;
             }
             DroppedBucketResource::NonFungible(r) => {
-                NonFungibleBucket::put(receiver, r, api)?;
+                NonFungibleBucket::put(r, api)?;
             }
         }
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -832,7 +829,6 @@ impl BucketBlueprint {
     }
 
     pub fn unlock_non_fungibles<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -843,7 +839,7 @@ impl BucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        NonFungibleBucket::unlock_non_fungibles(receiver, input.local_ids, api)?;
+        NonFungibleBucket::unlock_non_fungibles(input.local_ids, api)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

@@ -150,7 +150,6 @@ pub enum KernelError {
 
     // Actor Constraints
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
-    InvalidSubstateAccess(Box<InvalidSubstateAccess>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

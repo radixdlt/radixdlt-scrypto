@@ -62,7 +62,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn put<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -97,7 +96,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -146,7 +144,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_non_fungibles<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -196,7 +193,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_all<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -223,7 +219,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -254,7 +249,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_amount<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -285,7 +279,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_non_fungibles<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -317,7 +310,6 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

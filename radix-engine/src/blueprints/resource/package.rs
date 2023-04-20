@@ -1926,10 +1926,7 @@ impl ResourceManagerNativePackage {
             BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::unlock_non_fungibles(receiver, input, api)
+                BucketBlueprint::unlock_non_fungibles(input, api)
             }
             WORKTOP_DROP_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -1945,66 +1942,42 @@ impl ResourceManagerNativePackage {
             WORKTOP_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::put(receiver, input, api)
+                WorktopBlueprint::put(input, api)
             }
             WORKTOP_TAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::take(receiver, input, api)
+                WorktopBlueprint::take(input, api)
             }
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::take_non_fungibles(receiver, input, api)
+                WorktopBlueprint::take_non_fungibles(input, api)
             }
             WORKTOP_TAKE_ALL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::take_all(receiver, input, api)
+                WorktopBlueprint::take_all(input, api)
             }
             WORKTOP_ASSERT_CONTAINS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::assert_contains(receiver, input, api)
+                WorktopBlueprint::assert_contains(input, api)
             }
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::assert_contains_amount(receiver, input, api)
+                WorktopBlueprint::assert_contains_amount(input, api)
             }
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::assert_contains_non_fungibles(receiver, input, api)
+                WorktopBlueprint::assert_contains_non_fungibles(input, api)
             }
             WORKTOP_DRAIN_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                WorktopBlueprint::drain(receiver, input, api)
+                WorktopBlueprint::drain(input, api)
             }
             AUTH_ZONE_POP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
