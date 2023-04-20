@@ -78,6 +78,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn sys_lock_substate(
         &mut self,
         node_id: &NodeId,
@@ -140,12 +141,14 @@ where
             .kernel_lock_substate(&node_id, module_id, substate_key, flags)
     }
 
+    #[trace_resources]
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.api
             .kernel_read_substate(lock_handle)
             .map(|v| v.as_slice().to_vec())
     }
 
+    #[trace_resources]
     fn sys_write_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -193,6 +196,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let info = self.api.kernel_get_lock_info(lock_handle)?;
         if info.flags.contains(LockFlags::MUTABLE) {}
@@ -206,6 +210,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn new_object(
         &mut self,
         blueprint_ident: &str,
@@ -319,6 +324,7 @@ where
         Ok(node_id.into())
     }
 
+    #[trace_resources]
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
@@ -364,6 +370,7 @@ where
         Ok(global_address)
     }
 
+    #[trace_resources]
     fn globalize_with_address(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
@@ -477,6 +484,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn call_method(
         &mut self,
         receiver: &NodeId,
@@ -486,6 +494,7 @@ where
         self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
     }
 
+    #[trace_resources]
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
@@ -572,6 +581,7 @@ where
             .map(|v| v.into())
     }
 
+    #[trace_resources]
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
@@ -584,6 +594,7 @@ where
         Ok(object_info)
     }
 
+    #[trace_resources]
     fn get_key_value_store_info(
         &mut self,
         node_id: &NodeId,
@@ -599,6 +610,7 @@ where
         Ok(schema)
     }
 
+    #[trace_resources]
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
@@ -621,6 +633,7 @@ where
         Ok(node_id.into())
     }
 
+    #[trace_resources]
     fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         // TODO: Cleanup
         if let Some(actor) = self.api.kernel_get_current_actor() {
@@ -685,7 +698,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
-    #[trace_resources(log=units)]
+    #[trace_resources(log=units, log=reason)]
     fn consume_cost_units(
         &mut self,
         units: u32,
@@ -708,6 +721,7 @@ where
             )
     }
 
+    #[trace_resources]
     fn credit_cost_units(
         &mut self,
         vault_id: NodeId,
@@ -729,6 +743,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
             .kernel_get_current_actor()
@@ -761,6 +776,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -769,6 +785,7 @@ where
         Ok(auth_zone_id.into())
     }
 
+    #[trace_resources]
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -800,6 +817,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
@@ -817,6 +835,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
         // No costing applied
 
@@ -834,6 +853,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
@@ -974,6 +994,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -985,6 +1006,7 @@ where
             .transaction_hash())
     }
 
+    #[trace_resources]
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 

@@ -74,9 +74,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
 
     fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        node_type: &EntityType,
+        node_type: Option<EntityType>,
+        virtual_node: bool,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Allocating node id: type = {:?}", node_type);
+        log!(
+            api,
+            "Allocating node id: type = {:?}  virtual = {}",
+            node_type,
+            virtual_node
+        );
         Ok(())
     }
 
