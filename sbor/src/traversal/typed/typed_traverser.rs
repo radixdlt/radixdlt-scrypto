@@ -4,11 +4,12 @@ use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 
-pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension>(
+pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension, C>(
     payload: &'de [u8],
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
-) -> TypedTraverser<'de, 's, E> {
+    context: C,
+) -> TypedTraverser<'de, 's, E, C> {
     TypedTraverser::new(
         payload,
         schema,
@@ -16,17 +17,19 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension>(
         E::MAX_DEPTH,
         ExpectedStart::PayloadPrefix(E::PAYLOAD_PREFIX),
         true,
+        context,
     )
 }
 
-pub fn traverse_partial_payload_with_types<'de, 's, E: CustomTypeExtension>(
+pub fn traverse_partial_payload_with_types<'de, 's, E: CustomTypeExtension, C>(
     partial_payload: &'de [u8],
     expected_start: ExpectedStart<E::CustomValueKind>,
     check_exact_end: bool,
     current_depth: usize,
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
-) -> TypedTraverser<'de, 's, E> {
+    context: C,
+) -> TypedTraverser<'de, 's, E, C> {
     TypedTraverser::new(
         partial_payload,
         schema,
@@ -34,6 +37,7 @@ pub fn traverse_partial_payload_with_types<'de, 's, E: CustomTypeExtension>(
         E::MAX_DEPTH - current_depth,
         expected_start,
         check_exact_end,
+        context,
     )
 }
 
@@ -41,9 +45,10 @@ pub fn traverse_partial_payload_with_types<'de, 's, E: CustomTypeExtension>(
 ///
 /// It validates that the payload matches the given type kinds,
 /// and adds the relevant type index to the events which are output.
-pub struct TypedTraverser<'de, 's, E: CustomTypeExtension> {
+pub struct TypedTraverser<'de, 's, E: CustomTypeExtension, C> {
     traverser: VecTraverser<'de, E::CustomTraversal>,
     state: TypedTraverserState<'s, E>,
+    context: C,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,7 +119,7 @@ macro_rules! look_up_type {
     };
 }
 
-impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
+impl<'de, 's, E: CustomTypeExtension, C> TypedTraverser<'de, 's, E, C> {
     pub fn new(
         input: &'de [u8],
         schema: &'s Schema<E>,
@@ -122,6 +127,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         max_depth: usize,
         expected_start: ExpectedStart<E::CustomValueKind>,
         check_exact_end: bool,
+        context: C,
     ) -> Self {
         Self {
             traverser: VecTraverser::new(input, max_depth, expected_start, check_exact_end),
@@ -130,6 +136,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
                 schema,
                 root_type_index: type_index,
             },
+            context,
         }
     }
 

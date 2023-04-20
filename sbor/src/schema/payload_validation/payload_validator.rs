@@ -102,12 +102,17 @@ macro_rules! numeric_validation_match {
     }};
 }
 
-pub fn validate_payload_against_schema<'s, E: CustomTypeExtension>(
+/// Validate the payload against the given schema.
+///
+/// This function assumes the input schema has passed consistency check.
+///
+pub fn validate_payload_against_schema<'s, E: CustomTypeExtension, C>(
     payload: &[u8],
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
+    context: C,
 ) -> Result<(), LocatedValidationError<'s, E>> {
-    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
+    let mut traverser = traverse_payload_with_types::<E, C>(payload, &schema, index, context);
     loop {
         let typed_event = traverser.next_event();
         if validate_event_with_type::<E>(&schema, &typed_event.event).map_err(|error| {
@@ -294,7 +299,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index, ());
         assert!(result.is_ok())
     }
 
@@ -307,7 +312,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index, ());
         assert!(matches!(
             result,
             Err(LocatedValidationError {
@@ -385,7 +390,7 @@ mod tests {
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
-        let result = validate_payload_against_schema(&bytes, &schema, type_index);
+        let result = validate_payload_against_schema(&bytes, &schema, type_index, ());
         assert!(result.is_ok())
     }
 
@@ -420,6 +425,7 @@ mod tests {
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                ()
             ),
             Ok(())
         );
@@ -429,6 +435,7 @@ mod tests {
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                ()
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::TypeValidationError(
@@ -447,6 +454,7 @@ mod tests {
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                ()
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::TypeValidationError(
@@ -511,6 +519,7 @@ mod tests {
             &cut_off_payload,
             &schema,
             type_index,
+            ()
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -546,6 +555,7 @@ mod tests {
             &payload,
             &schema,
             type_index,
+            ()
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -577,6 +587,7 @@ mod tests {
             &payload,
             &schema,
             type_index,
+            ()
         ) else {
             panic!("Validation did not error with too short a payload");
         };

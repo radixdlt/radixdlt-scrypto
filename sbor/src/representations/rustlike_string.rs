@@ -18,7 +18,7 @@ pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeE
     payload: &'_ [u8],
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
-    let mut traverser = traverse_payload_with_types(payload, context.schema, type_index);
+    let mut traverser = traverse_payload_with_types(payload, context.schema, type_index, ());
     if let PrintMode::MultiLine {
         first_line_indent, ..
     } = &context.print_mode
@@ -49,6 +49,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
         current_depth,
         context.schema,
         type_index,
+        (),
     );
     if let PrintMode::MultiLine {
         first_line_indent, ..
@@ -64,13 +65,13 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
 }
 
 pub fn consume_end_event<E: FormattableCustomTypeExtension>(
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
 ) -> Result<(), FormattingError> {
     traverser.consume_end_event().map_err(FormattingError::Sbor)
 }
 
 fn consume_container_end<E: FormattableCustomTypeExtension>(
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
 ) -> Result<(), FormattingError> {
     traverser
         .consume_container_end_event()
@@ -79,7 +80,7 @@ fn consume_container_end<E: FormattableCustomTypeExtension>(
 
 fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
     context: &RustLikeDisplayContext<'_, '_, E>,
 ) -> Result<(), FormattingError> {
     let typed_event = traverser.next_event();
@@ -113,7 +114,7 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
     context: &RustLikeDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     tuple_header: TupleHeader,
@@ -218,7 +219,7 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
     context: &RustLikeDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     variant_header: EnumVariantHeader,
@@ -327,7 +328,7 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
     context: &RustLikeDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     array_header: ArrayHeader<E::CustomValueKind>,
@@ -408,7 +409,7 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
 
 fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    traverser: &mut TypedTraverser<E>,
+    traverser: &mut TypedTraverser<E, ()>,
     context: &RustLikeDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     map_header: MapHeader<E::CustomValueKind>,
