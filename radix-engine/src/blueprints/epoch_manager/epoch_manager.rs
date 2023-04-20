@@ -219,7 +219,6 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
@@ -234,7 +233,6 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mgr_handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -266,7 +264,6 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mgr_handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -307,7 +304,6 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -376,7 +372,6 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::read_only(),
         )?;
@@ -446,7 +441,6 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
@@ -461,7 +455,6 @@ impl EpochManagerBlueprint {
             validators.into_iter().collect();
 
         let handle = api.lock_field(
-            receiver,
             &EpochManagerOffset::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;

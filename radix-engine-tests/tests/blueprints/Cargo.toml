@@ -9,7 +9,6 @@ members = [
     "component",
     "core",
     "clock",
-    "data_access",
     "deep_sbor",
     "epoch_manager",
     "execution_trace",

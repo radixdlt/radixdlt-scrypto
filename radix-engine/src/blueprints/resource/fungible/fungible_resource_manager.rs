@@ -183,7 +183,6 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            receiver,
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -252,7 +251,6 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            receiver,
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -312,7 +310,6 @@ impl FungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            receiver,
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
@@ -342,7 +339,6 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            receiver,
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
@@ -372,7 +368,6 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            receiver,
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
@@ -394,7 +389,6 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            receiver,
             &ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;

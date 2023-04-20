@@ -61,9 +61,8 @@ pub trait WasmRuntime {
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn lock_substate(
+    fn lock_field(
         &mut self,
-        node_id: Vec<u8>,
         offset: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;

@@ -80,7 +80,6 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.lock_field(
-            receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -141,7 +140,6 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.lock_field(
-            receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -219,7 +217,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorOffset::Validator.into();
-        let handle = api.lock_field(receiver, &substate_key, LockFlags::MUTABLE)?;
+        let handle = api.lock_field(&substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         // No update
@@ -309,7 +307,6 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError> + KernelSubstateApi,
     {
         let handle = api.lock_field(
-            receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -374,7 +371,6 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &ValidatorOffset::Validator.into(),
             LockFlags::MUTABLE,
         )?;

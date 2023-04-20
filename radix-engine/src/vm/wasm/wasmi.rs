@@ -284,20 +284,17 @@ fn lock_key_value_store_entry(
     runtime.lock_key_value_store_entry(node_id, substate_key, flags)
 }
 
-fn lock_substate(
+fn lock_field(
     mut caller: Caller<'_, HostState>,
-    node_id_ptr: u32,
-    node_id_len: u32,
     offset_ptr: u32,
     offset_len: u32,
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_substate(node_id, substate_key, flags)
+    runtime.lock_field(substate_key, flags)
 }
 
 fn read_substate(
@@ -596,19 +593,15 @@ impl WasmiModule {
             },
         );
 
-        let host_lock_substate = Func::wrap(
+        let host_lock_field = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             node_id_ptr: u32,
-             node_id_len: u32,
              offset_ptr: u32,
              offset_len: u32,
              mutable: u32|
              -> Result<u32, Trap> {
-                lock_substate(
+                lock_field(
                     caller,
-                    node_id_ptr,
-                    node_id_len,
                     offset_ptr,
                     offset_len,
                     mutable,
@@ -740,7 +733,7 @@ impl WasmiModule {
         );
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
-        linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
+        linker_define!(linker, LOCK_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(
             linker,
             LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME,

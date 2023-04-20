@@ -312,21 +312,18 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn lock_substate(
+        pub fn lock_field(
             env: &WasmerInstanceEnv,
-            node_id_ptr: u32,
-            node_id_len: u32,
             offset_ptr: u32,
             offset_len: u32,
             flags: u32,
         ) -> Result<u32, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
             let substate_key = read_memory(&instance, offset_ptr, offset_len)?;
 
             let handle = runtime
-                .lock_substate(node_id, substate_key, flags)
+                .lock_field(substate_key, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
@@ -489,7 +486,7 @@ impl WasmerModule {
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
-                LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
+                LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_field),
                 READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
                 WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
                 DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),

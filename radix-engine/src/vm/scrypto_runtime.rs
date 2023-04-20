@@ -186,19 +186,13 @@ where
         Ok(handle)
     }
 
-    fn lock_substate(
+    fn lock_field(
         &mut self,
-        node_id: Vec<u8>,
         key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
-        let node_id = NodeId(
-            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
-                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
-        );
-
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.lock_field(&node_id, &key, flags)?;
+        let handle = self.api.lock_field(&key, flags)?;
 
         Ok(handle)
     }
@@ -406,9 +400,8 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn lock_substate(
+    fn lock_field(
         &mut self,
-        node_id: Vec<u8>,
         offset: Vec<u8>,
         flags: u32,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {

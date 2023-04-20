@@ -32,7 +32,6 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -376,7 +375,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -391,7 +389,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -416,7 +413,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -437,7 +433,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -456,7 +451,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -510,7 +504,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -555,7 +548,6 @@ impl NonFungibleVault {
         let event = DepositResourceEvent::Ids(resource.ids().clone());
 
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -592,7 +584,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -644,7 +635,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -687,7 +677,6 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;

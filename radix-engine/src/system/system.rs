@@ -84,7 +84,6 @@ where
     #[trace_resources]
     fn lock_field(
         &mut self,
-        orig_node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -95,10 +94,6 @@ where
                 => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
             Actor::Method { node_id, module_id, blueprint, .. } => (node_id, module_id, blueprint),
         };
-
-        if !orig_node_id.eq(node_id) {
-            panic!("Not the original id");
-        }
 
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
 

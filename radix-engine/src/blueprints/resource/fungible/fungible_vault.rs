@@ -29,7 +29,6 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -144,7 +143,6 @@ impl FungibleVaultBlueprint {
 
         // Lock the substate (with special flags)
         let vault_handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
@@ -319,7 +317,6 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -334,7 +331,6 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -360,7 +356,6 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -393,7 +388,6 @@ impl FungibleVault {
         let event = DepositResourceEvent::Amount(resource.amount());
 
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -421,7 +415,6 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -460,7 +453,6 @@ impl FungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            receiver,
             &FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;

@@ -31,7 +31,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -59,7 +58,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -86,7 +84,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -126,7 +123,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::read_only(),
         )?;
@@ -166,7 +162,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -206,7 +201,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -236,7 +230,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -261,7 +254,6 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            receiver,
             &AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;

@@ -215,7 +215,6 @@ impl ClockNativePackage {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let handle = api.lock_field(
-            receiver,
             &ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
@@ -241,7 +240,6 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.lock_field(
-                    receiver,
                     &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
@@ -269,7 +267,6 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.lock_field(
-                    receiver,
                     &ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;

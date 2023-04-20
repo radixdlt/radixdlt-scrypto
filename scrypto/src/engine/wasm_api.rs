@@ -102,10 +102,8 @@ extern "C" {
     // Substate API
     //===============
 
-    // Locks a substate
-    pub fn lock_substate(
-        node_id_ptr: *const u8,
-        node_id_len: usize,
+    // Locks a field
+    pub fn lock_field(
         offset_ptr: *const u8,
         offset_len: usize,
         flags: u32,
@@ -243,9 +241,7 @@ pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn lock_substate(
-    _node_id: *const u8,
-    _node_id_len: usize,
+pub unsafe fn lock_field(
     _offset: *const u8,
     _offset_len: usize,
     _flags: u32,

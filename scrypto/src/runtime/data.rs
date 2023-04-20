@@ -107,14 +107,12 @@ impl<V: ScryptoEncode> DerefMut for DataRefMut<V> {
 }
 
 pub struct ComponentStatePointer<V: 'static + ScryptoEncode + ScryptoDecode> {
-    node_id: NodeId,
     phantom_data: PhantomData<V>,
 }
 
 impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
-    pub fn new(node_id: NodeId) -> Self {
+    pub fn new() -> Self {
         Self {
-            node_id,
             phantom_data: PhantomData,
         }
     }
@@ -123,7 +121,6 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
             .lock_field(
-                &self.node_id,
                 &vec![ComponentOffset::State0 as u8],
                 LockFlags::read_only(),
             )
@@ -137,7 +134,6 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
             .lock_field(
-                &self.node_id,
                 &vec![ComponentOffset::State0 as u8],
                 LockFlags::MUTABLE,
             )
