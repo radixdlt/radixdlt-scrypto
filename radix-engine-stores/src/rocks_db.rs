@@ -75,7 +75,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
         index_id.extend(node_id.as_ref());
         index_id.push(module_id.0);
         let index_id: [u8; NodeId::LENGTH + 1] = index_id.try_into().unwrap();
-        let start = encode_substate_id(node_id, module_id, &SubstateKey::from_vec(vec![0]).into());
+        let start = encode_substate_id(node_id, module_id, &vec![0]);
 
         let iter = self
             .db

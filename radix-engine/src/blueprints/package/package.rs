@@ -146,11 +146,7 @@ where
     let mut metadata_init = BTreeMap::new();
     for (key, value) in metadata {
         metadata_init.insert(
-            SubstateKey::from_vec(scrypto_encode(&key).unwrap()).ok_or(
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidMetadataKey(key),
-                )),
-            )?,
+            SubstateKey::Key(scrypto_encode(&key).unwrap()),
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }

@@ -1,30 +1,27 @@
 use crate::interface::SubstateKeyMapper;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::types::{ModuleId, SubstateKey, SysModuleId};
+use radix_engine_interface::types::SubstateKey;
 
 pub struct JmtKeyMapper;
 
 impl SubstateKeyMapper for JmtKeyMapper {
-    fn map_to_db_key(module_id: ModuleId, key: SubstateKey) -> Vec<u8> {
-        let module_id = SysModuleId::from_repr(module_id.0).unwrap();
-        let key = match key {
-            SubstateKey::Key(key) => key
-        };
-
-        let bytes = match module_id {
-            SysModuleId::Metadata | SysModuleId::Map | SysModuleId::Iterable => {
-                hash(key).0[12..32].to_vec()
+    fn map_to_db_key(key: SubstateKey) -> Vec<u8> {
+        let bytes = match key {
+            SubstateKey::Key(key) => {
+                // TODO: Split into Map/Tuple
+                if key.len() == 1 {
+                    key
+                } else {
+                    hash(key).0[12..32].to_vec()
+                }
             }
-            SysModuleId::Tuple
-            | SysModuleId::AccessRules
-            | SysModuleId::TypeInfo
-            | SysModuleId::Royalty => key,
-            SysModuleId::Sorted => {
-                let mut bytes = key[0..2].to_vec(); // 2 bytes
-                bytes.extend(hash(key[2..].to_vec()).0[12..32].to_vec()); // 20 bytes
+            SubstateKey::Sorted(bucket, key) => {
+                let mut bytes = bucket.to_be_bytes().to_vec();
+                bytes.extend(hash(key).0[12..32].to_vec()); // 20 bytes
                 bytes
             }
         };
+
         bytes
     }
 }

@@ -170,7 +170,7 @@ pub enum StateUpdate {
 }
 
 pub trait SubstateKeyMapper {
-    fn map_to_db_key(module_id: ModuleId, key: SubstateKey) -> Vec<u8>;
+    fn map_to_db_key(key: SubstateKey) -> Vec<u8>;
 }
 
 /// Represents the interface between Track and a database vendor.
@@ -210,7 +210,7 @@ mod tests {
     fn test_encode_decode_substate_id() {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
-        let substate_key = SubstateKey::from_vec(vec![3]).unwrap();
+        let substate_key = SubstateKey::Key(vec![3]);
         let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,

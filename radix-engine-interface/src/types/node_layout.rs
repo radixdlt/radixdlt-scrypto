@@ -162,8 +162,7 @@ macro_rules! into_substate_key {
     ($t:ty) => {
         impl Into<SubstateKey> for $t {
             fn into(self) -> SubstateKey {
-                SubstateKey::from_vec(vec![self as u8])
-                    .expect("Failed to convert offset into substate key")
+                SubstateKey::Key(vec![self as u8])
             }
         }
 

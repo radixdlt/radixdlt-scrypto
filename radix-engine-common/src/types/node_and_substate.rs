@@ -192,46 +192,7 @@ impl ModuleId {
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
-    Key(Vec<u8>)
+    // TODO: Split into Map/Tuple
+    Key(Vec<u8>),
+    Sorted(u16, Vec<u8>),
 }
-
-impl SubstateKey {
-    pub const MIN_LENGTH: usize = 1;
-    pub const MAX_LENGTH: usize = 128;
-
-    pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        Self::from_vec(slice.to_vec())
-    }
-
-    pub fn from_vec(bytes: Vec<u8>) -> Option<Self> {
-        if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
-            None
-        } else {
-            Some(Self::Key(bytes))
-        }
-    }
-}
-
-/*
-impl Debug for SubstateKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("SubstateKey")
-            .field(&hex::encode(&self.0))
-            .finish()
-    }
-}
- */
-
-/*
-impl AsRef<[u8]> for SubstateKey {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Into<Vec<u8>> for SubstateKey {
-    fn into(self) -> Vec<u8> {
-        self.0
-    }
-}
- */

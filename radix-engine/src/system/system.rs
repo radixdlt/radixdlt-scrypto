@@ -143,7 +143,7 @@ where
             }
         };
 
-        let substate_key = SubstateKey::from_vec(key.clone()).unwrap();
+        let substate_key = SubstateKey::Key(key.clone());
 
         self.api
             .kernel_lock_substate(&node_id, module_id.into(), &substate_key, flags)
@@ -283,7 +283,7 @@ where
             .map(|(i, x)| {
                 (
                     // TODO check size during package publishing time
-                    SubstateKey::from_vec(vec![i as u8]).unwrap(),
+                    SubstateKey::Key(vec![i as u8]),
                     IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
                 )
             })
@@ -714,7 +714,7 @@ where
         }
 
         let module_id = SysModuleId::Iterable;
-        let substate_key = SubstateKey::from_vec(key).unwrap();
+        let substate_key = SubstateKey::Key(key);
 
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -734,7 +734,7 @@ where
         }
 
         let module_id = SysModuleId::Iterable;
-        let substate_key = SubstateKey::from_vec(key).unwrap();
+        let substate_key = SubstateKey::Key(key);
 
         let rtn = self
             .api
@@ -836,7 +836,7 @@ where
         }
 
         let module_id = SysModuleId::Sorted;
-        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
+        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
     }
@@ -878,7 +878,7 @@ where
         }
 
         let module_id = SysModuleId::Sorted;
-        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
+        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
 
         let rtn = self
             .api

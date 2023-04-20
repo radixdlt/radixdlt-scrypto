@@ -475,7 +475,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
                 let module_substates = module_substates
                     .into_iter()
                     .map(|(key, value)| {
-                        let key = M::map_to_db_key(module_id, key);
+                        let key = M::map_to_db_key(key);
                         (key, TrackedSubstateKey::New(RuntimeSubstate::new(value)))
                     })
                     .collect();
@@ -500,7 +500,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), AcquireLockError> {
-        let db_key = M::map_to_db_key(module_id, substate_key.clone());
+        let db_key = M::map_to_db_key(substate_key.clone());
 
         let tracked_module = self
             .tracked_nodes
@@ -544,7 +544,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, AcquireLockError> {
-        let db_key = M::map_to_db_key(module_id, substate_key.clone());
+        let db_key = M::map_to_db_key(substate_key.clone());
 
         let tracked = self.get_tracked_substate(node_id, module_id, &db_key);
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
@@ -764,7 +764,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         flags: LockFlags,
         virtualize: F,
     ) -> Result<u32, AcquireLockError> {
-        let db_key = M::map_to_db_key(module_id, substate_key.clone());
+        let db_key = M::map_to_db_key(substate_key.clone());
 
         // Load the substate from state track
         let tracked = self.get_tracked_substate_virtualize(node_id, module_id, &db_key, virtualize);
