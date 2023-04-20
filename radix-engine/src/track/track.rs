@@ -1,7 +1,10 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{AcquireLockError, DeleteSubstateError, NodeSubstates, SetSubstateError, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore};
+use radix_engine_stores::interface::{
+    AcquireLockError, DeleteSubstateError, NodeSubstates, SetSubstateError, StateUpdate,
+    StateUpdates, SubstateDatabase, SubstateStore,
+};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
 
@@ -227,6 +230,7 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
     ///
     /// Note that dependencies will never be reverted.
     pub fn revert_non_force_write_changes(&mut self) {
+        // TODO: Add back dependencies
         let updates = mem::take(&mut self.force_updates);
         self.updates = updates;
     }
@@ -503,20 +507,24 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
 
         // Check substate state
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
-            if matches!(tracked, TrackedSubstateKey::WriteOnly(..)) {
-                return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
-                    *node_id,
-                    module_id,
-                    substate_key.clone(),
-                ));
-            }
-
-            if matches!(tracked, TrackedSubstateKey::ReadAndWrite(..)) {
-                return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
-                    *node_id,
-                    module_id,
-                    substate_key.clone(),
-                ));
+            match tracked {
+                TrackedSubstateKey::New(..) => {
+                    return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
+                        *node_id,
+                        module_id,
+                        substate_key.clone(),
+                    ));
+                }
+                TrackedSubstateKey::WriteOnly(..) | TrackedSubstateKey::ReadAndWrite(..) => {
+                    return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
+                        *node_id,
+                        module_id,
+                        substate_key.clone(),
+                    ));
+                }
+                TrackedSubstateKey::ReadOnly(..) => {
+                    // Okay
+                }
             }
         }
 
