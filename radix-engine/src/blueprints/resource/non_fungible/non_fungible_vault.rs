@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
@@ -82,24 +81,14 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let other_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
-
-        // Check resource address
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        if resource_address != other_bucket.info.resource_address {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::MismatchingResource),
-            ));
-        }
+        let other_bucket =
+            drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
 
         // Put
-        if let DroppedBucketResource::NonFungible(r) = other_bucket.resource {
-            NonFungibleVault::put(receiver, r, api)?;
-        } else {
-            panic!("Expected non fungible bucket");
-        }
+        NonFungibleVault::put(receiver, other_bucket.liquid, api)?;
 
         Ok(())
     }

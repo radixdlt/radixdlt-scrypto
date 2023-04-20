@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::heap::{DroppedFungibleBucket, HeapNode};
+use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket, HeapNode};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -35,7 +35,7 @@ impl BucketInfoSubstate {
     }
 }
 
-fn drop_fungible_bucket_of_address<Y>(
+pub fn drop_fungible_bucket_of_address<Y>(
     expected_address: ResourceAddress,
     bucket_node_id: &NodeId,
     api: &mut Y,
@@ -71,11 +71,11 @@ where
     Ok(bucket)
 }
 
-fn drop_non_fungible_bucket_of_address<Y>(
+pub fn drop_non_fungible_bucket_of_address<Y>(
     expected_address: ResourceAddress,
     bucket_node_id: &NodeId,
     api: &mut Y,
-) -> Result<DroppedFungibleBucket, RuntimeError>
+) -> Result<DroppedNonFungibleBucket, RuntimeError>
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
@@ -97,7 +97,7 @@ where
         )));
     }
 
-    let bucket: DroppedFungibleBucket = node.into();
+    let bucket: DroppedNonFungibleBucket = node.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),

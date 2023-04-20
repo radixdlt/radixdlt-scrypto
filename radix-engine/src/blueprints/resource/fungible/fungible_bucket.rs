@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
-use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
@@ -222,25 +221,16 @@ impl FungibleBucketBlueprint {
         })?;
 
         // Drop other bucket
-        let other_bucket: DroppedBucket = api.kernel_drop_node(input.bucket.0.as_node_id())?.into();
-
-        // Check resource address
         let info = BucketInfoSubstate::of(receiver, api)?;
-        if info.resource_address != other_bucket.info.resource_address {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::MismatchingResource),
-            ));
-        }
-
-        // Put
-        let rtn = FungibleBucket::put(
-            receiver,
-            match other_bucket.resource {
-                DroppedBucketResource::Fungible(x) => x,
-                DroppedBucketResource::NonFungible(_) => unreachable!(),
-            },
+        let other_bucket = drop_fungible_bucket_of_address(
+            info.resource_address,
+            input.bucket.0.as_node_id(),
             api,
         )?;
+
+        // Put
+        let rtn = FungibleBucket::put(receiver, other_bucket.liquid, api)?;
+
         Ok(IndexedScryptoValue::from_typed(&rtn))
     }
 
