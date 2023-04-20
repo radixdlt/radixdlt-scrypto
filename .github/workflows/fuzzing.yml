@@ -108,22 +108,22 @@ jobs:
         ## Repo:\n \
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
         ## Status:\n \
-        \n\`\`\`\n \
-         $(cat afl/sessions_info) \
+        \n\`\`\`\n\
+        $(cat afl/sessions_info) \
         \n\`\`\`\n \
         ## Details:\n \
         <details>\n
           <summary>More details</summary>\n
-        \n\`\`\`\n \
+        \n\`\`\`\n\
         $(cargo afl whatsup -d afl/transaction) \
         \n\`\`\`\n
         </details>\n" > afl/summary
         cat afl/summary >> $GITHUB_STEP_SUMMARY
 
         echo -e \
-        "## Crash summary:\n \
-        \n\`\`\`\n \
-         $(cat afl/crash_summary.txt) \
+        "## Crash summary:\n\
+        \n\`\`\`\n\
+        $(cat afl/crash_summary.txt) \
         \n\`\`\`\n" >> $GITHUB_STEP_SUMMARY
 
         find afl -type f ! -path "*/queue/*" | tee list
