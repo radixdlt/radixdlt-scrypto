@@ -27,13 +27,13 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
-    pub fn get_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
+    pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         virtualize: F,
-    ) -> Option<&IndexedScryptoValue> {
+    ) -> &IndexedScryptoValue {
         let entry = self
             .nodes
             .entry(*node_id)
@@ -43,15 +43,14 @@ impl Heap {
             .entry(substate_key.clone());
         if let Entry::Vacant(e) = entry {
             let value = virtualize();
-            if let Some(value) = value {
-                e.insert(value);
-            }
+            e.insert(value);
         }
 
         self.nodes
             .get(node_id)
             .and_then(|node_substates| node_substates.get(&module_id))
             .and_then(|module_substates| module_substates.get(substate_key))
+            .unwrap()
     }
 
     /// Reads a substate

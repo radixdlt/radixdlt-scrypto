@@ -222,22 +222,19 @@ impl CallFrame {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
-            match heap.get_substate_virtualize(node_id, module_id.into(), substate_key, || {
-                if module_id.virtualize_substates() {
-                    let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
-                    Some(value)
-                } else {
-                    None
-                }
-            }) {
-                Some(x) => x,
-                _ => {
-                    return Err(LockSubstateError::SubstateNotFound(
-                        node_id.clone(),
-                        module_id,
-                        substate_key.clone(),
-                    ));
-                }
+            if module_id.virtualize_substates() {
+                heap.get_substate_virtualize(node_id, module_id.into(), substate_key, || {
+                    IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)
+                })
+            } else {
+                heap.get_substate(node_id, module_id.into(), substate_key)
+                    .ok_or_else(|| {
+                        LockSubstateError::SubstateNotFound(
+                            node_id.clone(),
+                            module_id,
+                            substate_key.clone(),
+                        )
+                    })?
             }
         } else {
             let handle = store
