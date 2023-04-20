@@ -2,8 +2,8 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
-    AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase,
-    SubstateKeyMapper, SubstateStore,
+    AcquireLockError, NodeSubstates, SetSubstateError, StateUpdate, StateUpdates, SubstateDatabase,
+    SubstateKeyMapper, SubstateStore, TakeSubstateError,
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
@@ -499,7 +499,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         module_id: ModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) -> Result<(), AcquireLockError> {
+    ) -> Result<(), SetSubstateError> {
         let db_key = M::map_to_db_key(substate_key.clone());
 
         let tracked_module = self
@@ -522,7 +522,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
                 let tracked = e.get_mut();
                 if let Some(runtime) = tracked.get_runtime_substate_mut() {
                     if runtime.lock_state.is_locked() {
-                        return Err(AcquireLockError::SubstateLocked(
+                        return Err(SetSubstateError::SubstateLocked(
                             node_id,
                             module_id,
                             substate_key.clone(),
@@ -543,13 +543,13 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, AcquireLockError> {
+    ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError> {
         let db_key = M::map_to_db_key(substate_key.clone());
 
         let tracked = self.get_tracked_substate(node_id, module_id, &db_key);
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
-                return Err(AcquireLockError::SubstateLocked(
+                return Err(TakeSubstateError::SubstateLocked(
                     *node_id,
                     module_id,
                     substate_key.clone(),
@@ -771,20 +771,26 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
 
         // Check substate state
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
-            if matches!(tracked, TrackedSubstateKey::WriteOnly(..)) {
-                return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
-                    *node_id,
-                    module_id,
-                    substate_key.clone(),
-                ));
-            }
-
-            if matches!(tracked, TrackedSubstateKey::ReadExistAndWrite(..)) {
-                return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
-                    *node_id,
-                    module_id,
-                    substate_key.clone(),
-                ));
+            match tracked {
+                TrackedSubstateKey::New(..) | TrackedSubstateKey::Garbage => {
+                    return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
+                        *node_id,
+                        module_id,
+                        substate_key.clone(),
+                    ));
+                }
+                TrackedSubstateKey::WriteOnly(..)
+                | TrackedSubstateKey::ReadExistAndWrite(..)
+                | TrackedSubstateKey::ReadNonExistAndWrite(..) => {
+                    return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
+                        *node_id,
+                        module_id,
+                        substate_key.clone(),
+                    ));
+                }
+                TrackedSubstateKey::ReadOnly(..) => {
+                    // Okay
+                }
             }
         }
 

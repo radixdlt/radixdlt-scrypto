@@ -713,7 +713,7 @@ where
             ));
         }
 
-        let module_id = SysModuleId::Iterable;
+        let module_id = SysModuleId::Iterable.into();
         let substate_key = SubstateKey::Key(key);
 
         self.api
@@ -733,7 +733,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Iterable;
+        let module_id = SysModuleId::Iterable.into();
         let substate_key = SubstateKey::Key(key);
 
         let rtn = self
@@ -835,7 +835,7 @@ where
             ));
         }
 
-        let module_id = SysModuleId::Sorted;
+        let module_id = SysModuleId::Sorted.into();
         let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -856,7 +856,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::Sorted, count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::Sorted.into(), count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -877,7 +877,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Sorted;
+        let module_id = SysModuleId::Sorted.into();
         let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
 
         let rtn = self
@@ -1318,7 +1318,7 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -1329,7 +1329,7 @@ where
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.api
@@ -1339,7 +1339,7 @@ where
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api

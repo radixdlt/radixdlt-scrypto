@@ -57,6 +57,16 @@ pub enum AcquireLockError {
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SetSubstateError {
+    SubstateLocked(NodeId, ModuleId, SubstateKey),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum TakeSubstateError {
+    SubstateLocked(NodeId, ModuleId, SubstateKey),
+}
+
 pub type NodeSubstates = BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 /// Represents the interface between Radix Engine and Track.
@@ -83,7 +93,7 @@ pub trait SubstateStore {
         module_id: ModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) -> Result<(), AcquireLockError>;
+    ) -> Result<(), SetSubstateError>;
 
     /// Deletes a substate from the substate store.
     ///
@@ -95,7 +105,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, AcquireLockError>;
+    ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError>;
 
     fn scan_substates(
         &mut self,

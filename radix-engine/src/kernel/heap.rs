@@ -56,7 +56,7 @@ impl Heap {
 
     /// Reads a substate
     pub fn get_substate(
-        &self,
+        &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
