@@ -110,7 +110,7 @@ if [ $cmd = "run" ] ; then
             # secondary fuzzer
             fuzz_args="-S $name "
         fi
-        fuzzer+="-p $power_schedule "
+        fuzz_args+="-p $power_schedule "
         # TODO: use different fuzzing variants per instance
         fuzz_cmd="./fuzz.sh afl run -V $duration $fuzz_args -T $name -t $timeout"
         echo -e "Starting screen session with:\n  $fuzz_cmd"
@@ -153,8 +153,12 @@ elif [ $cmd = "watch" ] ; then
             echo "Fuzzing ends in  : $(humanize_seconds $time_left)"
         fi
     done
+    echo "AFL instances stdout:"
+    find afl -name "${target}_*.log"  | sort | xargs tail -n50
+    echo "AFL instances stderr:"
+    find afl -name "${target}_*.err"  | sort | xargs tail -n50
     echo "AFL instances status (0 means 'ok'):"
-    find afl -name "${target}_*.status" | xargs grep -H -v "*"
+    find afl -name "${target}_*.status" | sort | xargs cat
 else
     error "Command '$cmd' not supported"
 fi

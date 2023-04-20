@@ -28,7 +28,7 @@ pub enum SysModuleId {
     Royalty,
     AccessRules,
     Object,
-    Map,
+    Virtualized,
 }
 
 impl Into<ModuleId> for SysModuleId {

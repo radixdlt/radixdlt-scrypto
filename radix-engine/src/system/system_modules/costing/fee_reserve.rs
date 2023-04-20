@@ -99,6 +99,7 @@ pub enum CostingReason {
     Invoke,
     DropNode,
     CreateNode,
+    AllocateNodeId,
     LockSubstate,
     ReadSubstate,
     WriteSubstate,

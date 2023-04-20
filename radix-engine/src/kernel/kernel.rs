@@ -257,7 +257,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
@@ -273,22 +273,25 @@ where
         Ok(node)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        // TODO: Add costing
+        M::on_allocate_node_id(Some(entity_type), false, self)?;
+
         let node_id = self.id_allocator.allocate_node_id(entity_type)?;
 
         Ok(node_id)
     }
 
-    #[trace_resources(log=node_id)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        M::on_allocate_node_id(node_id.entity_type(), true, self)?;
+
         self.id_allocator.allocate_virtual_node_id(node_id);
 
         Ok(())
     }
 
-    #[trace_resources(log=node_id)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
@@ -321,24 +324,20 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources]
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
     }
 
-    #[trace_resources]
     fn kernel_get_callback(&mut self) -> &mut M {
         &mut self.callback
     }
 
-    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
@@ -361,14 +360,12 @@ where
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_load_package_package_dependencies(&mut self) {
         self.current_frame
             .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_load_common(&mut self) {
         self.current_frame
             .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
@@ -384,7 +381,6 @@ where
             .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
-    #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
@@ -452,7 +448,6 @@ where
         }
     }
 
-    #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
@@ -528,7 +523,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
+    #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
@@ -677,6 +672,7 @@ where
             .unwrap())
     }
 
+    #[trace_resources]
     fn kernel_write_substate(
         &mut self,
         lock_handle: LockHandle,

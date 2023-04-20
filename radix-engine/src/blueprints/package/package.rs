@@ -108,7 +108,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 }
 
 fn globalize_package<Y>(
-    package_address: Option<[u8; 27]>,
+    package_address: Option<[u8; NodeId::LENGTH]>,
     info: PackageInfoSubstate,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
@@ -405,7 +405,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_native<Y>(
-        package_address: Option<[u8; 27]>, // TODO: Clean this up
+        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         native_package_code_id: u8,
         schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
@@ -481,7 +481,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_wasm_advanced<Y>(
-        package_address: Option<[u8; 27]>, // TODO: Clean this up
+        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -507,7 +507,7 @@ impl PackageNativePackage {
     }
 
     fn publish_wasm_internal<Y>(
-        package_address: Option<[u8; 27]>, // TODO: Clean this up
+        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
