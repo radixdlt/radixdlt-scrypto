@@ -781,10 +781,6 @@ impl ResourceManagerNativePackage {
             substates.push(aggregator.add_child_type_and_descendents::<BucketInfoSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -872,8 +868,6 @@ impl ResourceManagerNativePackage {
 
             let mut substates = Vec::new();
             substates.push(aggregator.add_child_type_and_descendents::<BucketInfoSubstate>());
-            substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
-            substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
             substates
                 .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
             substates
