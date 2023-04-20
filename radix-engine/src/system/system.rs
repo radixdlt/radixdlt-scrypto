@@ -1309,15 +1309,15 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_lock_substate(
+    fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
-        self.api
-            .kernel_lock_substate(node_id, module_id, substate_key, flags)
+        self.api.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default)
     }
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {

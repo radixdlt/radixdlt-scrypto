@@ -524,12 +524,13 @@ where
     S: SubstateStore,
 {
     #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
-    fn kernel_lock_substate(
+    fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
         M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 
@@ -540,6 +541,7 @@ where
             module_id,
             substate_key,
             flags,
+            default,
         );
 
         let lock_handle = match &maybe_lock_handle {
@@ -558,6 +560,7 @@ where
                                 module_id,
                                 &substate_key,
                                 flags,
+                                None
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -605,6 +608,7 @@ where
                                 module_id.into(),
                                 substate_key,
                                 flags,
+                                None
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?

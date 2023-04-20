@@ -210,6 +210,7 @@ impl CallFrame {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
@@ -222,10 +223,8 @@ impl CallFrame {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
-            if module_id.virtualize_substates() {
-                heap.get_substate_virtualize(node_id, module_id.into(), substate_key, || {
-                    IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)
-                })
+            if let Some(compute_default) = default {
+                heap.get_substate_virtualize(node_id, module_id.into(), substate_key, compute_default)
             } else {
                 heap.get_substate(node_id, module_id.into(), substate_key)
                     .ok_or_else(|| {
@@ -238,14 +237,9 @@ impl CallFrame {
             }
         } else {
             let handle = store
-                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
-                    if module_id.virtualize_substates() {
-                        let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
-                        Some(value)
-                    } else {
-                        None
-                    }
-                })
+                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags,
+                    || { default.map(|f| f()) }
+                )
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             store.read_substate(handle)
@@ -303,6 +297,7 @@ impl CallFrame {
 
         Ok(lock_handle)
     }
+
 
     pub fn drop_lock<S: SubstateStore>(
         &mut self,
