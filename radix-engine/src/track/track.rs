@@ -1,9 +1,7 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{
-    AcquireLockError, NodeSubstates, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore,
-};
+use radix_engine_stores::interface::{AcquireLockError, DeleteSubstateError, NodeSubstates, SetSubstateError, StateUpdate, StateUpdates, SubstateDatabase, SubstateStore};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
 
@@ -336,7 +334,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         module_id: ModuleId,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) -> Result<(), AcquireLockError> {
+    ) -> Result<(), SetSubstateError> {
         let module_substates = self
             .updates
             .entry(node_id)
@@ -356,7 +354,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
                 let tracked = e.get_mut();
                 if let Some(runtime) = tracked.get_runtime_substate_mut() {
                     if runtime.lock_state.is_locked() {
-                        return Err(AcquireLockError::SubstateLocked(
+                        return Err(SetSubstateError::SubstateLocked(
                             node_id,
                             module_id,
                             substate_key.clone(),
@@ -400,11 +398,11 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, AcquireLockError> {
+    ) -> Result<Option<IndexedScryptoValue>, DeleteSubstateError> {
         let tracked = self.get_tracked_substate(node_id, module_id, substate_key);
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
-                return Err(AcquireLockError::SubstateLocked(
+                return Err(DeleteSubstateError::SubstateLocked(
                     *node_id,
                     module_id,
                     substate_key.clone(),

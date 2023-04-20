@@ -705,7 +705,7 @@ where
                 &mut self.heap,
                 self.store,
             )
-            .map_err(CallFrameError::UpsertSubstatesError)
+            .map_err(CallFrameError::SetSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
@@ -724,7 +724,7 @@ where
                 &mut self.heap,
                 self.store,
             )
-            .map_err(CallFrameError::ReadSubstatesError)
+            .map_err(CallFrameError::RemoveSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
@@ -737,7 +737,7 @@ where
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.current_frame
             .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::ReadSubstatesError)
+            .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }

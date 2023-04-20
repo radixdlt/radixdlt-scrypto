@@ -103,27 +103,6 @@ impl<'a> BalanceAccounter<'a> {
         substate_db: &'a dyn SubstateDatabase,
         updates: &'a IndexMap<NodeId, TrackedNode>,
     ) -> Self {
-        /*
-        let mut state_updates_indexed: IndexMap<
-            NodeId,
-            IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>,
-        > = index_map_new();
-        for ((node_id, module_id, substate_key), change) in &state_updates.substate_changes {
-            let map = state_updates_indexed
-                .entry(*node_id)
-                .or_default()
-                .entry(*module_id)
-                .or_default();
-
-            match &change {
-                StateUpdate::Update(substate_value, ..) | StateUpdate::Create(substate_value) => {
-                    map.insert(substate_key.clone(), substate_value);
-                }
-                StateUpdate::Delete => {}
-            }
-        }
-         */
-
         Self {
             substate_db,
             updates,
