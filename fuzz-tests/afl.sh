@@ -23,6 +23,7 @@ function usage() {
     echo "    watch <interval>"
     echo "            Monitor AFL instances until they are finished."
     echo "            One can specify interval (default: $DFLT_INTERVAL) to output the status"
+    echo "    quit    Quit all AFL instances"
 }
 
 function error() {
@@ -175,6 +176,18 @@ elif [ $cmd = "watch" ] ; then
         printf "  %-20s: %s\n" "coverage" $coverage
         printf "  %-20s: %s\n" "stability" $stability
     done | tee afl/sessions_info
+elif [ $cmd = "quit" ] ; then
+    list=$(find afl/${target} -name fuzzer_stats | sort)
+    if [ "$list" != "" ] ; then
+        for stats_file in $list ; do
+            name=$(grep afl_banner $stats_file | awk '{print $3}')
+            pid=$(grep fuzzer_pid $stats_file | awk '{print $3}')
+            echo "killing session $name"
+            kill -9 $pid
+        done
+    else
+        echo "nothing to be done"
+    fi
 else
     error "Command '$cmd' not supported"
 fi
