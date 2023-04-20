@@ -351,7 +351,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::Tuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
@@ -450,7 +450,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::Tuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .unwrap();

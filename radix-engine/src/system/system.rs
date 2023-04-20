@@ -127,7 +127,7 @@ where
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                                 (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Map,
-                                _ => SysModuleId::Tuple,
+                                _ => SysModuleId::Object,
                             }
                         }
                         ObjectModuleId::Metadata => SysModuleId::Metadata,
@@ -137,7 +137,7 @@ where
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
                         (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Map,
-                        _ => SysModuleId::Tuple,
+                        _ => SysModuleId::Object,
                     }
                 }
             }
@@ -225,7 +225,7 @@ where
 
         let handle = self.api.kernel_lock_substate(
             package_address.as_node_id(),
-            SysModuleId::Tuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
         )?;
@@ -308,7 +308,7 @@ where
 
         let self_module_id = match (package_address, blueprint_ident) {
             (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Map,
-            _ => SysModuleId::Tuple,
+            _ => SysModuleId::Object,
         };
 
         self.api.kernel_create_node(
@@ -442,7 +442,7 @@ where
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates
-                        .remove(&SysModuleId::Tuple.into())
+                        .remove(&SysModuleId::Object.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
@@ -476,7 +476,7 @@ where
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates
-                        .remove(&SysModuleId::Tuple.into())
+                        .remove(&SysModuleId::Object.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
@@ -679,7 +679,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Iterable.into() => btreemap!(),
+                SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::IterableStore
                 ).to_substates(),
@@ -713,7 +713,7 @@ where
             ));
         }
 
-        let module_id = SysModuleId::Iterable.into();
+        let module_id = SysModuleId::Object.into();
         let substate_key = SubstateKey::Key(key);
 
         self.api
@@ -733,7 +733,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Iterable.into();
+        let module_id = SysModuleId::Object.into();
         let substate_key = SubstateKey::Key(key);
 
         let rtn = self
@@ -757,7 +757,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Iterable;
+        let module_id = SysModuleId::Object;
         let substates = self
             .api
             .kernel_scan_substates(node_id, module_id, count)?
@@ -777,7 +777,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Iterable;
+        let module_id = SysModuleId::Object;
         let substates = self
             .api
             .kernel_take_substates(node_id, module_id, count)?
@@ -801,7 +801,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Sorted.into() => btreemap!(),
+                SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedStore
                 ).to_substates(),
@@ -835,7 +835,7 @@ where
             ));
         }
 
-        let module_id = SysModuleId::Sorted.into();
+        let module_id = SysModuleId::Object.into();
         let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -856,7 +856,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::Sorted.into(), count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::Object.into(), count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -877,7 +877,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Sorted.into();
+        let module_id = SysModuleId::Object.into();
         let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
 
         let rtn = self
@@ -1114,7 +1114,7 @@ where
 
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::Tuple.into(),
+                SysModuleId::Object.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
             )?;

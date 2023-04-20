@@ -67,7 +67,7 @@ impl Publish {
             bootstrap(&mut substate_db, &scrypto_interpreter);
 
             let node_id: NodeId = package_address.0.into();
-            let module_id: ModuleId = SysModuleId::Tuple.into();
+            let module_id: ModuleId = SysModuleId::Object.into();
             let substate_key_code: Vec<u8> = PackageOffset::Code.into();
             let package_code = PackageCodeSubstate { code };
 

@@ -185,7 +185,7 @@ impl DroppedBucket {
 
 impl Into<DroppedBucket> for NodeSubstates {
     fn into(mut self) -> DroppedBucket {
-        let mut module_substates = self.remove(&SysModuleId::Tuple.into()).unwrap();
+        let mut module_substates = self.remove(&SysModuleId::Object.into()).unwrap();
 
         let info: BucketInfoSubstate = module_substates
             .remove(&BucketOffset::Info.into())
@@ -223,7 +223,7 @@ pub enum DroppedProofResource {
 
 impl Into<DroppedProof> for NodeSubstates {
     fn into(mut self) -> DroppedProof {
-        let mut module = self.remove(&SysModuleId::Tuple.into()).unwrap();
+        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
 
         let info: ProofInfoSubstate = module
             .remove(&ProofOffset::Info.into())

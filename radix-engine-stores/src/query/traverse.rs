@@ -115,7 +115,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                SysModuleId::Tuple.into(),
+                                SysModuleId::Object.into(),
                                 &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database"),
@@ -135,7 +135,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                SysModuleId::Tuple.into(),
+                                SysModuleId::Object.into(),
                                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database"),
@@ -157,7 +157,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 .unpack();
                             for child_node_id in owned_nodes {
                                 self.traverse_recursive(
-                                    Some(&(node_id, SysModuleId::Tuple.into(), db_key.clone())),
+                                    Some(&(node_id, SysModuleId::Object.into(), db_key.clone())),
                                     child_node_id,
                                     depth + 1,
                                 );

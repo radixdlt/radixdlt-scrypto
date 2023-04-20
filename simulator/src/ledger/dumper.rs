@@ -28,7 +28,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::Tuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Code.into(),
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
@@ -126,7 +126,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     let substate = substate_db
         .get_substate(
             resource_address.as_node_id(),
-            SysModuleId::Tuple.into(),
+            SysModuleId::Object.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;

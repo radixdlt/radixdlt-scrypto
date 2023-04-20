@@ -341,7 +341,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::Tuple.into(),
+                            SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .map(|output| {
@@ -358,7 +358,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_db.get_substate(
             package_address.as_node_id(),
-            SysModuleId::Tuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Royalty.into(),
         ) {
             scrypto_decode::<PackageRoyaltySubstate>(&output)
@@ -368,7 +368,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::Tuple.into(),
+                            SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .map(|output| {
@@ -418,7 +418,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::Tuple.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             )
             .map(|output| {
@@ -436,7 +436,7 @@ impl TestRunner {
             .substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::Tuple.into(),
+                SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .map(|output| {
@@ -448,7 +448,7 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut substate_iter = self
                 .substate_db()
-                .list_substates(ids.as_node_id(), SysModuleId::Iterable.into());
+                .list_substates(ids.as_node_id(), SysModuleId::Object.into());
             let id = substate_iter.next().map(|(_key, value)| {
                 let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
                 id
@@ -530,7 +530,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     address.as_node_id(),
-                    SysModuleId::Tuple.into(),
+                    SysModuleId::Object.into(),
                     &ValidatorOffset::Validator.into(),
                 )
                 .unwrap(),
@@ -544,7 +544,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     EPOCH_MANAGER.as_node_id(),
-                    SysModuleId::Tuple.into(),
+                    SysModuleId::Object.into(),
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
                 .unwrap(),
@@ -1308,7 +1308,7 @@ impl TestRunner {
                     .substate_db()
                     .get_substate(
                         package_address.as_node_id(),
-                        SysModuleId::Tuple.into(),
+                        SysModuleId::Object.into(),
                         &PackageOffset::Info.into(),
                     )
                     .unwrap(),
