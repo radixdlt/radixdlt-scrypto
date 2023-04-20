@@ -7,7 +7,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_callback::SystemInvocation;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use sbor::rust::collections::BTreeMap;
+use radix_engine_stores::interface::NodeSubstates;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================
@@ -100,7 +100,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_create_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        _node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -134,7 +134,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _module_id: &SysModuleId,
+        _module_id: &ModuleId,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

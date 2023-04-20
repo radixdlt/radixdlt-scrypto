@@ -67,7 +67,7 @@ impl Publish {
             bootstrap(&mut substate_db, &scrypto_interpreter);
 
             let node_id: NodeId = package_address.0.into();
-            let module_id: ModuleId = SysModuleId::ObjectTuple.into();
+            let module_id: ModuleId = SysModuleId::Object.into();
             let substate_key_code: SubstateKey = PackageOffset::Code.into();
             let package_code = PackageCodeSubstate { code };
 
@@ -79,10 +79,10 @@ impl Publish {
             };
             let state_updates = StateUpdates {
                 substate_changes: indexmap!(
-                    (node_id, module_id, substate_key_code) => StateUpdate::Update(
+                    (node_id, module_id, substate_key_code) => StateUpdate::Set(
                         scrypto_encode(&package_code).unwrap()
                     ),
-                    (node_id, module_id, substate_key_info) => StateUpdate::Update(
+                    (node_id, module_id, substate_key_info) => StateUpdate::Set(
                         scrypto_encode(&package_info).unwrap()
                     )
                 ),

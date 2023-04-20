@@ -13,7 +13,6 @@ High-level Abstraction
 */
 
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::crypto::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -61,22 +60,80 @@ pub enum AcquireLockError {
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SetSubstateError {
+    SubstateLocked(NodeId, ModuleId, SubstateKey),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum DeleteSubstateError {
+    SubstateLocked(NodeId, ModuleId, SubstateKey),
+}
+
+pub type NodeSubstates = BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.
 ///
 /// The trait here is for formalizing the interface and intended user flow.
 pub trait SubstateStore {
-    /// Acquires a lock over a substate.
+    /// Inserts a node into the substate store.
+    ///
+    /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
     ///
     /// # Panics
     /// - If the module ID is invalid
+    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
+
+    /// Inserts a substate into the substate store.
+    ///
+    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
+    /// is undefined.
+    fn set_substate(
+        &mut self,
+        node_id: NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        substate_value: IndexedScryptoValue,
+    ) -> Result<(), SetSubstateError>;
+
+    /// Deletes a substate from the substate store.
+    ///
+    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
+    /// is undefined.
+    fn delete_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, DeleteSubstateError>;
+
+    fn scan_sorted(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)>;
+
+    /// Acquires a lock over a substate.
     fn acquire_lock(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+    ) -> Result<u32, AcquireLockError> {
+        self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
+    }
+
+    fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+        virtualize: F,
     ) -> Result<u32, AcquireLockError>;
 
     /// Releases a lock.
@@ -85,25 +142,11 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid.
     fn release_lock(&mut self, handle: u32);
 
-    /// Inserts a substate into the substate store.
-    ///
-    /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
-    ///
-    /// # Panics
-    /// - If the module ID is invalid
-    fn create_substate(
-        &mut self,
-        node_id: NodeId,
-        module_id: ModuleId,
-        substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
-    );
-
     /// Reads a substate of the given node module.
     ///
     /// # Panics
     /// - If the lock handle is invalid
-    fn read_substate(&self, handle: u32) -> &IndexedScryptoValue;
+    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue;
 
     /// Updates a substate.
     ///
@@ -111,20 +154,6 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
-
-    /// Returns an iterator over substates within the given substate module.
-    ///
-    /// In case the module does not exist, an empty iterator is returned.
-    ///
-    /// # Panics
-    /// - If the module ID is invalid
-    /// - If iteration is not enabled for the module
-    /// - If any of the substates within the module is WRITE locked
-    fn list_substates(
-        &mut self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, IndexedScryptoValue)>>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -134,10 +163,8 @@ pub struct StateUpdates {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StateUpdate {
-    /// Creates a substate.
-    Create(Vec<u8>),
-    /// Updates a substate.
-    Update(Vec<u8>),
+    Set(Vec<u8>),
+    Delete,
 }
 
 /// The configuration of a node module.
@@ -193,7 +220,8 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError>;
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError>;
 }
 
 /// Interface for committing changes into a substate database.

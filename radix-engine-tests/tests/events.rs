@@ -632,6 +632,7 @@ fn epoch_manager_round_update_emits_correct_event() {
     let genesis = create_genesis(
         GenesisData::empty(),
         1u64,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -679,6 +680,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     let genesis = create_genesis(
         GenesisData::empty(),
         1u64,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -733,6 +735,7 @@ fn validator_registration_emits_correct_event() {
     let genesis = create_genesis(
         GenesisData::empty(),
         initial_epoch,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -789,6 +792,7 @@ fn validator_unregistration_emits_correct_event() {
     let genesis = create_genesis(
         GenesisData::empty(),
         initial_epoch,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -856,6 +860,7 @@ fn validator_staking_emits_correct_event() {
     let genesis = create_genesis(
         GenesisData::empty(),
         initial_epoch,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -993,6 +998,7 @@ fn validator_unstake_emits_correct_events() {
             account_with_lp,
         ),
         initial_epoch,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -1153,6 +1159,7 @@ fn validator_claim_xrd_emits_correct_events() {
             account_with_lp,
         ),
         initial_epoch,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -1291,6 +1298,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let genesis = create_genesis(
         GenesisData::empty(),
         initial_epoch,
+        10u32,
         rounds_per_epoch,
         num_unstake_epochs,
     );

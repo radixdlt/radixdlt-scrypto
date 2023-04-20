@@ -8,4 +8,5 @@ use radix_engine_interface::*;
 pub enum TypeInfoSubstate {
     Object(ObjectInfo),
     KeyValueStore(KeyValueStoreSchema),
+    IterableStore,
 }
