@@ -1,7 +1,7 @@
 use crate::blueprints::clock::TimePrecision;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
-use radix_engine_common::types::ComponentAddress;
+use radix_engine_common::types::{ComponentAddress, NodeId};
 use sbor::rust::fmt::Debug;
 
 pub const CLOCK_BLUEPRINT: &str = "Clock";
@@ -10,7 +10,7 @@ pub const CLOCK_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ClockCreateInput {
-    pub component_address: [u8; 27], // TODO: Clean this up
+    pub component_address: [u8; NodeId::LENGTH], // TODO: Clean this up
 }
 
 pub type ClockCreateOutput = ComponentAddress;

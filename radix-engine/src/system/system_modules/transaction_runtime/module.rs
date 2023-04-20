@@ -16,7 +16,7 @@ impl TransactionRuntimeModule {
 
     pub fn generate_uuid(&mut self) -> u128 {
         // Take the lower 16 bytes
-        let mut temp = self.tx_hash.lower_16_bytes();
+        let mut temp: [u8; 16] = self.tx_hash.lower_bytes();
 
         // Put TX runtime counter to the last 4 bytes.
         temp[12..16].copy_from_slice(&self.next_id.to_be_bytes());

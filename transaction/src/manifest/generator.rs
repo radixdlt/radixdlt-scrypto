@@ -1383,42 +1383,42 @@ mod tests {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let package_address = PackageAddress::try_from_bech32(
             &bech32_decoder,
-            "package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv".into(),
+            "package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdrwrjwz".into(),
         )
         .unwrap();
         let component = ComponentAddress::try_from_bech32(
             &bech32_decoder,
-            "component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq",
+            "component_sim1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdxh44",
         )
         .unwrap();
         let resource = ResourceAddress::try_from_bech32(
             &bech32_decoder,
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje",
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp",
         )
         .unwrap();
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 resource_address: resource
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qwvvetv")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
+            r#"CALL_FUNCTION  Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdrwrjwz")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 package_address,
                 blueprint_name: "Airdrop".into(),
@@ -1427,7 +1427,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  Address("component_sim1p8xzs5t032p03afg4p6kzyfuxgllj8uumk7st7dn869qs6vdzq")  "refill";"#,
+            r#"CALL_METHOD  Address("component_sim1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdxh44")  "refill";"#,
             Instruction::CallMethod {
                 component_address: component,
                 method_name: "refill".to_string(),
@@ -1435,7 +1435,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"MINT_FUNGIBLE Address("resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje") Decimal("100");"#,
+            r#"MINT_FUNGIBLE Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Decimal("100");"#,
             Instruction::MintFungible {
                 resource_address: resource,
                 amount: dec!("100")
@@ -1628,14 +1628,14 @@ mod tests {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let resource = ResourceAddress::try_from_bech32(
             &bech32_decoder,
-            "resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe",
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp",
         )
         .unwrap();
 
         generate_instruction_ok!(
             r##"
             MINT_NON_FUNGIBLE
-                Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+                Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")
                 Tuple(
                     Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))))
                 );
@@ -1660,14 +1660,14 @@ mod tests {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let resource = ResourceAddress::try_from_bech32(
             &bech32_decoder,
-            "resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe",
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp",
         )
         .unwrap();
 
         generate_instruction_ok!(
             r#"
             MINT_UUID_NON_FUNGIBLE
-                Address("resource_sim1q2ym536cwvvf3cy9p777t4qjczqwf79hagp3wn93srvsgvqtwe")
+                Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")
                 Tuple(
                     Array<Tuple>(
                         Tuple(Tuple("Hello World", Decimal("12")))

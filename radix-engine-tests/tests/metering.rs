@@ -67,19 +67,19 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
-        1472 /* AllocateNodeId */
-        + 5024 /* CreateNode */
-        + 6191 /* DropLock */
-        + 4800 /* DropNode */
-        + 807880 /* Invoke */
-        + 51030 /* LockSubstate */
-        + 109081 /* ReadSubstate */
+        1104 /* AllocateNodeId */
+        + 1744 /* CreateNode */
+        + 5587 /* DropLock */
+        + 1680 /* DropNode */
+        + 719200 /* Invoke */
+        + 16024 /* LockSubstate */
+        + 109996 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1260 /* TxPayloadCost */
+        + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 176335, /* WriteSubstate */
+        + 182205, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -202,20 +202,20 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        3312 /* AllocateNodeId */
-        + 11323 /* CreateNode */
-        + 15211 /* DropLock */
-        + 10500 /* DropNode */
-        + 2597898 /* Invoke */
-        + 122791 /* LockSubstate */
-        + 345135 /* ReadSubstate */
+        2484 /* AllocateNodeId */
+        + 3935 /* CreateNode */
+        + 13727 /* DropLock */
+        + 3675 /* DropNode */
+        + 2368287 /* Invoke */
+        + 37666 /* LockSubstate */
+        + 346860 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1520495 /* RunWasm */
+        + 1527895 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1625 /* TxPayloadCost */
+        + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 529737, /* WriteSubstate */
+        + 556451, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -313,20 +313,20 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        5428 /* AllocateNodeId */
-        + 18526 /* CreateNode */
-        + 24641 /* DropLock */
-        + 17700 /* DropNode */
-        + 2786587 /* Invoke */
-        + 197879 /* LockSubstate */
-        + 441334 /* ReadSubstate */
+        4071 /* AllocateNodeId */
+        + 6431 /* CreateNode */
+        + 22237 /* DropLock */
+        + 6195 /* DropNode */
+        + 2478055 /* Invoke */
+        + 58040 /* LockSubstate */
+        + 444724 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1215255 /* RunWasm */
+        + 1233805 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2375 /* TxPayloadCost */
+        + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1941077, /* WriteSubstate */
+        + 2060271, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
