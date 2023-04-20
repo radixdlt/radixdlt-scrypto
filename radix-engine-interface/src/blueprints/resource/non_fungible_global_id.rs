@@ -134,21 +134,22 @@ pub trait FromPublicKey: Sized {
 impl FromPublicKey for NonFungibleGlobalId {
     fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
         let public_key: PublicKey = public_key.clone().into();
+
         match public_key {
-            PublicKey::EcdsaSecp256k1(public_key) => NonFungibleGlobalId::new(
-                ECDSA_SECP256K1_TOKEN,
-                NonFungibleLocalId::bytes(
-                    hash(public_key.to_vec()).0[32 - NodeId::LENGTH + 1..32].to_vec(),
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
+                NonFungibleGlobalId::new(
+                    ECDSA_SECP256K1_TOKEN,
+                    NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
                 )
-                .unwrap(),
-            ),
-            PublicKey::EddsaEd25519(public_key) => NonFungibleGlobalId::new(
-                EDDSA_ED25519_TOKEN,
-                NonFungibleLocalId::bytes(
-                    hash(public_key.to_vec()).0[32 - NodeId::LENGTH + 1..32].to_vec(),
+            }
+            PublicKey::EddsaEd25519(public_key) => {
+                let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
+                NonFungibleGlobalId::new(
+                    EDDSA_ED25519_TOKEN,
+                    NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
                 )
-                .unwrap(),
-            ),
+            }
         }
     }
 }

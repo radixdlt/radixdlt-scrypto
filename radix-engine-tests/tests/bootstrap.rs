@@ -107,9 +107,7 @@ fn test_genesis_resource_with_initial_allocation() {
         &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
     );
     let allocation_amount = dec!("105");
-    let mut address_bytes: [u8; NodeId::LENGTH] = hash(vec![1, 2, 3]).0[32 - NodeId::LENGTH..32]
-        .try_into()
-        .unwrap(); //lower_26_bytes();
+    let mut address_bytes: [u8; NodeId::LENGTH] = hash(vec![1, 2, 3]).lower_bytes();
     address_bytes[0] = EntityType::GlobalFungibleResource as u8;
     let resource_address = NodeId(address_bytes);
 
