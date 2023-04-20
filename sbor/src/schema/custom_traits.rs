@@ -51,9 +51,10 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         type_validation: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError>;
 
-    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink, C>(
         custom_type_kind: &Self::CustomTypeKind<L>,
         value_kind: ValueKind<Self::CustomValueKind>,
+        context: &C,
     ) -> bool;
 
     fn empty_schema() -> &'static Schema<Self>;

@@ -47,8 +47,7 @@ pub fn traverse_partial_payload_with_types<'de, 's, E: CustomTypeExtension, C>(
 /// and adds the relevant type index to the events which are output.
 pub struct TypedTraverser<'de, 's, E: CustomTypeExtension, C> {
     traverser: VecTraverser<'de, E::CustomTraversal>,
-    state: TypedTraverserState<'s, E>,
-    context: C,
+    state: TypedTraverserState<'s, E, C>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,8 +134,8 @@ impl<'de, 's, E: CustomTypeExtension, C> TypedTraverser<'de, 's, E, C> {
                 container_stack: Vec::with_capacity(max_depth),
                 schema,
                 root_type_index: type_index,
+                context,
             },
-            context,
         }
     }
 
@@ -174,7 +173,7 @@ impl<'de, 's, E: CustomTypeExtension, C> TypedTraverser<'de, 's, E, C> {
 
     fn next_event_internal<'t1, 'state>(
         inner_traverser: &'t1 mut VecTraverser<'de, E::CustomTraversal>,
-        state: &'state mut TypedTraverserState<'s, E>,
+        state: &'state mut TypedTraverserState<'s, E, C>,
     ) -> (
         TypedTraversalEvent<'de, E>,
         Location<'t1, E::CustomTraversal>,
@@ -281,13 +280,14 @@ pub struct ValueTreeSummary<X: CustomValueKind> {
     pub value_body_end_offset_exclusive: usize,
 }
 
-struct TypedTraverserState<'s, E: CustomTypeExtension> {
+struct TypedTraverserState<'s, E: CustomTypeExtension, C> {
     container_stack: Vec<ContainerType<'s>>,
     schema: &'s Schema<E>,
     root_type_index: LocalTypeIndex,
+    context: C,
 }
 
-impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
+impl<'s, E: CustomTypeExtension, C> TypedTraverserState<'s, E, C> {
     fn map_container_start_event<'t, 'de>(
         &'t mut self,
         type_index: LocalTypeIndex,
@@ -360,7 +360,11 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                     element_type: element_type_index,
                 } => {
                     let element_type = look_up_type!(self, *element_type_index);
-                    if !value_kind_matches_type_kind::<E>(element_value_kind, element_type) {
+                    if !value_kind_matches_type_kind::<E, C>(
+                        element_value_kind,
+                        element_type,
+                        &self.context,
+                    ) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildElementType {
@@ -393,7 +397,11 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                     value_type: value_type_index,
                 } => {
                     let key_type = look_up_type!(self, *key_type_index);
-                    if !value_kind_matches_type_kind::<E>(key_value_kind, key_type) {
+                    if !value_kind_matches_type_kind::<E, C>(
+                        key_value_kind,
+                        key_type,
+                        &self.context,
+                    ) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildKeyType {
@@ -404,7 +412,11 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                         )
                     }
                     let value_type = look_up_type!(self, *value_type_index);
-                    if !value_kind_matches_type_kind::<E>(value_value_kind, value_type) {
+                    if !value_kind_matches_type_kind::<E, C>(
+                        value_value_kind,
+                        value_type,
+                        &self.context,
+                    ) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildValueType {
@@ -442,7 +454,7 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
         let value_kind = value_ref.value_kind();
         let type_kind = look_up_type!(self, type_index);
 
-        if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
+        if !value_kind_matches_type_kind::<E, C>(value_kind, type_kind, &self.context) {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
@@ -464,7 +476,7 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
         let value_kind = value_batch_ref.value_kind();
         let type_kind = look_up_type!(self, type_index);
 
-        if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
+        if !value_kind_matches_type_kind::<E, C>(value_kind, type_kind, &self.context) {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
@@ -517,9 +529,10 @@ type TypeKindFor<E> = TypeKind<
     LocalTypeIndex,
 >;
 
-fn value_kind_matches_type_kind<E: CustomTypeExtension>(
+fn value_kind_matches_type_kind<E: CustomTypeExtension, C>(
     value_kind: ValueKind<E::CustomValueKind>,
     type_kind: &TypeKindFor<E>,
+    context: &C,
 ) -> bool {
     match type_kind {
         TypeKind::Any => true,
@@ -540,7 +553,7 @@ fn value_kind_matches_type_kind<E: CustomTypeExtension>(
         TypeKind::Enum { .. } => matches!(value_kind, ValueKind::Enum),
         TypeKind::Map { .. } => matches!(value_kind, ValueKind::Map),
         TypeKind::Custom(custom_type_kind) => {
-            E::custom_type_kind_matches_value_kind(custom_type_kind, value_kind)
+            E::custom_type_kind_matches_value_kind(custom_type_kind, value_kind, context)
         }
     }
 }

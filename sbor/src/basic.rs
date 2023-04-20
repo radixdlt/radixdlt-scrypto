@@ -210,9 +210,10 @@ impl CustomTypeExtension for NoCustomTypeExtension {
         unreachable!("No custom type kinds exist")
     }
 
-    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink, C>(
         _: &Self::CustomTypeKind<L>,
         _: ValueKind<Self::CustomValueKind>,
+        _: &C,
     ) -> bool {
         unreachable!("No custom value kinds exist")
     }
