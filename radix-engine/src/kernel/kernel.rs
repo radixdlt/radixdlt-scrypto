@@ -417,7 +417,7 @@ where
                         .get_substate(
                             bucket_id,
                             SysModuleId::ObjectTuple,
-                            &BucketOffset::LiquidFungible.into(),
+                            &BucketOffset::Liquid.into(),
                         )
                         .unwrap();
                     let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
@@ -434,7 +434,7 @@ where
                         .get_substate(
                             bucket_id,
                             SysModuleId::ObjectTuple,
-                            &BucketOffset::LiquidNonFungible.into(),
+                            &BucketOffset::Liquid.into(),
                         )
                         .unwrap();
                     let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();

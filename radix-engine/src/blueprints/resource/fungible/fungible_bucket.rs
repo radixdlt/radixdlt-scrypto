@@ -18,7 +18,7 @@ impl FungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LiquidFungible.into(),
+            &BucketOffset::Liquid.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -33,7 +33,7 @@ impl FungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LockedFungible.into(),
+            &BucketOffset::Locked.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -57,11 +57,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LiquidFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -85,11 +82,8 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LiquidFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -110,11 +104,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LockedFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked = locked.amount();
 
@@ -152,11 +143,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LockedFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let max_locked = locked.amount();

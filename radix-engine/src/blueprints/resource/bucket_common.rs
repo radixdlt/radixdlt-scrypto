@@ -17,7 +17,7 @@ pub enum BucketError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BucketInfoSubstate {
-    pub resource_address: ResourceAddress,
+    pub resource_address: ResourceAddress, // TODO: remove address in favour of parent
     pub resource_type: ResourceType,
 }
 

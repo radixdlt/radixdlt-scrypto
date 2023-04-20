@@ -281,8 +281,6 @@ impl FungibleResourceManagerBlueprint {
                 .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 

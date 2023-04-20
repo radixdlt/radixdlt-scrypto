@@ -101,11 +101,11 @@ impl Into<DroppedFungibleBucket> for HeapNode {
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
             liquid: module
-                .remove(&BucketOffset::LiquidFungible.into())
+                .remove(&BucketOffset::Liquid.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
             locked: module
-                .remove(&BucketOffset::LockedFungible.into())
+                .remove(&BucketOffset::Locked.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
         }
@@ -122,11 +122,11 @@ impl Into<DroppedNonFungibleBucket> for HeapNode {
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
             liquid: module
-                .remove(&BucketOffset::LiquidNonFungible.into())
+                .remove(&BucketOffset::Liquid.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
             locked: module
-                .remove(&BucketOffset::LockedNonFungible.into())
+                .remove(&BucketOffset::Locked.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
         }
