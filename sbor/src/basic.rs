@@ -259,11 +259,11 @@ mod serde_serialization {
     use super::*;
 
     impl SerializableCustomTypeExtension for NoCustomTypeExtension {
-        fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
-            _: &SerializationContext<'s, 'a, Self>,
+        fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2, 'c>(
+            _: &SerializationContext<'s, 'a, 'c, Self>,
             _: LocalTypeIndex,
             _: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
-        ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
+        ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, 'c, Self> {
             unreachable!("No custom values exist")
         }
     }

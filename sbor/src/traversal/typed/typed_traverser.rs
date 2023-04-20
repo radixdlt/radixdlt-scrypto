@@ -126,7 +126,7 @@ impl<'de, 's, 'c, E: CustomTypeExtension> TypedTraverser<'de, 's, 'c, E> {
         max_depth: usize,
         expected_start: ExpectedStart<E::CustomValueKind>,
         check_exact_end: bool,
-        context: &E::CustomValidationContext,
+        custom_validation_context: &'c E::CustomValidationContext,
     ) -> Self {
         Self {
             traverser: VecTraverser::new(input, max_depth, expected_start, check_exact_end),
@@ -134,7 +134,7 @@ impl<'de, 's, 'c, E: CustomTypeExtension> TypedTraverser<'de, 's, 'c, E> {
                 container_stack: Vec::with_capacity(max_depth),
                 schema,
                 root_type_index: type_index,
-                custom_validation_context: context,
+                custom_validation_context,
             },
         }
     }

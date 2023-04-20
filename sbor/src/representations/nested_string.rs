@@ -592,6 +592,7 @@ mod tests {
             print_mode: PrintMode::SingleLine,
             schema: &schema,
             custom_display_context: Default::default(),
+            custom_validation_context: &NoCustomValidationContext {},
             type_index,
         };
         assert_eq!(
@@ -679,6 +680,7 @@ mod tests {
             },
             schema: &schema,
             custom_display_context: Default::default(),
+            custom_validation_context: &NoCustomValidationContext {},
             type_index,
         };
         assert_eq!(

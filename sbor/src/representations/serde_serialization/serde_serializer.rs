@@ -104,7 +104,7 @@ pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomType
         current_depth,
         context.schema,
         index,
-        context.custom,
+        context.custom_validation_context,
     );
     let success =
         serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
@@ -253,7 +253,7 @@ pub struct SerializableFields<'t, 'de, 's1, 's2, 'c, E: CustomTypeExtension> {
     length: usize,
 }
 
-impl<'t, 'de, 's1, 'c, 's2, E: CustomTypeExtension> SerializableFields<'t, 'de, 's1, 'c, 's2, E> {
+impl<'t, 'de, 's1, 's2, 'c, E: CustomTypeExtension> SerializableFields<'t, 'de, 's1, 's2, 'c, E> {
     fn new(
         traverser: &'t mut TypedTraverser<'de, 's1, 'c, E>,
         field_names: Option<&'s2 [Cow<'static, str>]>,
@@ -267,9 +267,9 @@ impl<'t, 'de, 's1, 'c, 's2, E: CustomTypeExtension> SerializableFields<'t, 'de, 
     }
 }
 
-impl<'t, 'de, 's1, 'c, 's2, 's, 'a, E: SerializableCustomTypeExtension>
+impl<'t, 'de, 's1, 's2, 'c, 's, 'a, E: SerializableCustomTypeExtension>
     ContextualSerialize<SerializationContext<'s, 'a, 'c, E>>
-    for SerializableFields<'t, 'de, 's1, 'c, 's2, E>
+    for SerializableFields<'t, 'de, 's1, 's2, 'c, E>
 {
     fn contextual_serialize<S: Serializer>(
         &self,
