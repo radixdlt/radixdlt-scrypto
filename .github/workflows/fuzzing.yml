@@ -85,6 +85,7 @@ jobs:
         ./afl.sh watch ${{ github.event.inputs.watch_interval }}
 
     - name: Process AFL results
+      if: success() || failure() || cancelled()
       working-directory: fuzz-tests
       run: |
         # it is expected to generate afl/crash_summary.txt
