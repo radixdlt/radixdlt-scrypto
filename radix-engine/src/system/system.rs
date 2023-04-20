@@ -711,7 +711,7 @@ where
         let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
 
         self.api
-            .kernel_set_substate(node_id, SysModuleId::Object, substate_key, value)
+            .kernel_set_substate(node_id, SysModuleId::Object.into(), substate_key, value)
     }
 
     fn scan_sorted_store(
@@ -729,7 +729,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::Object, count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::Object.into(), count)?
             .into_iter()
             .map(|(_key, value)| value.into())
             .collect();
@@ -754,7 +754,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Object, &substate_key)?
+            .kernel_remove_substate(node_id, SysModuleId::Object.into(), &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1190,7 +1190,7 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -1201,7 +1201,7 @@ where
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.api
@@ -1211,7 +1211,7 @@ where
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api

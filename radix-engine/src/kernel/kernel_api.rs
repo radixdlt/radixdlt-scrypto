@@ -77,7 +77,7 @@ pub trait KernelSubstateApi {
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
@@ -89,7 +89,7 @@ pub trait KernelSubstateApi {
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
 
@@ -100,7 +100,7 @@ pub trait KernelSubstateApi {
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }

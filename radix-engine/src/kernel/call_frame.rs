@@ -451,7 +451,7 @@ impl CallFrame {
     pub fn set_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         key: SubstateKey,
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
@@ -464,7 +464,7 @@ impl CallFrame {
             todo!()
         } else {
             store
-                .set_substate(*node_id, module_id.into(), key, value)
+                .set_substate(*node_id, module_id, key, value)
                 .map_err(|e| CallFrameSetSubstateError::StoreError(e))?;
         };
 
@@ -474,7 +474,7 @@ impl CallFrame {
     pub fn remove_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -486,7 +486,7 @@ impl CallFrame {
             todo!()
         } else {
             store
-                .delete_substate(node_id, module_id.into(), key)
+                .delete_substate(node_id, module_id, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
@@ -498,7 +498,7 @@ impl CallFrame {
     pub fn scan_sorted<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -509,7 +509,7 @@ impl CallFrame {
         let substates = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.scan_sorted(node_id, module_id.into(), count)
+            store.scan_sorted(node_id, module_id, count)
         };
 
         for (_id, substate) in &substates {
