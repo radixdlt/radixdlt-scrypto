@@ -42,12 +42,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe { lock_field(u32::from(field), flags.bits()) };
-
-        Ok(handle)
-    }
-
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
@@ -216,6 +210,12 @@ impl ClientSubstateLockApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
+    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+        let handle = unsafe { lock_field(u32::from(field), flags.bits()) };
+
+        Ok(handle)
+    }
+
     fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 
