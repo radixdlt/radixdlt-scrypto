@@ -25,6 +25,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::query::TypeInfoSubstate;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -736,12 +737,13 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
-    if substate_db.read_mapped_substate::<JmtKeyMapper>(
+    let xrd_info = substate_db.read_mapped_substate::<JmtKeyMapper, Option<TypeInfoSubstate>>(
         &RADIX_TOKEN.into(),
         SysModuleId::TypeInfo.into(),
         TypeInfoOffset::TypeInfo.into(),
-    ).is_none()
-    {
+    );
+
+    if xrd_info.is_none() {
         let genesis_transaction = create_genesis(
             genesis_data,
             initial_epoch,

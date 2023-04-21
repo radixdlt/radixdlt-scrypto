@@ -304,12 +304,11 @@ impl TestRunner {
 
         let metadata_entry = self
             .substate_db
-            .read_mapped_substate::<JmtKeyMapper>(
+            .read_mapped_substate::<JmtKeyMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
                 SubstateKey::Map(key),
-            )
-            .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s).unwrap())?;
+            )?;
 
         let metadata_entry = match metadata_entry {
             Option::Some(value) => {
@@ -327,54 +326,44 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper>(
+        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
             component_address.as_node_id(),
             SysModuleId::Royalty.into(),
             RoyaltyOffset::RoyaltyAccumulator.into(),
         ) {
-            scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output)
-                .unwrap()
+            output
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .read_mapped_substate::<JmtKeyMapper>(
+                        .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
                         )
-                        .map(|output| {
-                            scrypto_decode::<LiquidFungibleResource>(&output)
-                                .unwrap()
-                                .amount()
-                        })
                 })
+                .map(|r| r.amount())
         } else {
             None
         }
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper>(
+        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper, PackageRoyaltySubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Royalty.into(),
         ) {
-            scrypto_decode::<PackageRoyaltySubstate>(&output)
-                .unwrap()
+            output
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .read_mapped_substate::<JmtKeyMapper>(
+                        .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
                         )
-                        .map(|output| {
-                            scrypto_decode::<LiquidFungibleResource>(&output)
-                                .unwrap()
-                                .amount()
-                        })
                 })
+                .map(|r| r.amount())
         } else {
             None
         }
@@ -414,16 +403,12 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .read_mapped_substate::<JmtKeyMapper>(
+            .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 FungibleVaultOffset::LiquidFungible.into(),
             )
-            .map(|output| {
-                scrypto_decode::<LiquidFungibleResource>(&output)
-                    .unwrap()
-                    .amount()
-            })
+            .map(|output| output.amount())
     }
 
     pub fn inspect_non_fungible_vault(
@@ -432,13 +417,12 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let vault = self
             .substate_db()
-            .read_mapped_substate::<JmtKeyMapper>(
+            .read_mapped_substate::<JmtKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
-            .map(|output| {
-                let vault = scrypto_decode::<LiquidNonFungibleVault>(&output).unwrap();
+            .map(|vault| {
                 let amount = vault.amount;
                 (amount, vault.ids)
             });
@@ -523,31 +507,27 @@ impl TestRunner {
     }
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
-        scrypto_decode(
-            &self
-                .substate_db()
-                .read_mapped_substate::<JmtKeyMapper>(
-                    address.as_node_id(),
-                    SysModuleId::Object.into(),
-                    ValidatorOffset::Validator.into(),
-                )
-                .unwrap(),
-        )
-        .unwrap()
+        self
+            .substate_db()
+            .read_mapped_substate::<JmtKeyMapper, ValidatorSubstate>(
+                address.as_node_id(),
+                SysModuleId::Object.into(),
+                ValidatorOffset::Validator.into(),
+            )
+            .unwrap()
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let substate: CurrentValidatorSetSubstate = scrypto_decode(
-            &self
+        let substate =
+            self
                 .substate_db()
-                .read_mapped_substate::<JmtKeyMapper>(
+                .read_mapped_substate::<JmtKeyMapper, CurrentValidatorSetSubstate>(
                     EPOCH_MANAGER.as_node_id(),
                     SysModuleId::Object.into(),
                     EpochManagerOffset::CurrentValidatorSet.into(),
                 )
-                .unwrap(),
-        )
-        .unwrap();
+                .unwrap();
+
         substate
             .validator_set
             .iter()
@@ -1262,17 +1242,14 @@ impl TestRunner {
                         local_type_index.clone(),
                     ),
                     ObjectModuleId::SELF => {
-                        let type_info: TypeInfoSubstate = scrypto_decode(
-                            &self
+                        let type_info= self
                                 .substate_db()
-                                .read_mapped_substate::<JmtKeyMapper>(
+                                .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
                                     node_id,
                                     SysModuleId::TypeInfo.into(),
                                     TypeInfoOffset::TypeInfo.into(),
                                 )
-                                .unwrap(),
-                        )
-                        .unwrap();
+                                .unwrap();
 
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
@@ -1301,17 +1278,14 @@ impl TestRunner {
 
         (
             local_type_index,
-            scrypto_decode::<PackageInfoSubstate>(
-                &self
-                    .substate_db()
-                    .read_mapped_substate::<JmtKeyMapper>(
-                        package_address.as_node_id(),
-                        SysModuleId::Object.into(),
-                        PackageOffset::Info.into(),
-                    )
-                    .unwrap(),
-            )
-            .unwrap()
+            self
+                .substate_db()
+                .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
+                    package_address.as_node_id(),
+                    SysModuleId::Object.into(),
+                    PackageOffset::Info.into(),
+                )
+                .unwrap()
             .schema
             .blueprints
             .remove(&blueprint_name)

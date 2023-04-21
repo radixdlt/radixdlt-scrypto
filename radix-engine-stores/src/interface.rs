@@ -15,6 +15,7 @@ High-level Abstraction
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::data::scrypto::{scrypto_decode, ScryptoDecode};
 use sbor::rust::prelude::*;
 
 // TODO: Add streaming support for `list_substates`
@@ -186,8 +187,9 @@ pub trait SubstateKeyMapper {
 /// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
     /// Convenience method for database readers
-    fn read_mapped_substate<M: SubstateKeyMapper>(&self, node_id: &NodeId, module_id: ModuleId, substate_key: SubstateKey) -> Option<Vec<u8>>{
+    fn read_mapped_substate<M: SubstateKeyMapper, D: ScryptoDecode>(&self, node_id: &NodeId, module_id: ModuleId, substate_key: SubstateKey) -> Option<D>{
         self.get_substate(node_id, module_id, &M::map_to_db_key(substate_key))
+            .map(|buf| scrypto_decode(&buf).unwrap())
     }
 
     /// Reads a substate of the given node module.

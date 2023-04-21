@@ -10,7 +10,6 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use radix_engine_stores::interface::SubstateKeyMapper;
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use radix_engine_stores::jmt_support::JmtKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -151,30 +150,27 @@ fn test_genesis_resource_with_initial_allocation() {
     let commit_result = transaction_receipt.expect_commit(true);
     substate_store.commit(&commit_result.state_updates);
 
-    let persisted_resource_manager_substate = substate_store
-        .read_mapped_substate::<JmtKeyMapper>(
+    let resource_manager_substate = substate_store
+        .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerSubstate>(
             &resource_address,
             SysModuleId::Object.into(),
             ResourceManagerOffset::ResourceManager.into(),
         )
         .unwrap();
 
-    let resource_manager_substate: FungibleResourceManagerSubstate =
-        scrypto_decode(&persisted_resource_manager_substate).unwrap();
     assert_eq!(resource_manager_substate.total_supply, dec!("105"));
 
     // TODO: Move this to system wrapper around substate_store
     let key = scrypto_encode("symbol").unwrap();
 
-    let persisted_symbol_metadata_entry = substate_store
-        .read_mapped_substate::<JmtKeyMapper>(
+    let entry = substate_store
+        .read_mapped_substate::<JmtKeyMapper, Option<MetadataEntry>>(
             &resource_address,
             SysModuleId::Metadata.into(),
             SubstateKey::Map(key),
         )
         .unwrap();
 
-    let entry: Option<MetadataEntry> = scrypto_decode(&persisted_symbol_metadata_entry).unwrap();
     if let Some(MetadataEntry::Value(MetadataValue::String(symbol))) = entry {
         assert_eq!(symbol, "TST");
     } else {

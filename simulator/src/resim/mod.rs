@@ -79,6 +79,7 @@ use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use radix_engine_stores::jmt_support::JmtKeyMapper;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
@@ -351,14 +352,13 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
-    let substate = substate_db
-        .read_mapped_substate(
+    let package_info = substate_db
+        .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Ok(package_info.schema)
 }
@@ -383,15 +383,13 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
-    let substate = substate_db
-        .read_mapped_substate(
+    let type_info = substate_db
+        .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
             TypeInfoOffset::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
-
-    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
@@ -422,14 +420,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     *local_type_index,
                 ),
                 ObjectModuleId::SELF => {
-                    let substate = substate_db
-                        .read_mapped_substate(
+                    let type_info = substate_db
+                        .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
                             node_id,
                             SysModuleId::TypeInfo.into(),
                             TypeInfoOffset::TypeInfo.into(),
                         )
                         .unwrap();
-                    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                             blueprint.package_address,
@@ -450,14 +447,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
         ),
     };
 
-    let substate = substate_db
-        .read_mapped_substate(
+    let package_info = substate_db
+        .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Info.into(),
         )
         .unwrap();
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Some((
         local_type_index,
