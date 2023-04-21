@@ -230,13 +230,11 @@ impl FormattableCustomTypeExtension for NoCustomTypeExtension {
     }
 }
 
-impl ValidatableCustomTypeExtension for NoCustomTypeExtension {
-    type ValidationContext = ();
-
+impl ValidatableCustomTypeExtension<()> for NoCustomTypeExtension {
     fn validate_custom_value<'de, L: SchemaTypeLink>(
         _custom_value_ref: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
         _custom_type_kind: &Self::CustomTypeKind<L>,
-        _context: &Self::ValidationContext,
+        _context: &(),
     ) -> Result<(), ValidationError> {
         unreachable!("No custom values exist")
     }

@@ -103,30 +103,30 @@ macro_rules! numeric_validation_match {
     }};
 }
 
-pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension>(
+pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension<T>, T>(
     payload: &[u8],
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
-    context: &E::ValidationContext,
+    context: &T,
 ) -> Result<(), LocatedValidationError<'s, E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
     loop {
         let typed_event = traverser.next_event();
-        if validate_event_with_type::<E>(&schema, &typed_event.event, context).map_err(|error| {
-            LocatedValidationError {
+        if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(
+            |error| LocatedValidationError {
                 error,
                 location: typed_event.full_location(),
-            }
-        })? {
+            },
+        )? {
             return Ok(());
         }
     }
 }
 
-fn validate_event_with_type<E: ValidatableCustomTypeExtension>(
+fn validate_event_with_type<E: ValidatableCustomTypeExtension<T>, T>(
     schema: &Schema<E>,
     event: &TypedTraversalEvent<E>,
-    context: &E::ValidationContext,
+    context: &T,
 ) -> Result<bool, PayloadValidationError<E>> {
     match event {
         TypedTraversalEvent::ContainerStart(type_index, header) => {
@@ -134,7 +134,7 @@ fn validate_event_with_type<E: ValidatableCustomTypeExtension>(
         }
         TypedTraversalEvent::ContainerEnd(_, _) => Ok(false), // Validation already handled at Container Start
         TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
-            validate_terminal_value::<E>(schema, value_ref, *type_index, context).map(|_| false)
+            validate_terminal_value::<E, T>(schema, value_ref, *type_index, context).map(|_| false)
         }
         TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => {
             validate_terminal_value_batch::<E>(schema, value_batch_ref, *type_index).map(|_| false)
@@ -185,11 +185,11 @@ pub fn validate_container<E: CustomTypeExtension>(
     Ok(())
 }
 
-pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension>(
+pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
     schema: &Schema<E>,
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
-    context: &E::ValidationContext,
+    context: &T,
 ) -> Result<(), PayloadValidationError<E>> {
     // Apply contextual custom type validation here!
     if let TerminalValueRef::Custom(custom_value_ref) = value {
