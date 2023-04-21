@@ -80,6 +80,13 @@ pub enum ResourceManagerOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum NonFungibleResourceManagerOffset {
+    IdType,
+    ResourceManager,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum FungibleVaultOffset {
     Info,
     LiquidFungible,
@@ -179,6 +186,7 @@ into_substate_key!(ComponentOffset);
 into_substate_key!(PackageOffset);
 into_substate_key!(ResourceManagerOffset);
 into_substate_key!(FungibleVaultOffset);
+into_substate_key!(NonFungibleResourceManagerOffset);
 into_substate_key!(NonFungibleVaultOffset);
 into_substate_key!(EpochManagerOffset);
 into_substate_key!(ValidatorOffset);

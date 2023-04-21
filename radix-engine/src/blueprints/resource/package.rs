@@ -199,8 +199,12 @@ impl ResourceManagerNativePackage {
 
             let mut substates = Vec::new();
             substates.push(
+                aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
+            );
+            substates.push(
                 aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerSubstate>(),
             );
+
 
             let mut functions = BTreeMap::new();
             functions.insert(
