@@ -68,10 +68,13 @@ impl ResourceManagerNativePackage {
 
             let mut substates = Vec::new();
             substates.push(
-                aggregator.add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(),
+                aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
+                    ),
             );
             substates.push(
-                aggregator.add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
+                aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
             );
 
             let mut functions = BTreeMap::new();
@@ -202,17 +205,16 @@ impl ResourceManagerNativePackage {
 
             let mut substates = Vec::new();
             substates.push(
-                aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
+                aggregator
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
             );
             substates.push(
-                aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerDataSchemaSubstate>(),
+                aggregator
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerDataSchemaSubstate>(
+                    ),
             );
-            substates.push(
-                aggregator.add_child_type_and_descendents::<Decimal>(),
-            );
-            substates.push(
-                aggregator.add_child_type_and_descendents::<Own>(),
-            );
+            substates.push(aggregator.add_child_type_and_descendents::<Decimal>());
+            substates.push(aggregator.add_child_type_and_descendents::<Own>());
 
             let mut functions = BTreeMap::new();
             functions.insert(

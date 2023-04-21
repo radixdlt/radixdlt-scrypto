@@ -141,12 +141,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             "Resource Type".green().bold(),
             "Non-fungible"
         );
-        writeln!(
-            output,
-            "{}: {:?}",
-            "ID Type".green().bold(),
-            id_type
-        );
+        writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
         writeln!(
             output,
             "{}: {}",

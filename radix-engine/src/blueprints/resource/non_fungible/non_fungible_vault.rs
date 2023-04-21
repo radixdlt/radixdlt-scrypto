@@ -26,7 +26,10 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_parent_field(NonFungibleResourceManagerOffset::IdType.into(), LockFlags::read_only())?;
+        let handle = api.lock_parent_field(
+            NonFungibleResourceManagerOffset::IdType.into(),
+            LockFlags::read_only(),
+        )?;
         let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
         Ok(id_type)
     }

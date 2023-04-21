@@ -11,7 +11,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::{NodeId};
+use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
 
@@ -239,10 +239,8 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_data_substate(
-            non_fungible_schema,
-            api,
-        )?;
+        let (resource_manager, nf_store_id) =
+            build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
 
         let entries: BTreeMap<NonFungibleLocalId, ScryptoValue> = entries
             .into_iter()
@@ -288,10 +286,8 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungible_entries.insert(id, entry);
         }
 
-        let (data, nf_store_id) = build_non_fungible_resource_manager_data_substate(
-            non_fungible_schema,
-            api,
-        )?;
+        let (data, nf_store_id) =
+            build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
@@ -375,9 +371,7 @@ impl NonFungibleResourceManagerBlueprint {
 
             let info = BucketInfoSubstate {
                 resource_address,
-                resource_type: ResourceType::NonFungible {
-                    id_type,
-                },
+                resource_type: ResourceType::NonFungible { id_type },
             };
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
@@ -521,7 +515,6 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
-
         let (bucket_id, ids) = {
             let data_handle = api.lock_field(
                 NonFungibleResourceManagerOffset::Data.into(),
@@ -612,10 +605,10 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::DataSchema.into(),
             LockFlags::read_only(),
         )?;
-        let data_schema: NonFungibleResourceManagerDataSchemaSubstate = api.sys_read_substate_typed(data_schema_handle)?;
+        let data_schema: NonFungibleResourceManagerDataSchemaSubstate =
+            api.sys_read_substate_typed(data_schema_handle)?;
         let non_fungible_type_index = data_schema.non_fungible_type_index;
         let mutable_fields = data_schema.mutable_fields.clone();
-
 
         let nf_store_handle = api.lock_field(
             NonFungibleResourceManagerOffset::Data.into(),
@@ -686,8 +679,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let nf_store: Own =
-            api.sys_read_substate_typed(data_handle)?;
+        let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
 
         let non_fungible_handle = api.lock_key_value_store_entry(
             nf_store.as_node_id(),
@@ -815,7 +807,8 @@ impl NonFungibleResourceManagerBlueprint {
                             NonFungibleResourceManagerOffset::TotalSupply.into(),
                             LockFlags::MUTABLE,
                         )?;
-                        let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                        let mut total_supply: Decimal =
+                            api.sys_read_substate_typed(total_supply_handle)?;
                         total_supply -= resource.amount();
                         api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
                     }
@@ -869,9 +862,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
-        let resource_type = ResourceType::NonFungible {
-            id_type,
-        };
+        let resource_type = ResourceType::NonFungible { id_type };
 
         Ok(resource_type)
     }

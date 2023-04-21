@@ -10,7 +10,7 @@ use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::{NodeId, FungibleResourceManagerOffset};
+use radix_engine_interface::types::{FungibleResourceManagerOffset, NodeId};
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
@@ -172,8 +172,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-         let divisibility = {
-            let divisibility_handle =    api.lock_field(
+        let divisibility = {
+            let divisibility_handle = api.lock_field(
                 FungibleResourceManagerOffset::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
@@ -211,7 +211,6 @@ impl FungibleResourceManagerBlueprint {
             total_supply += amount;
             api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
             api.sys_drop_lock(total_supply_handle)?;
-
 
             let bucket_info = BucketInfoSubstate {
                 resource_address,
@@ -272,7 +271,8 @@ impl FungibleResourceManagerBlueprint {
                         FungibleResourceManagerOffset::TotalSupply.into(),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                    let mut total_supply: Decimal =
+                        api.sys_read_substate_typed(total_supply_handle)?;
                     total_supply -= resource.amount();
                     api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
                     api.sys_drop_lock(total_supply_handle)?;
@@ -345,9 +345,7 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
-        let resource_type = ResourceType::Fungible {
-            divisibility,
-        };
+        let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
     }

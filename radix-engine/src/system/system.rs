@@ -1008,7 +1008,11 @@ where
     }
 
     #[trace_resources]
-    fn lock_parent_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+    fn lock_parent_field(
+        &mut self,
+        field: u8,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, blueprint) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
@@ -1022,14 +1026,17 @@ where
             } => (node_id, module_id, blueprint),
         };
 
-        let parent = self.get_info()?.blueprint_parent.ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
+        let parent = self
+            .get_info()?
+            .blueprint_parent
+            .ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
 
         // TODO: Check if valid substate_key for node_id
         self.api.kernel_lock_substate(
-                parent.as_node_id(),
-                SysModuleId::Object.into(),
-                &SubstateKey::Tuple(field),
-                flags,
+            parent.as_node_id(),
+            SysModuleId::Object.into(),
+            &SubstateKey::Tuple(field),
+            flags,
         )
     }
 

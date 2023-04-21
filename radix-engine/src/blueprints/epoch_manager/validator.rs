@@ -1,8 +1,10 @@
-use crate::blueprints::epoch_manager::{EpochManagerBlueprint, EpochManagerSubstate};
+use crate::blueprints::epoch_manager::{
+    EpochManagerBlueprint, EpochManagerConfigSubstate, EpochManagerSubstate,
+};
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -155,7 +157,12 @@ impl ValidatorBlueprint {
             let epoch_manager: EpochManagerSubstate =
                 api.sys_read_substate_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
-            let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
+
+            let config_handle =
+                api.lock_parent_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+            let config: EpochManagerConfigSubstate = api.sys_read_substate_typed(config_handle)?;
+            let epoch_unlocked = current_epoch + config.num_unstake_epochs;
+
             api.sys_drop_lock(manager_handle)?;
 
             let data = UnstakeData {
@@ -256,7 +263,10 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let registered_handle = api.lock_parent_field(EpochManagerOffset::RegisteredValidators.into(), LockFlags::read_only())?;
+            let registered_handle = api.lock_parent_field(
+                EpochManagerOffset::RegisteredValidators.into(),
+                LockFlags::read_only(),
+            )?;
             let secondary_index: Own = api.sys_read_substate_typed(registered_handle)?;
 
             EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
@@ -334,7 +344,10 @@ impl ValidatorBlueprint {
                     key,
                 };
 
-                let registered_handle = api.lock_parent_field(EpochManagerOffset::RegisteredValidators.into(), LockFlags::read_only())?;
+                let registered_handle = api.lock_parent_field(
+                    EpochManagerOffset::RegisteredValidators.into(),
+                    LockFlags::read_only(),
+                )?;
                 let secondary_index: Own = api.sys_read_substate_typed(registered_handle)?;
 
                 EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
@@ -597,8 +610,6 @@ impl ValidatorCreator {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address = ComponentAddress::new_unchecked(global_node_id.into());
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(api)?;
@@ -623,6 +634,8 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
+        let address = ComponentAddress::new_unchecked(global_node_id.into());
         api.globalize_with_address(
             btreemap!(
                 ObjectModuleId::SELF => validator_id,

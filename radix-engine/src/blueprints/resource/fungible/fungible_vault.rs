@@ -23,7 +23,10 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_parent_field(FungibleResourceManagerOffset::Divisibility.into(), LockFlags::read_only())?;
+        let handle = api.lock_parent_field(
+            FungibleResourceManagerOffset::Divisibility.into(),
+            LockFlags::read_only(),
+        )?;
         let divisibility: u8 = api.sys_read_substate_typed(handle)?;
         api.sys_drop_lock(handle)?;
         Ok(divisibility)

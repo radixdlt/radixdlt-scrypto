@@ -105,6 +105,7 @@ pub enum NonFungibleVaultOffset {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
+    Config,
     EpochManager,
     CurrentValidatorSet,
     RegisteredValidators,

@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::{FungibleResourceManagerTotalSupplySubstate};
+use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
     create_genesis, GenesisData, GenesisResource, GenesisValidator,
 };

@@ -1,7 +1,7 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::account::Account;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
@@ -18,14 +18,16 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EpochManagerSubstate {
-    pub epoch: u64,
-    pub round: u64,
-
-    // TODO: Move configuration to an immutable substate
+pub struct EpochManagerConfigSubstate {
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct EpochManagerSubstate {
+    pub epoch: u64,
+    pub round: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
@@ -94,12 +96,14 @@ impl EpochManagerBlueprint {
         };
 
         let epoch_manager_id = {
-            let epoch_manager = EpochManagerSubstate {
-                epoch: initial_epoch,
-                round: 0,
+            let config = EpochManagerConfigSubstate {
                 max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs,
+            };
+            let epoch_manager = EpochManagerSubstate {
+                epoch: initial_epoch,
+                round: 0,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: BTreeMap::new(),
@@ -108,6 +112,7 @@ impl EpochManagerBlueprint {
             api.new_object(
                 EPOCH_MANAGER_BLUEPRINT,
                 vec![
+                    scrypto_encode(&config).unwrap(),
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&registered_validators).unwrap(),
@@ -221,12 +226,19 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn start<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let mgr_handle =
-            api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
-        let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
-        Self::epoch_change(epoch_manager.epoch, epoch_manager.max_validators, api)?;
+        let config_handle =
+            api.lock_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+        let config: EpochManagerConfigSubstate = api.sys_read_substate_typed(config_handle)?;
+
+        let mgr_handle = api.lock_field(
+            EpochManagerOffset::EpochManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let mgr: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
+
+        Self::epoch_change(mgr.epoch, config.max_validators, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_access_rule_and_mutability(
@@ -243,6 +255,9 @@ impl EpochManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let config_handle =
+            api.lock_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+        let config: EpochManagerConfigSubstate = api.sys_read_substate_typed(config_handle)?;
         let mgr_handle =
             api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
         let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
@@ -256,9 +271,9 @@ impl EpochManagerBlueprint {
             ));
         }
 
-        if round >= epoch_manager.rounds_per_epoch {
+        if round >= config.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
-            let max_validators = epoch_manager.max_validators;
+            let max_validators = config.max_validators;
             Self::epoch_change(next_epoch, max_validators, api)?;
             epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
@@ -409,8 +424,7 @@ impl EpochManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let secondary_index: SecondaryIndexSubstate =
-            api.sys_read_substate_typed(handle)?;
+        let secondary_index: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
 
         let validators: Vec<(ComponentAddress, Validator)> =
             api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
