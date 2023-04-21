@@ -400,11 +400,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn lock_field(
-        &mut self,
-        field: u8,
-        flags: u32,
-    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    fn lock_field(&mut self, field: u8, flags: u32) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

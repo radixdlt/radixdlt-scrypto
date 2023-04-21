@@ -97,10 +97,7 @@ pub struct BalanceAccounter<'a, S: SubstateDatabase> {
 }
 
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
-    pub fn new(
-        substate_db: &'a S,
-        tracked: &'a IndexMap<NodeId, TrackedNode>,
-    ) -> Self {
+    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
             substate_db,
             tracked,

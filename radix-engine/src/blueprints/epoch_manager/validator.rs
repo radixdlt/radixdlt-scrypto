@@ -79,10 +79,7 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.lock_field(
-            ValidatorOffset::Validator.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
@@ -139,10 +136,7 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.lock_field(
-            ValidatorOffset::Validator.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
         let manager = api.get_object_info(receiver)?.type_parent.unwrap();
 
@@ -306,10 +300,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError> + KernelSubstateApi,
     {
-        let handle = api.lock_field(
-            ValidatorOffset::Validator.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
         let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -370,10 +361,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            ValidatorOffset::Validator.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
         // Update Epoch Manager

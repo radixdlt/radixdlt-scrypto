@@ -29,10 +29,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
@@ -55,10 +53,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         auth_zone.push(input.proof);
@@ -80,10 +76,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
@@ -118,10 +112,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::read_only(),
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::read_only())?;
 
         let composed_proof = {
             let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
@@ -156,10 +148,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let composed_proof = {
             let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
@@ -194,10 +184,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
         auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
@@ -222,10 +209,7 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
         auth_zone.clear_signature_proofs();
         api.sys_write_substate_typed(handle, &auth_zone)?;
@@ -245,10 +229,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.lock_field(
-            AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         let proofs = auth_zone.drain();

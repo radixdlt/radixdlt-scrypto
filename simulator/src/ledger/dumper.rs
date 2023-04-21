@@ -44,9 +44,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate
-            .code
-            .len()
+        substate.code.len()
     );
     Ok(())
 }
@@ -122,8 +120,6 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
-
-
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
         let resource_manager = substate_db
             .read_mapped_substate::<JmtKeyMapper, NonFungibleResourceManagerSubstate>(

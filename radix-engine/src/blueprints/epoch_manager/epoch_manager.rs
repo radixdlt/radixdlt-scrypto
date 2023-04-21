@@ -232,16 +232,10 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mgr_handle = api.lock_field(
-            EpochManagerOffset::EpochManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let mgr_handle =
+            api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
         let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
-        Self::epoch_change(
-            epoch_manager.epoch,
-            epoch_manager.max_validators,
-            api,
-        )?;
+        Self::epoch_change(epoch_manager.epoch, epoch_manager.max_validators, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_access_rule_and_mutability(
@@ -254,17 +248,12 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn next_round<Y>(
-        round: u64,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn next_round<Y>(round: u64, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mgr_handle = api.lock_field(
-            EpochManagerOffset::EpochManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let mgr_handle =
+            api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
         let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
 
         if round <= epoch_manager.round {
@@ -293,17 +282,11 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn set_epoch<Y>(
-        epoch: u64,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn set_epoch<Y>(epoch: u64, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            EpochManagerOffset::EpochManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
 
         let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
         epoch_manager.epoch = epoch;
@@ -425,11 +408,7 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    fn epoch_change<Y>(
-        epoch: u64,
-        max_validators: u32,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn epoch_change<Y>(epoch: u64, max_validators: u32, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

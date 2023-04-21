@@ -363,11 +363,7 @@ impl AccountNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::withdraw(
-                    input.resource_address,
-                    input.amount,
-                    api,
-                )?;
+                let rtn = AccountBlueprint::withdraw(input.resource_address, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
@@ -440,11 +436,8 @@ impl AccountNativePackage {
                 let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_proof_by_ids(
-                    input.resource_address,
-                    input.ids,
-                    api,
-                )?;
+                let rtn =
+                    AccountBlueprint::create_proof_by_ids(input.resource_address, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(

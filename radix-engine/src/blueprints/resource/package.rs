@@ -1326,10 +1326,8 @@ impl ResourceManagerNativePackage {
                 let input: NonFungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_non_fungible(
-                    input.entries,
-                    api,
-                )?;
+                let rtn =
+                    NonFungibleResourceManagerBlueprint::mint_non_fungible(input.entries, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME => {
@@ -1408,9 +1406,7 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(
-                    input.id, api,
-                )?;
+                let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
@@ -1439,8 +1435,7 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn =
-                    NonFungibleResourceManagerBlueprint::get_non_fungible(input.id, api)?;
+                let rtn = NonFungibleResourceManagerBlueprint::get_non_fungible(input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
@@ -1696,10 +1691,7 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(
-                    input.local_ids,
-                    api,
-                )?;
+                let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PROOF_DROP_IDENT => {

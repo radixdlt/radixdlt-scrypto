@@ -42,17 +42,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn lock_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe {
-            lock_field(
-                u32::from(field),
-                flags.bits(),
-            )
-        };
+    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+        let handle = unsafe { lock_field(u32::from(field), flags.bits()) };
 
         Ok(handle)
     }

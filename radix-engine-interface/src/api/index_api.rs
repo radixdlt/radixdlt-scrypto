@@ -28,11 +28,7 @@ pub trait ClientIndexApi<E> {
     }
 
     /// Removes an entry from an index
-    fn remove_from_index(
-        &mut self,
-        node_id: &NodeId,
-        key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, E>;
+    fn remove_from_index(&mut self, node_id: &NodeId, key: Vec<u8>) -> Result<Option<Vec<u8>>, E>;
 
     /// Removes an entry from an index
     fn remove_typed_from_index<V: ScryptoDecode>(

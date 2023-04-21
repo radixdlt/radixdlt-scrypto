@@ -28,10 +28,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            FungibleVaultOffset::Info.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(FungibleVaultOffset::Info.into(), LockFlags::read_only())?;
         let info: FungibleVaultDivisibilitySubstate = api.sys_read_substate_typed(handle)?;
         let divisibility = info.divisibility;
         api.sys_drop_lock(handle)?;
@@ -214,8 +211,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let amount = FungibleVault::liquid_amount(api)?
-            + FungibleVault::locked_amount(api)?;
+        let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
 
         let divisibility = Self::get_divisibility(api)?;
         let resource_address = ResourceAddress::new_unchecked(
@@ -294,10 +290,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn unlock_amount<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -338,10 +331,7 @@ impl FungibleVault {
         Ok(amount)
     }
 
-    pub fn take<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<LiquidFungibleResource, RuntimeError>
+    pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<LiquidFungibleResource, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -363,10 +353,7 @@ impl FungibleVault {
         Ok(taken)
     }
 
-    pub fn put<Y>(
-        resource: LiquidFungibleResource,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -433,10 +420,7 @@ impl FungibleVault {
     }
 
     // protected method
-    pub fn unlock_amount<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

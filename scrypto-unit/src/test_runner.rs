@@ -326,11 +326,14 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
-            component_address.as_node_id(),
-            SysModuleId::Royalty.into(),
-            RoyaltyOffset::RoyaltyAccumulator.into(),
-        ) {
+        if let Some(output) = self
+            .substate_db
+            .read_mapped_substate::<JmtKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
+                component_address.as_node_id(),
+                SysModuleId::Royalty.into(),
+                RoyaltyOffset::RoyaltyAccumulator.into(),
+            )
+        {
             output
                 .royalty_vault
                 .and_then(|vault| {
@@ -348,11 +351,14 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper, PackageRoyaltySubstate>(
-            package_address.as_node_id(),
-            SysModuleId::Object.into(),
-            PackageOffset::Royalty.into(),
-        ) {
+        if let Some(output) = self
+            .substate_db
+            .read_mapped_substate::<JmtKeyMapper, PackageRoyaltySubstate>(
+                package_address.as_node_id(),
+                SysModuleId::Object.into(),
+                PackageOffset::Royalty.into(),
+            )
+        {
             output
                 .royalty_vault
                 .and_then(|vault| {
@@ -507,8 +513,7 @@ impl TestRunner {
     }
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
-        self
-            .substate_db()
+        self.substate_db()
             .read_mapped_substate::<JmtKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
                 SysModuleId::Object.into(),
@@ -518,15 +523,14 @@ impl TestRunner {
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let substate =
-            self
-                .substate_db()
-                .read_mapped_substate::<JmtKeyMapper, CurrentValidatorSetSubstate>(
-                    EPOCH_MANAGER.as_node_id(),
-                    SysModuleId::Object.into(),
-                    EpochManagerOffset::CurrentValidatorSet.into(),
-                )
-                .unwrap();
+        let substate = self
+            .substate_db()
+            .read_mapped_substate::<JmtKeyMapper, CurrentValidatorSetSubstate>(
+                EPOCH_MANAGER.as_node_id(),
+                SysModuleId::Object.into(),
+                EpochManagerOffset::CurrentValidatorSet.into(),
+            )
+            .unwrap();
 
         substate
             .validator_set
@@ -1242,14 +1246,14 @@ impl TestRunner {
                         local_type_index.clone(),
                     ),
                     ObjectModuleId::SELF => {
-                        let type_info= self
-                                .substate_db()
-                                .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
-                                    node_id,
-                                    SysModuleId::TypeInfo.into(),
-                                    TypeInfoOffset::TypeInfo.into(),
-                                )
-                                .unwrap();
+                        let type_info = self
+                            .substate_db()
+                            .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
+                                node_id,
+                                SysModuleId::TypeInfo.into(),
+                                TypeInfoOffset::TypeInfo.into(),
+                            )
+                            .unwrap();
 
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
@@ -1278,19 +1282,18 @@ impl TestRunner {
 
         (
             local_type_index,
-            self
-                .substate_db()
+            self.substate_db()
                 .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
                     SysModuleId::Object.into(),
                     PackageOffset::Info.into(),
                 )
                 .unwrap()
-            .schema
-            .blueprints
-            .remove(&blueprint_name)
-            .unwrap()
-            .schema,
+                .schema
+                .blueprints
+                .remove(&blueprint_name)
+                .unwrap()
+                .schema,
         )
     }
 

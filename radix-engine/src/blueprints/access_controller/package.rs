@@ -698,10 +698,7 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        transition_mut(
-            api,
-            AccessControllerLockPrimaryRoleStateMachineInput,
-        )?;
+        transition_mut(api, AccessControllerLockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, LockPrimaryRoleEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -718,10 +715,7 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        transition_mut(
-            api,
-            AccessControllerUnlockPrimaryRoleStateMachineInput,
-        )?;
+        transition_mut(api, AccessControllerUnlockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, UnlockPrimaryRoleEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))

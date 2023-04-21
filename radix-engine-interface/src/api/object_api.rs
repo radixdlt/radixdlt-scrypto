@@ -38,11 +38,7 @@ pub trait ClientObjectApi<E> {
         object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, E>;
 
-    fn lock_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, E>;
+    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, E>;
 
     // TODO: Add specific object read/write lock apis
 

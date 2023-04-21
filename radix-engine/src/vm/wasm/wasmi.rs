@@ -591,16 +591,8 @@ impl WasmiModule {
 
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             field: u32,
-             lock_flags: u32|
-             -> Result<u32, Trap> {
-                lock_field(
-                    caller,
-                    field,
-                    lock_flags,
-                )
-                .map_err(|e| e.into())
+            |caller: Caller<'_, HostState>, field: u32, lock_flags: u32| -> Result<u32, Trap> {
+                lock_field(caller, field, lock_flags).map_err(|e| e.into())
             },
         );
 

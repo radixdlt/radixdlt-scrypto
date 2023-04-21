@@ -9,10 +9,8 @@ impl SubstateKeyMapper for JmtKeyMapper {
         let bytes = match key {
             SubstateKey::Tuple(field) => {
                 vec![field]
-            },
-            SubstateKey::Map(key) => {
-                hash(key).0[12..32].to_vec()
             }
+            SubstateKey::Map(key) => hash(key).0[12..32].to_vec(),
             SubstateKey::Sorted(bucket, key) => {
                 let mut bytes = bucket.to_be_bytes().to_vec();
                 bytes.extend(hash(key).0[12..32].to_vec()); // 20 bytes

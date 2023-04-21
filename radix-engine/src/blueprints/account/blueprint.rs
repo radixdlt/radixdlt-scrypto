@@ -185,10 +185,7 @@ impl AccountBlueprint {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.lock_field(
-            AccountOffset::Account.into(),
-            LockFlags::read_only(),
-        )?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -236,10 +233,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn lock_contingent_fee<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn lock_contingent_fee<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -254,10 +248,7 @@ impl AccountBlueprint {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.lock_field(
-            AccountOffset::Account.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
@@ -303,17 +294,11 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn deposit_batch<Y>(
-        buckets: Vec<Bucket>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn deposit_batch<Y>(buckets: Vec<Bucket>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            AccountOffset::Account.into(),
-            LockFlags::read_only(),
-        )?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // TODO: We should optimize this a bit more so that we're not locking and unlocking the same
         // KV-store entries again and again because of buckets that have the same resource address.
@@ -379,10 +364,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.lock_field(
-            AccountOffset::Account.into(),
-            LockFlags::read_only(),
-        )?; // TODO: should this be an R or RW lock?
+        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {

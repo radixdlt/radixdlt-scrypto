@@ -1,6 +1,6 @@
 use crate::errors::{
-    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType,
-    KernelError, RuntimeError, SubstateValidationError,
+    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError,
+    RuntimeError, SubstateValidationError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -62,7 +62,6 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-
     #[trace_resources]
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.api
@@ -247,24 +246,25 @@ where
     }
 
     #[trace_resources]
-    fn lock_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
+    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, blueprint) = match &actor {
-            Actor::Function { .. }
-            | Actor::VirtualLazyLoad { .. }
-            => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
-            Actor::Method { node_id, module_id, blueprint, .. } => (node_id, module_id, blueprint),
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                blueprint,
+                ..
+            } => (node_id, module_id, blueprint),
         };
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)) {
-
+                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
+            {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
@@ -775,11 +775,7 @@ where
         Ok(rtn)
     }
 
-    fn scan_index(
-        &mut self,
-        node_id: &NodeId,
-        count: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn scan_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::IterableStore => {}

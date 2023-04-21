@@ -174,10 +174,7 @@ impl FungibleResourceManagerBlueprint {
         Ok((resource_address, bucket))
     }
 
-    pub(crate) fn mint<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub(crate) fn mint<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -241,10 +238,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(Bucket(Own(bucket_id)))
     }
 
-    pub(crate) fn burn<Y>(
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -358,9 +352,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(Own(vault_id))
     }
 
-    pub(crate) fn get_resource_type<Y>(
-        api: &mut Y,
-    ) -> Result<ResourceType, RuntimeError>
+    pub(crate) fn get_resource_type<Y>(api: &mut Y) -> Result<ResourceType, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -378,9 +370,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(
-        api: &mut Y,
-    ) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

@@ -30,8 +30,7 @@ impl BucketInfoSubstate {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle =
-            api.lock_field(BucketOffset::Info.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(BucketOffset::Info.into(), LockFlags::read_only())?;
         let substate_ref: BucketInfoSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -46,10 +45,7 @@ impl FungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LiquidFungible.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(BucketOffset::LiquidFungible.into(), LockFlags::read_only())?;
         let substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -60,27 +56,18 @@ impl FungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LockedFungible.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(BucketOffset::LockedFungible.into(), LockFlags::read_only())?;
         let substate_ref: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
-    pub fn take<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<LiquidFungibleResource, RuntimeError>
+    pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<LiquidFungibleResource, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LiquidFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LiquidFungible.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -92,10 +79,7 @@ impl FungibleBucket {
         Ok(taken)
     }
 
-    pub fn put<Y>(
-        resource: LiquidFungibleResource,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -103,10 +87,7 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.lock_field(
-            BucketOffset::LiquidFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LiquidFungible.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -127,10 +108,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LockedFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LockedFungible.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked = locked.amount();
 
@@ -160,17 +138,11 @@ impl FungibleBucket {
     }
 
     // protected method
-    pub fn unlock_amount<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LockedFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LockedFungible.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let max_locked = locked.amount();
@@ -252,17 +224,11 @@ impl NonFungibleBucket {
         Ok(ids)
     }
 
-    pub fn take<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<LiquidNonFungibleResource, RuntimeError>
+    pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LiquidNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LiquidNonFungible.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -281,10 +247,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LiquidNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LiquidNonFungible.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate
             .take_by_ids(ids)
@@ -295,10 +258,7 @@ impl NonFungibleBucket {
         Ok(taken)
     }
 
-    pub fn put<Y>(
-        resource: LiquidNonFungibleResource,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn put<Y>(resource: LiquidNonFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -306,10 +266,7 @@ impl NonFungibleBucket {
             return Ok(());
         }
 
-        let handle = api.lock_field(
-            BucketOffset::LiquidNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LiquidNonFungible.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -330,10 +287,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LockedNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LockedNonFungible.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
@@ -383,10 +337,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LockedNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LockedNonFungible.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
 
         // Take from liquid if needed
@@ -426,10 +377,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            BucketOffset::LockedNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(BucketOffset::LockedNonFungible.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
@@ -447,10 +395,7 @@ impl NonFungibleBucket {
 
         api.sys_write_substate_typed(handle, &locked)?;
 
-        NonFungibleBucket::put(
-            LiquidNonFungibleResource::new(liquid_non_fungibles),
-            api,
-        )
+        NonFungibleBucket::put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }
 }
 
@@ -640,9 +585,7 @@ impl BucketBlueprint {
             ));
         } else {
             let mut ids = NonFungibleBucket::liquid_non_fungible_local_ids(api)?;
-            ids.extend(NonFungibleBucket::locked_non_fungible_local_ids(
-                api,
-            )?);
+            ids.extend(NonFungibleBucket::locked_non_fungible_local_ids(api)?);
             Ok(IndexedScryptoValue::from_typed(&ids))
         }
     }
@@ -660,11 +603,9 @@ impl BucketBlueprint {
 
         let info = BucketInfoSubstate::of_self(api)?;
         let amount = if info.resource_type.is_fungible() {
-            FungibleBucket::liquid_amount(api)?
-                + FungibleBucket::locked_amount(api)?
+            FungibleBucket::liquid_amount(api)? + FungibleBucket::locked_amount(api)?
         } else {
-            NonFungibleBucket::liquid_amount(api)?
-                + NonFungibleBucket::locked_amount(api)?
+            NonFungibleBucket::liquid_amount(api)? + NonFungibleBucket::locked_amount(api)?
         };
 
         Ok(IndexedScryptoValue::from_typed(&amount))
@@ -700,8 +641,7 @@ impl BucketBlueprint {
 
         let info = BucketInfoSubstate::of_self(api)?;
         let node_id = if info.resource_type.is_fungible() {
-            let amount = FungibleBucket::locked_amount(api)?
-                + FungibleBucket::liquid_amount(api)?;
+            let amount = FungibleBucket::locked_amount(api)? + FungibleBucket::liquid_amount(api)?;
 
             let proof_info = ProofInfoSubstate {
                 resource_address: info.resource_address,
@@ -720,8 +660,8 @@ impl BucketBlueprint {
             )?;
             proof_id
         } else {
-            let amount = NonFungibleBucket::locked_amount(api)?
-                + NonFungibleBucket::liquid_amount(api)?;
+            let amount =
+                NonFungibleBucket::locked_amount(api)? + NonFungibleBucket::liquid_amount(api)?;
 
             let proof_info = ProofInfoSubstate {
                 resource_address: info.resource_address,
