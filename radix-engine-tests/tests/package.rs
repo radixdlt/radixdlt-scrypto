@@ -150,6 +150,7 @@ fn test_basic_package_missing_export() {
                 type_validations: vec![],
             },
             substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+            transient_substates: vec![],
             functions: btreemap!(
                 "f".to_string() => FunctionSchema {
                     receiver: Option::None,

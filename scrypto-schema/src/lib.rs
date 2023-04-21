@@ -48,6 +48,7 @@ pub struct BlueprintSchema {
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substates: Vec<LocalTypeIndex>,
+    pub transient_substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
@@ -85,6 +86,7 @@ impl Default for BlueprintSchema {
                 type_validations: vec![],
             },
             substates: Vec::default(),
+            transient_substates: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),

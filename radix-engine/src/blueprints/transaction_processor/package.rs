@@ -17,10 +17,6 @@ pub struct TransactionProcessorNativePackage;
 impl TransactionProcessorNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<()>());
-
         let mut functions = BTreeMap::new();
         functions.insert(
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
@@ -39,7 +35,8 @@ impl TransactionProcessorNativePackage {
                 TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSchema {
                     parent: None,
                     schema,
-                    substates,
+                    substates: vec![],
+                    transient_substates: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
