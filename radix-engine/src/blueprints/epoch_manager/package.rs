@@ -235,7 +235,7 @@ impl EpochManagerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             EPOCH_MANAGER_CREATE_IDENT => {

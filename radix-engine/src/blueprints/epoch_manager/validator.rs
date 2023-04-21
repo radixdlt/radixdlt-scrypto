@@ -2,7 +2,7 @@ use crate::blueprints::epoch_manager::{EpochManagerBlueprint, EpochManagerSubsta
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -117,7 +117,7 @@ impl ValidatorBlueprint {
 
     pub fn unstake<Y>(lp_tokens: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelSubstateApi,
+        Y: ClientApi<RuntimeError>,
     {
         // Prepare event and emit it once operations finish
         let event = {
@@ -128,9 +128,6 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
-
-        let manager = api.get_info()?.blueprint_parent.unwrap();
-
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
         // Unstake
@@ -151,10 +148,8 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.kernel_lock_substate(
-                manager.as_node_id(),
-                SysModuleId::Object.into(),
-                &EpochManagerOffset::EpochManager.into(),
+            let manager_handle = api.lock_parent_field(
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let epoch_manager: EpochManagerSubstate =
@@ -272,13 +267,12 @@ impl ValidatorBlueprint {
 
     pub fn claim_xrd<Y>(bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelSubstateApi,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
         let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
-        let manager = api.get_info()?.blueprint_parent.unwrap();
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
@@ -289,10 +283,8 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.kernel_lock_substate(
-                manager.as_node_id(),
-                SysModuleId::Object.into(),
-                &EpochManagerOffset::EpochManager.into(),
+            let mgr_handle = api.lock_parent_field(
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let mgr_substate: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;

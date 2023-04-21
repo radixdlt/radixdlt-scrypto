@@ -221,7 +221,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn start<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let mgr_handle =
             api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
@@ -292,7 +292,7 @@ impl EpochManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
 
@@ -306,7 +306,7 @@ impl EpochManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let stake_amount = xrd_stake.sys_amount(api)?;
 
