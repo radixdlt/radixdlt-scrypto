@@ -186,11 +186,13 @@ function generate_input() {
                 return
             fi
 
+            set -x
             mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
             mv manifest_*.raw ${curr_path}/${raw_dir}
 
             # do not minimize big files, move them directly to input
-            find ${curr_path}/${raw_dir} -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
+            find ${curr_path}/${raw_dir} -type f -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
+            set +x
         fi
 
         # Make the input corpus unique
