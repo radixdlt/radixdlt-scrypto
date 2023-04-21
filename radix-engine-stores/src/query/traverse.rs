@@ -5,12 +5,10 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::scrypto_decode;
-use radix_engine_interface::types::{
-    FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
-    ObjectInfo, ResourceAddress, SysModuleId,
-};
+use radix_engine_interface::types::{FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset, ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset};
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use sbor::rust::prelude::*;
+use crate::jmt_support::JmtKeyMapper;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
     substate_db: &'s S,
@@ -78,7 +76,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         let type_info: TypeInfoSubstate = scrypto_decode(
             &self
                 .substate_db
-                .get_substate(&node_id, SysModuleId::TypeInfo.into(), &vec![0])
+                .read_mapped_substate::<JmtKeyMapper>(&node_id, SysModuleId::TypeInfo.into(), TypeInfoOffset::TypeInfo.into())
                 .expect("Missing TypeInfo substate"),
         )
         .expect("Failed to decode TypeInfo substate");
@@ -117,10 +115,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     let liquid: LiquidFungibleResource = scrypto_decode(
                         &self
                             .substate_db
-                            .get_substate(
+                            .read_mapped_substate::<JmtKeyMapper>(
                                 &node_id,
                                 SysModuleId::Object.into(),
-                                &vec![FungibleVaultOffset::LiquidFungible.into()],
+                                FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database"),
                     )
@@ -137,10 +135,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     let liquid: LiquidNonFungibleVault = scrypto_decode(
                         &self
                             .substate_db
-                            .get_substate(
+                            .read_mapped_substate::<JmtKeyMapper>(
                                 &node_id,
                                 SysModuleId::Object.into(),
-                                &vec![NonFungibleVaultOffset::LiquidNonFungible.into()],
+                                NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database"),
                     )

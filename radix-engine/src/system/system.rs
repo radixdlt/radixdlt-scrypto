@@ -14,13 +14,13 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
-use radix_engine_interface::api::iterable_store_api::ClientIterableStoreApi;
+use radix_engine_interface::api::index_api::ClientIndexApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::sorted_store_api::SortedKey;
+use radix_engine_interface::api::sorted_index_api::SortedKey;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -698,12 +698,12 @@ where
     }
 }
 
-impl<'a, Y, V> ClientIterableStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn new_iterable_store(&mut self) -> Result<NodeId, RuntimeError> {
+    fn new_index(&mut self) -> Result<NodeId, RuntimeError> {
         let entity_type = EntityType::InternalIterableStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
@@ -720,7 +720,7 @@ where
         Ok(node_id)
     }
 
-    fn insert_into_iterable_store(
+    fn insert_into_index(
         &mut self,
         node_id: &NodeId,
         key: Vec<u8>,
@@ -751,7 +751,7 @@ where
             .kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
-    fn remove_from_iterable_store(
+    fn remove_from_index(
         &mut self,
         node_id: &NodeId,
         key: Vec<u8>,
@@ -775,7 +775,7 @@ where
         Ok(rtn)
     }
 
-    fn scan_iterable_store(
+    fn scan_index(
         &mut self,
         node_id: &NodeId,
         count: u32,
@@ -820,13 +820,13 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn new_sorted_store(&mut self) -> Result<NodeId, RuntimeError> {
+    fn new_sorted_index(&mut self) -> Result<NodeId, RuntimeError> {
         let entity_type = EntityType::InternalSortedStore;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
@@ -844,7 +844,7 @@ where
     }
 
     #[trace_resources]
-    fn insert_into_sorted_store(
+    fn insert_into_sorted_index(
         &mut self,
         node_id: &NodeId,
         sorted_key: SortedKey,
@@ -875,7 +875,7 @@ where
     }
 
     #[trace_resources]
-    fn scan_sorted_store(
+    fn scan_sorted_index(
         &mut self,
         node_id: &NodeId,
         count: u32,
@@ -899,7 +899,7 @@ where
     }
 
     #[trace_resources]
-    fn remove_from_sorted_store(
+    fn remove_from_sorted_index(
         &mut self,
         node_id: &NodeId,
         sorted_key: &SortedKey,

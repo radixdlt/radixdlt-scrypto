@@ -91,14 +91,14 @@ impl BalanceChange {
 /// Note that the implementation below assumes that substate owned objects can not be
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
-pub struct BalanceAccounter<'a> {
-    substate_db: &'a dyn SubstateDatabase,
+pub struct BalanceAccounter<'a, S: SubstateDatabase> {
+    substate_db: &'a S,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
-impl<'a> BalanceAccounter<'a> {
+impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(
-        substate_db: &'a dyn SubstateDatabase,
+        substate_db: &'a S,
         tracked: &'a IndexMap<NodeId, TrackedNode>,
     ) -> Self {
         Self {

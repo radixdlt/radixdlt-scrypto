@@ -152,10 +152,10 @@ fn test_genesis_resource_with_initial_allocation() {
     substate_store.commit(&commit_result.state_updates);
 
     let persisted_resource_manager_substate = substate_store
-        .get_substate(
+        .read_mapped_substate::<JmtKeyMapper>(
             &resource_address,
             SysModuleId::Object.into(),
-            &vec![ResourceManagerOffset::ResourceManager.into()],
+            ResourceManagerOffset::ResourceManager.into(),
         )
         .unwrap();
 
@@ -165,13 +165,12 @@ fn test_genesis_resource_with_initial_allocation() {
 
     // TODO: Move this to system wrapper around substate_store
     let key = scrypto_encode("symbol").unwrap();
-    let metadata_key = JmtKeyMapper::map_to_db_key(SubstateKey::Map(key));
 
     let persisted_symbol_metadata_entry = substate_store
-        .get_substate(
+        .read_mapped_substate::<JmtKeyMapper>(
             &resource_address,
             SysModuleId::Metadata.into(),
-            &metadata_key,
+            SubstateKey::Map(key),
         )
         .unwrap();
 

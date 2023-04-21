@@ -1,4 +1,3 @@
-use radix_engine_stores::interface::SubstateKeyMapper;
 use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fs;
@@ -302,14 +301,13 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
-        let metadata_key = JmtKeyMapper::map_to_db_key(SubstateKey::Map(key));
 
         let metadata_entry = self
             .substate_db
-            .get_substate(
+            .read_mapped_substate::<JmtKeyMapper>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
-                &metadata_key,
+                SubstateKey::Map(key),
             )
             .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s).unwrap())?;
 
@@ -329,20 +327,20 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.get_substate(
+        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper>(
             component_address.as_node_id(),
             SysModuleId::Royalty.into(),
-            &vec![RoyaltyOffset::RoyaltyAccumulator.into()],
+            RoyaltyOffset::RoyaltyAccumulator.into(),
         ) {
             scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output)
                 .unwrap()
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_substate(
+                        .read_mapped_substate::<JmtKeyMapper>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            &vec![FungibleVaultOffset::LiquidFungible.into()],
+                            FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output)
@@ -356,20 +354,20 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self.substate_db.get_substate(
+        if let Some(output) = self.substate_db.read_mapped_substate::<JmtKeyMapper>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &vec![PackageOffset::Royalty.into()],
+            PackageOffset::Royalty.into(),
         ) {
             scrypto_decode::<PackageRoyaltySubstate>(&output)
                 .unwrap()
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_substate(
+                        .read_mapped_substate::<JmtKeyMapper>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            &vec![FungibleVaultOffset::LiquidFungible.into()],
+                            FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output)
@@ -416,10 +414,10 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_substate(
+            .read_mapped_substate::<JmtKeyMapper>(
                 &vault_id,
                 SysModuleId::Object.into(),
-                &vec![FungibleVaultOffset::LiquidFungible.into()],
+                FungibleVaultOffset::LiquidFungible.into(),
             )
             .map(|output| {
                 scrypto_decode::<LiquidFungibleResource>(&output)
@@ -434,10 +432,10 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let vault = self
             .substate_db()
-            .get_substate(
+            .read_mapped_substate::<JmtKeyMapper>(
                 &vault_id,
                 SysModuleId::Object.into(),
-                &vec![NonFungibleVaultOffset::LiquidNonFungible.into()],
+                NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .map(|output| {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(&output).unwrap();
@@ -528,10 +526,10 @@ impl TestRunner {
         scrypto_decode(
             &self
                 .substate_db()
-                .get_substate(
+                .read_mapped_substate::<JmtKeyMapper>(
                     address.as_node_id(),
                     SysModuleId::Object.into(),
-                    &vec![ValidatorOffset::Validator.into()],
+                    ValidatorOffset::Validator.into(),
                 )
                 .unwrap(),
         )
@@ -542,10 +540,10 @@ impl TestRunner {
         let substate: CurrentValidatorSetSubstate = scrypto_decode(
             &self
                 .substate_db()
-                .get_substate(
+                .read_mapped_substate::<JmtKeyMapper>(
                     EPOCH_MANAGER.as_node_id(),
                     SysModuleId::Object.into(),
-                    &vec![EpochManagerOffset::CurrentValidatorSet.into()],
+                    EpochManagerOffset::CurrentValidatorSet.into(),
                 )
                 .unwrap(),
         )
@@ -1267,10 +1265,10 @@ impl TestRunner {
                         let type_info: TypeInfoSubstate = scrypto_decode(
                             &self
                                 .substate_db()
-                                .get_substate(
+                                .read_mapped_substate::<JmtKeyMapper>(
                                     node_id,
                                     SysModuleId::TypeInfo.into(),
-                                    &vec![TypeInfoOffset::TypeInfo.into()],
+                                    TypeInfoOffset::TypeInfo.into(),
                                 )
                                 .unwrap(),
                         )
@@ -1306,10 +1304,10 @@ impl TestRunner {
             scrypto_decode::<PackageInfoSubstate>(
                 &self
                     .substate_db()
-                    .get_substate(
+                    .read_mapped_substate::<JmtKeyMapper>(
                         package_address.as_node_id(),
                         SysModuleId::Object.into(),
-                        &vec![PackageOffset::Info.into()],
+                        PackageOffset::Info.into(),
                     )
                     .unwrap(),
             )

@@ -26,10 +26,10 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let substate = substate_db
-        .get_substate(
+        .read_mapped_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &vec![PackageOffset::Code.into()],
+            PackageOffset::Code.into(),
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
 
@@ -61,10 +61,10 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
 
     let (package_address, blueprint_name, resources) = {
         let substate = substate_db
-            .get_substate(
+            .read_mapped_substate(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
-                &vec![TypeInfoOffset::TypeInfo.into()],
+                TypeInfoOffset::TypeInfo.into(),
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
@@ -124,10 +124,10 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
     let substate = substate_db
-        .get_substate(
+        .read_mapped_substate(
             resource_address.as_node_id(),
             SysModuleId::Object.into(),
-            &vec![ResourceManagerOffset::ResourceManager.into()],
+            ResourceManagerOffset::ResourceManager.into(),
         )
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;
 

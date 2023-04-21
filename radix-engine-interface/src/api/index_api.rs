@@ -5,58 +5,58 @@ use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
-pub trait ClientIterableStoreApi<E> {
-    /// Creates a new iterable store
-    fn new_iterable_store(&mut self) -> Result<NodeId, E>;
+pub trait ClientIndexApi<E> {
+    /// Creates a new index
+    fn new_index(&mut self) -> Result<NodeId, E>;
 
-    /// Inserts an entry into an iterable store
-    fn insert_into_iterable_store(
+    /// Inserts an entry into an index
+    fn insert_into_index(
         &mut self,
         node_id: &NodeId,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
-    /// Inserts an entry into an iterable store
-    fn insert_typed_into_iterable_store<V: ScryptoEncode>(
+    /// Inserts an entry into an index
+    fn insert_typed_into_index<V: ScryptoEncode>(
         &mut self,
         node_id: &NodeId,
         key: Vec<u8>,
         value: V,
     ) -> Result<(), E> {
-        self.insert_into_iterable_store(node_id, key, scrypto_encode(&value).unwrap())
+        self.insert_into_index(node_id, key, scrypto_encode(&value).unwrap())
     }
 
-    /// Removes an entry from an iterable store
-    fn remove_from_iterable_store(
+    /// Removes an entry from an index
+    fn remove_from_index(
         &mut self,
         node_id: &NodeId,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, E>;
 
-    /// Removes an entry from an iterable store
-    fn remove_typed_from_iterable_store<V: ScryptoDecode>(
+    /// Removes an entry from an index
+    fn remove_typed_from_index<V: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         key: Vec<u8>,
     ) -> Result<Option<V>, E> {
         let rtn = self
-            .remove_from_iterable_store(node_id, key)?
+            .remove_from_index(node_id, key)?
             .map(|e| scrypto_decode(&e).unwrap());
         Ok(rtn)
     }
 
-    /// Scans arbitrary elements of count from an iterable store
-    fn scan_iterable_store(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    /// Scans arbitrary elements of count from an index
+    fn scan_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
-    /// Scans arbitrary elements of count from an iterable store
-    fn scan_typed_iterable_store<S: ScryptoDecode>(
+    /// Scans arbitrary elements of count from an index
+    fn scan_typed_index<S: ScryptoDecode>(
         &mut self,
         node_id: &NodeId,
         count: u32,
     ) -> Result<Vec<S>, E> {
         let entries = self
-            .scan_iterable_store(node_id, count)?
+            .scan_index(node_id, count)?
             .into_iter()
             .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();
@@ -67,10 +67,10 @@ pub trait ClientIterableStoreApi<E> {
         Ok(entries)
     }
 
-    /// Removes and returns arbitrary elements of count from an iterable store
+    /// Removes and returns arbitrary elements of count from an index
     fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
-    /// Removes and returns arbitrary elements of count from an iterable store
+    /// Removes and returns arbitrary elements of count from an index
     fn take_typed<S: ScryptoDecode>(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<S>, E> {
         let entries = self
             .take(node_id, count)?

@@ -352,10 +352,10 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let substate = substate_db
-        .get_substate(
+        .read_mapped_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &vec![PackageOffset::Info.into()],
+            PackageOffset::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
     let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
@@ -384,10 +384,10 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let substate = substate_db
-        .get_substate(
+        .read_mapped_substate(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
-            &vec![TypeInfoOffset::TypeInfo.into()],
+            TypeInfoOffset::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
 
@@ -423,10 +423,10 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 ),
                 ObjectModuleId::SELF => {
                     let substate = substate_db
-                        .get_substate(
+                        .read_mapped_substate(
                             node_id,
                             SysModuleId::TypeInfo.into(),
-                            &vec![TypeInfoOffset::TypeInfo.into()],
+                            TypeInfoOffset::TypeInfo.into(),
                         )
                         .unwrap();
                     let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
@@ -451,10 +451,10 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     let substate = substate_db
-        .get_substate(
+        .read_mapped_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &vec![PackageOffset::Info.into()],
+            PackageOffset::Info.into(),
         )
         .unwrap();
     let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();

@@ -814,7 +814,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = resource_manager.id_type;
         let info = NonFungibleVaultIdTypeSubstate { id_type };
 
-        let ids = Own(api.new_iterable_store()?);
+        let ids = Own(api.new_index()?);
         let vault = LiquidNonFungibleVault {
             amount: Decimal::zero(),
             ids,

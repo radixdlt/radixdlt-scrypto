@@ -92,7 +92,7 @@ impl EpochManagerBlueprint {
         };
 
         let validators = {
-            let sorted_validators = api.new_sorted_store()?;
+            let sorted_validators = api.new_sorted_index()?;
             Own(sorted_validators)
         };
 
@@ -379,7 +379,7 @@ impl EpochManagerBlueprint {
                 key,
                 stake,
             } => {
-                api.insert_typed_into_sorted_store(
+                api.insert_typed_into_sorted_index(
                     secondary_index.as_node_id(),
                     index_key,
                     (address, Validator { key, stake }),
@@ -387,13 +387,13 @@ impl EpochManagerBlueprint {
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let (address, mut validator) = api
-                    .remove_typed_from_sorted_store::<(ComponentAddress, Validator)>(
+                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
                         secondary_index.as_node_id(),
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
-                api.insert_typed_into_sorted_store(
+                api.insert_typed_into_sorted_index(
                     secondary_index.as_node_id(),
                     index_key,
                     (address, validator),
@@ -405,20 +405,20 @@ impl EpochManagerBlueprint {
                 new_stake_amount,
             } => {
                 let (address, mut validator) = api
-                    .remove_typed_from_sorted_store::<(ComponentAddress, Validator)>(
+                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
                         secondary_index.as_node_id(),
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
-                api.insert_typed_into_sorted_store(
+                api.insert_typed_into_sorted_index(
                     secondary_index.as_node_id(),
                     new_index_key,
                     (address, validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                api.remove_from_sorted_store(secondary_index.as_node_id(), &index_key)?;
+                api.remove_from_sorted_index(secondary_index.as_node_id(), &index_key)?;
             }
         }
 
@@ -443,7 +443,7 @@ impl EpochManagerBlueprint {
         let secondary_index = registered_validator_set.validators;
 
         let validators: Vec<(ComponentAddress, Validator)> =
-            api.scap_typed_sorted_store(secondary_index.as_node_id(), max_validators)?;
+            api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 

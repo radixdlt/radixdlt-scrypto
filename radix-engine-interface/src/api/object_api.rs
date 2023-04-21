@@ -44,6 +44,8 @@ pub trait ClientObjectApi<E> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
+    // TODO: Add specific object read/write lock apis
+
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 

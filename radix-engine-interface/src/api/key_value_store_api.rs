@@ -18,4 +18,6 @@ pub trait ClientKeyValueStoreApi<E> {
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
+
+    // TODO: Add specific kv store read/write lock apis
 }

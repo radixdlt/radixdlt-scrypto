@@ -407,7 +407,7 @@ impl NonFungibleVault {
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
 
         let items: Vec<NonFungibleLocalId> =
-            api.scan_typed_iterable_store(&substate_ref.ids.0, u32::MAX)?;
+            api.scan_typed_index(&substate_ref.ids.0, u32::MAX)?;
         let ids = items.into_iter().collect();
         api.sys_drop_lock(handle)?;
         Ok(ids)
@@ -498,7 +498,7 @@ impl NonFungibleVault {
 
         // TODO: Batch remove
         for id in ids {
-            let removed = api.remove_from_iterable_store(
+            let removed = api.remove_from_index(
                 substate_ref.ids.as_node_id(),
                 scrypto_encode(id).unwrap(),
             )?;
@@ -543,7 +543,7 @@ impl NonFungibleVault {
         // TODO: Batch update
         // TODO: Rather than insert, use create_unique?
         for id in resource.ids {
-            api.insert_typed_into_iterable_store(
+            api.insert_typed_into_index(
                 vault.ids.as_node_id(),
                 scrypto_encode(&id).unwrap(),
                 id,

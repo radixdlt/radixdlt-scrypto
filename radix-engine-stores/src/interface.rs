@@ -185,6 +185,11 @@ pub trait SubstateKeyMapper {
 
 /// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
+    /// Convenience method for database readers
+    fn read_mapped_substate<M: SubstateKeyMapper>(&self, node_id: &NodeId, module_id: ModuleId, substate_key: SubstateKey) -> Option<Vec<u8>>{
+        self.get_substate(node_id, module_id, &M::map_to_db_key(substate_key))
+    }
+
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
