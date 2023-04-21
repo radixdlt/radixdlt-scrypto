@@ -598,7 +598,11 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn finalize(mut self, transaction_result: &TransactionResult) -> TransactionExecutionTrace {
+    pub fn finalize(
+        mut self,
+        transaction_result: &TransactionResult,
+        execution_metrics: &mut ExecutionMetrics,
+    ) -> TransactionExecutionTrace {
         match transaction_result {
             TransactionResult::Commit(c) => {
                 let mut execution_traces = Vec::new();
@@ -612,14 +616,14 @@ impl ExecutionTraceModule {
                     c.outcome.is_success(),
                 );
 
+                execution_metrics.execution_cost_units_consumed =
+                    c.fee_summary.execution_cost_sum as usize;
+                execution_metrics.royalties_cost_units_consumed =
+                    c.fee_summary.royalty_cost_sum as usize;
+
                 TransactionExecutionTrace {
                     execution_traces,
                     resource_changes,
-                    execution_metrics: ExecutionMetrics {
-                        execution_cost_units_consumed: c.fee_summary.execution_cost_sum as usize,
-                        royalties_cost_units_consumed: c.fee_summary.royalty_cost_sum as usize,
-                        ..Default::default()
-                    },
                 }
             }
             TransactionResult::Reject(_) | TransactionResult::Abort(_) => {

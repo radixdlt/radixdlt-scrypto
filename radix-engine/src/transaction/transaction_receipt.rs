@@ -31,7 +31,6 @@ pub struct ResourcesUsage {
 pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub execution_metrics: ExecutionMetrics,
 }
 
 impl TransactionExecutionTrace {
@@ -193,6 +192,8 @@ pub struct TransactionReceipt {
     pub result: TransactionResult,
     /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
     pub execution_trace: TransactionExecutionTrace,
+    /// Metrics gathered during transaction execution.
+    pub execution_metrics: ExecutionMetrics,
     /// Optional resource usage trace, controlled by feature flag `resources_usage`.
     pub resources_usage: ResourcesUsage,
 }

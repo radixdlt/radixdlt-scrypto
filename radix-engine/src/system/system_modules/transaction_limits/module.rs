@@ -95,13 +95,16 @@ impl TransactionLimitsModule {
     }
 
     /// Exports metrics to transaction receipt.
-    pub fn finalize(&self, transaction_metrics: &mut ExecutionMetrics) {
-        transaction_metrics.substate_read_count = self.substate_db_read_count;
-        transaction_metrics.substate_write_count = self.substate_db_write_count;
-        transaction_metrics.substate_read_size = self.substate_db_read_size_total;
-        transaction_metrics.substate_write_size = self.substate_db_write_size_total;
-        transaction_metrics.max_wasm_memory_used = self.wasm_max_memory;
-        transaction_metrics.max_invoke_payload_size = self.invoke_payload_max_size;
+    pub fn finalize(&self) -> ExecutionMetrics {
+        ExecutionMetrics {
+            substate_read_count: self.substate_db_read_count,
+            substate_write_count: self.substate_db_write_count,
+            substate_read_size: self.substate_db_read_size_total,
+            substate_write_size: self.substate_db_write_size_total,
+            max_wasm_memory_used: self.wasm_max_memory,
+            max_invoke_payload_size: self.invoke_payload_max_size,
+            ..Default::default()
+        }
     }
 
     /// Checks if maximum WASM memory limit for one instance was exceeded and then

@@ -234,6 +234,7 @@ where
 
         // Finalize
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
+        let mut execution_metrics = system.modules.transaction_limits.finalize();
         let transaction_result = match result_type {
             TransactionResultType::Commit(outcome) => {
                 let is_success = outcome.is_ok();
@@ -275,11 +276,10 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let mut execution_trace = system.modules.execution_trace.finalize(&transaction_result);
-        system
+        let execution_trace = system
             .modules
-            .transaction_limits
-            .finalize(&mut execution_trace.execution_metrics);
+            .execution_trace
+            .finalize(&transaction_result, &mut execution_metrics);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -293,6 +293,7 @@ where
         let receipt = TransactionReceipt {
             result: transaction_result,
             execution_trace,
+            execution_metrics,
             resources_usage,
         };
 
@@ -346,48 +347,28 @@ where
                 println!("{:-^80}", "Execution Metrics");
                 println!(
                     "{:<30}: {:>10}",
-                    "Total Substate Read Bytes",
-                    receipt.execution_trace.execution_metrics.substate_read_size
+                    "Total Substate Read Bytes", receipt.execution_metrics.substate_read_size
                 );
                 println!(
                     "{:<30}: {:>10}",
-                    "Total Substate Write Bytes",
-                    receipt
-                        .execution_trace
-                        .execution_metrics
-                        .substate_write_size
+                    "Total Substate Write Bytes", receipt.execution_metrics.substate_write_size
                 );
                 println!(
                     "{:<30}: {:>10}",
-                    "Substate Read Count",
-                    receipt
-                        .execution_trace
-                        .execution_metrics
-                        .substate_read_count
+                    "Substate Read Count", receipt.execution_metrics.substate_read_count
                 );
                 println!(
                     "{:<30}: {:>10}",
-                    "Substate Write Count",
-                    receipt
-                        .execution_trace
-                        .execution_metrics
-                        .substate_write_count
+                    "Substate Write Count", receipt.execution_metrics.substate_write_count
                 );
                 println!(
                     "{:<30}: {:>10}",
-                    "Peak WASM Memory Usage Bytes",
-                    receipt
-                        .execution_trace
-                        .execution_metrics
-                        .max_wasm_memory_used
+                    "Peak WASM Memory Usage Bytes", receipt.execution_metrics.max_wasm_memory_used
                 );
                 println!(
                     "{:<30}: {:>10}",
                     "Max Invoke Payload Size Bytes",
-                    receipt
-                        .execution_trace
-                        .execution_metrics
-                        .max_invoke_payload_size
+                    receipt.execution_metrics.max_invoke_payload_size
                 );
                 println!("{:-^80}", "Application Logs");
                 for (level, message) in &commit.application_logs {
