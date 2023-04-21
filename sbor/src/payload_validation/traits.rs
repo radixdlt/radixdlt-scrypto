@@ -11,5 +11,5 @@ pub trait ValidatableCustomTypeExtension: CustomTypeExtension {
         custom_value_ref: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
         custom_type_kind: &Self::CustomTypeKind<L>,
         context: &Self::ValidationContext,
-    );
+    ) -> Result<(), ValidationError>;
 }

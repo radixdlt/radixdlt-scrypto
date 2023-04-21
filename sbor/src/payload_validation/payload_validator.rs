@@ -5,18 +5,18 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayloadValidationError<E: CustomTypeExtension> {
     TraversalError(TypedTraversalError<E>),
-    TypeValidationError(TypeValidationError),
+    ValidationError(ValidationError),
     SchemaInconsistency,
 }
 
-impl<E: CustomTypeExtension> From<TypeValidationError> for PayloadValidationError<E> {
-    fn from(value: TypeValidationError) -> Self {
-        Self::TypeValidationError(value)
+impl<E: CustomTypeExtension> From<ValidationError> for PayloadValidationError<E> {
+    fn from(value: ValidationError) -> Self {
+        Self::ValidationError(value)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TypeValidationError {
+pub enum ValidationError {
     LengthValidationError {
         required: LengthValidation,
         actual: usize,
@@ -61,6 +61,7 @@ pub enum TypeValidationError {
         required: NumericValidation<u128>,
         actual: u128,
     },
+    CustomError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -92,7 +93,7 @@ macro_rules! numeric_validation_match {
                 _ => return Err(PayloadValidationError::SchemaInconsistency),
             };
             if !$numeric_validation.is_valid(value) {
-                return Err(TypeValidationError::$error_type {
+                return Err(ValidationError::$error_type {
                     required: *$numeric_validation,
                     actual: value,
                 }
@@ -102,15 +103,16 @@ macro_rules! numeric_validation_match {
     }};
 }
 
-pub fn validate_payload_against_schema<'s, E: CustomTypeExtension>(
+pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension>(
     payload: &[u8],
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
+    context: &E::ValidationContext,
 ) -> Result<(), LocatedValidationError<'s, E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
     loop {
         let typed_event = traverser.next_event();
-        if validate_event_with_type::<E>(&schema, &typed_event.event).map_err(|error| {
+        if validate_event_with_type::<E>(&schema, &typed_event.event, context).map_err(|error| {
             LocatedValidationError {
                 error,
                 location: typed_event.full_location(),
@@ -121,9 +123,10 @@ pub fn validate_payload_against_schema<'s, E: CustomTypeExtension>(
     }
 }
 
-fn validate_event_with_type<E: CustomTypeExtension>(
+fn validate_event_with_type<E: ValidatableCustomTypeExtension>(
     schema: &Schema<E>,
     event: &TypedTraversalEvent<E>,
+    context: &E::ValidationContext,
 ) -> Result<bool, PayloadValidationError<E>> {
     match event {
         TypedTraversalEvent::ContainerStart(type_index, header) => {
@@ -131,7 +134,7 @@ fn validate_event_with_type<E: CustomTypeExtension>(
         }
         TypedTraversalEvent::ContainerEnd(_, _) => Ok(false), // Validation already handled at Container Start
         TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
-            validate_terminal_value::<E>(schema, value_ref, *type_index).map(|_| false)
+            validate_terminal_value::<E>(schema, value_ref, *type_index, context).map(|_| false)
         }
         TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => {
             validate_terminal_value_batch::<E>(schema, value_batch_ref, *type_index).map(|_| false)
@@ -158,7 +161,7 @@ pub fn validate_container<E: CustomTypeExtension>(
                 return Err(PayloadValidationError::SchemaInconsistency);
             };
             if !length_validation.is_valid(*length) {
-                return Err(TypeValidationError::LengthValidationError {
+                return Err(ValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: *length,
                 }
@@ -170,7 +173,7 @@ pub fn validate_container<E: CustomTypeExtension>(
                 return Err(PayloadValidationError::SchemaInconsistency);
             };
             if !length_validation.is_valid(*length) {
-                return Err(TypeValidationError::LengthValidationError {
+                return Err(ValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: *length,
                 }
@@ -182,12 +185,22 @@ pub fn validate_container<E: CustomTypeExtension>(
     Ok(())
 }
 
-pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
+pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension>(
     schema: &Schema<E>,
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
+    context: &E::ValidationContext,
 ) -> Result<(), PayloadValidationError<E>> {
-    // TODO: apply contextual custom type validation here!
+    // Apply contextual custom type validation here!
+    if let TerminalValueRef::Custom(custom_value_ref) = value {
+        let custom_type_kind = match schema.resolve_type_kind(type_index)
+        .ok_or(PayloadValidationError::SchemaInconsistency)? {
+            TypeKind::Custom(x) => x,
+            _ => panic!("Found non-custom type kind for custom value; should've been checked by `custom_type_kind_matches_value_kind()` function"),
+        };
+
+        E::validate_custom_value(custom_value_ref, custom_type_kind, context)?;
+    }
 
     match schema
         .resolve_type_validation(type_index)
@@ -229,7 +242,7 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
                 return Err(PayloadValidationError::SchemaInconsistency);
             };
             if !length_validation.is_valid(x.len()) {
-                return Err(TypeValidationError::LengthValidationError {
+                return Err(ValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: x.len(),
                 }
@@ -259,7 +272,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
             let TerminalValueBatchRef::U8(value_batch) = value_batch;
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
-                    return Err(TypeValidationError::U8ValidationError {
+                    return Err(ValidationError::U8ValidationError {
                         required: *numeric_validation,
                         actual: *byte,
                     }
@@ -313,8 +326,8 @@ mod tests {
         assert!(matches!(
             result,
             Err(LocatedValidationError {
-                error: PayloadValidationError::TypeValidationError(
-                    TypeValidationError::LengthValidationError {
+                error: PayloadValidationError::ValidationError(
+                    ValidationError::LengthValidationError {
                         required: LengthValidation {
                             min: Some(16),
                             max: Some(16)
@@ -433,8 +446,8 @@ mod tests {
                 LocalTypeIndex::SchemaLocalIndex(0),
             )
             .map_err(|e| e.error),
-            Err(PayloadValidationError::TypeValidationError(
-                TypeValidationError::U8ValidationError {
+            Err(PayloadValidationError::ValidationError(
+                ValidationError::U8ValidationError {
                     required: NumericValidation {
                         min: Some(5),
                         max: Some(6)
@@ -451,8 +464,8 @@ mod tests {
                 LocalTypeIndex::SchemaLocalIndex(0),
             )
             .map_err(|e| e.error),
-            Err(PayloadValidationError::TypeValidationError(
-                TypeValidationError::LengthValidationError {
+            Err(PayloadValidationError::ValidationError(
+                ValidationError::LengthValidationError {
                     required: LengthValidation {
                         min: Some(0),
                         max: Some(1)
