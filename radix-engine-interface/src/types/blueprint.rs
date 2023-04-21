@@ -8,7 +8,7 @@ use sbor::rust::string::ToString;
 pub struct ObjectInfo {
     pub blueprint: Blueprint,
     pub global: bool,
-    pub type_parent: Option<GlobalAddress>,
+    pub blueprint_parent: Option<GlobalAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -216,6 +216,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
+    fn lock_parent_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+        todo!()
+    }
+
     fn get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         todo!()
     }

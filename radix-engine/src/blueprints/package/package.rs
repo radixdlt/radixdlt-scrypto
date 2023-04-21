@@ -140,7 +140,7 @@ where
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
-            type_parent: None,
+            blueprint_parent: None,
         })),
     );
     let mut metadata_init = BTreeMap::new();

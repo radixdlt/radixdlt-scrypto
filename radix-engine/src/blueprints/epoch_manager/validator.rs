@@ -129,7 +129,7 @@ impl ValidatorBlueprint {
 
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
-        let manager = api.get_info()?.type_parent.unwrap();
+        let manager = api.get_info()?.blueprint_parent.unwrap();
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
@@ -261,7 +261,7 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let manager = api.get_info()?.type_parent.unwrap();
+            let manager = api.get_info()?.blueprint_parent.unwrap();
             api.call_method(
                 manager.as_node_id(),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
@@ -280,7 +280,7 @@ impl ValidatorBlueprint {
         let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
-        let manager = api.get_info()?.type_parent.unwrap();
+        let manager = api.get_info()?.blueprint_parent.unwrap();
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
@@ -339,7 +339,7 @@ impl ValidatorBlueprint {
         // Update Epoch Manager
         {
             if let Some(index_key) = &validator.sorted_key {
-                let manager = api.get_info()?.type_parent.unwrap();
+                let manager = api.get_info()?.blueprint_parent.unwrap();
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
                     index_key: index_key.clone(),
                     key,

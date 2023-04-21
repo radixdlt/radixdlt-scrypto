@@ -206,7 +206,7 @@ where
             })
             .collect();
 
-        let type_parent = if let Some(parent) = &schema.parent {
+        let blueprint_parent = if let Some(parent) = &schema.parent {
             match actor {
                 Actor::Method {
                     global_address: Some(address),
@@ -236,7 +236,7 @@ where
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
-                        type_parent
+                        blueprint_parent
                     })
                 ).to_substates(),
             ),
@@ -964,7 +964,7 @@ where
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, blueprint) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
             Actor::Method {
                 node_id,
@@ -1008,6 +1008,32 @@ where
     }
 
     #[trace_resources]
+    fn lock_parent_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, object_module_id, blueprint) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                blueprint,
+                ..
+            } => (node_id, module_id, blueprint),
+        };
+
+        let parent = self.get_info()?.blueprint_parent.ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
+
+        // TODO: Check if valid substate_key for node_id
+        self.api.kernel_lock_substate(
+                parent.as_node_id(),
+                SysModuleId::Object.into(),
+                &SubstateKey::Tuple(field),
+                flags,
+        )
+    }
+
+    #[trace_resources]
     fn get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, module_id) = match &actor {
@@ -1024,17 +1050,17 @@ where
             ObjectModuleId::Metadata => ObjectInfo {
                 blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
                 global: true,
-                type_parent: None,
+                blueprint_parent: None,
             },
             ObjectModuleId::AccessRules => ObjectInfo {
                 blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
                 global: true,
-                type_parent: None,
+                blueprint_parent: None,
             },
             ObjectModuleId::Royalty => ObjectInfo {
                 blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
                 global: true,
-                type_parent: None,
+                blueprint_parent: None,
             },
         };
 

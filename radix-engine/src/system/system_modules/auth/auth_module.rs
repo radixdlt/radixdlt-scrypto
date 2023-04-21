@@ -138,7 +138,7 @@ impl AuthModule {
 
                 let mut auths = Vec::new();
 
-                if let Some(parent) = info.type_parent {
+                if let Some(parent) = info.blueprint_parent {
                     let (ref_type, _) =
                         api.kernel_get_node_info(node_id)
                             .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -445,7 +445,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
-                    type_parent: None,
+                    blueprint_parent: None,
                 })).to_substates()
             ),
         )?;

@@ -191,7 +191,9 @@ pub enum CallFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     GlobalAddressDoesNotExist,
+    NoParent,
     NotAnObject,
+    NotAMethod,
     NotATuple,
     NotAKeyValueStore,
     NotASortedStore,

@@ -109,7 +109,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::IterableStore | TypeInfoSubstate::SortedStore => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
-                type_parent,
+                                         blueprint_parent: type_parent,
                 global: _,
             }) => {
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
