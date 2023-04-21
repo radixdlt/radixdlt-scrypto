@@ -74,8 +74,9 @@ pub enum PackageOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ResourceManagerOffset {
-    ResourceManager,
+pub enum FungibleResourceManagerOffset {
+    Divisibility,
+    TotalSupply,
 }
 
 #[repr(u8)]
@@ -185,7 +186,7 @@ into_substate_key!(TypeInfoOffset);
 into_substate_key!(RoyaltyOffset);
 into_substate_key!(ComponentOffset);
 into_substate_key!(PackageOffset);
-into_substate_key!(ResourceManagerOffset);
+into_substate_key!(FungibleResourceManagerOffset);
 into_substate_key!(FungibleVaultOffset);
 into_substate_key!(NonFungibleResourceManagerOffset);
 into_substate_key!(NonFungibleVaultOffset);

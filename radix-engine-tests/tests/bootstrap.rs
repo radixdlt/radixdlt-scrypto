@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
+use radix_engine::blueprints::resource::{FungibleResourceManagerTotalSupplySubstate};
 use radix_engine::system::bootstrap::{
     create_genesis, GenesisData, GenesisResource, GenesisValidator,
 };
@@ -150,15 +150,15 @@ fn test_genesis_resource_with_initial_allocation() {
     let commit_result = transaction_receipt.expect_commit(true);
     substate_store.commit(&commit_result.state_updates);
 
-    let resource_manager_substate = substate_store
-        .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerSubstate>(
+    let total_supply = substate_store
+        .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address,
             SysModuleId::Object.into(),
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::TotalSupply.into(),
         )
         .unwrap();
 
-    assert_eq!(resource_manager_substate.total_supply, dec!("105"));
+    assert_eq!(total_supply, dec!("105"));
 
     // TODO: Move this to system wrapper around substate_store
     let key = scrypto_encode("symbol").unwrap();

@@ -68,7 +68,10 @@ impl ResourceManagerNativePackage {
 
             let mut substates = Vec::new();
             substates.push(
-                aggregator.add_child_type_and_descendents::<FungibleResourceManagerSubstate>(),
+                aggregator.add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(),
+            );
+            substates.push(
+                aggregator.add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
             );
 
             let mut functions = BTreeMap::new();

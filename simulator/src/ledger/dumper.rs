@@ -154,11 +154,18 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             total_supply
         );
     } else {
-        let resource_manager = substate_db
-            .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerSubstate>(
+        let divisibility = substate_db
+            .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                ResourceManagerOffset::ResourceManager.into(),
+                FungibleResourceManagerOffset::Divisibility.into(),
+            )
+            .ok_or(EntityDumpError::ResourceManagerNotFound)?;
+        let total_supply = substate_db
+            .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
+                resource_address.as_node_id(),
+                SysModuleId::Object.into(),
+                FungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
@@ -166,13 +173,13 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             output,
             "{}: {:?}",
             "Divisibility".green().bold(),
-            resource_manager.divisibility
+            divisibility
         );
         writeln!(
             output,
             "{}: {}",
             "Total Supply".green().bold(),
-            resource_manager.total_supply
+            total_supply
         );
     }
     Ok(())
