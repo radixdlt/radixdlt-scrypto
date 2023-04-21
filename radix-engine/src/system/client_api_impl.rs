@@ -78,7 +78,10 @@ where
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let LockInfo {
-            node_id, module_id, ..
+            node_id,
+            module_id,
+            substate_key,
+            ..
         } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&SysModuleId::ObjectState) {
@@ -102,7 +105,40 @@ where
                         }
                     }
                 }
-                _ => {}
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                    let handle = self.kernel_lock_substate(
+                        blueprint.package_address.as_node_id(),
+                        SysModuleId::ObjectState,
+                        &PackageOffset::Info.into(),
+                        LockFlags::read_only(),
+                    )?;
+                    let package_info: PackageInfoSubstate = self.sys_read_substate_typed(handle)?;
+                    let blueprint_schema = package_info
+                        .schema
+                        .blueprints
+                        .get(&blueprint.blueprint_name)
+                        .expect("Missing blueprint schema")
+                        .clone();
+                    self.kernel_drop_lock(handle)?;
+
+                    if let Some(index) = blueprint_schema
+                        .substates
+                        .get(substate_key.as_ref()[0] as usize)
+                    {
+                        validate_payload_against_schema(
+                            &buffer,
+                            &blueprint_schema.schema,
+                            *index,
+                            &(),
+                        )
+                        .map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+                    } else {
+                        // TODO: we should have schema for every object!
+                        // Currently, metadata object does not.
+                    }
+                }
             }
         }
 
