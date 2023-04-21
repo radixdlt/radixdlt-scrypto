@@ -160,7 +160,7 @@ macro_rules! into_substate_key {
     ($t:ty) => {
         impl Into<SubstateKey> for $t {
             fn into(self) -> SubstateKey {
-                SubstateKey::Key(vec![self as u8])
+                SubstateKey::Tuple(self as u8)
             }
         }
 

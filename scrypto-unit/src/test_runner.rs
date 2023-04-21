@@ -302,7 +302,7 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
-        let metadata_key = JmtKeyMapper::map_to_db_key(SubstateKey::Key(key));
+        let metadata_key = JmtKeyMapper::map_to_db_key(SubstateKey::Map(key));
 
         let metadata_entry = self
             .substate_db

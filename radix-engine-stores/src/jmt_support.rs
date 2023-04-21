@@ -7,13 +7,11 @@ pub struct JmtKeyMapper;
 impl SubstateKeyMapper for JmtKeyMapper {
     fn map_to_db_key(key: SubstateKey) -> Vec<u8> {
         let bytes = match key {
-            SubstateKey::Key(key) => {
-                // TODO: Split into Map/Tuple
-                if key.len() == 1 {
-                    key
-                } else {
-                    hash(key).0[12..32].to_vec()
-                }
+            SubstateKey::Tuple(field) => {
+                vec![field]
+            },
+            SubstateKey::Map(key) => {
+                hash(key).0[12..32].to_vec()
             }
             SubstateKey::Sorted(bucket, key) => {
                 let mut bytes = bucket.to_be_bytes().to_vec();

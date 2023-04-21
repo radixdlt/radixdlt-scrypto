@@ -184,7 +184,7 @@ pub struct ModuleId(pub u8);
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
-    // TODO: Split into Map/Tuple
-    Key(Vec<u8>),
+    Tuple(u8),
+    Map(Vec<u8>),
     Sorted(u16, Vec<u8>),
 }

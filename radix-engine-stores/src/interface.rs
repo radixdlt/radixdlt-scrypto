@@ -220,7 +220,7 @@ mod tests {
     fn test_encode_decode_substate_id() {
         let node_id = NodeId([1u8; NodeId::LENGTH]);
         let module_id = ModuleId(2);
-        let substate_key = SubstateKey::Key(vec![3]);
+        let substate_key = SubstateKey::Map(vec![3]);
         let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
         assert_eq!(
             substate_id,

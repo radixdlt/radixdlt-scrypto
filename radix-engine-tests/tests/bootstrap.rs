@@ -165,7 +165,7 @@ fn test_genesis_resource_with_initial_allocation() {
 
     // TODO: Move this to system wrapper around substate_store
     let key = scrypto_encode("symbol").unwrap();
-    let metadata_key = JmtKeyMapper::map_to_db_key(SubstateKey::Key(key));
+    let metadata_key = JmtKeyMapper::map_to_db_key(SubstateKey::Map(key));
 
     let persisted_symbol_metadata_entry = substate_store
         .get_substate(

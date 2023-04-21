@@ -146,7 +146,7 @@ where
     let mut metadata_init = BTreeMap::new();
     for (key, value) in metadata {
         metadata_init.insert(
-            SubstateKey::Key(scrypto_encode(&key).unwrap()),
+            SubstateKey::Map(scrypto_encode(&key).unwrap()),
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }

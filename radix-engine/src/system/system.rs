@@ -103,7 +103,7 @@ where
 
         // TODO: Check if valid substate_key for node_id
 
-        let substate_key = SubstateKey::Key(vec![field]);
+        let substate_key = SubstateKey::Tuple(field);
 
         self.api
             .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
@@ -247,7 +247,7 @@ where
             .map(|(i, x)| {
                 (
                     // TODO check size during package publishing time
-                    SubstateKey::Key(vec![i as u8]),
+                    SubstateKey::Tuple(i as u8),
                     IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
                 )
             })
@@ -685,7 +685,7 @@ where
             }
         };
 
-        let substate_key = SubstateKey::Key(key.clone());
+        let substate_key = SubstateKey::Map(key.clone());
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
@@ -744,7 +744,7 @@ where
         }
 
         let module_id = SysModuleId::Object.into();
-        let substate_key = SubstateKey::Key(key);
+        let substate_key = SubstateKey::Map(key);
 
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -764,7 +764,7 @@ where
         }
 
         let module_id = SysModuleId::Object.into();
-        let substate_key = SubstateKey::Key(key);
+        let substate_key = SubstateKey::Map(key);
 
         let rtn = self
             .api
