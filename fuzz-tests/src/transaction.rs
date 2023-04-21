@@ -579,7 +579,7 @@ impl Fuzzer {
                         entries.insert(
                             NonFungibleLocalId::integer(self.rng.gen_range(0u64..1000u64)),
                             (to_manifest_value(&(
-                                self.get_random_string(1000),
+                                self.get_random_string(100),
                                 self.get_random_decimal(None),
                             )),),
                         );
@@ -663,7 +663,7 @@ impl Fuzzer {
                         entries.insert(
                             NonFungibleLocalId::integer(self.rng.gen_range(0u64..1000u64)),
                             (to_manifest_value(&(
-                                self.get_random_string(1000),
+                                self.get_random_string(100),
                                 self.get_random_decimal(None),
                             )),),
                         );
@@ -682,7 +682,7 @@ impl Fuzzer {
                     let entries_len = self.rng.gen_range(0usize..100usize);
                     for _i in 0..entries_len {
                         entries.push((to_manifest_value(&(
-                            self.get_random_string(1000),
+                            self.get_random_string(100),
                             self.get_random_decimal(None),
                         )),));
                     }
@@ -697,14 +697,23 @@ impl Fuzzer {
                 30 => Some(Instruction::PopFromAuthZone {}),
                 // PublishPackage
                 31 => {
+                    // publish package generates pretty big manifest files, which are hard to fuzz.
+                    // Do not generate many of them
                     #[cfg(test)]
-                    builder.publish_package(self.package.code.clone(), self.package.schema.clone());
+                    if self.rng.gen_range(0..100) < 5 {
+                        builder.publish_package(
+                            self.package.code.clone(),
+                            self.package.schema.clone(),
+                        );
+                    }
                     None
                 }
                 // PublishPackageAdvanced
                 32 => {
+                    // publish package generates pretty big manifest files, which are hard to fuzz.
+                    // Do not generate many of them
                     #[cfg(test)]
-                    {
+                    if self.rng.gen_range(0..100) < 5 {
                         let royalty_config = BTreeMap::new();
                         let metadata = BTreeMap::from([("name".to_string(), "Token".to_string())]);
                         let access_rules = AccessRulesConfig::new()
@@ -733,7 +742,7 @@ impl Fuzzer {
                 //
                 35 => Some(Instruction::RemoveMetadata {
                     entity_address: GlobalAddress::from(component_address),
-                    key: self.get_random_string(1000),
+                    key: self.get_random_string(100),
                 }),
                 // ReturnToWorktop
                 36 => buckets
@@ -745,7 +754,7 @@ impl Fuzzer {
                     let rules_len = self.rng.gen_range(0usize..100usize);
                     for _i in 0..rules_len {
                         royalty_config = royalty_config.add_rule(
-                            &self.get_random_string(1000),
+                            &self.get_random_string(100),
                             self.rng.gen_range(0u32..1_000_000_u32),
                         );
                     }
@@ -759,10 +768,8 @@ impl Fuzzer {
                 // SetMetadata
                 38 => Some(Instruction::SetMetadata {
                     entity_address: GlobalAddress::from(component_address),
-                    key: self.get_random_string(1000),
-                    value: MetadataEntry::Value(MetadataValue::String(
-                        self.get_random_string(1000),
-                    )),
+                    key: self.get_random_string(100),
+                    value: MetadataEntry::Value(MetadataValue::String(self.get_random_string(100))),
                 }),
                 // SetMethodAccessRule
                 39 => Some(Instruction::SetMethodAccessRule {
@@ -776,12 +783,12 @@ impl Fuzzer {
                     let rules_len = self.rng.gen_range(0usize..100usize);
                     for _i in 0..rules_len {
                         royalty_config = royalty_config.add_rule(
-                            &self.get_random_string(1000),
+                            &self.get_random_string(100),
                             self.rng.gen_range(0u32..1_000_000_u32),
                         );
                     }
                     let royalty_config =
-                        BTreeMap::from([(self.get_random_string(1000), royalty_config.default(1))]);
+                        BTreeMap::from([(self.get_random_string(100), royalty_config.default(1))]);
 
                     Some(Instruction::SetPackageRoyaltyConfig {
                         package_address: RESOURCE_MANAGER_PACKAGE,
