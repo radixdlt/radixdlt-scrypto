@@ -16,6 +16,7 @@
         "descendents",
         "eddsa",
         "flamegraph",
+        "Formattable",
         "instantiatable",
         "Instrumenter",
         "Invokable",

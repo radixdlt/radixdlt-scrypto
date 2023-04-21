@@ -309,7 +309,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index, &());
         assert!(result.is_ok())
     }
 
@@ -322,7 +322,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index, &());
         assert!(matches!(
             result,
             Err(LocatedValidationError {
@@ -400,7 +400,7 @@ mod tests {
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
-        let result = validate_payload_against_schema(&bytes, &schema, type_index);
+        let result = validate_payload_against_schema(&bytes, &schema, type_index, &());
         assert!(result.is_ok())
     }
 
@@ -435,6 +435,7 @@ mod tests {
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                &()
             ),
             Ok(())
         );
@@ -444,6 +445,7 @@ mod tests {
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                &()
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
@@ -462,6 +464,7 @@ mod tests {
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                &()
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
@@ -525,7 +528,7 @@ mod tests {
         let Err(error) = validate_payload_against_schema(
             &cut_off_payload,
             &schema,
-            type_index,
+            type_index, &()
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -560,7 +563,7 @@ mod tests {
         let Err(error) = validate_payload_against_schema(
             &payload,
             &schema,
-            type_index,
+            type_index, &()
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -591,7 +594,7 @@ mod tests {
         let Err(error) = validate_payload_against_schema(
             &payload,
             &schema,
-            type_index,
+            type_index, &()
         ) else {
             panic!("Validation did not error with too short a payload");
         };
