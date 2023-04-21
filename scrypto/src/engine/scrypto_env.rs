@@ -216,6 +216,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
+    fn get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+        todo!()
+    }
+
     fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 

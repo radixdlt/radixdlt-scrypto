@@ -1009,30 +1009,66 @@ where
     }
 
     #[trace_resources]
+    fn get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, module_id) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                ..
+            } => (node_id, module_id),
+        };
+
+        let info = match module_id {
+            ObjectModuleId::SELF => self.get_object_info(node_id)?,
+            ObjectModuleId::Metadata => {
+                ObjectInfo {
+                    blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
+                    global: true,
+                    type_parent: None,
+                }
+            }
+            ObjectModuleId::AccessRules => {
+                ObjectInfo {
+                    blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                    global: true,
+                    type_parent: None,
+                }
+            }
+            ObjectModuleId::Royalty => {
+                ObjectInfo {
+                    blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                    global: true,
+                    type_parent: None,
+                }
+            }
+        };
+
+        Ok(info)
+    }
+
+    #[trace_resources]
     fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        self.api
-            .kernel_get_current_actor()
-            .and_then(|e| match e {
-                Actor::Method {
-                    global_address: Some(address),
-                    ..
-                } => Some(address),
-                _ => None,
-            })
-            .ok_or(RuntimeError::SystemError(
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        match actor {
+            Actor::Method {
+                global_address: Some(address),
+                ..
+            } => Ok(address),
+            _ => Err(RuntimeError::SystemError(
                 SystemError::GlobalAddressDoesNotExist,
-            ))
+            )),
+        }
     }
 
     fn get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self
-            .api
-            .kernel_get_current_actor()
-            .unwrap()
-            .blueprint()
-            .clone())
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        Ok(actor.blueprint().clone())
     }
 }
 

@@ -9,6 +9,9 @@ pub trait ClientActorApi<E: Debug> {
 
     // TODO: Add specific object read/write lock apis
 
+    fn get_info(&mut self) -> Result<ObjectInfo, E>;
+
     fn get_global_address(&mut self) -> Result<GlobalAddress, E>;
+
     fn get_blueprint(&mut self) -> Result<Blueprint, E>;
 }
