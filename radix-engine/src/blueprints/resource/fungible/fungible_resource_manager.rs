@@ -322,16 +322,9 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.lock_field(
-            FungibleResourceManagerOffset::Divisibility.into(),
-            LockFlags::read_only(),
-        )?;
-        let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
-        let info = FungibleVaultDivisibilitySubstate { divisibility };
         let vault_id = api.new_object(
             FUNGIBLE_VAULT_BLUEPRINT,
             vec![
-                scrypto_encode(&info).unwrap(),
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
             ],

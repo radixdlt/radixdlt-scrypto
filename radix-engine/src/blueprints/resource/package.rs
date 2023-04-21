@@ -413,9 +413,6 @@ impl ResourceManagerNativePackage {
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(
-                aggregator.add_child_type_and_descendents::<FungibleVaultDivisibilitySubstate>(),
-            );
             substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 

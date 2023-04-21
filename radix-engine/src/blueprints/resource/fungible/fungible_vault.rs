@@ -10,11 +10,6 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct FungibleVaultDivisibilitySubstate {
-    pub divisibility: u8,
-}
-
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {
@@ -28,9 +23,8 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleVaultOffset::Info.into(), LockFlags::read_only())?;
-        let info: FungibleVaultDivisibilitySubstate = api.sys_read_substate_typed(handle)?;
-        let divisibility = info.divisibility;
+        let handle = api.lock_parent_field(FungibleResourceManagerOffset::Divisibility.into(), LockFlags::read_only())?;
+        let divisibility: u8 = api.sys_read_substate_typed(handle)?;
         api.sys_drop_lock(handle)?;
         Ok(divisibility)
     }

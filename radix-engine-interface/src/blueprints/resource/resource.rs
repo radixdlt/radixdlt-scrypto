@@ -10,6 +10,7 @@ pub enum ResourceError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
 pub struct LiquidFungibleResource {
     /// The total amount.
     amount: Decimal,
