@@ -39,10 +39,7 @@ pub struct CurrentValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct SecondaryIndexSubstate {
-    pub validators: Own, //BTreeMap<Vec<u8>, (ComponentAddress, Validator)>,
-}
+pub type SecondaryIndexSubstate = Own;
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
@@ -91,7 +88,7 @@ impl EpochManagerBlueprint {
             )?;
         };
 
-        let validators = {
+        let registered_validators = {
             let sorted_validators = api.new_sorted_index()?;
             Own(sorted_validators)
         };
@@ -107,8 +104,6 @@ impl EpochManagerBlueprint {
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: BTreeMap::new(),
             };
-
-            let registered_validators = SecondaryIndexSubstate { validators };
 
             api.new_object(
                 EPOCH_MANAGER_BLUEPRINT,
@@ -352,8 +347,7 @@ impl EpochManagerBlueprint {
             EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::read_only(),
         )?;
-        let registered_validators: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
-        let secondary_index = registered_validators.validators;
+        let secondary_index: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
 
         match update {
             UpdateSecondaryIndex::Create {
@@ -417,9 +411,8 @@ impl EpochManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let registered_validator_set: SecondaryIndexSubstate =
+        let secondary_index: SecondaryIndexSubstate =
             api.sys_read_substate_typed(handle)?;
-        let secondary_index = registered_validator_set.validators;
 
         let validators: Vec<(ComponentAddress, Validator)> =
             api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
