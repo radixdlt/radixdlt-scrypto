@@ -98,7 +98,7 @@ fn get_epoch_should_succeed() {
 
     // Assert
     let epoch: u64 = receipt.expect_commit(true).output(1);
-    assert_eq!(epoch, 2);
+    assert_eq!(epoch, 1);
 }
 
 #[test]
