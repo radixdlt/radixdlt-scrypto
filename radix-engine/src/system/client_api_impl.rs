@@ -85,7 +85,7 @@ where
             let type_info = TypeInfoBlueprint::get_type(&node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
-                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
+                    validate_payload_against_schema(&buffer, &schema.schema, schema.value, &())
                         .map_err(|_| {
                             RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
                         })?;
@@ -162,15 +162,20 @@ where
             ));
         }
         for i in 0..object_states.len() {
-            validate_payload_against_schema(&object_states[i], &schema.schema, schema.substates[i])
-                .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::SchemaValidationError(
-                            blueprint_ident.to_string(),
-                            err.error_message(&schema.schema),
-                        ),
-                    )))
-                })?;
+            validate_payload_against_schema(
+                &object_states[i],
+                &schema.schema,
+                schema.substates[i],
+                &(),
+            )
+            .map_err(|err| {
+                RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::SchemaValidationError(
+                        blueprint_ident.to_string(),
+                        err.error_message(&schema.schema),
+                    ),
+                )))
+            })?;
         }
         self.kernel_drop_lock(handle)?;
 
@@ -717,6 +722,7 @@ where
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
+            &(),
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(

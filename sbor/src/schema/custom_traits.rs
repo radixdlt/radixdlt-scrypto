@@ -4,10 +4,6 @@ use crate::*;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
-    type CustomTypeExtension: CustomTypeExtension<
-        CustomValueKind = Self::CustomValueKind,
-        CustomTypeKind<L> = Self,
-    >;
 }
 
 pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
@@ -19,7 +15,6 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
         L,
         CustomValueKind = Self::CustomValueKind,
-        CustomTypeExtension = Self,
     >;
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
 
@@ -37,12 +32,12 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
 
     fn custom_type_kind_is_valid(
         context: &SchemaContext,
-        custom_type_kind: &SchemaCustomTypeKind<Self>,
+        custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError>;
 
     fn custom_type_kind_matches_metadata(
         context: &SchemaContext,
-        custom_type_kind: &SchemaCustomTypeKind<Self>,
+        custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError>;
 

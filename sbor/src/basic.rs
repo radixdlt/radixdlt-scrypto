@@ -141,8 +141,6 @@ pub enum NoCustomTypeKind {}
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
     type CustomValueKind = NoCustomValueKind;
-
-    type CustomTypeExtension = NoCustomTypeExtension;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -183,14 +181,14 @@ impl CustomTypeExtension for NoCustomTypeExtension {
 
     fn custom_type_kind_is_valid(
         _: &SchemaContext,
-        _: &SchemaCustomTypeKind<Self>,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
     fn custom_type_kind_matches_metadata(
         _: &SchemaContext,
-        _: &SchemaCustomTypeKind<Self>,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
         _: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")

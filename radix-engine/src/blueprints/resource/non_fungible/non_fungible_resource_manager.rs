@@ -47,7 +47,7 @@ where
 {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
-    let key_schema = generate_full_schema(aggregator);
+    let key_schema = generate_full_schema::<ScryptoCustomTypeExtension>(aggregator);
 
     let mut kv_schema = non_fungible_schema.schema;
 

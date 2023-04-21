@@ -10,9 +10,9 @@ pub fn generate_full_schema_from_single_type<
     (type_index, generate_full_schema(aggregator))
 }
 
-pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
-    aggregator: TypeAggregator<C>,
-) -> Schema<C::CustomTypeExtension> {
+pub fn generate_full_schema<E: CustomTypeExtension>(
+    aggregator: TypeAggregator<E::CustomTypeKind<GlobalTypeId>>,
+) -> Schema<E> {
     let type_count = aggregator.types.len();
     let type_indices = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
 
@@ -20,10 +20,7 @@ pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
     let mut type_metadata = Vec::with_capacity(type_count);
     let mut type_validations = Vec::with_capacity(type_count);
     for (_type_hash, type_data) in aggregator.types {
-        type_kinds.push(linearize::<C::CustomTypeExtension>(
-            type_data.kind,
-            &type_indices,
-        ));
+        type_kinds.push(linearize::<E>(type_data.kind, &type_indices));
         type_metadata.push(type_data.metadata);
         type_validations.push(type_data.validation);
     }

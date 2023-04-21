@@ -54,6 +54,7 @@ fn validate_input(
         input.as_slice(),
         &blueprint_schema.schema,
         function_schema.input,
+        &(),
     )
     .map_err(|err| {
         RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
@@ -83,6 +84,7 @@ fn validate_output(
         value.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,
+        &(),
     )
     .map_err(|err| {
         RuntimeError::InterpreterError(InterpreterError::ScryptoOutputSchemaNotMatch(

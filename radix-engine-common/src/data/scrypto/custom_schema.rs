@@ -30,16 +30,10 @@ pub enum ScryptoCustomTypeKind {
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
     type CustomValueKind = ScryptoCustomValueKind;
-    type CustomTypeExtension = ScryptoCustomTypeExtension;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ScryptoCustomTypeValidation {}
-
-impl CustomTypeValidation for ScryptoCustomTypeValidation {}
-
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum ScryptoCustomTypeExtension {}
+pub struct ScryptoCustomTypeExtension {}
 
 lazy_static::lazy_static! {
     static ref EMPTY_SCHEMA: Schema<ScryptoCustomTypeExtension> = {
@@ -87,7 +81,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
 
     fn custom_type_kind_is_valid(
         _context: &SchemaContext,
-        type_kind: &SchemaCustomTypeKind<Self>,
+        type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
             ScryptoCustomTypeKind::Reference
@@ -112,7 +106,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
 
     fn custom_type_kind_matches_metadata(
         _: &SchemaContext,
-        type_kind: &SchemaCustomTypeKind<Self>,
+        type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         // Even though they all map to the same thing, we keep the explicit match statement so that

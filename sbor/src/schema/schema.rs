@@ -13,9 +13,11 @@ pub struct Schema<E: CustomTypeExtension> {
     pub type_validations: Vec<TypeValidation>,
 }
 
-pub type SchemaTypeKind<E> =
-    TypeKind<<E as CustomTypeExtension>::CustomValueKind, SchemaCustomTypeKind<E>, LocalTypeIndex>;
-pub type SchemaCustomTypeKind<E> = <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>;
+pub type SchemaTypeKind<E> = TypeKind<
+    <E as CustomTypeExtension>::CustomValueKind,
+    <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>,
+    LocalTypeIndex,
+>;
 
 impl<E: CustomTypeExtension> Schema<E> {
     pub fn empty() -> Self {
