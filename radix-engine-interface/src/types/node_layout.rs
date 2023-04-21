@@ -96,7 +96,6 @@ pub enum FungibleVaultOffset {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum NonFungibleVaultOffset {
-    Info,
     LiquidNonFungible,
     LockedNonFungible,
 }

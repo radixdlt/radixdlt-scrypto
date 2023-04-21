@@ -15,11 +15,6 @@ pub enum NonFungibleVaultError {
     NotEnoughAmount,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NonFungibleVaultIdTypeSubstate {
-    pub id_type: NonFungibleIdType,
-}
-
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
@@ -31,13 +26,6 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        /*
-        let handle = api.lock_field(NonFungibleVaultOffset::Info.into(), LockFlags::read_only())?;
-        let info: NonFungibleVaultIdTypeSubstate = api.sys_read_substate_typed(handle)?;
-        let id_type = info.id_type;
-        api.sys_drop_lock(handle)?;
-         */
-
         let handle = api.lock_parent_field(NonFungibleResourceManagerOffset::IdType.into(), LockFlags::read_only())?;
         let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
         Ok(id_type)

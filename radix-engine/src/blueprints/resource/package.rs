@@ -529,9 +529,6 @@ impl ResourceManagerNativePackage {
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(
-                aggregator.add_child_type_and_descendents::<NonFungibleVaultIdTypeSubstate>(),
-            );
             substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleVault>());
             substates
                 .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());

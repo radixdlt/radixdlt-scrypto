@@ -27,6 +27,8 @@ pub enum NonFungibleResourceManagerError {
     InvalidNonFungibleIdType,
 }
 
+pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerSubstate {
     pub total_supply: Decimal,
@@ -35,7 +37,6 @@ pub struct NonFungibleResourceManagerSubstate {
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
-pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 fn build_non_fungible_resource_manager_substate<Y>(
     supply: usize,
@@ -821,14 +822,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleResourceManagerOffset::IdType.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
-
-        let info = NonFungibleVaultIdTypeSubstate { id_type };
-
         let ids = Own(api.new_index()?);
         let vault = LiquidNonFungibleVault {
             amount: Decimal::zero(),
@@ -837,7 +830,6 @@ impl NonFungibleResourceManagerBlueprint {
         let vault_id = api.new_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
-                scrypto_encode(&info).unwrap(),
                 scrypto_encode(&vault).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
