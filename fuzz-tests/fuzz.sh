@@ -175,10 +175,10 @@ function generate_input() {
 
         else
             # Collect input data
-            cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
+            cargo nextest run -p radix-engine-tests --release --features dump_manifest_to_file
             popd
 
-            cargo nextest run test_gen_tx_manifest --features dump_manifest_to_file
+            cargo nextest run test_gen_tx_manifest --release --features dump_manifest_to_file
 
             if [ $mode = "raw" ] ; then
                 mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
