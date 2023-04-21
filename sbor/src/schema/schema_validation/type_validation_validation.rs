@@ -2,9 +2,9 @@ use super::*;
 use crate::schema::*;
 
 pub fn validate_type_validation_with_type_kind<'a, E: CustomTypeExtension>(
-    context: &TypeValidationContext,
+    _context: &TypeValidationContext,
     type_kind: &SchemaTypeKind<E>,
-    type_validation: &SchemaTypeValidation<E>,
+    type_validation: &TypeValidation,
 ) -> Result<(), SchemaValidationError> {
     // It's always possible to opt into no additional validation.
     if matches!(type_validation, TypeValidation::None) {
@@ -93,15 +93,10 @@ pub fn validate_type_validation_with_type_kind<'a, E: CustomTypeExtension>(
             };
             validate_length_validation(length_validation)?;
         }
-        TypeKind::Custom(custom_type_kind) => {
-            let TypeValidation::Custom(custom_type_validation) = type_validation else {
-                return Err(SchemaValidationError::TypeValidationMismatch);
-            };
-            E::validate_type_validation_with_type_kind(
-                context,
-                custom_type_kind,
-                custom_type_validation,
-            )?;
+        TypeKind::Custom(_) => {
+            if !matches!(type_validation, TypeValidation::None) {
+                return Err(SchemaValidationError::TypeValidationAttachedToCustomType);
+            }
         }
     }
     Ok(())

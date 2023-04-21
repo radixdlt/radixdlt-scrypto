@@ -32,6 +32,7 @@ pub enum SchemaValidationError {
     TypeValidationMismatch,
     TypeValidationNumericValidationInvalid,
     TypeValidationLengthValidationInvalid,
+    TypeValidationAttachedToCustomType,
 }
 
 pub fn validate_schema<E: CustomTypeExtension>(

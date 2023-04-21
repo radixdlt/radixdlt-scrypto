@@ -187,6 +187,8 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
 ) -> Result<(), PayloadValidationError<E>> {
+    // TODO: apply contextual custom type validation here!
+
     match schema
         .resolve_type_validation(type_index)
         .ok_or(PayloadValidationError::SchemaInconsistency)?
@@ -234,10 +236,8 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
                 .into());
             }
         }
-        TypeValidation::Custom(_) => {
-            todo!("Add support for custom type validation")
-        }
-        _ => return Err(PayloadValidationError::SchemaInconsistency),
+        TypeValidation::Array(_) => todo!(),
+        TypeValidation::Map(_) => todo!(),
     }
     Ok(())
 }

@@ -145,11 +145,6 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
     type CustomTypeExtension = NoCustomTypeExtension;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum NoCustomTypeValidation {}
-
-impl CustomTypeValidation for NoCustomTypeValidation {}
-
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum NoCustomTypeExtension {}
 
@@ -166,7 +161,6 @@ impl CustomTypeExtension for NoCustomTypeExtension {
     const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
     type CustomValueKind = NoCustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
-    type CustomTypeValidation = NoCustomTypeValidation;
     type CustomTraversal = NoCustomTraversal;
 
     fn linearize_type_kind(
@@ -187,25 +181,17 @@ impl CustomTypeExtension for NoCustomTypeExtension {
         }
     }
 
-    fn validate_type_kind(
+    fn custom_type_kind_is_valid(
         _: &TypeValidationContext,
         _: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
-    fn validate_type_metadata_with_type_kind(
+    fn custom_type_kind_matches_metadata(
         _: &TypeValidationContext,
         _: &SchemaCustomTypeKind<Self>,
         _: &TypeMetadata,
-    ) -> Result<(), SchemaValidationError> {
-        unreachable!("No custom type kinds exist")
-    }
-
-    fn validate_type_validation_with_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
-        _: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }

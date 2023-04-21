@@ -21,7 +21,6 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         CustomValueKind = Self::CustomValueKind,
         CustomTypeExtension = Self,
     >;
-    type CustomTypeValidation: CustomTypeValidation;
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
 
     fn linearize_type_kind(
@@ -34,21 +33,15 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         well_known_index: u8,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
-    fn validate_type_kind(
+    fn custom_type_kind_is_valid(
         context: &TypeValidationContext,
-        type_kind: &SchemaCustomTypeKind<Self>,
+        custom_type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError>;
 
-    fn validate_type_metadata_with_type_kind(
+    fn custom_type_kind_matches_metadata(
         context: &TypeValidationContext,
-        type_kind: &SchemaCustomTypeKind<Self>,
+        custom_type_kind: &SchemaCustomTypeKind<Self>,
         type_metadata: &TypeMetadata,
-    ) -> Result<(), SchemaValidationError>;
-
-    fn validate_type_validation_with_type_kind(
-        context: &TypeValidationContext,
-        type_kind: &SchemaCustomTypeKind<Self>,
-        type_validation: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError>;
 
     fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(

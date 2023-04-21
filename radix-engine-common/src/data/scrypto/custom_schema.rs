@@ -53,7 +53,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
 
     type CustomValueKind = ScryptoCustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind;
-    type CustomTypeValidation = ScryptoCustomTypeValidation;
     type CustomTraversal = ScryptoCustomTraversal;
 
     fn linearize_type_kind(
@@ -86,7 +85,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         resolve_scrypto_well_known_type(well_known_index)
     }
 
-    fn validate_type_kind(
+    fn custom_type_kind_is_valid(
         _context: &TypeValidationContext,
         type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
@@ -111,7 +110,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         Ok(())
     }
 
-    fn validate_type_metadata_with_type_kind(
+    fn custom_type_kind_matches_metadata(
         _: &TypeValidationContext,
         type_kind: &SchemaCustomTypeKind<Self>,
         type_metadata: &TypeMetadata,
@@ -137,41 +136,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             }
         }
         Ok(())
-    }
-
-    fn validate_type_validation_with_type_kind(
-        _: &TypeValidationContext,
-        type_kind: &SchemaCustomTypeKind<Self>,
-        _: &SchemaCustomTypeValidation<Self>,
-    ) -> Result<(), SchemaValidationError> {
-        // NOTE:
-        // Right now SchemaCustomTypeValidation is an empty enum, so it'd be reasonable to panic,
-        // but soon this will contain custom validations (eg for Address), so the below code
-        // is in preparation for when we add these in.
-
-        match type_kind {
-            // Even though they all map to the same thing, we keep the explicit match statement so that
-            // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
-            ScryptoCustomTypeKind::Reference
-            | ScryptoCustomTypeKind::GlobalAddress
-            | ScryptoCustomTypeKind::LocalAddress
-            | ScryptoCustomTypeKind::PackageAddress
-            | ScryptoCustomTypeKind::ComponentAddress
-            | ScryptoCustomTypeKind::ResourceAddress
-            | ScryptoCustomTypeKind::Own
-            | ScryptoCustomTypeKind::Bucket
-            | ScryptoCustomTypeKind::Proof
-            | ScryptoCustomTypeKind::Vault
-            | ScryptoCustomTypeKind::KeyValueStore { .. }
-            | ScryptoCustomTypeKind::Decimal
-            | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId => {
-                // All these custom type kinds only support `SchemaTypeValidation::None`.
-                // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
-                // - which isn't valid.
-                return Err(SchemaValidationError::TypeValidationMismatch);
-            }
-        }
     }
 
     fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
