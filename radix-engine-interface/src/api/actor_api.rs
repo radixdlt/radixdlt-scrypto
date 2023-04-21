@@ -1,5 +1,5 @@
-use radix_engine_interface::api::LockFlags;
 use crate::types::*;
+use radix_engine_interface::api::LockFlags;
 use sbor::rust::fmt::Debug;
 
 /// Api which exposes methods in the context of the actor

@@ -357,73 +357,55 @@ impl EpochManagerNativePackage {
             VALIDATOR_REGISTER_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::register(receiver, api)?;
+                let rtn = ValidatorBlueprint::register(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UNREGISTER_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::unregister(receiver, api)?;
+                let rtn = ValidatorBlueprint::unregister(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::stake(receiver, input.stake, api)?;
+                let rtn = ValidatorBlueprint::stake(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UNSTAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::unstake(receiver, input.lp_tokens, api)?;
+                let rtn = ValidatorBlueprint::unstake(input.lp_tokens, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::claim_xrd(receiver, input.bucket, api)?;
+                let rtn = ValidatorBlueprint::claim_xrd(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_KEY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::update_key(receiver, input.key, api)?;
+                let rtn = ValidatorBlueprint::update_key(input.key, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {

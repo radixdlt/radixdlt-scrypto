@@ -1452,39 +1452,29 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::take(receiver, &input.amount, api)?;
+                let rtn = FungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::take(receiver, &input.amount, api)?;
+                let rtn = NonFungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: NonFungibleVaultTakeNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
-                    receiver,
                     input.non_fungible_local_ids,
                     api,
                 )?;
@@ -1493,39 +1483,29 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::recall(receiver, input.amount, api)?;
+                let rtn = FungibleVaultBlueprint::recall(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::recall(receiver, input.amount, api)?;
+                let rtn = NonFungibleVaultBlueprint::recall(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: NonFungibleVaultRecallNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(
-                    receiver,
                     input.non_fungible_local_ids,
                     api,
                 )?;
@@ -1534,25 +1514,19 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: VaultPutInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::put(receiver, input.bucket, api)?;
+                let rtn = FungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: VaultPutInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::put(receiver, input.bucket, api)?;
+                let rtn = NonFungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {

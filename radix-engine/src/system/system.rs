@@ -245,7 +245,6 @@ where
         Ok(node_id.into())
     }
 
-
     #[trace_resources]
     fn globalize(
         &mut self,
@@ -1016,35 +1015,27 @@ where
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
             Actor::Method {
-                node_id,
-                module_id,
-                ..
+                node_id, module_id, ..
             } => (node_id, module_id),
         };
 
         let info = match module_id {
             ObjectModuleId::SELF => self.get_object_info(node_id)?,
-            ObjectModuleId::Metadata => {
-                ObjectInfo {
-                    blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
-                    global: true,
-                    type_parent: None,
-                }
-            }
-            ObjectModuleId::AccessRules => {
-                ObjectInfo {
-                    blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                    global: true,
-                    type_parent: None,
-                }
-            }
-            ObjectModuleId::Royalty => {
-                ObjectInfo {
-                    blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                    global: true,
-                    type_parent: None,
-                }
-            }
+            ObjectModuleId::Metadata => ObjectInfo {
+                blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
+                global: true,
+                type_parent: None,
+            },
+            ObjectModuleId::AccessRules => ObjectInfo {
+                blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                global: true,
+                type_parent: None,
+            },
+            ObjectModuleId::Royalty => ObjectInfo {
+                blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                global: true,
+                type_parent: None,
+            },
         };
 
         Ok(info)
