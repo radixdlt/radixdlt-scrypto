@@ -355,7 +355,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
         .get_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
+            &vec![PackageOffset::Info.into()],
         )
         .ok_or(Error::PackageNotFound(package_address))?;
     let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
@@ -387,7 +387,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
         .get_substate(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
-            &TypeInfoOffset::TypeInfo.into(),
+            &vec![TypeInfoOffset::TypeInfo.into()],
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
 
@@ -426,7 +426,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         .get_substate(
                             node_id,
                             SysModuleId::TypeInfo.into(),
-                            &TypeInfoOffset::TypeInfo.into(),
+                            &vec![TypeInfoOffset::TypeInfo.into()],
                         )
                         .unwrap();
                     let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
@@ -454,7 +454,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
         .get_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
+            &vec![PackageOffset::Info.into()],
         )
         .unwrap();
     let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();

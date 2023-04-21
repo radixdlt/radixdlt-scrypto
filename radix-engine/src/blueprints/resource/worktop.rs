@@ -80,7 +80,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             let worktop_handle = api.lock_field(
-                &WorktopOffset::Worktop.into(),
+                WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
@@ -114,7 +114,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
             let worktop_handle = api.lock_field(
-                &WorktopOffset::Worktop.into(),
+                WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
@@ -162,7 +162,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
             let worktop_handle = api.lock_field(
-                &WorktopOffset::Worktop.into(),
+                WorktopOffset::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
@@ -204,7 +204,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle =
-            api.lock_field(&WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+            api.lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
         let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         if let Some(bucket) = worktop.resources.remove(&input.resource_address) {
             // Move
@@ -230,7 +230,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.lock_field(
-            &WorktopOffset::Worktop.into(),
+            WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
@@ -260,7 +260,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.lock_field(
-            &WorktopOffset::Worktop.into(),
+            WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
@@ -290,7 +290,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle = api.lock_field(
-            &WorktopOffset::Worktop.into(),
+            WorktopOffset::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
@@ -321,7 +321,7 @@ impl WorktopBlueprint {
         })?;
 
         let worktop_handle =
-            api.lock_field(&WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+            api.lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
         let mut worktop: WorktopSubstate = api.sys_read_substate_typed(worktop_handle)?;
         let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
         worktop.resources.clear();

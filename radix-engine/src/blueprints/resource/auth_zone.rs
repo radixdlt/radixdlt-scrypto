@@ -30,7 +30,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -56,7 +56,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -81,7 +81,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -119,7 +119,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::read_only(),
         )?;
 
@@ -157,7 +157,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -195,7 +195,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
@@ -223,7 +223,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
@@ -246,7 +246,7 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle = api.lock_field(
-            &AuthZoneOffset::AuthZone.into(),
+            AuthZoneOffset::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
 

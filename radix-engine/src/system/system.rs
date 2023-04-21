@@ -65,7 +65,7 @@ where
     #[trace_resources]
     fn lock_field(
         &mut self,
-        key: &Vec<u8>,
+        field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
@@ -103,7 +103,7 @@ where
 
         // TODO: Check if valid substate_key for node_id
 
-        let substate_key = SubstateKey::Key(key.clone());
+        let substate_key = SubstateKey::Key(vec![field]);
 
         self.api
             .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)

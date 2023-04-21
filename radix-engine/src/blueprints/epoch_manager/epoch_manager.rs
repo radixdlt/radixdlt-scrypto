@@ -219,7 +219,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &EpochManagerOffset::EpochManager.into(),
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -233,7 +233,7 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mgr_handle = api.lock_field(
-            &EpochManagerOffset::EpochManager.into(),
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
         let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
@@ -262,7 +262,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let mgr_handle = api.lock_field(
-            &EpochManagerOffset::EpochManager.into(),
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
         let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
@@ -301,7 +301,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &EpochManagerOffset::EpochManager.into(),
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -366,7 +366,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &EpochManagerOffset::RegisteredValidatorSet.into(),
+            EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::read_only(),
         )?;
         let registered_validators: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
@@ -434,7 +434,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &EpochManagerOffset::RegisteredValidatorSet.into(),
+            EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -448,7 +448,7 @@ impl EpochManagerBlueprint {
             validators.into_iter().collect();
 
         let handle = api.lock_field(
-            &EpochManagerOffset::CurrentValidatorSet.into(),
+            EpochManagerOffset::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
         let mut validator_set: CurrentValidatorSetSubstate = api.sys_read_substate_typed(handle)?;

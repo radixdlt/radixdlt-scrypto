@@ -205,7 +205,7 @@ impl ClockNativePackage {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let handle = api.lock_field(
-            &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+            ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
@@ -229,7 +229,7 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.lock_field(
-                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+                    ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
@@ -255,7 +255,7 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.lock_field(
-                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+                    ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;

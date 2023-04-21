@@ -33,7 +33,7 @@ pub trait ClientSubstateApi<E: Debug> {
     // TODO: expose non-SELF?
     fn lock_field(
         &mut self,
-        key: &Vec<u8>,
+        field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 

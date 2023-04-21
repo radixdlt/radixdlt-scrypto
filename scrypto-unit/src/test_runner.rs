@@ -332,7 +332,7 @@ impl TestRunner {
         if let Some(output) = self.substate_db.get_substate(
             component_address.as_node_id(),
             SysModuleId::Royalty.into(),
-            &RoyaltyOffset::RoyaltyAccumulator.into(),
+            &vec![RoyaltyOffset::RoyaltyAccumulator.into()],
         ) {
             scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output)
                 .unwrap()
@@ -342,7 +342,7 @@ impl TestRunner {
                         .get_substate(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            &FungibleVaultOffset::LiquidFungible.into(),
+                            &vec![FungibleVaultOffset::LiquidFungible.into()],
                         )
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output)
@@ -359,7 +359,7 @@ impl TestRunner {
         if let Some(output) = self.substate_db.get_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Royalty.into(),
+            &vec![PackageOffset::Royalty.into()],
         ) {
             scrypto_decode::<PackageRoyaltySubstate>(&output)
                 .unwrap()
@@ -369,7 +369,7 @@ impl TestRunner {
                         .get_substate(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            &FungibleVaultOffset::LiquidFungible.into(),
+                            &vec![FungibleVaultOffset::LiquidFungible.into()],
                         )
                         .map(|output| {
                             scrypto_decode::<LiquidFungibleResource>(&output)
@@ -419,7 +419,7 @@ impl TestRunner {
             .get_substate(
                 &vault_id,
                 SysModuleId::Object.into(),
-                &FungibleVaultOffset::LiquidFungible.into(),
+                &vec![FungibleVaultOffset::LiquidFungible.into()],
             )
             .map(|output| {
                 scrypto_decode::<LiquidFungibleResource>(&output)
@@ -437,7 +437,7 @@ impl TestRunner {
             .get_substate(
                 &vault_id,
                 SysModuleId::Object.into(),
-                &NonFungibleVaultOffset::LiquidNonFungible.into(),
+                &vec![NonFungibleVaultOffset::LiquidNonFungible.into()],
             )
             .map(|output| {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(&output).unwrap();
@@ -531,7 +531,7 @@ impl TestRunner {
                 .get_substate(
                     address.as_node_id(),
                     SysModuleId::Object.into(),
-                    &ValidatorOffset::Validator.into(),
+                    &vec![ValidatorOffset::Validator.into()],
                 )
                 .unwrap(),
         )
@@ -545,7 +545,7 @@ impl TestRunner {
                 .get_substate(
                     EPOCH_MANAGER.as_node_id(),
                     SysModuleId::Object.into(),
-                    &EpochManagerOffset::CurrentValidatorSet.into(),
+                    &vec![EpochManagerOffset::CurrentValidatorSet.into()],
                 )
                 .unwrap(),
         )
@@ -1270,7 +1270,7 @@ impl TestRunner {
                                 .get_substate(
                                     node_id,
                                     SysModuleId::TypeInfo.into(),
-                                    &TypeInfoOffset::TypeInfo.into(),
+                                    &vec![TypeInfoOffset::TypeInfo.into()],
                                 )
                                 .unwrap(),
                         )
@@ -1309,7 +1309,7 @@ impl TestRunner {
                     .get_substate(
                         package_address.as_node_id(),
                         SysModuleId::Object.into(),
-                        &PackageOffset::Info.into(),
+                        &vec![PackageOffset::Info.into()],
                     )
                     .unwrap(),
             )

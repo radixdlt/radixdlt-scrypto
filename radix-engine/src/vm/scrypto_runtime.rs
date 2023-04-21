@@ -188,11 +188,11 @@ where
 
     fn lock_field(
         &mut self,
-        key: Vec<u8>,
+        field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.lock_field(&key, flags)?;
+        let handle = self.api.lock_field(field, flags)?;
 
         Ok(handle)
     }
@@ -402,7 +402,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn lock_field(
         &mut self,
-        offset: Vec<u8>,
+        field: u8,
         flags: u32,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))

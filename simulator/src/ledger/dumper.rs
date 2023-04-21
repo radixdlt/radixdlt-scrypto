@@ -29,7 +29,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         .get_substate(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Code.into(),
+            &vec![PackageOffset::Code.into()],
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
 
@@ -64,7 +64,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             .get_substate(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into(),
+                &vec![TypeInfoOffset::TypeInfo.into()],
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
@@ -127,7 +127,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         .get_substate(
             resource_address.as_node_id(),
             SysModuleId::Object.into(),
-            &ResourceManagerOffset::ResourceManager.into(),
+            &vec![ResourceManagerOffset::ResourceManager.into()],
         )
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;
 

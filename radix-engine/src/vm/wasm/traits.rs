@@ -63,7 +63,7 @@ pub trait WasmRuntime {
 
     fn lock_field(
         &mut self,
-        offset: Vec<u8>,
+        field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 

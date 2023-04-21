@@ -188,13 +188,12 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
 impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
     fn lock_field(
         &mut self,
-        key: &Vec<u8>,
+        field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
         let handle = unsafe {
             lock_field(
-                key.as_ptr(),
-                key.len(),
+                u32::from(field),
                 flags.bits(),
             )
         };

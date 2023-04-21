@@ -155,7 +155,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .get_substate(
             &resource_address,
             SysModuleId::Object.into(),
-            &ResourceManagerOffset::ResourceManager.into(),
+            &vec![ResourceManagerOffset::ResourceManager.into()],
         )
         .unwrap();
 

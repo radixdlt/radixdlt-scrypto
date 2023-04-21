@@ -739,7 +739,7 @@ where
         .get_substate(
             &RADIX_TOKEN.into(),
             SysModuleId::TypeInfo.into(),
-            &TypeInfoOffset::TypeInfo.into(),
+            &vec![TypeInfoOffset::TypeInfo.into()],
         )
         .is_none()
     {

@@ -164,9 +164,9 @@ macro_rules! into_substate_key {
             }
         }
 
-        impl Into<Vec<u8>> for $t {
-            fn into(self) -> Vec<u8> {
-                vec![self as u8]
+        impl Into<u8> for $t {
+            fn into(self) -> u8 {
+                self as u8
             }
         }
     };

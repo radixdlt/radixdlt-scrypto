@@ -259,7 +259,7 @@ impl<'a> BalanceAccounter<'a> {
                 .fetch_substate(
                     node_id,
                     SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
+                    &vec![TypeInfoOffset::TypeInfo.into()],
                 )
                 .expect("Missing vault info"),
         )
@@ -278,12 +278,12 @@ impl<'a> BalanceAccounter<'a> {
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
                 SysModuleId::Object.into(),
-                &FungibleVaultOffset::LiquidFungible.into(),
+                &vec![FungibleVaultOffset::LiquidFungible.into()],
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
                     SysModuleId::Object.into(),
-                    &FungibleVaultOffset::LiquidFungible.into(),
+                    &vec![FungibleVaultOffset::LiquidFungible.into()],
                 );
 
                 let old_balance = if let Some(s) = old_substate {
@@ -306,7 +306,7 @@ impl<'a> BalanceAccounter<'a> {
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
                 SysModuleId::Object.into(),
-                &NonFungibleVaultOffset::LiquidNonFungible.into(),
+                &vec![NonFungibleVaultOffset::LiquidNonFungible.into()],
             ) {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(substate).unwrap();
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {

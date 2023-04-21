@@ -285,16 +285,12 @@ fn lock_key_value_store_entry(
 }
 
 fn lock_field(
-    mut caller: Caller<'_, HostState>,
-    offset_ptr: u32,
-    offset_len: u32,
+    caller: Caller<'_, HostState>,
+    field: u32,
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
-
-    runtime.lock_field(substate_key, flags)
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime.lock_field(field as u8, flags)
 }
 
 fn read_substate(
@@ -596,15 +592,13 @@ impl WasmiModule {
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             offset_ptr: u32,
-             offset_len: u32,
-             mutable: u32|
+             field: u32,
+             lock_flags: u32|
              -> Result<u32, Trap> {
                 lock_field(
                     caller,
-                    offset_ptr,
-                    offset_len,
-                    mutable,
+                    field,
+                    lock_flags,
                 )
                 .map_err(|e| e.into())
             },

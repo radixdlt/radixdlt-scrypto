@@ -32,7 +32,7 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::Info.into(),
+            NonFungibleVaultOffset::Info.into(),
             LockFlags::read_only(),
         )?;
         let info: NonFungibleVaultIdTypeSubstate = api.sys_read_substate_typed(handle)?;
@@ -371,7 +371,7 @@ impl NonFungibleVault {
         Y: ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LiquidNonFungible.into(),
+            NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
@@ -385,7 +385,7 @@ impl NonFungibleVault {
         Y: ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LockedNonFungible.into(),
+            NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -401,7 +401,7 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LiquidNonFungible.into(),
+            NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
@@ -420,7 +420,7 @@ impl NonFungibleVault {
         Y: ClientSubstateApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LockedNonFungible.into(),
+            NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -437,7 +437,7 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LiquidNonFungible.into(),
+            NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
@@ -489,7 +489,7 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LiquidNonFungible.into(),
+            NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
@@ -532,7 +532,7 @@ impl NonFungibleVault {
         let event = DepositResourceEvent::Ids(resource.ids().clone());
 
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LiquidNonFungible.into(),
+            NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut vault: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
@@ -568,7 +568,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LockedNonFungible.into(),
+            NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -619,7 +619,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LockedNonFungible.into(),
+            NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -660,7 +660,7 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &NonFungibleVaultOffset::LockedNonFungible.into(),
+            NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;

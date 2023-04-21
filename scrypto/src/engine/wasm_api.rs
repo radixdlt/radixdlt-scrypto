@@ -104,8 +104,7 @@ extern "C" {
 
     // Locks a field
     pub fn lock_field(
-        offset_ptr: *const u8,
-        offset_len: usize,
+        field: u32,
         flags: u32,
     ) -> u32;
 
@@ -242,8 +241,7 @@ pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn lock_field(
-    _offset: *const u8,
-    _offset_len: usize,
+    _field: u32,
     _flags: u32,
 ) -> u32 {
     unreachable!()

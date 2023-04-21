@@ -676,7 +676,7 @@ mod tests {
                     pub struct Test_y_Input { arg0 : u32 }
 
                     #[no_mangle]
-                    pub extern "C" fn Test_x(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
+                    pub extern "C" fn Test_x(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                         use ::sbor::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook

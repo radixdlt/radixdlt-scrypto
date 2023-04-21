@@ -319,7 +319,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -427,7 +427,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -494,7 +494,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -571,7 +571,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -640,7 +640,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -669,7 +669,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -704,7 +704,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -737,7 +737,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -805,7 +805,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -840,7 +840,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -860,7 +860,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: NonFungibleResourceManagerSubstate =

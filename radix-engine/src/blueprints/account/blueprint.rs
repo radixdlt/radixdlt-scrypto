@@ -186,7 +186,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.lock_field(
-            &AccountOffset::Account.into(),
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -255,7 +255,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.lock_field(
-            &AccountOffset::Account.into(),
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?;
 
@@ -311,7 +311,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            &AccountOffset::Account.into(),
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
@@ -380,7 +380,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.lock_field(
-            &AccountOffset::Account.into(),
+            AccountOffset::Account.into(),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 

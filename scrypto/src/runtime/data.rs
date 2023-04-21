@@ -121,7 +121,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
             .lock_field(
-                &vec![ComponentOffset::State0 as u8],
+                ComponentOffset::State0 as u8,
                 LockFlags::read_only(),
             )
             .unwrap();
@@ -134,7 +134,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
             .lock_field(
-                &vec![ComponentOffset::State0 as u8],
+                ComponentOffset::State0 as u8,
                 LockFlags::MUTABLE,
             )
             .unwrap();
