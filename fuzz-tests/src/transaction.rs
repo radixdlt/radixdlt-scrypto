@@ -7,8 +7,6 @@ use once_cell::sync::Lazy;
 
 #[cfg(feature = "afl")]
 use afl::fuzz;
-use radix_engine_interface::schema::PackageSchema;
-use std::collections::HashMap;
 #[cfg(feature = "afl")]
 use std::panic::AssertUnwindSafe;
 
@@ -27,9 +25,10 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::manifest::manifest_decode;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::interface::SubstateDatabase;
 use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -104,6 +103,7 @@ struct Fuzzer {
     runner: TestRunner,
     snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
+    #[cfg(test)]
     package: Package,
 }
 
@@ -134,13 +134,17 @@ impl Fuzzer {
         let snapshot = runner.get_snapshot();
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
+        #[cfg(test)]
         let package_dir = "../radix-engine-tests/tests/blueprints/address";
+        #[cfg(test)]
         let (code, schema) = Compile::compile(package_dir);
+
         Self {
             rng,
             runner,
             snapshot,
             accounts,
+            #[cfg(test)]
             package: Package { code, schema },
         }
     }
@@ -693,22 +697,26 @@ impl Fuzzer {
                 30 => Some(Instruction::PopFromAuthZone {}),
                 // PublishPackage
                 31 => {
+                    #[cfg(test)]
                     builder.publish_package(self.package.code.clone(), self.package.schema.clone());
                     None
                 }
                 // PublishPackageAdvanced
                 32 => {
-                    let royalty_config = BTreeMap::new();
-                    let metadata = BTreeMap::from([("name".to_string(), "Token".to_string())]);
-                    let access_rules = AccessRulesConfig::new()
-                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
-                    builder.publish_package_advanced(
-                        self.package.code.clone(),
-                        self.package.schema.clone(),
-                        royalty_config,
-                        metadata,
-                        access_rules,
-                    );
+                    #[cfg(test)]
+                    {
+                        let royalty_config = BTreeMap::new();
+                        let metadata = BTreeMap::from([("name".to_string(), "Token".to_string())]);
+                        let access_rules = AccessRulesConfig::new()
+                            .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                        builder.publish_package_advanced(
+                            self.package.code.clone(),
+                            self.package.schema.clone(),
+                            royalty_config,
+                            metadata,
+                            access_rules,
+                        );
+                    }
                     None
                 }
                 // PushToAuthZone
