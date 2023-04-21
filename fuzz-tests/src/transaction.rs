@@ -7,6 +7,8 @@ use once_cell::sync::Lazy;
 
 #[cfg(feature = "afl")]
 use afl::fuzz;
+use radix_engine_interface::schema::PackageSchema;
+use std::collections::HashMap;
 #[cfg(feature = "afl")]
 use std::panic::AssertUnwindSafe;
 
@@ -22,6 +24,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
 };
+use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_stores::interface::SubstateDatabase;
@@ -30,7 +33,7 @@ use rand::{thread_rng, Rng};
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use scrypto_unit::{TestRunner, TestRunnerSnapshot};
+use scrypto_unit::{Compile, TestRunner, TestRunnerSnapshot};
 use strum::EnumCount;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -45,6 +48,11 @@ struct Account {
     address: ComponentAddress,
     fungibles: Container<ResourceAddress>,
     non_fungibles: Container<ResourceAddress>,
+}
+
+struct Package {
+    code: Vec<u8>,
+    schema: PackageSchema,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -96,6 +104,7 @@ struct Fuzzer {
     runner: TestRunner,
     snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
+    package: Package,
 }
 
 impl Fuzzer {
@@ -125,11 +134,14 @@ impl Fuzzer {
         let snapshot = runner.get_snapshot();
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
+        let package_dir = "../radix-engine-tests/tests/blueprints/address";
+        let (code, schema) = Compile::compile(package_dir);
         Self {
             rng,
             runner,
             snapshot,
             accounts,
+            package: Package { code, schema },
         }
     }
 
@@ -357,22 +369,19 @@ impl Fuzzer {
         let fee = Decimal::from(100);
         match self.rng.gen_range(0..3) {
             0 => {
-                println!("fee = {} ", fee);
                 //builder.lock_fee(self.runner.faucet_component(), fee);
                 builder.lock_fee(component_address, fee);
             }
             1 => {
                 let d = self.get_random_decimal(Some(100u128));
-                println!("fee = {} d = {}", fee, d);
                 builder.lock_fee_and_withdraw(component_address, fee, fungible_address, d);
             }
             2 => {
-                println!("fee = {} ids = {:?}", fee, non_fungible_ids);
                 builder.lock_fee_and_withdraw_non_fungibles(
                     component_address,
                     fee,
                     non_fungible_address,
-                    non_fungible_ids,
+                    non_fungible_ids.clone(),
                 );
             }
             _ => todo!(),
@@ -397,16 +406,10 @@ impl Fuzzer {
                     })
                 }
                 // AssertWorktopContainsByIds
-                2 => {
-                    let ids: BTreeSet<NonFungibleLocalId> = self
-                        .get_non_fungible_local_id(component_address, non_fungible_address)
-                        .unwrap_or(BTreeSet::new());
-
-                    Some(Instruction::AssertWorktopContainsByIds {
-                        ids,
-                        resource_address: non_fungible_address,
-                    })
-                }
+                2 => Some(Instruction::AssertWorktopContainsByIds {
+                    ids: non_fungible_ids.clone(),
+                    resource_address: non_fungible_address,
+                }),
                 // BurnResource
                 3 => buckets
                     .get_random(true)
@@ -482,13 +485,67 @@ impl Fuzzer {
                     })
                 }
                 // CreateFungibleResource
-                14 => None,
+                14 => Some(Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&FungibleResourceManagerCreateInput {
+                        divisibility: self.rng.gen_range(0..30),
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                        ]),
+                    }),
+                }),
                 // CreateFungibleResourceWithInitialSupply
-                15 => None,
+                15 => Some(Instruction::CallFunction {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                        .to_string(),
+                    args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                        divisibility: self.rng.gen_range(0..30),
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                        ]),
+                        initial_supply: self.get_random_decimal(None),
+                    }),
+                }),
                 // CreateIdentity
-                16 => None,
+                16 => Some(Instruction::CallFunction {
+                    package_address: IDENTITY_PACKAGE,
+                    blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                    function_name: IDENTITY_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(&IdentityCreateInput {}),
+                }),
                 // CreateIdentityAdvanced
-                17 => None,
+                17 => {
+                    let owner_id = NonFungibleGlobalId::from_public_key(&account.public_key);
+                    let config = AccessRulesConfig::new()
+                        .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
+
+                    Some(Instruction::CallFunction {
+                        package_address: IDENTITY_PACKAGE,
+                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                        function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+                        args: to_manifest_value(&IdentityCreateAdvancedInput { config }),
+                    })
+                }
                 // CreateNonFungibleResource
                 18 => Some(Instruction::CallFunction {
                     package_address: RESOURCE_MANAGER_PACKAGE,
@@ -616,13 +673,44 @@ impl Fuzzer {
                     })
                 }
                 // MintUuidNonFungible
-                29 => None,
+                29 => {
+                    let mut entries = Vec::new();
+                    let entries_len = self.rng.gen_range(0usize..100usize);
+                    for _i in 0..entries_len {
+                        entries.push((to_manifest_value(&(
+                            self.get_random_string(1000),
+                            self.get_random_decimal(None),
+                        )),));
+                    }
+                    Some(Instruction::MintUuidNonFungible {
+                        resource_address: non_fungible_address,
+                        args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
+                            entries,
+                        }),
+                    })
+                }
                 // PopFromAuthZone
                 30 => Some(Instruction::PopFromAuthZone {}),
                 // PublishPackage
-                31 => None,
+                31 => {
+                    builder.publish_package(self.package.code.clone(), self.package.schema.clone());
+                    None
+                }
                 // PublishPackageAdvanced
-                32 => None,
+                32 => {
+                    let royalty_config = BTreeMap::new();
+                    let metadata = BTreeMap::from([("name".to_string(), "Token".to_string())]);
+                    let access_rules = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    builder.publish_package_advanced(
+                        self.package.code.clone(),
+                        self.package.schema.clone(),
+                        royalty_config,
+                        metadata,
+                        access_rules,
+                    );
+                    None
+                }
                 // PushToAuthZone
                 33 => proof_ids
                     .get_random(true)
@@ -634,8 +722,11 @@ impl Fuzzer {
                         vault_id: LocalAddress::new_unchecked(vault_id.into()),
                         amount: self.get_random_decimal(None),
                     }),
-                // RemoveMetadata
-                35 => None,
+                //
+                35 => Some(Instruction::RemoveMetadata {
+                    entity_address: GlobalAddress::from(component_address),
+                    key: self.get_random_string(1000),
+                }),
                 // ReturnToWorktop
                 36 => buckets
                     .get_random(true)
@@ -703,16 +794,10 @@ impl Fuzzer {
                     })
                 }
                 // TakeFromWorktopByIds
-                43 => {
-                    let ids: BTreeSet<NonFungibleLocalId> = self
-                        .get_non_fungible_local_id(component_address, non_fungible_address)
-                        .unwrap_or(BTreeSet::new());
-
-                    Some(Instruction::TakeFromWorktopByIds {
-                        ids: ids.clone(),
-                        resource_address: non_fungible_address,
-                    })
-                }
+                43 => Some(Instruction::TakeFromWorktopByIds {
+                    ids: non_fungible_ids.clone(),
+                    resource_address: non_fungible_address,
+                }),
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
@@ -751,10 +836,10 @@ pub enum TxStatus {
 }
 
 #[cfg(feature = "dump_manifest_to_file")]
-fn dump_manifest_to_file(m: &TransactionManifest) {
+fn dump_manifest_to_file(m: &TransactionManifest, name: &str) {
     let bytes = manifest_encode(m).unwrap();
     let m_hash = hash(&bytes);
-    let path = format!("manifest_{:?}.raw", m_hash);
+    let path = format!("manifest_{}_{:?}.raw", name, m_hash);
     std::fs::write(&path, bytes).unwrap();
     println!("manifest dumped to file {}", &path);
 }
@@ -763,32 +848,59 @@ fn dump_manifest_to_file(m: &TransactionManifest) {
 // It stops when given number of successful transactions is reached.
 #[test]
 fn test_gen_tx_manifest() {
-    let needed_good_cnt = 50;
     let mut i = 0;
-    let mut curr_good_cnt = 0;
+    let mut successfull_manifests = std::collections::HashSet::new();
+    let successful_manifest_max = 100;
+    let mut failed_manifests = std::collections::HashSet::new();
+    let failed_manifests_max = 200;
 
     let mut fuzzer = Fuzzer::new();
-    while curr_good_cnt < needed_good_cnt {
+    while successfull_manifests.len() < successful_manifest_max {
         let m = fuzzer.gen_tx_manifest();
-        if matches!(
-            fuzzer.fuzz_tx_manifest(&manifest_encode(&m).unwrap()),
-            TxStatus::CommitSuccess
-        ) && m.instructions.len() >= 1
-        {
-            curr_good_cnt += 1;
-            println!("good instructions={} {:?} ", m.instructions.len(), m);
+        if m.instructions.len() > 1 {
+            let manifest_bytes = manifest_encode(&m).unwrap();
+
+            let option = match fuzzer.fuzz_tx_manifest(&manifest_bytes) {
+                TxStatus::CommitSuccess => {
+                    println!(
+                        "successful manifest! len={} instructions = {:?}",
+                        m.instructions.len(),
+                        m.instructions
+                    );
+                    Some((
+                        &mut successfull_manifests,
+                        successful_manifest_max,
+                        "succes",
+                    ))
+                }
+                TxStatus::CommitFailure => {
+                    Some((&mut failed_manifests, failed_manifests_max, "failed"))
+                }
+                _ => None,
+            };
+            match option {
+                Some((manifest_set, max_cnt, name)) => {
+                    let m_hash = hash(&manifest_bytes);
+                    if manifest_set.len() < max_cnt {
+                        if manifest_set.insert(m_hash) {
+                            println!("new!");
+                            #[cfg(feature = "dump_manifest_to_file")]
+                            dump_manifest_to_file(&m, name);
+                        }
+                    }
+                }
+                None => {}
+            }
+            print!(
+                "step: {} good: {}/{} failed: {}/{}\r",
+                i,
+                successfull_manifests.len(),
+                successful_manifest_max,
+                failed_manifests.len(),
+                failed_manifests_max
+            );
         }
-        #[cfg(feature = "dump_manifest_to_file")]
-        dump_manifest_to_file(&m);
         i += 1;
-        //println!("{}/{} instructions={} {:?}", i, needed_good_cnt, m.instructions.len(), m);
-        println!(
-            "{} {}/{} instructions={} ",
-            i,
-            curr_good_cnt,
-            needed_good_cnt,
-            m.instructions.len()
-        );
     }
 }
 
