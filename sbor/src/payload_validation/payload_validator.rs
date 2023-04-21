@@ -193,13 +193,24 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension>(
 ) -> Result<(), PayloadValidationError<E>> {
     // Apply contextual custom type validation here!
     if let TerminalValueRef::Custom(custom_value_ref) = value {
-        let custom_type_kind = match schema.resolve_type_kind(type_index)
-        .ok_or(PayloadValidationError::SchemaInconsistency)? {
-            TypeKind::Custom(x) => x,
-            _ => panic!("Found non-custom type kind for custom value; should've been checked by `custom_type_kind_matches_value_kind()` function"),
+        match schema
+            .resolve_type_kind(type_index)
+            .ok_or(PayloadValidationError::SchemaInconsistency)?
+        {
+            TypeKind::Custom(custom_type_kind) => {
+                E::validate_custom_value(custom_value_ref, custom_type_kind, context)?;
+            }
+            TypeKind::Any => {
+                // No validation for "any" type
+            }
+            x => {
+                // Should've been checked by `custom_type_kind_matches_value_kind()` within traverser
+                panic!(
+                    "Found non-custom type kind `{:?}` for custom value `{:?}`",
+                    x, custom_value_ref
+                );
+            }
         };
-
-        E::validate_custom_value(custom_value_ref, custom_type_kind, context)?;
     }
 
     match schema
