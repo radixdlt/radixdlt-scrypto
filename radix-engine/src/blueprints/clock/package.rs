@@ -121,26 +121,17 @@ impl ClockNativePackage {
             CLOCK_GET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::get_current_time(receiver, input, api)
+                Self::get_current_time(input, api)
             }
             CLOCK_SET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::set_current_time(receiver, input, api)
+                Self::set_current_time(input, api)
             }
             CLOCK_COMPARE_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::compare_current_time(receiver, input, api)
+                Self::compare_current_time(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -199,7 +190,6 @@ impl ClockNativePackage {
     }
 
     fn set_current_time<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -226,7 +216,6 @@ impl ClockNativePackage {
     }
 
     fn get_current_time<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -253,7 +242,6 @@ impl ClockNativePackage {
     }
 
     fn compare_current_time<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

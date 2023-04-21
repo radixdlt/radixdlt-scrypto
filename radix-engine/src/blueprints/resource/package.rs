@@ -1755,50 +1755,32 @@ impl ResourceManagerNativePackage {
             BUCKET_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::put(receiver, input, api)
+                BucketBlueprint::put(input, api)
             }
             BUCKET_TAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::take(receiver, input, api)
+                BucketBlueprint::take(input, api)
             }
             BUCKET_TAKE_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::take_non_fungibles(receiver, input, api)
+                BucketBlueprint::take_non_fungibles(input, api)
             }
             BUCKET_GET_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::get_amount(receiver, input, api)
+                BucketBlueprint::get_amount(input, api)
             }
             BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::get_non_fungible_local_ids(receiver, input, api)
+                BucketBlueprint::get_non_fungible_local_ids(input, api)
             }
             BUCKET_GET_RESOURCE_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::get_resource_address(receiver, input, api)
+                BucketBlueprint::get_resource_address(input, api)
             }
             BUCKET_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -1827,10 +1809,7 @@ impl ResourceManagerNativePackage {
             BUCKET_UNLOCK_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                BucketBlueprint::unlock_amount(receiver, input, api)
+                BucketBlueprint::unlock_amount(input, api)
             }
             BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -1891,66 +1870,42 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_POP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::pop(receiver, input, api)
+                AuthZoneBlueprint::pop(input, api)
             }
             AUTH_ZONE_PUSH_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::push(receiver, input, api)
+                AuthZoneBlueprint::push(input, api)
             }
             AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::create_proof(receiver, input, api)
+                AuthZoneBlueprint::create_proof(input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
+                AuthZoneBlueprint::create_proof_by_amount(input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
+                AuthZoneBlueprint::create_proof_by_ids(input, api)
             }
             AUTH_ZONE_CLEAR_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::clear(receiver, input, api)
+                AuthZoneBlueprint::clear(input, api)
             }
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::clear_signature_proofs(receiver, input, api)
+                AuthZoneBlueprint::clear_signature_proofs(input, api)
             }
             AUTH_ZONE_DRAIN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::drain(receiver, input, api)
+                AuthZoneBlueprint::drain(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),

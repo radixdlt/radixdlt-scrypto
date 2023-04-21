@@ -214,9 +214,9 @@ impl EpochManagerBlueprint {
         Ok(lp_buckets)
     }
 
-    pub(crate) fn get_current_epoch<Y>(receiver: &NodeId, api: &mut Y) -> Result<u64, RuntimeError>
+    pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<u64, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             &EpochManagerOffset::EpochManager.into(),
@@ -238,7 +238,6 @@ impl EpochManagerBlueprint {
         )?;
         let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
         Self::epoch_change(
-            receiver,
             epoch_manager.epoch,
             epoch_manager.max_validators,
             api,
@@ -256,12 +255,11 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn next_round<Y>(
-        receiver: &NodeId,
         round: u64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mgr_handle = api.lock_field(
             &EpochManagerOffset::EpochManager.into(),
@@ -281,7 +279,7 @@ impl EpochManagerBlueprint {
         if round >= epoch_manager.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
             let max_validators = epoch_manager.max_validators;
-            Self::epoch_change(receiver, next_epoch, max_validators, api)?;
+            Self::epoch_change(next_epoch, max_validators, api)?;
             epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
         } else {
@@ -296,12 +294,11 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn set_epoch<Y>(
-        receiver: &NodeId,
         epoch: u64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             &EpochManagerOffset::EpochManager.into(),
@@ -329,7 +326,6 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator_with_stake<Y>(
-        receiver: &NodeId,
         key: EcdsaSecp256k1PublicKey,
         xrd_stake: Bucket,
         register: bool,
@@ -345,7 +341,6 @@ impl EpochManagerBlueprint {
 
         if let Some(index_key) = index_key {
             Self::update_validator(
-                receiver,
                 UpdateSecondaryIndex::Create {
                     primary: validator_address,
                     stake: stake_amount,
@@ -364,12 +359,11 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
-        receiver: &NodeId,
         update: UpdateSecondaryIndex,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             &EpochManagerOffset::RegisteredValidatorSet.into(),
@@ -432,13 +426,12 @@ impl EpochManagerBlueprint {
     }
 
     fn epoch_change<Y>(
-        receiver: &NodeId,
         epoch: u64,
         max_validators: u32,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             &EpochManagerOffset::RegisteredValidatorSet.into(),

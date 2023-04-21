@@ -1,6 +1,6 @@
 use crate::errors::{
     ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType,
-    InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError,
+    KernelError, RuntimeError, SubstateValidationError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -75,8 +75,6 @@ where
                 => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
             Actor::Method { node_id, module_id, blueprint, .. } => (node_id, module_id, blueprint),
         };
-
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {

@@ -25,7 +25,6 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -158,14 +157,6 @@ pub struct InvalidDropNodeAccess {
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidSubstateAccess {
-    pub actor: Actor,
-    pub node_id: NodeId,
-    pub key: Vec<u8>,
-    pub flags: LockFlags,
 }
 
 impl CanBeAbortion for KernelError {
