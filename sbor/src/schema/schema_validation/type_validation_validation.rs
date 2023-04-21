@@ -2,7 +2,7 @@ use super::*;
 use crate::schema::*;
 
 pub fn validate_type_validation_with_type_kind<'a, E: CustomTypeExtension>(
-    _context: &TypeValidationContext,
+    _context: &SchemaContext,
     type_kind: &SchemaTypeKind<E>,
     type_validation: &TypeValidation,
 ) -> Result<(), SchemaValidationError> {

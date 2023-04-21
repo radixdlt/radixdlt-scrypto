@@ -182,14 +182,14 @@ impl CustomTypeExtension for NoCustomTypeExtension {
     }
 
     fn custom_type_kind_is_valid(
-        _: &TypeValidationContext,
+        _: &SchemaContext,
         _: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
     fn custom_type_kind_matches_metadata(
-        _: &TypeValidationContext,
+        _: &SchemaContext,
         _: &SchemaCustomTypeKind<Self>,
         _: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {

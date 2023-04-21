@@ -86,7 +86,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     }
 
     fn custom_type_kind_is_valid(
-        _context: &TypeValidationContext,
+        _context: &SchemaContext,
         type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
@@ -111,7 +111,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     }
 
     fn custom_type_kind_matches_metadata(
-        _: &TypeValidationContext,
+        _: &SchemaContext,
         type_kind: &SchemaCustomTypeKind<Self>,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {

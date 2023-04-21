@@ -51,7 +51,7 @@ pub fn validate_schema<E: CustomTypeExtension>(
     if type_validations.len() != types_len {
         return Err(SchemaValidationError::ValidationsLengthMismatch);
     }
-    let context = TypeValidationContext {
+    let context = SchemaContext {
         local_types_len: types_len,
     };
 
@@ -67,7 +67,7 @@ pub fn validate_schema<E: CustomTypeExtension>(
     Ok(())
 }
 
-pub struct TypeValidationContext {
+pub struct SchemaContext {
     pub local_types_len: usize,
 }
 

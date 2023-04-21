@@ -3,7 +3,7 @@ use crate::rust::prelude::*;
 use crate::schema::*;
 
 pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
-    context: &TypeValidationContext,
+    context: &SchemaContext,
     type_kind: &SchemaTypeKind<E>,
     type_metadata: &TypeMetadata,
 ) -> Result<(), SchemaValidationError> {

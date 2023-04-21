@@ -36,12 +36,12 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
     fn empty_schema() -> &'static Schema<Self>;
 
     fn custom_type_kind_is_valid(
-        context: &TypeValidationContext,
+        context: &SchemaContext,
         custom_type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError>;
 
     fn custom_type_kind_matches_metadata(
-        context: &TypeValidationContext,
+        context: &SchemaContext,
         custom_type_kind: &SchemaCustomTypeKind<Self>,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError>;
