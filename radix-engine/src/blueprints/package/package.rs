@@ -21,6 +21,7 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -107,7 +108,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 }
 
 fn globalize_package<Y>(
-    package_address: Option<[u8; 27]>,
+    package_address: Option<[u8; NodeId::LENGTH]>,
     info: PackageInfoSubstate,
     code_type: PackageCodeTypeSubstate,
     code: PackageCodeSubstate,
@@ -167,10 +168,9 @@ where
     );
 
     if let Some(access_rules) = access_rules {
-        let mut node = api.kernel_drop_node(access_rules.0.as_node_id())?;
-        let access_rules = node
-            .substates
-            .remove(&SysModuleId::ObjectTuple)
+        let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
+        let access_rules = node_substates
+            .remove(&SysModuleId::Object.into())
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
@@ -195,12 +195,11 @@ where
         api.kernel_allocate_node_id(EntityType::GlobalPackage)?
     };
 
-    let mut modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>> =
-        node_modules
-            .into_iter()
-            .map(|(k, v)| (k, v.to_substates()))
-            .collect();
-    modules.insert(SysModuleId::ObjectTuple, node_init);
+    let mut modules: NodeSubstates = node_modules
+        .into_iter()
+        .map(|(k, v)| (k.into(), v.to_substates()))
+        .collect();
+    modules.insert(SysModuleId::Object.into(), node_init);
 
     api.kernel_create_node(node_id, modules)?;
 
@@ -410,7 +409,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_native<Y>(
-        package_address: Option<[u8; 27]>, // TODO: Clean this up
+        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         native_package_code_id: u8,
         schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
@@ -486,7 +485,7 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn publish_wasm_advanced<Y>(
-        package_address: Option<[u8; 27]>, // TODO: Clean this up
+        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
@@ -512,7 +511,7 @@ impl PackageNativePackage {
     }
 
     fn publish_wasm_internal<Y>(
-        package_address: Option<[u8; 27]>, // TODO: Clean this up
+        package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,

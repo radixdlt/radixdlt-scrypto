@@ -1,5 +1,4 @@
 use super::call_frame::RefType;
-use super::heap::HeapNode;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -8,6 +7,7 @@ use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_stores::interface::NodeSubstates;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -15,7 +15,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 /// API for managing nodes
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
 
     /// TODO: Remove
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
@@ -27,14 +27,14 @@ pub trait KernelNodeApi {
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError>;
 }
 
 /// Info regarding the substate locked as well as what type of lock
 pub struct LockInfo {
     pub node_id: NodeId,
-    pub module_id: SysModuleId,
+    pub module_id: ModuleId,
     pub substate_key: SubstateKey,
     pub flags: LockFlags,
 }
@@ -45,7 +45,7 @@ pub trait KernelSubstateApi {
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
@@ -69,6 +69,40 @@ pub trait KernelSubstateApi {
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
+
+    /// Sets a value to a substate without checking for the original value.
+    ///
+    /// Clients must ensure that this isn't used in conjunction with shardable
+    /// substates; otherwise, the behavior is undefined
+    fn kernel_set_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError>;
+
+    /// Removes a substate from a node and returns the original value.
+    ///
+    /// Clients must ensure that this isn't used in conjunction with virtualized
+    /// substates; otherwise, the behavior is undefined
+    fn kernel_remove_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
+
+    /// Reads substates under a node in sorted lexicographical order
+    ///
+    /// Clients must ensure that this isn't used in conjunction with virtualized
+    /// substates; otherwise, the behavior is undefined
+    fn kernel_scan_sorted_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }
 
 #[derive(Debug)]

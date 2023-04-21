@@ -69,7 +69,7 @@ pub struct GenesisStakeAllocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisResource {
-    pub address_seed_bytes: [u8; 26],
+    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, String)>,
     pub owner: Option<ComponentAddress>,
@@ -121,19 +121,25 @@ impl From<TransactionReceipt> for SystemBootstrapReceipt {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct GenesisWrapUpReceipt {
-    pub faucet_component: ComponentAddress,
+    pub commit_result: CommitResult,
+}
+
+impl GenesisWrapUpReceipt {
+    pub fn faucet_component(&self) -> ComponentAddress {
+        // TODO: Remove this when appropriate syscalls are implemented for Scrypto
+        self.commit_result
+            .new_component_addresses()
+            .last()
+            .unwrap()
+            .clone()
+    }
 }
 
 impl From<TransactionReceipt> for GenesisWrapUpReceipt {
     fn from(receipt: TransactionReceipt) -> Self {
-        // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-        let faucet_component = receipt
-            .expect_commit(true)
-            .new_component_addresses()
-            .last()
-            .unwrap()
-            .clone();
-        GenesisWrapUpReceipt { faucet_component }
+        GenesisWrapUpReceipt {
+            commit_result: receipt.expect_commit_success().clone(),
+        }
     }
 }
 
@@ -158,20 +164,21 @@ where
         }
     }
 
-    pub fn bootstrap_default(
+    pub fn bootstrap_test_default(
         &mut self,
     ) -> Option<(
         SystemBootstrapReceipt,
         Vec<TransactionReceipt>,
         GenesisWrapUpReceipt,
     )> {
-        self.bootstrap_with_genesis_data(vec![], 1u64, 1u64, 1u64)
+        self.bootstrap_with_genesis_data(vec![], 1u64, 10u32, 1u64, 1u64)
     }
 
     pub fn bootstrap_with_genesis_data(
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
+        max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> Option<(
@@ -189,8 +196,12 @@ where
             .expect("Database misconfigured")
             .is_none()
         {
-            let system_bootstrap_receipt =
-                self.execute_system_bootstrap(initial_epoch, rounds_per_epoch, num_unstake_epochs);
+            let system_bootstrap_receipt = self.execute_system_bootstrap(
+                initial_epoch,
+                max_validators,
+                rounds_per_epoch,
+                num_unstake_epochs,
+            );
 
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
@@ -220,11 +231,13 @@ where
     fn execute_system_bootstrap(
         &mut self,
         initial_epoch: u64,
+        max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> SystemBootstrapReceipt {
         let transaction = create_system_bootstrap_transaction(
             initial_epoch,
+            max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
         );
@@ -295,6 +308,7 @@ where
 
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
 ) -> SystemTransaction {
@@ -569,7 +583,12 @@ pub fn create_system_bootstrap_transaction(
                 schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
+                dependent_resources: vec![
+                    RADIX_TOKEN,
+                    PACKAGE_TOKEN,
+                    SYSTEM_TOKEN,
+                    VALIDATOR_OWNER_TOKEN,
+                ],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -809,8 +828,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Create EpochManager
     {
-        let epoch_manager_component_address = Into::<[u8; 27]>::into(EPOCH_MANAGER);
-        let validator_owner_token = Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN);
+        let epoch_manager_component_address = Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER);
+        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN);
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
         pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
 
@@ -822,6 +841,7 @@ pub fn create_system_bootstrap_transaction(
                 validator_owner_token,
                 epoch_manager_component_address,
                 initial_epoch,
+                max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
@@ -841,7 +861,12 @@ pub fn create_system_bootstrap_transaction(
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: "GenesisHelper".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(whole_lotta_xrd, EPOCH_MANAGER, rounds_per_epoch),
+            args: manifest_args!(
+                whole_lotta_xrd,
+                EPOCH_MANAGER,
+                rounds_per_epoch,
+                AuthAddresses::system_role()
+            ),
         });
     }
 
@@ -865,7 +890,7 @@ pub fn create_genesis_data_ingestion_transaction(
         for resource in resources {
             pre_allocated_ids.insert(NodeId::new(
                 EntityType::GlobalFungibleResource as u8,
-                &resource.address_seed_bytes,
+                &resource.address_bytes_without_entity_id,
             ));
         }
     }

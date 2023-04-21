@@ -46,10 +46,9 @@ impl WorktopBlueprint {
 
         // FIXME we must check the node type, before generic own schema validation is ready.
 
-        let mut node = api.kernel_drop_node(input.worktop.as_node_id())?;
-        let substate = node
-            .substates
-            .remove(&SysModuleId::ObjectTuple)
+        let mut node_substates = api.kernel_drop_node(input.worktop.as_node_id())?;
+        let substate = node_substates
+            .remove(&SysModuleId::Object.into())
             .unwrap()
             .remove(&WorktopOffset::Worktop.into())
             .unwrap();

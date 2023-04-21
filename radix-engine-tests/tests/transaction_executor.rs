@@ -130,9 +130,9 @@ fn test_normal_transaction_flow() {
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     let (_, _, receipt) = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
-        .bootstrap_default()
+        .bootstrap_test_default()
         .unwrap();
-    let faucet_component = receipt.faucet_component;
+    let faucet_component = receipt.faucet_component();
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();

@@ -14,7 +14,7 @@ impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_default();
+        Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
         if let Ok(a) = SimulatorPackageAddress::from_str(&self.address) {
             dump_package(a.0, &substate_db, out).map_err(Error::LedgerDumpError)

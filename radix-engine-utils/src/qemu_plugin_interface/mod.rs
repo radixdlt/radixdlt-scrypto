@@ -2,12 +2,16 @@ use shared_memory::*;
 use std::{fs::File, io::prelude::*};
 
 pub mod data_analyzer;
-pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam};
+pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam, OutputParamValue};
 
 /// Shared memory name
 const SHARED_MEM_ID: &str = "/shm-scrypto";
 /// Maximum pre-allocated data entries
-const OUTPUT_DATA_COUNT: usize = 500000;
+const OUTPUT_DATA_COUNT: usize = 600000;
+/// Tracked functions calls stack depth
+const CALL_STACK_DEPTH: usize = 40;
+/// Output directory
+const OUTPUT_DIR: &str = "/tmp/scrypto-resources-usage";
 
 std::thread_local! {
     /// Global QEMU plugin object variable
@@ -34,7 +38,7 @@ impl<'a> QemuPluginInterface<'a> {
         };
 
         let mut ret = Self {
-            counters_stack: vec![("", 0); 20],
+            counters_stack: vec![("", 0); CALL_STACK_DEPTH],
             stack_top: 0,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
@@ -53,7 +57,7 @@ impl<'a> QemuPluginInterface<'a> {
     }
 
     pub fn start_counting(&mut self, key: &'static str, arg: &[data_analyzer::OutputParam]) {
-        if self.stack_top == self.counters_stack.len() {
+        if self.stack_top + 1 == self.counters_stack.len() {
             panic!("Stack too small, extend elements count of counters_stack field.");
         }
 
@@ -82,7 +86,29 @@ impl<'a> QemuPluginInterface<'a> {
         if self.stack_top == 0 {
             panic!("Not counting!");
         }
-        self.stack_top -= 1;
+
+        if self.counters_stack[self.stack_top].0 != key {
+            for i in (0..self.stack_top).rev() {
+                if self.counters_stack[i].0 == key {
+                    self.stack_top = i;
+                    break;
+                } else {
+                    self.output_data.push(OutputData {
+                        event: OutputDataEvent::FunctionExit,
+                        stack_depth: i,
+                        cpu_instructions: 0,
+                        cpu_instructions_calibrated: 0,
+                        function_name: self.counters_stack[i].0,
+                        param: vec![OutputParam {
+                            name: "return".into(),
+                            value: data_analyzer::OutputParamValue::Literal("true".into()),
+                        }],
+                    });
+                }
+            }
+        } else {
+            self.stack_top -= 1;
+        }
 
         self.counters_stack[self.stack_top].1 = n - self.counters_stack[self.stack_top].1;
 
@@ -106,16 +132,22 @@ impl<'a> QemuPluginInterface<'a> {
         ret
     }
 
-    // Applies calibration data to each item.
     fn prepare_output_data(&mut self) {
         if self.output_data.is_empty() {
             return;
         }
 
+        self.apply_calibration_data();
+        self.append_missing_function_exits();
+    }
+
+    fn apply_calibration_data(&mut self) {
         let overflow_range = 1;
         let mut ov_cnt = 0;
         for i in (0..=self.output_data.len() - 1).rev() {
-            if !matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
+            if !matches!(self.output_data[i].event, OutputDataEvent::FunctionExit)
+                || self.output_data[i].is_return_from_function()
+            {
                 continue;
             }
 
@@ -177,6 +209,64 @@ impl<'a> QemuPluginInterface<'a> {
         println!("Subtraction overflow count {}", ov_cnt);
     }
 
+    fn append_missing_function_exits(&mut self) {
+        let mut data_to_insert: Vec<(usize, OutputData<'a>)> = Vec::new();
+
+        for (i, v) in self.output_data.iter().enumerate() {
+            // for each function enter event
+            if matches!(v.event, OutputDataEvent::FunctionEnter) {
+                // verify function exit with same stack depth is present
+                let mut found = false;
+                let mut idx = i + 1;
+                for (j, w) in self.output_data[i + 1..].into_iter().enumerate() {
+                    if v.stack_depth == w.stack_depth
+                        && v.function_name == w.function_name
+                        && matches!(w.event, OutputDataEvent::FunctionExit)
+                    {
+                        found = true;
+                        break;
+                    } else if w.stack_depth < v.stack_depth
+                        || (w.stack_depth == v.stack_depth && v.function_name != w.function_name)
+                    {
+                        // not found due to stack depth diff or function name diff
+                        // exit event must be added before j element
+                        idx = i + 1 + j;
+                        break;
+                    } else if w.stack_depth > v.stack_depth {
+                        // ok
+                        idx = i + 1 + j + 1; // update idx in case of stack depth 0 function missing
+                    } else {
+                        panic!(
+                            "Wrong sequence of data: {}:{} (idx {}), {}:{} (idx {})",
+                            v.stack_depth, v.function_name, i, w.function_name, w.stack_depth, j
+                        )
+                    }
+                }
+
+                if !found && idx == self.output_data.len() {
+                    data_to_insert.push((
+                        idx,
+                        OutputData {
+                            event: OutputDataEvent::FunctionExit,
+                            stack_depth: v.stack_depth,
+                            cpu_instructions: v.cpu_instructions,
+                            cpu_instructions_calibrated: v.cpu_instructions_calibrated,
+                            function_name: v.function_name,
+                            param: vec![OutputParam {
+                                name: "return".into(),
+                                value: data_analyzer::OutputParamValue::Literal("true".into()),
+                            }],
+                        },
+                    ));
+                }
+            }
+        }
+
+        for v in data_to_insert.iter() {
+            self.output_data.insert(v.0, v.1.clone());
+        }
+    }
+
     #[allow(dead_code)]
     fn save_output_to_file(&self, file_name: &str) {
         if let Ok(mut file) = File::create(file_name) {
@@ -189,6 +279,25 @@ impl<'a> QemuPluginInterface<'a> {
             panic!("Unable to create {} file.", file_name)
         }
     }
+
+    fn generate_output_file_name(&self) -> String {
+        const DEFAULT_NAME: &str = "report";
+        let fname = match std::env::current_exe() {
+            Ok(exe_path) => match exe_path.file_stem() {
+                Some(fname) => match fname.to_str() {
+                    Some(s) => String::from(s),
+                    None => String::from(DEFAULT_NAME),
+                },
+                None => String::from(DEFAULT_NAME),
+            },
+            Err(_) => String::from(DEFAULT_NAME),
+        };
+        let now = std::time::SystemTime::now();
+        let timestamp = now
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap();
+        format!("{}/{}_{}.xml", OUTPUT_DIR, fname, timestamp.as_micros())
+    }
 }
 
 impl<'a> Drop for QemuPluginInterface<'a> {
@@ -196,9 +305,10 @@ impl<'a> Drop for QemuPluginInterface<'a> {
         self.prepare_output_data();
 
         // Uncomment following function call for plugin debug purposes
-        // self.save_output_to_file("/tmp/out.txt");
+        //self.save_output_to_file("/tmp/out.txt");
 
-        DataAnalyzer::save_xml(&self.output_data, "/tmp/out.xml");
+        let fname = self.generate_output_file_name();
+        DataAnalyzer::save_xml(&self.output_data, &fname);
     }
 }
 

@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemCallback;
 use crate::system::system_modules::costing::*;
-use crate::track::Track;
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -251,12 +251,12 @@ where
                     distribute_fees(&mut track, fee_reserve, is_success);
 
                 // Finalize track
-                let state_updates = track.finalize();
+                let tracked_nodes = track.finalize();
                 let state_update_summary =
-                    StateUpdateSummary::new(self.substate_db, &state_updates);
+                    StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates,
+                    state_updates: to_state_updates(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -460,15 +460,15 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees(
-    track: &mut Track,
+fn distribute_fees<S: SubstateDatabase>(
+    track: &mut Track<S>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,
 ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
     // Distribute royalty
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
-        let module_id = SysModuleId::ObjectTuple;
+        let module_id = SysModuleId::Object;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
         let handle = track
             .acquire_lock(
@@ -508,7 +508,7 @@ fn distribute_fees(
         let handle = track
             .acquire_lock(
                 &vault_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

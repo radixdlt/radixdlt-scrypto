@@ -31,9 +31,9 @@ mod multi_threaded_test {
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
         let (_, _, receipt) = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
-            .bootstrap_default()
+            .bootstrap_test_default()
             .unwrap();
-        let faucet_component = receipt.faucet_component;
+        let faucet_component = receipt.faucet_component();
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

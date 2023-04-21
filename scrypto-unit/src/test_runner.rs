@@ -128,21 +128,24 @@ impl Compile {
 }
 
 pub struct CustomGenesis {
-    genesis_data_chunks: Vec<GenesisDataChunk>,
-    initial_epoch: u64,
-    rounds_per_epoch: u64,
-    num_unstake_epochs: u64,
+    pub genesis_data_chunks: Vec<GenesisDataChunk>,
+    pub initial_epoch: u64,
+    pub max_validators: u32,
+    pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
 }
 
 impl CustomGenesis {
     pub fn empty(
         initial_epoch: u64,
+        max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> CustomGenesis {
         CustomGenesis {
             genesis_data_chunks: vec![],
             initial_epoch,
+            max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
         }
@@ -153,6 +156,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
+        max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> CustomGenesis {
@@ -169,6 +173,7 @@ impl CustomGenesis {
         CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
+            max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
         }
@@ -197,7 +202,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -211,14 +216,15 @@ impl TestRunnerBuilder {
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
+                    custom_genesis.max_validators,
                     custom_genesis.rounds_per_epoch,
                     custom_genesis.num_unstake_epochs,
                 )
                 .unwrap(),
-            None => bootstrapper.bootstrap_default().unwrap(),
+            None => bootstrapper.bootstrap_test_default().unwrap(),
         };
 
-        let faucet_component = genesis_wrap_up_receipt.faucet_component;
+        let faucet_component = genesis_wrap_up_receipt.faucet_component();
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -226,7 +232,7 @@ impl TestRunnerBuilder {
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
 
-        TestRunner {
+        let runner = TestRunner {
             scrypto_interpreter,
             substate_db,
             state_hash_support: Some(self.state_hashing)
@@ -237,7 +243,14 @@ impl TestRunnerBuilder {
             next_transaction_nonce,
             trace: self.trace,
             faucet_component,
-        }
+        };
+
+        let next_epoch = genesis_wrap_up_receipt.commit_result.next_epoch().unwrap();
+        (runner, next_epoch.0)
+    }
+
+    pub fn build(self) -> TestRunner {
+        self.build_and_get_epoch().0
     }
 }
 
@@ -371,7 +384,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::ObjectTuple.into(),
+                            SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
@@ -391,7 +404,7 @@ impl TestRunner {
             .substate_db
             .get_substate(
                 package_address.as_node_id(),
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &PackageOffset::Royalty.into(),
             )
             .expect("Database misconfigured")
@@ -403,7 +416,7 @@ impl TestRunner {
                     self.substate_db
                         .get_substate(
                             vault.as_node_id(),
-                            SysModuleId::ObjectTuple.into(),
+                            SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Database misconfigured")
@@ -454,7 +467,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             )
             .expect("Database misconfigured")
@@ -472,7 +485,7 @@ impl TestRunner {
         self.substate_db()
             .get_substate(
                 &vault_id,
-                SysModuleId::ObjectTuple.into(),
+                SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .expect("Database misconfigured")
@@ -556,7 +569,7 @@ impl TestRunner {
                 .substate_db()
                 .get_substate(
                     address.as_node_id(),
-                    SysModuleId::ObjectTuple.into(),
+                    SysModuleId::Object.into(),
                     &ValidatorOffset::Validator.into(),
                 )
                 .expect("Database misconfigured")
@@ -566,12 +579,12 @@ impl TestRunner {
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let substate: ValidatorSetSubstate = scrypto_decode(
+        let substate: CurrentValidatorSetSubstate = scrypto_decode(
             &self
                 .substate_db()
                 .get_substate(
                     EPOCH_MANAGER.as_node_id(),
-                    SysModuleId::ObjectTuple.into(),
+                    SysModuleId::Object.into(),
                     &EpochManagerOffset::CurrentValidatorSet.into(),
                 )
                 .expect("Database misconfigured")
@@ -1313,7 +1326,9 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
+                            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                                panic!("No event schema.")
+                            }
                         }
                     }
                 }
@@ -1335,7 +1350,7 @@ impl TestRunner {
                     .substate_db()
                     .get_substate(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectTuple.into(),
+                        SysModuleId::Object.into(),
                         &PackageOffset::Info.into(),
                     )
                     .expect("Database misconfigured")
@@ -1400,8 +1415,8 @@ impl StateHashSupport {
                 SubstateHashChange::new(
                     substate_id.clone(),
                     match value {
-                        StateUpdate::Create(v) => Some(hash(v)),
-                        StateUpdate::Update(v) => Some(hash(v)),
+                        StateUpdate::Set(v) => Some(hash(v)),
+                        StateUpdate::Delete => None,
                     },
                 )
             })

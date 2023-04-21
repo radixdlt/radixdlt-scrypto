@@ -21,7 +21,7 @@ pub struct GenesisStakeAllocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
-    pub address_seed_bytes: [u8; 26],
+    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
     pub initial_supply: Decimal,
     pub metadata: Vec<(String, String)>,
     pub owner: Option<ComponentAddress>,
@@ -63,6 +63,7 @@ mod genesis_helper {
             whole_lotta_xrd: Bucket,
             epoch_manager: ComponentAddress,
             rounds_per_epoch: u64,
+            system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
             Self {
                 epoch_manager,
@@ -72,7 +73,10 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize()
+            .globalize_with_access_rules(AccessRulesConfig::new().default(
+                rule!(require(system_role.clone())),
+                rule!(require(system_role)),
+            ))
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
@@ -180,7 +184,7 @@ mod genesis_helper {
 
             let address_bytes = NodeId::new(
                 EntityType::GlobalFungibleResource as u8,
-                &resource.address_seed_bytes,
+                &resource.address_bytes_without_entity_id,
             )
             .0;
             let resource_address = ResourceAddress::new_unchecked(address_bytes.clone());
@@ -291,16 +295,10 @@ mod genesis_helper {
         }
 
         pub fn wrap_up(&mut self) -> Bucket {
-            // A little hack to move to the next epoch,
-            // which also updates the validator set
-            // TODO: clean this up (add a dedicated method in epoch manager?)
             let _: () = Runtime::call_method(
                 self.epoch_manager,
-                "next_round",
-                scrypto_encode(&EpochManagerNextRoundInput {
-                    round: self.rounds_per_epoch,
-                })
-                .unwrap(),
+                EPOCH_MANAGER_START_IDENT,
+                scrypto_encode(&()).unwrap(),
             );
 
             // TODO: assert all resource vaults are empty

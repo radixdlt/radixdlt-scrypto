@@ -5,6 +5,7 @@ use std::{
     io::Write,
 };
 
+#[derive(Clone)]
 pub enum OutputDataEvent {
     FunctionEnter,
     FunctionExit,
@@ -56,6 +57,7 @@ impl OutputParam {
     }
 }
 
+#[derive(Clone)]
 pub struct OutputData<'a> {
     /// Logged event
     pub event: OutputDataEvent,
@@ -108,6 +110,22 @@ impl<'a> OutputData<'a> {
         file.write_fmt(format_args!("\n"))
             .expect(&format!("Unable write data."));
     }
+
+    pub fn is_return_from_function(&self) -> bool {
+        for p in &self.param {
+            if p.name == "return" {
+                match p.value {
+                    OutputParamValue::Literal(v) => {
+                        if v == "true" {
+                            return true;
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+        false
+    }
 }
 
 pub struct DataAnalyzer {}
@@ -159,6 +177,12 @@ impl DataAnalyzer {
 
     /// Function stores passed data as xml file.
     pub fn save_xml<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
+        // ensure folder exists
+        let mut path = std::path::PathBuf::new();
+        path.push(file_name);
+        path.pop();
+        std::fs::create_dir_all(path).unwrap_or_default();
+
         if let Ok(mut file) = File::create(file_name) {
             let mut stack_fcn: Vec<&'a str> = vec!["root"];
             let mut prev_stack_depth = 0;
@@ -170,15 +194,23 @@ impl DataAnalyzer {
 
                 // get cpu instructions and param from exit event
                 if matches!(v.event, OutputDataEvent::FunctionEnter) {
-                    for w in data[i..].into_iter() {
+                    let mut found = false;
+                    for w in data[i + 1..].into_iter() {
                         if v.stack_depth == w.stack_depth
                             && v.function_name == w.function_name
                             && matches!(w.event, OutputDataEvent::FunctionExit)
                         {
                             cpu_ins_cal = w.cpu_instructions_calibrated;
                             param = &w.param;
+                            found = true;
                             break;
                         }
+                    }
+                    if !found {
+                        println!(
+                            "Function exit not found: {}:{} (idx {})",
+                            v.stack_depth, v.function_name, i
+                        )
                     }
                 }
 

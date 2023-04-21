@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::types::*;
+use radix_engine_interface::api::sorted_store_api::SortedKey;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
@@ -12,9 +13,10 @@ pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct EpochManagerCreateInput {
-    pub validator_owner_token: [u8; 27], // TODO: Clean this up
-    pub component_address: [u8; 27],     // TODO: Clean this up
+    pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
+    pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
     pub initial_epoch: u64,
+    pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
 }
@@ -37,6 +39,13 @@ pub struct EpochManagerSetEpochInput {
 
 pub type EpochManagerSetEpochOutput = ();
 
+pub const EPOCH_MANAGER_START_IDENT: &str = "start";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct EpochManagerStartInput {}
+
+pub type EpochManagerStartOutput = ();
+
 pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -58,15 +67,30 @@ pub type EpochManagerCreateValidatorOutput = (ComponentAddress, Bucket);
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub enum UpdateValidator {
-    Register(EcdsaSecp256k1PublicKey, Decimal),
-    Unregister,
+pub enum UpdateSecondaryIndex {
+    Create {
+        index_key: SortedKey,
+        primary: ComponentAddress,
+        key: EcdsaSecp256k1PublicKey,
+        stake: Decimal,
+    },
+    UpdateStake {
+        index_key: SortedKey,
+        new_index_key: SortedKey,
+        new_stake_amount: Decimal,
+    },
+    UpdatePublicKey {
+        index_key: SortedKey,
+        key: EcdsaSecp256k1PublicKey,
+    },
+    Remove {
+        index_key: SortedKey,
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerUpdateValidatorInput {
-    pub validator_address: ComponentAddress,
-    pub update: UpdateValidator,
+    pub update: UpdateSecondaryIndex,
 }
 
 pub type EpochManagerUpdateValidatorOutput = ();

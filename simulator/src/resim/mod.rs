@@ -92,6 +92,9 @@ use utils::ContextualDisplay;
 /// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
+    1,
+    214,
+    31,
     81,
     94,
     195,
@@ -199,7 +202,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_default();
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -266,7 +269,7 @@ pub fn handle_manifest<O: std::io::Write>(
         None => {
             let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_default();
+            Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -346,12 +349,12 @@ pub fn get_signing_keys(
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_default();
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -379,7 +382,7 @@ pub fn export_blueprint_schema(
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_default();
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let substate = substate_db
         .get_substate(
@@ -436,7 +439,9 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                        TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                            return None
+                        }
                     }
                 }
             }
@@ -451,7 +456,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

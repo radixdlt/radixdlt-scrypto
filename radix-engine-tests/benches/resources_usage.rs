@@ -134,7 +134,7 @@ fn transfer_test(c: &mut Criterion) {
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     let _ = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
-        .bootstrap_default()
+        .bootstrap_test_default()
         .unwrap();
 
     // Create a key pair

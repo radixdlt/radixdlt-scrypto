@@ -34,19 +34,19 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (system_bootstrap_receipt, _, _) = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 1u64, 1u64)
+    let (system_bootstrap_receipt, _, wrap_up_receipt) = bootstrapper
+        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
-
-    system_bootstrap_receipt
-        .commit_result
-        .next_epoch()
-        .expect("There should be a new epoch.");
 
     assert!(system_bootstrap_receipt
         .commit_result
         .new_package_addresses()
         .contains(&PACKAGE_PACKAGE));
+
+    wrap_up_receipt
+        .commit_result
+        .next_epoch()
+        .expect("There should be a new epoch.");
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
     let (_, data_ingestion_receipts, _) = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 1u64, 1u64)
+        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
     assert!(data_ingestion_receipts[0]
@@ -85,11 +85,11 @@ fn test_genesis_resource_with_initial_allocation() {
     let token_holder = ComponentAddress::virtual_account_from_public_key(
         &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
     );
-    let address_seed_bytes = hash(vec![1, 2, 3]).lower_26_bytes();
+    let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
     let resource_address = ResourceAddress::new_unchecked(
         NodeId::new(
             EntityType::GlobalFungibleResource as u8,
-            &address_seed_bytes,
+            &address_bytes_without_entity_id,
         )
         .0,
     );
@@ -99,7 +99,7 @@ fn test_genesis_resource_with_initial_allocation() {
     );
     let allocation_amount = dec!("105");
     let genesis_resource = GenesisResource {
-        address_seed_bytes: address_seed_bytes.clone(),
+        address_bytes_without_entity_id: address_bytes_without_entity_id.clone(),
         initial_supply: allocation_amount,
         metadata: vec![("symbol".to_string(), "TST".to_string())],
         owner: Some(owner),
@@ -119,13 +119,13 @@ fn test_genesis_resource_with_initial_allocation() {
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
     let (_, mut data_ingestion_receipts, _) = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 1u64, 1u64)
+        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
     let persisted_resource_manager_substate = substate_db
         .get_substate(
             &resource_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
         .unwrap()
@@ -221,7 +221,7 @@ fn test_genesis_stake_allocation() {
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
     let (_, mut data_ingestion_receipts, _) = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 1u64, 1u64)
+        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();

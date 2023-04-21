@@ -28,7 +28,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let package = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Code.into(),
         )
         .expect("Database misconfigured");
@@ -72,7 +72,9 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-            TypeInfoSubstate::KeyValueStore(_) => panic!("Unexpected"),
+            TypeInfoSubstate::KeyValueStore(_) | TypeInfoSubstate::SortedStore => {
+                panic!("Unexpected")
+            }
         };
 
         let mut accounter = ResourceAccounter::new(substate_db);
@@ -137,7 +139,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     let substate = substate_db
         .get_substate(
             resource_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
         .expect("Database misconfigured")
