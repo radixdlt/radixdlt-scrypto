@@ -7,7 +7,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemCallback;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::transaction::{TransactionExecutionTrace, TransactionResult};
+use crate::transaction::{ExecutionMetrics, TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -45,28 +45,6 @@ impl ExecutionTraceModule {
     pub fn update_instruction_index(&mut self, new_index: usize) {
         self.current_instruction_index = new_index;
     }
-}
-
-/// Metrics gathered during transaction execution.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub struct ExecutionMetrics {
-    /// Consumed cost units (excluding royalties)
-    pub execution_cost_units_consumed: usize,
-    /// Consumed royalties cost units
-    pub royalties_cost_units_consumed: usize,
-    /// Total substate read size in bytes.
-    pub substate_read_size: usize,
-    /// Substate read count.
-    pub substate_read_count: usize,
-    /// Total substate write size in bytes.
-    pub substate_write_size: usize,
-    /// Substate write count.
-    pub substate_write_count: usize,
-    /// Peak WASM memory usage during transactino execution.
-    /// This is the highest sum of all nested WASM instances.
-    pub max_wasm_memory_used: usize,
-    /// The highest invoke payload size during transaction execution.
-    pub max_invoke_payload_size: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

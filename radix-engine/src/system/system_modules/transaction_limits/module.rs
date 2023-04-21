@@ -3,7 +3,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::{SystemCallback, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::execution_trace::ExecutionMetrics;
+use crate::transaction::ExecutionMetrics;
 use crate::types::*;
 use crate::{
     errors::ModuleError,

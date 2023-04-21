@@ -3,7 +3,7 @@ use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::system::system_modules::costing::FeeSummary;
 use crate::system::system_modules::execution_trace::{
-    ExecutionMetrics, ExecutionTrace, ResourceChange, WorktopChange,
+    ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::types::*;
 use colored::*;
@@ -41,6 +41,28 @@ impl TransactionExecutionTrace {
         }
         aggregator
     }
+}
+
+/// Metrics gathered during transaction execution.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub struct ExecutionMetrics {
+    /// Consumed cost units (excluding royalties)
+    pub execution_cost_units_consumed: usize,
+    /// Consumed royalties cost units
+    pub royalties_cost_units_consumed: usize,
+    /// Total substate read size in bytes.
+    pub substate_read_size: usize,
+    /// Substate read count.
+    pub substate_read_count: usize,
+    /// Total substate write size in bytes.
+    pub substate_write_size: usize,
+    /// Substate write count.
+    pub substate_write_count: usize,
+    /// Peak WASM memory usage during transactino execution.
+    /// This is the highest sum of all nested WASM instances.
+    pub max_wasm_memory_used: usize,
+    /// The highest invoke payload size during transaction execution.
+    pub max_invoke_payload_size: usize,
 }
 
 /// Captures whether a transaction should be committed, and its other results
