@@ -29,14 +29,7 @@ impl LockFlags {
 }
 
 /// A high level api to read/write substates
-pub trait ClientSubstateApi<E: Debug> {
-    // TODO: expose non-SELF?
-    fn lock_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, E>;
-
+pub trait ClientSubstateLockApi<E: Debug> {
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
 
     fn sys_read_substate_typed<S: ScryptoDecode>(

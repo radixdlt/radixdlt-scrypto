@@ -5,7 +5,7 @@ use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{ClientApi, ClientSubstateApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -368,7 +368,7 @@ pub struct NonFungibleVault;
 impl NonFungibleVault {
     pub fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -382,7 +382,7 @@ impl NonFungibleVault {
 
     pub fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
@@ -417,7 +417,7 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),

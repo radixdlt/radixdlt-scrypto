@@ -1,6 +1,7 @@
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::ClientSubstateLockApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };

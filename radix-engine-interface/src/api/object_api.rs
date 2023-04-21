@@ -1,6 +1,7 @@
 use crate::types::*;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_interface::api::LockFlags;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -36,6 +37,12 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, E>;
+
+    fn lock_field(
+        &mut self,
+        field: u8,
+        flags: LockFlags,
+    ) -> Result<LockHandle, E>;
 
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;

@@ -1,4 +1,4 @@
-use scrypto::api::substate_api::LockFlags;
+use scrypto::api::substate_lock_api::LockFlags;
 use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;

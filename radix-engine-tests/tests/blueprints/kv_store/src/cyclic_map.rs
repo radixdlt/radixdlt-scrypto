@@ -1,6 +1,6 @@
 use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
-use scrypto::api::substate_api::LockFlags;
-use scrypto::api::ClientSubstateApi;
+use scrypto::api::substate_lock_api::LockFlags;
+use scrypto::api::ClientSubstateLockApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

@@ -21,7 +21,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_store_api::SortedKey;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -57,57 +57,11 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    #[trace_resources]
-    fn lock_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, blueprint) = match &actor {
-            Actor::Function { .. }
-            | Actor::VirtualLazyLoad { .. }
-                => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
-            Actor::Method { node_id, module_id, blueprint, .. } => (node_id, module_id, blueprint),
-        };
-
-        // TODO: Remove
-        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)) {
-
-                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
-            }
-        }
-
-        let sys_module_id = match object_module_id {
-            ObjectModuleId::SELF => {
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                        return Err(RuntimeError::SystemError(SystemError::NotATuple));
-                    }
-                    _ => SysModuleId::Object,
-                }
-            }
-            ObjectModuleId::Metadata => {
-                return Err(RuntimeError::SystemError(SystemError::NotATuple));
-            }
-            ObjectModuleId::Royalty => SysModuleId::Royalty,
-            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-        };
-
-        // TODO: Check if valid substate_key for node_id
-
-        let substate_key = SubstateKey::Tuple(field);
-
-        self.api
-            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
-    }
 
     #[trace_resources]
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
@@ -290,6 +244,53 @@ where
         )?;
 
         Ok(node_id.into())
+    }
+
+    #[trace_resources]
+    fn lock_field(
+        &mut self,
+        field: u8,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, object_module_id, blueprint) = match &actor {
+            Actor::Function { .. }
+            | Actor::VirtualLazyLoad { .. }
+            => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
+            Actor::Method { node_id, module_id, blueprint, .. } => (node_id, module_id, blueprint),
+        };
+
+        // TODO: Remove
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)) {
+
+                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+            }
+        }
+
+        let sys_module_id = match object_module_id {
+            ObjectModuleId::SELF => {
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                    (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                        return Err(RuntimeError::SystemError(SystemError::NotATuple));
+                    }
+                    _ => SysModuleId::Object,
+                }
+            }
+            ObjectModuleId::Metadata => {
+                return Err(RuntimeError::SystemError(SystemError::NotATuple));
+            }
+            ObjectModuleId::Royalty => SysModuleId::Royalty,
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+        };
+
+        // TODO: Check if valid substate_key for node_id
+
+        let substate_key = SubstateKey::Tuple(field);
+
+        self.api
+            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
     }
 
     #[trace_resources]

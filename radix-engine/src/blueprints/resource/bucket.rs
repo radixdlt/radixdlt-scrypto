@@ -5,9 +5,8 @@ use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -29,7 +28,7 @@ pub struct BucketInfoSubstate {
 impl BucketInfoSubstate {
     pub fn of_self<Y>(api: &mut Y) -> Result<Self, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle =
             api.lock_field(BucketOffset::Info.into(), LockFlags::read_only())?;
@@ -45,7 +44,7 @@ pub struct FungibleBucket;
 impl FungibleBucket {
     pub fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LiquidFungible.into(),
@@ -59,7 +58,7 @@ impl FungibleBucket {
 
     pub fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LockedFungible.into(),
@@ -76,7 +75,7 @@ impl FungibleBucket {
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LiquidFungible.into(),
@@ -98,7 +97,7 @@ impl FungibleBucket {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
@@ -126,7 +125,7 @@ impl FungibleBucket {
         api: &mut Y,
     ) -> Result<FungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LockedFungible.into(),
@@ -166,7 +165,7 @@ impl FungibleBucket {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LockedFungible.into(),
@@ -195,7 +194,7 @@ pub struct NonFungibleBucket;
 impl NonFungibleBucket {
     pub fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LiquidNonFungible.into(),
@@ -209,7 +208,7 @@ impl NonFungibleBucket {
 
     pub fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LockedNonFungible.into(),
@@ -225,7 +224,7 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LiquidNonFungible.into(),
@@ -241,7 +240,7 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LockedNonFungible.into(),
@@ -258,7 +257,7 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LiquidNonFungible.into(),
@@ -280,7 +279,7 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             BucketOffset::LiquidNonFungible.into(),
@@ -301,7 +300,7 @@ impl NonFungibleBucket {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientSubstateApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());

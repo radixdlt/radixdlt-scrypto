@@ -2,9 +2,8 @@ use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
@@ -43,7 +42,7 @@ pub struct ProofInfoSubstate {
 }
 
 impl ProofInfoSubstate {
-    pub fn of_self<Y: ClientSubstateApi<RuntimeError>>(
+    pub fn of_self<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
         let handle =

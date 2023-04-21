@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, StateUpdate, StateUpdates, SubstateDatabase,
