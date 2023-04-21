@@ -33,6 +33,8 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         well_known_index: u8,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
+    fn empty_schema() -> &'static Schema<Self>;
+
     fn custom_type_kind_is_valid(
         context: &TypeValidationContext,
         custom_type_kind: &SchemaCustomTypeKind<Self>,
@@ -48,6 +50,4 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         custom_type_kind: &Self::CustomTypeKind<L>,
         value_kind: ValueKind<Self::CustomValueKind>,
     ) -> bool;
-
-    fn empty_schema() -> &'static Schema<Self>;
 }

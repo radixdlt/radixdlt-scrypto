@@ -236,8 +236,10 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
                 .into());
             }
         }
-        TypeValidation::Array(_) => todo!(),
-        TypeValidation::Map(_) => todo!(),
+        TypeValidation::Array(_) | TypeValidation::Map(_) => {
+            // No Array or Map validation should be attached to terminal value.
+            return Err(PayloadValidationError::SchemaInconsistency);
+        }
     }
     Ok(())
 }
