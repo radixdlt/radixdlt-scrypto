@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::EpochManagerSubstate;
+use crate::blueprints::epoch_manager::{EpochManagerBlueprint, EpochManagerSubstate};
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -261,12 +261,10 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let manager = api.get_info()?.blueprint_parent.unwrap();
-            api.call_method(
-                manager.as_node_id(),
-                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                scrypto_encode(&EpochManagerUpdateValidatorInput { update }).unwrap(),
-            )?;
+            let registered_handle = api.lock_parent_field(EpochManagerOffset::RegisteredValidators.into(), LockFlags::read_only())?;
+            let secondary_index: Own = api.sys_read_substate_typed(registered_handle)?;
+
+            EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
         }
 
         Ok(new_sorted_key)
@@ -339,16 +337,15 @@ impl ValidatorBlueprint {
         // Update Epoch Manager
         {
             if let Some(index_key) = &validator.sorted_key {
-                let manager = api.get_info()?.blueprint_parent.unwrap();
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
                     index_key: index_key.clone(),
                     key,
                 };
-                api.call_method(
-                    manager.as_node_id(),
-                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                    scrypto_encode(&EpochManagerUpdateValidatorInput { update }).unwrap(),
-                )?;
+
+                let registered_handle = api.lock_parent_field(EpochManagerOffset::RegisteredValidators.into(), LockFlags::read_only())?;
+                let secondary_index: Own = api.sys_read_substate_typed(registered_handle)?;
+
+                EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
             }
         }
 

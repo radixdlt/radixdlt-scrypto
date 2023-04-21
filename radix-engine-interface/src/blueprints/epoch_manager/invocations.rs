@@ -77,8 +77,6 @@ pub struct EpochManagerCreateValidatorWithStakeInput {
 
 pub type EpochManagerCreateValidatorWithStakeOutput = (ComponentAddress, Bucket, Bucket);
 
-pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum UpdateSecondaryIndex {
     Create {
@@ -100,13 +98,6 @@ pub enum UpdateSecondaryIndex {
         index_key: SortedKey,
     },
 }
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct EpochManagerUpdateValidatorInput {
-    pub update: UpdateSecondaryIndex,
-}
-
-pub type EpochManagerUpdateValidatorOutput = ();
 
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 

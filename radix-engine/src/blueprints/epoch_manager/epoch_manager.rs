@@ -145,10 +145,6 @@ impl EpochManagerBlueprint {
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT),
-            rule!(require(this_package_token)),
-        );
-        access_rules.set_method_access_rule(
             MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
@@ -318,7 +314,14 @@ impl EpochManagerBlueprint {
             ValidatorCreator::create_with_stake(key, xrd_stake, register, api)?;
 
         if let Some(index_key) = index_key {
+            let handle = api.lock_field(
+                EpochManagerOffset::RegisteredValidators.into(),
+                LockFlags::read_only(),
+            )?;
+            let secondary_index: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
+
             Self::update_validator(
+                secondary_index.as_node_id(),
                 UpdateSecondaryIndex::Create {
                     primary: validator_address,
                     stake: stake_amount,
@@ -337,18 +340,13 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
+        secondary_index: &NodeId,
         update: UpdateSecondaryIndex,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            EpochManagerOffset::RegisteredValidatorSet.into(),
-            LockFlags::read_only(),
-        )?;
-        let secondary_index: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
-
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
@@ -357,7 +355,7 @@ impl EpochManagerBlueprint {
                 stake,
             } => {
                 api.insert_typed_into_sorted_index(
-                    secondary_index.as_node_id(),
+                    secondary_index,
                     index_key,
                     (address, Validator { key, stake }),
                 )?;
@@ -365,13 +363,13 @@ impl EpochManagerBlueprint {
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let (address, mut validator) = api
                     .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
-                        secondary_index.as_node_id(),
+                        secondary_index,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.insert_typed_into_sorted_index(
-                    secondary_index.as_node_id(),
+                    secondary_index,
                     index_key,
                     (address, validator),
                 )?;
@@ -383,19 +381,19 @@ impl EpochManagerBlueprint {
             } => {
                 let (address, mut validator) = api
                     .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
-                        secondary_index.as_node_id(),
+                        secondary_index,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.insert_typed_into_sorted_index(
-                    secondary_index.as_node_id(),
+                    secondary_index,
                     new_index_key,
                     (address, validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                api.remove_from_sorted_index(secondary_index.as_node_id(), &index_key)?;
+                api.remove_from_sorted_index(secondary_index, &index_key)?;
             }
         }
 
@@ -407,7 +405,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            EpochManagerOffset::RegisteredValidatorSet.into(),
+            EpochManagerOffset::RegisteredValidators.into(),
             LockFlags::MUTABLE,
         )?;
 

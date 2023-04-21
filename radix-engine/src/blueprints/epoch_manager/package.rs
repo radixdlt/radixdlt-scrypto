@@ -94,17 +94,6 @@ impl EpochManagerNativePackage {
                 export_name: EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT.to_string(),
             },
         );
-        functions.insert(
-            EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerUpdateValidatorInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerUpdateValidatorOutput>(),
-                export_name: EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
-            },
-        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -340,17 +329,6 @@ impl EpochManagerNativePackage {
                     input.register,
                     api,
                 )?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let input: EpochManagerUpdateValidatorInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-
-                let rtn = EpochManagerBlueprint::update_validator(input.update, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

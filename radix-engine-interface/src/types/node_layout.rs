@@ -107,7 +107,7 @@ pub enum NonFungibleVaultOffset {
 pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
-    RegisteredValidatorSet,
+    RegisteredValidators,
 }
 
 #[repr(u8)]
