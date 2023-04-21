@@ -4,9 +4,9 @@ mod custom_payload_wrappers;
 mod custom_schema;
 /// Defines custom serialization of the types.
 mod custom_serde;
-/// Defines how to validate custom types.
-mod custom_traversal;
 /// Defines how to traverse scrypto custom types.
+mod custom_traversal;
+/// Defines how to validate custom types.
 mod custom_validation;
 /// Defines the model of Scrypto custom values.
 mod custom_value;
