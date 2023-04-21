@@ -4,9 +4,9 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
-use radix_engine_stores::interface::CommittableSubstateDatabase;
 use radix_engine_stores::interface::StateUpdate;
 use radix_engine_stores::interface::StateUpdates;
+use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateKeyMapper};
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
@@ -68,10 +68,12 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
             let module_id: ModuleId = SysModuleId::Object.into();
-            let substate_key_code: Vec<u8> = vec![PackageOffset::Code.into()];
+            let substate_key_code: Vec<u8> =
+                JmtKeyMapper::map_to_db_key(PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
 
-            let substate_key_info: Vec<u8> = vec![PackageOffset::Info.into()];
+            let substate_key_info: Vec<u8> =
+                JmtKeyMapper::map_to_db_key(PackageOffset::Info.into());
             let package_info = PackageInfoSubstate {
                 schema,
                 dependent_resources: BTreeSet::new(),

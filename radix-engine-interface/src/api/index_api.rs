@@ -5,6 +5,7 @@ use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
+/// Api to manage an iterable index
 pub trait ClientIndexApi<E> {
     /// Creates a new index
     fn new_index(&mut self) -> Result<NodeId, E>;

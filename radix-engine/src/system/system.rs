@@ -704,7 +704,7 @@ where
     V: SystemCallbackObject,
 {
     fn new_index(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalIterableStore;
+        let entity_type = EntityType::InternalIndex;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
         self.api.kernel_create_node(
@@ -823,7 +823,7 @@ where
 {
     #[trace_resources]
     fn new_sorted_index(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalSortedStore;
+        let entity_type = EntityType::InternalSortedIndex;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
         self.api.kernel_create_node(
