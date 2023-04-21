@@ -203,11 +203,10 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
             TypeKind::Any => {
                 // No validation for "any" type
             }
-            x => {
-                // Should've been checked by `custom_type_kind_matches_value_kind()` within traverser
+            ty => {
                 panic!(
-                    "Found non-custom type kind `{:?}` for custom value `{:?}`",
-                    x, custom_value_ref
+                    "Non-custom type `{:?}` matched with custom value `{:?}`; please check `custom_type_kind_matches_value_kind`",
+                    ty, custom_value_ref
                 );
             }
         };

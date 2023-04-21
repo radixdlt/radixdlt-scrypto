@@ -2,7 +2,6 @@ use crate::*;
 use radix_engine_common::types::*;
 
 pub const RADIX_TOKEN: ResourceAddress = resource_address(EntityType::GlobalFungibleResource, 0);
-
 pub const ECDSA_SECP256K1_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 0);
 pub const EDDSA_ED25519_TOKEN: ResourceAddress =
@@ -35,7 +34,20 @@ pub const METADATA_PACKAGE: PackageAddress = package_address(EntityType::GlobalP
 pub const ROYALTY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 12);
 pub const GENESIS_HELPER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 13);
+pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 64);
 
+pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
+pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);
+
+pub const FAUCET_BLUEPRINT: &str = "Faucet";
+pub(crate) const FUNGIBLE_VAULT_BLUEPRINT: &str = "FungibleVault";
+pub(crate) const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";
+pub(crate) const FUNGIBLE_BUCKET_BLUEPRINT: &str = "FungibleBucket";
+pub(crate) const NON_FUNGIBLE_BUCKET_BLUEPRINT: &str = "NonFungibleBucket";
+pub(crate) const FUNGIBLE_PROOF_BLUEPRINT: &str = "FungibleProof";
+pub(crate) const NON_FUNGIBLE_PROOF_BLUEPRINT: &str = "NonFungibleProof";
+
+// TODO: remove
 // There should be no need of this function, but many of our configurations are depending on it.
 // Having it in a single place to avoid out-of-sync.
 pub fn is_native_package(address: PackageAddress) -> bool {
@@ -55,9 +67,3 @@ pub fn is_native_package(address: PackageAddress) -> bool {
         _ => false,
     }
 }
-
-pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 64);
-pub const FAUCET_BLUEPRINT: &str = "Faucet";
-
-pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
-pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);
