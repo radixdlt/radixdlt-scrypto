@@ -121,11 +121,18 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
-        let resource_manager = substate_db
-            .read_mapped_substate::<JmtKeyMapper, NonFungibleResourceManagerSubstate>(
+        let id_type = substate_db
+            .read_mapped_substate::<JmtKeyMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                ResourceManagerOffset::ResourceManager.into(),
+                NonFungibleResourceManagerOffset::IdType.into(),
+            )
+            .ok_or(EntityDumpError::ResourceManagerNotFound)?;
+        let total_supply = substate_db
+            .read_mapped_substate::<JmtKeyMapper, Decimal>(
+                resource_address.as_node_id(),
+                SysModuleId::Object.into(),
+                NonFungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(
@@ -138,13 +145,13 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             output,
             "{}: {:?}",
             "ID Type".green().bold(),
-            resource_manager.id_type
+            id_type
         );
         writeln!(
             output,
             "{}: {}",
             "Total Supply".green().bold(),
-            resource_manager.total_supply
+            total_supply
         );
     } else {
         let resource_manager = substate_db

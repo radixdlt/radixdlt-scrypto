@@ -30,19 +30,18 @@ pub enum NonFungibleResourceManagerError {
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerSubstate {
-    pub total_supply: Decimal,
+pub struct NonFungibleResourceManagerDataSubstate {
     pub non_fungible_type_index: LocalTypeIndex,
     pub non_fungible_table: Own,
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
+pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
 
-fn build_non_fungible_resource_manager_substate<Y>(
-    supply: usize,
+fn build_non_fungible_resource_manager_data_substate<Y>(
     non_fungible_schema: NonFungibleDataSchema,
     api: &mut Y,
-) -> Result<(NonFungibleResourceManagerSubstate, NodeId), RuntimeError>
+) -> Result<(NonFungibleResourceManagerDataSubstate, NodeId), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -97,9 +96,8 @@ where
 
     let nf_store_id = api.new_key_value_store(kv_schema)?;
 
-    let resource_manager = NonFungibleResourceManagerSubstate {
+    let resource_manager = NonFungibleResourceManagerDataSubstate {
         non_fungible_type_index: non_fungible_schema.non_fungible,
-        total_supply: supply.into(),
         non_fungible_table: Own(nf_store_id),
         mutable_fields: non_fungible_schema.mutable_fields,
     };
@@ -203,13 +201,14 @@ impl NonFungibleResourceManagerBlueprint {
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
         let (resource_manager_substate, _) =
-            build_non_fungible_resource_manager_substate(0, non_fungible_schema, api)?;
+            build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&id_type).unwrap(),
                 scrypto_encode(&resource_manager_substate).unwrap(),
+                scrypto_encode(&Decimal::zero()).unwrap(),
             ],
         )?;
 
@@ -239,13 +238,12 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-            entries.len(),
+        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_data_substate(
             non_fungible_schema,
             api,
         )?;
 
-        let entries = entries
+        let entries: BTreeMap<NonFungibleLocalId, ScryptoValue> = entries
             .into_iter()
             .map(|(id, (value,))| (id, value))
             .collect();
@@ -253,6 +251,7 @@ impl NonFungibleResourceManagerBlueprint {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
+        let supply: Decimal = Decimal::from(entries.len());
         let bucket =
             build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
 
@@ -261,6 +260,7 @@ impl NonFungibleResourceManagerBlueprint {
             vec![
                 scrypto_encode(&id_type).unwrap(),
                 scrypto_encode(&resource_manager).unwrap(),
+                scrypto_encode(&supply).unwrap(),
             ],
         )?;
 
@@ -286,8 +286,7 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungible_entries.insert(id, entry);
         }
 
-        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-            non_fungible_entries.len(),
+        let (data, nf_store_id) = build_non_fungible_resource_manager_data_substate(
             non_fungible_schema,
             api,
         )?;
@@ -295,6 +294,7 @@ impl NonFungibleResourceManagerBlueprint {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
 
+        let supply = Decimal::from(non_fungible_entries.len());
         let bucket = build_non_fungible_bucket(
             resource_address,
             NonFungibleIdType::UUID,
@@ -307,7 +307,8 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
-                scrypto_encode(&resource_manager).unwrap(),
+                scrypto_encode(&data).unwrap(),
+                scrypto_encode(&supply).unwrap(),
             ],
         )?;
 
@@ -325,13 +326,13 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
-        let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
+        let data_handle = api.lock_field(
+            NonFungibleResourceManagerOffset::Data.into(),
+            LockFlags::read_only(),
         )?;
 
-        let mut resource_manager: NonFungibleResourceManagerSubstate =
-            api.sys_read_substate_typed(resman_handle)?;
+        let data: NonFungibleResourceManagerDataSubstate =
+            api.sys_read_substate_typed(data_handle)?;
 
         let handle = api.lock_field(
             NonFungibleResourceManagerOffset::IdType.into(),
@@ -348,8 +349,16 @@ impl NonFungibleResourceManagerBlueprint {
                 ));
             }
 
-            let amount: Decimal = entries.len().into();
-            resource_manager.total_supply += amount;
+            {
+                let total_supply_handle = api.lock_field(
+                    NonFungibleResourceManagerOffset::TotalSupply.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                let amount: Decimal = entries.len().into();
+                total_supply += amount;
+                api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            }
 
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
@@ -387,12 +396,10 @@ impl NonFungibleResourceManagerBlueprint {
                 ],
             )?;
 
-            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-
             (bucket_id, non_fungibles)
         };
 
-        let nf_store_id = { resource_manager.non_fungible_table };
+        let nf_store_id = { data.non_fungible_table };
 
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.lock_key_value_store_entry(
@@ -439,20 +446,20 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-        let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
+        let data_handle = api.lock_field(
+            NonFungibleResourceManagerOffset::Data.into(),
+            LockFlags::read_only(),
         )?;
 
-        let mut resource_manager: NonFungibleResourceManagerSubstate =
-            api.sys_read_substate_typed(resman_handle)?;
-        let nf_store_id = resource_manager.non_fungible_table;
+        let data: NonFungibleResourceManagerDataSubstate =
+            api.sys_read_substate_typed(data_handle)?;
+        let nf_store_id = data.non_fungible_table;
 
-        let handle = api.lock_field(
+        let id_type_handle = api.lock_field(
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::MUTABLE,
         )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+        let id_type: NonFungibleIdType = api.sys_read_substate_typed(id_type_handle)?;
 
         if id_type != NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
@@ -462,7 +469,16 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        resource_manager.total_supply += 1;
+        // Update Total Supply
+        {
+            let total_supply_handle = api.lock_field(
+                NonFungibleResourceManagerOffset::TotalSupply.into(),
+                LockFlags::MUTABLE,
+            )?;
+            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            total_supply -= 1;
+            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+        }
 
         // TODO: Is this enough bits to prevent hash collisions?
         // TODO: Possibly use an always incrementing timestamp
@@ -498,8 +514,6 @@ impl NonFungibleResourceManagerBlueprint {
 
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
-        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-
         Ok((Bucket(Own(bucket_id)), id))
     }
 
@@ -511,15 +525,16 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-        let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+
 
         let (bucket_id, ids) = {
-            let mut resource_manager: NonFungibleResourceManagerSubstate =
-                api.sys_read_substate_typed(resman_handle)?;
-            let nf_store_id = resource_manager.non_fungible_table;
+            let data_handle = api.lock_field(
+                NonFungibleResourceManagerOffset::Data.into(),
+                LockFlags::read_only(),
+            )?;
+            let data: NonFungibleResourceManagerDataSubstate =
+                api.sys_read_substate_typed(data_handle)?;
+            let nf_store_id = data.non_fungible_table;
 
             let handle = api.lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
@@ -535,8 +550,17 @@ impl NonFungibleResourceManagerBlueprint {
                 ));
             }
 
-            let amount: Decimal = entries.len().into();
-            resource_manager.total_supply += amount;
+            {
+                let total_supply_handle = api.lock_field(
+                    NonFungibleResourceManagerOffset::TotalSupply.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                let amount: Decimal = entries.len().into();
+                total_supply += amount;
+                api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            }
+
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
             for (value,) in entries {
@@ -573,8 +597,6 @@ impl NonFungibleResourceManagerBlueprint {
                 ],
             )?;
 
-            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-
             (bucket_id, ids)
         };
 
@@ -594,11 +616,11 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: NonFungibleResourceManagerSubstate =
+        let resource_manager: NonFungibleResourceManagerDataSubstate =
             api.sys_read_substate_typed(resman_handle)?;
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
@@ -663,11 +685,11 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: NonFungibleResourceManagerSubstate =
+        let resource_manager: NonFungibleResourceManagerDataSubstate =
             api.sys_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
@@ -692,11 +714,11 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: NonFungibleResourceManagerSubstate =
+        let resource_manager: NonFungibleResourceManagerDataSubstate =
             api.sys_read_substate_typed(resman_handle)?;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
@@ -754,10 +776,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+
 
         // FIXME: check if the bucket is locked
         let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
@@ -782,10 +801,14 @@ impl NonFungibleResourceManagerBlueprint {
                 // Check if resource matches
                 // TODO: Move this check into actor check
                 {
+                    let data_handle = api.lock_field(
+                        NonFungibleResourceManagerOffset::Data.into(),
+                        LockFlags::read_only(),
+                    )?;
                     let resource_address =
                         ResourceAddress::new_unchecked(api.get_global_address()?.into());
-                    let mut resource_manager: NonFungibleResourceManagerSubstate =
-                        api.sys_read_substate_typed(resman_handle)?;
+                    let data: NonFungibleResourceManagerDataSubstate =
+                        api.sys_read_substate_typed(data_handle)?;
                     if dropped_bucket.info.resource_address != resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
@@ -796,12 +819,19 @@ impl NonFungibleResourceManagerBlueprint {
 
                     // Update total supply
                     // TODO: there might be better for maintaining total supply, especially for non-fungibles
-                    // Update total supply
-                    resource_manager.total_supply -= resource.amount();
+                    {
+                        let total_supply_handle = api.lock_field(
+                            NonFungibleResourceManagerOffset::TotalSupply.into(),
+                            LockFlags::MUTABLE,
+                        )?;
+                        let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                        total_supply -= resource.amount();
+                        api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+                    }
 
                     for id in resource.into_ids() {
                         let non_fungible_handle = api.lock_key_value_store_entry(
-                            resource_manager.non_fungible_table.as_node_id(),
+                            data.non_fungible_table.as_node_id(),
                             &id.to_key(),
                             LockFlags::MUTABLE,
                         )?;
@@ -809,8 +839,6 @@ impl NonFungibleResourceManagerBlueprint {
                         api.sys_write_substate_typed(non_fungible_handle, None::<ScryptoValue>)?;
                         api.sys_drop_lock(non_fungible_handle)?;
                     }
-
-                    api.sys_write_substate_typed(resman_handle, &resource_manager)?;
                 }
             }
         }
@@ -861,13 +889,11 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resman_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::ResourceManager.into(),
+        let handle = api.lock_field(
+            NonFungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
-        let resource_manager: NonFungibleResourceManagerSubstate =
-            api.sys_read_substate_typed(resman_handle)?;
-        let total_supply = resource_manager.total_supply;
+        let total_supply: Decimal = api.sys_read_substate_typed(handle)?;
         Ok(total_supply)
     }
 }

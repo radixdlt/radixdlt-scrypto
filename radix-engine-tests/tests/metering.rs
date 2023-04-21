@@ -318,15 +318,15 @@ fn test_flash_loan() {
         + 19721 /* DropLock */
         + 6195 /* DropNode */
         + 2478055 /* Invoke */
-        + 53172 /* LockSubstate */
-        + 393892 /* ReadSubstate */
+        + 53404 /* LockSubstate */
+        + 393694 /* ReadSubstate */
         + 215000 /* RunNative */
         + 40000 /* RunSystem */
         + 1184015 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2054271, /* WriteSubstate */
+        + 1958271, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
