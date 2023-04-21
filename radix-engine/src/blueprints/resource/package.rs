@@ -202,10 +202,13 @@ impl ResourceManagerNativePackage {
                 aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
             );
             substates.push(
-                aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerDataSubstate>(),
+                aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerDataSchemaSubstate>(),
             );
             substates.push(
                 aggregator.add_child_type_and_descendents::<Decimal>(),
+            );
+            substates.push(
+                aggregator.add_child_type_and_descendents::<Own>(),
             );
 
             let mut functions = BTreeMap::new();

@@ -82,8 +82,9 @@ pub enum ResourceManagerOffset {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum NonFungibleResourceManagerOffset {
     IdType,
-    Data,
+    DataSchema,
     TotalSupply,
+    Data,
 }
 
 #[repr(u8)]
