@@ -177,12 +177,20 @@ function generate_input() {
             # Collect input data
             cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
             popd
+
+            cargo nextest run test_gen_tx_manifest --features dump_manifest_to_file
+
             if [ $mode = "raw" ] ; then
                 mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
+                mv manifest_*.raw ${curr_path}/${final_dir}
                 return
             fi
 
             mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
+            mv manifest_*.raw ${curr_path}/${raw_dir}
+
+            # do not minimize big files, move them directly to input
+            find ${curr_path}/${raw_dir} -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
         fi
 
         # Make the input corpus unique
