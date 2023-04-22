@@ -60,7 +60,7 @@ pub enum RefType {
 
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubstateLock {
+pub struct SubstateLock<L> {
     pub node_id: NodeId,
     pub module_id: ModuleId,
     pub substate_key: SubstateKey,
@@ -68,6 +68,7 @@ pub struct SubstateLock {
     pub initial_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
     pub store_handle: Option<u32>,
+    pub data: L,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,7 +86,7 @@ impl RENodeRefData {
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
-pub struct CallFrame {
+pub struct CallFrame<L> {
     /// The frame id
     pub depth: usize,
 
@@ -106,7 +107,7 @@ pub struct CallFrame {
     owned_root_nodes: IndexMap<NodeId, u32>,
 
     next_lock_handle: LockHandle,
-    locks: IndexMap<LockHandle, SubstateLock>,
+    locks: IndexMap<LockHandle, SubstateLock<L>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -174,7 +175,7 @@ pub enum CallFrameTakeSortedSubstatesError {
     NodeNotInCallFrame(NodeId),
 }
 
-impl CallFrame {
+impl<L: Clone> CallFrame<L> {
     // TODO: Remove
     fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
@@ -211,6 +212,7 @@ impl CallFrame {
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
+        data: L,
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
@@ -291,6 +293,7 @@ impl CallFrame {
                 initial_owned_nodes: owned_nodes.clone(),
                 flags,
                 store_handle,
+                data,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -388,12 +391,13 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo> {
+    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
         self.locks.get(&lock_handle).map(|substate_lock| LockInfo {
             node_id: substate_lock.node_id,
             module_id: substate_lock.module_id,
             substate_key: substate_lock.substate_key.clone(),
             flags: substate_lock.flags,
+            data: substate_lock.data.clone(),
         })
     }
 
@@ -633,7 +637,7 @@ impl CallFrame {
     }
 
     pub fn new_child_from_parent(
-        parent: &mut CallFrame,
+        parent: &mut CallFrame<L>,
         actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, MoveError> {
@@ -666,8 +670,8 @@ impl CallFrame {
     }
 
     pub fn update_upstream(
-        from: &mut CallFrame,
-        to: &mut CallFrame,
+        from: &mut CallFrame<L>,
+        to: &mut CallFrame<L>,
         update: CallFrameUpdate,
     ) -> Result<(), MoveError> {
         for node_id in update.nodes_to_move {

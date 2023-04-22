@@ -1399,7 +1399,7 @@ where
             .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default, data)
     }
 
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<SystemLockData>, RuntimeError> {
         self.api.kernel_get_lock_info(lock_handle)
     }
 

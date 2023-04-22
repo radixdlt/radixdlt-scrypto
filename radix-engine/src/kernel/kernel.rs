@@ -136,11 +136,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame,
+    current_frame: CallFrame<SystemLockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame>,
+    prev_frame_stack: Vec<CallFrame<SystemLockData>>,
     /// Heap
     heap: Heap,
     /// Store
@@ -543,6 +543,7 @@ where
             substate_key,
             flags,
             default,
+            data,
         );
 
         let lock_handle = match &maybe_lock_handle {
@@ -562,6 +563,7 @@ where
                                 &substate_key,
                                 flags,
                                 None,
+                                SystemLockData::default(),
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -610,6 +612,7 @@ where
                                 substate_key,
                                 flags,
                                 None,
+                                SystemLockData::default(),
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -630,7 +633,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<SystemLockData>, RuntimeError> {
         self.current_frame
             .get_lock_info(lock_handle)
             .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(

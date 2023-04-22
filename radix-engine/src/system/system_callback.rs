@@ -86,7 +86,7 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct SystemLockData;
 
 pub struct SystemConfig<C: SystemCallbackObject> {
