@@ -1018,28 +1018,27 @@ where
             }
         }
 
+        // Check if valid field_index
+        let schema = self.get_blueprint_schema(blueprint)?;
+        if !schema.has_field(field) {
+            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(blueprint.clone(), field)));
+        }
+
         let sys_module_id = match object_module_id {
-            ObjectModuleId::SELF => {
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                        return Err(RuntimeError::SystemError(SystemError::NotATuple));
-                    }
-                    _ => SysModuleId::Object,
-                }
-            }
-            ObjectModuleId::Metadata => {
-                return Err(RuntimeError::SystemError(SystemError::NotATuple));
-            }
+            ObjectModuleId::Metadata => SysModuleId::Metadata,
             ObjectModuleId::Royalty => SysModuleId::Royalty,
             ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+            ObjectModuleId::SELF => SysModuleId::Object,
         };
-
-        // TODO: Check if valid substate_key for node_id
-
         let substate_key = SubstateKey::Tuple(field);
 
-        self.api
-            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags, SystemLockData::default())
+        self.api.kernel_lock_substate(
+                &node_id,
+                sys_module_id.into(),
+                &substate_key,
+                flags,
+                SystemLockData::default(),
+        )
     }
 
     #[trace_resources]

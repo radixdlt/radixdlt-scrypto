@@ -194,7 +194,7 @@ pub enum SystemError {
     NoParent,
     NotAnObject,
     NotAMethod,
-    NotATuple,
+    FieldDoesNotExist(Blueprint, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,

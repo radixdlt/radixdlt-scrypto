@@ -194,7 +194,7 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 parent: None,
                 schema,
-                substates,
+                substates: substates,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -406,7 +406,7 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 parent: None,
                 schema,
-                substates,
+                substates: substates,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -527,7 +527,7 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
+                substates: substates,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -686,7 +686,7 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
+                substates: substates,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -828,7 +828,7 @@ impl ResourceManagerNativePackage {
         let bucket_schema = BlueprintSchema {
             parent: None,
             schema,
-            substates,
+            substates: substates,
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
@@ -895,7 +895,7 @@ impl ResourceManagerNativePackage {
         let proof_schema = BlueprintSchema {
             parent: None,
             schema,
-            substates,
+            substates: substates,
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
@@ -997,7 +997,7 @@ impl ResourceManagerNativePackage {
         let worktop_schema = BlueprintSchema {
             parent: None,
             schema,
-            substates,
+            substates: substates,
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
@@ -1091,7 +1091,7 @@ impl ResourceManagerNativePackage {
         let auth_zone_schema = BlueprintSchema {
             parent: None,
             schema,
-            substates,
+            substates: substates,
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),

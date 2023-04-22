@@ -208,8 +208,12 @@ pub struct PackageNativePackage;
 impl PackageNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-        let substates = Vec::new();
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(

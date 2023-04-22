@@ -93,6 +93,11 @@ impl Default for BlueprintSchema {
 }
 
 impl BlueprintSchema {
+    pub fn has_field(&self, field_index: u8) -> bool {
+        let field_index: usize = field_index.into();
+        field_index < self.substates.len()
+    }
+
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {
