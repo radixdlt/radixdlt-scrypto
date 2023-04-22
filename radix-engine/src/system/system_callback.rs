@@ -87,7 +87,9 @@ pub struct SystemInvocation {
 }
 
 #[derive(Default, Clone)]
-pub struct SystemLockData;
+pub struct SystemLockData {
+    pub is_kv_store: bool,
+}
 
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,

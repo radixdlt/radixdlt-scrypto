@@ -303,8 +303,6 @@ impl FeeTable {
                 (SysModuleId::Metadata, Some(EntityType::GlobalPackage)) => 622,
                 (SysModuleId::Metadata, Some(EntityType::GlobalValidator)) => 689,
                 (SysModuleId::Metadata, Some(EntityType::GlobalVirtualEcdsaIdentity)) => 707,
-                (SysModuleId::Virtualized, Some(EntityType::InternalGenericComponent)) => 650,
-                (SysModuleId::Virtualized, Some(EntityType::InternalKeyValueStore)) => 671,
                 (SysModuleId::Object, Some(EntityType::GlobalAccessController)) => 1562,
                 (SysModuleId::Object, Some(EntityType::GlobalAccount)) => 356,
                 (SysModuleId::Object, Some(EntityType::GlobalClock)) => 290,

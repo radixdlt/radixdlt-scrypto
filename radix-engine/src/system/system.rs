@@ -76,10 +76,10 @@ where
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let LockInfo {
-            node_id, module_id, ..
+            node_id, data, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::Virtualized.into()) {
+        if data.is_kv_store {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -224,15 +224,10 @@ where
             None
         };
 
-        let self_module_id = match (package_address, blueprint_ident) {
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
-            _ => SysModuleId::Object,
-        };
-
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                self_module_id.into() => node_init,
+                SysModuleId::Object.into() => node_init,
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
@@ -380,7 +375,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
-                        .remove(&SysModuleId::Virtualized.into())
+                        .remove(&SysModuleId::Object.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
@@ -566,7 +561,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Virtualized.into() => btreemap!(),
+                SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -611,13 +606,13 @@ where
             TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
-            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Virtualized,
+            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Object,
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
                 if let Actor::Method { module_id, .. } = &actor {
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Object,
                                 _ => {
                                     return Err(RuntimeError::SystemError(
                                         SystemError::NotAKeyValueStore,
@@ -632,7 +627,7 @@ where
                     }
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Object,
                         _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
                     }
                 }
@@ -647,7 +642,9 @@ where
             &substate_key,
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData::default(),
+            SystemLockData {
+                is_kv_store: true,
+            },
         )
     }
 }
