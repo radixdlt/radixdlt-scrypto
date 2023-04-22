@@ -1,6 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateLockApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
@@ -157,7 +157,13 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
+    fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, ClientApiError> {
+        todo!()
+    }
 
+    fn key_value_entry_insert(&mut self, handle: KeyValueEntryLockHandle, buffer: Vec<u8>) -> Result<(), ClientApiError> {
+        todo!()
+    }
 }
 
 impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {

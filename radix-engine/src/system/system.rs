@@ -15,7 +15,7 @@ use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
 use radix_engine_interface::api::index_api::ClientIndexApi;
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -631,7 +631,7 @@ where
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<KeyValueEntryLockHandle, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
@@ -656,6 +656,68 @@ where
         )
     }
 
+    #[trace_resources]
+    fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        if !data.is_kv_store {
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+        }
+
+        self.api
+            .kernel_read_substate(handle)
+            .map(|v| v.as_slice().to_vec())
+    }
+
+    #[trace_resources]
+    fn key_value_entry_insert(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        let LockInfo {
+            node_id, data, ..
+        } = self.api.kernel_get_lock_info(handle)?;
+
+        let schema = if data.is_kv_store {
+            let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+            match type_info {
+                TypeInfoSubstate::KeyValueStore(schema) => schema,
+                _ => panic!("Unexpected"),
+            }
+        } else {
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+        };
+
+        let value: ScryptoValue = scrypto_decode(&buffer)
+            .map_err(|_| {
+                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+            }) ?;
+
+        let buffer = scrypto_encode(&Option::Some(value)).unwrap();
+
+        validate_payload_against_schema(&buffer, &schema.schema, schema.value)
+            .map_err(|_| {
+                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+            })?;
+
+        if !schema.can_own {
+            let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
+                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+            })?;
+            let (_, own, _) = indexed.unpack();
+            if !own.is_empty() {
+                return Err(RuntimeError::SystemError(
+                    SystemError::InvalidKeyValueStoreOwnership,
+                ));
+            }
+        }
+
+        let substate = IndexedScryptoValue::from_vec(buffer)
+            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+        self.api.kernel_write_substate(handle, substate)?;
+
+        Ok(())
+    }
 }
 
 impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>

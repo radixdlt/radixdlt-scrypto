@@ -4,6 +4,9 @@ use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
 use scrypto_schema::KeyValueStoreSchema;
 
+
+pub type KeyValueEntryLockHandle = u32;
+
 // TODO: Add locked entry interface rather than using substate api
 pub trait ClientKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
@@ -18,7 +21,17 @@ pub trait ClientKeyValueStoreApi<E> {
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<LockHandle, E>;
+    ) -> Result<KeyValueEntryLockHandle, E>;
 
-    // TODO: Add specific kv store read/write lock apis
+
+    // TODO: Change return to Option<Vec<u8>>
+    fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, E>;
+
+    fn key_value_entry_insert(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), E>;
+
+    // TODO: Add specific kv store read lock apis
 }
