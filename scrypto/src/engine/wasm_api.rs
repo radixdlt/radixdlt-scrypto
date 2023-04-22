@@ -72,6 +72,12 @@ extern "C" {
         flags: u32,
     ) -> u32;
 
+    pub fn key_value_entry_insert(
+        _key_value_entry_lock_handle: u32,
+        _buffer_ptr: *const u8,
+        _buffer_len: usize,
+    );
+
     /// Invokes a method on a component.
     pub fn call_method(
         receiver_ptr: *const u8,
@@ -201,6 +207,15 @@ pub unsafe fn lock_key_value_store_entry(
     _offset_len: usize,
     _flags: u32,
 ) -> u32 {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn key_value_entry_insert(
+    _key_value_entry_lock_handle: u32,
+    _buffer_ptr: *const u8,
+    _buffer_len: usize,
+) {
     unreachable!()
 }
 

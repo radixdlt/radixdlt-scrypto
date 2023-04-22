@@ -96,13 +96,11 @@ impl<
     pub fn insert(&self, key: K, value: V) {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
-        let value_payload = scrypto_encode(&value).unwrap();
         let handle = env
             .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
-        let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
-        env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
-            .unwrap();
+        let value_payload = scrypto_encode(&value).unwrap();
+        env.key_value_entry_set(handle, value_payload).unwrap();
         env.sys_drop_lock(handle).unwrap();
     }
 

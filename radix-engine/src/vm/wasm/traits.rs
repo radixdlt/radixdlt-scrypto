@@ -54,6 +54,12 @@ pub trait WasmRuntime {
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 
+    fn key_value_entry_insert(
+        &mut self,
+        handle: u32,
+        data: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
     fn get_object_info(
         &mut self,
         component_id: Vec<u8>,

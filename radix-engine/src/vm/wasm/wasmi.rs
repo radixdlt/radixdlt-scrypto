@@ -284,6 +284,17 @@ fn lock_key_value_store_entry(
     runtime.lock_key_value_store_entry(node_id, substate_key, flags)
 }
 
+fn key_value_entry_insert(
+    mut caller: Caller<'_, HostState>,
+    handle: u32,
+    buffer_ptr: u32,
+    buffer_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+    let data = read_memory(caller.as_context_mut(), memory, buffer_ptr, buffer_len)?;
+    runtime.key_value_entry_insert(handle, data)
+}
+
 fn lock_field(
     caller: Caller<'_, HostState>,
     field: u32,
@@ -589,6 +600,22 @@ impl WasmiModule {
             },
         );
 
+        let host_key_value_entry_insert = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             handle: u32,
+             buffer_ptr: u32,
+             buffer_len: u32|
+             -> Result<(), Trap> {
+                key_value_entry_insert(
+                    caller,
+                    handle,
+                    buffer_ptr,
+                    buffer_len,
+                ).map_err(|e| e.into())
+            },
+        );
+
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, field: u32, lock_flags: u32| -> Result<u32, Trap> {
@@ -707,11 +734,7 @@ impl WasmiModule {
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
         linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
-        linker_define!(
-            linker,
-            NEW_KEY_VALUE_STORE_FUNCTION_NAME,
-            host_new_key_value_store
-        );
+
         linker_define!(
             linker,
             GLOBALIZE_OBJECT_FUNCTION_NAME,
@@ -720,11 +743,23 @@ impl WasmiModule {
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+
+        linker_define!(
+            linker,
+            NEW_KEY_VALUE_STORE_FUNCTION_NAME,
+            host_new_key_value_store
+        );
         linker_define!(
             linker,
             LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME,
             host_lock_key_value_store_entry
         );
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_INSERT_FUNCTION_NAME,
+            host_key_value_entry_insert
+        );
+
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
         linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);

@@ -143,7 +143,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
+    ) -> Result<KeyValueEntryLockHandle, ClientApiError> {
         let handle = unsafe {
             lock_key_value_store_entry(
                 node_id.as_ref().as_ptr(),
@@ -161,8 +161,16 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn key_value_entry_insert(&mut self, handle: KeyValueEntryLockHandle, buffer: Vec<u8>) -> Result<(), ClientApiError> {
-        todo!()
+    fn key_value_entry_set(&mut self, handle: KeyValueEntryLockHandle, buffer: Vec<u8>) -> Result<(), ClientApiError> {
+        unsafe {
+            key_value_entry_insert(
+                handle,
+                buffer.as_ptr(),
+                buffer.len(),
+            )
+        };
+
+        Ok(())
     }
 }
 

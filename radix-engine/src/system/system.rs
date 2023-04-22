@@ -669,7 +669,7 @@ where
     }
 
     #[trace_resources]
-    fn key_value_entry_insert(
+    fn key_value_entry_set(
         &mut self,
         handle: KeyValueEntryLockHandle,
         buffer: Vec<u8>,

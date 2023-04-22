@@ -27,7 +27,7 @@ pub trait ClientKeyValueStoreApi<E> {
     // TODO: Change return to Option<Vec<u8>>
     fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, E>;
 
-    fn key_value_entry_insert(
+    fn key_value_entry_set(
         &mut self,
         handle: KeyValueEntryLockHandle,
         buffer: Vec<u8>,

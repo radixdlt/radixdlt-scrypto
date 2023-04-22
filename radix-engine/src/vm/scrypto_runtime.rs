@@ -144,6 +144,17 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+
+        self.api.drop_object(node_id)?;
+
+        Ok(())
+    }
+
     fn new_key_value_store(
         &mut self,
         schema: Vec<u8>,
@@ -156,17 +167,6 @@ where
             scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
 
         self.allocate_buffer(key_value_store_id_encoded)
-    }
-
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        let node_id = NodeId(
-            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
-                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
-        );
-
-        self.api.drop_object(node_id)?;
-
-        Ok(())
     }
 
     fn lock_key_value_store_entry(
@@ -184,6 +184,11 @@ where
         let handle = self.api.lock_key_value_store_entry(&node_id, &key, flags)?;
 
         Ok(handle)
+    }
+
+    fn key_value_entry_insert(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.key_value_entry_set(handle, data)?;
+        Ok(())
     }
 
     fn lock_field(
@@ -380,14 +385,14 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn new_key_value_store(
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -397,6 +402,10 @@ impl WasmRuntime for NopWasmRuntime {
         offset: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn key_value_entry_insert(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
