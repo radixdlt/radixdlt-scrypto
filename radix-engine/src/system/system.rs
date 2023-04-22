@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreSchema};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -54,6 +54,83 @@ where
             api,
             phantom: PhantomData::default(),
         }
+    }
+
+    fn get_blueprint_schema(&mut self, blueprint: &Blueprint) -> Result<BlueprintSchema, RuntimeError> {
+        let handle = self.api.kernel_lock_substate(
+            blueprint.package_address.as_node_id(),
+            SysModuleId::Object.into(),
+            &PackageOffset::Info.into(),
+            LockFlags::read_only(),
+            SystemLockData::default(),
+        )?;
+        let package: PackageInfoSubstate =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let schema =
+            package
+                .schema
+                .blueprints
+                .get(blueprint.blueprint_name.as_str())
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::SubstateValidationError(Box::new(
+                        SubstateValidationError::BlueprintNotFound(blueprint.blueprint_name.to_string()),
+                    )),
+                ))?.clone();
+
+        self.api.kernel_drop_lock(handle)?;
+
+        Ok(schema)
+    }
+
+    fn verify_blueprint_fields(&mut self, blueprint: &Blueprint, fields: &Vec<Vec<u8>>) -> Result<Option<String>, RuntimeError> {
+        let handle = self.api.kernel_lock_substate(
+            blueprint.package_address.as_node_id(),
+            SysModuleId::Object.into(),
+            &PackageOffset::Info.into(),
+            LockFlags::read_only(),
+            SystemLockData::default(),
+        )?;
+        let package: PackageInfoSubstate =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let schema =
+            package
+                .schema
+                .blueprints
+                .get(blueprint.blueprint_name.as_str())
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::SubstateValidationError(Box::new(
+                        SubstateValidationError::BlueprintNotFound(blueprint.blueprint_name.to_string()),
+                    )),
+                ))?;
+
+        if schema.substates.len() != fields.len() {
+            return Err(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::WrongNumberOfSubstates(
+                        blueprint.clone(),
+                        fields.len(),
+                        schema.substates.len(),
+                    ),
+                )),
+            ));
+        }
+        for i in 0..fields.len() {
+            validate_payload_against_schema(&fields[i], &schema.schema, schema.substates[i])
+                .map_err(|err| {
+                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
+                        SubstateValidationError::SchemaValidationError(
+                            blueprint.clone(),
+                            err.error_message(&schema.schema),
+                        ),
+                    )))
+                })?;
+        }
+
+        let parent_blueprint = schema.parent.clone();
+
+        self.api.kernel_drop_lock(handle)?;
+
+        Ok(parent_blueprint)
     }
 }
 
@@ -135,53 +212,12 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        object_states: Vec<Vec<u8>>,
+        fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let package_address = actor.package_address().clone();
-
-        let handle = self.api.kernel_lock_substate(
-            package_address.as_node_id(),
-            SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
-            LockFlags::read_only(),
-            SystemLockData::default(),
-        )?;
-        let package: PackageInfoSubstate =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(blueprint_ident)
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
-                    )),
-                ))?;
-        if schema.substates.len() != object_states.len() {
-            return Err(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::WrongNumberOfSubstates(
-                        blueprint_ident.to_string(),
-                        object_states.len(),
-                        schema.substates.len(),
-                    ),
-                )),
-            ));
-        }
-        for i in 0..object_states.len() {
-            validate_payload_against_schema(&object_states[i], &schema.schema, schema.substates[i])
-                .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::SchemaValidationError(
-                            blueprint_ident.to_string(),
-                            err.error_message(&schema.schema),
-                        ),
-                    )))
-                })?;
-        }
-        self.api.kernel_drop_lock(handle)?;
+        let blueprint = Blueprint::new(&package_address, blueprint_ident);
+        let parent_blueprint = self.verify_blueprint_fields(&blueprint, &fields)?;
 
         let entity_type = match (package_address, blueprint_ident) {
             (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
@@ -195,7 +231,7 @@ where
         };
 
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = object_states
+        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = fields
             .into_iter()
             .enumerate()
             .map(|(i, x)| {
@@ -207,7 +243,7 @@ where
             })
             .collect();
 
-        let blueprint_parent = if let Some(parent) = &schema.parent {
+        let blueprint_parent = if let Some(parent) = &parent_blueprint {
             match actor {
                 Actor::Method {
                     global_address: Some(address),
@@ -1186,7 +1222,7 @@ where
         let actor = self.api.kernel_get_current_actor();
 
         // Locking the package info substate associated with the emitter's package
-        let (handle, blueprint_schema, local_type_index) = {
+        let (blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
                 Some(Actor::Method {
@@ -1211,29 +1247,7 @@ where
                 )),
             }?;
 
-            let handle = self.api.kernel_lock_substate(
-                blueprint.package_address.as_node_id(),
-                SysModuleId::Object.into(),
-                &PackageOffset::Info.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-            let package_info: PackageInfoSubstate =
-                self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let blueprint_schema = package_info
-                .schema
-                .blueprints
-                .get(&blueprint.blueprint_name)
-                .cloned()
-                .map_or(
-                    Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(Box::new(EventError::SchemaNotFoundError {
-                            blueprint: blueprint.clone(),
-                            event_name: event_name.clone(),
-                        })),
-                    )),
-                    Ok,
-                )?;
+            let blueprint_schema = self.get_blueprint_schema(&blueprint)?;
 
             // Translating the event name to it's local_type_index which is stored in the blueprint
             // schema
@@ -1249,7 +1263,7 @@ where
                     ));
                 };
 
-            (handle, blueprint_schema, local_type_index)
+            (blueprint_schema, local_type_index)
         };
 
         // Construct the event type identifier based on the current actor
@@ -1292,8 +1306,6 @@ where
             .events
             .add_event(event_type_identifier, event_data);
 
-        // Dropping the lock on the PackageInfo
-        self.api.kernel_drop_lock(handle)?;
         Ok(())
     }
 }
