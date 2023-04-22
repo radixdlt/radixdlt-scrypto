@@ -338,7 +338,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                     panic!("Should never occur");
                                 }
                             },
-                            TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => {}
+                            TrackedSubstateKey::Transient(..) | TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => {}
                         }
                     }
 

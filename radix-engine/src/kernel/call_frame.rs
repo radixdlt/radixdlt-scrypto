@@ -242,7 +242,7 @@ impl CallFrame {
             }
         } else {
             let handle = store
-                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
+                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, false, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;

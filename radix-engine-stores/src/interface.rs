@@ -137,7 +137,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<u32, AcquireLockError> {
-        self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
+        self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, false, || None)
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -146,6 +146,7 @@ pub trait SubstateStore {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        transient: bool,
         virtualize: F,
     ) -> Result<u32, AcquireLockError>;
 
