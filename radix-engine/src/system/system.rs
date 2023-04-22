@@ -645,6 +645,7 @@ where
             module_id.into(),
             &substate_key,
             flags,
+            false,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
         )
     }
@@ -1005,6 +1006,17 @@ where
 
         self.api
             .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
+    }
+
+    #[trace_resources]
+    fn lock_transient_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+        /*
+        let substate_key = SubstateKey::Tuple(field);
+
+        self.api
+            .kernel_lock_substate(&node_id, SysModuleId::Object, &substate_key, flags)
+         */
+        todo!()
     }
 
     #[trace_resources]
@@ -1388,10 +1400,11 @@ where
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        transient: bool,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
         self.api
-            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default)
+            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, transient, default)
     }
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {

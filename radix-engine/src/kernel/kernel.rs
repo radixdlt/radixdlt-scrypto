@@ -530,6 +530,7 @@ where
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        transient: bool,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
         M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
@@ -541,6 +542,7 @@ where
             module_id,
             substate_key,
             flags,
+            transient,
             default,
         );
 
@@ -560,6 +562,7 @@ where
                                 module_id,
                                 &substate_key,
                                 flags,
+                                false,
                                 None,
                             )
                             .map_err(CallFrameError::LockSubstateError)
@@ -608,6 +611,7 @@ where
                                 module_id.into(),
                                 substate_key,
                                 flags,
+                                false,
                                 None,
                             )
                             .map_err(CallFrameError::LockSubstateError)

@@ -210,6 +210,7 @@ impl CallFrame {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        transient: bool,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
@@ -242,7 +243,7 @@ impl CallFrame {
             }
         } else {
             let handle = store
-                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, false, || {
+                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, transient, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;

@@ -48,6 +48,7 @@ pub trait KernelSubstateApi {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        transient: bool,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError>;
 
@@ -58,7 +59,7 @@ pub trait KernelSubstateApi {
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None)
+        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, false, None)
     }
 
     /// Retrieves info related to a lock
