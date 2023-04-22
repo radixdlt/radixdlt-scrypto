@@ -355,7 +355,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let package_info = substate_db
         .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             PackageOffset::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
@@ -450,7 +450,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let package_info = substate_db
         .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             PackageOffset::Info.into(),
         )
         .unwrap();

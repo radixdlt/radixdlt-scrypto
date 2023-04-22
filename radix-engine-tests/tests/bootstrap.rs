@@ -153,7 +153,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_store
         .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address,
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             FungibleResourceManagerOffset::TotalSupply.into(),
         )
         .unwrap();

@@ -196,7 +196,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
             SystemLockData::default(),

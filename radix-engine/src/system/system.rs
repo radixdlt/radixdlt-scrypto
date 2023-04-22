@@ -59,7 +59,7 @@ where
     fn get_blueprint_schema(&mut self, blueprint: &Blueprint) -> Result<BlueprintSchema, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -85,7 +85,7 @@ where
     fn verify_blueprint_fields(&mut self, blueprint: &Blueprint, fields: &Vec<Vec<u8>>) -> Result<Option<String>, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -263,7 +263,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => node_init,
+                SysModuleId::User.into() => node_init,
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
@@ -393,7 +393,7 @@ where
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates
-                        .remove(&SysModuleId::Object.into())
+                        .remove(&SysModuleId::User.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
@@ -411,7 +411,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
-                        .remove(&SysModuleId::Object.into())
+                        .remove(&SysModuleId::User.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
@@ -429,7 +429,7 @@ where
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates
-                        .remove(&SysModuleId::Object.into())
+                        .remove(&SysModuleId::User.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
@@ -597,7 +597,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::User.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -625,6 +625,7 @@ where
         Ok(schema)
     }
 
+    #[trace_resources]
     fn lock_key_value_store_entry(
         &mut self,
         node_id: &NodeId,
@@ -636,87 +637,16 @@ where
             return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
         }
 
-        let actor = self.api.kernel_get_current_actor().unwrap();
-
-        let module_id = match type_info {
-            TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+        match type_info {
+            TypeInfoSubstate::KeyValueStore(..) => {},
+            TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore | TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
-            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Object,
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                if let Actor::Method { module_id, .. } = &actor {
-                    match module_id {
-                        ObjectModuleId::SELF => {
-                            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Object,
-                                _ => {
-                                    return Err(RuntimeError::SystemError(
-                                        SystemError::NotAKeyValueStore,
-                                    ))
-                                }
-                            }
-                        }
-                        ObjectModuleId::Metadata => SysModuleId::Metadata,
-                        ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-                        }
-                    }
-                } else {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Object,
-                        _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
-                    }
-                }
-            }
-        };
-
-        let substate_key = SubstateKey::Map(key.clone());
-
-        self.api.kernel_lock_substate_with_default(
-            &node_id,
-            module_id.into(),
-            &substate_key,
-            flags,
-            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData {
-                is_kv_store: true,
-            },
-        )
-    }
-
-    fn lock_self_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, blueprint) = match &actor {
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
-            }
-            Actor::Method {
-                node_id,
-                module_id,
-                blueprint,
-                ..
-            } => (node_id, module_id, blueprint),
-        };
-
-        // TODO: Add check
-        /*
-        let schema = self.get_blueprint_schema(blueprint)?;
-
-        if !schema.has_field(field) {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(blueprint.clone(), field)));
-        }
-         */
-
-        let sys_module_id = match object_module_id {
-            ObjectModuleId::Metadata => SysModuleId::Metadata,
-            ObjectModuleId::Royalty => SysModuleId::Royalty,
-            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-            ObjectModuleId::SELF => SysModuleId::Object,
         };
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            sys_module_id.into(),
+            SysModuleId::User.into(),
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -725,6 +655,7 @@ where
             },
         )
     }
+
 }
 
 impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
@@ -739,7 +670,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::User.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::IterableStore
                 ).to_substates(),
@@ -773,7 +704,7 @@ where
             ));
         }
 
-        let module_id = SysModuleId::Object.into();
+        let module_id = SysModuleId::User.into();
         let substate_key = SubstateKey::Map(key);
 
         self.api
@@ -793,7 +724,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Object.into();
+        let module_id = SysModuleId::User.into();
         let substate_key = SubstateKey::Map(key);
 
         let rtn = self
@@ -813,7 +744,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Object;
+        let module_id = SysModuleId::User;
         let substates = self
             .api
             .kernel_scan_substates(node_id, module_id, count)?
@@ -833,7 +764,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Object;
+        let module_id = SysModuleId::User;
         let substates = self
             .api
             .kernel_take_substates(node_id, module_id, count)?
@@ -858,7 +789,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::User.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedStore
                 ).to_substates(),
@@ -893,7 +824,7 @@ where
             ));
         }
 
-        let module_id = SysModuleId::Object.into();
+        let module_id = SysModuleId::User.into();
         let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
@@ -915,7 +846,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::Object.into(), count)?
+            .kernel_scan_sorted_substates(node_id, SysModuleId::User.into(), count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -937,7 +868,7 @@ where
             }
         }
 
-        let module_id = SysModuleId::Object.into();
+        let module_id = SysModuleId::User.into();
         let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
 
         let rtn = self
@@ -1070,7 +1001,7 @@ where
             ObjectModuleId::Metadata => SysModuleId::Metadata,
             ObjectModuleId::Royalty => SysModuleId::Royalty,
             ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-            ObjectModuleId::SELF => SysModuleId::Object,
+            ObjectModuleId::SELF => SysModuleId::User,
         };
         let substate_key = SubstateKey::Tuple(field);
 
@@ -1110,10 +1041,54 @@ where
         // TODO: Check if valid substate_key for node_id
         self.api.kernel_lock_substate(
             parent.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &SubstateKey::Tuple(field),
             flags,
             SystemLockData::default(),
+        )
+    }
+
+
+    #[trace_resources]
+    fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, object_module_id, blueprint) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                blueprint,
+                ..
+            } => (node_id, module_id, blueprint),
+        };
+
+        // TODO: Add check
+        /*
+        let schema = self.get_blueprint_schema(blueprint)?;
+
+        if !schema.has_field(field) {
+            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(blueprint.clone(), field)));
+        }
+         */
+
+        let sys_module_id = match object_module_id {
+            ObjectModuleId::Metadata => SysModuleId::Metadata,
+            ObjectModuleId::Royalty => SysModuleId::Royalty,
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+            ObjectModuleId::SELF => SysModuleId::User,
+        };
+
+        self.api.kernel_lock_substate_with_default(
+            &node_id,
+            sys_module_id.into(),
+            &SubstateKey::Map(key.clone()),
+            flags,
+            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            SystemLockData {
+                is_kv_store: true,
+            },
         )
     }
 

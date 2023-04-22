@@ -146,7 +146,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &ProofOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -157,7 +157,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
 
             let handle = api.kernel_lock_substate(
                 proof.0.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 &ProofOffset::Fungible.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -201,7 +201,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &ProofOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -212,7 +212,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
 
             let handle = api.kernel_lock_substate(
                 proof.0.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 &ProofOffset::NonFungible.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -257,7 +257,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &ProofOffset::Fungible.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -342,7 +342,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             &ProofOffset::NonFungible.into(),
             LockFlags::read_only(),
             SystemLockData::default(),

@@ -274,12 +274,12 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 &vec![FungibleVaultOffset::LiquidFungible.into()],
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    SysModuleId::Object.into(),
+                    SysModuleId::User.into(),
                     &vec![FungibleVaultOffset::LiquidFungible.into()],
                 );
 
@@ -302,12 +302,12 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 &vec![NonFungibleVaultOffset::LiquidNonFungible.into()],
             ) {
                 let vault = scrypto_decode::<LiquidNonFungibleVault>(substate).unwrap();
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
-                    let module_id: ModuleId = SysModuleId::Object.into();
+                    let module_id: ModuleId = SysModuleId::User.into();
                     n.tracked_modules.get(&module_id)
                 });
 

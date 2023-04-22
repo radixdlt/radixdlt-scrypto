@@ -157,9 +157,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn lock_self_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
-        todo!()
-    }
+
 }
 
 impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
@@ -225,6 +223,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         _field: u8,
         _flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
+        todo!()
+    }
+
+    fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
         todo!()
     }
 

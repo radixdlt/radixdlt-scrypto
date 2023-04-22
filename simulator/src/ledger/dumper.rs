@@ -29,7 +29,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let substate = substate_db
         .read_mapped_substate::<JmtKeyMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
-            SysModuleId::Object.into(),
+            SysModuleId::User.into(),
             PackageOffset::Code.into(),
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
@@ -124,14 +124,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let id_type = substate_db
             .read_mapped_substate::<JmtKeyMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 NonFungibleResourceManagerOffset::IdType.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
             .read_mapped_substate::<JmtKeyMapper, Decimal>(
                 resource_address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
@@ -152,14 +152,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let divisibility = substate_db
             .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 FungibleResourceManagerOffset::Divisibility.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
             .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
                 resource_address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 FungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;

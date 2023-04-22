@@ -340,7 +340,7 @@ impl TestRunner {
                     self.substate_db
                         .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            SysModuleId::Object.into(),
+                            SysModuleId::User.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
                         )
                 })
@@ -355,7 +355,7 @@ impl TestRunner {
             .substate_db
             .read_mapped_substate::<JmtKeyMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 PackageOffset::Royalty.into(),
             )
         {
@@ -365,7 +365,7 @@ impl TestRunner {
                     self.substate_db
                         .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            SysModuleId::Object.into(),
+                            SysModuleId::User.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
                         )
                 })
@@ -411,7 +411,7 @@ impl TestRunner {
         self.substate_db()
             .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
                 &vault_id,
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 FungibleVaultOffset::LiquidFungible.into(),
             )
             .map(|output| output.amount())
@@ -425,7 +425,7 @@ impl TestRunner {
             .substate_db()
             .read_mapped_substate::<JmtKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .map(|vault| {
@@ -436,7 +436,7 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut substate_iter = self
                 .substate_db()
-                .list_substates(ids.as_node_id(), SysModuleId::Object.into());
+                .list_substates(ids.as_node_id(), SysModuleId::User.into());
             let id = substate_iter.next().map(|(_key, value)| {
                 let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
                 id
@@ -516,7 +516,7 @@ impl TestRunner {
         self.substate_db()
             .read_mapped_substate::<JmtKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 ValidatorOffset::Validator.into(),
             )
             .unwrap()
@@ -527,7 +527,7 @@ impl TestRunner {
             .substate_db()
             .read_mapped_substate::<JmtKeyMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
-                SysModuleId::Object.into(),
+                SysModuleId::User.into(),
                 EpochManagerOffset::CurrentValidatorSet.into(),
             )
             .unwrap();
@@ -1285,7 +1285,7 @@ impl TestRunner {
             self.substate_db()
                 .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
-                    SysModuleId::Object.into(),
+                    SysModuleId::User.into(),
                     PackageOffset::Info.into(),
                 )
                 .unwrap()
