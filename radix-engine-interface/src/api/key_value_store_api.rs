@@ -20,5 +20,11 @@ pub trait ClientKeyValueStoreApi<E> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
+    fn lock_self_key_value_entry(
+        &mut self,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, E>;
+
     // TODO: Add specific kv store read/write lock apis
 }

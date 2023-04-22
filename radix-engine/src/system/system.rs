@@ -683,6 +683,48 @@ where
             },
         )
     }
+
+    fn lock_self_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, object_module_id, blueprint) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                blueprint,
+                ..
+            } => (node_id, module_id, blueprint),
+        };
+
+        // TODO: Add check
+        /*
+        let schema = self.get_blueprint_schema(blueprint)?;
+
+        if !schema.has_field(field) {
+            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(blueprint.clone(), field)));
+        }
+         */
+
+        let sys_module_id = match object_module_id {
+            ObjectModuleId::Metadata => SysModuleId::Metadata,
+            ObjectModuleId::Royalty => SysModuleId::Royalty,
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+            ObjectModuleId::SELF => SysModuleId::Object,
+        };
+
+        self.api.kernel_lock_substate_with_default(
+            &node_id,
+            sys_module_id.into(),
+            &SubstateKey::Map(key.clone()),
+            flags,
+            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            SystemLockData {
+                is_kv_store: true,
+            },
+        )
+    }
 }
 
 impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
