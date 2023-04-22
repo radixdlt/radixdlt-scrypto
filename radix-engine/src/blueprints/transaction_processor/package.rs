@@ -9,6 +9,7 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use resources_tracker_macro::trace_resources;
+use crate::system::system_callback::SystemLockData;
 
 use super::TransactionProcessorBlueprint;
 
@@ -56,7 +57,7 @@ impl TransactionProcessorNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {

@@ -86,6 +86,9 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
+#[derive(Default)]
+pub struct SystemLockData;
+
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub modules: SystemModuleMixer,
@@ -259,6 +262,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SysModuleId::Object.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             );
 
             if let Ok(handle) = handle {
@@ -322,6 +326,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SysModuleId::Object.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             api.kernel_drop_lock(handle)?;
 
@@ -336,6 +341,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     SysModuleId::Object.into(),
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
+                    SystemLockData::default(),
                 )?;
                 let package_info = api.kernel_read_substate(handle)?;
                 let package_info: PackageInfoSubstate = package_info.as_typed().unwrap();

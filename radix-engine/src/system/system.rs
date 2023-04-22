@@ -8,7 +8,7 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
@@ -145,6 +145,7 @@ where
             SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
+            SystemLockData::default(),
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -646,6 +647,7 @@ where
             &substate_key,
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+            SystemLockData::default(),
         )
     }
 }
@@ -1004,7 +1006,7 @@ where
         let substate_key = SubstateKey::Tuple(field);
 
         self.api
-            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
+            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags, SystemLockData::default())
     }
 
     #[trace_resources]
@@ -1037,6 +1039,7 @@ where
             SysModuleId::Object.into(),
             &SubstateKey::Tuple(field),
             flags,
+            SystemLockData::default(),
         )
     }
 
@@ -1216,6 +1219,7 @@ where
                 SysModuleId::Object.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             let package_info: PackageInfoSubstate =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -1377,7 +1381,7 @@ where
     }
 }
 
-impl<'a, Y, V> KernelSubstateApi for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelSubstateApi<SystemLockData> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1389,9 +1393,10 @@ where
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
+        data: SystemLockData,
     ) -> Result<LockHandle, RuntimeError> {
         self.api
-            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default)
+            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default, data)
     }
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {

@@ -7,11 +7,12 @@ use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
+use crate::system::system_callback::SystemLockData;
 
 pub struct Authentication;
 
 impl Authentication {
-    fn proof_matches<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+    fn proof_matches<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
         resource_rule: &HardResourceOrNonFungible,
         proof: &Proof,
         api: &mut Y,
@@ -45,7 +46,7 @@ impl Authentication {
         check: P,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
         P: Fn(&AuthZone, usize, &mut Y) -> Result<bool, RuntimeError>,
     {
         let mut remaining_barrier_crossings_required = barrier_crossings_required;
@@ -61,6 +62,7 @@ impl Authentication {
                 SysModuleId::Object.into(),
                 &AuthZoneOffset::AuthZone.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             let auth_zone: AuthZone = api.kernel_read_substate(handle)?.as_typed().unwrap();
             let auth_zone = auth_zone.clone();
@@ -101,7 +103,7 @@ impl Authentication {
         Ok(pass)
     }
 
-    fn auth_zone_stack_has_amount<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+    fn auth_zone_stack_has_amount<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -127,7 +129,7 @@ impl Authentication {
         )
     }
 
-    fn auth_zone_stack_matches_rule<Y: KernelSubstateApi + ClientObjectApi<RuntimeError>>(
+    fn auth_zone_stack_matches_rule<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -177,7 +179,7 @@ impl Authentication {
         )
     }
 
-    pub fn verify_proof_rule<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+    pub fn verify_proof_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -267,7 +269,7 @@ impl Authentication {
         }
     }
 
-    pub fn verify_auth_rule<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+    pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -314,7 +316,7 @@ impl Authentication {
         }
     }
 
-    pub fn verify_method_auth<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+    pub fn verify_method_auth<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,

@@ -8,6 +8,7 @@ use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_stores::interface::NodeSubstates;
+use crate::system::system_callback::SystemLockData;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -40,7 +41,7 @@ pub struct LockInfo {
 }
 
 /// API for managing substates within nodes
-pub trait KernelSubstateApi {
+pub trait KernelSubstateApi<L> {
     /// Locks a substate to make available for reading and/or writing
     fn kernel_lock_substate_with_default(
         &mut self,
@@ -49,6 +50,7 @@ pub trait KernelSubstateApi {
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
+        lock_data: L,
     ) -> Result<LockHandle, RuntimeError>;
 
     fn kernel_lock_substate(
@@ -57,8 +59,9 @@ pub trait KernelSubstateApi {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        lock_data: L,
     ) -> Result<LockHandle, RuntimeError> {
-        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None)
+        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None, lock_data)
     }
 
     /// Retrieves info related to a lock
@@ -193,6 +196,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi<SystemLockData> + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
 {
 }

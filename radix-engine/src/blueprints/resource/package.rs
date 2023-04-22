@@ -12,6 +12,7 @@ use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
 use resources_tracker_macro::trace_resources;
+use crate::system::system_callback::SystemLockData;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -1118,7 +1119,7 @@ impl ResourceManagerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         match export_name {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {

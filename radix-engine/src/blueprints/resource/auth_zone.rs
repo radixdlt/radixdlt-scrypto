@@ -6,6 +6,7 @@ use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
+use crate::system::system_callback::SystemLockData;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 
@@ -70,7 +71,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -106,7 +107,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByAmountInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -142,7 +143,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByIdsInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))

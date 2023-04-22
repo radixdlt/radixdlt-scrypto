@@ -5,7 +5,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{
@@ -199,6 +199,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             SysModuleId::Object.into(),
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
+            SystemLockData::default(),
         )?;
         let mut substate: PackageRoyaltySubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -235,6 +236,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 SysModuleId::Royalty.into(),
                 &RoyaltyOffset::RoyaltyConfig.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             let substate: ComponentRoyaltyConfigSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -247,6 +249,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     SysModuleId::Royalty.into(),
                     &RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
+                    SystemLockData::default(),
                 )?;
                 let mut substate: ComponentRoyaltyAccumulatorSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();

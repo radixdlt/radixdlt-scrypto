@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
@@ -61,6 +61,7 @@ impl NodeMoveModule {
                     SysModuleId::Object.into(),
                     &ProofOffset::Info.into(),
                     LockFlags::MUTABLE,
+                    SystemLockData::default(),
                 )?;
                 let mut proof: ProofInfoSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();

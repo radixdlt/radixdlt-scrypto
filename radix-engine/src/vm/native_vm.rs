@@ -15,6 +15,7 @@ use crate::types::*;
 use crate::vm::VmInvoke;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
+use crate::system::system_callback::SystemLockData;
 
 pub struct NativeVm;
 
@@ -48,7 +49,7 @@ impl VmInvoke for NativeVmInstance {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi,
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
         match self.native_package_code_id {
             PACKAGE_CODE_ID => {

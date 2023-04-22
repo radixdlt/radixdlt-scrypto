@@ -13,7 +13,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
@@ -518,7 +518,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelSubstateApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelSubstateApi<SystemLockData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -531,6 +531,7 @@ where
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
+        data: SystemLockData,
     ) -> Result<LockHandle, RuntimeError> {
         M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 

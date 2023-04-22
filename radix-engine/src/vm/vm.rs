@@ -1,7 +1,7 @@
 use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::vm::vm::api::ClientApi;
@@ -26,7 +26,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         Y: ClientApi<RuntimeError>
             + KernelInternalApi<SystemConfig<Self>>
             + KernelNodeApi
-            + KernelSubstateApi,
+            + KernelSubstateApi<SystemLockData>,
         W: WasmEngine,
     {
         let code_type = {
@@ -35,6 +35,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                 SysModuleId::Object.into(),
                 &PackageOffset::CodeType.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             let code_type = api.kernel_read_substate(handle)?;
             let code_type: PackageCodeTypeSubstate = code_type.as_typed().unwrap();
@@ -48,6 +49,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                 SysModuleId::Object.into(),
                 &PackageOffset::Code.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             let code = api.kernel_read_substate(handle)?;
             let package_code: PackageCodeSubstate = code.as_typed().unwrap();
@@ -90,5 +92,5 @@ pub trait VmInvoke {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi;
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>;
 }
