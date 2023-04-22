@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
@@ -34,7 +34,7 @@ impl FungibleVaultBlueprint {
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         let resource_address =
@@ -71,7 +71,7 @@ impl FungibleVaultBlueprint {
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Drop other bucket
         let other_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
@@ -113,7 +113,7 @@ impl FungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Check resource address and amount
         let resource_address =
@@ -165,7 +165,7 @@ impl FungibleVaultBlueprint {
 
     pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         if !Self::check_amount(&amount, divisibility) {
@@ -198,7 +198,7 @@ impl FungibleVaultBlueprint {
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
 
@@ -230,7 +230,7 @@ impl FungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         if !Self::check_amount(&amount, divisibility) {
@@ -271,7 +271,7 @@ impl FungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         FungibleVault::lock_amount(receiver, amount, api)?;
         Ok(())
@@ -375,7 +375,7 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<FungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             FungibleVaultOffset::LockedFungible.into(),

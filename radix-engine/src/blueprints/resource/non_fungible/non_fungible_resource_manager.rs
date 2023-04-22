@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
@@ -228,7 +228,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::UUID {
@@ -277,7 +277,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let mut non_fungible_entries = BTreeMap::new();
         for (entry,) in entries {
@@ -760,7 +760,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // FIXME: check if the bucket is locked
         let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();

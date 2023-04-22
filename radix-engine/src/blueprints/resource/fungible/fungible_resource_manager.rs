@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
@@ -97,7 +97,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         verify_divisibility(divisibility)?;
 
@@ -124,7 +124,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
         let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
@@ -148,7 +148,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         verify_divisibility(divisibility)?;
 
@@ -238,7 +238,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // FIXME: check if the bucket is locked
         let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
