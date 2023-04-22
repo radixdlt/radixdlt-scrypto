@@ -540,8 +540,6 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
             substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleVault>());
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(

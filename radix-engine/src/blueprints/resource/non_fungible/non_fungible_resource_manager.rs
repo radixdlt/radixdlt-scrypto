@@ -843,7 +843,6 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&vault).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 
