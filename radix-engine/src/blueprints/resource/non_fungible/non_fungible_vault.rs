@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi};
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{ClientApi, LockFlags};
@@ -36,7 +36,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Check amount
         if !Self::check_amount(amount) {
@@ -105,7 +105,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Drop other bucket
         let other_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
@@ -131,7 +131,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let amount = NonFungibleVault::liquid_amount(api)? + NonFungibleVault::locked_amount(api)?;
 
@@ -151,7 +151,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !Self::check_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
@@ -188,7 +188,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
@@ -218,7 +218,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let resource_address =
             ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
@@ -250,7 +250,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !Self::check_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
@@ -286,7 +286,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let resource_address =
             ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
@@ -321,7 +321,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         NonFungibleVault::lock_non_fungibles(receiver, local_ids, api)?;
         Ok(())
@@ -529,7 +529,7 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
@@ -580,7 +580,7 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
