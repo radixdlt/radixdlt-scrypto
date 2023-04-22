@@ -361,8 +361,8 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+        let handle = api.lock_transient_field(
+            8u8,//NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -395,8 +395,8 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+        let handle = api.lock_transient_field(
+            8u8,//NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -531,8 +531,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+        let handle = api.lock_transient_field(
+            8u8,//NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -582,8 +582,8 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+        let handle = api.lock_transient_field(
+            8u8,//NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -623,8 +623,8 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+        let handle = api.lock_transient_field(
+            8u8,//NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;

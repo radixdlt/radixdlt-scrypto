@@ -1010,13 +1010,31 @@ where
 
     #[trace_resources]
     fn lock_transient_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
-        /*
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, object_module_id, blueprint) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                blueprint,
+                ..
+            } => (node_id, module_id, blueprint),
+        };
+
         let substate_key = SubstateKey::Tuple(field);
 
-        self.api
-            .kernel_lock_substate(&node_id, SysModuleId::Object, &substate_key, flags)
-         */
-        todo!()
+        self.api.kernel_lock_substate_with_default(
+            node_id,
+            SysModuleId::Object.into(),
+            &substate_key,
+            flags,
+            true,
+            Some(|| {
+                IndexedScryptoValue::from_typed(&LockedNonFungibleResource::default())
+            }),
+        )
     }
 
     #[trace_resources]
