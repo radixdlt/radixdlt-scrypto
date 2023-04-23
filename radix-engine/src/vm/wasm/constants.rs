@@ -24,8 +24,10 @@ pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x37;
 pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
 pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_ID: usize = 0x38;
 pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME: &str = "lock_key_value_store_entry";
-pub const KEY_VALUE_ENTRY_INSERT_FUNCTION_ID: usize = 0x39;
-pub const KEY_VALUE_ENTRY_INSERT_FUNCTION_NAME: &str = "key_value_entry_insert";
+pub const KEY_VALUE_ENTRY_GET_FUNCTION_ID: usize = 0x39;
+pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "key_value_entry_get";
+pub const KEY_VALUE_ENTRY_SET_FUNCTION_ID: usize = 0x40;
+pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "key_value_entry_set";
 
 pub const LOCK_FIELD_FUNCTION_ID: usize = 0x40;
 pub const LOCK_FIELD_FUNCTION_NAME: &str = "lock_field";

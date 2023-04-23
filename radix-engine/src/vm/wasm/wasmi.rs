@@ -284,7 +284,15 @@ fn lock_key_value_store_entry(
     runtime.lock_key_value_store_entry(node_id, substate_key, flags)
 }
 
-fn key_value_entry_insert(
+fn key_value_entry_get(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+    runtime.key_value_entry_get(handle).map(|buffer| buffer.0)
+}
+
+fn key_value_entry_set(
     mut caller: Caller<'_, HostState>,
     handle: u32,
     buffer_ptr: u32,
@@ -292,7 +300,7 @@ fn key_value_entry_insert(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
     let data = read_memory(caller.as_context_mut(), memory, buffer_ptr, buffer_len)?;
-    runtime.key_value_entry_insert(handle, data)
+    runtime.key_value_entry_set(handle, data)
 }
 
 fn lock_field(
@@ -600,14 +608,26 @@ impl WasmiModule {
             },
         );
 
-        let host_key_value_entry_insert = Func::wrap(
+        let host_key_value_entry_get = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             handle: u32|
+             -> Result<u64, Trap> {
+                key_value_entry_get(
+                    caller,
+                    handle,
+                ).map_err(|e| e.into())
+            },
+        );
+
+        let host_key_value_entry_set = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              handle: u32,
              buffer_ptr: u32,
              buffer_len: u32|
              -> Result<(), Trap> {
-                key_value_entry_insert(
+                key_value_entry_set(
                     caller,
                     handle,
                     buffer_ptr,
@@ -756,8 +776,13 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_INSERT_FUNCTION_NAME,
-            host_key_value_entry_insert
+            KEY_VALUE_ENTRY_GET_FUNCTION_NAME,
+            host_key_value_entry_get
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_SET_FUNCTION_NAME,
+            host_key_value_entry_set
         );
 
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

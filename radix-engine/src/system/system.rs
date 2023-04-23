@@ -688,12 +688,13 @@ where
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
         };
 
+        /*
         let value: ScryptoValue = scrypto_decode(&buffer)
             .map_err(|_| {
                 RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
             }) ?;
-
         let buffer = scrypto_encode(&Option::Some(value)).unwrap();
+         */
 
         validate_payload_against_schema(&buffer, &schema.schema, schema.value)
             .map_err(|_| {

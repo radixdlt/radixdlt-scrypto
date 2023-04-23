@@ -186,7 +186,12 @@ where
         Ok(handle)
     }
 
-    fn key_value_entry_insert(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_get(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let value = self.api.key_value_entry_get(handle)?;
+        self.allocate_buffer(value)
+    }
+
+    fn key_value_entry_set(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.key_value_entry_set(handle, data)?;
         Ok(())
     }
@@ -405,7 +410,11 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn key_value_entry_insert(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_get(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn key_value_entry_set(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

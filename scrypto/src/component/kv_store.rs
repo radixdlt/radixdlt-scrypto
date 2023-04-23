@@ -100,7 +100,11 @@ impl<
             .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let value_payload = scrypto_encode(&value).unwrap();
-        env.key_value_entry_set(handle, value_payload).unwrap();
+
+        let value: ScryptoValue = scrypto_decode(&value_payload).unwrap();
+        let buffer = scrypto_encode(&Option::Some(value)).unwrap();
+
+        env.key_value_entry_set(handle, buffer).unwrap();
         env.sys_drop_lock(handle).unwrap();
     }
 
@@ -112,9 +116,9 @@ impl<
             .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
 
-        let raw_bytes = env.sys_read_substate(handle).unwrap();
-        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
-        let rtn = substate.map(|v| {
+        let raw_bytes = env.key_value_entry_get(handle).unwrap();
+        let value: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
+        let rtn = value.map(|v| {
             let rust_value = scrypto_decode(&scrypto_encode(&v).unwrap()).unwrap();
             rust_value
         });
