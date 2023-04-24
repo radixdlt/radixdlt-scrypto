@@ -1,6 +1,6 @@
 use native_sdk::account::*;
+use native_sdk::epoch_manager::*;
 use scrypto::api::node_modules::metadata::MetadataValue;
-use scrypto::blueprints::epoch_manager::*;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -103,35 +103,24 @@ mod genesis_helper {
         }
 
         fn create_validator(&mut self, validator: GenesisValidator) {
-            let (validator_address, owner_token_bucket): (ComponentAddress, Bucket) =
-                Runtime::call_method(
-                    self.epoch_manager,
-                    "create_validator",
-                    scrypto_encode(&EpochManagerCreateValidatorInput { key: validator.key })
-                        .unwrap(),
-                );
+            let (validator_address, owner_token_bucket) = EpochManager(self.epoch_manager)
+                .create_validator(validator.key, &mut ScryptoEnv)
+                .unwrap();
 
             // Deposit the badge to the owner account
-            let _: () = Account(validator.owner)
+            Account(validator.owner)
                 .deposit(owner_token_bucket, &mut ScryptoEnv)
                 .unwrap();
 
             if validator.is_registered {
-                let _: () = Runtime::call_method(
-                    validator_address,
-                    "register",
-                    scrypto_encode(&ValidatorRegisterInput {}).unwrap(),
-                );
+                Validator(validator_address)
+                    .register(&mut ScryptoEnv)
+                    .unwrap();
             }
 
-            let _: () = Runtime::call_method(
-                validator_address,
-                "update_accept_delegated_stake",
-                scrypto_encode(&ValidatorUpdateAcceptDelegatedStakeInput {
-                    accept_delegated_stake: validator.accept_delegated_stake,
-                })
-                .unwrap(),
-            );
+            Validator(validator_address)
+                .update_accept_delegated_stake(validator.accept_delegated_stake, &mut ScryptoEnv)
+                .unwrap();
 
             self.validators.insert(validator.key, validator_address);
         }
@@ -150,14 +139,9 @@ mod genesis_helper {
                 {
                     let staker_account_address = accounts[account_index as usize].clone();
                     let stake_bucket = self.xrd_vault.take(xrd_amount);
-                    let lp_bucket: Bucket = Runtime::call_method(
-                        validator_address.clone(),
-                        "stake",
-                        scrypto_encode(&ValidatorStakeInput {
-                            stake: stake_bucket,
-                        })
-                        .unwrap(),
-                    );
+                    let lp_bucket = Validator(validator_address.clone())
+                        .stake(stake_bucket, &mut ScryptoEnv)
+                        .unwrap();
                     let _: () = Account(staker_account_address)
                         .deposit(lp_bucket, &mut ScryptoEnv)
                         .unwrap();
@@ -277,11 +261,9 @@ mod genesis_helper {
         }
 
         pub fn wrap_up(&mut self) -> Bucket {
-            let _: () = Runtime::call_method(
-                self.epoch_manager,
-                EPOCH_MANAGER_START_IDENT,
-                scrypto_encode(&()).unwrap(),
-            );
+            EpochManager(self.epoch_manager)
+                .start(&mut ScryptoEnv)
+                .unwrap();
 
             // TODO: assert all resource vaults are empty
             // i.e. that for all resources: initial_supply == sum(allocations)

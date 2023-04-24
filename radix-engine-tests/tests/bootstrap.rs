@@ -1,7 +1,7 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation, GenesisValidator,
+    GenesisStakeAllocation,
 };
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
