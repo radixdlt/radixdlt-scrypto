@@ -4,8 +4,8 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
-use radix_engine_stores::interface::StateUpdate;
-use radix_engine_stores::interface::StateUpdates;
+use radix_engine_stores::interface::DatabaseUpdate;
+use radix_engine_stores::interface::DatabaseUpdates;
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateKeyMapper};
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
@@ -79,12 +79,12 @@ impl Publish {
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };
-            let state_updates = StateUpdates {
-                substate_changes: indexmap!(
-                    (node_id, module_id, substate_key_code) => StateUpdate::Set(
+            let state_updates = DatabaseUpdates {
+                database_updates: indexmap!(
+                    (node_id, module_id, substate_key_code) => DatabaseUpdate::Set(
                         scrypto_encode(&package_code).unwrap()
                     ),
-                    (node_id, module_id, substate_key_info) => StateUpdate::Set(
+                    (node_id, module_id, substate_key_info) => DatabaseUpdate::Set(
                         scrypto_encode(&package_info).unwrap()
                     )
                 ),

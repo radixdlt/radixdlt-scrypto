@@ -170,12 +170,12 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct StateUpdates {
-    pub substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate>,
+pub struct DatabaseUpdates {
+    pub database_updates: IndexMap<(NodeId, ModuleId), IndexMap<Vec<u8>, DatabaseUpdate>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum StateUpdate {
+pub enum DatabaseUpdate {
     Set(Vec<u8>),
     Delete,
 }
@@ -216,7 +216,7 @@ pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
     ///
     /// An error is thrown in case of invalid module ID.
-    fn commit(&mut self, state_changes: &StateUpdates);
+    fn commit(&mut self, state_changes: &DatabaseUpdates);
 }
 
 /// Interface for listing nodes within a substate database.

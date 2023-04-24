@@ -97,15 +97,15 @@ impl SubstateDatabase for RocksdbSubstateStore {
 }
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
-    fn commit(&mut self, state_changes: &StateUpdates) {
-        for ((node_id, module_id, substate_key), substate_change) in &state_changes.substate_changes
+    fn commit(&mut self, state_changes: &DatabaseUpdates) {
+        for ((node_id, module_id, substate_key), substate_change) in &state_changes.database_updates
         {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
             match substate_change {
-                StateUpdate::Set(substate_value) => {
+                DatabaseUpdate::Set(substate_value) => {
                     self.db.put(substate_id, substate_value).expect("IO error");
                 }
-                StateUpdate::Delete => {
+                DatabaseUpdate::Delete => {
                     self.db.delete(substate_id).expect("IO error");
                 }
             }

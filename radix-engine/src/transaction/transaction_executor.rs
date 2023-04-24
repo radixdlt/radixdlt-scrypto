@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_state_updates, Track};
+use crate::track::{to_database_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -257,7 +257,7 @@ where
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_state_updates(tracked_nodes),
+                    state_updates: to_database_updates(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),

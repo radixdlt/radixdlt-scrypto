@@ -50,7 +50,7 @@ use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{
-    CommittableSubstateDatabase, StateUpdate, StateUpdates, SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
 };
 use radix_engine_stores::jmt_support::JmtKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -1339,20 +1339,22 @@ impl StateHashSupport {
         }
     }
 
-    pub fn update_with(&mut self, state_updates: &StateUpdates) {
-        let hash_changes = state_updates
-            .substate_changes
-            .iter()
-            .map(|(substate_id, value)| {
-                SubstateHashChange::new(
-                    substate_id.clone(),
-                    match value {
-                        StateUpdate::Set(v) => Some(hash(v)),
-                        StateUpdate::Delete => None,
+    pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
+        let mut hash_changes = Vec::new();
+        for ((node_id, module_id), index_update) in &db_updates.database_updates {
+            for (key, db_update) in index_update {
+                let substate_id = (node_id.clone(), module_id.clone(), key.clone());
+                let hash_change = SubstateHashChange::new(
+                    substate_id,
+                    match db_update {
+                        DatabaseUpdate::Set(v) => Some(hash(v)),
+                        DatabaseUpdate::Delete => None,
                     },
-                )
-            })
-            .collect::<Vec<_>>();
+                );
+                hash_changes.push(hash_change);
+            }
+        }
+
         self.current_hash = put_at_next_version(
             &mut self.tree_store,
             Some(self.current_version).filter(|version| *version > 0),

@@ -51,15 +51,17 @@ impl SubstateDatabase for InMemorySubstateDatabase {
 }
 
 impl CommittableSubstateDatabase for InMemorySubstateDatabase {
-    fn commit(&mut self, state_changes: &StateUpdates) {
-        for ((node_id, module_id, db_key), substate_change) in &state_changes.substate_changes {
-            let substate_id = encode_substate_id(node_id, *module_id, db_key);
-            match substate_change {
-                StateUpdate::Set(substate_value) => {
-                    self.substates.insert(substate_id, substate_value.clone());
-                }
-                StateUpdate::Delete => {
-                    self.substates.remove(&substate_id);
+    fn commit(&mut self, database_updates: &DatabaseUpdates) {
+        for ((node_id, module_id), index_updates) in &database_updates.database_updates {
+            for (db_key, update) in index_updates {
+                let substate_id = encode_substate_id(node_id, *module_id, db_key);
+                match update {
+                    DatabaseUpdate::Set(substate_value) => {
+                        self.substates.insert(substate_id, substate_value.clone());
+                    }
+                    DatabaseUpdate::Delete => {
+                        self.substates.remove(&substate_id);
+                    }
                 }
             }
         }
