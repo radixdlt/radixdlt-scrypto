@@ -448,6 +448,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
+            royalty_cost_sum: self.royalty_committed_sum,
         }
     }
 }

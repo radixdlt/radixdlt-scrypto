@@ -21,10 +21,12 @@ pub struct FeeSummary {
     pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
     /// The execution cost breakdown
     pub execution_cost_breakdown: BTreeMap<CostingReason, u32>,
-    /// The total number of cost units consumed.
+    /// The total number of cost units consumed (excluding royalties).
     pub execution_cost_sum: u32,
     /// The royalty cost breakdown
     pub royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, (NodeId, Decimal)>,
+    /// The total number of cost units consumed for royalties.
+    pub royalty_cost_sum: u32,
 }
 
 impl FeeSummary {
