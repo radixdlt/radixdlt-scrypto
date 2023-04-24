@@ -118,7 +118,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
-    fn new_key_value_store(
+    fn key_value_store_new(
         &mut self,
         schema: KeyValueStoreSchema,
     ) -> Result<NodeId, ClientApiError> {
@@ -127,7 +127,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_key_value_store_info(
+    fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, ClientApiError> {
@@ -138,7 +138,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
@@ -179,7 +179,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn unlock_key_value_entry(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), ClientApiError> {
+    fn key_value_entry_lock_release(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), ClientApiError> {
         unsafe {
             unlock_key_value_entry(
                 handle,

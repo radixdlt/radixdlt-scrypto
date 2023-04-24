@@ -160,7 +160,7 @@ impl AccountBlueprint {
             // Creating the key-value-store where the vaults will be held. This is a KVStore of
             // [`ResourceAddress`] and [`Own`]ed vaults.
             let kv_store_id =
-                api.new_key_value_store(KeyValueStoreSchema::new::<ResourceAddress, Own>(true))?;
+                api.key_value_store_new(KeyValueStoreSchema::new::<ResourceAddress, Own>(true))?;
 
             let account_substate = AccountSubstate {
                 vaults: Own(kv_store_id),
@@ -190,7 +190,7 @@ impl AccountBlueprint {
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-            let handle = api.lock_key_value_store_entry(
+            let handle = api.key_value_store_lock_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
                 LockFlags::read_only(),
@@ -219,7 +219,7 @@ impl AccountBlueprint {
         }
 
         // Drop locks (LIFO)
-        api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
+        api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
         api.field_lock_release(handle)?;
 
         Ok(())
@@ -253,7 +253,7 @@ impl AccountBlueprint {
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-            let handle = api.lock_key_value_store_entry(
+            let handle = api.key_value_store_lock_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
                 LockFlags::MUTABLE,
@@ -288,7 +288,7 @@ impl AccountBlueprint {
         vault.sys_put(bucket, api)?;
 
         // Drop locks (LIFO)
-        api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
+        api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
         api.field_lock_release(handle)?;
 
         Ok(())
@@ -311,7 +311,7 @@ impl AccountBlueprint {
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
                 let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-                let handle = api.lock_key_value_store_entry(
+                let handle = api.key_value_store_lock_entry(
                     account.vaults.as_node_id(),
                     &encoded_key,
                     LockFlags::MUTABLE,
@@ -345,7 +345,7 @@ impl AccountBlueprint {
             // Put the bucket in the vault
             vault.sys_put(bucket, api)?;
 
-            api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
+            api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
         }
 
         api.field_lock_release(handle)?;
@@ -369,7 +369,7 @@ impl AccountBlueprint {
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
             let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-            let handle = api.lock_key_value_store_entry(
+            let handle = api.key_value_store_lock_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
                 LockFlags::read_only(),
@@ -394,7 +394,7 @@ impl AccountBlueprint {
         let rtn = vault_fn(&mut vault, api)?;
 
         // Drop locks (LIFO)
-        api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
+        api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
         api.field_lock_release(handle)?;
 
         Ok(rtn)

@@ -162,7 +162,7 @@ where
         let schema = scrypto_decode::<KeyValueStoreSchema>(&schema)
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
-        let key_value_store_id = self.api.new_key_value_store(schema)?;
+        let key_value_store_id = self.api.key_value_store_new(schema)?;
         let key_value_store_id_encoded =
             scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
 
@@ -181,7 +181,7 @@ where
         );
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.lock_key_value_store_entry(&node_id, &key, flags)?;
+        let handle = self.api.key_value_store_lock_entry(&node_id, &key, flags)?;
 
         Ok(handle)
     }
@@ -197,7 +197,7 @@ where
     }
 
     fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.unlock_key_value_entry(handle)?;
+        self.api.key_value_entry_lock_release(handle)?;
         Ok(())
     }
 

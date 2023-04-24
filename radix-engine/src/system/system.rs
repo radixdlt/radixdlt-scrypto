@@ -573,7 +573,7 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
+    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
@@ -596,7 +596,7 @@ where
     }
 
     #[trace_resources]
-    fn get_key_value_store_info(
+    fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
@@ -614,7 +614,7 @@ where
     }
 
     #[trace_resources]
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
@@ -702,7 +702,7 @@ where
         Ok(())
     }
 
-    fn unlock_key_value_entry(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), RuntimeError> {
+    fn key_value_entry_lock_release(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), RuntimeError> {
         let LockInfo {
             data, ..
         } = self.api.kernel_get_lock_info(handle)?;

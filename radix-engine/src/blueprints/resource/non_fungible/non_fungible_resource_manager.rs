@@ -95,7 +95,7 @@ where
         can_own: false, // Only allow NonFungibles to store data/references
     };
 
-    let nf_store_id = api.new_key_value_store(kv_schema)?;
+    let nf_store_id = api.key_value_store_new(kv_schema)?;
 
     let update_data_substate = NonFungibleResourceManagerDataSchemaSubstate {
         non_fungible_type_index: non_fungible_schema.non_fungible,
@@ -129,7 +129,7 @@ where
                 ));
             }
 
-            let non_fungible_handle = api.lock_key_value_store_entry(
+            let non_fungible_handle = api.key_value_store_lock_entry(
                 &nf_store_id,
                 &non_fungible_local_id.to_key(),
                 LockFlags::MUTABLE,
@@ -137,7 +137,7 @@ where
 
             // TODO: Change interface so that we accept Option instead
             api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
-            api.unlock_key_value_entry(non_fungible_handle)?;
+            api.key_value_entry_lock_release(non_fungible_handle)?;
             ids.insert(non_fungible_local_id);
         }
 
@@ -394,7 +394,7 @@ impl NonFungibleResourceManagerBlueprint {
         let data: Own = api.field_lock_read_typed(data_handle)?;
 
         for (id, non_fungible) in non_fungibles {
-            let non_fungible_handle = api.lock_key_value_store_entry(
+            let non_fungible_handle = api.key_value_store_lock_entry(
                 data.as_node_id(),
                 &id.to_key(),
                 LockFlags::MUTABLE,
@@ -417,7 +417,7 @@ impl NonFungibleResourceManagerBlueprint {
                 api.key_value_entry_set_typed(non_fungible_handle, Some(non_fungible))?;
             }
 
-            api.unlock_key_value_entry(non_fungible_handle)?;
+            api.key_value_entry_lock_release(non_fungible_handle)?;
         }
 
         Runtime::emit_event(
@@ -475,14 +475,14 @@ impl NonFungibleResourceManagerBlueprint {
         let id = NonFungibleLocalId::uuid(uuid).unwrap();
 
         {
-            let non_fungible_handle = api.lock_key_value_store_entry(
+            let non_fungible_handle = api.key_value_store_lock_entry(
                 nf_store.as_node_id(),
                 &id.to_key(),
                 LockFlags::MUTABLE,
             )?;
             api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
 
-            api.unlock_key_value_entry(non_fungible_handle)?;
+            api.key_value_entry_lock_release(non_fungible_handle)?;
         }
 
         let info = BucketInfoSubstate {
@@ -557,14 +557,14 @@ impl NonFungibleResourceManagerBlueprint {
                 ids.insert(id.clone());
 
                 {
-                    let non_fungible_handle = api.lock_key_value_store_entry(
+                    let non_fungible_handle = api.key_value_store_lock_entry(
                         nf_store.as_node_id(),
                         &id.to_key(),
                         LockFlags::MUTABLE,
                     )?;
                     api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
 
-                    api.unlock_key_value_entry(non_fungible_handle)?;
+                    api.key_value_entry_lock_release(non_fungible_handle)?;
                 }
             }
 
@@ -616,7 +616,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let nf_store: Own = api.field_lock_read_typed(nf_store_handle)?;
 
-        let kv_schema = api.get_key_value_store_info(nf_store.as_node_id())?;
+        let kv_schema = api.key_value_store_get_info(nf_store.as_node_id())?;
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
         let sbor_path = schema_path.to_sbor_path(&kv_schema.schema, non_fungible_type_index);
         let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
@@ -637,7 +637,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle = api.lock_key_value_store_entry(
+        let non_fungible_handle = api.key_value_store_lock_entry(
             nf_store.as_node_id(),
             &id.to_key(),
             LockFlags::MUTABLE,
@@ -662,7 +662,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        api.unlock_key_value_entry(non_fungible_handle)?;
+        api.key_value_entry_lock_release(non_fungible_handle)?;
 
         Ok(())
     }
@@ -681,7 +681,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let nf_store: Own = api.field_lock_read_typed(data_handle)?;
 
-        let non_fungible_handle = api.lock_key_value_store_entry(
+        let non_fungible_handle = api.key_value_store_lock_entry(
             nf_store.as_node_id(),
             &id.to_key(),
             LockFlags::read_only(),
@@ -710,7 +710,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
 
-        let non_fungible_handle = api.lock_key_value_store_entry(
+        let non_fungible_handle = api.key_value_store_lock_entry(
             nf_store.as_node_id(),
             &id.to_key(),
             LockFlags::read_only(),
@@ -814,14 +814,14 @@ impl NonFungibleResourceManagerBlueprint {
                     }
 
                     for id in resource.into_ids() {
-                        let non_fungible_handle = api.lock_key_value_store_entry(
+                        let non_fungible_handle = api.key_value_store_lock_entry(
                             nf_store.as_node_id(),
                             &id.to_key(),
                             LockFlags::MUTABLE,
                         )?;
 
                         api.key_value_entry_set_typed(non_fungible_handle, None::<ScryptoValue>)?;
-                        api.unlock_key_value_entry(non_fungible_handle)?;
+                        api.key_value_entry_lock_release(non_fungible_handle)?;
                     }
                 }
             }

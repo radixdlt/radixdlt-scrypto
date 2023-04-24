@@ -37,7 +37,7 @@ impl<
 
         let schema = KeyValueStoreSchema::new::<K, V>(true);
 
-        let id = env.new_key_value_store(schema).unwrap();
+        let id = env.key_value_store_new(schema).unwrap();
 
         Self {
             id: Own(id),
@@ -51,7 +51,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
             .unwrap();
         let raw_bytes = env.key_value_entry_get(handle).unwrap();
 
@@ -63,7 +63,7 @@ impl<
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
             Option::None => {
-                env.unlock_key_value_entry(handle).unwrap();
+                env.key_value_entry_lock_release(handle).unwrap();
                 None
             }
         }
@@ -73,7 +73,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let raw_bytes = env.key_value_entry_get(handle).unwrap();
 
@@ -85,7 +85,7 @@ impl<
                 Some(KeyValueEntryRefMut::new(handle, value, rust_value))
             }
             Option::None => {
-                env.unlock_key_value_entry(handle).unwrap();
+                env.key_value_entry_lock_release(handle).unwrap();
                 None
             }
         }
@@ -96,7 +96,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let value_payload = scrypto_encode(&value).unwrap();
 
@@ -104,7 +104,7 @@ impl<
         let buffer = scrypto_encode(&Option::Some(value)).unwrap();
 
         env.key_value_entry_set(handle, buffer).unwrap();
-        env.unlock_key_value_entry(handle).unwrap();
+        env.key_value_entry_lock_release(handle).unwrap();
     }
 
     /// Remove an entry from the map and return the original value if it exists
@@ -112,7 +112,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
 
         let raw_bytes = env.key_value_entry_get(handle).unwrap();
@@ -124,7 +124,7 @@ impl<
 
         let value: Option<ScryptoValue> = None;
         env.key_value_entry_set(handle, scrypto_encode(&value).unwrap()).unwrap();
-        env.unlock_key_value_entry(handle).unwrap();
+        env.key_value_entry_lock_release(handle).unwrap();
 
         rtn
     }
@@ -221,7 +221,7 @@ impl<V: ScryptoEncode> Deref for KeyValueEntryRef<V> {
 impl<V: ScryptoEncode> Drop for KeyValueEntryRef<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
-        env.unlock_key_value_entry(self.lock_handle).unwrap();
+        env.key_value_entry_lock_release(self.lock_handle).unwrap();
     }
 }
 
@@ -254,7 +254,7 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
             Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
         let value = scrypto_encode(&substate).unwrap();
         env.key_value_entry_set(self.handle, value).unwrap();
-        env.unlock_key_value_entry(self.handle).unwrap();
+        env.key_value_entry_lock_release(self.handle).unwrap();
     }
 }
 
