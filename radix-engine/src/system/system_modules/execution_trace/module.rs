@@ -7,7 +7,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemCallback;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::transaction::{ExecutionMetrics, TransactionExecutionTrace, TransactionResult};
+use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -576,11 +576,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn finalize(
-        mut self,
-        transaction_result: &TransactionResult,
-        execution_metrics: &mut ExecutionMetrics,
-    ) -> TransactionExecutionTrace {
+    pub fn finalize(mut self, transaction_result: &TransactionResult) -> TransactionExecutionTrace {
         match transaction_result {
             TransactionResult::Commit(c) => {
                 let mut execution_traces = Vec::new();
@@ -593,11 +589,6 @@ impl ExecutionTraceModule {
                     &c.fee_payments,
                     c.outcome.is_success(),
                 );
-
-                execution_metrics.execution_cost_units_consumed =
-                    c.fee_summary.execution_cost_sum as usize;
-                execution_metrics.royalties_cost_units_consumed =
-                    c.fee_summary.royalty_cost_sum as usize;
 
                 TransactionExecutionTrace {
                     execution_traces,

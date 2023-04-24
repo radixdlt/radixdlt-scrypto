@@ -234,7 +234,6 @@ where
 
         // Finalize
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
-        let mut execution_metrics = system.modules.transaction_limits.finalize();
         let transaction_result = match result_type {
             TransactionResultType::Commit(outcome) => {
                 let is_success = outcome.is_ok();
@@ -276,10 +275,11 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = system
+        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
+        let execution_metrics = system
             .modules
-            .execution_trace
-            .finalize(&transaction_result, &mut execution_metrics);
+            .transaction_limits
+            .finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
