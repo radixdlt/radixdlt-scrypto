@@ -19,7 +19,7 @@ fn genesis_epoch_has_correct_initial_validators() {
     let num_unstake_epochs = 1u64;
     let max_validators = 10u32;
 
-    let mut stake_allocations = BTreeMap::new();
+    let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
     for k in 1usize..=100usize {
@@ -38,13 +38,13 @@ fn genesis_epoch_has_correct_initial_validators() {
 
         let stake = Decimal::from(1000000 * ((k + 1) / 2));
 
-        stake_allocations.insert(
+        stake_allocations.push((
             pub_key,
             vec![GenesisStakeAllocation {
                 account_index: (k - 1) as u32,
                 xrd_amount: stake,
             }],
-        );
+        ));
     }
 
     let genesis_data_chunks = vec![
@@ -504,7 +504,7 @@ fn registered_validator_test(
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
 
-    let mut stake_allocations = BTreeMap::new();
+    let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
     for k in 1usize..=num_initial_validators {
@@ -522,13 +522,13 @@ fn registered_validator_test(
             owner: validator_account_address,
         });
 
-        stake_allocations.insert(
+        stake_allocations.push((
             pub_key,
             vec![GenesisStakeAllocation {
                 account_index: (k - 1) as u32,
                 xrd_amount: initial_stakes,
             }],
-        );
+        ));
     }
 
     let validator_account_index = num_initial_validators;
@@ -544,9 +544,7 @@ fn registered_validator_test(
             accounts,
             allocations: stake_allocations,
         },
-        GenesisDataChunk::XrdBalances(btreemap!(
-            account_address => validator_stake
-        )),
+        GenesisDataChunk::XrdBalances(vec![(account_address, validator_stake)]),
     ];
 
     let genesis = CustomGenesis {

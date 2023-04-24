@@ -1,7 +1,7 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation,
+    GenesisStakeAllocation, GenesisValidator,
 };
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
@@ -28,7 +28,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
-            allocations: btreemap!(validator_key => vec![stake]),
+            allocations: vec![(validator_key, vec![stake])],
         },
     ];
 
@@ -58,9 +58,10 @@ fn test_genesis_xrd_allocation_to_accounts() {
         &PublicKey::EcdsaSecp256k1(account_public_key.clone()),
     );
     let allocation_amount = dec!("100");
-    let genesis_data_chunks = vec![GenesisDataChunk::XrdBalances(
-        btreemap!(account_component_address => allocation_amount),
-    )];
+    let genesis_data_chunks = vec![GenesisDataChunk::XrdBalances(vec![(
+        account_component_address,
+        allocation_amount,
+    )])];
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
@@ -99,7 +100,7 @@ fn test_genesis_resource_with_initial_allocation() {
     );
     let allocation_amount = dec!("105");
     let genesis_resource = GenesisResource {
-        address_bytes_without_entity_id: address_bytes_without_entity_id.clone(),
+        address_bytes_without_entity_id,
         initial_supply: allocation_amount,
         metadata: vec![("symbol".to_string(), "TST".to_string())],
         owner: Some(owner),
@@ -112,7 +113,7 @@ fn test_genesis_resource_with_initial_allocation() {
         GenesisDataChunk::Resources(vec![genesis_resource]),
         GenesisDataChunk::ResourceBalances {
             accounts: vec![token_holder.clone()],
-            allocations: btreemap!(resource_address.clone() => vec![resource_allocation]),
+            allocations: vec![(resource_address.clone(), vec![resource_allocation])],
         },
     ];
 
@@ -211,10 +212,10 @@ fn test_genesis_stake_allocation() {
         ]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_0, staker_1],
-            allocations: btreemap!(
-                validator_0_key => validator_0_allocations,
-                validator_1_key => validator_1_allocations
-            ),
+            allocations: vec![
+                (validator_0_key, validator_0_allocations),
+                (validator_1_key, validator_1_allocations),
+            ],
         },
     ];
 

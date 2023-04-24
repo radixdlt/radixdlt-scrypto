@@ -165,9 +165,13 @@ impl CustomGenesis {
             GenesisDataChunk::Validators(vec![genesis_validator]),
             GenesisDataChunk::Stakes {
                 accounts: vec![staker_account],
-                allocations: btreemap!(
-                validator_public_key => vec![
-                    GenesisStakeAllocation { account_index: 0, xrd_amount: stake_xrd_amount }]),
+                allocations: vec![(
+                    validator_public_key,
+                    vec![GenesisStakeAllocation {
+                        account_index: 0,
+                        xrd_amount: stake_xrd_amount,
+                    }],
+                )],
             },
         ];
         CustomGenesis {

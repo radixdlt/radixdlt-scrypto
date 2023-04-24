@@ -86,14 +86,14 @@ pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
         accounts: Vec<ComponentAddress>,
-        allocations: BTreeMap<EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>>,
+        allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
     },
     Resources(Vec<GenesisResource>),
     ResourceBalances {
         accounts: Vec<ComponentAddress>,
-        allocations: BTreeMap<ResourceAddress, Vec<GenesisResourceAllocation>>,
+        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
     },
-    XrdBalances(BTreeMap<ComponentAddress, Decimal>),
+    XrdBalances(Vec<(ComponentAddress, Decimal)>),
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -205,7 +205,7 @@ where
 
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
-            for chunk in genesis_data_chunks {
+            for chunk in genesis_data_chunks.into_iter() {
                 let receipt = self.ingest_genesis_data_chunk(
                     &system_bootstrap_receipt.genesis_helper(),
                     chunk,

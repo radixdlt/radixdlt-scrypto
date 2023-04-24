@@ -1,6 +1,7 @@
+use native_sdk::account::*;
 use scrypto::api::node_modules::metadata::MetadataValue;
-use scrypto::blueprints::account::AccountDepositInput;
 use scrypto::blueprints::epoch_manager::*;
+use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
@@ -38,14 +39,14 @@ pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
         accounts: Vec<ComponentAddress>,
-        allocations: BTreeMap<EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>>,
+        allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
     },
     Resources(Vec<GenesisResource>),
     ResourceBalances {
         accounts: Vec<ComponentAddress>,
-        allocations: BTreeMap<ResourceAddress, Vec<GenesisResourceAllocation>>,
+        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
     },
-    XrdBalances(BTreeMap<ComponentAddress, Decimal>),
+    XrdBalances(Vec<(ComponentAddress, Decimal)>),
 }
 
 #[blueprint]
@@ -111,14 +112,9 @@ mod genesis_helper {
                 );
 
             // Deposit the badge to the owner account
-            let _: () = Runtime::call_method(
-                validator.owner,
-                "deposit",
-                scrypto_encode(&AccountDepositInput {
-                    bucket: owner_token_bucket,
-                })
-                .unwrap(),
-            );
+            let _: () = Account(validator.owner)
+                .deposit(owner_token_bucket, &mut ScryptoEnv)
+                .unwrap();
 
             if validator.is_registered {
                 let _: () = Runtime::call_method(
@@ -143,7 +139,7 @@ mod genesis_helper {
         fn allocate_stakes(
             &mut self,
             accounts: Vec<ComponentAddress>,
-            allocations: BTreeMap<EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>>,
+            allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
         ) {
             for (validator_key, stake_allocations) in allocations.into_iter() {
                 let validator_address = self.validators.get(&validator_key).unwrap();
@@ -162,11 +158,9 @@ mod genesis_helper {
                         })
                         .unwrap(),
                     );
-                    let _: () = Runtime::call_method(
-                        staker_account_address,
-                        "deposit",
-                        scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
-                    );
+                    let _: () = Account(staker_account_address)
+                        .deposit(lp_bucket, &mut ScryptoEnv)
+                        .unwrap();
                 }
             }
         }
@@ -228,14 +222,9 @@ mod genesis_helper {
                     ),
                 );
 
-                let _: () = Runtime::call_method(
-                    owner,
-                    "deposit",
-                    scrypto_encode(&AccountDepositInput {
-                        bucket: owner_badge,
-                    })
-                    .unwrap(),
-                );
+                let _: () = Account(owner)
+                    .deposit(owner_badge, &mut ScryptoEnv)
+                    .unwrap();
             }
 
             let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
@@ -260,7 +249,7 @@ mod genesis_helper {
         fn allocate_resources(
             &mut self,
             accounts: Vec<ComponentAddress>,
-            allocations: BTreeMap<ResourceAddress, Vec<GenesisResourceAllocation>>,
+            allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
         ) {
             for (resource_address, allocations) in allocations.into_iter() {
                 let mut resource_vault = self.resource_vaults.get_mut(&resource_address).unwrap();
@@ -271,26 +260,19 @@ mod genesis_helper {
                 {
                     let account_address = accounts[account_index as usize].clone();
                     let allocation_bucket = resource_vault.take(amount);
-                    let _: () = Runtime::call_method(
-                        account_address,
-                        "deposit",
-                        scrypto_encode(&AccountDepositInput {
-                            bucket: allocation_bucket,
-                        })
-                        .unwrap(),
-                    );
+                    let _: () = Account(account_address)
+                        .deposit(allocation_bucket, &mut ScryptoEnv)
+                        .unwrap();
                 }
             }
         }
 
-        fn allocate_xrd(&mut self, allocations: BTreeMap<ComponentAddress, Decimal>) {
+        fn allocate_xrd(&mut self, allocations: Vec<(ComponentAddress, Decimal)>) {
             for (account_address, amount) in allocations.into_iter() {
                 let bucket = self.xrd_vault.take(amount);
-                let _: () = Runtime::call_method(
-                    account_address,
-                    "deposit",
-                    scrypto_encode(&AccountDepositInput { bucket }).unwrap(),
-                );
+                let _: () = Account(account_address)
+                    .deposit(bucket, &mut ScryptoEnv)
+                    .unwrap();
             }
         }
 
