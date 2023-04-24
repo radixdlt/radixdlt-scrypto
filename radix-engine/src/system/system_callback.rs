@@ -19,7 +19,8 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::schema::BlueprintSchema;
 
-fn validate_input(
+fn validate_input<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
+    upstream: SystemUpstream<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
@@ -43,7 +44,7 @@ fn validate_input(
         input.as_slice(),
         &blueprint_schema.schema,
         function_schema.input,
-        &(),
+        &upstream,
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
@@ -55,7 +56,8 @@ fn validate_input(
     Ok(function_schema.export_name.clone())
 }
 
-fn validate_output(
+fn validate_output<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
+    upstream: SystemUpstream<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
@@ -69,7 +71,7 @@ fn validate_output(
         output.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,
-        &(),
+        &upstream,
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
@@ -91,6 +93,21 @@ pub struct SystemInvocation {
 pub struct SystemCallback<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub modules: SystemModuleMixer,
+}
+
+pub struct SystemUpstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
+    pub api: &'a mut Y,
+    pub phantom: PhantomData<V>,
+}
+
+impl<'a, Y, V> PayloadValidationContext for SystemUpstream<'a, Y, V>
+where
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
+{
+    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+        self.api.kernel_get_node_type_info(node_id)
+    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
@@ -356,8 +373,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
             //  Validate input
             let export_name = match &invocation.ident {
                 FnIdent::Application(ident) => {
-                    let export_name =
-                        validate_input(&schema, &ident, invocation.receiver.is_some(), &args)?;
+                    let export_name = validate_input(
+                        SystemUpstream {
+                            api,
+                            phantom: PhantomData,
+                        },
+                        &schema,
+                        &ident,
+                        invocation.receiver.is_some(),
+                        &args,
+                    )?;
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
@@ -386,7 +411,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
 
             // Validate output
             match invocation.ident {
-                FnIdent::Application(ident) => validate_output(&schema, &ident, &output)?,
+                FnIdent::Application(ident) => validate_output(
+                    SystemUpstream {
+                        api,
+                        phantom: PhantomData,
+                    },
+                    &schema,
+                    &ident,
+                    &output,
+                )?,
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema
                 }
