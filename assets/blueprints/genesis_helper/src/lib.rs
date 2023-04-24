@@ -32,7 +32,7 @@ pub struct GenesisResource {
     pub description: String,
     pub url: String,
     pub icon_url: String,
-    pub address_bytes: [u8; 27],
+    pub address_bytes: [u8; NodeId::LENGTH],
     pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
 }
 
@@ -44,9 +44,10 @@ mod genesis_helper {
         pub fn init(
             mut genesis_data: GenesisData,
             mut whole_lotta_xrd: Bucket,
-            validator_owner_token: [u8; 27], // TODO: Clean this up
-            epoch_manager_component_address: [u8; 27], // TODO: Clean this up
+            validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
+            epoch_manager_component_address: [u8; NodeId::LENGTH], // TODO: Clean this up
             initial_epoch: u64,
+            max_validators: u32,
             rounds_per_epoch: u64,
             num_unstake_epochs: u64,
         ) -> Bucket {
@@ -101,6 +102,7 @@ mod genesis_helper {
                     component_address: epoch_manager_component_address,
                     validator_set: validators_with_initial_stake,
                     initial_epoch,
+                    max_validators,
                     rounds_per_epoch,
                     num_unstake_epochs,
                 })

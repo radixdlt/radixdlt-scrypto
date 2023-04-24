@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket, HeapNode};
+use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -43,13 +43,12 @@ pub fn drop_fungible_bucket_of_address<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let node: HeapNode = api.kernel_drop_node(bucket_node_id)?;
+    let node_substates = api.kernel_drop_node(bucket_node_id)?;
 
     // Note that we assume the input is indeed a bucket; we're just not sure if it's
     // fungible or non-fungible, because schema type allows either.
-    let info: BucketInfoSubstate = node
-        .substates
-        .get(&SysModuleId::ObjectTuple)
+    let info: BucketInfoSubstate = node_substates
+        .get(&SysModuleId::Object.into())
         .unwrap()
         .get(&BucketOffset::Info.into())
         .map(|x| x.as_typed().unwrap())
@@ -61,7 +60,7 @@ where
         )));
     }
 
-    let bucket: DroppedFungibleBucket = node.into();
+    let bucket: DroppedFungibleBucket = node_substates.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),
@@ -79,13 +78,12 @@ pub fn drop_non_fungible_bucket_of_address<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let node: HeapNode = api.kernel_drop_node(bucket_node_id)?;
+    let node_substates = api.kernel_drop_node(bucket_node_id)?;
 
     // Note that we assume the input is indeed a bucket; we're just not sure if it's
     // fungible or non-fungible, because schema type allows either.
-    let info: BucketInfoSubstate = node
-        .substates
-        .get(&SysModuleId::ObjectTuple)
+    let info: BucketInfoSubstate = node_substates
+        .get(&SysModuleId::Object.into())
         .unwrap()
         .get(&BucketOffset::Info.into())
         .map(|x| x.as_typed().unwrap())
@@ -97,7 +95,7 @@ where
         )));
     }
 
-    let bucket: DroppedNonFungibleBucket = node.into();
+    let bucket: DroppedNonFungibleBucket = node_substates.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),

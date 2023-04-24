@@ -133,7 +133,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
 
     fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        _identifier: &KernelInvocation<SystemInvocation>,
+        identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -152,6 +152,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::Invoke {
                             input_size: input_size as u32,
+                            identifier: &identifier.sys_invocation,
                         })
                     },
                     1,
@@ -195,7 +196,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::ObjectTuple,
+            SysModuleId::Object.into(),
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
         )?;
@@ -231,7 +232,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
                 component_address.as_node_id(),
-                SysModuleId::Royalty,
+                SysModuleId::Royalty.into(),
                 &RoyaltyOffset::RoyaltyConfig.into(),
                 LockFlags::read_only(),
             )?;
@@ -243,7 +244,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    SysModuleId::Royalty,
+                    SysModuleId::Royalty.into(),
                     &RoyaltyOffset::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                 )?;
@@ -273,8 +274,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
 
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        _node_id: &NodeId,
-        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_id: &NodeId,
+        _node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_callback()
@@ -282,7 +283,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .costing
             .apply_execution_cost(
                 CostingReason::CreateNode,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0, node_id })
+                },
                 1,
             )?;
         Ok(())
@@ -304,9 +307,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
 
     fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        _node_id: &NodeId,
-        _module_id: &SysModuleId,
-        _offset: &SubstateKey,
+        node_id: &NodeId,
+        module_id: &ModuleId,
+        substate_key: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_callback()
@@ -314,7 +317,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .costing
             .apply_execution_cost(
                 CostingReason::LockSubstate,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::LockSubstate {
+                        node_id,
+                        module_id: &SysModuleId::from_repr(module_id.0).unwrap(),
+                        substate_key,
+                    })
+                },
                 1,
             )?;
         Ok(())
@@ -366,6 +375,24 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
             .apply_execution_cost(
                 CostingReason::DropLock,
                 |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
+                1,
+            )?;
+        Ok(())
+    }
+
+    fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
+        api: &mut Y,
+        _entity_type: Option<EntityType>,
+        virtual_node: bool,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_callback()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::AllocateNodeId,
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::AllocateNodeId { virtual_node })
+                },
                 1,
             )?;
         Ok(())

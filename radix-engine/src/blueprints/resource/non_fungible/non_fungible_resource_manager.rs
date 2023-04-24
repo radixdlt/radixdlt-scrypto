@@ -191,7 +191,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address: [u8; 27], // TODO: Clean this up
+        resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where

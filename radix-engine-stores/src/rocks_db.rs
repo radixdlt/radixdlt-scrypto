@@ -1,5 +1,4 @@
 use crate::interface::*;
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
@@ -77,14 +76,18 @@ impl SubstateDatabase for RocksdbSubstateStore {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Result<(Vec<(SubstateKey, Vec<u8>)>, Hash), ListSubstatesError> {
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, Vec<u8>)>, ListSubstatesError> {
         let start = encode_substate_id(node_id, module_id, &SubstateKey::min());
         let end = encode_substate_id(node_id, module_id, &SubstateKey::max());
         let mut substates = Vec::<(SubstateKey, Vec<u8>)>::new();
 
+        let count = count.try_into().unwrap();
+
         let mut iter = self
             .db
-            .iterator(IteratorMode::From(&start, Direction::Forward));
+            .iterator(IteratorMode::From(&start, Direction::Forward))
+            .take(count);
         while let Some(kv) = iter.next() {
             let (key, value) = kv.unwrap();
             if key.as_ref() > &end {
@@ -96,7 +99,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
             substates.push((substate_key, value));
         }
 
-        Ok((substates, Hash([0; Hash::LENGTH])))
+        Ok(substates)
     }
 }
 
@@ -106,15 +109,13 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
         {
             let substate_id = encode_substate_id(node_id, *module_id, substate_key);
             match substate_change {
-                StateUpdate::Create(substate_value) => {
+                StateUpdate::Set(substate_value) => {
                     self.db
                         .put(substate_id, scrypto_encode(&substate_value).unwrap())
                         .expect("IO error");
                 }
-                StateUpdate::Update(substate_value) => {
-                    self.db
-                        .put(substate_id, scrypto_encode(&substate_value).unwrap())
-                        .expect("IO error");
+                StateUpdate::Delete => {
+                    self.db.delete(substate_id).expect("IO error");
                 }
             }
         }

@@ -75,7 +75,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_virtual_ecdsa_256k1<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::UUID_LENGTH],
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where
@@ -94,7 +94,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_virtual_eddsa_25519<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::UUID_LENGTH],
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where

@@ -21,8 +21,8 @@ impl EpochManagerNativePackage {
 
         let mut substates = Vec::new();
         substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSetSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSetSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<SecondaryIndexSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -55,6 +55,15 @@ impl EpochManagerNativePackage {
             },
         );
         functions.insert(
+            EPOCH_MANAGER_START_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<EpochManagerStartInput>(),
+                output: aggregator.add_child_type_and_descendents::<EpochManagerStartOutput>(),
+                export_name: EPOCH_MANAGER_START_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -72,6 +81,17 @@ impl EpochManagerNativePackage {
                 output: aggregator
                     .add_child_type_and_descendents::<EpochManagerCreateValidatorOutput>(),
                 export_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<EpochManagerCreateValidatorWithStakeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<EpochManagerCreateValidatorWithStakeOutput>(),
+                export_name: EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -190,7 +210,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
-            parent: None,
+            parent: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
             substates,
             functions,
@@ -245,6 +265,7 @@ impl EpochManagerNativePackage {
                     input.component_address,
                     input.validator_set,
                     input.initial_epoch,
+                    input.max_validators,
                     input.rounds_per_epoch,
                     input.num_unstake_epochs,
                     api,
@@ -276,6 +297,19 @@ impl EpochManagerNativePackage {
                 let rtn = EpochManagerBlueprint::set_epoch(receiver, input.epoch, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            EPOCH_MANAGER_START_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: EpochManagerStartInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::start(receiver, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             EPOCH_MANAGER_NEXT_ROUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -302,6 +336,26 @@ impl EpochManagerNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: EpochManagerCreateValidatorWithStakeInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = EpochManagerBlueprint::create_validator_with_stake(
+                    receiver,
+                    input.key,
+                    input.xrd_stake,
+                    input.register,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -312,12 +366,7 @@ impl EpochManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = EpochManagerBlueprint::update_validator(
-                    receiver,
-                    input.validator_address,
-                    input.update,
-                    api,
-                )?;
+                let rtn = EpochManagerBlueprint::update_validator(receiver, input.update, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -327,7 +376,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::register(receiver, input, api)
+                let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::register(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UNREGISTER_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -335,7 +388,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::unregister(receiver, input, api)
+                let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::unregister(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -343,7 +400,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::stake(receiver, input, api)
+                let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::stake(receiver, input.stake, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UNSTAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -351,7 +412,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::unstake(receiver, input, api)
+                let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::unstake(receiver, input.lp_tokens, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -359,7 +424,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::claim_xrd(receiver, input, api)
+                let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::claim_xrd(receiver, input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_KEY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -367,7 +436,11 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::update_key(receiver, input, api)
+                let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::update_key(receiver, input.key, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -375,7 +448,16 @@ impl EpochManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ValidatorBlueprint::update_accept_delegated_stake(receiver, input, api)
+                let input: ValidatorUpdateAcceptDelegatedStakeInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ValidatorBlueprint::update_accept_delegated_stake(
+                    receiver,
+                    input.accept_delegated_stake,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),

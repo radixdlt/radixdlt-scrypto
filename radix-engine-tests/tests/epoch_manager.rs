@@ -1,6 +1,6 @@
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::bootstrap::{create_genesis, GenesisData};
+use radix_engine::system::bootstrap::{create_genesis, GenesisData, GenesisValidator};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -10,6 +10,66 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{Instruction, SystemTransaction};
+
+#[test]
+fn genesis_epoch_has_correct_initial_validators() {
+    // Arrange
+    let initial_epoch = 1u64;
+    let rounds_per_epoch = 5u64;
+    let num_unstake_epochs = 1u64;
+    let max_validators = 10u32;
+
+    let mut stakes = BTreeMap::new();
+    let mut validators = Vec::new();
+    let mut accounts = Vec::new();
+    for k in 1usize..=100usize {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
+            .unwrap()
+            .public_key();
+        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+
+        accounts.push(validator_account_address);
+        validators.push(GenesisValidator {
+            key: pub_key,
+            component_address: validator_account_address,
+        });
+
+        let stake = Decimal::from(1000000 * ((k + 1) / 2));
+
+        stakes.insert(k - 1, vec![(k - 1, stake)]);
+    }
+
+    let genesis_data = GenesisData {
+        validators,
+        resources: Vec::new(),
+        accounts,
+        resource_balances: BTreeMap::new(),
+        xrd_balances: BTreeMap::new(),
+        stakes,
+    };
+
+    let genesis = create_genesis(
+        genesis_data,
+        initial_epoch,
+        max_validators,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    );
+
+    // Act
+    let (_, validators) = TestRunner::builder()
+        .with_custom_genesis(genesis)
+        .build_and_get_epoch();
+
+    // Assert
+    assert_eq!(validators.len(), 10);
+    for (_, validator) in validators {
+        assert!(
+            validator.stake >= Decimal::from(45000000u64)
+                && validator.stake <= Decimal::from(50000000u64)
+        )
+    }
+}
 
 #[test]
 fn get_epoch_should_succeed() {
@@ -70,9 +130,12 @@ fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
+    let initial_epoch = 1u64;
+    let max_validators = 10u32;
     let genesis = create_genesis(
         GenesisData::empty(),
-        1u64,
+        initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -105,11 +168,13 @@ fn next_round_with_validator_auth_succeeds() {
 fn next_epoch_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         GenesisData::empty(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -143,6 +208,7 @@ fn next_epoch_with_validator_auth_succeeds() {
 fn register_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -156,6 +222,7 @@ fn register_validator_with_auth_succeeds() {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -181,6 +248,7 @@ fn register_validator_with_auth_succeeds() {
 fn register_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -194,6 +262,7 @@ fn register_validator_without_auth_fails() {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -217,6 +286,7 @@ fn register_validator_without_auth_fails() {
 fn unregister_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -230,6 +300,7 @@ fn unregister_validator_with_auth_succeeds() {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -255,6 +326,7 @@ fn unregister_validator_with_auth_succeeds() {
 fn unregister_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -268,6 +340,7 @@ fn unregister_validator_without_auth_fails() {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -290,6 +363,7 @@ fn unregister_validator_without_auth_fails() {
 fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
@@ -303,6 +377,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -374,11 +449,13 @@ fn not_allowing_delegated_stake_should_not_let_non_owner_stake() {
 fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let genesis = create_genesis(
         GenesisData::empty(),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -421,25 +498,66 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
-#[test]
-fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change() {
+fn registered_validator_test(
+    num_initial_validators: usize,
+    max_validators: usize,
+    initial_stakes: Decimal,
+    validator_stake: Decimal,
+    expect_in_next_epoch: bool,
+) {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
+    let mut stakes = BTreeMap::new();
+    let mut validators = Vec::new();
+    let mut accounts = Vec::new();
+    for k in 1usize..=num_initial_validators {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
+            .unwrap()
+            .public_key();
+        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+
+        accounts.push(validator_account_address);
+        validators.push(GenesisValidator {
+            key: pub_key,
+            component_address: validator_account_address,
+        });
+
+        stakes.insert(k - 1, vec![(k - 1, initial_stakes)]);
+    }
+
+    let validator_account_index = num_initial_validators;
+    let pub_key =
+        EcdsaSecp256k1PrivateKey::from_u64((validator_account_index + 1).try_into().unwrap())
+            .unwrap()
+            .public_key();
+    let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    accounts.push(account_address);
+
+    let genesis_data = GenesisData {
+        validators,
+        resources: Vec::new(),
+        accounts,
+        resource_balances: BTreeMap::new(),
+        xrd_balances: btreemap!(
+            validator_account_index => validator_stake
+        ),
+        stakes,
+    };
     let genesis = create_genesis(
-        GenesisData::empty(),
+        genesis_data,
         initial_epoch,
+        max_validators.try_into().unwrap(),
         rounds_per_epoch,
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account_address, VALIDATOR_OWNER_TOKEN)
-        .withdraw_from_account(account_address, RADIX_TOKEN, Decimal::one())
+        .withdraw_from_account(account_address, RADIX_TOKEN, validator_stake)
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
@@ -477,20 +595,36 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.0.len(), max_validators);
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
-        next_epoch.0.get(&validator_address).unwrap(),
-        &Validator {
-            key: pub_key,
-            stake: Decimal::one(),
-        }
+        next_epoch.0.contains_key(&validator_address),
+        expect_in_next_epoch
     );
+}
+
+#[test]
+fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough(
+) {
+    registered_validator_test(10, 10, 1000000.into(), 900000.into(), false);
+}
+
+#[test]
+fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
+) {
+    registered_validator_test(9, 10, 1000000.into(), 900000.into(), true);
+}
+
+#[test]
+fn registered_validator_with_enough_stake_does_become_part_of_validator_on_epoch_change() {
+    registered_validator_test(10, 10, 1000000.into(), 1100000.into(), true);
 }
 
 #[test]
 fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -505,6 +639,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -550,6 +685,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -564,6 +700,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
             validator_account_address,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -619,6 +756,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 fn cannot_claim_unstake_immediately() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -635,6 +773,7 @@ fn cannot_claim_unstake_immediately() {
             account_with_lp,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -681,6 +820,7 @@ fn cannot_claim_unstake_immediately() {
 fn can_claim_unstake_after_epochs() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -697,6 +837,7 @@ fn can_claim_unstake_after_epochs() {
             account_with_lp,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -752,6 +893,7 @@ fn can_claim_unstake_after_epochs() {
 fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
+    let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
@@ -768,6 +910,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             account_with_lp,
         ),
         initial_epoch,
+        max_validators,
         rounds_per_epoch,
         num_unstake_epochs,
     );
@@ -842,10 +985,11 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN),
-            Into::<[u8; 27]>::into(EPOCH_MANAGER),
+            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN),
+            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             validator_set,
             1u64,
+            10u32,
             1u64,
             1u64
         ),
@@ -883,10 +1027,11 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            Into::<[u8; 27]>::into(VALIDATOR_OWNER_TOKEN),
-            Into::<[u8; 27]>::into(EPOCH_MANAGER),
+            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN),
+            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             validator_set,
             1u64,
+            10u32,
             1u64,
             1u64
         ),

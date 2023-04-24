@@ -92,32 +92,35 @@ use utils::ContextualDisplay;
 /// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
-    47,
-    171,
-    219,
-    117,
-    206,
-    243,
-    13,
-    82,
+    59,
+    99,
+    48,
+    95,
+    132,
+    112,
+    235,
+    36,
+    42,
+    161,
+    133,
+    230,
+    241,
+    33,
+    44,
+    166,
+    237,
     56,
-    137,
-    192,
-    143,
-    255,
-    188,
-    175,
-    135,
-    196,
-    206,
-    18,
-    120,
-    57,
-    188,
-    228,
-    71,
-    160,
-    137,
+    70,
+    204,
+    112,
+    110,
+    219,
+    138,
+    151,
+    60,
+    191,
+    147,
+    140,
 ]);
 
 /// Build fast, reward everyone, and scale without friction
@@ -351,7 +354,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -436,7 +439,9 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                        TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                            return None
+                        }
                     }
                 }
             }
@@ -451,7 +456,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectTuple.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

@@ -91,11 +91,23 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         log_expr_quote.push(quote! { let #var = #right; });
                         let var_s = var.to_string();
                         additional_items.push( quote!{ OutputParam { name: #var_s.into(), value: OutputParamValue::Literal(format!("{:?}", #var).into())} } );
-                    } else if let Ok(right) = syn::parse::<syn::ExprBlock>(right_arg.into()) {
+                    } else if let Ok(right) = syn::parse::<syn::ExprBlock>(right_arg.clone().into())
+                    {
                         // log block result
                         let var = syn::Ident::new(&format!("arg{}", idx), Span::call_site());
                         log_expr_quote.push(quote! { let #var = #right; });
                         let var_s = var.to_string();
+                        additional_items.push( quote!{ OutputParam { name: #var_s.into(), value: OutputParamValue::Literal(format!("{:?}", #var).into())} } );
+                    } else if let Ok(right) = syn::parse::<syn::ExprUnary>(right_arg.into()) {
+                        // log deref result
+                        let var_name = match right.expr.as_ref() {
+                            syn::Expr::Path(p) => p.path.segments.last().unwrap().ident.clone(),
+                            _ => panic!("Not supported path expression: {:?}", right.expr),
+                        };
+                        let var =
+                            syn::Ident::new(&format!("{}_deref", var_name), Span::call_site());
+                        log_expr_quote.push(quote! { let #var = #right; });
+                        let var_s = var_name.to_string();
                         additional_items.push( quote!{ OutputParam { name: #var_s.into(), value: OutputParamValue::Literal(format!("{:?}", #var).into())} } );
                     } else {
                         panic!("Wrong log value type: {:?}", i.right.as_ref())
@@ -118,11 +130,23 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         log_expr_after_quote.push(quote! { let #var = #right; });
                         let var_s = var.to_string();
                         additional_items_after.push( quote!{ OutputParam { name: #var_s.into(), value: OutputParamValue::Literal(format!("{:?}", #var).into())} } );
-                    } else if let Ok(right) = syn::parse::<syn::ExprBlock>(right_arg.into()) {
+                    } else if let Ok(right) = syn::parse::<syn::ExprBlock>(right_arg.clone().into())
+                    {
                         // lob block result
                         let var = syn::Ident::new(&format!("arg{}", idx), Span::call_site());
                         log_expr_after_quote.push(quote! { let #var = #right; });
                         let var_s = var.to_string();
+                        additional_items_after.push( quote!{ OutputParam { name: #var_s.into(), value: OutputParamValue::Literal(format!("{:?}", #var).into())} } );
+                    } else if let Ok(right) = syn::parse::<syn::ExprUnary>(right_arg.into()) {
+                        // log deref result
+                        let var_name = match right.expr.as_ref() {
+                            syn::Expr::Path(p) => p.path.segments.last().unwrap().ident.clone(),
+                            _ => panic!("Not supported path expression: {:?}", right.expr),
+                        };
+                        let var =
+                            syn::Ident::new(&format!("{}_deref", var_name), Span::call_site());
+                        log_expr_quote.push(quote! { let #var = #right; });
+                        let var_s = var_name.to_string();
                         additional_items_after.push( quote!{ OutputParam { name: #var_s.into(), value: OutputParamValue::Literal(format!("{:?}", #var).into())} } );
                     } else {
                         panic!("Wrong log_after value type: {:?}", i.right.as_ref())

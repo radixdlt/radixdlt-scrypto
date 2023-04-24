@@ -10,7 +10,7 @@ mod non_existent_vault {
     impl NonExistentVault {
         pub fn create_component_with_non_existent_vault() -> ComponentAddress {
             NonExistentVault {
-                vault: Option::Some(Vault(Own(NodeId([1u8; 27])))),
+                vault: Option::Some(Vault(Own(NodeId([1u8; NodeId::LENGTH])))),
                 vaults: KeyValueStore::new(),
             }
             .instantiate()
@@ -27,12 +27,12 @@ mod non_existent_vault {
         }
 
         pub fn create_non_existent_vault(&mut self) {
-            self.vault = Option::Some(Vault(Own(NodeId([1u8; 27]))))
+            self.vault = Option::Some(Vault(Own(NodeId([1u8; NodeId::LENGTH]))))
         }
 
         pub fn create_kv_store_with_non_existent_vault() -> ComponentAddress {
             let vaults = KeyValueStore::new();
-            vaults.insert(0, Vault(Own(NodeId([1u8; 27]))));
+            vaults.insert(0, Vault(Own(NodeId([1u8; NodeId::LENGTH]))));
             NonExistentVault {
                 vault: Option::None,
                 vaults,
@@ -42,7 +42,8 @@ mod non_existent_vault {
         }
 
         pub fn create_non_existent_vault_in_kv_store(&mut self) {
-            self.vaults.insert(0, Vault(Own(NodeId([1u8; 27]))));
+            self.vaults
+                .insert(0, Vault(Own(NodeId([1u8; NodeId::LENGTH]))));
         }
     }
 }
