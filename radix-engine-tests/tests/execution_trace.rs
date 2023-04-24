@@ -1,4 +1,4 @@
-use radix_engine::system::kernel_modules::execution_trace::{
+use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;
@@ -269,7 +269,7 @@ fn test_instruction_traces() {
         assert_eq!(
             Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
             }),
             trace.origin

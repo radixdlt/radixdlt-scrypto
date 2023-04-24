@@ -47,18 +47,3 @@ impl ModuleInit {
         }
     }
 }
-
-#[derive(Debug)]
-pub enum NodeInit {
-    Object(BTreeMap<SubstateKey, IndexedScryptoValue>),
-    KeyValueStore,
-}
-
-impl NodeInit {
-    pub fn to_substates(self) -> BTreeMap<SubstateKey, IndexedScryptoValue> {
-        match self {
-            NodeInit::Object(object_states) => object_states,
-            NodeInit::KeyValueStore => BTreeMap::new(),
-        }
-    }
-}

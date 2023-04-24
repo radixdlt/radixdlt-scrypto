@@ -40,7 +40,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
-    pub resource_address: [u8; 27], // TODO: Clean this up
+    pub resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
 }
 
 pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);
@@ -53,3 +53,14 @@ pub struct FungibleResourceManagerMintInput {
 }
 
 pub type FungibleResourceManagerMintOutput = Bucket;
+
+// Protected
+
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct FungibleResourceManagerCreateBucketInput {
+    pub amount: Decimal,
+}
+
+pub type FungibleResourceManagerCreateBucketOutput = Bucket;

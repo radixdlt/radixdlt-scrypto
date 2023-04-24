@@ -1,4 +1,4 @@
-use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
@@ -94,7 +94,7 @@ impl FungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                    LocalRef::Bucket(_) => FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                 },
                 scrypto_args!(locked_amount),
@@ -111,7 +111,7 @@ impl FungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
+                    LocalRef::Bucket(_) => FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
                     LocalRef::Vault(_) => FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
                 },
                 scrypto_args!(locked_amount),
@@ -156,7 +156,7 @@ impl NonFungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Bucket(_) => NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                 },
                 scrypto_args!(locked_ids),
@@ -173,7 +173,7 @@ impl NonFungibleProof {
             api.call_method(
                 container.as_node_id(),
                 match container {
-                    LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Bucket(_) => NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                 },
                 scrypto_args!(locked_ids),
@@ -203,7 +203,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofCloneInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -263,7 +263,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -300,7 +300,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -330,7 +330,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
@@ -347,7 +347,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ProofDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
         let proof = input.proof;
 

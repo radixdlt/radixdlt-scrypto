@@ -7,7 +7,6 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -15,7 +14,8 @@ use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
+use crate::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
@@ -104,13 +104,14 @@ pub struct GenesisResource {
     pub description: String,
     pub url: String,
     pub icon_url: String,
-    pub address_bytes: [u8; 27],
+    pub address_bytes: [u8; NodeId::LENGTH],
     pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
 }
 
 pub fn create_genesis(
     genesis_data: GenesisData,
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
 ) -> SystemTransaction {
@@ -385,7 +386,12 @@ pub fn create_genesis(
                 schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
+                dependent_resources: vec![
+                    RADIX_TOKEN,
+                    PACKAGE_TOKEN,
+                    SYSTEM_TOKEN,
+                    VALIDATOR_OWNER_TOKEN,
+                ],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -629,8 +635,8 @@ pub fn create_genesis(
             pre_allocated_ids.insert(resource.address_bytes.into());
         }
 
-        let epoch_manager_component_address: [u8; 27] = EPOCH_MANAGER.into();
-        let olympia_validator_token_address: [u8; 27] = VALIDATOR_OWNER_TOKEN.into();
+        let epoch_manager_component_address: [u8; NodeId::LENGTH] = EPOCH_MANAGER.into();
+        let olympia_validator_token_address: [u8; NodeId::LENGTH] = VALIDATOR_OWNER_TOKEN.into();
         pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
 
@@ -651,6 +657,7 @@ pub fn create_genesis(
                 olympia_validator_token_address,
                 epoch_manager_component_address,
                 initial_epoch,
+                max_validators,
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
@@ -696,7 +703,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
 
 pub fn bootstrap<S, W>(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
 ) -> Option<TransactionReceipt>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
@@ -707,6 +714,7 @@ where
         scrypto_interpreter,
         GenesisData::empty(),
         1u64,
+        100u32,
         1u64,
         1u64,
         false,
@@ -715,9 +723,10 @@ where
 
 pub fn bootstrap_with_genesis_data<S, W>(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     genesis_data: GenesisData,
     initial_epoch: u64,
+    max_validators: u32,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
     trace: bool,
@@ -738,6 +747,7 @@ where
         let genesis_transaction = create_genesis(
             genesis_data,
             initial_epoch,
+            max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
         );

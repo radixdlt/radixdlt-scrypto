@@ -1,7 +1,7 @@
-use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
-use crate::wasm::WasmEngine;
+use crate::vm::wasm::WasmEngine;
+use crate::vm::ScryptoVm;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_stores::interface::*;
 use transaction::errors::TransactionValidationError;
@@ -23,7 +23,7 @@ pub enum PreviewError {
 
 pub fn execute_preview<S: SubstateDatabase, W: WasmEngine, IHM: IntentHashManager>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     intent_hash_manager: &IHM,
     network: &NetworkDefinition,
     preview_intent: PreviewIntent,

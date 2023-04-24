@@ -14,7 +14,7 @@ pub struct Mint {
     /// The resource address
     pub resource_address: SimulatorResourceAddress,
 
-    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    /// The proofs to add to the auth zone, in form of "<resource_address>:<amount>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
     pub proofs: Option<Vec<String>>,
 

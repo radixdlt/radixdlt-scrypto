@@ -48,16 +48,9 @@ extern "C" {
 
     pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
-    pub fn globalize_object(
-        component_id_ptr: *const u8,
-        component_id_len: usize,
-        modules_ptr: *const u8,
-        modules_len: usize,
-    ) -> Buffer;
+    pub fn globalize_object(modules_ptr: *const u8, modules_len: usize) -> Buffer;
 
     pub fn globalize_with_address(
-        _node_id_ptr: *const u8,
-        _node_id_len: usize,
         _modules_ptr: *const u8,
         _modules_len: usize,
         _address_ptr: *const u8,
@@ -171,19 +164,12 @@ pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) ->
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_object(
-    _node_id_ptr: *const u8,
-    _node_id_len: usize,
-    _modules_ptr: *const u8,
-    _modules_len: usize,
-) -> Buffer {
+pub unsafe fn globalize_object(_modules_ptr: *const u8, _modules_len: usize) -> Buffer {
     unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn globalize_with_address(
-    _node_id_ptr: *const u8,
-    _node_id_len: usize,
     _modules_ptr: *const u8,
     _modules_len: usize,
     _address_ptr: *const u8,

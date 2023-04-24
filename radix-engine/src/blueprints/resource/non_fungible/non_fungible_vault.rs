@@ -4,6 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -49,28 +50,12 @@ impl NonFungibleVaultBlueprint {
 
         // Take
         let taken = NonFungibleVault::take(receiver, *amount, api)?;
-        let id_type = Self::get_id_type(receiver, api)?;
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
 
         // Create node
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
     }
 
     pub fn take_non_fungibles<Y>(
@@ -87,25 +72,9 @@ impl NonFungibleVaultBlueprint {
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        let id_type = Self::get_id_type(receiver, api)?;
 
         // Create node
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
     }
 
     pub fn put<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -176,26 +145,13 @@ impl NonFungibleVaultBlueprint {
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        let id_type = Self::get_id_type(receiver, api)?;
         let taken = NonFungibleVault::take(receiver, amount, api)?;
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
+        let bucket =
+            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
 
-        Ok(Bucket(Own(bucket_id)))
+        Ok(bucket)
     }
 
     pub fn recall_non_fungibles<Y>(
@@ -211,26 +167,13 @@ impl NonFungibleVaultBlueprint {
         let resource_address = ResourceAddress::new_unchecked(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
-        let id_type = Self::get_id_type(receiver, api)?;
 
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
+        let bucket =
+            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Ids(non_fungible_local_ids))?;
 
-        Ok(Bucket(Own(bucket_id)))
+        Ok(bucket)
     }
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>

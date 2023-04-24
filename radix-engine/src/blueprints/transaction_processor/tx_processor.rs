@@ -1,10 +1,9 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
-use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
+use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
-use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -19,6 +18,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
@@ -61,7 +61,7 @@ impl TransactionProcessorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         // Runtime transaction validation
@@ -73,11 +73,11 @@ impl TransactionProcessorBlueprint {
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             worktop_node_id,
-            NodeInit::Object(btreemap!(
-                WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
-            )),
             btreemap!(
-                SysModuleId::TypeInfo => ModuleInit::TypeInfo(
+                SysModuleId::Object.into() => btreemap!(
+                    WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
+                ),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
@@ -350,14 +350,9 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = api.call_function(
-                        RESOURCE_MANAGER_PACKAGE,
-                        BUCKET_BLUEPRINT,
-                        BUCKET_BURN_IDENT,
-                        scrypto_encode(&BucketBurnInput { bucket }).unwrap(),
-                    )?;
+                    let rtn = bucket.sys_burn(api)?;
 
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
@@ -446,7 +441,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        SysModuleId::Metadata,
+                        ObjectModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
@@ -471,7 +466,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        SysModuleId::Metadata,
+                        ObjectModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
@@ -491,7 +486,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        ObjectModuleId::SELF,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -514,7 +509,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         component_address.as_node_id(),
-                        SysModuleId::Royalty,
+                        ObjectModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -534,7 +529,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        SysModuleId::ObjectState,
+                        ObjectModuleId::SELF,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -551,7 +546,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
                         component_address.as_node_id(),
-                        SysModuleId::Royalty,
+                        ObjectModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
                     )?;
@@ -573,7 +568,7 @@ impl TransactionProcessorBlueprint {
                     let receiver = entity_address.into();
                     let result = api.call_module_method(
                         &receiver,
-                        SysModuleId::AccessRules,
+                        ObjectModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                             object_key: ObjectKey::SELF,
@@ -713,7 +708,8 @@ impl<'blob> TransactionProcessor<'blob> {
                 info.blueprint.package_address,
                 info.blueprint.blueprint_name.as_str(),
             ) {
-                (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
+                | (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }

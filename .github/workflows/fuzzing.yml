@@ -68,7 +68,7 @@ jobs:
     - name: Generate input for AFL
       working-directory: fuzz-tests
       run: |
-        ./fuzz.sh generate-input ${{ github.event.inputs.fuzz_input_mode }}
+        ./fuzz.sh generate-input ${{ github.event.inputs.fuzz_input_mode }} ${{ github.event.inputs.timeout }}
 
     - name: Start AFL
       working-directory: fuzz-tests
@@ -84,7 +84,14 @@ jobs:
       run: |
         ./afl.sh watch ${{ github.event.inputs.watch_interval }}
 
+    - name: Process AFL results
+      working-directory: fuzz-tests
+      run: |
+        # it is expected to generate afl/crash_summary.txt
+        ./process_fuzz_results.sh afl/transaction
+
     - name: Generate summary
+      if: success() || failure() || cancelled()
       working-directory: fuzz-tests
       run: |
         COMMIT=$(git rev-parse --short HEAD)
@@ -98,10 +105,18 @@ jobs:
          $(cargo afl whatsup -d afl/transaction) \
         \n\`\`\`\n" > afl/summary
         cat afl/summary >> $GITHUB_STEP_SUMMARY
+
+        echo -e \
+        "## Crash summary:\n \
+        \n\`\`\`\n \
+         $(cat afl/crash_summary.txt) \
+        \n\`\`\`\n" >> $GITHUB_STEP_SUMMARY
+
         find afl -type f ! -path "*/queue/*" | tee list
         tar -cvzf fuzz_transaction.tgz -T list
 
     - name: Upload artifacts
+      if: success() || failure() || cancelled()
       uses: actions/upload-artifact@v3
       with:
         name: fuzz_transaction.tgz

@@ -6,6 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
@@ -47,12 +48,12 @@ impl AttachedAccessRules {
         // TODO: allow setting method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                &self.0.clone().into(),
-                SysModuleId::AccessRules,
+                self.0.as_node_id(),
+                ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(SysModuleId::ObjectState, method_name),
+                    method_key: MethodKey::new(ObjectModuleId::SELF, method_name),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -64,12 +65,12 @@ impl AttachedAccessRules {
         // TODO: allow locking method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                &self.0.clone().into(),
-                SysModuleId::AccessRules,
+                self.0.as_node_id(),
+                ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(SysModuleId::ObjectState, method_name),
+                    method_key: MethodKey::new(ObjectModuleId::SELF, method_name),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),

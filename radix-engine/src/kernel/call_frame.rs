@@ -1,17 +1,17 @@
 use crate::kernel::actor::Actor;
-use crate::system::node_init::NodeInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_properties::NodeProperties;
 use crate::types::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::blueprints::resource::{BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{
+    AcquireLockError, DeleteSubstateError, NodeSubstates, SetSubstateError, SubstateStore,
+};
 
-use super::heap::{Heap, HeapNode};
+use super::heap::Heap;
 use super::kernel_api::LockInfo;
-use super::track::Track;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
@@ -64,7 +64,7 @@ pub enum RefType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub node_id: NodeId,
-    pub module_id: SysModuleId,
+    pub module_id: ModuleId,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
@@ -115,7 +115,7 @@ pub struct CallFrame {
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, SysModuleId, SubstateKey),
+    SubstateNotFound(NodeId, ModuleId, SubstateKey),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -149,112 +149,79 @@ pub enum WriteSubstateError {
     NoWritePermission,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ScanSortedSubstatesError {
+    NodeNotInCallFrame(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameSetSubstateError {
+    NodeNotInCallFrame(NodeId),
+    StoreError(SetSubstateError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameRemoveSubstateError {
+    NodeNotInCallFrame(NodeId),
+    StoreError(DeleteSubstateError),
+}
+
 impl CallFrame {
-    fn get_type_info<'s>(
+    // TODO: Remove
+    fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
         heap: &mut Heap,
-        track: &mut Track<'s>,
+        store: &mut S,
     ) -> Option<TypeInfoSubstate> {
         if let Some(substate) = heap.get_substate(
             node_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
-        } else if let Ok(handle) = track.acquire_lock(
+        } else if let Ok(handle) = store.acquire_lock(
             node_id,
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
             LockFlags::read_only(),
         ) {
-            let type_info: TypeInfoSubstate = track.read_substate(handle).as_typed().unwrap();
-            track.release_lock(handle);
+            let type_info: TypeInfoSubstate = store.read_substate(handle).as_typed().unwrap();
+            store.release_lock(handle);
             Some(type_info)
         } else {
             None
         }
     }
 
-    pub fn acquire_lock<'s>(
+    pub fn acquire_lock<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s>,
+        store: &mut S,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
-            .ok_or(LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
-
-        // Virtualization
-        // TODO: clean up the naughty!
-        let virtualization_enabled = {
-            if module_id == SysModuleId::Metadata {
-                true
-            } else if module_id == SysModuleId::ObjectState {
-                if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
-                    match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                            blueprint.package_address == METADATA_PACKAGE
-                                && blueprint.blueprint_name == METADATA_BLUEPRINT
-                        }
-                        TypeInfoSubstate::KeyValueStore(_) => true,
-                    }
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        };
-        if virtualization_enabled {
-            if heap.contains_node(node_id) {
-                if heap
-                    .get_substate(node_id, module_id.into(), substate_key)
-                    .is_none()
-                {
-                    heap.put_substate(
-                        node_id.clone(),
-                        module_id,
-                        substate_key.clone(),
-                        IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
-                    );
-                }
-            } else {
-                match track.acquire_lock(
-                    node_id,
-                    module_id.into(),
-                    substate_key,
-                    LockFlags::read_only(),
-                ) {
-                    Ok(handle) => {
-                        track.release_lock(handle);
-                    }
-                    Err(error) => {
-                        if matches!(error, AcquireLockError::NotFound(_, _, _)) {
-                            track.create_substate(
-                                node_id.clone(),
-                                module_id.into(),
-                                substate_key.clone(),
-                                IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None),
-                            )
-                        }
-                    }
-                }
-            };
-        }
+            .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
         let mut store_handle = None;
         let substate_value = if heap.contains_node(node_id) {
-            // TODO: make Heap more like Track?
+            // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
-            match heap.get_substate(node_id, module_id.into(), substate_key) {
+            match heap.get_substate_virtualize(node_id, module_id.into(), substate_key, || {
+                if module_id.virtualize_substates() {
+                    let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
+                    Some(value)
+                } else {
+                    None
+                }
+            }) {
                 Some(x) => x,
                 _ => {
                     return Err(LockSubstateError::SubstateNotFound(
@@ -265,11 +232,18 @@ impl CallFrame {
                 }
             }
         } else {
-            let handle = track
-                .acquire_lock(node_id, module_id.into(), substate_key, flags)
+            let handle = store
+                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
+                    if module_id.virtualize_substates() {
+                        let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
+                        Some(value)
+                    } else {
+                        None
+                    }
+                })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
-            track.read_substate(handle)
+            store.read_substate(handle)
         };
 
         // Infer references and owns within the substate
@@ -325,10 +299,10 @@ impl CallFrame {
         Ok(lock_handle)
     }
 
-    pub fn drop_lock<'s>(
+    pub fn drop_lock<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s>,
+        store: &mut S,
         lock_handle: LockHandle,
     ) -> Result<(), UnlockSubstateError> {
         let substate_lock = self
@@ -342,7 +316,7 @@ impl CallFrame {
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = if let Some(handle) = substate_lock.store_handle {
-                track.read_substate(handle)
+                store.read_substate(handle)
             } else {
                 heap.get_substate(node_id, module_id.into(), substate_key)
                     .expect("Substate locked but missing")
@@ -380,32 +354,11 @@ impl CallFrame {
             for child_id in &new_children {
                 self.take_node_internal(child_id)
                     .map_err(UnlockSubstateError::MoveError)?;
-
-                // TODO: Move this check into system layer
-                if let Some(info) = heap.get_substate(
-                    child_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                ) {
-                    let type_info: TypeInfoSubstate = info.as_typed().unwrap();
-                    match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                            if !NodeProperties::can_own(
-                                &substate_key,
-                                blueprint.package_address,
-                                blueprint.blueprint_name.as_str(),
-                            ) {
-                                return Err(UnlockSubstateError::CantOwn(child_id.clone()));
-                            }
-                        }
-                        TypeInfoSubstate::KeyValueStore(..) => {}
-                    }
-                }
             }
 
             if !heap.contains_node(&node_id) {
                 for child in &new_children {
-                    Self::move_node_to_store(heap, track, child)?;
+                    Self::move_node_to_store(heap, store, child)?;
                 }
             }
         }
@@ -425,7 +378,7 @@ impl CallFrame {
 
         // Release track lock
         if let Some(handle) = substate_lock.store_handle {
-            track.release_lock(handle);
+            store.release_lock(handle);
         }
 
         Ok(())
@@ -440,10 +393,10 @@ impl CallFrame {
         })
     }
 
-    pub fn read_substate<'f, 's>(
+    pub fn read_substate<'f, S: SubstateStore>(
         &mut self,
         heap: &'f mut Heap,
-        track: &'f mut Track<'s>,
+        store: &'f mut S,
         lock_handle: LockHandle,
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let SubstateLock {
@@ -458,7 +411,7 @@ impl CallFrame {
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
         if let Some(store_handle) = store_handle {
-            Ok(track.read_substate(*store_handle))
+            Ok(store.read_substate(*store_handle))
         } else {
             Ok(heap
                 .get_substate(node_id, *module_id, substate_key)
@@ -466,10 +419,10 @@ impl CallFrame {
         }
     }
 
-    pub fn write_substate<'f, 's>(
+    pub fn write_substate<'f, S: SubstateStore>(
         &mut self,
         heap: &'f mut Heap,
-        track: &'f mut Track<'s>,
+        store: &'f mut S,
         lock_handle: LockHandle,
         substate: IndexedScryptoValue,
     ) -> Result<(), WriteSubstateError> {
@@ -490,11 +443,93 @@ impl CallFrame {
         }
 
         if let Some(store_handle) = store_handle {
-            track.update_substate(*store_handle, substate);
+            store.update_substate(*store_handle, substate);
         } else {
             heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
         }
         Ok(())
+    }
+
+    // Substate Virtualization does not apply to this call
+    // Should this be prevented at this layer?
+    pub fn set_substate<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        key: SubstateKey,
+        value: IndexedScryptoValue,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<(), CallFrameSetSubstateError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| CallFrameSetSubstateError::NodeNotInCallFrame(node_id.clone()))?;
+
+        if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store
+                .set_substate(*node_id, module_id, key, value)
+                .map_err(|e| CallFrameSetSubstateError::StoreError(e))?;
+        };
+
+        Ok(())
+    }
+
+    pub fn remove_substate<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        key: &SubstateKey,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Option<IndexedScryptoValue>, CallFrameRemoveSubstateError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let removed = if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store
+                .delete_substate(node_id, module_id, key)
+                .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
+        };
+
+        Ok(removed)
+    }
+
+    // Substate Virtualization does not apply to this call
+    // Should this be prevented at this layer?
+    pub fn scan_sorted<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, ScanSortedSubstatesError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| ScanSortedSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let substates = if heap.contains_node(node_id) {
+            todo!()
+        } else {
+            store.scan_sorted(node_id, module_id, count)
+        };
+
+        for (_id, substate) in &substates {
+            let refs = substate.references();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref.clone(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
     }
 
     pub fn new_root() -> Self {
@@ -515,6 +550,7 @@ impl CallFrame {
         frame.add_ref(EDDSA_ED25519_TOKEN.into(), RefType::Normal);
         frame.add_ref(PACKAGE_TOKEN.into(), RefType::Normal);
         frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RefType::Normal);
+        frame.add_ref(VALIDATOR_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
@@ -588,15 +624,15 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drop_all_locks<'s>(
+    pub fn drop_all_locks<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s>,
+        store: &mut S,
     ) -> Result<(), UnlockSubstateError> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.drop_lock(heap, track, lock_handle)?;
+            self.drop_lock(heap, store, lock_handle)?;
         }
 
         Ok(())
@@ -617,77 +653,41 @@ impl CallFrame {
         }
     }
 
-    pub fn create_node<'f, 's>(
+    pub fn create_node<'f, S: SubstateStore>(
         &mut self,
         node_id: NodeId,
-        node_init: NodeInit,
-        node_modules: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
         heap: &mut Heap,
-        track: &'f mut Track<'s>,
+        store: &'f mut S,
         push_to_store: bool,
     ) -> Result<(), UnlockSubstateError> {
-        let mut substates = BTreeMap::new();
-        substates.insert(SysModuleId::ObjectState, node_init.to_substates());
-        substates.extend(node_modules);
-
-        for (_module_id, module) in &substates {
-            for (substate_key, substate_value) in module {
+        for (_module_id, module) in &node_substates {
+            for (_substate_key, substate_value) in module {
                 // FIXME there is a huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
-
                 for child_id in substate_value.owned_node_ids() {
                     self.take_node_internal(child_id)
                         .map_err(UnlockSubstateError::MoveError)?;
-
-                    // TODO: Move this check into system layer
-                    if let Some(info) = heap.get_substate(
-                        child_id,
-                        SysModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                    ) {
-                        let type_info: TypeInfoSubstate = info.as_typed().unwrap();
-                        match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                                if !NodeProperties::can_own(
-                                    &substate_key,
-                                    blueprint.package_address,
-                                    blueprint.blueprint_name.as_str(),
-                                ) {
-                                    return Err(UnlockSubstateError::CantOwn(child_id.clone()));
-                                }
-                            }
-                            TypeInfoSubstate::KeyValueStore(..) => {}
-                        }
-                    }
-
                     if push_to_store {
-                        Self::move_node_to_store(heap, track, child_id)?;
+                        Self::move_node_to_store(heap, store, child_id)?;
+                    }
+                }
+
+                if push_to_store {
+                    for reference in substate_value.references() {
+                        if !reference.is_global() {
+                            return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
+                        }
                     }
                 }
             }
         }
 
         if push_to_store {
-            for (module_id, module) in substates {
-                for (substate_key, substate_value) in module {
-                    for reference in substate_value.references() {
-                        if !reference.is_global() {
-                            return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
-                        }
-                    }
-
-                    track.create_substate(node_id, module_id.into(), substate_key, substate_value);
-                }
-            }
-
+            store.create_node(node_id, node_substates);
             self.add_ref(node_id, RefType::Normal);
         } else {
-            // Insert node into heap
-            let heap_root_node = HeapNode {
-                substates,
-                //child_nodes,
-            };
-            heap.insert_node(node_id, heap_root_node);
+            heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
         }
 
@@ -708,10 +708,10 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<HeapNode, MoveError> {
+    ) -> Result<NodeSubstates, MoveError> {
         self.take_node_internal(node_id)?;
-        let node = heap.remove_node(node_id);
-        for (_, module) in &node.substates {
+        let node_substates = heap.remove_node(node_id);
+        for (_, module) in &node_substates {
             for (_, substate_value) in module {
                 let refs = substate_value.references();
                 let child_nodes = substate_value.owned_node_ids();
@@ -729,23 +729,24 @@ impl CallFrame {
                 }
             }
         }
-        Ok(node)
+        Ok(node_substates)
     }
 
-    pub fn move_node_to_store(
+    pub fn move_node_to_store<S: SubstateStore>(
         heap: &mut Heap,
-        track: &mut Track,
+        store: &mut S,
         node_id: &NodeId,
     ) -> Result<(), UnlockSubstateError> {
         // FIXME: Clean this up
         let can_be_stored = if node_id.is_global() {
             true
         } else {
-            if let Some(type_info) = Self::get_type_info(node_id, heap, track) {
+            if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                         if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                            && (blueprint.blueprint_name == BUCKET_BLUEPRINT
+                            && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                                || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == PROOF_BLUEPRINT) =>
                     {
                         false
@@ -760,9 +761,9 @@ impl CallFrame {
             return Err(UnlockSubstateError::CantBeStored(node_id.clone()));
         }
 
-        let node = heap.remove_node(node_id);
-        for (module_id, module) in node.substates {
-            for (substate_key, substate_value) in module {
+        let node_substates = heap.remove_node(node_id);
+        for (_module_id, module_substates) in &node_substates {
+            for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
                         return Err(UnlockSubstateError::CantStoreLocalReference(*reference));
@@ -770,17 +771,12 @@ impl CallFrame {
                 }
 
                 for node in substate_value.owned_node_ids() {
-                    Self::move_node_to_store(heap, track, node)?;
+                    Self::move_node_to_store(heap, store, node)?;
                 }
-
-                track.create_substate(
-                    node_id.clone(),
-                    module_id.into(),
-                    substate_key,
-                    substate_value,
-                );
             }
         }
+
+        store.create_node(node_id.clone(), node_substates);
 
         Ok(())
     }

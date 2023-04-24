@@ -95,9 +95,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_substates(&node_id, SysModuleId::ObjectState.into())
+                    .list_substates(&node_id, SysModuleId::VirtualizedObject.into(), u32::MAX)
                     .expect("Failed to list key value store")
-                    .0
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
                         .expect("Substate is not a scrypto value")
@@ -106,7 +105,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_recursive(
                             Some(&(
                                 node_id,
-                                SysModuleId::ObjectState.into(),
+                                SysModuleId::VirtualizedObject.into(),
                                 substate_key.clone(),
                             )),
                             child_node_id,
@@ -115,6 +114,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
+            TypeInfoSubstate::IterableStore => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
                 type_parent,
@@ -128,7 +128,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                SysModuleId::ObjectState.into(),
+                                SysModuleId::Object.into(),
                                 &FungibleVaultOffset::LiquidFungible.into(),
                             )
                             .expect("Broken database")
@@ -149,7 +149,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .substate_db
                             .get_substate(
                                 &node_id,
-                                SysModuleId::ObjectState.into(),
+                                SysModuleId::Object.into(),
                                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
                             )
                             .expect("Broken database")
@@ -165,8 +165,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
-                        if let Ok(x) = self.substate_db.list_substates(&node_id, t.into()) {
-                            for (substate_key, substate_value) in x.0 {
+                        if let Ok(x) = self
+                            .substate_db
+                            .list_substates(&node_id, t.into(), u32::MAX)
+                        {
+                            for (substate_key, substate_value) in x {
                                 let (_, owned_nodes, _) =
                                     IndexedScryptoValue::from_vec(substate_value)
                                         .expect("Substate is not a scrypto value")
@@ -175,7 +178,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                     self.traverse_recursive(
                                         Some(&(
                                             node_id,
-                                            SysModuleId::ObjectState.into(),
+                                            SysModuleId::Object.into(),
                                             substate_key.clone(),
                                         )),
                                         child_node_id,

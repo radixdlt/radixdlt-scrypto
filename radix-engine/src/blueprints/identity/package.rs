@@ -1,12 +1,13 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
-use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
+use crate::errors::SystemUpstreamError;
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -96,12 +97,12 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_advanced(input.config, api)?;
@@ -112,12 +113,12 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create(api)?;
@@ -127,11 +128,11 @@ impl IdentityNativePackage {
             IDENTITY_SECURIFY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::securify(receiver, api)?;
@@ -142,12 +143,12 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_ecdsa_virtual(input.id, api)?;
@@ -158,20 +159,20 @@ impl IdentityNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
                 let rtn = IdentityBlueprint::create_eddsa_virtual(input.id, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
@@ -201,9 +202,9 @@ impl IdentityBlueprint {
     {
         let access_rules = SecurifiedIdentity::create_advanced(config, api)?;
 
-        let (object, modules) = Self::create_object(access_rules, api)?;
+        let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(object.0, modules)?;
+        let address = api.globalize(modules)?;
         Ok(address)
     }
 
@@ -213,16 +214,16 @@ impl IdentityBlueprint {
     {
         let (access_rules, bucket) = SecurifiedIdentity::create_securified(api)?;
 
-        let (object, modules) = Self::create_object(access_rules, api)?;
+        let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(object.0, modules)?;
+        let address = api.globalize(modules)?;
         Ok((address, bucket))
     }
 
     pub fn create_ecdsa_virtual<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::UUID_LENGTH],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -236,9 +237,9 @@ impl IdentityBlueprint {
     }
 
     pub fn create_eddsa_virtual<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::UUID_LENGTH],
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -261,7 +262,7 @@ impl IdentityBlueprint {
     fn create_object<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<(Own, BTreeMap<SysModuleId, Own>), RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -271,11 +272,12 @@ impl IdentityBlueprint {
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            SysModuleId::AccessRules => access_rules.0,
-            SysModuleId::Metadata => metadata,
-            SysModuleId::Royalty => royalty,
+            ObjectModuleId::SELF => Own(object_id),
+            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::Metadata => metadata,
+            ObjectModuleId::Royalty => royalty,
         );
 
-        Ok((Own(object_id), modules))
+        Ok(modules)
     }
 }

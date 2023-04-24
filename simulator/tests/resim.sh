@@ -13,6 +13,12 @@ temp=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 account=`echo $temp | cut -d " " -f1`
 account2=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 
+# Dump each entity in the ledger
+addresses=`$resim show-ledger | grep -e "─ " | awk '{print $2}'`
+for addr in $addresses ; do
+    $resim show $addr
+done
+
 # Test - set epoch & time
 $resim set-current-epoch 858585
 $resim set-current-time 2023-01-27T13:01:16Z

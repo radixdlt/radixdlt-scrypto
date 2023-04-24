@@ -2,6 +2,7 @@
 members = [
     "access_rules",
     "address",
+    "arg_validation",
     "arguments",
     "balance_changes",
     "bucket",

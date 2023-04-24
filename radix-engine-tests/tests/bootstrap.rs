@@ -1,5 +1,4 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
-use radix_engine::kernel::interpreters::*;
 use radix_engine::system::bootstrap::{
     create_genesis, GenesisData, GenesisResource, GenesisValidator,
 };
@@ -7,7 +6,8 @@ use radix_engine::transaction::{
     execute_transaction, BalanceChange, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::DefaultWasmEngine;
+use radix_engine::vm::wasm::DefaultWasmEngine;
+use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
@@ -16,7 +16,7 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let substate_store = InMemorySubstateDatabase::standard();
     let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
     let validator_address = ComponentAddress::virtual_account_from_public_key(&validator_key);
@@ -36,7 +36,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         xrd_balances: BTreeMap::new(),
         stakes,
     };
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,
@@ -59,7 +59,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 
 #[test]
 fn test_genesis_xrd_allocation_to_accounts() {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_store = InMemorySubstateDatabase::standard();
     let account_public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let account_component_address = ComponentAddress::virtual_account_from_public_key(
@@ -76,7 +76,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         xrd_balances,
         stakes: BTreeMap::new(),
     };
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,
@@ -101,14 +101,15 @@ fn test_genesis_xrd_allocation_to_accounts() {
 
 #[test]
 fn test_genesis_resource_with_initial_allocation() {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_store = InMemorySubstateDatabase::standard();
     let tokenholder = ComponentAddress::virtual_account_from_public_key(
         &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
     );
     let allocation_amount = dec!("105");
-    let address_bytes = hash(vec![1, 2, 3]).lower_26_bytes();
-    let resource_address = NodeId::new(EntityType::GlobalFungibleResource as u8, &address_bytes);
+    let mut address_bytes: [u8; NodeId::LENGTH] = hash(vec![1, 2, 3]).lower_bytes();
+    address_bytes[0] = EntityType::GlobalFungibleResource as u8;
+    let resource_address = NodeId(address_bytes);
 
     let owner = ComponentAddress::virtual_account_from_public_key(
         &EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key(),
@@ -135,7 +136,7 @@ fn test_genesis_resource_with_initial_allocation() {
         stakes: BTreeMap::new(),
     };
 
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,
@@ -151,7 +152,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let persisted_resource_manager_substate = substate_store
         .get_substate(
             &resource_address,
-            SysModuleId::ObjectState.into(),
+            SysModuleId::Object.into(),
             &ResourceManagerOffset::ResourceManager.into(),
         )
         .unwrap()
@@ -199,7 +200,7 @@ fn test_genesis_resource_with_initial_allocation() {
 
 #[test]
 fn test_genesis_stake_allocation() {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_store = InMemorySubstateDatabase::standard();
 
     // There are two genesis validators
@@ -235,7 +236,7 @@ fn test_genesis_stake_allocation() {
         stakes,
     };
 
-    let genesis_transaction = create_genesis(genesis_data, 1u64, 1u64, 1u64);
+    let genesis_transaction = create_genesis(genesis_data, 1u64, 100u32, 1u64, 1u64);
 
     let transaction_receipt = execute_transaction(
         &substate_store,

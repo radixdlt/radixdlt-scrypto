@@ -12,7 +12,7 @@ pub struct Show {
 
 impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
         bootstrap(&mut substate_db, &scrypto_interpreter);
 
