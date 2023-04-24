@@ -22,19 +22,28 @@ pub struct ResourceManagerBurnInput {
 
 pub type ResourceManagerBurnOutput = ();
 
-pub const RESOURCE_MANAGER_CREATE_VAULT_IDENT: &str = "create_vault";
+pub const RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT: &str = "create_empty_vault";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerCreateVaultInput {}
+pub struct ResourceManagerCreateEmptyVaultInput {}
 
-pub type ResourceManagerCreateVaultOutput = Vault;
+pub type ResourceManagerCreateEmptyVaultOutput = Vault;
 
-pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
+pub const RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT: &str = "create_empty_bucket";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerCreateBucketInput {}
+pub struct ResourceManagerCreateEmptyBucketInput {}
 
-pub type ResourceManagerCreateBucketOutput = Bucket;
+pub type ResourceManagerCreateEmptyBucketOutput = Bucket;
+
+pub const RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT: &str = "drop_empty_bucket";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ResourceManagerDropEmptyBucketInput {
+    pub bucket: Bucket,
+}
+
+pub type ResourceManagerDropEmptyBucketOutput = ();
 
 pub const RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT: &str = "get_resource_type";
 

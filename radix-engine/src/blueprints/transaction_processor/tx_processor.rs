@@ -350,14 +350,9 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = api.call_function(
-                        RESOURCE_MANAGER_PACKAGE,
-                        BUCKET_BLUEPRINT,
-                        BUCKET_BURN_IDENT,
-                        scrypto_encode(&BucketBurnInput { bucket }).unwrap(),
-                    )?;
+                    let rtn = bucket.sys_burn(api)?;
 
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
@@ -713,7 +708,8 @@ impl<'blob> TransactionProcessor<'blob> {
                 info.blueprint.package_address,
                 info.blueprint.blueprint_name.as_str(),
             ) {
-                (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
+                | (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }

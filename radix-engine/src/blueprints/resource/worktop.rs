@@ -76,7 +76,7 @@ impl WorktopBlueprint {
         let amount = input.bucket.sys_amount(api)?;
 
         if amount.is_zero() {
-            input.bucket.sys_burn(api)?;
+            input.bucket.sys_drop_empty(api)?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             let worktop_handle =

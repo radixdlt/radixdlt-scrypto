@@ -377,7 +377,7 @@ fn substate_id(
     module_id: SysModuleId,
     substate_offset_seed: u8,
 ) -> (NodeId, ModuleId, SubstateKey) {
-    let fake_pkg_address = PackageAddress::new_unchecked([node_id_seed; 27]);
+    let fake_pkg_address = PackageAddress::new_unchecked([node_id_seed; NodeId::LENGTH]);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     (
         NodeId(fake_pkg_address.into()),
