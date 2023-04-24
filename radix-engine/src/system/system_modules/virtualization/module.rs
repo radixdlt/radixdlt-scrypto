@@ -73,10 +73,8 @@ impl VirtualizationModule {
                 api.kernel_allocate_virtual_node_id(node_id)?;
 
                 let mut system = SystemDownstream::new(api);
-                system.globalize_with_address(
-                    modules,
-                    GlobalAddress::new_unchecked(node_id.into()),
-                )?;
+                system
+                    .globalize_with_address(modules, GlobalAddress::new_or_panic(node_id.into()))?;
 
                 Ok(true)
             }

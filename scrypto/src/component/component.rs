@@ -199,7 +199,7 @@ impl LocalComponent for OwnedComponent {
             ))
             .unwrap();
 
-        ComponentAddress::new_unchecked(address.into())
+        ComponentAddress::new_or_panic(address.into())
     }
 }
 

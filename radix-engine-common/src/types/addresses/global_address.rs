@@ -15,7 +15,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct GlobalAddress(NodeId); // private to ensure entity type check
 
 impl GlobalAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
         assert!(node_id.is_global());
         Self(node_id)

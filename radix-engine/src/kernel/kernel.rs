@@ -66,7 +66,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
                 continue;
             } else if node_id.is_global_package()
-                && is_native_package(PackageAddress::new_unchecked(node_id.0))
+                && is_native_package(PackageAddress::new_or_panic(node_id.0))
             {
                 // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);

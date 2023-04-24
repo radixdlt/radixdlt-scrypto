@@ -45,7 +45,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(receiver, api)?;
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
 
@@ -72,7 +72,7 @@ impl FungibleVaultBlueprint {
 
         // Check resource address
         {
-            let resource_address = ResourceAddress::new_unchecked(
+            let resource_address = ResourceAddress::new_or_panic(
                 api.get_object_info(receiver)?.type_parent.unwrap().into(),
             );
             if resource_address != other_bucket.info.resource_address {
@@ -112,7 +112,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Check resource address and amount
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         if resource_address != RADIX_TOKEN {
@@ -176,7 +176,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let taken = FungibleVault::take(receiver, amount, api)?;
@@ -196,7 +196,7 @@ impl FungibleVaultBlueprint {
             + FungibleVault::locked_amount(receiver, api)?;
 
         let divisibility = Self::get_divisibility(receiver, api)?;
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let proof_info = ProofInfoSubstate {
@@ -233,7 +233,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let proof_info = ProofInfoSubstate {

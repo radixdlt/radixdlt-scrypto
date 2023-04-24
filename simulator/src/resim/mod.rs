@@ -90,7 +90,7 @@ use utils::ContextualDisplay;
 
 /// The address of the faucet component, test network only.
 /// TODO: remove
-pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
+pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_or_panic([
     EntityType::GlobalGenericComponent as u8,
     59,
     99,
@@ -447,7 +447,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
-            PackageAddress::new_unchecked(node_id.clone().into()),
+            PackageAddress::new_or_panic(node_id.clone().into()),
             blueprint_name.to_owned(),
             *local_type_index,
         ),

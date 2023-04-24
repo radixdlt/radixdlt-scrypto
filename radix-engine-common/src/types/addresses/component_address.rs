@@ -16,7 +16,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct ComponentAddress(NodeId); // private to ensure entity type check
 
 impl ComponentAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
         assert!(node_id.is_global_component());
         Self(node_id)
@@ -122,7 +122,7 @@ impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
 
 impl From<ComponentAddress> for super::GlobalAddress {
     fn from(value: ComponentAddress) -> Self {
-        Self::new_unchecked(value.into())
+        Self::new_or_panic(value.into())
     }
 }
 

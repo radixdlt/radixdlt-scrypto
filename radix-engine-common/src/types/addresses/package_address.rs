@@ -15,7 +15,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct PackageAddress(NodeId); // private to ensure entity type check
 
 impl PackageAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
         assert!(node_id.is_global_package());
         Self(node_id)
@@ -87,7 +87,7 @@ impl Into<[u8; NodeId::LENGTH]> for PackageAddress {
 
 impl From<PackageAddress> for super::GlobalAddress {
     fn from(value: PackageAddress) -> Self {
-        Self::new_unchecked(value.into())
+        Self::new_or_panic(value.into())
     }
 }
 

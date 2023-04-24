@@ -203,7 +203,7 @@ where
 
     api.kernel_create_node(node_id, modules)?;
 
-    let package_address = PackageAddress::new_unchecked(node_id.into());
+    let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)
 }
 

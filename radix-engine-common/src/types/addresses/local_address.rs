@@ -15,7 +15,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct LocalAddress(NodeId); // private to ensure entity type check
 
 impl LocalAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
         assert!(node_id.is_local());
         Self(node_id)

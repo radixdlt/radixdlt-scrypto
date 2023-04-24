@@ -425,7 +425,7 @@ where
         };
 
         let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let global_address = GlobalAddress::new_unchecked(global_node_id.into());
+        let global_address = GlobalAddress::new_or_panic(global_node_id.into());
         self.globalize_with_address(modules, global_address)?;
         Ok(global_address)
     }
@@ -575,7 +575,7 @@ where
                         blueprint, global, ..
                     }) => {
                         let global_address = if global {
-                            Some(GlobalAddress::new_unchecked(receiver.clone().into()))
+                            Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                         } else {
                             // See if we have a parent
 

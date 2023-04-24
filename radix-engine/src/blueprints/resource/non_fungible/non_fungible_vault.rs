@@ -50,7 +50,7 @@ impl NonFungibleVaultBlueprint {
 
         // Take
         let taken = NonFungibleVault::take(receiver, *amount, api)?;
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
 
@@ -69,7 +69,7 @@ impl NonFungibleVaultBlueprint {
         // Take
         let taken = NonFungibleVault::take_non_fungibles(receiver, &non_fungible_local_ids, api)?;
 
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
 
@@ -85,7 +85,7 @@ impl NonFungibleVaultBlueprint {
         let other_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
 
         // Check resource address
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         if resource_address != other_bucket.info.resource_address {
@@ -142,7 +142,7 @@ impl NonFungibleVaultBlueprint {
             ));
         }
 
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let taken = NonFungibleVault::take(receiver, amount, api)?;
@@ -164,7 +164,7 @@ impl NonFungibleVaultBlueprint {
     {
         let taken = NonFungibleVault::take_non_fungibles(receiver, &non_fungible_local_ids, api)?;
 
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
 
@@ -180,7 +180,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let id_type = Self::get_id_type(receiver, api)?;
@@ -221,7 +221,7 @@ impl NonFungibleVaultBlueprint {
         }
 
         let id_type = Self::get_id_type(receiver, api)?;
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
 
@@ -251,7 +251,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(
+        let resource_address = ResourceAddress::new_or_panic(
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let id_type = Self::get_id_type(receiver, api)?;

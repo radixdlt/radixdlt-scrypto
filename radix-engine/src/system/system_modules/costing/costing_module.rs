@@ -175,7 +175,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
                 Actor::Method { node_id, ident, .. } => {
                     if node_id.is_global_component() {
                         (
-                            Some(ComponentAddress::new_unchecked(node_id.clone().into())),
+                            Some(ComponentAddress::new_or_panic(node_id.clone().into())),
                             ident,
                         )
                     } else {

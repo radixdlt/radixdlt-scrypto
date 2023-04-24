@@ -41,7 +41,7 @@ impl Runtime {
 
     pub fn global_address() -> ComponentAddress {
         let address: GlobalAddress = ScryptoEnv.get_global_address().unwrap();
-        ComponentAddress::new_unchecked(address.into())
+        ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the current package address.

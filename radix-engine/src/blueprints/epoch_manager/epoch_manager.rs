@@ -65,7 +65,7 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let address = ComponentAddress::new_unchecked(component_address);
+        let address = ComponentAddress::new_or_panic(component_address);
 
         {
             let metadata: BTreeMap<String, String> = BTreeMap::new();

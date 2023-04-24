@@ -178,7 +178,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         Self::create_with_address(
             id_type,
             non_fungible_schema,
@@ -210,7 +210,7 @@ impl NonFungibleResourceManagerBlueprint {
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
-        let resource_address = ResourceAddress::new_unchecked(resource_address);
+        let resource_address = ResourceAddress::new_or_panic(resource_address);
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok(resource_address)
@@ -244,7 +244,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         let ids = entries.keys().cloned().collect();
         let non_fungibles = entries
@@ -298,7 +298,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         create_non_fungibles(
             resource_address,
@@ -329,7 +329,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -379,7 +379,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -434,7 +434,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -493,7 +493,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -595,7 +595,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -645,7 +645,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -711,7 +711,7 @@ impl NonFungibleResourceManagerBlueprint {
                 // TODO: Move this check into actor check
                 {
                     let resource_address =
-                        ResourceAddress::new_unchecked(api.get_global_address()?.into());
+                        ResourceAddress::new_or_panic(api.get_global_address()?.into());
                     let mut resource_manager: NonFungibleResourceManagerSubstate =
                         api.sys_read_substate_typed(resman_handle)?;
                     if dropped_bucket.info.resource_address != resource_address {
