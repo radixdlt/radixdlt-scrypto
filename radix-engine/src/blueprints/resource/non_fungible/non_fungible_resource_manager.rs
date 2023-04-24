@@ -137,7 +137,7 @@ where
 
             // TODO: Change interface so that we accept Option instead
             api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
-            api.sys_drop_lock(non_fungible_handle)?;
+            api.unlock_key_value_entry(non_fungible_handle)?;
             ids.insert(non_fungible_local_id);
         }
 
@@ -417,7 +417,7 @@ impl NonFungibleResourceManagerBlueprint {
                 api.key_value_entry_set_typed(non_fungible_handle, Some(non_fungible))?;
             }
 
-            api.sys_drop_lock(non_fungible_handle)?;
+            api.unlock_key_value_entry(non_fungible_handle)?;
         }
 
         Runtime::emit_event(
@@ -482,7 +482,7 @@ impl NonFungibleResourceManagerBlueprint {
             )?;
             api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
 
-            api.sys_drop_lock(non_fungible_handle)?;
+            api.unlock_key_value_entry(non_fungible_handle)?;
         }
 
         let info = BucketInfoSubstate {
@@ -564,7 +564,7 @@ impl NonFungibleResourceManagerBlueprint {
                     )?;
                     api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
 
-                    api.sys_drop_lock(non_fungible_handle)?;
+                    api.unlock_key_value_entry(non_fungible_handle)?;
                 }
             }
 
@@ -662,7 +662,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        api.sys_drop_lock(non_fungible_handle)?;
+        api.unlock_key_value_entry(non_fungible_handle)?;
 
         Ok(())
     }
@@ -821,7 +821,7 @@ impl NonFungibleResourceManagerBlueprint {
                         )?;
 
                         api.key_value_entry_set_typed(non_fungible_handle, None::<ScryptoValue>)?;
-                        api.sys_drop_lock(non_fungible_handle)?;
+                        api.unlock_key_value_entry(non_fungible_handle)?;
                     }
                 }
             }

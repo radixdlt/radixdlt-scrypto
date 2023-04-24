@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use sbor::rust::ops::{Deref, DerefMut};
 use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::*;

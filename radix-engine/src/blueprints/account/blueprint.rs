@@ -219,7 +219,7 @@ impl AccountBlueprint {
         }
 
         // Drop locks (LIFO)
-        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
         api.sys_drop_lock(handle)?;
 
         Ok(())
@@ -288,7 +288,7 @@ impl AccountBlueprint {
         vault.sys_put(bucket, api)?;
 
         // Drop locks (LIFO)
-        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
         api.sys_drop_lock(handle)?;
 
         Ok(())
@@ -345,7 +345,7 @@ impl AccountBlueprint {
             // Put the bucket in the vault
             vault.sys_put(bucket, api)?;
 
-            api.sys_drop_lock(kv_store_entry_lock_handle)?;
+            api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
         }
 
         api.sys_drop_lock(handle)?;
@@ -394,7 +394,7 @@ impl AccountBlueprint {
         let rtn = vault_fn(&mut vault, api)?;
 
         // Drop locks (LIFO)
-        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
         api.sys_drop_lock(handle)?;
 
         Ok(rtn)

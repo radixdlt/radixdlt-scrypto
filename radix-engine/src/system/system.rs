@@ -178,11 +178,17 @@ where
     }
 
     #[trace_resources]
-    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        let info = self.api.kernel_get_lock_info(lock_handle)?;
-        if info.flags.contains(LockFlags::MUTABLE) {}
+    fn sys_drop_lock(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
+        let LockInfo {
+            data, ..
+        } = self.api.kernel_get_lock_info(handle)?;
 
-        self.api.kernel_drop_lock(lock_handle)
+        if data.is_kv_store {
+            panic!("oops");
+            //return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+        }
+
+        self.api.kernel_drop_lock(handle)
     }
 }
 

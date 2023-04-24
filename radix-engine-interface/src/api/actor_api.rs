@@ -1,6 +1,7 @@
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::fmt::Debug;
+use sbor::rust::vec::Vec;
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
