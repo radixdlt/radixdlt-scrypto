@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
-use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
@@ -19,7 +18,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LiquidNonFungible.into(),
+            &BucketOffset::Liquid.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -34,7 +33,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LockedNonFungible.into(),
+            &BucketOffset::Locked.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -59,7 +58,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LiquidNonFungible.into(),
+            &BucketOffset::Liquid.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -77,7 +76,7 @@ impl NonFungibleBucket {
     {
         let handle = api.sys_lock_substate(
             receiver,
-            &BucketOffset::LockedNonFungible.into(),
+            &BucketOffset::Locked.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
@@ -94,11 +93,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LiquidNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -118,11 +114,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LiquidNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate
             .take_by_ids(ids)
@@ -145,11 +138,8 @@ impl NonFungibleBucket {
             return Ok(());
         }
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LiquidNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.sys_read_substate_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -170,11 +160,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LockedNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
@@ -224,11 +211,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LockedNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
 
         // Take from liquid if needed
@@ -269,11 +253,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &BucketOffset::LockedNonFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle =
+            api.sys_lock_substate(receiver, &BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
@@ -314,6 +295,10 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+
         // Check amount
         let info = BucketInfoSubstate::of(receiver, api)?;
         if !info.resource_type.check_amount(input.amount) {
@@ -326,8 +311,8 @@ impl NonFungibleBucketBlueprint {
         let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
 
         // Create node
-        let bucket = ResourceManager(info.resource_address)
-            .new_non_fungible_bucket(taken.into_ids(), api)?;
+        let bucket =
+            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
@@ -344,14 +329,16 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let info = BucketInfoSubstate::of(receiver, api)?;
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
 
         // Take
         let taken = NonFungibleBucket::take_non_fungibles(receiver, &input.ids, api)?;
 
         // Create node
-        let bucket = ResourceManager(info.resource_address)
-            .new_non_fungible_bucket(taken.into_ids(), api)?;
+        let bucket =
+            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
@@ -368,26 +355,20 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        // Drop other bucket
-        let other_bucket: DroppedBucket = api.kernel_drop_node(input.bucket.0.as_node_id())?.into();
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
 
-        // Check resource address
-        let info = BucketInfoSubstate::of(receiver, api)?;
-        if info.resource_address != other_bucket.info.resource_address {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::MismatchingResource),
-            ));
-        }
+        // Drop other bucket
+        let other_bucket = drop_non_fungible_bucket_of_address(
+            resource_address,
+            input.bucket.0.as_node_id(),
+            api,
+        )?;
 
         // Put
-        match other_bucket.resource {
-            DroppedBucketResource::Fungible(r) => {
-                FungibleBucket::put(receiver, r, api)?;
-            }
-            DroppedBucketResource::NonFungible(r) => {
-                NonFungibleBucket::put(receiver, r, api)?;
-            }
-        }
+        NonFungibleBucket::put(receiver, other_bucket.liquid, api)?;
+
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
@@ -446,9 +427,11 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let info = BucketInfoSubstate::of(receiver, api)?;
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
 
-        Ok(IndexedScryptoValue::from_typed(&info.resource_address))
+        Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
 
     pub fn create_proof<Y>(
@@ -463,13 +446,17 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+
         let info = BucketInfoSubstate::of(receiver, api)?;
         let node_id = if info.resource_type.is_fungible() {
             let amount = FungibleBucket::locked_amount(receiver, api)?
                 + FungibleBucket::liquid_amount(receiver, api)?;
 
             let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
+                resource_address,
                 resource_type: info.resource_type,
                 restricted: false,
             };
@@ -489,7 +476,7 @@ impl NonFungibleBucketBlueprint {
                 + NonFungibleBucket::liquid_amount(receiver, api)?;
 
             let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
+                resource_address,
                 resource_type: info.resource_type,
                 restricted: false,
             };

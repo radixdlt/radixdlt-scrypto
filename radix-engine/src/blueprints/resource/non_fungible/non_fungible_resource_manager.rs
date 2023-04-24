@@ -1,8 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::heap::DroppedBucket;
-use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
@@ -23,7 +21,6 @@ pub enum NonFungibleResourceManagerError {
     NonFungibleNotFound(Box<NonFungibleGlobalId>),
     InvalidField(String),
     FieldNotMutable(String),
-    MismatchingBucketResource,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
     NonFungibleLocalIdProvidedForUUIDType,
@@ -645,7 +642,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -659,12 +655,9 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
                     resource_type: ResourceType::NonFungible { id_type },
                 })
                 .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
@@ -687,61 +680,38 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        // FIXME: check if the bucket is locked
-        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
+        // Drop the bucket
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let other_bucket =
+            drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
-        match dropped_bucket.resource {
-            DroppedBucketResource::Fungible(..) => {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::MismatchingBucketResource,
-                    ),
-                ));
-            }
-            DroppedBucketResource::NonFungible(resource) => {
-                Runtime::emit_event(
-                    api,
-                    BurnNonFungibleResourceEvent {
-                        ids: resource.ids().clone(),
-                    },
-                )?;
+        Runtime::emit_event(
+            api,
+            BurnNonFungibleResourceEvent {
+                ids: other_bucket.liquid.ids().clone(),
+            },
+        )?;
 
-                // Check if resource matches
-                // TODO: Move this check into actor check
-                {
-                    let resource_address =
-                        ResourceAddress::new_unchecked(api.get_global_address()?.into());
-                    let mut resource_manager: NonFungibleResourceManagerSubstate =
-                        api.sys_read_substate_typed(resman_handle)?;
-                    if dropped_bucket.info.resource_address != resource_address {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::NonFungibleResourceManagerError(
-                                NonFungibleResourceManagerError::MismatchingBucketResource,
-                            ),
-                        ));
-                    }
+        // Update total supply
+        // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        let mut resource_manager: NonFungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        resource_manager.total_supply -= other_bucket.liquid.amount();
 
-                    // Update total supply
-                    // TODO: there might be better for maintaining total supply, especially for non-fungibles
-                    // Update total supply
-                    resource_manager.total_supply -= resource.amount();
+        for id in other_bucket.liquid.into_ids() {
+            let non_fungible_handle = api.sys_lock_substate(
+                resource_manager.non_fungible_table.as_node_id(),
+                &id.to_substate_key(),
+                LockFlags::MUTABLE,
+            )?;
 
-                    for id in resource.into_ids() {
-                        let non_fungible_handle = api.sys_lock_substate(
-                            resource_manager.non_fungible_table.as_node_id(),
-                            &id.to_substate_key(),
-                            LockFlags::MUTABLE,
-                        )?;
-
-                        api.sys_write_substate_typed(non_fungible_handle, None::<ScryptoValue>)?;
-                        api.sys_drop_lock(non_fungible_handle)?;
-                    }
-
-                    api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-                }
-            }
+            api.sys_write_substate_typed(non_fungible_handle, None::<ScryptoValue>)?;
+            api.sys_drop_lock(non_fungible_handle)?;
         }
+
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
+        api.sys_drop_lock(resman_handle)?;
 
         Ok(())
     }
@@ -754,9 +724,11 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // FIXME: check if the bucket is locked
-        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
-        if dropped_bucket.amount().is_zero() {
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let other_bucket =
+            drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+
+        if other_bucket.liquid.amount().is_zero() {
             Ok(())
         } else {
             Err(RuntimeError::ApplicationError(
