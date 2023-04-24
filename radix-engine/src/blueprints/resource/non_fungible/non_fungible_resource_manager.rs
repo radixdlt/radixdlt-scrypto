@@ -642,7 +642,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -656,7 +655,6 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
                     resource_type: ResourceType::NonFungible { id_type },
                 })
                 .unwrap(),

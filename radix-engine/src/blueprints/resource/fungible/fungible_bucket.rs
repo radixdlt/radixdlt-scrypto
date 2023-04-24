@@ -178,6 +178,10 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+
         // Check amount
         let info = BucketInfoSubstate::of(receiver, api)?;
         if !info.resource_type.check_amount(input.amount) {
@@ -190,8 +194,7 @@ impl FungibleBucketBlueprint {
         let taken = FungibleBucket::take(receiver, input.amount, api)?;
 
         // Create node
-        let bucket =
-            ResourceManager(info.resource_address).new_fungible_bucket(taken.amount(), api)?;
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
@@ -208,13 +211,13 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+
         // Drop other bucket
-        let info = BucketInfoSubstate::of(receiver, api)?;
-        let other_bucket = drop_fungible_bucket_of_address(
-            info.resource_address,
-            input.bucket.0.as_node_id(),
-            api,
-        )?;
+        let other_bucket =
+            drop_fungible_bucket_of_address(resource_address, input.bucket.0.as_node_id(), api)?;
 
         // Put
         let rtn = FungibleBucket::put(receiver, other_bucket.liquid, api)?;
@@ -252,9 +255,11 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let info = BucketInfoSubstate::of(receiver, api)?;
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
 
-        Ok(IndexedScryptoValue::from_typed(&info.resource_address))
+        Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
 
     pub fn create_proof<Y>(
@@ -269,13 +274,17 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+
         let info = BucketInfoSubstate::of(receiver, api)?;
         let node_id = {
             let amount = FungibleBucket::locked_amount(receiver, api)?
                 + FungibleBucket::liquid_amount(receiver, api)?;
 
             let proof_info = ProofInfoSubstate {
-                resource_address: info.resource_address,
+                resource_address,
                 resource_type: info.resource_type,
                 restricted: false,
             };

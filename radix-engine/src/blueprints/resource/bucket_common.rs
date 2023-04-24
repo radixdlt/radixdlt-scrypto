@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -17,7 +18,6 @@ pub enum BucketError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BucketInfoSubstate {
-    pub resource_address: ResourceAddress, // TODO: remove address in favour of parent
     pub resource_type: ResourceType,
 }
 
@@ -43,18 +43,16 @@ pub fn drop_fungible_bucket_of_address<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
+    // Note that we assume the input is indeed a bucket, checked by schema
+    let resource_address = ResourceAddress::new_unchecked(
+        TypeInfoBlueprint::get_type(bucket_node_id, api)?
+            .parent()
+            .expect("Missing parent for fungible bucket")
+            .into(),
+    );
     let node_substates = api.kernel_drop_node(bucket_node_id)?;
 
-    // Note that we assume the input is indeed a bucket; we're just not sure if it's
-    // fungible or non-fungible, because schema type allows either.
-    let info: BucketInfoSubstate = node_substates
-        .get(&SysModuleId::Object.into())
-        .unwrap()
-        .get(&BucketOffset::Info.into())
-        .map(|x| x.as_typed().unwrap())
-        .unwrap();
-
-    if info.resource_address != expected_address {
+    if resource_address != expected_address {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),
         )));
@@ -78,18 +76,16 @@ pub fn drop_non_fungible_bucket_of_address<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
+    // Note that we assume the input is indeed a bucket, checked by schema
+    let resource_address = ResourceAddress::new_unchecked(
+        TypeInfoBlueprint::get_type(bucket_node_id, api)?
+            .parent()
+            .expect("Missing parent for fungible bucket")
+            .into(),
+    );
     let node_substates = api.kernel_drop_node(bucket_node_id)?;
 
-    // Note that we assume the input is indeed a bucket; we're just not sure if it's
-    // fungible or non-fungible, because schema type allows either.
-    let info: BucketInfoSubstate = node_substates
-        .get(&SysModuleId::Object.into())
-        .unwrap()
-        .get(&BucketOffset::Info.into())
-        .map(|x| x.as_typed().unwrap())
-        .unwrap();
-
-    if info.resource_address != expected_address {
+    if resource_address != expected_address {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),
         )));
