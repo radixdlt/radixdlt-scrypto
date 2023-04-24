@@ -5,6 +5,8 @@ use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
+use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
     ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
@@ -32,6 +34,14 @@ pub trait StateTreeVisitor {
         _vault_id: NodeId,
         _address: &ResourceAddress,
         _resource: &LiquidNonFungibleVault,
+    ) {
+    }
+
+    fn visit_non_fungible(
+        &mut self,
+        _vault_id: NodeId,
+        _address: &ResourceAddress,
+        _id: &NonFungibleLocalId,
     ) {
     }
 
@@ -146,6 +156,20 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
                         &liquid,
                     );
+
+                    let ids = self
+                        .substate_db
+                        .list_substates(liquid.ids.as_node_id(), SysModuleId::Object.into());
+                    for (_key, value) in ids {
+                        let non_fungible_local_id: NonFungibleLocalId =
+                            scrypto_decode(&value).unwrap();
+
+                        self.visitor.visit_non_fungible(
+                            node_id.into(),
+                            &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                            &non_fungible_local_id,
+                        );
+                    }
                 } else {
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)

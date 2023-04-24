@@ -68,8 +68,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
             TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::IterableStore
-            | TypeInfoSubstate::SortedStore => {
+            | TypeInfoSubstate::Index
+            | TypeInfoSubstate::SortedIndex => {
                 panic!("Unexpected")
             }
         };
@@ -100,7 +100,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         blueprint_name
     );
 
-    writeln!(output, "{}", "Resources".green().bold());
+    writeln!(output, "{}", "Fungible Resources".green().bold());
     for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
         writeln!(
             output,
@@ -109,6 +109,19 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             component_address.display(&bech32_encoder),
             amount
         );
+    }
+
+    writeln!(output, "{}", "Non-fungibles Resources".green().bold());
+    for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
+        writeln!(
+            output,
+            "{} {}",
+            list_item_prefix(last),
+            component_address.display(&bech32_encoder)
+        );
+        for (last, id) in ids.iter().identify_last() {
+            writeln!(output, "   {} {}", list_item_prefix(last), id);
+        }
     }
 
     Ok(())

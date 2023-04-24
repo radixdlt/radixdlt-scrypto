@@ -460,8 +460,8 @@ where
                     }
 
                     TypeInfoSubstate::KeyValueStore(..)
-                    | TypeInfoSubstate::SortedStore
-                    | TypeInfoSubstate::IterableStore => {
+                    | TypeInfoSubstate::SortedIndex
+                    | TypeInfoSubstate::Index => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -515,8 +515,8 @@ where
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
             TypeInfoSubstate::KeyValueStore(..)
-            | TypeInfoSubstate::SortedStore
-            | TypeInfoSubstate::IterableStore => {
+            | TypeInfoSubstate::SortedIndex
+            | TypeInfoSubstate::Index => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -583,8 +583,8 @@ where
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. }
-            | TypeInfoSubstate::SortedStore
-            | TypeInfoSubstate::IterableStore => {
+            | TypeInfoSubstate::SortedIndex
+            | TypeInfoSubstate::Index => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -607,7 +607,7 @@ where
         let actor = self.api.kernel_get_current_actor().unwrap();
 
         let module_id = match type_info {
-            TypeInfoSubstate::SortedStore | TypeInfoSubstate::IterableStore => {
+            TypeInfoSubstate::SortedIndex | TypeInfoSubstate::Index => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Virtualized,
@@ -664,7 +664,7 @@ where
             btreemap!(
                 SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::IterableStore
+                    TypeInfoSubstate::Index
                 ).to_substates(),
             ),
         )?;
@@ -680,7 +680,7 @@ where
     ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::Index => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
@@ -710,7 +710,7 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::Index => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
@@ -730,7 +730,7 @@ where
     fn scan_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::Index => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
@@ -750,7 +750,7 @@ where
     fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::Index => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
             }
@@ -783,7 +783,7 @@ where
             btreemap!(
                 SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::SortedStore
+                    TypeInfoSubstate::SortedIndex
                 ).to_substates(),
             ),
         )?;
@@ -800,7 +800,7 @@ where
     ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::SortedIndex => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
@@ -830,7 +830,7 @@ where
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::SortedIndex => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
@@ -854,7 +854,7 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::SortedIndex => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }

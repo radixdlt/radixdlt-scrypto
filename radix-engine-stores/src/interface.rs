@@ -186,17 +186,6 @@ pub trait SubstateKeyMapper {
 
 /// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
-    /// Convenience method for database readers
-    fn read_mapped_substate<M: SubstateKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-        substate_key: SubstateKey,
-    ) -> Option<D> {
-        self.get_substate(node_id, module_id, &M::map_to_db_key(substate_key))
-            .map(|buf| scrypto_decode(&buf).unwrap())
-    }
-
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
@@ -209,6 +198,17 @@ pub trait SubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>;
+
+    /// Convenience method for database readers
+    fn read_mapped_substate<M: SubstateKeyMapper, D: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+    ) -> Option<D> {
+        self.get_substate(node_id, module_id, &M::map_to_db_key(substate_key))
+            .map(|buf| scrypto_decode(&buf).unwrap())
+    }
 }
 
 /// Interface for committing changes into a substate database.

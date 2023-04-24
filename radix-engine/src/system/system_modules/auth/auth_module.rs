@@ -195,8 +195,8 @@ impl AuthModule {
             let blueprint = match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
                 TypeInfoSubstate::KeyValueStore(..)
-                | TypeInfoSubstate::SortedStore
-                | TypeInfoSubstate::IterableStore => {
+                | TypeInfoSubstate::SortedIndex
+                | TypeInfoSubstate::Index => {
                     return Err(RuntimeError::SystemError(SystemError::NotAnObject))
                 }
             };
