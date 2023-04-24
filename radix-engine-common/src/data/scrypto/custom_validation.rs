@@ -1,6 +1,6 @@
 use super::*;
 use crate::constants::*;
-use crate::types::{NodeId, PackageAddress};
+use crate::types::{GlobalAddress, NodeId, PackageAddress};
 use crate::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -20,6 +20,8 @@ pub enum TypeInfo {
     Object {
         package_address: PackageAddress,
         blueprint_name: String,
+        global: bool,
+        type_parent: Option<GlobalAddress>,
     },
     KeyValueStore,
     SortedStore,
@@ -41,6 +43,8 @@ where
         match &custom_value_ref.0 {
             ScryptoCustomValue::Reference(reference) => {
                 if let Some(type_info) = context.get_node_type_info(reference.as_node_id()) {
+                    // Alternately, we can just use the type info for reference check.
+                    // Using node entity type is to avoid massive list of blueprints for each type.
                     if match custom_type_kind {
                         ScryptoCustomTypeKind::Reference => true,
                         ScryptoCustomTypeKind::GlobalAddress => reference.as_node_id().is_global(),
@@ -75,19 +79,19 @@ where
                     if match  custom_type_kind {
                         ScryptoCustomTypeKind::Own => true,
                         ScryptoCustomTypeKind::Bucket => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name }
+                            TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address.eq( &RESOURCE_MANAGER_PACKAGE)
                                 && (blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT || blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => true,
                             _ => false,
                         }
                         ScryptoCustomTypeKind::Proof => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name }
+                            TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address.eq( &RESOURCE_MANAGER_PACKAGE)
                                     && (blueprint_name == FUNGIBLE_PROOF_BLUEPRINT || blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) => true,
                             _ => false,
                         }
                         ScryptoCustomTypeKind::Vault => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name }
+                            TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address.eq( &RESOURCE_MANAGER_PACKAGE)
                                 && (blueprint_name == FUNGIBLE_VAULT_BLUEPRINT || blueprint_name == NON_FUNGIBLE_VAULT_BLUEPRINT) => true,
                             _ => false,
