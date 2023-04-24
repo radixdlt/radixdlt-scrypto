@@ -63,7 +63,7 @@ impl<
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
             Option::None => {
-                env.sys_drop_lock(handle).unwrap();
+                env.unlock_key_value_entry(handle).unwrap();
                 None
             }
         }
@@ -85,7 +85,7 @@ impl<
                 Some(KeyValueEntryRefMut::new(handle, value, rust_value))
             }
             Option::None => {
-                env.sys_drop_lock(handle).unwrap();
+                env.unlock_key_value_entry(handle).unwrap();
                 None
             }
         }
@@ -104,7 +104,7 @@ impl<
         let buffer = scrypto_encode(&Option::Some(value)).unwrap();
 
         env.key_value_entry_set(handle, buffer).unwrap();
-        env.sys_drop_lock(handle).unwrap();
+        env.unlock_key_value_entry(handle).unwrap();
     }
 
     /// Remove an entry from the map and return the original value if it exists
@@ -124,7 +124,7 @@ impl<
 
         let value: Option<ScryptoValue> = None;
         env.key_value_entry_set(handle, scrypto_encode(&value).unwrap()).unwrap();
-        env.sys_drop_lock(handle).unwrap();
+        env.unlock_key_value_entry(handle).unwrap();
 
         rtn
     }
@@ -221,7 +221,7 @@ impl<V: ScryptoEncode> Deref for KeyValueEntryRef<V> {
 impl<V: ScryptoEncode> Drop for KeyValueEntryRef<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
-        env.sys_drop_lock(self.lock_handle).unwrap();
+        env.unlock_key_value_entry(self.lock_handle).unwrap();
     }
 }
 
@@ -254,7 +254,7 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
             Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
         let value = scrypto_encode(&substate).unwrap();
         env.key_value_entry_set(self.handle, value).unwrap();
-        env.sys_drop_lock(self.handle).unwrap();
+        env.unlock_key_value_entry(self.handle).unwrap();
     }
 }
 

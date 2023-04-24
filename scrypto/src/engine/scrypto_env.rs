@@ -178,6 +178,16 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
 
         Ok(())
     }
+
+    fn unlock_key_value_entry(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), ClientApiError> {
+        unsafe {
+            unlock_key_value_entry(
+                handle,
+            )
+        };
+
+        Ok(())
+    }
 }
 
 impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {

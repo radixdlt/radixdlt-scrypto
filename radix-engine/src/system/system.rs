@@ -145,7 +145,7 @@ where
             data, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
         if data.is_kv_store {
-            panic!("Not a field");
+            return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
         self.api
@@ -164,7 +164,7 @@ where
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
         if data.is_kv_store {
-            panic!("Not a field");
+            return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         } else {
             // TODO: Other schema checks
             // TODO: Check objects stored are storeable
@@ -690,22 +690,24 @@ where
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
         };
 
-        /*
-        let value: ScryptoValue = scrypto_decode(&buffer)
-            .map_err(|_| {
-                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-            }) ?;
-        let buffer = scrypto_encode(&Option::Some(value)).unwrap();
-         */
-
-
-
         let substate = IndexedScryptoValue::from_vec(buffer)
             .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
         self.api.kernel_write_substate(handle, substate)?;
 
         Ok(())
     }
+
+    fn unlock_key_value_entry(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), RuntimeError> {
+        let LockInfo {
+            data, ..
+        } = self.api.kernel_get_lock_info(handle)?;
+        if !data.is_kv_store {
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+        }
+
+        self.api.kernel_drop_lock(handle)
+    }
+
 }
 
 impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>

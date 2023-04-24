@@ -196,6 +196,11 @@ where
         Ok(())
     }
 
+    fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.unlock_key_value_entry(handle)?;
+        Ok(())
+    }
+
     fn lock_field(
         &mut self,
         field: u8,
@@ -415,6 +420,10 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn key_value_entry_set(&mut self, handle: u32, data: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

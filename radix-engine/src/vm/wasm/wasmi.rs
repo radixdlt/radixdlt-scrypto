@@ -303,6 +303,14 @@ fn key_value_entry_set(
     runtime.key_value_entry_set(handle, data)
 }
 
+fn unlock_key_value_entry(
+    mut caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime.unlock_key_value_entry(handle)
+}
+
 fn lock_field(
     caller: Caller<'_, HostState>,
     field: u32,
@@ -636,6 +644,18 @@ impl WasmiModule {
             },
         );
 
+        let host_unlock_key_value_entry = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             handle: u32|
+             -> Result<(), Trap> {
+                unlock_key_value_entry(
+                    caller,
+                    handle,
+                ).map_err(|e| e.into())
+            },
+        );
+
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, field: u32, lock_flags: u32| -> Result<u32, Trap> {
@@ -783,6 +803,11 @@ impl WasmiModule {
             linker,
             KEY_VALUE_ENTRY_SET_FUNCTION_NAME,
             host_key_value_entry_set
+        );
+        linker_define!(
+            linker,
+            UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME,
+            host_unlock_key_value_entry
         );
 
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

@@ -65,6 +65,11 @@ pub trait WasmRuntime {
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn unlock_key_value_entry(
+        &mut self,
+        handle: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
     fn get_object_info(
         &mut self,
         component_id: Vec<u8>,

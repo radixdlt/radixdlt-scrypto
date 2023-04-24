@@ -330,6 +330,26 @@ impl WasmModule {
                                 ));
                             }
                         }
+                        UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                    ],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
                         LOCK_FIELD_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
