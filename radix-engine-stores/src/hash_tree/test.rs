@@ -7,7 +7,9 @@ use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::{ModuleId, NodeId, PackageAddress, SubstateKey, SysModuleId};
+use radix_engine_interface::types::{
+    EntityType, ModuleId, NodeId, PackageAddress, SubstateKey, SysModuleId,
+};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -377,7 +379,9 @@ fn substate_id(
     module_id: SysModuleId,
     substate_offset_seed: u8,
 ) -> (NodeId, ModuleId, SubstateKey) {
-    let fake_pkg_address = PackageAddress::new_unchecked([node_id_seed; NodeId::LENGTH]);
+    let mut node_id = [node_id_seed; NodeId::LENGTH];
+    node_id[0] = EntityType::GlobalPackage as u8;
+    let fake_pkg_address = PackageAddress::new_unchecked(node_id);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     (
         NodeId(fake_pkg_address.into()),
