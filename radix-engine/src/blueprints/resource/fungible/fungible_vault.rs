@@ -1,9 +1,9 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -59,22 +59,7 @@ impl FungibleVaultBlueprint {
         let taken = FungibleVault::take(receiver, *amount, api)?;
 
         // Create node
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                })
-                .unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)
     }
 
     pub fn put<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -82,26 +67,14 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let other_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
-
-        // Check resource address
-        {
-            let resource_address = ResourceAddress::new_unchecked(
-                api.get_object_info(receiver)?.type_parent.unwrap().into(),
-            );
-            if resource_address != other_bucket.info.resource_address {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::MismatchingResource),
-                ));
-            }
-        }
+        let resource_address = ResourceAddress::new_unchecked(
+            api.get_object_info(receiver)?.type_parent.unwrap().into(),
+        );
+        let other_bucket =
+            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
 
         // Put
-        if let DroppedBucketResource::Fungible(r) = other_bucket.resource {
-            FungibleVault::put(receiver, r, api)?;
-        } else {
-            panic!("expecting fungible bucket")
-        }
+        FungibleVault::put(receiver, other_bucket.liquid, api)?;
 
         Ok(())
     }
@@ -194,23 +167,12 @@ impl FungibleVaultBlueprint {
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let taken = FungibleVault::take(receiver, amount, api)?;
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                })
-                .unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
+
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
-        Ok(Bucket(Own(bucket_id)))
+
+        Ok(bucket)
     }
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>

@@ -389,7 +389,8 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && blueprint.blueprint_name == BUCKET_BLUEPRINT => {}
+                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => {}
                 _ => {
                     return None;
                 }
@@ -405,6 +406,21 @@ where
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
 
+            let resource_address = ResourceAddress::new_unchecked(
+                self.heap
+                    .get_substate(
+                        bucket_id,
+                        SysModuleId::TypeInfo.into(),
+                        &TypeInfoOffset::TypeInfo.into(),
+                    )
+                    .unwrap()
+                    .as_typed::<TypeInfoSubstate>()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .into(),
+            );
+
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
                     let substate = self
@@ -412,13 +428,13 @@ where
                         .get_substate(
                             bucket_id,
                             SysModuleId::Object.into(),
-                            &BucketOffset::LiquidFungible.into(),
+                            &BucketOffset::Liquid.into(),
                         )
                         .unwrap();
                     let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
 
                     Some(BucketSnapshot::Fungible {
-                        resource_address: info.resource_address,
+                        resource_address: resource_address,
                         resource_type: info.resource_type,
                         liquid: liquid.amount(),
                     })
@@ -429,13 +445,13 @@ where
                         .get_substate(
                             bucket_id,
                             SysModuleId::Object.into(),
-                            &BucketOffset::LiquidNonFungible.into(),
+                            &BucketOffset::Liquid.into(),
                         )
                         .unwrap();
                     let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
 
                     Some(BucketSnapshot::NonFungible {
-                        resource_address: info.resource_address,
+                        resource_address: resource_address,
                         resource_type: info.resource_type,
                         liquid: liquid.ids().clone(),
                     })

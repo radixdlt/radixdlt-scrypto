@@ -212,7 +212,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
                 vault
             } else {
                 let mut system = SystemDownstream::new(api);
-                let new_vault = ResourceManager(RADIX_TOKEN).new_vault(&mut system)?;
+                let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
                 substate.royalty_vault = Some(new_vault);
                 api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
                 new_vault
@@ -254,7 +254,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for CostingModule 
                     vault
                 } else {
                     let mut system = SystemDownstream::new(api);
-                    let new_vault = ResourceManager(RADIX_TOKEN).new_vault(&mut system)?;
+                    let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
                     substate.royalty_vault = Some(new_vault);
                     new_vault
                 };

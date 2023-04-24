@@ -12,7 +12,7 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRulesConfig, AccessRulesConfig) {
+) -> (AccessRulesConfig, AccessRulesConfig, AccessRulesConfig) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));
@@ -87,8 +87,43 @@ fn build_access_rules(
         update_non_fungible_data_mutability,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_CREATE_BUCKET_IDENT),
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+        ),
         AllowAll,
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+        ),
+        AllowAll,
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+        ),
+        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
+                RESOURCE_MANAGER_PACKAGE,
+            )),
+        ))),
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+        ),
+        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
+                RESOURCE_MANAGER_PACKAGE,
+            )),
+        ))),
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
@@ -108,11 +143,6 @@ fn build_access_rules(
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_CREATE_VAULT_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             ObjectModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
@@ -124,6 +154,14 @@ fn build_access_rules(
         MethodKey::new(
             ObjectModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+        ),
+        AllowAll,
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
         ),
         AllowAll,
         DenyAll,
@@ -221,7 +259,11 @@ fn build_access_rules(
             ObjectModuleId::SELF,
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
-        AllowAll,
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
@@ -229,7 +271,11 @@ fn build_access_rules(
             ObjectModuleId::SELF,
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
         ),
-        AllowAll,
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
@@ -237,7 +283,11 @@ fn build_access_rules(
             ObjectModuleId::SELF,
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
-        AllowAll,
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
@@ -245,11 +295,62 @@ fn build_access_rules(
             ObjectModuleId::SELF,
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
-        AllowAll,
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
         DenyAll,
     );
 
-    (resman_access_rules, vault_access_rules)
+    // Not that if a local reference to a bucket is passed to another actor, the recipient will be able
+    // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
+    // theoretically.
+    let mut bucket_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+        ),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+    bucket_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+        ),
+        AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
+            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            )),
+        ))),
+        DenyAll,
+    );
+
+    (resman_access_rules, vault_access_rules, bucket_access_rules)
 }
 
 pub fn globalize_resource_manager<Y>(
@@ -262,17 +363,21 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let vault_blueprint_name = if resource_address.as_node_id().is_global_fungible_resource() {
-        FUNGIBLE_VAULT_BLUEPRINT
-    } else {
-        NON_FUNGIBLE_VAULT_BLUEPRINT
-    }
-    .to_string();
+    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+        build_access_rules(access_rules);
+    let (vault_blueprint_name, bucket_blueprint_name) =
+        if resource_address.as_node_id().is_global_fungible_resource() {
+            (FUNGIBLE_VAULT_BLUEPRINT, FUNGIBLE_BUCKET_BLUEPRINT)
+        } else {
+            (NON_FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT)
+        };
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
-        btreemap!(vault_blueprint_name => vault_access_rules),
+        btreemap!(
+            vault_blueprint_name.to_string() => vault_access_rules,
+            bucket_blueprint_name.to_string()=> bucket_access_rules
+        ),
         api,
     )?
     .0;

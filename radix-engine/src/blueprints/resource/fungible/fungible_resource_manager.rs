@@ -1,10 +1,9 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::heap::DroppedBucket;
-use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -20,8 +19,8 @@ const DIVISIBILITY_MAXIMUM: u8 = 18;
 pub enum FungibleResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
-    MismatchingBucketResource,
     InvalidDivisibility(u8),
+    DropNonEmptyBucket,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -49,16 +48,7 @@ impl FungibleResourceManagerSubstate {
     }
 }
 
-fn build_fungible_bucket<Y>(
-    resource_address: ResourceAddress,
-    divisibility: u8,
-    amount: Decimal,
-    api: &mut Y,
-) -> Result<Bucket, RuntimeError>
-where
-    Y: ClientApi<RuntimeError>,
-{
-    // check amount
+fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
     let resource_type = ResourceType::Fungible { divisibility };
     if !resource_type.check_amount(amount) {
         return Err(RuntimeError::ApplicationError(
@@ -78,23 +68,7 @@ where
         ));
     }
 
-    let bucket_info = BucketInfoSubstate {
-        resource_address,
-        resource_type: ResourceType::Fungible { divisibility },
-    };
-    let liquid_resource = LiquidFungibleResource::new(amount);
-    let bucket_id = api.new_object(
-        BUCKET_BLUEPRINT,
-        vec![
-            scrypto_encode(&bucket_info).unwrap(),
-            scrypto_encode(&liquid_resource).unwrap(),
-            scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-            scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-            scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-        ],
-    )?;
-
-    Ok(Bucket(Own(bucket_id)))
+    Ok(())
 }
 
 pub struct FungibleResourceManagerBlueprint;
@@ -167,9 +141,11 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         let resource_address = ResourceAddress::new_unchecked(resource_address);
-        let bucket = build_fungible_bucket(resource_address, divisibility, initial_supply, api)?;
+        check_new_amount(divisibility, initial_supply)?;
 
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
+
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(initial_supply, api)?;
 
         Ok((resource_address, bucket))
     }
@@ -188,59 +164,24 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let bucket_id = {
-            let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
 
-            let mut resource_manager: FungibleResourceManagerSubstate =
-                api.sys_read_substate_typed(resman_handle)?;
-            let divisibility = resource_manager.divisibility;
-            let resource_type = ResourceType::Fungible { divisibility };
+        let mut resource_manager: FungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        let divisibility = resource_manager.divisibility;
 
-            // check amount
-            if !resource_type.check_amount(amount) {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        FungibleResourceManagerError::InvalidAmount(amount, divisibility),
-                    ),
-                ));
-            }
+        // check amount
+        check_new_amount(divisibility, amount)?;
 
-            // Practically impossible to overflow the Decimal type with this limit in place.
-            if amount > dec!("1000000000000000000") {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        FungibleResourceManagerError::MaxMintAmountExceeded,
-                    ),
-                ));
-            }
+        resource_manager.total_supply += amount;
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
+        api.sys_drop_lock(resman_handle)?;
 
-            resource_manager.total_supply += amount;
-
-            let bucket_info = BucketInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::Fungible { divisibility },
-            };
-            let liquid_resource = LiquidFungibleResource::new(amount);
-            let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&bucket_info).unwrap(),
-                    scrypto_encode(&liquid_resource).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-            api.sys_drop_lock(resman_handle)?;
-
-            bucket_id
-        };
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(amount, api)?;
 
         Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
-        Ok(Bucket(Own(bucket_id)))
+        Ok(bucket)
     }
 
     pub(crate) fn burn<Y>(
@@ -257,60 +198,70 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        // FIXME: check if the bucket is locked
-        let dropped_bucket: DroppedBucket = api.kernel_drop_node(bucket.0.as_node_id())?.into();
+        // Drop other bucket
+        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let other_bucket =
+            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
-        match dropped_bucket.resource {
-            DroppedBucketResource::Fungible(resource) => {
-                Runtime::emit_event(
-                    api,
-                    BurnFungibleResourceEvent {
-                        amount: resource.amount(),
-                    },
-                )?;
+        Runtime::emit_event(
+            api,
+            BurnFungibleResourceEvent {
+                amount: other_bucket.liquid.amount(),
+            },
+        )?;
 
-                // Check if resource matches
-                // TODO: Move this check into actor check
-                {
-                    let resource_address =
-                        ResourceAddress::new_unchecked(api.get_global_address()?.into());
-                    if dropped_bucket.info.resource_address != resource_address {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(
-                                FungibleResourceManagerError::MismatchingBucketResource,
-                            ),
-                        ));
-                    }
-
-                    // Update total supply
-                    // TODO: there might be better for maintaining total supply, especially for non-fungibles
-                    // Update total supply
-                    let mut resource_manager: FungibleResourceManagerSubstate =
-                        api.sys_read_substate_typed(resman_handle)?;
-                    resource_manager.total_supply -= resource.amount();
-
-                    api.sys_write_substate_typed(resman_handle, &resource_manager)?;
-                    api.sys_drop_lock(resman_handle)?;
-                }
-            }
-            DroppedBucketResource::NonFungible(..) => {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        FungibleResourceManagerError::MismatchingBucketResource,
-                    ),
-                ));
-            }
-        }
+        // Update total supply
+        let mut resource_manager: FungibleResourceManagerSubstate =
+            api.sys_read_substate_typed(resman_handle)?;
+        resource_manager.total_supply -= other_bucket.liquid.amount();
+        api.sys_write_substate_typed(resman_handle, &resource_manager)?;
+        api.sys_drop_lock(resman_handle)?;
 
         Ok(())
     }
 
-    pub(crate) fn create_bucket<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub(crate) fn drop_empty_bucket<Y>(
+        _receiver: &NodeId,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let other_bucket =
+            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+
+        if other_bucket.liquid.amount().is_zero() {
+            Ok(())
+        } else {
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(
+                    FungibleResourceManagerError::DropNonEmptyBucket,
+                ),
+            ))
+        }
+    }
+
+    pub(crate) fn create_empty_bucket<Y>(
+        receiver: &NodeId,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        Self::create_bucket(receiver, 0.into(), api)
+    }
+
+    pub(crate) fn create_bucket<Y>(
+        receiver: &NodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
         let resman_handle = api.sys_lock_substate(
             receiver,
             &ResourceManagerOffset::ResourceManager.into(),
@@ -320,24 +271,21 @@ impl FungibleResourceManagerBlueprint {
             api.sys_read_substate_typed(resman_handle)?;
         let divisibility = resource_manager.divisibility;
         let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
+            FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
                     resource_type: ResourceType::Fungible { divisibility },
                 })
                 .unwrap(),
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 
         Ok(Bucket(Own(bucket_id)))
     }
 
-    pub(crate) fn create_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_empty_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {

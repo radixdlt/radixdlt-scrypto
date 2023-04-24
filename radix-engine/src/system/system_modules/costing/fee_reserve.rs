@@ -285,7 +285,9 @@ impl SystemLoanFeeReserve {
         }
 
         // Repay owed with balance
-        self.xrd_owed -= min(self.xrd_balance, self.xrd_owed);
+        let amount = min(self.xrd_balance, self.xrd_owed);
+        self.xrd_owed -= amount;
+        self.xrd_balance -= amount; // not used afterwards
 
         // Check outstanding loan
         if self.xrd_owed != 0 {
@@ -446,6 +448,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
+            royalty_cost_sum: self.royalty_committed_sum,
         }
     }
 }
