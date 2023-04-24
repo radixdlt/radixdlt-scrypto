@@ -285,7 +285,9 @@ impl SystemLoanFeeReserve {
         }
 
         // Repay owed with balance
-        self.xrd_owed -= min(self.xrd_balance, self.xrd_owed);
+        let amount = min(self.xrd_balance, self.xrd_owed);
+        self.xrd_owed -= amount;
+        self.xrd_balance -= amount; // not used afterwards
 
         // Check outstanding loan
         if self.xrd_owed != 0 {

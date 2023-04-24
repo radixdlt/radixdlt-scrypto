@@ -99,11 +99,13 @@ impl Heap {
     }
 }
 
+#[derive(Debug)]
 pub struct DroppedBucket {
     pub info: BucketInfoSubstate,
     pub resource: DroppedBucketResource,
 }
 
+#[derive(Debug)]
 pub enum DroppedBucketResource {
     Fungible(LiquidFungibleResource),
     NonFungible(LiquidNonFungibleResource),
