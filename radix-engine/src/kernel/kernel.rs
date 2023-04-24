@@ -336,6 +336,33 @@ where
     }
 
     fn kernel_get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+        // This is to solve the bootstrapping problem.
+        // Can be removed if we flush bootstrap state updates without transactional execution.
+        if node_id.eq(RADIX_TOKEN.as_node_id()) {
+            return Some(TypeInfo::Object {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                global: true,
+                type_parent: None,
+            });
+        } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
+            || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
+            || node_id.eq(SYSTEM_TOKEN.as_node_id())
+            || node_id.eq(PACKAGE_TOKEN.as_node_id())
+            || node_id.eq(GLOBAL_OBJECT_TOKEN.as_node_id())
+            || node_id.eq(PACKAGE_OWNER_TOKEN.as_node_id())
+            || node_id.eq(VALIDATOR_OWNER_TOKEN.as_node_id())
+            || node_id.eq(IDENTITY_OWNER_TOKEN.as_node_id())
+            || node_id.eq(ACCOUNT_OWNER_TOKEN.as_node_id())
+        {
+            return Some(TypeInfo::Object {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                global: true,
+                type_parent: None,
+            });
+        }
+
         self.heap
             .get_substate(
                 node_id,

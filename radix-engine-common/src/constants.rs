@@ -44,8 +44,7 @@ pub(crate) const FUNGIBLE_VAULT_BLUEPRINT: &str = "FungibleVault";
 pub(crate) const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";
 pub(crate) const FUNGIBLE_BUCKET_BLUEPRINT: &str = "FungibleBucket";
 pub(crate) const NON_FUNGIBLE_BUCKET_BLUEPRINT: &str = "NonFungibleBucket";
-pub(crate) const FUNGIBLE_PROOF_BLUEPRINT: &str = "FungibleProof";
-pub(crate) const NON_FUNGIBLE_PROOF_BLUEPRINT: &str = "NonFungibleProof";
+pub(crate) const PROOF_BLUEPRINT: &str = "Proof";
 
 // TODO: remove
 // There should be no need of this function, but many of our configurations are depending on it.

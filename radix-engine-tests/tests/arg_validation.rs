@@ -104,7 +104,6 @@ fn valid_transactions_can_be_committed() {
 }
 
 #[test]
-#[ignore = "This test is ignored until we check the entity type at validation time"]
 fn cannot_pass_bucket_for_proof_argument() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -133,11 +132,10 @@ fn cannot_pass_bucket_for_proof_argument() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("ScryptoInputSchemaNotMatch"))
+    assert!(error_message.contains("InputSchemaNotMatch"))
 }
 
 #[test]
-#[ignore = "This test is ignored until we check the entity type at validation time"]
 fn cannot_pass_proof_for_bucket_argument() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -166,5 +164,5 @@ fn cannot_pass_proof_for_bucket_argument() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("ScryptoInputSchemaNotMatch"))
+    assert!(error_message.contains("InputSchemaNotMatch"))
 }

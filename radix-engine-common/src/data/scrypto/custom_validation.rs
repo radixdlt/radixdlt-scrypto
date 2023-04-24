@@ -88,7 +88,7 @@ where
                         ScryptoCustomTypeKind::Proof => match &type_info {
                             TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address.eq( &RESOURCE_MANAGER_PACKAGE)
-                                    && (blueprint_name == FUNGIBLE_PROOF_BLUEPRINT || blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) => true,
+                                    &&  blueprint_name == PROOF_BLUEPRINT => true,
                             _ => false,
                         }
                         ScryptoCustomTypeKind::Vault => match &type_info {
