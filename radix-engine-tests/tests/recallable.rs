@@ -1,5 +1,5 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::AuthError;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use std::ops::Sub;

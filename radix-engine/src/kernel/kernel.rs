@@ -1,43 +1,138 @@
-use super::actor::ExecutionMode;
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
-use super::heap::{Heap, HeapNode};
+use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeApi, KernelModuleApi, KernelNodeApi,
-    KernelSubstateApi, KernelWasmApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
 };
-use super::module::KernelModule;
-use super::module_mixer::KernelModuleMixer;
-use super::track::Track;
 use crate::blueprints::resource::*;
+use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::errors::{InvalidDropNodeAccess, InvalidSubstateAccess, RuntimeError};
 use crate::kernel::actor::Actor;
-use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::node_init::NodeInit;
+use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_properties::NodeProperties;
+use crate::system::system::SystemDownstream;
+use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::package::PackageCodeSubstate;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
+/// Organizes the radix engine stack to make a function entrypoint available for execution
+pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
+    pub id_allocator: &'g mut IdAllocator,
+    pub callback: &'g mut SystemCallback<V>,
+    pub store: &'g mut S,
+}
+
+impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
+    /// Executes a transaction
+    pub fn call_function(
+        self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        #[cfg(feature = "resource_tracker")]
+        radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+            v.borrow_mut();
+        });
+
+        let mut kernel = Kernel {
+            heap: Heap::new(),
+            store: self.store,
+            id_allocator: self.id_allocator,
+            current_frame: CallFrame::new_root(),
+            prev_frame_stack: vec![],
+            callback: self.callback,
+        };
+
+        SystemCallback::on_init(&mut kernel)?;
+
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        for node_id in args.references() {
+            if node_id.is_global_virtual() {
+                // For virtual accounts and native packages, create a reference directly
+                kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                continue;
+            } else if node_id.is_global_package()
+                && is_native_package(PackageAddress::new_unchecked(node_id.0))
+            {
+                // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
+                kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                continue;
+            }
+
+            if kernel.current_frame.get_node_visibility(node_id).is_some() {
+                continue;
+            }
+
+            let handle = kernel
+                .store
+                .acquire_lock(
+                    node_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                    LockFlags::read_only(),
+                )
+                .map_err(|_| KernelError::NodeNotFound(*node_id))?;
+            let substate_ref = kernel.store.read_substate(handle);
+            let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
+            kernel.store.release_lock(handle);
+            match type_substate {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint, global, ..
+                }) => {
+                    if global {
+                        kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                    } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                            || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                    {
+                        kernel
+                            .current_frame
+                            .add_ref(*node_id, RefType::DirectAccess);
+                    } else {
+                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                    }
+                }
+                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                    return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                }
+            }
+        }
+
+        let mut system = SystemDownstream::new(&mut kernel);
+
+        let rtn =
+            system.call_function(package_address, blueprint_name, function_name, args.into())?;
+        // Sanity check call frame
+        assert!(kernel.prev_frame_stack.is_empty());
+
+        SystemCallback::on_teardown(&mut kernel)?;
+
+        Ok(rtn)
+    }
+}
+
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
-    's, // Substate store lifetime
-    W,  // WASM engine type
+    M,  // Upstream System layer
+    S,  // Substate store
 > where
-    W: WasmEngine,
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
-    /// Current execution mode, specifies permissions into state/invocations
-    execution_mode: ExecutionMode,
     /// Stack
     current_frame: CallFrame,
     // This stack could potentially be removed and just use the native stack
@@ -47,146 +142,33 @@ pub struct Kernel<
     /// Heap
     heap: Heap,
     /// Store
-    track: &'g mut Track<'s>,
+    store: &'g mut S,
 
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
-    /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g ScryptoInterpreter<W>,
-    /// Kernel module mixer
-    module: KernelModuleMixer,
+
+    /// Upstream system layer
+    callback: &'g mut M,
 }
 
-impl<'g, 's, W> Kernel<'g, 's, W>
+impl<'g, M, S> Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
-    pub fn new(
-        id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track<'s>,
-        scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        module: KernelModuleMixer,
-    ) -> Self {
-        #[cfg(feature = "resource_tracker")]
-        radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
-            v.borrow_mut();
-        });
-
-        Self {
-            execution_mode: ExecutionMode::Kernel,
-            heap: Heap::new(),
-            track,
-            scrypto_interpreter,
-            id_allocator,
-            current_frame: CallFrame::new_root(),
-            prev_frame_stack: vec![],
-            module,
-        }
-    }
-
-    pub fn initialize(&mut self) -> Result<(), RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-            KernelModuleMixer::on_init(api)
-        })
-    }
-
-    // TODO: Josh holds some concern about this interface; will look into this again.
-    pub fn teardown<T>(
-        mut self,
-        previous_result: Result<T, RuntimeError>,
-    ) -> (KernelModuleMixer, Result<T, RuntimeError>) {
-        let new_result = match previous_result {
-            Ok(output) => {
-                // Sanity check call frame
-                assert!(self.prev_frame_stack.is_empty());
-
-                // Tear down kernel modules
-                match self
-                    .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::KernelModule, |api| {
-                        KernelModuleMixer::on_teardown(api)
-                    }) {
-                    Ok(_) => Ok(output),
-                    Err(error) => Err(error),
-                }
-            }
-            Err(error) => Err(error),
-        };
-
-        (self.module, new_result)
-    }
-
-    fn drop_node_internal(&mut self, node_id: NodeId) -> Result<HeapNode, RuntimeError> {
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| {
-            api.current_frame
-                .remove_node(&mut api.heap, &node_id)
-                .map_err(|e| {
-                    RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::MoveError(e),
-                    ))
-                })
-        })
-    }
-
-    fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
-        let owned_nodes = self.current_frame.owned_nodes();
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
-            for node_id in owned_nodes {
-                if let Ok(blueprint) = api.get_object_info(&node_id).map(|x| x.blueprint) {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                            api.call_function(
-                                RESOURCE_MANAGER_PACKAGE,
-                                PROOF_BLUEPRINT,
-                                PROOF_DROP_IDENT,
-                                scrypto_encode(&ProofDropInput {
-                                    proof: Proof(Own(node_id)),
-                                })
-                                .unwrap(),
-                            )?;
-                        }
-                        _ => {
-                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                                node_id,
-                            )))
-                        }
-                    }
-                } else {
-                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                        node_id,
-                    )));
-                }
-            }
-
-            Ok(())
-        })?;
-
-        // Last check
-        if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                node_id,
-            )));
-        }
-
-        Ok(())
-    }
-
-    fn run<X: Executor>(
+    fn invoke(
         &mut self,
-        mut resolved: Box<ResolvedInvocation<X>>,
-    ) -> Result<X::Output, RuntimeError> {
+        invocation: Box<KernelInvocation<M::Invocation>>,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
-        let executor = resolved.executor;
-        let actor = &resolved.resolved_actor;
-        let args = &resolved.args;
-        let call_frame_update = &mut resolved.update;
+        let mut call_frame_update = invocation.get_update();
+        let sys_invocation = invocation.sys_invocation;
+        let actor = &invocation.resolved_actor;
+        let args = &invocation.args;
 
         // Before push call frame
-        {
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, actor, call_frame_update, &args)
-            })?;
-        }
+        M::before_push_frame(actor, &mut call_frame_update, &args, self)?;
 
         // Push call frame
         {
@@ -206,32 +188,28 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            {
-                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                    KernelModuleMixer::on_execution_start(api, &caller)
-                })?;
-            }
+            M::on_execution_start(&caller, self)?;
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)
+                .drop_all_locks(&mut self.heap, self.store)
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
-            let (output, mut update) =
-                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
+            let output = M::invoke_upstream(sys_invocation, args, self)?;
+
+            let mut update = CallFrameUpdate {
+                nodes_to_move: output.owned_node_ids().clone(),
+                node_refs_to_copy: output.references().clone(),
+            };
 
             // Handle execution finish
-            {
-                self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                    KernelModuleMixer::on_execution_finish(api, &caller, &mut update)
-                })?;
-            }
+            M::on_execution_finish(&caller, &mut update, self)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, &mut self.track)
+                .drop_all_locks(&mut self.heap, self.store)
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -247,8 +225,17 @@ where
                 .map_err(CallFrameError::MoveError)
                 .map_err(KernelError::CallFrameError)?;
 
-            // drop proofs and check resource leak
-            self.auto_drop_nodes_in_frame()?;
+            // auto drop
+            {
+                let owned_nodes = self.current_frame.owned_nodes();
+                M::auto_drop(owned_nodes, self)?;
+                // Last check
+                if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                        node_id,
+                    )));
+                }
+            }
 
             // Restore previous frame
             self.current_frame = parent;
@@ -257,188 +244,58 @@ where
         }
 
         // After pop call frame
-        {
-            self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::after_pop_frame(api)
-            })?;
-        }
+        M::after_pop_frame(self)?;
 
         Ok(output)
-    }
-
-    fn verify_valid_mode_transition(
-        cur: &ExecutionMode,
-        next: &ExecutionMode,
-    ) -> Result<(), RuntimeError> {
-        match (cur, next) {
-            (ExecutionMode::Kernel, ..) => Ok(()),
-            (ExecutionMode::Client, ExecutionMode::System) => Ok(()),
-            _ => Err(RuntimeError::KernelError(
-                KernelError::InvalidModeTransition(*cur, *next),
-            )),
-        }
-    }
-
-    fn invoke_internal<X: Executor>(
-        &mut self,
-        resolved: Box<ResolvedInvocation<X>>,
-    ) -> Result<X::Output, RuntimeError> {
-        let depth = self.current_frame.depth;
-        // TODO: Move to higher layer
-        if depth == 0 {
-            for node_id in &resolved.update.node_refs_to_copy {
-                if node_id.is_global_virtual() {
-                    // For virtual accounts and native packages, create a reference directly
-                    self.current_frame.add_ref(*node_id, RefType::Normal);
-                    continue;
-                } else if node_id.is_global_package()
-                    && is_native_package(PackageAddress::new_unchecked(node_id.0))
-                {
-                    // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                    self.current_frame.add_ref(*node_id, RefType::Normal);
-                    continue;
-                }
-
-                if self.current_frame.get_node_visibility(node_id).is_some() {
-                    continue;
-                }
-
-                let handle = self
-                    .track
-                    .acquire_lock(
-                        node_id,
-                        SysModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                        LockFlags::read_only(),
-                    )
-                    .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-                let substate_ref = self.track.read_substate(handle);
-                let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-                self.track.release_lock(handle);
-                match type_substate {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint, global, ..
-                    }) => {
-                        if global {
-                            self.current_frame.add_ref(*node_id, RefType::Normal);
-                        } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                                || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                        {
-                            self.current_frame.add_ref(*node_id, RefType::DirectAccess);
-                        } else {
-                            return Err(RuntimeError::KernelError(
-                                KernelError::InvalidDirectAccess,
-                            ));
-                        }
-                    }
-                    TypeInfoSubstate::KeyValueStore(..) => {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
-                    }
-                }
-            }
-        }
-
-        let output = self.run(resolved)?;
-
-        Ok(output)
-    }
-
-    #[inline(always)]
-    pub fn execute_in_mode<X, RTN, E>(
-        &mut self,
-        execution_mode: ExecutionMode,
-        execute: X,
-    ) -> Result<RTN, RuntimeError>
-    where
-        RuntimeError: From<E>,
-        X: FnOnce(&mut Self) -> Result<RTN, E>,
-    {
-        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
-
-        // Save and replace kernel actor
-        let saved = self.execution_mode;
-        self.execution_mode = execution_mode;
-
-        let rtn = execute(self)?;
-
-        // Restore old kernel actor
-        self.execution_mode = saved;
-
-        Ok(rtn)
     }
 }
 
-impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
+impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
-    #[trace_resources]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
-        KernelModuleMixer::before_drop_node(self, &node_id)?;
+    #[trace_resources(log=node_id.entity_type())]
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+        M::before_drop_node(node_id, self)?;
 
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
+        let node = self
+            .current_frame
+            .remove_node(&mut self.heap, node_id)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
+            })?;
 
-        // TODO: Move this into the system layer
-        if let Some(actor) = self.current_frame.actor.clone() {
-            let info = self.get_object_info(node_id)?;
-            if !NodeProperties::can_be_dropped(
-                current_mode,
-                &actor,
-                info.blueprint.package_address,
-                info.blueprint.blueprint_name.as_str(),
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        mode: current_mode,
-                        actor: actor.clone(),
-                        node_id: node_id.clone(),
-                        package_address: info.blueprint.package_address,
-                        blueprint_name: info.blueprint.blueprint_name,
-                    })),
-                ));
-            }
-        }
-
-        let node = self.drop_node_internal(*node_id)?;
-
-        // Restore current mode
-        self.execution_mode = current_mode;
-
-        KernelModuleMixer::after_drop_node(self)?;
+        M::after_drop_node(self)?;
 
         Ok(node)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        // TODO: Add costing
+        M::on_allocate_node_id(Some(entity_type), false, self)?;
+
         let node_id = self.id_allocator.allocate_node_id(entity_type)?;
 
         Ok(node_id)
     }
 
-    #[trace_resources(log=node_id)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        M::on_allocate_node_id(node_id.entity_type(), true, self)?;
+
         self.id_allocator.allocate_virtual_node_id(node_id);
 
         Ok(())
     }
 
-    #[trace_resources(log=node_id)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        node_init: NodeInit,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::before_create_node(self, &node_id, &node_init, &module_init)?;
-
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
+        M::before_create_node(&node_id, &node_substates, self)?;
 
         let push_to_store = node_id.is_global();
 
@@ -446,45 +303,39 @@ where
         self.current_frame
             .create_node(
                 node_id,
-                node_init,
-                module_init,
+                node_substates,
                 &mut self.heap,
-                &mut self.track,
+                self.store,
                 push_to_store,
             )
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
-        // Restore current mode
-        self.execution_mode = current_mode;
-
-        KernelModuleMixer::after_create_node(self, &node_id)?;
+        M::after_create_node(&node_id, self)?;
 
         Ok(())
     }
 }
 
-impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
+impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
-    #[trace_resources]
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
     }
 
-    #[trace_resources]
-    fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
-        &mut self.module
+    fn kernel_get_callback(&mut self) -> &mut M {
+        &mut self.callback
     }
 
-    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
-    #[trace_resources]
+    // TODO: Remove
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
@@ -506,18 +357,40 @@ where
         actor
     }
 
-    #[trace_resources]
+    // TODO: Remove
+    fn kernel_load_package_package_dependencies(&mut self) {
+        self.current_frame
+            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
+    }
+
+    // TODO: Remove
+    fn kernel_load_common(&mut self) {
+        self.current_frame
+            .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(CLOCK.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
+        self.current_frame
+            .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
+    }
+
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && blueprint.blueprint_name == BUCKET_BLUEPRINT => {}
+                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => {}
                 _ => {
                     return None;
                 }
@@ -528,7 +401,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::ObjectState,
+            SysModuleId::Object.into(),
             &BucketOffset::Info.into(),
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
@@ -539,7 +412,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::Object.into(),
                             &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
@@ -556,7 +429,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::Object.into(),
                             &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
@@ -574,11 +447,10 @@ where
         }
     }
 
-    #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -596,7 +468,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             proof_id,
-            SysModuleId::ObjectState,
+            SysModuleId::Object.into(),
             &ProofOffset::Info.into(),
         ) {
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
@@ -607,7 +479,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::Object.into(),
                             &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
@@ -625,7 +497,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectState,
+                            SysModuleId::Object.into(),
                             &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
@@ -645,51 +517,24 @@ where
     }
 }
 
-impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
+impl<'g, M, S> KernelSubstateApi for Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
-    #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
+    #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        KernelModuleMixer::before_lock_substate(self, &node_id, &module_id, substate_key, &flags)?;
-
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        // TODO: Check if valid substate_key for node_id
-
-        // Check node configs
-        if let Some(actor) = &self.current_frame.actor {
-            if !NodeProperties::can_substate_be_accessed(
-                current_mode,
-                actor,
-                node_id,
-                module_id,
-                substate_key,
-                flags,
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
-                        mode: current_mode,
-                        actor: actor.clone(),
-                        node_id: node_id.clone(),
-                        substate_key: substate_key.clone(),
-                        flags,
-                    })),
-                ));
-            }
-        }
+        M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
-            &mut self.track,
+            self.store,
             node_id,
             module_id,
             substate_key,
@@ -700,17 +545,14 @@ where
             Ok(lock_handle) => *lock_handle,
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                    let retry = KernelModuleMixer::on_substate_lock_fault(
-                        *node_id,
-                        module_id,
-                        &substate_key,
-                        self,
-                    )?;
+                    let retry =
+                        M::on_substate_lock_fault(*node_id, module_id, &substate_key, self)?;
+
                     if retry {
                         self.current_frame
                             .acquire_lock(
                                 &mut self.heap,
-                                &mut self.track,
+                                self.store,
                                 &node_id,
                                 module_id,
                                 &substate_key,
@@ -739,9 +581,9 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = SysModuleId::ObjectState;
+                        let module_id = SysModuleId::Object;
                         let handle = self
-                            .track
+                            .store
                             .acquire_lock(
                                 node_id,
                                 module_id.into(),
@@ -751,15 +593,15 @@ where
                             .map_err(|e| LockSubstateError::TrackError(Box::new(e)))
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?;
-                        self.track.release_lock(handle);
+                        self.store.release_lock(handle);
 
                         self.current_frame.add_ref(*node_id, RefType::Normal);
                         self.current_frame
                             .acquire_lock(
                                 &mut self.heap,
-                                &mut self.track,
+                                self.store,
                                 &node_id,
-                                module_id,
+                                module_id.into(),
                                 substate_key,
                                 flags,
                             )
@@ -775,11 +617,8 @@ where
             }
         };
 
-        // Restore current mode
-        self.execution_mode = current_mode;
-
         // TODO: pass the right size
-        KernelModuleMixer::after_lock_substate(self, lock_handle, 0)?;
+        M::after_lock_substate(lock_handle, 0, self)?;
 
         Ok(lock_handle)
     }
@@ -795,10 +634,10 @@ where
 
     #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_drop_lock(self, lock_handle)?;
+        M::on_drop_lock(lock_handle, self)?;
 
         self.current_frame
-            .drop_lock(&mut self.heap, &mut self.track, lock_handle)
+            .drop_lock(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -812,7 +651,7 @@ where
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let mut len = self
             .current_frame
-            .read_substate(&mut self.heap, &mut self.track, lock_handle)
+            .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?
             .as_slice()
@@ -824,92 +663,117 @@ where
             len = 0;
         }
 
-        KernelModuleMixer::on_read_substate(self, lock_handle, len)?;
+        M::on_read_substate(lock_handle, len, self)?;
 
         Ok(self
             .current_frame
-            .read_substate(&mut self.heap, &mut self.track, lock_handle)
+            .read_substate(&mut self.heap, self.store, lock_handle)
             .unwrap())
     }
 
+    #[trace_resources]
     fn kernel_write_substate(
         &mut self,
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_write_substate(self, lock_handle, value.as_slice().len())?;
+        M::on_write_substate(lock_handle, value.as_slice().len(), self)?;
 
         self.current_frame
-            .write_substate(&mut self.heap, &mut self.track, lock_handle, value)
+            .write_substate(&mut self.heap, self.store, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_set_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.current_frame
+            .set_substate(
+                node_id,
+                module_id,
+                substate_key,
+                value,
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(CallFrameError::SetSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_remove_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+        self.current_frame
+            .remove_substate(
+                node_id,
+                module_id,
+                &substate_key,
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(CallFrameError::RemoveSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_scan_sorted_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.current_frame
+            .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
+            .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }
 }
 
-impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
+impl<'g, M, S> KernelInvokeApi<M::Invocation> for Kernel<'g, M, S>
 where
-    W: WasmEngine,
-{
-    #[trace_resources]
-    fn kernel_create_wasm_instance(
-        &mut self,
-        package_address: PackageAddress,
-        handle: LockHandle,
-    ) -> Result<W::WasmInstance, RuntimeError> {
-        // TODO: check if save to unwrap
-        let package_code: PackageCodeSubstate =
-            self.kernel_read_substate(handle)?.as_typed().unwrap();
-
-        Ok(self
-            .scrypto_interpreter
-            .create_instance(package_address, &package_code.code))
-    }
-}
-
-impl<'g, 's, W, N> KernelInvokeApi<N, RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-    N: ExecutableInvocation,
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<N>,
-    ) -> Result<<N as Invocation>::Output, RuntimeError> {
-        KernelModuleMixer::before_invoke(
+        invocation: Box<KernelInvocation<M::Invocation>>,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
+
+        let rtn = self.invoke(invocation)?;
+
+        M::after_invoke(
+            0, // TODO: Pass the right size
             self,
-            &invocation.debug_identifier(),
-            invocation.payload_size(),
-        )?;
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-
-        self.execution_mode = ExecutionMode::Resolver;
-        let resolved = invocation.resolve(self)?;
-
-        self.execution_mode = ExecutionMode::Kernel;
-        let rtn = self.invoke_internal(resolved)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        KernelModuleMixer::after_invoke(
-            self, 0, // TODO: Pass the right size
         )?;
 
         Ok(rtn)
     }
 }
 
-impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
-
-impl<'g, 's, W> KernelModuleApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
-
-impl<'g, 's, W> TypeInfoContext for Kernel<'g, 's, W>
+impl<'g, M, S> KernelApi<M> for Kernel<'g, M, S>
 where
-    W: WasmEngine,
+    M: KernelCallbackObject,
+    S: SubstateStore,
+{
+}
+
+impl<'g, M, S> TypeInfoContext for Kernel<'g, M, S>
+where
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
     // Note that we do not check node visibility here; call frame is responsible for that.
 
@@ -918,13 +782,10 @@ where
             .heap
             .get_substate(
                 node_id,
-                SysModuleId::TypeInfo,
+                SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
             )
-            .or_else(||  {
-                
-
-            })
+            .or_else(|| todo!())
             .map(|x| x.as_typed().unwrap());
 
         substate.map(|substate| match substate {
@@ -933,6 +794,7 @@ where
                 blueprint_name: blueprint.blueprint_name,
             },
             TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
+            TypeInfoSubstate::SortedStore => TypeInfo::SortedStore,
         })
     }
 }

@@ -1,11 +1,12 @@
 use crate::types::*;
+use radix_engine_interface::api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Method {
         global_address: Option<GlobalAddress>,
         node_id: NodeId,
-        module_id: SysModuleId,
+        module_id: ObjectModuleId,
         blueprint: Blueprint,
         ident: String,
     },
@@ -70,22 +71,4 @@ impl Actor {
     pub fn virtual_lazy_load(blueprint: Blueprint, ident: u8) -> Self {
         Self::VirtualLazyLoad { blueprint, ident }
     }
-}
-
-/// Execution mode
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Sbor)]
-pub enum ExecutionMode {
-    Kernel,
-    Resolver,
-    DropNode,
-    AutoDrop,
-
-    /* System */
-    System,
-
-    /* Kernel modules */
-    KernelModule,
-
-    /* Clients, e.g. blueprints and node modules */
-    Client,
 }

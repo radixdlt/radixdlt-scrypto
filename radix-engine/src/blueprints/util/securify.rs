@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
 pub enum MethodType {
@@ -30,7 +30,7 @@ pub trait SecurifiedAccessRules {
             };
 
             access_rules_config.set_method_access_rule_and_mutability(
-                MethodKey::new(SysModuleId::ObjectState, method),
+                MethodKey::new(ObjectModuleId::SELF, method),
                 access_rule,
                 mutability,
             );
@@ -59,7 +59,7 @@ pub trait SecurifiedAccessRules {
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(SysModuleId::ObjectState, securify_ident),
+                MethodKey::new(ObjectModuleId::SELF, securify_ident),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 api,
@@ -85,7 +85,7 @@ pub trait SecurifiedAccessRules {
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(SysModuleId::ObjectState, securify_ident),
+                MethodKey::new(ObjectModuleId::SELF, securify_ident),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 api,
@@ -118,7 +118,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let access_rule = rule!(require(owner_id));
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(SysModuleId::ObjectState, securify_ident),
+                MethodKey::new(ObjectModuleId::SELF, securify_ident),
                 AccessRuleEntry::AccessRule(access_rule.clone()),
                 AccessRuleEntry::AccessRule(this_package_rule.clone()),
                 api,

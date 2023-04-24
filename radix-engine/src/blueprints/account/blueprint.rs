@@ -1,6 +1,5 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -13,6 +12,7 @@ use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Pr
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -58,7 +58,7 @@ impl AccountBlueprint {
     fn create_modules<Y>(
         access_rules: AccessRules,
         api: &mut Y,
-    ) -> Result<BTreeMap<SysModuleId, Own>, RuntimeError>
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -66,16 +66,16 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            SysModuleId::AccessRules => access_rules.0,
-            SysModuleId::Metadata => metadata,
-            SysModuleId::Royalty => royalty,
+            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::Metadata => metadata,
+            ObjectModuleId::Royalty => royalty,
         );
 
         Ok(modules)
     }
 
     pub fn create_virtual_ecdsa_256k1<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::UUID_LENGTH],
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where
@@ -87,13 +87,14 @@ impl AccountBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
 
-        Ok((account, modules))
+        Ok(modules)
     }
 
     pub fn create_virtual_eddsa_25519<Y>(
-        id: [u8; 26],
+        id: [u8; NodeId::UUID_LENGTH],
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where
@@ -105,9 +106,10 @@ impl AccountBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
 
-        Ok((account, modules))
+        Ok(modules)
     }
 
     pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
@@ -126,10 +128,11 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(config, api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(account.0, modules)?;
+        let address = api.globalize(modules)?;
 
         Ok(address)
     }
@@ -140,10 +143,11 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
-        let modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(access_rules, api)?;
+        modules.insert(ObjectModuleId::SELF, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(account.0, modules)?;
+        let address = api.globalize(modules)?;
 
         Ok((address, bucket))
     }
@@ -177,7 +181,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -229,7 +233,7 @@ impl AccountBlueprint {
 
     pub fn lock_fee<Y>(receiver: &NodeId, amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount, false, api)?;
         Ok(())
@@ -241,7 +245,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount, true, api)?;
         Ok(())
@@ -249,7 +253,7 @@ impl AccountBlueprint {
 
     pub fn deposit<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -311,7 +315,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             receiver,
@@ -380,7 +384,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<R, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -433,7 +437,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let bucket = Self::get_vault(
             receiver,
@@ -452,7 +456,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let bucket = Self::get_vault(
             receiver,
@@ -472,7 +476,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount_to_lock, false, api)?;
 
@@ -494,7 +498,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_fee_internal(receiver, amount_to_lock, false, api)?;
 
@@ -514,7 +518,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let proof = Self::get_vault(
             receiver,
@@ -533,7 +537,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let proof = Self::get_vault(
             receiver,
@@ -552,7 +556,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let proof = Self::get_vault(
             receiver,

@@ -1,7 +1,7 @@
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine::wasm::*;
+use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -109,7 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::InterpreterError(_)));
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemUpstreamError(_)));
 }
 
 #[test]

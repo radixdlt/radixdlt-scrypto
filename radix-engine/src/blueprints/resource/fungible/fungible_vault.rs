@@ -4,6 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -59,22 +60,7 @@ impl FungibleVaultBlueprint {
         let taken = FungibleVault::take(receiver, *amount, api)?;
 
         // Create node
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                })
-                .unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Ok(Bucket(Own(bucket_id)))
+        ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)
     }
 
     pub fn put<Y>(receiver: &NodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -194,23 +180,12 @@ impl FungibleVaultBlueprint {
             api.get_object_info(receiver)?.type_parent.unwrap().into(),
         );
         let taken = FungibleVault::take(receiver, amount, api)?;
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                })
-                .unwrap(),
-                scrypto_encode(&taken).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
+
+        let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
-        Ok(Bucket(Own(bucket_id)))
+
+        Ok(bucket)
     }
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>

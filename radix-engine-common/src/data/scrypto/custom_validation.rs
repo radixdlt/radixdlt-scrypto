@@ -22,6 +22,7 @@ pub enum TypeInfo {
         blueprint_name: String,
     },
     KeyValueStore,
+    SortedStore,
 }
 
 pub trait TypeInfoContext {

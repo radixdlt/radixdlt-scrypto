@@ -53,7 +53,6 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
@@ -63,10 +62,12 @@ use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::wasm::*;
+use radix_engine::vm::wasm::*;
+use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
@@ -91,32 +92,35 @@ use utils::ContextualDisplay;
 /// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
-    47,
-    171,
-    219,
-    117,
-    206,
-    243,
-    13,
-    82,
+    59,
+    99,
+    48,
+    95,
+    132,
+    112,
+    235,
+    36,
+    42,
+    161,
+    133,
+    230,
+    241,
+    33,
+    44,
+    166,
+    237,
     56,
-    137,
-    192,
-    143,
-    255,
-    188,
-    175,
-    135,
-    196,
-    206,
-    18,
-    120,
-    57,
-    188,
-    228,
-    71,
-    160,
-    137,
+    70,
+    204,
+    112,
+    110,
+    219,
+    138,
+    151,
+    60,
+    191,
+    147,
+    140,
 ]);
 
 /// Build fast, reward everyone, and scale without friction
@@ -196,7 +200,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
@@ -263,7 +267,7 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
             bootstrap(&mut substate_db, &scrypto_interpreter);
 
@@ -343,14 +347,14 @@ pub fn get_signing_keys(
 }
 
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectState.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")
@@ -376,7 +380,7 @@ pub fn export_blueprint_schema(
 }
 
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
@@ -404,22 +408,22 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, blueprint_name, local_type_index) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
-                SysModuleId::AccessRules => (
+                ObjectModuleId::AccessRules => (
                     ACCESS_RULES_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::Royalty => (
+                ObjectModuleId::Royalty => (
                     ROYALTY_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::Metadata => (
+                ObjectModuleId::Metadata => (
                     METADATA_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                SysModuleId::ObjectState => {
+                ObjectModuleId::SELF => {
                     let substate = substate_db
                         .get_substate(
                             node_id,
@@ -435,10 +439,11 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) => return None,
+                        TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                            return None
+                        }
                     }
                 }
-                SysModuleId::TypeInfo => return None,
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
@@ -451,7 +456,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let substate = substate_db
         .get_substate(
             package_address.as_node_id(),
-            SysModuleId::ObjectState.into(),
+            SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
         )
         .expect("Database misconfigured")

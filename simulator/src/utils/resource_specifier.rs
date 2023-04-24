@@ -157,7 +157,7 @@ mod test {
     pub fn parsing_of_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje:900";
+            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:900";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act
@@ -172,7 +172,7 @@ mod test {
                 900.into(),
                 ResourceAddress::try_from_bech32(
                     &bech32_decoder,
-                    "resource_sim1qgyx3fwettpx9pwkgnxapfx6f8u87vdven8h6ptkwj2sfvqsje"
+                    "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp"
                 )
                 .unwrap()
             )
@@ -183,7 +183,7 @@ mod test {
     pub fn parsing_of_single_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq056vhf:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c]";
+            "resource_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwh8wx0:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c]";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act
@@ -210,7 +210,7 @@ mod test {
     pub fn parsing_of_multiple_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq056vhf:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c],[d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d],[005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7]";
+            "resource_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwh8wx0:[1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c],[d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d],[005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7]";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act

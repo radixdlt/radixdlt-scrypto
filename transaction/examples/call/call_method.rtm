@@ -1,5 +1,5 @@
 CALL_METHOD
-    Address("account_sim1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqsp82e9v")
+    Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt")
     "complicated_method"
     Decimal("1")
     PreciseDecimal("2");

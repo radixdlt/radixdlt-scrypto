@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_init::NodeInit;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
@@ -22,17 +21,17 @@ pub enum ComposedProof {
     NonFungible(ProofInfoSubstate, NonFungibleProof),
 }
 
-impl From<ComposedProof> for NodeInit {
+impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
-            ComposedProof::Fungible(info, proof) => NodeInit::Object(btreemap!(
+            ComposedProof::Fungible(info, proof) => btreemap!(
                 ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
                 ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
-            )),
-            ComposedProof::NonFungible(info, proof) => NodeInit::Object(btreemap!(
+            ),
+            ComposedProof::NonFungible(info, proof) => btreemap!(
                 ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
                 ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
-            )),
+            ),
         }
     }
 }
@@ -73,9 +72,13 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             proofs,
             resource_address,
             match amount {
-                Some(amount) => NonFungiblesSpecification::Some(
-                    amount.to_string().parse().expect("Amount checked upfront"),
-                ),
+                Some(amount) => {
+                    NonFungiblesSpecification::Some(amount.to_string().parse().map_err(|_| {
+                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                            AuthZoneError::ComposeProofError(ComposeProofError::InvalidAmount),
+                        ))
+                    })?)
+                }
                 None => NonFungiblesSpecification::All,
             },
             api,
@@ -264,7 +267,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 api.call_method(
                     container.as_node_id(),
                     match container {
-                        LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                        LocalRef::Bucket(_) => FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                         LocalRef::Vault(_) => FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                     },
                     scrypto_args!(amount),
@@ -347,7 +350,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 api.call_method(
                     container.as_node_id(),
                     match container {
-                        LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                        LocalRef::Bucket(_) => NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                         LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     },
                     scrypto_args!(&ids),

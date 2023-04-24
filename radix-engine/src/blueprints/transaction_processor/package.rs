@@ -1,8 +1,7 @@
-use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
+use crate::errors::SystemUpstreamError;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -64,14 +63,14 @@ impl TransactionProcessorNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
                 TransactionProcessorBlueprint::run(input, api)
             }
-            _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
+            _ => Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }

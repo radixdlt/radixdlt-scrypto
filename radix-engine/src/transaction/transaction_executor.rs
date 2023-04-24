@@ -1,16 +1,16 @@
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::interpreters::ScryptoInterpreter;
-use crate::kernel::kernel::Kernel;
-use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::kernel::track::Track;
-use crate::system::kernel_modules::costing::*;
+use crate::kernel::kernel::KernelBoot;
+use crate::system::module_mixer::SystemModuleMixer;
+use crate::system::system_callback::SystemCallback;
+use crate::system::system_modules::costing::*;
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
+use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::{
@@ -117,7 +117,7 @@ where
     W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_interpreter: &'w ScryptoInterpreter<W>,
+    scrypto_vm: &'w ScryptoVm<W>,
 }
 
 impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
@@ -125,10 +125,10 @@ where
     S: SubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_db: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
+    pub fn new(substate_db: &'s S, scrypto_vm: &'w ScryptoVm<W>) -> Self {
         Self {
             substate_db,
-            scrypto_interpreter,
+            scrypto_vm,
         }
     }
 
@@ -188,49 +188,49 @@ where
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let modules = KernelModuleMixer::standard(
-            transaction_hash.clone(),
-            executable.auth_zone_params().clone(),
-            fee_reserve,
-            fee_table,
-            executable.payload_size(),
-            executable.auth_zone_params().initial_proofs.len(),
-            execution_config,
-        );
-        let mut kernel = Kernel::new(
-            &mut id_allocator,
-            &mut track,
-            self.scrypto_interpreter,
-            modules,
-        );
-        kernel.initialize().expect("Failed to initialize kernel");
+        let mut system = SystemCallback {
+            callback_obj: Vm {
+                scrypto_vm: self.scrypto_vm,
+            },
+            modules: SystemModuleMixer::standard(
+                transaction_hash.clone(),
+                executable.auth_zone_params().clone(),
+                fee_reserve,
+                fee_table,
+                executable.payload_size(),
+                executable.auth_zone_params().initial_proofs.len(),
+                execution_config,
+            ),
+        };
 
-        // Execute
-        let invoke_result = kernel.initialize().and_then(|_| {
-            kernel
-                .call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInput {
-                        transaction_hash: transaction_hash.clone(),
-                        runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                        instructions: Cow::Owned(
-                            manifest_encode(executable.instructions()).unwrap(),
-                        ),
-                        blobs: Cow::Borrowed(executable.blobs()),
-                        references: extract_refs_from_manifest(executable.instructions()),
-                    })
-                    .unwrap(),
-                )
-                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap())
-        });
+        let kernel_boot = KernelBoot {
+            id_allocator: &mut id_allocator,
+            callback: &mut system,
+            store: &mut track,
+        };
 
-        // Teardown
-        let (modules, invoke_result) = kernel.teardown(invoke_result);
-        let mut fee_reserve = modules.costing.fee_reserve();
-        let mut application_events = modules.events.events();
-        let application_logs = modules.logger.logs();
+        let invoke_result = kernel_boot
+            .call_function(
+                TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+                TRANSACTION_PROCESSOR_RUN_IDENT,
+                scrypto_encode(&TransactionProcessorRunInput {
+                    transaction_hash: transaction_hash.clone(),
+                    runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                    instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
+                    blobs: Cow::Borrowed(executable.blobs()),
+                    references: extract_refs_from_manifest(executable.instructions()),
+                })
+                .unwrap(),
+            )
+            .map(|rtn| {
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            });
+
+        let mut fee_reserve = system.modules.costing.fee_reserve();
+        let mut application_events = system.modules.events.events();
+        let application_logs = system.modules.logger.logs();
 
         // Finalize
         let result_type = determine_result_type(invoke_result, &mut fee_reserve);
@@ -251,12 +251,12 @@ where
                     distribute_fees(&mut track, fee_reserve, is_success);
 
                 // Finalize track
-                let state_updates = track.finalize();
+                let tracked_nodes = track.finalize();
                 let state_update_summary =
-                    StateUpdateSummary::new(self.substate_db, &state_updates);
+                    StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates,
+                    state_updates: to_state_updates(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -275,7 +275,11 @@ where
                 TransactionResult::Abort(AbortResult { reason: error })
             }
         };
-        let execution_trace = modules.execution_trace.finalize(&transaction_result);
+        let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
+        let execution_metrics = system
+            .modules
+            .transaction_limits
+            .finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -289,62 +293,98 @@ where
         let receipt = TransactionReceipt {
             result: transaction_result,
             execution_trace,
+            execution_metrics,
             resources_usage,
         };
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
-            match &receipt.result {
-                TransactionResult::Commit(commit) => {
-                    println!("{:-^80}", "Cost Analysis");
-                    let break_down = commit
-                        .fee_summary
-                        .execution_cost_breakdown
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v))
-                        .collect::<BTreeMap<String, &u32>>();
-                    for (k, v) in break_down {
-                        println!("{:<30}: {:>10}", k, v);
-                    }
-
-                    println!("{:-^80}", "Cost Totals");
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
-                    );
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Cost Unit Limit", commit.fee_summary.cost_unit_limit
-                    );
-                    // NB - we use "to_string" to ensure they align correctly
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Execution XRD",
-                        commit.fee_summary.total_execution_cost_xrd.to_string()
-                    );
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Royalty XRD",
-                        commit.fee_summary.total_royalty_cost_xrd.to_string()
-                    );
-                    println!("{:-^80}", "Application Logs");
-                    for (level, message) in &commit.application_logs {
-                        println!("[{}] {}", level, message);
-                    }
-                }
-                TransactionResult::Reject(e) => {
-                    println!("{:-^80}", "Transaction Rejected");
-                    println!("{:?}", e.error);
-                }
-                TransactionResult::Abort(e) => {
-                    println!("{:-^80}", "Transaction Aborted");
-                    println!("{:?}", e);
-                }
-            }
-            println!("{:-^80}", "Finish");
+            TransactionExecutor::<S, W>::print_execution_summary(&receipt);
         }
 
         receipt
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn print_execution_summary(receipt: &TransactionReceipt) {
+        match &receipt.result {
+            TransactionResult::Commit(commit) => {
+                println!("{:-^80}", "Cost Analysis");
+                let break_down = commit
+                    .fee_summary
+                    .execution_cost_breakdown
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v))
+                    .collect::<BTreeMap<String, &u32>>();
+                for (k, v) in break_down {
+                    println!("{:<30}: {:>10}", k, v);
+                }
+
+                println!("{:-^80}", "Cost Totals");
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Royalty Units Consumed", commit.fee_summary.royalty_cost_sum
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                );
+                // NB - we use "to_string" to ensure they align correctly
+                println!(
+                    "{:<30}: {:>10}",
+                    "Execution XRD",
+                    commit.fee_summary.total_execution_cost_xrd.to_string()
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Royalty XRD",
+                    commit.fee_summary.total_royalty_cost_xrd.to_string()
+                );
+                println!("{:-^80}", "Execution Metrics");
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Substate Read Bytes", receipt.execution_metrics.substate_read_size
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Substate Write Bytes", receipt.execution_metrics.substate_write_size
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Substate Read Count", receipt.execution_metrics.substate_read_count
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Substate Write Count", receipt.execution_metrics.substate_write_count
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Peak WASM Memory Usage Bytes", receipt.execution_metrics.max_wasm_memory_used
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Max Invoke Payload Size Bytes",
+                    receipt.execution_metrics.max_invoke_payload_size
+                );
+                println!("{:-^80}", "Application Logs");
+                for (level, message) in &commit.application_logs {
+                    println!("[{}] {}", level, message);
+                }
+            }
+            TransactionResult::Reject(e) => {
+                println!("{:-^80}", "Transaction Rejected");
+                println!("{:?}", e.error);
+            }
+            TransactionResult::Abort(e) => {
+                println!("{:-^80}", "Transaction Aborted");
+                println!("{:?}", e);
+            }
+        }
+        println!("{:-^80}", "Finish");
     }
 }
 
@@ -353,7 +393,7 @@ pub fn execute_and_commit_transaction<
     W: WasmEngine,
 >(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
@@ -375,7 +415,7 @@ pub fn execute_and_commit_transaction<
 
 pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
+    scrypto_interpreter: &ScryptoVm<W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
@@ -460,15 +500,15 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees(
-    track: &mut Track,
+fn distribute_fees<S: SubstateDatabase>(
+    track: &mut Track<S>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,
 ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
     // Distribute royalty
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
-        let module_id = SysModuleId::ObjectState;
+        let module_id = SysModuleId::Object;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
         let handle = track
             .acquire_lock(
@@ -508,7 +548,7 @@ fn distribute_fees(
         let handle = track
             .acquire_lock(
                 &vault_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

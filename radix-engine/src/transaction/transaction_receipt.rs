@@ -1,13 +1,14 @@
 use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::execution_trace::{
+use crate::system::system_modules::costing::FeeSummary;
+use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
@@ -36,6 +37,28 @@ impl TransactionExecutionTrace {
         }
         aggregator
     }
+}
+
+/// Metrics gathered during transaction execution.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub struct ExecutionMetrics {
+    /// Consumed cost units (excluding royalties)
+    pub execution_cost_units_consumed: usize,
+    /// Consumed royalties cost units
+    pub royalties_cost_units_consumed: usize,
+    /// Total substate read size in bytes.
+    pub substate_read_size: usize,
+    /// Substate read count.
+    pub substate_read_count: usize,
+    /// Total substate write size in bytes.
+    pub substate_write_size: usize,
+    /// Substate write count.
+    pub substate_write_count: usize,
+    /// Peak WASM memory usage during transactino execution.
+    /// This is the highest sum of all nested WASM instances.
+    pub max_wasm_memory_used: usize,
+    /// The highest invoke payload size during transaction execution.
+    pub max_invoke_payload_size: usize,
 }
 
 /// Captures whether a transaction should be committed, and its other results
@@ -71,8 +94,8 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
-                Emitter::Function(node_id, SysModuleId::ObjectState, ..)
-                | Emitter::Method(node_id, SysModuleId::ObjectState),
+                Emitter::Function(node_id, ObjectModuleId::SELF, ..)
+                | Emitter::Method(node_id, ObjectModuleId::SELF),
                 ..,
             ) = event_type_id
             {
@@ -148,6 +171,13 @@ impl TransactionOutcome {
         }
     }
 
+    pub fn expect_failure(&self) -> &RuntimeError {
+        match self {
+            TransactionOutcome::Success(_) => panic!("Outcome was an unexpected success"),
+            TransactionOutcome::Failure(error) => error,
+        }
+    }
+
     pub fn success_or_else<E, F: Fn(&RuntimeError) -> E>(
         &self,
         f: F,
@@ -180,6 +210,8 @@ pub struct TransactionReceipt {
     pub result: TransactionResult,
     /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
     pub execution_trace: TransactionExecutionTrace,
+    /// Metrics gathered during transaction execution.
+    pub execution_metrics: ExecutionMetrics,
     /// Optional resource usage trace, controlled by feature flag `resources_usage`.
     pub resources_usage: ResourcesUsage,
 }

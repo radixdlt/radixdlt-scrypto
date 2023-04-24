@@ -15,9 +15,11 @@ use utils::ContextualDisplay;
 pub struct NodeId(pub [u8; Self::LENGTH]);
 
 impl NodeId {
-    pub const LENGTH: usize = 27;
+    pub const ENTITY_ID_LENGTH: usize = 1;
+    pub const UUID_LENGTH: usize = 29;
+    pub const LENGTH: usize = Self::ENTITY_ID_LENGTH + Self::UUID_LENGTH;
 
-    pub fn new(entity_byte: u8, random_bytes: &[u8; Self::LENGTH - 1]) -> Self {
+    pub fn new(entity_byte: u8, random_bytes: &[u8; Self::UUID_LENGTH]) -> Self {
         let mut buf = [0u8; Self::LENGTH];
         buf[0] = entity_byte;
         buf[1..random_bytes.len() + 1].copy_from_slice(random_bytes);
@@ -209,6 +211,16 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct ModuleId(pub u8);
+
+impl ModuleId {
+    // TODO: Need a better way to configure this
+    pub fn virtualize_substates(&self) -> bool {
+        match self.0 {
+            1u8 | 5u8 => true,
+            _ => false,
+        }
+    }
+}
 
 /// The unique identifier of a substate within a node module.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]

@@ -12,6 +12,7 @@ DFLT_COMMAND=simple
 DFLT_SUBCOMMAND=run
 DFLT_RUN_CMD_ARG=inf
 DFLT_TARGET=transaction
+DFLT_TIMEOUT=1000
 
 function usage() {
     echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [COMMAND-ARGS]"
@@ -41,6 +42,8 @@ function usage() {
     echo "        raw         - Do not process generated data"
     echo "        unique      - Make the input data unique"
     echo "        minimize    - Minimize the input data"
+    echo "  Args:"
+    echo "        timeout     - timeout in ms"
     echo "Examples:"
     echo "  - build AFL fuzz tests"
     echo "    $0 afl build"
@@ -146,6 +149,8 @@ function fuzzer_simple() {
 function generate_input() {
     # available modes: raw, unique, minimize
     local mode=${1:-minimize}
+    local timeout=${2:-$DFLT_TIMEOUT}
+
     if [ $target = "transaction" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
@@ -160,18 +165,28 @@ function generate_input() {
         mkdir -p $raw_dir $cmin_dir $final_dir
 
         pushd ..
-        # Collect input data
-        cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
-        popd
-        if [ $mode = "raw" ] ; then
-            mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
-            return
+        if [ "$(ls -A ${curr_path}/${raw_dir})" ] ; then
+            echo "raw dir is not empty, skipping generation"
+            popd
+            if [ $mode = "raw" ] ; then
+                find ${curr_path}/${raw_dir} -type f -name "*" | xargs  -I {} mv {} ${curr_path}/${final_dir}
+                return
+            fi
+
+        else
+            # Collect input data
+            cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
+            popd
+            if [ $mode = "raw" ] ; then
+                mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
+                return
+            fi
+
+            mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
         fi
 
-        mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
-
         # Make the input corpus unique
-        cargo afl cmin -i $raw_dir -o $cmin_dir -- target-afl/release/${target} 2>&1 | tee afl_cmin.log
+        cargo afl cmin -t $timeout -i $raw_dir -o $cmin_dir -- target-afl/release/${target} 2>&1 | tee afl_cmin.log
         if [ $mode = "unique" ] ; then
             mv $cmin_dir/* $final_dir
             return
@@ -184,12 +199,13 @@ function generate_input() {
         pushd $cmin_dir
         # Filter out the files not greater than 100k to reduce minimizing duration
         if which parallel && parallel --version | grep -q 'GNU parallel' ; then
-            # parallel is nicer because is serializes output from commands in parallel
-            find . -type f -size -100k | parallel -- \
-                cargo afl tmin -i "{}" -o "${curr_path}/${final_dir}/{/}" -- ${curr_path}/target-afl/release/${target}
+            # parallel is nicer because is serializes output from commands in parallel.
+            # "halt now,fail=1" - exit when any job has failed. Kill other running jobs
+            find . -type f -size -100k | parallel --halt now,fail=1 -- \
+                cargo afl tmin -t $timeout -i "{}" -o "${curr_path}/${final_dir}/{/}" -- ${curr_path}/target-afl/release/${target}
         else
             find . -type f -size -100k | xargs -P 8 -I {} \
-                cargo afl tmin -i "{}" -o "${curr_path}/${final_dir}/{}" -- ${curr_path}/target-afl/release/${target}
+                cargo afl tmin -t $timeout -i "{}" -o "${curr_path}/${final_dir}/{}" -- ${curr_path}/target-afl/release/${target}
         fi
         popd
     else

@@ -1,9 +1,9 @@
 use radix_engine::{
     errors::{ModuleError, RejectionError, RuntimeError},
-    system::kernel_modules::transaction_limits::TransactionLimitsError,
+    system::system_modules::transaction_limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
-    wasm::WASM_MEMORY_PAGE_SIZE,
+    vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
 use radix_engine_interface::{blueprints::resource::*, schema::PackageSchema};
 use scrypto_unit::*;
@@ -89,7 +89,7 @@ fn transaction_limit_memory_exceeded() {
 }
 
 #[test]
-fn transaction_limit_exceeded_substate_reads_should_fail() {
+fn transaction_limit_exceeded_substate_read_count_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
@@ -126,7 +126,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
 }
 
 #[test]
-fn transaction_limit_exceeded_substate_writes_should_fail() {
+fn transaction_limit_exceeded_substate_write_count_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
@@ -160,6 +160,81 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
             ))
         )
     });
+}
+
+#[test]
+fn transaction_limit_exceeded_substate_read_size_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "read_kv_stores",
+            manifest_args!(100u32),
+        )
+        .build();
+
+    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
+    let executable = transactions.get_executable(btreeset![]);
+    let fee_config = FeeReserveConfig::default();
+    let mut execution_config = ExecutionConfig::default();
+    // Setting maximum substate size to small value to activate transaction limit
+    execution_config.max_substate_size = 10;
+    execution_config.kernel_trace = true;
+    let receipt =
+        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
+
+    // Assert
+    receipt.expect_specific_rejection(|e| match e {
+        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
+            ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
+            ),
+        )) => *size > execution_config.max_substate_size,
+        _ => false,
+    });
+}
+
+#[test]
+fn transaction_limit_exceeded_substate_write_size_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+
+    const SIZE: u32 = 5000;
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_function(
+            package_address,
+            "TransactionLimitSubstateTest",
+            "write_large_value",
+            manifest_args!(SIZE),
+        )
+        .build();
+
+    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
+    let executable = transactions.get_executable(btreeset![]);
+    let fee_config = FeeReserveConfig::default();
+    let mut execution_config = ExecutionConfig::default();
+    execution_config.max_substate_size = SIZE as usize + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
+    execution_config.kernel_trace = true;
+    let receipt =
+        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxSubstateWriteSizeExceeded(x),
+        )) => *x == SIZE as usize + 8, /* SBOR prefix */
+        _ => false,
+    })
 }
 
 #[test]

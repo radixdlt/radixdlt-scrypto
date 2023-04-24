@@ -1,10 +1,10 @@
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
@@ -20,7 +20,7 @@ use transaction::validation::{
 
 struct TransactionFuzzer {
     rng: ChaCha8Rng,
-    scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
     faucet_component: ComponentAddress,
 }
@@ -29,7 +29,7 @@ impl TransactionFuzzer {
     fn new() -> Self {
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
-        let scrypto_interpreter = ScryptoInterpreter {
+        let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::V0,

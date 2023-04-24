@@ -5,12 +5,12 @@ use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_stores::interface::StateUpdate;
-use radix_engine_stores::interface::{StateUpdates, SubstateDatabase};
+use radix_engine_stores::interface::SubstateDatabase;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::TrackedNode;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -25,26 +25,30 @@ pub struct StateUpdateSummary {
 }
 
 impl StateUpdateSummary {
-    pub fn new<S: SubstateDatabase>(substate_db: &S, state_updates: &StateUpdates) -> Self {
+    pub fn new<S: SubstateDatabase>(
+        substate_db: &S,
+        updates: &IndexMap<NodeId, TrackedNode>,
+    ) -> Self {
         let mut new_packages = index_set_new();
         let mut new_components = index_set_new();
         let mut new_resources = index_set_new();
-        for (k, u) in &state_updates.substate_changes {
-            if let StateUpdate::Create(_) = u {
-                if k.0.is_global_package() {
-                    new_packages.insert(PackageAddress::new_unchecked(k.0.into()));
+
+        for (node_id, tracked) in updates {
+            if tracked.is_new {
+                if node_id.is_global_package() {
+                    new_packages.insert(PackageAddress::new_unchecked(node_id.0));
                 }
-                if k.0.is_global_component() {
-                    new_components.insert(ComponentAddress::new_unchecked(k.0.into()));
+                if node_id.is_global_component() {
+                    new_components.insert(ComponentAddress::new_unchecked(node_id.0));
                 }
-                if k.0.is_global_resource() {
-                    new_resources.insert(ResourceAddress::new_unchecked(k.0.into()));
+                if node_id.is_global_resource() {
+                    new_resources.insert(ResourceAddress::new_unchecked(node_id.0));
                 }
             }
         }
 
         let (balance_changes, direct_vault_updates) =
-            BalanceAccounter::new(substate_db, &state_updates).run();
+            BalanceAccounter::new(substate_db, &updates).run();
 
         StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
@@ -89,35 +93,19 @@ impl BalanceChange {
 /// Note that the implementation below assumes that substate owned objects can not be
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
-pub struct BalanceAccounter<'a, 'b> {
+pub struct BalanceAccounter<'a> {
     substate_db: &'a dyn SubstateDatabase,
-    state_updates_indexed: IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>>,
+    updates: &'a IndexMap<NodeId, TrackedNode>, //IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>>,
 }
 
-impl<'a, 'b> BalanceAccounter<'a, 'b> {
-    pub fn new(substate_db: &'a dyn SubstateDatabase, state_updates: &'b StateUpdates) -> Self {
-        let mut state_updates_indexed: IndexMap<
-            NodeId,
-            IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>,
-        > = index_map_new();
-        for ((node_id, module_id, substate_key), change) in &state_updates.substate_changes {
-            state_updates_indexed
-                .entry(*node_id)
-                .or_default()
-                .entry(*module_id)
-                .or_default()
-                .insert(
-                    substate_key.clone(),
-                    match &change {
-                        StateUpdate::Update(substate_value, ..) => substate_value,
-                        StateUpdate::Create(substate_value) => substate_value,
-                    },
-                );
-        }
-
+impl<'a> BalanceAccounter<'a> {
+    pub fn new(
+        substate_db: &'a dyn SubstateDatabase,
+        updates: &'a IndexMap<NodeId, TrackedNode>,
+    ) -> Self {
         Self {
             substate_db,
-            state_updates_indexed,
+            updates,
         }
     }
 
@@ -132,7 +120,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             index_map_new();
         let mut accounted_vaults = index_set_new();
 
-        self.state_updates_indexed
+        self.updates
             .keys()
             .filter_map(|x| GlobalAddress::try_from(x.as_ref()).ok())
             .for_each(|root| {
@@ -144,7 +132,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 )
             });
 
-        self.state_updates_indexed
+        self.updates
             .keys()
             .filter(|x| x.is_internal_vault() && !accounted_vaults.contains(*x))
             .for_each(|vault_node_id| {
@@ -213,7 +201,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
         root: &GlobalAddress,
         current_node: &NodeId,
     ) -> () {
-        if let Some(modules) = self.state_updates_indexed.get(current_node) {
+        if let Some(tracked_node) = self.updates.get(current_node) {
             if current_node.is_internal_vault() {
                 accounted_vaults.insert(current_node.clone());
 
@@ -246,17 +234,17 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for (_module_id, module_substates) in modules {
-                    for (_substate_key, update) in module_substates {
-                        let substate_value = IndexedScryptoValue::from_slice(update.as_ref())
-                            .expect("Failed to decode substate");
-                        for own in substate_value.owned_node_ids() {
-                            self.traverse_state_updates(
-                                balance_changes,
-                                accounted_vaults,
-                                root,
-                                own,
-                            );
+                for (_module_id, tracked_module) in &tracked_node.modules {
+                    for (_substate_key, tracked_key) in tracked_module {
+                        if let Some(value) = tracked_key.get_substate() {
+                            for own in value.owned_node_ids() {
+                                self.traverse_state_updates(
+                                    balance_changes,
+                                    accounted_vaults,
+                                    root,
+                                    own,
+                                );
+                            }
                         }
                     }
                 }
@@ -291,12 +279,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    SysModuleId::ObjectState.into(),
+                    SysModuleId::Object.into(),
                     &FungibleVaultOffset::LiquidFungible.into(),
                 );
 
@@ -319,12 +307,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
             // If there is an update to the liquid resource
             if let Some(substate) = self.fetch_substate_from_state_updates(
                 node_id,
-                SysModuleId::ObjectState.into(),
+                SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             ) {
                 let old_substate = self.fetch_substate_from_database(
                     node_id,
-                    SysModuleId::ObjectState.into(),
+                    SysModuleId::Object.into(),
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 );
 
@@ -363,7 +351,7 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
         // - Track does not store the initial value of substate.
 
         self.fetch_substate_from_state_updates(node_id, module_id, substate_key)
-            .map(|x| x.clone())
+            .map(|x| x.to_vec())
             .or_else(|| self.fetch_substate_from_database(node_id, module_id, substate_key))
     }
 
@@ -383,11 +371,12 @@ impl<'a, 'b> BalanceAccounter<'a, 'b> {
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
-    ) -> Option<&Vec<u8>> {
-        self.state_updates_indexed
+    ) -> Option<&[u8]> {
+        self.updates
             .get(node_id)
-            .and_then(|x| x.get(&module_id))
-            .and_then(|x| x.get(substate_key).cloned())
+            .and_then(|tracked_node| tracked_node.modules.get(&module_id))
+            .and_then(|tracked_module| tracked_module.get(substate_key))
+            .and_then(|tracked_key| tracked_key.get_substate().map(|e| e.as_slice()))
     }
 }
 

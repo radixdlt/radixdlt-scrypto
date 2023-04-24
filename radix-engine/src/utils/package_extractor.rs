@@ -2,10 +2,10 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 
 use crate::errors::InvokeError;
-use crate::kernel::interpreters::NopWasmRuntime;
-use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
+use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
-use crate::wasm::*;
+use crate::vm::wasm::*;
+use crate::vm::NopWasmRuntime;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {
@@ -25,7 +25,7 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
     let wasm_engine = DefaultWasmEngine::default();
     let wasm_instrumenter = WasmInstrumenter::default();
     let instrumented_code = wasm_instrumenter.instrument(
-        PackageAddress::new_unchecked([0u8; 27]),
+        PackageAddress::new_unchecked([0u8; NodeId::LENGTH]),
         code,
         WasmMeteringConfig::V0,
     );

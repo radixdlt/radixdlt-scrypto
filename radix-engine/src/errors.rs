@@ -8,20 +8,22 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::actor::{Actor, ExecutionMode};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{
-    LockSubstateError, MoveError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
+    CallFrameRemoveSubstateError, CallFrameSetSubstateError, LockSubstateError, MoveError,
+    ReadSubstateError, ScanSortedSubstatesError, UnlockSubstateError, WriteSubstateError,
 };
-use crate::system::kernel_modules::auth::AuthError;
-use crate::system::kernel_modules::costing::CostingError;
-use crate::system::kernel_modules::events::EventError;
-use crate::system::kernel_modules::node_move::NodeMoveError;
-use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::system_modules::auth::AuthError;
+use crate::system::system_modules::costing::CostingError;
+use crate::system::system_modules::events::EventError;
+use crate::system::system_modules::node_move::NodeMoveError;
+use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
-use crate::wasm::WasmRuntimeError;
+use crate::vm::wasm::WasmRuntimeError;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::substate_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -66,7 +68,10 @@ pub enum RuntimeError {
     SystemError(SystemError),
 
     /// TODO: merge with `ModuleError`/`ApplicationError`
-    InterpreterError(InterpreterError),
+    SystemUpstreamError(SystemUpstreamError),
+
+    /// An error occurred in the vm layer
+    VmError(VmError),
 
     /// An error occurred within a kernel module.
     ModuleError(ModuleError),
@@ -89,9 +94,9 @@ impl From<KernelError> for RuntimeError {
     }
 }
 
-impl From<InterpreterError> for RuntimeError {
-    fn from(error: InterpreterError) -> Self {
-        RuntimeError::InterpreterError(error.into())
+impl From<SystemUpstreamError> for RuntimeError {
+    fn from(error: SystemUpstreamError) -> Self {
+        RuntimeError::SystemUpstreamError(error.into())
     }
 }
 
@@ -111,8 +116,9 @@ impl CanBeAbortion for RuntimeError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             RuntimeError::KernelError(err) => err.abortion(),
+            RuntimeError::VmError(_) => None,
             RuntimeError::SystemError(_) => None,
-            RuntimeError::InterpreterError(_) => None,
+            RuntimeError::SystemUpstreamError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
@@ -121,14 +127,11 @@ impl CanBeAbortion for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KernelError {
-    // Execution mode
-    InvalidModeTransition(ExecutionMode, ExecutionMode),
-
     // Call frame
     CallFrameError(CallFrameError),
 
     /// Interpreter
-    InterpreterError(InterpreterError),
+    InterpreterError(SystemUpstreamError),
     WasmRuntimeError(WasmRuntimeError),
 
     // ID allocation
@@ -151,7 +154,6 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropNodeAccess {
-    pub mode: ExecutionMode,
     pub actor: Actor,
     pub node_id: NodeId,
     pub package_address: PackageAddress,
@@ -160,7 +162,6 @@ pub struct InvalidDropNodeAccess {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidSubstateAccess {
-    pub mode: ExecutionMode,
     pub actor: Actor,
     pub node_id: NodeId,
     pub substate_key: SubstateKey,
@@ -188,6 +189,9 @@ pub enum CallFrameError {
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
+    ScanSortedSubstatesError(ScanSortedSubstatesError),
+    SetSubstatesError(CallFrameSetSubstateError),
+    RemoveSubstatesError(CallFrameRemoveSubstateError),
     MoveError(MoveError),
 }
 
@@ -196,17 +200,45 @@ pub enum SystemError {
     GlobalAddressDoesNotExist,
     NotAnObject,
     NotAKeyValueStore,
+    NotASortedStore,
+    CannotStoreOwnedInIterable,
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
+    MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     SubstateValidationError(Box<SubstateValidationError>),
     AssertAccessRuleFailed,
+    CallMethodOnKeyValueStore,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemUpstreamError {
+    InvalidSystemCall,
+
+    NativeUnexpectedReceiver(String),
+    NativeExpectedReceiver(String),
+    NativeExportDoesNotExist(String),
+    NativeInvalidCodeId(u8),
+
+    BlueprintNotFound(Blueprint),
+    FunctionNotFound(String),
+    ReceiverNotMatch(String),
+    InputSchemaNotMatch(String, String),
+    InputDecodeError(DecodeError),
+
+    OutputDecodeError(DecodeError),
+    OutputSchemaNotMatch(String, String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum VmError {
+    InvalidCode,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -214,26 +246,6 @@ pub enum SubstateValidationError {
     BlueprintNotFound(String),
     WrongNumberOfSubstates(String, usize, usize),
     SchemaValidationError(String, String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum InterpreterError {
-    InvalidSystemCall,
-    CallMethodOnKeyValueStore,
-
-    NativeUnexpectedReceiver(String),
-    NativeExpectedReceiver(String),
-    NativeExportDoesNotExist(String),
-    NativeInvalidCodeId(u8),
-
-    ScryptoBlueprintNotFound(Blueprint),
-    ScryptoFunctionNotFound(String),
-    ScryptoReceiverNotMatch(String),
-    ScryptoInputSchemaNotMatch(String, String),
-    ScryptoInputDecodeError(DecodeError),
-
-    ScryptoOutputDecodeError(DecodeError),
-    ScryptoOutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -251,7 +263,7 @@ pub struct InvalidModuleType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub NodeId, pub BTreeSet<SysModuleId>);
+pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
 
 impl CanBeAbortion for ModuleError {
     fn abortion(&self) -> Option<&AbortReason> {

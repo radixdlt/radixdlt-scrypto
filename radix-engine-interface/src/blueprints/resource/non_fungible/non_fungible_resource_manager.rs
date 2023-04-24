@@ -57,7 +57,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub resource_address: [u8; 27], // TODO: Clean this up
+    pub resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
 }
 
 pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;
@@ -139,6 +139,17 @@ pub struct NonFungibleResourceManagerMintSingleUuidInput {
     pub entry: ScryptoValue,
 }
 pub type NonFungibleResourceManagerMintSingleUuidOutput = (Bucket, NonFungibleLocalId);
+
+// Protected
+
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerCreateBucketInput {
+    pub entries: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleResourceManagerCreateBucketOutput = Bucket;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct NonFungibleDataSchema {

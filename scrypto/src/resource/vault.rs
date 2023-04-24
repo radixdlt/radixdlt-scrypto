@@ -66,8 +66,8 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 resource_address.as_node_id(),
-                RESOURCE_MANAGER_CREATE_VAULT_IDENT,
-                scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
+                RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+                scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

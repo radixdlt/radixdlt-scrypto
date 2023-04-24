@@ -1,3 +1,4 @@
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageSetRoyaltyConfigInput, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
@@ -23,7 +24,7 @@ impl BorrowedPackage {
     {
         api.call_module_method(
             self.0.as_node_id(),
-            SysModuleId::ObjectState,
+            ObjectModuleId::SELF,
             PACKAGE_SET_ROYALTY_CONFIG_IDENT,
             scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
         )?;

@@ -1,3 +1,4 @@
+use crate::api::ObjectModuleId;
 use crate::blueprints::resource::MethodKey;
 use crate::types::*;
 use crate::*;
@@ -5,19 +6,8 @@ use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
 
-// TODO: Remove
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum InvocationDebugIdentifier {
-    Function(FunctionIdentifier),
-    Method(MethodIdentifier),
-    VirtualLazyLoad,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodReceiver(pub NodeId, pub SysModuleId);
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodIdentifier(pub NodeId, pub SysModuleId, pub String);
+pub struct MethodIdentifier(pub NodeId, pub ObjectModuleId, pub String);
 
 impl MethodIdentifier {
     pub fn method_key(&self) -> MethodKey {
@@ -109,41 +99,4 @@ impl FnIdentifier {
 pub struct FunctionInvocation {
     pub identifier: FunctionIdentifier,
     pub args: Vec<u8>,
-}
-
-impl Invocation for FunctionInvocation {
-    type Output = IndexedScryptoValue;
-
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Function(self.identifier.clone())
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodInvocation {
-    pub identifier: MethodIdentifier,
-    pub args: Vec<u8>,
-}
-
-impl Invocation for MethodInvocation {
-    type Output = IndexedScryptoValue;
-
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Method(self.identifier.clone())
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VirtualLazyLoadInvocation {
-    pub blueprint: Blueprint,
-    pub virtual_func_id: u8,
-    pub args: [u8; 26],
-}
-
-impl Invocation for VirtualLazyLoadInvocation {
-    type Output = IndexedScryptoValue;
-
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::VirtualLazyLoad
-    }
 }

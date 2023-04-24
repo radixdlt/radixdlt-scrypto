@@ -24,10 +24,11 @@ use strum::{EnumIter, FromRepr};
 )]
 pub enum SysModuleId {
     TypeInfo,
-    ObjectState,
     Metadata,
     Royalty,
     AccessRules,
+    Object,
+    VirtualizedObject,
 }
 
 impl Into<ModuleId> for SysModuleId {
@@ -98,7 +99,7 @@ pub enum NonFungibleVaultOffset {
 pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
-    PreparingValidatorSet,
+    RegisteredValidatorSet,
 }
 
 #[repr(u8)]

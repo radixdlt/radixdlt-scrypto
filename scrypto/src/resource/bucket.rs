@@ -1,7 +1,7 @@
+use crate::borrow_resource_manager;
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -41,41 +41,27 @@ impl ScryptoBucket for Bucket {
         let rtn = env
             .call_method(
                 resource_address.as_node_id(),
-                RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-                scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+                RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+                scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
     fn drop_empty(self) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_function(
-                RESOURCE_MANAGER_PACKAGE,
-                BUCKET_BLUEPRINT,
-                BUCKET_DROP_EMPTY_IDENT,
-                scrypto_encode(&BucketDropEmptyInput {
-                    bucket: Bucket(self.0),
-                })
-                .unwrap(),
+        let resource_address = self.resource_address();
+        ScryptoEnv
+            .call_method(
+                resource_address.as_node_id(),
+                RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
+                scrypto_encode(&ResourceManagerDropEmptyBucketInput { bucket: self }).unwrap(),
             )
             .unwrap();
     }
 
     fn burn(self) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_function(
-                RESOURCE_MANAGER_PACKAGE,
-                BUCKET_BLUEPRINT,
-                BUCKET_BURN_IDENT,
-                scrypto_encode(&ResourceManagerBurnInput {
-                    bucket: Bucket(self.0),
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let resource_address = self.resource_address();
+        borrow_resource_manager!(resource_address).burn(self);
     }
 
     fn create_proof(&self) -> Proof {
@@ -122,7 +108,7 @@ impl ScryptoBucket for Bucket {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                BUCKET_TAKE_NON_FUNGIBLES_IDENT,
+                NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&BucketTakeNonFungiblesInput {
                     ids: non_fungible_local_ids.clone(),
                 })
@@ -149,7 +135,7 @@ impl ScryptoBucket for Bucket {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
             )
             .unwrap();

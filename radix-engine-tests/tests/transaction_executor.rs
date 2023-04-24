@@ -1,11 +1,11 @@
 use radix_engine::errors::RejectionError;
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::system::bootstrap::bootstrap;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::wasm::WasmInstrumenter;
-use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
+use radix_engine::vm::wasm::WasmInstrumenter;
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
+use radix_engine::vm::ScryptoVm;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
@@ -123,7 +123,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let mut scrypto_interpreter = ScryptoInterpreter {
+    let mut scrypto_interpreter = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
