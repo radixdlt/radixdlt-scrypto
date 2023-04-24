@@ -1,5 +1,5 @@
 use super::call_frame::{CallFrame, LockSubstateError, RefType};
-use super::heap::{Heap, HeapNode};
+use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
@@ -20,7 +20,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, SubstateStore};
+use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -106,7 +106,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) => {
+                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -255,8 +255,8 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<HeapNode, RuntimeError> {
+    #[trace_resources(log=node_id.entity_type())]
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
         let node = self
@@ -271,28 +271,31 @@ where
         Ok(node)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        // TODO: Add costing
+        M::on_allocate_node_id(Some(entity_type), false, self)?;
+
         let node_id = self.id_allocator.allocate_node_id(entity_type)?;
 
         Ok(node_id)
     }
 
-    #[trace_resources(log=node_id)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        M::on_allocate_node_id(node_id.entity_type(), true, self)?;
+
         self.id_allocator.allocate_virtual_node_id(node_id);
 
         Ok(())
     }
 
-    #[trace_resources(log=node_id)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
-        module_init: BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        M::before_create_node(&node_id, &module_init, self)?;
+        M::before_create_node(&node_id, &node_substates, self)?;
 
         let push_to_store = node_id.is_global();
 
@@ -300,7 +303,7 @@ where
         self.current_frame
             .create_node(
                 node_id,
-                module_init,
+                node_substates,
                 &mut self.heap,
                 self.store,
                 push_to_store,
@@ -319,24 +322,20 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources]
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
     }
 
-    #[trace_resources]
     fn kernel_get_callback(&mut self) -> &mut M {
         &mut self.callback
     }
 
-    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
         if let Some(actor) = &actor {
@@ -359,14 +358,12 @@ where
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_load_package_package_dependencies(&mut self) {
         self.current_frame
             .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     // TODO: Remove
-    #[trace_resources]
     fn kernel_load_common(&mut self) {
         self.current_frame
             .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
@@ -382,11 +379,10 @@ where
             .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
-    #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -405,7 +401,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::ObjectTuple,
+            SysModuleId::Object.into(),
             &BucketOffset::Info.into(),
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
@@ -416,7 +412,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::Object.into(),
                             &BucketOffset::LiquidFungible.into(),
                         )
                         .unwrap();
@@ -433,7 +429,7 @@ where
                         .heap
                         .get_substate(
                             bucket_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::Object.into(),
                             &BucketOffset::LiquidNonFungible.into(),
                         )
                         .unwrap();
@@ -451,11 +447,10 @@ where
         }
     }
 
-    #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            SysModuleId::TypeInfo,
+            SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -473,7 +468,7 @@ where
 
         if let Some(substate) = self.heap.get_substate(
             proof_id,
-            SysModuleId::ObjectTuple,
+            SysModuleId::Object.into(),
             &ProofOffset::Info.into(),
         ) {
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
@@ -484,7 +479,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::Object.into(),
                             &ProofOffset::Fungible.into(),
                         )
                         .unwrap();
@@ -502,7 +497,7 @@ where
                         .heap
                         .get_substate(
                             proof_id,
-                            SysModuleId::ObjectTuple,
+                            SysModuleId::Object.into(),
                             &ProofOffset::NonFungible.into(),
                         )
                         .unwrap();
@@ -527,11 +522,11 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log={*node_id}, log=module_id, log={substate_key.to_hex()})]
+    #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -586,7 +581,7 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = SysModuleId::ObjectTuple;
+                        let module_id = SysModuleId::Object;
                         let handle = self
                             .store
                             .acquire_lock(
@@ -606,7 +601,7 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                module_id,
+                                module_id.into(),
                                 substate_key,
                                 flags,
                             )
@@ -676,6 +671,7 @@ where
             .unwrap())
     }
 
+    #[trace_resources]
     fn kernel_write_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -686,6 +682,59 @@ where
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_set_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: SubstateKey,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.current_frame
+            .set_substate(
+                node_id,
+                module_id,
+                substate_key,
+                value,
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(CallFrameError::SetSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_remove_substate(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+        self.current_frame
+            .remove_substate(
+                node_id,
+                module_id,
+                &substate_key,
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(CallFrameError::RemoveSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_scan_sorted_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        count: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.current_frame
+            .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
+            .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }

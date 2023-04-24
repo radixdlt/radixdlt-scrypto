@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey, SysModuleId};
+use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -74,16 +74,22 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
 
     fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        node_type: &EntityType,
+        node_type: Option<EntityType>,
+        virtual_node: bool,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Allocating node id: type = {:?}", node_type);
+        log!(
+            api,
+            "Allocating node id: type = {:?}  virtual = {}",
+            node_type,
+            virtual_node
+        );
         Ok(())
     }
 
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Creating node: id = {:?}, type = {:?}",
@@ -106,7 +112,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
     fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &SysModuleId,
+        module_id: &ModuleId,
         offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

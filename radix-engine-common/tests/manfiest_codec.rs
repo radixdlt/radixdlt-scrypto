@@ -18,7 +18,7 @@ struct TestStruct {
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress(NodeId([0u8; 27])),
+        a: ManifestAddress(NodeId([0u8; NodeId::LENGTH])),
         d: ManifestBucket(4),
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,
@@ -35,8 +35,8 @@ fn test_encode_and_decode() {
             77, // prefix
             33, // struct
             8,  // field length
-            128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, // address
+            128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, // address
             129, 4, 0, 0, 0, // bucket
             130, 5, 0, 0, 0, // proof
             131, 1, // expression

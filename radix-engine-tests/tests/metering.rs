@@ -76,9 +76,9 @@ fn test_basic_transfer() {
         + 75000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1260 /* TxPayloadCost */
+        + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 178500, /* WriteSubstate */
+        + 182205, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -211,9 +211,9 @@ fn test_radiswap() {
         + 15000 /* RunSystem */
         + 1544410 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1625 /* TxPayloadCost */
+        + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 534500, /* WriteSubstate */
+        + 556451, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -321,9 +321,9 @@ fn test_flash_loan() {
         + 40000 /* RunSystem */
         + 1226430 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2375 /* TxPayloadCost */
+        + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1954500, /* WriteSubstate */
+        + 2060271, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

@@ -11,6 +11,7 @@ use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
+use radix_engine_stores::interface::NodeSubstates;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
@@ -287,7 +288,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for ExecutionTrace
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
-        _node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        _node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_callback()
             .modules

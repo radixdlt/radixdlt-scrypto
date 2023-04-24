@@ -129,7 +129,7 @@ impl FungibleResourceManagerBlueprint {
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
-        resource_address: [u8; 27], // TODO: Clean this up
+        resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where

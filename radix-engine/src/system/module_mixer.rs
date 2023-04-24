@@ -25,8 +25,8 @@ use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
+use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
-use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
 
 bitflags! {
@@ -218,7 +218,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=input_size, log={&*identifier.sys_invocation.blueprint.blueprint_name}, log=identifier.sys_invocation.ident.to_debug_string(), log={format!("{:?}", identifier.sys_invocation.receiver)})]
     fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,
@@ -399,7 +399,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=output_size)]
     fn after_invoke<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         output_size: usize,
@@ -435,38 +435,39 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=entity_type)]
     fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
-        node_type: &EntityType,
+        entity_type: Option<EntityType>,
+        virtual_node: bool,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_allocate_node_id(api, node_type)?;
+            KernelTraceModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_allocate_node_id(api, node_type)?;
+            CostingModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_allocate_node_id(api, node_type)?;
+            NodeMoveModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_allocate_node_id(api, node_type)?;
+            AuthModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_allocate_node_id(api, node_type)?;
+            LoggerModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_allocate_node_id(api, node_type)?;
+            TransactionRuntimeModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_allocate_node_id(api, node_type)?;
+            ExecutionTraceModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_allocate_node_id(api, node_type)?;
+            TransactionLimitsModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_allocate_node_id(api, node_type)?;
+            EventsModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
         Ok(())
     }
@@ -475,35 +476,35 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_create_node(api, node_id, node_module_init)?;
+            KernelTraceModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_create_node(api, node_id, node_module_init)?;
+            CostingModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_create_node(api, node_id, node_module_init)?;
+            NodeMoveModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_create_node(api, node_id, node_module_init)?;
+            AuthModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_create_node(api, node_id, node_module_init)?;
+            LoggerModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_create_node(api, node_id, node_module_init)?;
+            TransactionRuntimeModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_create_node(api, node_id, node_module_init)?;
+            ExecutionTraceModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_create_node(api, node_id, node_module_init)?;
+            TransactionLimitsModule::before_create_node(api, node_id, node_substates)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_create_node(api, node_id, node_module_init)?;
+            EventsModule::before_create_node(api, node_id, node_substates)?;
         }
         Ok(())
     }
@@ -617,7 +618,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &SysModuleId,
+        module_id: &ModuleId,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
@@ -670,7 +671,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=size)]
     fn after_lock_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         handle: LockHandle,
@@ -707,7 +708,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=size)]
     fn on_read_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
@@ -744,7 +745,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log=size)]
     fn on_write_substate<Y: KernelApi<SystemCallback<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,

@@ -24,7 +24,7 @@ pub struct VirtualizationModule;
 impl VirtualizationModule {
     pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemCallback<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
-        _module_id: SysModuleId,
+        _module_id: ModuleId,
         _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -52,7 +52,7 @@ impl VirtualizationModule {
                     _ => return Ok(false),
                 };
 
-                let mut args = [0u8; 26];
+                let mut args = [0u8; NodeId::UUID_LENGTH];
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {

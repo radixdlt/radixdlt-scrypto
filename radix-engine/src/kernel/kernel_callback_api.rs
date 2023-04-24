@@ -5,6 +5,7 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_stores::interface::NodeSubstates;
 
 pub trait KernelCallbackObject: Sized {
     type Invocation: Debug;
@@ -27,7 +28,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_create_node<Y>(
         node_id: &NodeId,
-        node_module_init: &BTreeMap<SysModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_substates: &NodeSubstates,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -39,7 +40,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_id: &SysModuleId,
+        module_id: &ModuleId,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -126,10 +127,18 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_allocate_node_id<Y>(
+        entity_type: Option<EntityType>,
+        virtual_node: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 }
