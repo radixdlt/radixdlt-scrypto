@@ -332,6 +332,20 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         );
     }
 
+    fn get_substate(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.updates
+            .get(node_id)
+            .map(|node| &node.modules)
+            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|module_substates| module_substates.get(substate_key))
+            .and_then(|tracked_substate_key| tracked_substate_key.get_substate())
+    }
+
     fn set_substate(
         &mut self,
         node_id: NodeId,

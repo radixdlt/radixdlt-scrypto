@@ -776,31 +776,34 @@ where
     S: SubstateStore,
 {
     // Note that we do not check node visibility here; call frame is responsible for that.
-
     fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
-        let substate: Option<TypeInfoSubstate> = self
-            .heap
+        self.heap
             .get_substate(
                 node_id,
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
             )
-            .or_else(|| todo!())
-            .map(|x| x.as_typed().unwrap());
-
-        substate.map(|substate| match substate {
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint,
-                global,
-                type_parent,
-            }) => TypeInfo::Object {
-                package_address: blueprint.package_address,
-                blueprint_name: blueprint.blueprint_name,
-                global,
-                type_parent,
-            },
-            TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
-            TypeInfoSubstate::SortedStore => TypeInfo::SortedStore,
-        })
+            .or_else(|| {
+                self.store.get_substate(
+                    node_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+            })
+            .map(|x| x.as_typed::<TypeInfoSubstate>().unwrap())
+            .map(|substate| match substate {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint,
+                    global,
+                    type_parent,
+                }) => TypeInfo::Object {
+                    package_address: blueprint.package_address,
+                    blueprint_name: blueprint.blueprint_name,
+                    global,
+                    type_parent,
+                },
+                TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
+                TypeInfoSubstate::SortedStore => TypeInfo::SortedStore,
+            })
     }
 }

@@ -15,6 +15,7 @@ impl ValidatableCustomTypeExtension<()> for ScryptoCustomTypeExtension {
     }
 }
 
+/// A slightly duplicated model to break circular dependency.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeInfo {
     Object {

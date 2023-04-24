@@ -86,6 +86,13 @@ pub trait SubstateStore {
     /// - If the module ID is invalid
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
 
+    fn get_substate(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue>;
+
     /// Inserts a substate into the substate store.
     ///
     /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
