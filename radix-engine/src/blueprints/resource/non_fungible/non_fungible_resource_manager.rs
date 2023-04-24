@@ -136,7 +136,7 @@ where
             )?;
 
             // TODO: Change interface so that we accept Option instead
-            api.sys_write_substate(non_fungible_handle, scrypto_encode(&Some(value)).unwrap())?;
+            api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
             api.sys_drop_lock(non_fungible_handle)?;
             ids.insert(non_fungible_local_id);
         }
@@ -402,7 +402,7 @@ impl NonFungibleResourceManagerBlueprint {
 
             {
                 let cur_non_fungible: Option<ScryptoValue> =
-                    api.sys_read_substate_typed(non_fungible_handle)?;
+                    api.key_value_entry_get_typed(non_fungible_handle)?;
 
                 if let Some(..) = cur_non_fungible {
                     return Err(RuntimeError::ApplicationError(
@@ -414,7 +414,7 @@ impl NonFungibleResourceManagerBlueprint {
                     ));
                 }
 
-                api.sys_write_substate_typed(non_fungible_handle, Some(non_fungible))?;
+                api.key_value_entry_set_typed(non_fungible_handle, Some(non_fungible))?;
             }
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -480,7 +480,7 @@ impl NonFungibleResourceManagerBlueprint {
                 &id.to_key(),
                 LockFlags::MUTABLE,
             )?;
-            api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
+            api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
 
             api.sys_drop_lock(non_fungible_handle)?;
         }
@@ -562,7 +562,7 @@ impl NonFungibleResourceManagerBlueprint {
                         &id.to_key(),
                         LockFlags::MUTABLE,
                     )?;
-                    api.sys_write_substate_typed(non_fungible_handle, Some(value))?;
+                    api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
 
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
@@ -644,13 +644,13 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
-            api.sys_read_substate_typed(non_fungible_handle)?;
+            api.key_value_entry_get_typed(non_fungible_handle)?;
 
         if let Some(ref mut non_fungible) = non_fungible_entry {
             let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
             *value = data;
 
-            api.sys_write_substate_typed(non_fungible_handle, &non_fungible_entry)?;
+            api.key_value_entry_set_typed(non_fungible_handle, &non_fungible_entry)?;
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
@@ -687,7 +687,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let non_fungible: Option<ScryptoValue> =
-            api.sys_read_substate_typed(non_fungible_handle)?;
+            api.key_value_entry_get_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
 
         Ok(exists)
@@ -715,7 +715,7 @@ impl NonFungibleResourceManagerBlueprint {
             &id.to_key(),
             LockFlags::read_only(),
         )?;
-        let wrapper: Option<ScryptoValue> = api.sys_read_substate_typed(non_fungible_handle)?;
+        let wrapper: Option<ScryptoValue> = api.key_value_entry_get_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)
         } else {
@@ -820,7 +820,7 @@ impl NonFungibleResourceManagerBlueprint {
                             LockFlags::MUTABLE,
                         )?;
 
-                        api.sys_write_substate_typed(non_fungible_handle, None::<ScryptoValue>)?;
+                        api.key_value_entry_set_typed(non_fungible_handle, None::<ScryptoValue>)?;
                         api.sys_drop_lock(non_fungible_handle)?;
                     }
                 }

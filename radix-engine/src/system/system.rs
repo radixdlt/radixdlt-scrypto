@@ -141,6 +141,13 @@ where
 {
     #[trace_resources]
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
+        let LockInfo {
+            data, ..
+        } = self.api.kernel_get_lock_info(lock_handle)?;
+        if data.is_kv_store {
+            panic!("Not a field");
+        }
+
         self.api
             .kernel_read_substate(lock_handle)
             .map(|v| v.as_slice().to_vec())
@@ -157,31 +164,7 @@ where
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
         if data.is_kv_store {
-            let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-            match type_info {
-                TypeInfoSubstate::KeyValueStore(schema) => {
-                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
-
-                    if !schema.can_own {
-                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
-                        let (_, own, _) = indexed.unpack();
-                        if !own.is_empty() {
-                            return Err(RuntimeError::SystemError(
-                                SystemError::InvalidKeyValueStoreOwnership,
-                            ));
-                        }
-                    }
-                }
-                _ => {
-                    // TODO: Other schema checks
-                    // TODO: Check objects stored are storeable
-                }
-            }
+            panic!("Not a field");
         } else {
             // TODO: Other schema checks
             // TODO: Check objects stored are storeable
@@ -678,11 +661,30 @@ where
             node_id, data, ..
         } = self.api.kernel_get_lock_info(handle)?;
 
-        let schema = if data.is_kv_store {
+        if data.is_kv_store {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
-                TypeInfoSubstate::KeyValueStore(schema) => schema,
-                _ => panic!("Unexpected"),
+                TypeInfoSubstate::KeyValueStore(schema) => {
+                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
+                        .map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+
+                    if !schema.can_own {
+                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+                        let (_, own, _) = indexed.unpack();
+                        if !own.is_empty() {
+                            return Err(RuntimeError::SystemError(
+                                SystemError::InvalidKeyValueStoreOwnership,
+                            ));
+                        }
+                    }
+                },
+                _ => {
+                    // TODO: verify against schema
+                },
             }
         } else {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
@@ -696,22 +698,7 @@ where
         let buffer = scrypto_encode(&Option::Some(value)).unwrap();
          */
 
-        validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-            .map_err(|_| {
-                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-            })?;
 
-        if !schema.can_own {
-            let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
-                RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-            })?;
-            let (_, own, _) = indexed.unpack();
-            if !own.is_empty() {
-                return Err(RuntimeError::SystemError(
-                    SystemError::InvalidKeyValueStoreOwnership,
-                ));
-            }
-        }
 
         let substate = IndexedScryptoValue::from_vec(buffer)
             .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;

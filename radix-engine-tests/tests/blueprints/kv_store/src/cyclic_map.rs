@@ -41,7 +41,7 @@ mod cyclic_map {
                 .lock_key_value_store_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
-                .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
+                .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
@@ -69,7 +69,7 @@ mod cyclic_map {
                 .lock_key_value_store_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
-                .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
+                .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
             CyclicMap { store: kv_store }.instantiate().globalize()

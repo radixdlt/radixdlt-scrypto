@@ -226,7 +226,7 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRef<V> {
 }
 
 pub struct KeyValueEntryRefMut<V: ScryptoEncode> {
-    lock_handle: LockHandle,
+    handle: KeyValueEntryLockHandle,
     original_data: ScryptoValue,
     value: V,
 }
@@ -240,7 +240,7 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<V> {
 impl<V: ScryptoEncode> KeyValueEntryRefMut<V> {
     pub fn new(lock_handle: LockHandle, original_data: ScryptoValue, value: V) -> KeyValueEntryRefMut<V> {
         KeyValueEntryRefMut {
-            lock_handle,
+            handle: lock_handle,
             original_data,
             value,
         }
@@ -253,8 +253,8 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
         let substate: Option<ScryptoValue> =
             Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
         let value = scrypto_encode(&substate).unwrap();
-        env.sys_write_substate(self.lock_handle, value).unwrap();
-        env.sys_drop_lock(self.lock_handle).unwrap();
+        env.key_value_entry_set(self.handle, value).unwrap();
+        env.sys_drop_lock(self.handle).unwrap();
     }
 }
 
