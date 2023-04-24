@@ -27,6 +27,7 @@ pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
+pub use custom_validation::*;
 pub use schema_path::*;
 
 use sbor::rust::vec::Vec;

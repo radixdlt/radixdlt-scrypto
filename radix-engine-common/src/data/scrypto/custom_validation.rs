@@ -1,7 +1,6 @@
-use super::model::{Own, Reference};
 use super::*;
 use crate::constants::*;
-use crate::types::PackageAddress;
+use crate::types::{NodeId, PackageAddress};
 use crate::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -26,9 +25,7 @@ pub enum TypeInfo {
 }
 
 pub trait TypeInfoContext {
-    fn get_own_type_info(&self, own: &Own) -> Option<TypeInfo>;
-
-    fn get_reference_type_info(&self, reference: &Reference) -> Option<TypeInfo>;
+    fn get_node_type_info(&self, reference: &NodeId) -> Option<TypeInfo>;
 }
 
 impl<T> ValidatableCustomTypeExtension<T> for ScryptoCustomTypeExtension
@@ -42,7 +39,7 @@ where
     ) -> Result<(), ValidationError> {
         match &custom_value_ref.0 {
             ScryptoCustomValue::Reference(reference) => {
-                if let Some(type_info) = context.get_reference_type_info(&reference) {
+                if let Some(type_info) = context.get_node_type_info(reference.as_node_id()) {
                     if match custom_type_kind {
                         ScryptoCustomTypeKind::Reference => true,
                         ScryptoCustomTypeKind::GlobalAddress => reference.as_node_id().is_global(),
@@ -73,7 +70,7 @@ where
                 }
             }
             ScryptoCustomValue::Own(own) => {
-                if let Some(type_info) = context.get_own_type_info(&own) {
+                if let Some(type_info) = context.get_node_type_info(own.as_node_id()) {
                     if match  custom_type_kind {
                         ScryptoCustomTypeKind::Own => true,
                         ScryptoCustomTypeKind::Bucket => match &type_info {

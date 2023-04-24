@@ -906,3 +906,33 @@ where
 impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 
 impl<'g, 's, W> KernelModuleApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
+
+impl<'g, 's, W> TypeInfoContext for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    // Note that we do not check node visibility here; call frame is responsible for that.
+
+    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+        let substate: Option<TypeInfoSubstate> = self
+            .heap
+            .get_substate(
+                node_id,
+                SysModuleId::TypeInfo,
+                &TypeInfoOffset::TypeInfo.into(),
+            )
+            .or_else(||  {
+                
+
+            })
+            .map(|x| x.as_typed().unwrap());
+
+        substate.map(|substate| match substate {
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => TypeInfo::Object {
+                package_address: blueprint.package_address,
+                blueprint_name: blueprint.blueprint_name,
+            },
+            TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
+        })
+    }
+}
