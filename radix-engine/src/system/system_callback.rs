@@ -100,7 +100,7 @@ pub struct SystemUpstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallback
     pub phantom: PhantomData<V>,
 }
 
-impl<'a, Y, V> PayloadValidationContext for SystemUpstream<'a, Y, V>
+impl<'a, Y, V> NodeTypeInfoContext for SystemUpstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,

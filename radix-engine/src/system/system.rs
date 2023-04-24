@@ -43,7 +43,7 @@ pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallba
     pub phantom: PhantomData<V>,
 }
 
-impl<'a, Y, V> PayloadValidationContext for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> NodeTypeInfoContext for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
