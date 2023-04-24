@@ -28,13 +28,13 @@ pub enum TypeInfo {
     SortedStore,
 }
 
-pub trait TypeInfoContext {
+pub trait PayloadValidationContext {
     fn get_node_type_info(&self, reference: &NodeId) -> Option<TypeInfo>;
 }
 
 impl<T> ValidatableCustomTypeExtension<T> for ScryptoCustomTypeExtension
 where
-    T: TypeInfoContext,
+    T: PayloadValidationContext,
 {
     fn validate_custom_value<'de, L: SchemaTypeLink>(
         custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,

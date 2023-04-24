@@ -335,6 +335,37 @@ where
         self.current_frame.depth
     }
 
+    fn kernel_get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+        self.heap
+            .get_substate(
+                node_id,
+                SysModuleId::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
+            )
+            .or_else(|| {
+                self.store.get_substate(
+                    node_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+            })
+            .map(|x| x.as_typed::<TypeInfoSubstate>().unwrap())
+            .map(|substate| match substate {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint,
+                    global,
+                    type_parent,
+                }) => TypeInfo::Object {
+                    package_address: blueprint.package_address,
+                    blueprint_name: blueprint.blueprint_name,
+                    global,
+                    type_parent,
+                },
+                TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
+                TypeInfoSubstate::SortedStore => TypeInfo::SortedStore,
+            })
+    }
+
     // TODO: Remove
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         let actor = self.current_frame.actor.clone();
@@ -768,42 +799,4 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-}
-
-impl<'g, M, S> TypeInfoContext for Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: SubstateStore,
-{
-    // Note that we do not check node visibility here; call frame is responsible for that.
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
-        self.heap
-            .get_substate(
-                node_id,
-                SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into(),
-            )
-            .or_else(|| {
-                self.store.get_substate(
-                    node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                )
-            })
-            .map(|x| x.as_typed::<TypeInfoSubstate>().unwrap())
-            .map(|substate| match substate {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint,
-                    global,
-                    type_parent,
-                }) => TypeInfo::Object {
-                    package_address: blueprint.package_address,
-                    blueprint_name: blueprint.blueprint_name,
-                    global,
-                    type_parent,
-                },
-                TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
-                TypeInfoSubstate::SortedStore => TypeInfo::SortedStore,
-            })
-    }
 }

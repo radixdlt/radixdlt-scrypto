@@ -43,6 +43,16 @@ pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallba
     pub phantom: PhantomData<V>,
 }
 
+impl<'a, Y, V> PayloadValidationContext for SystemDownstream<'a, Y, V>
+where
+    Y: KernelApi<SystemCallback<V>>,
+    V: SystemCallbackObject,
+{
+    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+        self.api.kernel_get_node_type_info(node_id)
+    }
+}
+
 impl<'a, Y, V> SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemCallback<V>>,
@@ -173,7 +183,7 @@ where
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
-                    validate_payload_against_schema(&buffer, &schema.schema, schema.value, &())
+                    validate_payload_against_schema(&buffer, &schema.schema, schema.value, self)
                         .map_err(|_| {
                             RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
                         })?;
@@ -214,7 +224,7 @@ where
                             &buffer,
                             &blueprint_schema.schema,
                             *index,
-                            &(),
+                            self,
                         )
                         .map_err(|_| {
                             RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
@@ -298,7 +308,7 @@ where
                 &object_states[i],
                 &schema.schema,
                 schema.substates[i],
-                &(),
+                self,
             )
             .map_err(|err| {
                 RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
@@ -1116,7 +1126,7 @@ where
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
-            &(),
+            self,
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
@@ -1299,6 +1309,10 @@ where
 
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
         self.api.kernel_get_current_actor()
+    }
+
+    fn kernel_get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+        self.api.kernel_get_node_type_info(node_id)
     }
 
     fn kernel_get_current_depth(&self) -> usize {

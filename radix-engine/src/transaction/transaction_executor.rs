@@ -374,6 +374,15 @@ where
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
+                println!("{:-^80}", "Outcome");
+                println!(
+                    "{:<30}: {:>10}",
+                    "Outcome",
+                    match &commit.outcome {
+                        TransactionOutcome::Success(_) => "Success".to_string(),
+                        TransactionOutcome::Failure(error) => format!("Failure: {:?}", error),
+                    }
+                );
             }
             TransactionResult::Reject(e) => {
                 println!("{:-^80}", "Transaction Rejected");
