@@ -13,7 +13,6 @@ pub use resource_address::*;
 use crate::types::{EntityType, NodeId};
 
 pub const fn component_address(entity_type: EntityType, last_byte: u8) -> ComponentAddress {
-    assert!(entity_type.is_global_component());
     let mut node_id = [0u8; NodeId::LENGTH];
     node_id[0] = entity_type as u8;
     node_id[NodeId::LENGTH - 1] = last_byte;
@@ -21,7 +20,6 @@ pub const fn component_address(entity_type: EntityType, last_byte: u8) -> Compon
 }
 
 pub const fn resource_address(entity_type: EntityType, last_byte: u8) -> ResourceAddress {
-    assert!(entity_type.is_global_resource());
     let mut node_id = [0u8; NodeId::LENGTH];
     node_id[0] = entity_type as u8;
     node_id[NodeId::LENGTH - 1] = last_byte;
@@ -29,7 +27,6 @@ pub const fn resource_address(entity_type: EntityType, last_byte: u8) -> Resourc
 }
 
 pub const fn package_address(entity_type: EntityType, last_byte: u8) -> PackageAddress {
-    assert!(entity_type.is_global_package());
     let mut node_id = [0u8; NodeId::LENGTH];
     node_id[0] = entity_type as u8;
     node_id[NodeId::LENGTH - 1] = last_byte;
@@ -37,7 +34,6 @@ pub const fn package_address(entity_type: EntityType, last_byte: u8) -> PackageA
 }
 
 pub const fn local_address(entity_type: EntityType, last_byte: u8) -> LocalAddress {
-    assert!(entity_type.is_local());
     let mut node_id = [0u8; NodeId::LENGTH];
     node_id[0] = entity_type as u8;
     node_id[NodeId::LENGTH - 1] = last_byte;

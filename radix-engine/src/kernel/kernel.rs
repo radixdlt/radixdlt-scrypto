@@ -789,9 +789,15 @@ where
             .map(|x| x.as_typed().unwrap());
 
         substate.map(|substate| match substate {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => TypeInfo::Object {
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint,
+                global,
+                type_parent,
+            }) => TypeInfo::Object {
                 package_address: blueprint.package_address,
                 blueprint_name: blueprint.blueprint_name,
+                global,
+                type_parent,
             },
             TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
             TypeInfoSubstate::SortedStore => TypeInfo::SortedStore,
