@@ -30,7 +30,7 @@ impl NonFungibleVaultBlueprint {
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::read_only(),
         )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
         Ok(id_type)
     }
 
@@ -351,9 +351,9 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
+        let substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(amount)
     }
 
@@ -365,9 +365,9 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(amount)
     }
 
@@ -381,11 +381,11 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
+        let substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
 
         let items: Vec<NonFungibleLocalId> = api.scan_typed_index(&substate_ref.ids.0, u32::MAX)?;
         let ids = items.into_iter().collect();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(ids)
     }
 
@@ -399,9 +399,9 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
         let ids = substate_ref.ids();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(ids)
     }
 
@@ -413,7 +413,7 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
 
         // deduct from liquidity pool
         if substate_ref.amount < amount {
@@ -446,8 +446,8 @@ impl NonFungibleVault {
             }
         };
 
-        api.sys_write_substate_typed(handle, &substate_ref)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &substate_ref)?;
+        api.field_lock_release(handle)?;
 
         Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
 
@@ -465,7 +465,7 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
 
         substate_ref.amount -= Decimal::from(ids.len());
 
@@ -484,7 +484,7 @@ impl NonFungibleVault {
         }
 
         Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(LiquidNonFungibleResource::new(ids.clone()))
     }
@@ -503,7 +503,7 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut vault: LiquidNonFungibleVault = api.sys_read_substate_typed(handle)?;
+        let mut vault: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
 
         vault.amount += Decimal::from(resource.ids.len());
 
@@ -514,8 +514,8 @@ impl NonFungibleVault {
             api.insert_typed_into_index(vault.ids.as_node_id(), scrypto_encode(&id).unwrap(), id)?;
         }
 
-        api.sys_write_substate_typed(handle, &vault)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &vault)?;
+        api.field_lock_release(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -535,7 +535,7 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
         // Take from liquid if needed
@@ -559,7 +559,7 @@ impl NonFungibleVault {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
-        api.sys_write_substate_typed(handle, &locked)?;
+        api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
         Ok(NonFungibleProof::new(
@@ -586,7 +586,7 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -601,7 +601,7 @@ impl NonFungibleVault {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
-        api.sys_write_substate_typed(handle, &locked)?;
+        api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
         Ok(NonFungibleProof::new(
@@ -627,7 +627,7 @@ impl NonFungibleVault {
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.sys_read_substate_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {
@@ -642,7 +642,7 @@ impl NonFungibleVault {
             }
         }
 
-        api.sys_write_substate_typed(handle, &locked)?;
+        api.field_lock_write_typed(handle, &locked)?;
 
         NonFungibleVault::put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }

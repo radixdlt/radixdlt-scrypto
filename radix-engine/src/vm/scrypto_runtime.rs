@@ -216,7 +216,7 @@ where
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let substate = self.api.sys_read_substate(handle)?;
+        let substate = self.api.field_lock_read(handle)?;
 
         self.allocate_buffer(substate)
     }
@@ -226,13 +226,13 @@ where
         handle: LockHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.sys_write_substate(handle, data)?;
+        self.api.field_lock_write(handle, data)?;
 
         Ok(())
     }
 
     fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.sys_drop_lock(handle)?;
+        self.api.field_lock_release(handle)?;
 
         Ok(())
     }

@@ -328,7 +328,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::MUTABLE,
         )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
 
         let (bucket_id, non_fungibles) = {
             if id_type == NonFungibleIdType::UUID {
@@ -344,10 +344,10 @@ impl NonFungibleResourceManagerBlueprint {
                     NonFungibleResourceManagerOffset::TotalSupply.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
                 let amount: Decimal = entries.len().into();
                 total_supply += amount;
-                api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+                api.field_lock_write_typed(total_supply_handle, &total_supply)?;
             }
 
             // Allocate non-fungibles
@@ -391,7 +391,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::read_only(),
         )?;
-        let data: Own = api.sys_read_substate_typed(data_handle)?;
+        let data: Own = api.field_lock_read_typed(data_handle)?;
 
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.lock_key_value_store_entry(
@@ -442,13 +442,13 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::read_only(),
         )?;
-        let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
+        let nf_store: Own = api.field_lock_read_typed(data_handle)?;
 
         let id_type_handle = api.lock_field(
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::MUTABLE,
         )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(id_type_handle)?;
+        let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
 
         if id_type != NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
@@ -464,9 +464,9 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply -= 1;
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // TODO: Is this enough bits to prevent hash collisions?
@@ -520,13 +520,13 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerOffset::Data.into(),
                 LockFlags::read_only(),
             )?;
-            let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
+            let nf_store: Own = api.field_lock_read_typed(data_handle)?;
 
             let handle = api.lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
-            let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -541,10 +541,10 @@ impl NonFungibleResourceManagerBlueprint {
                     NonFungibleResourceManagerOffset::TotalSupply.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+                let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
                 let amount: Decimal = entries.len().into();
                 total_supply += amount;
-                api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+                api.field_lock_write_typed(total_supply_handle, &total_supply)?;
             }
 
             // Allocate non-fungibles
@@ -606,7 +606,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let data_schema: NonFungibleResourceManagerDataSchemaSubstate =
-            api.sys_read_substate_typed(data_schema_handle)?;
+            api.field_lock_read_typed(data_schema_handle)?;
         let non_fungible_type_index = data_schema.non_fungible_type_index;
         let mutable_fields = data_schema.mutable_fields.clone();
 
@@ -614,7 +614,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::read_only(),
         )?;
-        let nf_store: Own = api.sys_read_substate_typed(nf_store_handle)?;
+        let nf_store: Own = api.field_lock_read_typed(nf_store_handle)?;
 
         let kv_schema = api.get_key_value_store_info(nf_store.as_node_id())?;
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
@@ -679,7 +679,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
+        let nf_store: Own = api.field_lock_read_typed(data_handle)?;
 
         let non_fungible_handle = api.lock_key_value_store_entry(
             nf_store.as_node_id(),
@@ -706,7 +706,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
+        let nf_store: Own = api.field_lock_read_typed(data_handle)?;
 
         let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
 
@@ -738,7 +738,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::MUTABLE,
         )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
 
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
@@ -791,7 +791,7 @@ impl NonFungibleResourceManagerBlueprint {
                     )?;
                     let resource_address =
                         ResourceAddress::new_unchecked(api.get_global_address()?.into());
-                    let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
+                    let nf_store: Own = api.field_lock_read_typed(data_handle)?;
                     if dropped_bucket.info.resource_address != resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
@@ -808,9 +808,9 @@ impl NonFungibleResourceManagerBlueprint {
                             LockFlags::MUTABLE,
                         )?;
                         let mut total_supply: Decimal =
-                            api.sys_read_substate_typed(total_supply_handle)?;
+                            api.field_lock_read_typed(total_supply_handle)?;
                         total_supply -= resource.amount();
-                        api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+                        api.field_lock_write_typed(total_supply_handle, &total_supply)?;
                     }
 
                     for id in resource.into_ids() {
@@ -861,7 +861,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
         let resource_type = ResourceType::NonFungible { id_type };
 
         Ok(resource_type)
@@ -875,7 +875,7 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
-        let total_supply: Decimal = api.sys_read_substate_typed(handle)?;
+        let total_supply: Decimal = api.field_lock_read_typed(handle)?;
         Ok(total_supply)
     }
 }

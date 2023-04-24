@@ -134,13 +134,13 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo {
             data, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
@@ -154,7 +154,7 @@ where
     }
 
     #[trace_resources]
-    fn sys_write_substate(
+    fn field_lock_write(
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
@@ -178,14 +178,13 @@ where
     }
 
     #[trace_resources]
-    fn sys_drop_lock(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
+    fn field_lock_release(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
         let LockInfo {
             data, ..
         } = self.api.kernel_get_lock_info(handle)?;
 
         if data.is_kv_store {
-            panic!("oops");
-            //return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+            return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
         self.api.kernel_drop_lock(handle)

@@ -593,10 +593,10 @@ impl PackageNativePackage {
 
         let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
-        let mut substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
+        let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
-        api.sys_write_substate_typed(handle, &substate)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
@@ -613,7 +613,7 @@ impl PackageNativePackage {
 
         let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
 
-        let substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
+        let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
             Some(vault) => Vault(vault).sys_take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,

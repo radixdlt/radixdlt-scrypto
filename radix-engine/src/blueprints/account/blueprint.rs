@@ -189,7 +189,7 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+            let account: AccountSubstate = api.field_lock_read_typed(handle)?;
             let handle = api.lock_key_value_store_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
@@ -220,7 +220,7 @@ impl AccountBlueprint {
 
         // Drop locks (LIFO)
         api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(())
     }
@@ -252,7 +252,7 @@ impl AccountBlueprint {
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+            let account: AccountSubstate = api.field_lock_read_typed(handle)?;
             let handle = api.lock_key_value_store_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
@@ -289,7 +289,7 @@ impl AccountBlueprint {
 
         // Drop locks (LIFO)
         api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(())
     }
@@ -310,7 +310,7 @@ impl AccountBlueprint {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+                let account: AccountSubstate = api.field_lock_read_typed(handle)?;
                 let handle = api.lock_key_value_store_entry(
                     account.vaults.as_node_id(),
                     &encoded_key,
@@ -348,7 +348,7 @@ impl AccountBlueprint {
             api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
         }
 
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(())
     }
@@ -368,7 +368,7 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: AccountSubstate = api.sys_read_substate_typed(handle)?;
+            let account: AccountSubstate = api.field_lock_read_typed(handle)?;
             let handle = api.lock_key_value_store_entry(
                 account.vaults.as_node_id(),
                 &encoded_key,
@@ -395,7 +395,7 @@ impl AccountBlueprint {
 
         // Drop locks (LIFO)
         api.unlock_key_value_entry(kv_store_entry_lock_handle)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(rtn)
     }

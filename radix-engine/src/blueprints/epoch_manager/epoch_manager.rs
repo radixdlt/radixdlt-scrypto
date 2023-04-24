@@ -219,7 +219,7 @@ impl EpochManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
+        let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(handle)?;
 
         Ok(epoch_manager.epoch)
     }
@@ -230,13 +230,13 @@ impl EpochManagerBlueprint {
     {
         let config_handle =
             api.lock_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
-        let config: EpochManagerConfigSubstate = api.sys_read_substate_typed(config_handle)?;
+        let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
 
         let mgr_handle = api.lock_field(
             EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
-        let mgr: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
+        let mgr: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
 
         Self::epoch_change(mgr.epoch, config.max_validators, api)?;
 
@@ -257,10 +257,10 @@ impl EpochManagerBlueprint {
     {
         let config_handle =
             api.lock_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
-        let config: EpochManagerConfigSubstate = api.sys_read_substate_typed(config_handle)?;
+        let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
         let mgr_handle =
             api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
-        let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
+        let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
 
         if round <= epoch_manager.round {
             return Err(RuntimeError::ApplicationError(
@@ -282,8 +282,8 @@ impl EpochManagerBlueprint {
             epoch_manager.round = round;
         }
 
-        api.sys_write_substate_typed(mgr_handle, &epoch_manager)?;
-        api.sys_drop_lock(mgr_handle)?;
+        api.field_lock_write_typed(mgr_handle, &epoch_manager)?;
+        api.field_lock_release(mgr_handle)?;
 
         Ok(())
     }
@@ -294,9 +294,9 @@ impl EpochManagerBlueprint {
     {
         let handle = api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
 
-        let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
+        let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(handle)?;
         epoch_manager.epoch = epoch;
-        api.sys_write_substate_typed(handle, &epoch_manager)?;
+        api.field_lock_write_typed(handle, &epoch_manager)?;
 
         Ok(())
     }
@@ -333,7 +333,7 @@ impl EpochManagerBlueprint {
                 EpochManagerOffset::RegisteredValidators.into(),
                 LockFlags::read_only(),
             )?;
-            let secondary_index: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
+            let secondary_index: SecondaryIndexSubstate = api.field_lock_read_typed(handle)?;
 
             Self::update_validator(
                 secondary_index.as_node_id(),
@@ -424,7 +424,7 @@ impl EpochManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let secondary_index: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
+        let secondary_index: SecondaryIndexSubstate = api.field_lock_read_typed(handle)?;
 
         let validators: Vec<(ComponentAddress, Validator)> =
             api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
@@ -435,10 +435,10 @@ impl EpochManagerBlueprint {
             EpochManagerOffset::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_set: CurrentValidatorSetSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator_set: CurrentValidatorSetSubstate = api.field_lock_read_typed(handle)?;
         validator_set.validator_set = next_validator_set.clone();
-        api.sys_write_substate_typed(handle, &validator_set)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &validator_set)?;
+        api.field_lock_release(handle)?;
 
         Runtime::emit_event(
             api,

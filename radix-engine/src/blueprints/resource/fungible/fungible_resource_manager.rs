@@ -177,7 +177,7 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerOffset::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
-            let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
+            let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
             divisibility
         };
 
@@ -207,10 +207,10 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply += amount;
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
-            api.sys_drop_lock(total_supply_handle)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_release(total_supply_handle)?;
 
             let bucket_info = BucketInfoSubstate {
                 resource_address,
@@ -272,10 +272,10 @@ impl FungibleResourceManagerBlueprint {
                         LockFlags::MUTABLE,
                     )?;
                     let mut total_supply: Decimal =
-                        api.sys_read_substate_typed(total_supply_handle)?;
+                        api.field_lock_read_typed(total_supply_handle)?;
                     total_supply -= resource.amount();
-                    api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
-                    api.sys_drop_lock(total_supply_handle)?;
+                    api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+                    api.field_lock_release(total_supply_handle)?;
                 }
             }
             DroppedBucketResource::NonFungible(..) => {
@@ -299,7 +299,7 @@ impl FungibleResourceManagerBlueprint {
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;
-        let divisibility: u8 = api.sys_read_substate_typed(divisbility_handle)?;
+        let divisibility: u8 = api.field_lock_read_typed(divisbility_handle)?;
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
             vec![
@@ -344,7 +344,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
+        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
         let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
@@ -358,7 +358,7 @@ impl FungibleResourceManagerBlueprint {
             FungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
-        let total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+        let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
         Ok(total_supply)
     }
 }

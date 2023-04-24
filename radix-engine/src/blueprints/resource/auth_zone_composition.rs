@@ -151,9 +151,9 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let proof_info: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
+        let proof_info: ProofInfoSubstate = api.field_lock_read_typed(handle)?;
         if proof_info.resource_address == resource_address {
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
 
             let handle = api.kernel_lock_substate(
                 proof.0.as_node_id(),
@@ -162,7 +162,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
-            let proof: FungibleProof = api.sys_read_substate_typed(handle)?;
+            let proof: FungibleProof = api.field_lock_read_typed(handle)?;
             for (container, locked_amount) in &proof.evidence {
                 if let Some(existing) = max.get_mut(container) {
                     *existing = Decimal::max(*existing, locked_amount.clone());
@@ -170,9 +170,9 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
                     max.insert(container.clone(), locked_amount.clone());
                 }
             }
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
         } else {
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
         }
     }
     let total = max
@@ -206,9 +206,9 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let proof_info: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
+        let proof_info: ProofInfoSubstate = api.field_lock_read_typed(handle)?;
         if proof_info.resource_address == resource_address {
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
 
             let handle = api.kernel_lock_substate(
                 proof.0.as_node_id(),
@@ -217,7 +217,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
-            let proof: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+            let proof: NonFungibleProof = api.field_lock_read_typed(handle)?;
             for (container, locked_ids) in &proof.evidence {
                 total.extend(locked_ids.clone());
                 if let Some(ids) = per_container.get_mut(container) {
@@ -227,7 +227,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
                 }
             }
         } else {
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
         }
     }
     Ok((total, per_container))
@@ -262,7 +262,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: FungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate: FungibleProof = api.field_lock_read_typed(handle)?;
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {
@@ -283,7 +283,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                 evidence.insert(container.clone(), amount);
             }
         }
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
     }
 
     FungibleProof::new(amount, evidence)
@@ -347,7 +347,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate: NonFungibleProof = api.field_lock_read_typed(handle)?;
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_empty() {
@@ -370,7 +370,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
                 evidence.insert(container.clone(), ids);
             }
         }
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
     }
 
     NonFungibleProof::new(ids.clone(), evidence)

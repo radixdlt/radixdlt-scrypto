@@ -83,7 +83,7 @@ impl ValidatorBlueprint {
 
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Stake
         let (lp_token_bucket, new_stake_amount) = {
@@ -111,7 +111,7 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
         Ok(lp_token_bucket)
@@ -130,7 +130,7 @@ impl ValidatorBlueprint {
         };
 
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
@@ -155,15 +155,15 @@ impl ValidatorBlueprint {
                 LockFlags::read_only(),
             )?;
             let epoch_manager: EpochManagerSubstate =
-                api.sys_read_substate_typed(manager_handle)?;
+                api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
 
             let config_handle =
                 api.lock_parent_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
-            let config: EpochManagerConfigSubstate = api.sys_read_substate_typed(config_handle)?;
+            let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
             let epoch_unlocked = current_epoch + config.num_unstake_epochs;
 
-            api.sys_drop_lock(manager_handle)?;
+            api.field_lock_release(manager_handle)?;
 
             let data = UnstakeData {
                 epoch_unlocked,
@@ -184,7 +184,7 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
         Ok(unstake_bucket)
@@ -197,7 +197,7 @@ impl ValidatorBlueprint {
         let substate_key = ValidatorOffset::Validator.into();
         let handle = api.lock_field(substate_key, LockFlags::MUTABLE)?;
 
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -212,7 +212,7 @@ impl ValidatorBlueprint {
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
 
         if new_registered {
             Runtime::emit_event(api, RegisterValidatorEvent)?;
@@ -267,7 +267,7 @@ impl ValidatorBlueprint {
                 EpochManagerOffset::RegisteredValidators.into(),
                 LockFlags::read_only(),
             )?;
-            let secondary_index: Own = api.sys_read_substate_typed(registered_handle)?;
+            let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
 
             EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
         }
@@ -280,7 +280,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
-        let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
@@ -297,9 +297,9 @@ impl ValidatorBlueprint {
                 EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
+            let mgr_substate: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
             let epoch = mgr_substate.epoch;
-            api.sys_drop_lock(mgr_handle)?;
+            api.field_lock_release(mgr_handle)?;
             epoch
         };
 
@@ -334,7 +334,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Update Epoch Manager
         {
@@ -348,14 +348,14 @@ impl ValidatorBlueprint {
                     EpochManagerOffset::RegisteredValidators.into(),
                     LockFlags::read_only(),
                 )?;
-                let secondary_index: Own = api.sys_read_substate_typed(registered_handle)?;
+                let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
 
                 EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
             }
         }
 
         validator.key = key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
 
         Ok(())
     }
