@@ -53,7 +53,7 @@ impl Fuzzer {
             runner.create_non_fungible_resource(accounts[0].address),
         ];
 
-        let snapshot = runner.get_snapshot();
+        let snapshot = runner.create_snapshot();
 
         println!("resources = {:?}", resources);
 

@@ -235,7 +235,7 @@ impl TestRunner {
         }
     }
 
-    pub fn get_snapshot(&self) -> TestRunnerSnapshot {
+    pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
             substate_db: self.substate_db.clone(),
             next_private_key: self.next_private_key,
