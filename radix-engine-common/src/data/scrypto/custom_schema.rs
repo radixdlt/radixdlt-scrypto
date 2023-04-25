@@ -9,7 +9,7 @@ pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
 /// A schema for the values that a codec can decode / views as valid
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum ScryptoCustomTypeKind {
     Reference, /* any */
     GlobalAddress,
