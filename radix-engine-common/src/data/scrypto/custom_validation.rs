@@ -72,7 +72,7 @@ where
                         Ok(())
                     } else {
                         Err(ValidationError::CustomError(format!(
-                            "Invalid reference: expected = {:?}, actual = {:?} of type {:?}", custom_type_kind, reference.as_node_id(),  type_info
+                            "Invalid reference: expected = {:?}, actual node: {:?}, actual type info: {:?}", custom_type_kind, reference.as_node_id(),  type_info
                         )))
                     }
                 } else {
@@ -128,7 +128,7 @@ where
                         Ok(())
                     } else {
                         Err(ValidationError::CustomError(format!(
-                            "Invalid own: expected = {:?}, actual = {:?} of type {:?}", custom_type_kind, own.as_node_id(),  type_info
+                            "Invalid own: expected = {:?}, actual node: {:?}, actual type info: {:?}", custom_type_kind, own.as_node_id(),  type_info
                         )))
                     }
                 } else {

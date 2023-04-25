@@ -343,7 +343,7 @@ where
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
             return Some(TypeInfo::Object {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 global: true,
                 type_parent: None,
             });

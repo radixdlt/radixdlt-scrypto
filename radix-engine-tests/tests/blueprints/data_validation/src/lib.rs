@@ -77,9 +77,9 @@ impl Describe<ScryptoCustomTypeKind> for CustomReference {
 
     fn type_data() -> Option<TypeData<ScryptoCustomTypeKind, GlobalTypeId>> {
         Some(TypeData {
-            kind: TypeKind::Custom(ScryptoCustomTypeKind::Object(
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::ObjectRef(
                 RESOURCE_MANAGER_PACKAGE,
-                PROOF_BLUEPRINT.to_string(),
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             )),
             metadata: TypeMetadata::no_child_names("CustomReference"),
             validation: TypeValidation::None,

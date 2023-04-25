@@ -3,7 +3,6 @@ use radix_engine::{
     kernel::call_frame::MoveError,
     types::*,
 };
-use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
@@ -308,27 +307,48 @@ fn pass_own_as_reference_do_not_trigger_payload_validation_error() {
 }
 
 #[test]
-fn test_reference_of_specific_blueprint() {
+fn test_receive_reference_of_specific_blueprint() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let (pk, _, account) = test_runner.new_account(false);
     let component_address = setup_component(&mut test_runner);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), dec!("100"))
-        .create_proof_from_account(account, RADIX_TOKEN)
-        .pop_from_auth_zone(|builder, proof| {
-            builder.call_method(
-                component_address,
-                "accept_custom_reference",
-                manifest_args!(proof),
-            )
-        })
+        .call_method(
+            component_address,
+            "accept_custom_reference",
+            manifest_args!(RADIX_TOKEN),
+        )
         .build();
 
     // Assert
-    let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_receive_reference_not_of_specific_blueprint() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let component_address = setup_component(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .call_method(
+            component_address,
+            "accept_custom_reference",
+            manifest_args!(PACKAGE_TOKEN),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let error_message = receipt
+        .expect_commit_failure()
+        .outcome
+        .expect_failure()
+        .to_string();
+    assert!(error_message.contains("InputSchemaNotMatch"))
 }
