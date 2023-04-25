@@ -1,6 +1,7 @@
 use crate::interface::DatabaseMapper;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
+use sbor::rust::vec::Vec;
 
 pub struct JmtMapper;
 
