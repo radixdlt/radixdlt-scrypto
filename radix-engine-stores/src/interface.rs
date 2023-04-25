@@ -25,6 +25,7 @@ pub fn encode_substate_id(index_id: &Vec<u8>, db_key: &Vec<u8>) -> Vec<u8> {
     buffer
 }
 
+// TODO: Clean this interface up and move size of hash to a more appropriate interface
 pub fn decode_substate_id(slice: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     if slice.len() >= 26 {
         let index_id = slice[0..26].to_vec();
@@ -168,7 +169,7 @@ pub enum DatabaseUpdate {
 }
 
 pub trait DatabaseMapper {
-    fn map_to_index_id(node_id: &NodeId, module_id: ModuleId) -> Vec<u8>;
+    fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> Vec<u8>;
     fn map_to_db_key(key: SubstateKey) -> Vec<u8>;
 }
 
@@ -179,7 +180,7 @@ pub trait SubstateDatabase {
     /// [`Option::None`] is returned if missing.
     fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>>;
 
-    /// Returns an iterator over substates within the given substate module
+    /// Returns a lexicographical sorted iterator over the substates of an index
     fn list_substates(
         &self,
         index_id: &Vec<u8>,
@@ -193,7 +194,7 @@ pub trait SubstateDatabase {
         substate_key: SubstateKey,
     ) -> Option<D> {
         self.get_substate(
-            &M::map_to_index_id(node_id, module_id),
+            &M::map_to_db_index(node_id, module_id),
             &M::map_to_db_key(substate_key),
         )
         .map(|buf| scrypto_decode(&buf).unwrap())
@@ -205,7 +206,7 @@ pub trait SubstateDatabase {
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        self.list_substates(&M::map_to_index_id(node_id, module_id))
+        self.list_substates(&M::map_to_db_index(node_id, module_id))
     }
 }
 
@@ -220,32 +221,4 @@ pub trait CommittableSubstateDatabase {
 /// Interface for listing nodes within a substate database.
 pub trait ListableSubstateDatabase {
     fn list_nodes(&self) -> Vec<NodeId>;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /*
-    #[test]
-    fn test_encode_decode_substate_id() {
-        let node_id = NodeId([1u8; NodeId::LENGTH]);
-        let module_id = ModuleId(2);
-        let substate_key = SubstateKey::Map(vec![3]);
-        let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
-        assert_eq!(
-            substate_id,
-            vec![
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, // node id
-                2, // module id
-                3, // substate key
-            ]
-        );
-        assert_eq!(
-            decode_substate_id(&substate_id),
-            Some((node_id, module_id, substate_key))
-        )
-    }
-     */
 }

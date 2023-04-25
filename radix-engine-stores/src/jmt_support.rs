@@ -1,12 +1,13 @@
 use crate::interface::DatabaseMapper;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 pub struct JmtMapper;
 
 impl DatabaseMapper for JmtMapper {
-    fn map_to_index_id(node_id: &NodeId, module_id: ModuleId) -> Vec<u8> {
+    fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> Vec<u8> {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
         buffer.push(module_id.0);

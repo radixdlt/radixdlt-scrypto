@@ -42,8 +42,8 @@ pub struct Accounting {
 impl Accounting {
     pub fn new() -> Self {
         Accounting {
-            balances: HashMap::new(),
-            non_fungibles: HashMap::new(),
+            balances: hash_map_new(),
+            non_fungibles: hash_map_new(),
         }
     }
 

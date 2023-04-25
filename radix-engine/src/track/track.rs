@@ -308,7 +308,7 @@ pub fn to_database_updates<M: DatabaseMapper>(
                 }
             }
 
-            let index_id = M::map_to_index_id(&node_id, module_id);
+            let index_id = M::map_to_db_index(&node_id, module_id);
             database_updates.insert(index_id, index_updates);
         }
     }
@@ -439,7 +439,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
 
         match entry {
             Entry::Vacant(e) => {
-                let index_id = M::map_to_index_id(node_id, module_id);
+                let index_id = M::map_to_db_index(node_id, module_id);
                 let value = self
                     .substate_db
                     .get_substate(&index_id, db_key)
@@ -601,7 +601,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             return items;
         }
 
-        let index_id = M::map_to_index_id(node_id, module_id);
+        let index_id = M::map_to_db_index(node_id, module_id);
         let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         for (key, substate) in &mut tracked_iter {
             if items.len() == count {
@@ -666,7 +666,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         }
 
         // Read from database
-        let index_id = M::map_to_index_id(node_id, module_id);
+        let index_id = M::map_to_db_index(node_id, module_id);
         let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         let new_updates = {
             let mut new_updates = Vec::new();
@@ -744,7 +744,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         }
 
         // TODO: Add interleaving updates
-        let index_id = M::map_to_index_id(node_id, module_id);
+        let index_id = M::map_to_db_index(node_id, module_id);
         let tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         let items: Vec<IndexedScryptoValue> = tracked_iter
             .take(count)
