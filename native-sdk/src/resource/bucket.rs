@@ -1,6 +1,5 @@
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
@@ -9,6 +8,8 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
+
+use super::ResourceManager;
 
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -98,11 +99,11 @@ impl SysBucket for Bucket {
     where
         Y: ClientApi<E>,
     {
-        let rtn = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            BUCKET_BLUEPRINT,
-            BUCKET_DROP_EMPTY_IDENT,
-            scrypto_encode(&BucketDropEmptyInput {
+        let resource_address = self.sys_resource_address(api)?;
+        let rtn = api.call_method(
+            resource_address.as_node_id(),
+            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
+            scrypto_encode(&ResourceManagerDropEmptyBucketInput {
                 bucket: Bucket(self.0),
             })
             .unwrap(),
@@ -119,8 +120,8 @@ impl SysBucket for Bucket {
     {
         let rtn = api.call_method(
             receiver.as_node_id(),
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+            scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
@@ -150,7 +151,7 @@ impl SysBucket for Bucket {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
             scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
         )?;
 
@@ -201,7 +202,7 @@ impl SysBucket for Bucket {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            BUCKET_TAKE_NON_FUNGIBLES_IDENT,
+            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
         )?;
 
@@ -212,16 +213,8 @@ impl SysBucket for Bucket {
     where
         Y: ClientApi<E>,
     {
-        let rtn = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            BUCKET_BLUEPRINT,
-            BUCKET_BURN_IDENT,
-            scrypto_encode(&BucketBurnInput {
-                bucket: Bucket(self.0),
-            })
-            .unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let resource_address = self.sys_resource_address(api)?;
+        ResourceManager(resource_address).burn(Bucket(self.0), api)
     }
 
     fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>

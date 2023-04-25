@@ -16,7 +16,7 @@ mod simple_fuzzer;
 use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey, ResourceAddress};
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 use radix_engine_interface::data::manifest::manifest_decode;
-use scrypto_unit::TestRunner;
+use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
@@ -29,6 +29,7 @@ struct Account {
 
 struct Fuzzer {
     runner: TestRunner,
+    snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
     resources: Vec<ResourceAddress>,
 }
@@ -52,13 +53,20 @@ impl Fuzzer {
             runner.create_non_fungible_resource(accounts[0].address),
         ];
 
+        let snapshot = runner.create_snapshot();
+
         println!("resources = {:?}", resources);
 
         Self {
             runner,
+            snapshot,
             accounts,
             resources,
         }
+    }
+
+    fn reset_runner(&mut self) {
+        self.runner.restore_snapshot(self.snapshot.clone());
     }
 
     // pick account from the preallocated pool basing on the input data
@@ -194,31 +202,48 @@ fn test_fuzz_tx() {
     ));
 }
 
+// Initialize static objects outside the fuzzing loop to assure deterministic instrumentation
+// output across runs.
+fn init_statics() {
+    // Following code initializes secp256k1::SECP256K1 global static context
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(100).unwrap();
+    let _public_key = private_key.public_key();
+}
+
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
 fuzz_target!(|data: &[u8]| {
     unsafe {
         static mut FUZZER: Lazy<Fuzzer> = Lazy::new(|| Fuzzer::new());
 
+        FUZZER.reset_runner();
         FUZZER.fuzz_tx_manifest(data);
     }
 });
 
 #[cfg(feature = "afl")]
 fn main() {
+    init_statics();
+
     // fuzz! uses `catch_unwind` and it requires RefUnwindSafe trait, which is not auto-implemented by
     // Fuzzer members (TestRunner mainly). `AssertUnwindSafe` annotates the variable is indeed
     // unwind safe
     let mut fuzzer = AssertUnwindSafe(Fuzzer::new());
 
     fuzz!(|data: &[u8]| {
+        fuzzer.reset_runner();
         fuzzer.fuzz_tx_manifest(data);
     });
 }
 
 #[cfg(feature = "simple-fuzzer")]
 fn main() {
+    init_statics();
+
     let mut fuzzer = Fuzzer::new();
 
-    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus { fuzzer.fuzz_tx_manifest(data) });
+    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus {
+        fuzzer.reset_runner();
+        fuzzer.fuzz_tx_manifest(data)
+    });
 }

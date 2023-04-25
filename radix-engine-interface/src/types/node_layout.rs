@@ -118,12 +118,16 @@ pub enum ValidatorOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum BucketOffset {
-    Info,
-    LiquidFungible,
-    LockedFungible,
-    LiquidNonFungible,
-    LockedNonFungible,
+pub enum FungibleBucketOffset {
+    Liquid,
+    Locked,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum NonFungibleBucketOffset {
+    Liquid,
+    Locked,
 }
 
 #[repr(u8)]
@@ -191,7 +195,8 @@ into_substate_key!(NonFungibleResourceManagerOffset);
 into_substate_key!(NonFungibleVaultOffset);
 into_substate_key!(EpochManagerOffset);
 into_substate_key!(ValidatorOffset);
-into_substate_key!(BucketOffset);
+into_substate_key!(NonFungibleBucketOffset);
+into_substate_key!(FungibleBucketOffset);
 into_substate_key!(ProofOffset);
 into_substate_key!(WorktopOffset);
 into_substate_key!(ClockOffset);

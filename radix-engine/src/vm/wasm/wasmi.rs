@@ -1,11 +1,13 @@
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
+#[cfg(not(feature = "radix_engine_fuzzing"))]
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};
 use wasmi::*;
 
 use super::InstrumentedCode;
+#[cfg(not(feature = "radix_engine_fuzzing"))]
 use super::MeteredCodeKey;
 use crate::errors::InvokeError;
 use crate::types::*;
@@ -989,10 +991,14 @@ pub struct EngineOptions {
 }
 
 pub struct WasmiEngine {
-    #[cfg(not(feature = "moka"))]
+    // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
+    #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
     modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmiModule>>>,
-    #[cfg(feature = "moka")]
+    #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
     modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmiModule>>,
+    #[cfg(feature = "radix_engine_fuzzing")]
+    #[allow(dead_code)]
+    modules_cache: usize,
 }
 
 impl Default for WasmiEngine {
@@ -1005,11 +1011,11 @@ impl Default for WasmiEngine {
 
 impl WasmiEngine {
     pub fn new(options: EngineOptions) -> Self {
-        #[cfg(not(feature = "moka"))]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
             NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
         ));
-        #[cfg(feature = "moka")]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(|_key: &MeteredCodeKey, value: &Arc<WasmiModule>| -> u32 {
                 // Approximate the module entry size by the code size
@@ -1017,6 +1023,9 @@ impl WasmiEngine {
             })
             .max_capacity(options.max_cache_size_bytes as u64)
             .build();
+        #[cfg(feature = "radix_engine_fuzzing")]
+        let modules_cache = options.max_cache_size_bytes;
+
         Self { modules_cache }
     }
 }
@@ -1025,31 +1034,37 @@ impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
+        #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 
-        #[cfg(not(feature = "moka"))]
+        #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
-            if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
-                return cached_module.instantiate();
+            #[cfg(not(feature = "moka"))]
+            {
+                if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
+                    return cached_module.instantiate();
+                }
             }
-        }
-        #[cfg(feature = "moka")]
-        if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-            return cached_module.as_ref().instantiate();
+            #[cfg(feature = "moka")]
+            if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
+                return cached_module.as_ref().instantiate();
+            }
         }
 
         let code = &instrumented_code.code.as_ref()[..];
         let module = WasmiModule::new(code).unwrap();
         let instance = module.instantiate();
 
-        #[cfg(not(feature = "moka"))]
-        self.modules_cache
-            .borrow_mut()
-            .put(*metered_code_key, Arc::new(module));
-        #[cfg(feature = "moka")]
-        self.modules_cache
-            .insert(*metered_code_key, Arc::new(module));
-
+        #[cfg(not(feature = "radix_engine_fuzzing"))]
+        {
+            #[cfg(not(feature = "moka"))]
+            self.modules_cache
+                .borrow_mut()
+                .put(*metered_code_key, Arc::new(module));
+            #[cfg(feature = "moka")]
+            self.modules_cache
+                .insert(*metered_code_key, Arc::new(module));
+        }
         instance
     }
 }

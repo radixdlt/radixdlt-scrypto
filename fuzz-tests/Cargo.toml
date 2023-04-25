@@ -9,26 +9,38 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = { version = "0.4", optional = true }
-afl = { version = "0.12.16", optional = true }
+afl = { version = "0.12.16", features = ["reset_lazy_static"], optional = true }
 clap = { version = "4.1.7", optional = true }
 rand = { version = "0.8.5", optional = true }
 rand_chacha = { version = "0.3.1", optional = true }
 log = { version = "0.4.17", optional = true }
 once_cell = { version = "1.17.1"}
 sbor = { path = "../sbor", default-features = false }
-radix-engine = { path = "../radix-engine", default-features = false }
+radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_fuzzing"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
+radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
 transaction = { path = "../transaction", default-features = false }
-utils = { path = "../utils", default-features = false }
+utils = { path = "../utils", default-features = false, features = ["radix_engine_fuzzing"] }
 scrypto-unit = { path = "../scrypto-unit", default-features = false }
+
+[patch.crates-io]
+# Use "resettable" `lazy_static` version to prevent incorrect AFL behaviour, eg.
+# - warnings such as "Instrumentation output varies across runs"
+# - low stability reports
+# More details: https://github.com/rust-fuzz/afl.rs#lazy_static-variables
+lazy_static = { git = "https://github.com/rust-fuzz/resettable-lazy-static.rs", rev = "c5eb91f2bde4c2f70092d1574f7145cb33ff0922" }
 
 [workspace]
 members = ["."]
 
 [profile.release]
 # TODO: check if really this required
-debug = 1
+# Commented out out since due to following error, when building AFLplusplus
+#  - in debug mode (see GNUmakefile:142 - Werror is set)
+#  - with some modern gcc toolchain: clang 16.0, llvm-gcc 14
+# src/afl-fuzz-redqueen.c:1603:20: warning: variable 'cons_0' set but not used [-Wunused-but-set-variable]
+#debug = 1
 
 [[bin]]
 name = "transaction"

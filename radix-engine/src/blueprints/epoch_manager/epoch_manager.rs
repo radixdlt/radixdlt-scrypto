@@ -3,11 +3,10 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::account::Account;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::{ResourceManager, SysBucket};
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -54,13 +53,12 @@ impl EpochManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
-        validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
         initial_epoch: u64,
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
         api: &mut Y,
-    ) -> Result<Vec<Bucket>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -143,13 +141,6 @@ impl EpochManagerBlueprint {
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                ObjectModuleId::SELF,
-                EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT,
-            ),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
             MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
@@ -178,36 +169,7 @@ impl EpochManagerBlueprint {
             address.into(),
         )?;
 
-        // Initialize validators
-        let lp_buckets = {
-            let mut lp_buckets = vec![];
-            for (key, component_address, initial_stake) in validator_set {
-                let rtn = api.call_method(
-                    address.as_node_id(),
-                    EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT,
-                    scrypto_encode(&EpochManagerCreateValidatorWithStakeInput {
-                        key,
-                        xrd_stake: initial_stake,
-                        register: true,
-                    })
-                    .unwrap(),
-                )?;
-                let rtn: EpochManagerCreateValidatorWithStakeOutput = scrypto_decode(&rtn).unwrap();
-                let (_address, lp_bucket, owner_token_bucket) = rtn;
-
-                Account(component_address).deposit(owner_token_bucket, api)?;
-                lp_buckets.push(lp_bucket);
-            }
-            lp_buckets
-        };
-
-        api.call_method(
-            address.as_node_id(),
-            EPOCH_MANAGER_START_IDENT,
-            scrypto_encode(&()).unwrap(),
-        )?;
-
-        Ok(lp_buckets)
+        Ok(())
     }
 
     pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<u64, RuntimeError>
@@ -302,7 +264,6 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        _receiver: &NodeId,
         key: EcdsaSecp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
@@ -312,46 +273,6 @@ impl EpochManagerBlueprint {
         let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
-    }
-
-    pub(crate) fn create_validator_with_stake<Y>(
-        key: EcdsaSecp256k1PublicKey,
-        xrd_stake: Bucket,
-        register: bool,
-        api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let stake_amount = xrd_stake.sys_amount(api)?;
-
-        let (validator_address, liquidity_token_bucket, owner_token_bucket, index_key) =
-            ValidatorCreator::create_with_stake(key, xrd_stake, register, api)?;
-
-        if let Some(index_key) = index_key {
-            let handle = api.lock_field(
-                EpochManagerOffset::RegisteredValidators.into(),
-                LockFlags::read_only(),
-            )?;
-            let secondary_index: SecondaryIndexSubstate = api.field_lock_read_typed(handle)?;
-
-            Self::update_validator(
-                secondary_index.as_node_id(),
-                UpdateSecondaryIndex::Create {
-                    primary: validator_address,
-                    stake: stake_amount,
-                    index_key,
-                    key,
-                },
-                api,
-            )?;
-        }
-
-        Ok((
-            validator_address,
-            liquidity_token_bucket,
-            owner_token_bucket,
-        ))
     }
 
     pub(crate) fn update_validator<Y>(

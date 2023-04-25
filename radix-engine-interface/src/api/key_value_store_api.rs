@@ -1,5 +1,4 @@
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
-use crate::types::LockHandle;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;

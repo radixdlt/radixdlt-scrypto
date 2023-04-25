@@ -12,7 +12,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::StateUpdates;
+use radix_engine_stores::interface::DatabaseUpdates;
 use utils::ContextualDisplay;
 
 #[cfg(feature = "serde")]
@@ -43,6 +43,28 @@ impl TransactionExecutionTrace {
     }
 }
 
+/// Metrics gathered during transaction execution.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub struct ExecutionMetrics {
+    /// Consumed cost units (excluding royalties)
+    pub execution_cost_units_consumed: usize,
+    /// Consumed royalties cost units
+    pub royalties_cost_units_consumed: usize,
+    /// Total substate read size in bytes.
+    pub substate_read_size: usize,
+    /// Substate read count.
+    pub substate_read_count: usize,
+    /// Total substate write size in bytes.
+    pub substate_write_size: usize,
+    /// Substate write count.
+    pub substate_write_count: usize,
+    /// Peak WASM memory usage during transactino execution.
+    /// This is the highest sum of all nested WASM instances.
+    pub max_wasm_memory_used: usize,
+    /// The highest invoke payload size during transaction execution.
+    pub max_invoke_payload_size: usize,
+}
+
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TransactionResult {
@@ -62,7 +84,7 @@ impl TransactionResult {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
-    pub state_updates: StateUpdates,
+    pub state_updates: DatabaseUpdates,
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
@@ -192,6 +214,8 @@ pub struct TransactionReceipt {
     pub result: TransactionResult,
     /// Optional execution trace, controlled by config `ExecutionConfig::execution_trace`.
     pub execution_trace: TransactionExecutionTrace,
+    /// Metrics gathered during transaction execution.
+    pub execution_metrics: ExecutionMetrics,
     /// Optional resource usage trace, controlled by feature flag `resources_usage`.
     pub resources_usage: ResourcesUsage,
 }

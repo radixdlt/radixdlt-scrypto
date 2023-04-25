@@ -1,11 +1,13 @@
+use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleVault,
 };
-use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::interface::{DatabaseMapper, SubstateDatabase};
+use radix_engine_stores::jmt_support::JmtMapper;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
@@ -251,16 +253,13 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
-        let type_info: TypeInfoSubstate = scrypto_decode(
-            &self
-                .fetch_substate(
-                    node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &vec![TypeInfoOffset::TypeInfo.into()],
-                )
-                .expect("Missing vault info"),
-        )
-        .expect("Failed to decode vault info");
+        let type_info: TypeInfoSubstate = self
+            .fetch_substate::<JmtMapper, TypeInfoSubstate>(
+                node_id,
+                SysModuleId::TypeInfo.into(),
+                TypeInfoOffset::TypeInfo.into(),
+            )
+            .expect("Missing vault info");
 
         let resource_address = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
@@ -272,27 +271,26 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
 
         if resource_address.as_node_id().is_global_fungible_resource() {
             // If there is an update to the liquid resource
-            if let Some(substate) = self.fetch_substate_from_state_updates(
-                node_id,
-                SysModuleId::User.into(),
-                &vec![FungibleVaultOffset::LiquidFungible.into()],
-            ) {
-                let old_substate = self.fetch_substate_from_database(
+            if let Some(substate) = self
+                .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
                     SysModuleId::User.into(),
-                    &vec![FungibleVaultOffset::LiquidFungible.into()],
-                );
+                    FungibleVaultOffset::LiquidFungible.into(),
+                )
+            {
+                let old_substate = self
+                    .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
+                        node_id,
+                        SysModuleId::User.into(),
+                        FungibleVaultOffset::LiquidFungible.into(),
+                    );
 
                 let old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidFungibleResource>(&s)
-                        .unwrap()
-                        .amount()
+                    s.amount()
                 } else {
                     Decimal::ZERO
                 };
-                let new_balance = scrypto_decode::<LiquidFungibleResource>(substate)
-                    .unwrap()
-                    .amount();
+                let new_balance = substate.amount();
 
                 Some(BalanceChange::Fungible(new_balance - old_balance))
             } else {
@@ -300,12 +298,13 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             }
         } else {
             // If there is an update to the liquid resource
-            if let Some(substate) = self.fetch_substate_from_state_updates(
-                node_id,
-                SysModuleId::User.into(),
-                &vec![NonFungibleVaultOffset::LiquidNonFungible.into()],
-            ) {
-                let vault = scrypto_decode::<LiquidNonFungibleVault>(substate).unwrap();
+            if let Some(vault) = self
+                .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
+                    node_id,
+                    SysModuleId::User.into(),
+                    NonFungibleVaultOffset::LiquidNonFungible.into(),
+                )
+            {
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
                     let module_id: ModuleId = SysModuleId::User.into();
                     n.tracked_modules.get(&module_id)
@@ -353,40 +352,40 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         .map(|x| (resource_address, x))
     }
 
-    fn fetch_substate(
+    fn fetch_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        db_key: &Vec<u8>,
-    ) -> Option<Vec<u8>> {
+        key: SubstateKey,
+    ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates(node_id, module_id, db_key)
-            .map(|x| x.to_vec())
-            .or_else(|| self.fetch_substate_from_database(node_id, module_id, db_key))
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key.clone())
+            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
     }
 
-    fn fetch_substate_from_database(
+    fn fetch_substate_from_database<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        db_key: &Vec<u8>,
-    ) -> Option<Vec<u8>> {
-        self.substate_db.get_substate(node_id, module_id, db_key)
+        key: SubstateKey,
+    ) -> Option<D> {
+        self.substate_db
+            .get_mapped_substate::<M, D>(node_id, module_id, key)
     }
 
-    fn fetch_substate_from_state_updates(
+    fn fetch_substate_from_state_updates<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        db_key: &Vec<u8>,
-    ) -> Option<&[u8]> {
+        key: SubstateKey,
+    ) -> Option<D> {
         self.tracked
             .get(node_id)
             .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
-            .and_then(|tracked_module| tracked_module.substates.get(db_key))
-            .and_then(|tracked_key| tracked_key.get().map(|e| e.as_slice()))
+            .and_then(|tracked_module| tracked_module.substates.get(&M::map_to_db_key(key)))
+            .and_then(|tracked_key| tracked_key.get().map(|e| e.as_typed().unwrap()))
     }
 }

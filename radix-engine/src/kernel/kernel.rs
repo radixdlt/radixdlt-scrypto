@@ -107,8 +107,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     }
                 }
                 TypeInfoSubstate::KeyValueStore(..)
-                | TypeInfoSubstate::IterableStore
-                | TypeInfoSubstate::SortedStore => {
+                | TypeInfoSubstate::Index
+                | TypeInfoSubstate::SortedIndex => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -382,69 +382,65 @@ where
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        if let Some(substate) = self.heap.get_substate(
+        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
             &bucket_id,
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && blueprint.blueprint_name == BUCKET_BLUEPRINT => {}
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint,
+                    blueprint_parent,
+                    ..
+                }) if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                    && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                        || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                {
+                    let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
+                    let parent = blueprint_parent.unwrap();
+                    let resource_address: ResourceAddress =
+                        ResourceAddress::new_unchecked(parent.as_ref().clone().try_into().unwrap());
+                    (is_fungible, resource_address)
+                }
                 _ => {
                     return None;
                 }
             }
         } else {
             return None;
-        }
+        };
 
-        if let Some(substate) = self.heap.get_substate(
-            &bucket_id,
-            SysModuleId::User.into(),
-            &BucketOffset::Info.into(),
-        ) {
-            let info: BucketInfoSubstate = substate.as_typed().unwrap();
+        if is_fungible_bucket {
+            let substate = self
+                .heap
+                .get_substate(
+                    bucket_id,
+                    SysModuleId::Object.into(),
+                    &FungibleBucketOffset::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
 
-            match info.resource_type {
-                ResourceType::Fungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            bucket_id,
-                            SysModuleId::User.into(),
-                            &BucketOffset::LiquidFungible.into(),
-                        )
-                        .unwrap();
-                    let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
-
-                    Some(BucketSnapshot::Fungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        liquid: liquid.amount(),
-                    })
-                }
-                ResourceType::NonFungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            bucket_id,
-                            SysModuleId::User.into(),
-                            &BucketOffset::LiquidNonFungible.into(),
-                        )
-                        .unwrap();
-                    let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
-
-                    Some(BucketSnapshot::NonFungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        liquid: liquid.ids().clone(),
-                    })
-                }
-            }
+            Some(BucketSnapshot::Fungible {
+                resource_address,
+                liquid: liquid.amount(),
+            })
         } else {
-            None
+            let substate = self
+                .heap
+                .get_substate(
+                    bucket_id,
+                    SysModuleId::Object.into(),
+                    &NonFungibleBucketOffset::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
+
+            Some(BucketSnapshot::NonFungible {
+                resource_address,
+                liquid: liquid.ids().clone(),
+            })
         }
     }
 
@@ -523,7 +519,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
+    #[trace_resources(log=node_id.entity_type(), log=module_id)]
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,

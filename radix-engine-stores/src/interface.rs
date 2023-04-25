@@ -18,32 +18,20 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-// TODO: Add streaming support for `list_substates`
-
-/// Utility function for encoding a substate ID `(NodeId, ModuleId, SubstateKey)` into a `Vec<u8>`,
-pub fn encode_substate_id(node_id: &NodeId, module_id: ModuleId, db_key: &Vec<u8>) -> Vec<u8> {
+pub fn encode_substate_id(index_id: &Vec<u8>, db_key: &Vec<u8>) -> Vec<u8> {
     let mut buffer = Vec::new();
-    buffer.extend(node_id.as_ref());
-    buffer.push(module_id.0);
+    buffer.extend(index_id);
     buffer.extend(db_key); // Length is marked by EOF
     buffer
 }
 
-/// Utility function for decoding a substate ID `(NodeId, ModuleId, SubstateKey)` from a `Vec<u8>`,
-pub fn decode_substate_id(slice: &[u8]) -> Option<(NodeId, ModuleId, Vec<u8>)> {
-    if slice.len() >= NodeId::LENGTH + 1 {
-        // Decode node id
-        let mut node_id = [0u8; NodeId::LENGTH];
-        node_id.copy_from_slice(&slice[0..NodeId::LENGTH]);
-        let node_id = NodeId(node_id);
+// TODO: Clean this interface up and move size of hash to a more appropriate interface
+pub fn decode_substate_id(slice: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
+    if slice.len() >= 26 {
+        let index_id = slice[0..26].to_vec();
+        let key = slice[26 + 1..].to_vec();
 
-        // Decode module id
-        let module_id = ModuleId(slice[NodeId::LENGTH]);
-
-        // Decode db key
-        let db_key = slice[NodeId::LENGTH + 1..].to_vec();
-
-        return Some((node_id, module_id, db_key));
+        return Some((index_id, key));
     }
 
     return None;
@@ -170,45 +158,56 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct StateUpdates {
-    pub substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate>,
+pub struct DatabaseUpdates {
+    pub database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum StateUpdate {
+pub enum DatabaseUpdate {
     Set(Vec<u8>),
     Delete,
 }
 
-pub trait SubstateKeyMapper {
+pub trait DatabaseMapper {
+    fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> Vec<u8>;
     fn map_to_db_key(key: SubstateKey) -> Vec<u8>;
 }
 
 /// Represents the interface between Track and a database vendor.
 pub trait SubstateDatabase {
+    /// Reads a substate of the given node module.
+    ///
+    /// [`Option::None`] is returned if missing.
+    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>>;
+
+    /// Returns a lexicographical sorted iterator over the substates of an index
+    fn list_substates(
+        &self,
+        index_id: &Vec<u8>,
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>;
+
     /// Convenience method for database readers
-    fn read_mapped_substate<M: SubstateKeyMapper, D: ScryptoDecode>(
+    fn get_mapped_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: SubstateKey,
     ) -> Option<D> {
-        self.get_substate(node_id, module_id, &M::map_to_db_key(substate_key))
-            .map(|buf| scrypto_decode(&buf).unwrap())
+        self.get_substate(
+            &M::map_to_db_index(node_id, module_id),
+            &M::map_to_db_key(substate_key),
+        )
+        .map(|buf| scrypto_decode(&buf).unwrap())
     }
 
-    /// Reads a substate of the given node module.
-    ///
-    /// [`Option::None`] is returned if missing.
-    fn get_substate(&self, node_id: &NodeId, module_id: ModuleId, key: &Vec<u8>)
-        -> Option<Vec<u8>>;
-
-    /// Returns an iterator over substates within the given substate module
-    fn list_substates(
+    /// Convenience method for database readers
+    fn list_mapped_substates<M: DatabaseMapper>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>;
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
+        self.list_substates(&M::map_to_db_index(node_id, module_id))
+    }
 }
 
 /// Interface for committing changes into a substate database.
@@ -216,36 +215,10 @@ pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
     ///
     /// An error is thrown in case of invalid module ID.
-    fn commit(&mut self, state_changes: &StateUpdates);
+    fn commit(&mut self, state_changes: &DatabaseUpdates);
 }
 
 /// Interface for listing nodes within a substate database.
 pub trait ListableSubstateDatabase {
     fn list_nodes(&self) -> Vec<NodeId>;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_encode_decode_substate_id() {
-        let node_id = NodeId([1u8; NodeId::LENGTH]);
-        let module_id = ModuleId(2);
-        let substate_key = SubstateKey::Map(vec![3]);
-        let substate_id = encode_substate_id(&node_id, module_id, &substate_key);
-        assert_eq!(
-            substate_id,
-            vec![
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, // node id
-                2, // module id
-                3, // substate key
-            ]
-        );
-        assert_eq!(
-            decode_substate_id(&substate_id),
-            Some((node_id, module_id, substate_key))
-        )
-    }
 }

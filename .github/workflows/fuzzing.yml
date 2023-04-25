@@ -84,7 +84,14 @@ jobs:
       run: |
         ./afl.sh watch ${{ github.event.inputs.watch_interval }}
 
+    - name: Quit AFL
+      if: failure() || cancelled()
+      working-directory: fuzz-tests
+      run: |
+        ./afl.sh quit
+
     - name: Process AFL results
+      if: success() || failure() || cancelled()
       working-directory: fuzz-tests
       run: |
         # it is expected to generate afl/crash_summary.txt
@@ -101,15 +108,22 @@ jobs:
         ## Repo:\n \
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
         ## Status:\n \
+        \n\`\`\`\n\
+        $(cat afl/sessions_info) \
         \n\`\`\`\n \
-         $(cargo afl whatsup -d afl/transaction) \
-        \n\`\`\`\n" > afl/summary
+        ## Details:\n \
+        <details>\n
+          <summary>More details</summary>\n
+        \n\`\`\`\n\
+        $(cargo afl whatsup -d afl/transaction) \
+        \n\`\`\`\n
+        </details>\n" > afl/summary
         cat afl/summary >> $GITHUB_STEP_SUMMARY
 
         echo -e \
-        "## Crash summary:\n \
-        \n\`\`\`\n \
-         $(cat afl/crash_summary.txt) \
+        "## Crash summary:\n\
+        \n\`\`\`\n\
+        $(cat afl/crash_summary.txt) \
         \n\`\`\`\n" >> $GITHUB_STEP_SUMMARY
 
         find afl -type f ! -path "*/queue/*" | tee list

@@ -73,9 +73,13 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             proofs,
             resource_address,
             match amount {
-                Some(amount) => NonFungiblesSpecification::Some(
-                    amount.to_string().parse().expect("Amount checked upfront"),
-                ),
+                Some(amount) => {
+                    NonFungiblesSpecification::Some(amount.to_string().parse().map_err(|_| {
+                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                            AuthZoneError::ComposeProofError(ComposeProofError::InvalidAmount),
+                        ))
+                    })?)
+                }
                 None => NonFungiblesSpecification::All,
             },
             api,
@@ -274,7 +278,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                 api.call_method(
                     container.as_node_id(),
                     match container {
-                        LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                        LocalRef::Bucket(_) => FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                         LocalRef::Vault(_) => FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                     },
                     scrypto_args!(amount),
@@ -359,7 +363,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
                 api.call_method(
                     container.as_node_id(),
                     match container {
-                        LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                        LocalRef::Bucket(_) => NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                         LocalRef::Vault(_) => NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     },
                     scrypto_args!(&ids),

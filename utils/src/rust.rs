@@ -205,16 +205,75 @@ pub mod collections {
         pub use btreeset;
     }
 
+    /// This is a stub implementation for Hasher (used by `IndexMap`, `IndexSet`) to get rid of non-deterministic output (caused by random seeding the hashes).
+    /// This is useful when fuzz testing, where exactly the same output is expected for the same input data across different runs.
+    #[cfg(feature = "radix_engine_fuzzing")]
+    pub mod stub_hasher {
+        use core::hash::{BuildHasher, Hasher};
+
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        pub struct StubHasher {
+            seed: u64,
+        }
+
+        impl Hasher for StubHasher {
+            fn write(&mut self, _bytes: &[u8]) {}
+
+            fn finish(&self) -> u64 {
+                self.seed
+            }
+        }
+
+        impl BuildHasher for StubHasher {
+            type Hasher = StubHasher;
+
+            fn build_hasher(&self) -> Self::Hasher {
+                StubHasher { seed: self.seed }
+            }
+        }
+
+        impl StubHasher {
+            fn new() -> Self {
+                StubHasher { seed: 0 }
+            }
+        }
+
+        impl Default for StubHasher {
+            fn default() -> Self {
+                StubHasher::new()
+            }
+        }
+    }
+
     pub mod hash_map {
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+
         #[cfg(feature = "alloc")]
         pub use hashbrown::hash_map::*;
         #[cfg(not(feature = "alloc"))]
         pub use std::collections::hash_map::*;
 
         #[cfg(feature = "alloc")]
-        pub use hashbrown::HashMap;
+        pub use hashbrown::HashMap as ext_HashMap;
         #[cfg(not(feature = "alloc"))]
-        pub use std::collections::HashMap;
+        pub use std::collections::HashMap as ext_HashMap;
+
+        pub type HashMap<K, V, S = DefaultHashBuilder> = ext_HashMap<K, V, S>;
+
+        /// Creates an empty map with capacity 0 and default Hasher
+        pub fn new<K, V>() -> HashMap<K, V> {
+            HashMap::with_capacity_and_hasher(0, DefaultHashBuilder::default())
+        }
+
+        /// Creates an empty map with given capacity and default Hasher
+        pub fn with_capacity<K, V>(n: usize) -> HashMap<K, V> {
+            HashMap::with_capacity_and_hasher(n, DefaultHashBuilder::default())
+        }
 
         #[macro_export]
         macro_rules! hashmap {
@@ -240,20 +299,39 @@ pub mod collections {
     }
 
     pub mod hash_set {
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+
         #[cfg(feature = "alloc")]
         pub use hashbrown::hash_set::*;
         #[cfg(not(feature = "alloc"))]
         pub use std::collections::hash_set::*;
 
         #[cfg(feature = "alloc")]
-        pub use hashbrown::HashSet;
+        pub use hashbrown::HashSet as ext_HashSet;
         #[cfg(not(feature = "alloc"))]
-        pub use std::collections::HashSet;
+        pub use std::collections::HashSet as ext_HashSet;
+
+        pub type HashSet<K> = ext_HashSet<K, DefaultHashBuilder>;
+
+        /// Creates an empty set with capacity 0 and default Hasher
+        pub fn new<K>() -> HashSet<K> {
+            HashSet::with_capacity_and_hasher(0, DefaultHashBuilder::default())
+        }
+
+        /// Creates an empty set with given capacity and default Hasher
+        pub fn with_capacity<K>(n: usize) -> HashSet<K> {
+            HashSet::with_capacity_and_hasher(n, DefaultHashBuilder::default())
+        }
 
         #[macro_export]
         macro_rules! hashset {
             ( ) => ({
-                $crate::rust::collections::hash_set::HashSet::default()
+                $crate::rust::collections::hash_set::HashSet::new()
             });
             ( $($key:expr),* ) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
@@ -296,9 +374,11 @@ pub mod collections {
     /// let index_map = indexmap!(1u32 => "entry_one", 5u32 => "entry_two");
     /// ```
     pub mod index_map {
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(not(feature = "alloc"))]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
@@ -356,9 +436,11 @@ pub mod collections {
     /// let index_set = indexset!(1u32, 2u32);
     /// ```
     pub mod index_set {
-        #[cfg(feature = "alloc")]
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(not(feature = "alloc"))]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
@@ -415,22 +497,33 @@ pub mod collections {
         #[cfg(not(feature = "alloc"))]
         use std::borrow::Borrow;
 
+        #[cfg(feature = "radix_engine_fuzzing")]
+        pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+
         /// A thin wrapper around a `HashMap`, which guarantees that a `HashMap` usage will not
         /// result in a non-deterministic execution (simply by disallowing the iteration over its
         /// elements).
         #[derive(Debug, Clone, PartialEq, Eq)]
-        pub struct NonIterMap<K: Eq + Hash, V>(HashMap<K, V>);
+        pub struct NonIterMap<K: Eq + Hash, V, S: core::hash::BuildHasher = DefaultHashBuilder>(
+            HashMap<K, V, S>,
+        );
 
         #[cfg(feature = "alloc")]
-        pub type Entry<'a, K, V> =
-            hashbrown::hash_map::Entry<'a, K, V, hashbrown::hash_map::DefaultHashBuilder>;
+        pub type Entry<'a, K, V> = hashbrown::hash_map::Entry<'a, K, V, DefaultHashBuilder>;
         #[cfg(not(feature = "alloc"))]
         pub type Entry<'a, K, V> = std::collections::hash_map::Entry<'a, K, V>;
 
         impl<K: Hash + Eq, V> NonIterMap<K, V> {
             /// Creates an empty map.
             pub fn new() -> Self {
-                Self(HashMap::new())
+                Self(HashMap::with_capacity_and_hasher(
+                    0,
+                    DefaultHashBuilder::default(),
+                ))
             }
 
             /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -513,8 +606,10 @@ pub mod collections {
     pub use btree_set::BTreeSet;
     pub use hash_map::hashmap;
     pub use hash_map::HashMap;
+    pub use hash_map::{new as hash_map_new, with_capacity as hash_map_with_capacity};
     pub use hash_set::hashset;
     pub use hash_set::HashSet;
+    pub use hash_set::{new as hash_set_new, with_capacity as hash_set_with_capacity};
     pub use index_map::indexmap;
     pub use index_map::IndexMap;
     pub use index_map::{new as index_map_new, with_capacity as index_map_with_capacity};
