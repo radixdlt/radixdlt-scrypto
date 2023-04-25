@@ -10,7 +10,7 @@ use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -90,7 +90,7 @@ impl EpochManagerBlueprint {
         };
 
         let validators = {
-            let sorted_validators = api.new_sorted_store()?;
+            let sorted_validators = api.new_sorted_index()?;
             Own(sorted_validators)
         };
 
@@ -176,13 +176,12 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn get_current_epoch<Y>(receiver: &NodeId, api: &mut Y) -> Result<u64, RuntimeError>
+    pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<u64, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::EpochManager.into(),
+        let handle = api.lock_field(
+            EpochManagerOffset::EpochManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -195,18 +194,10 @@ impl EpochManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mgr_handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::EpochManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let mgr_handle =
+            api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
         let epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
-        Self::epoch_change(
-            receiver,
-            epoch_manager.epoch,
-            epoch_manager.max_validators,
-            api,
-        )?;
+        Self::epoch_change(epoch_manager.epoch, epoch_manager.max_validators, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_access_rule_and_mutability(
@@ -219,19 +210,12 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn next_round<Y>(
-        receiver: &NodeId,
-        round: u64,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn next_round<Y>(round: u64, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let mgr_handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::EpochManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let mgr_handle =
+            api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
         let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
 
         if round <= epoch_manager.round {
@@ -246,7 +230,7 @@ impl EpochManagerBlueprint {
         if round >= epoch_manager.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
             let max_validators = epoch_manager.max_validators;
-            Self::epoch_change(receiver, next_epoch, max_validators, api)?;
+            Self::epoch_change(next_epoch, max_validators, api)?;
             epoch_manager.epoch = next_epoch;
             epoch_manager.round = 0;
         } else {
@@ -260,19 +244,11 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn set_epoch<Y>(
-        receiver: &NodeId,
-        epoch: u64,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn set_epoch<Y>(epoch: u64, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::EpochManager.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
 
         let mut epoch_manager: EpochManagerSubstate = api.sys_read_substate_typed(handle)?;
         epoch_manager.epoch = epoch;
@@ -282,7 +258,6 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        _receiver: &NodeId,
         key: EcdsaSecp256k1PublicKey,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
@@ -295,16 +270,14 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
-        receiver: &NodeId,
         update: UpdateSecondaryIndex,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::RegisteredValidatorSet.into(),
+        let handle = api.lock_field(
+            EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::read_only(),
         )?;
         let registered_validators: SecondaryIndexSubstate = api.sys_read_substate_typed(handle)?;
@@ -317,7 +290,7 @@ impl EpochManagerBlueprint {
                 key,
                 stake,
             } => {
-                api.insert_typed_into_sorted_store(
+                api.insert_typed_into_sorted_index(
                     secondary_index.as_node_id(),
                     index_key,
                     (address, Validator { key, stake }),
@@ -325,13 +298,13 @@ impl EpochManagerBlueprint {
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let (address, mut validator) = api
-                    .remove_typed_from_sorted_store::<(ComponentAddress, Validator)>(
+                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
                         secondary_index.as_node_id(),
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
-                api.insert_typed_into_sorted_store(
+                api.insert_typed_into_sorted_index(
                     secondary_index.as_node_id(),
                     index_key,
                     (address, validator),
@@ -343,38 +316,32 @@ impl EpochManagerBlueprint {
                 new_stake_amount,
             } => {
                 let (address, mut validator) = api
-                    .remove_typed_from_sorted_store::<(ComponentAddress, Validator)>(
+                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
                         secondary_index.as_node_id(),
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
-                api.insert_typed_into_sorted_store(
+                api.insert_typed_into_sorted_index(
                     secondary_index.as_node_id(),
                     new_index_key,
                     (address, validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                api.remove_from_sorted_store(secondary_index.as_node_id(), &index_key)?;
+                api.remove_from_sorted_index(secondary_index.as_node_id(), &index_key)?;
             }
         }
 
         Ok(())
     }
 
-    fn epoch_change<Y>(
-        receiver: &NodeId,
-        epoch: u64,
-        max_validators: u32,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn epoch_change<Y>(epoch: u64, max_validators: u32, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::RegisteredValidatorSet.into(),
+        let handle = api.lock_field(
+            EpochManagerOffset::RegisteredValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -383,13 +350,12 @@ impl EpochManagerBlueprint {
         let secondary_index = registered_validator_set.validators;
 
         let validators: Vec<(ComponentAddress, Validator)> =
-            api.scap_typed_sorted_store(secondary_index.as_node_id(), max_validators)?;
+            api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &EpochManagerOffset::CurrentValidatorSet.into(),
+        let handle = api.lock_field(
+            EpochManagerOffset::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
         let mut validator_set: CurrentValidatorSetSubstate = api.sys_read_substate_typed(handle)?;

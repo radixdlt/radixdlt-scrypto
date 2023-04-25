@@ -382,7 +382,7 @@ fn substate_id(
     (
         NodeId(fake_pkg_address.into()),
         ModuleId(module_id as u8),
-        SubstateKey::from_vec(fake_kvs_entry_id).unwrap(),
+        SubstateKey::Map(fake_kvs_entry_id),
     )
 }
 

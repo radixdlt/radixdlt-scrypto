@@ -6,7 +6,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_stores::interface::NodeSubstates;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
@@ -42,13 +42,24 @@ pub struct LockInfo {
 /// API for managing substates within nodes
 pub trait KernelSubstateApi {
     /// Locks a substate to make available for reading and/or writing
+    fn kernel_lock_substate_with_default(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
+    ) -> Result<LockHandle, RuntimeError>;
+
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError>;
+    ) -> Result<LockHandle, RuntimeError> {
+        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None)
+    }
 
     /// Retrieves info related to a lock
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
@@ -102,7 +113,21 @@ pub trait KernelSubstateApi {
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+
+    fn kernel_scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+
+    fn kernel_take_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 }
 
 #[derive(Debug)]

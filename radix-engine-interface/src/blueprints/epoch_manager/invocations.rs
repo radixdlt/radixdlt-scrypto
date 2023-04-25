@@ -1,4 +1,4 @@
-use crate::api::sorted_store_api::SortedKey;
+use crate::api::sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::types::*;

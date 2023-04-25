@@ -28,7 +28,7 @@ pub enum SysModuleId {
     Royalty,
     AccessRules,
     Object,
-    VirtualizedObject,
+    Virtualized,
 }
 
 impl Into<ModuleId> for SysModuleId {
@@ -158,8 +158,13 @@ macro_rules! into_substate_key {
     ($t:ty) => {
         impl Into<SubstateKey> for $t {
             fn into(self) -> SubstateKey {
-                SubstateKey::from_vec(vec![self as u8])
-                    .expect("Failed to convert offset into substate key")
+                SubstateKey::Tuple(self as u8)
+            }
+        }
+
+        impl Into<u8> for $t {
+            fn into(self) -> u8 {
+                self as u8
             }
         }
     };

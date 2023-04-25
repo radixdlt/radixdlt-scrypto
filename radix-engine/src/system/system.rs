@@ -1,6 +1,6 @@
 use crate::errors::{
-    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType,
-    InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError,
+    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError,
+    RuntimeError, SubstateValidationError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -8,19 +8,20 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
+use radix_engine_interface::api::index_api::ClientIndexApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::sorted_store_api::SortedKey;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::sorted_index_api::SortedKey;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -38,14 +39,14 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub struct SystemDownstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
+pub struct SystemDownstream<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
 
 impl<'a, Y, V> SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     pub fn new(api: &'a mut Y) -> Self {
@@ -54,101 +55,13 @@ where
             phantom: PhantomData::default(),
         }
     }
-
-    fn can_substate_be_accessed(actor: &Actor, node_id: &NodeId) -> bool {
-        // TODO: Remove
-        if is_native_package(actor.blueprint().package_address) {
-            return true;
-        }
-
-        if node_id.is_internal_kv_store() {
-            return true;
-        }
-
-        match actor {
-            Actor::Method {
-                node_id: actor_node_id,
-                ..
-            } if actor_node_id == node_id => true,
-            _ => false,
-        }
-    }
 }
 
-impl<'a, Y, V> ClientSubstateApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    #[trace_resources]
-    fn sys_lock_substate(
-        &mut self,
-        node_id: &NodeId,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-
-        // TODO: Remove
-        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            match &type_info {
-                TypeInfoSubstate::Object(info)
-                    if info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT) => {}
-                _ => {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
-                }
-            }
-        }
-
-        let actor = self.api.kernel_get_current_actor().unwrap();
-
-        // TODO: Check if valid substate_key for node_id
-        if !Self::can_substate_be_accessed(&actor, node_id) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateAccess(Box::new(InvalidSubstateAccess {
-                    actor: actor.clone(),
-                    node_id: node_id.clone(),
-                    substate_key: substate_key.clone(),
-                    flags,
-                })),
-            ));
-        }
-
-        let module_id = match type_info {
-            TypeInfoSubstate::SortedStore => {
-                // TODO: Implement in sorted store api
-                panic!("Not supported")
-            }
-            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::VirtualizedObject,
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                if let Actor::Method { module_id, .. } = &actor {
-                    match module_id {
-                        ObjectModuleId::SELF => {
-                            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
-                                    SysModuleId::VirtualizedObject
-                                }
-                                _ => SysModuleId::Object,
-                            }
-                        }
-                        ObjectModuleId::Metadata => SysModuleId::Metadata,
-                        ObjectModuleId::Royalty => SysModuleId::Royalty,
-                        ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-                    }
-                } else {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::VirtualizedObject,
-                        _ => SysModuleId::Object,
-                    }
-                }
-            }
-        };
-
-        self.api
-            .kernel_lock_substate(&node_id, module_id.into(), substate_key, flags)
-    }
-
     #[trace_resources]
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.api
@@ -166,7 +79,7 @@ where
             node_id, module_id, ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::VirtualizedObject.into()) {
+        if module_id.eq(&SysModuleId::Virtualized.into()) {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
@@ -215,7 +128,7 @@ where
 
 impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -287,7 +200,7 @@ where
             .map(|(i, x)| {
                 (
                     // TODO check size during package publishing time
-                    SubstateKey::from_vec(vec![i as u8]).unwrap(),
+                    SubstateKey::Tuple(i as u8),
                     IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
                 )
             })
@@ -311,7 +224,7 @@ where
         };
 
         let self_module_id = match (package_address, blueprint_ident) {
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::VirtualizedObject,
+            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
             _ => SysModuleId::Object,
         };
 
@@ -466,7 +379,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
-                        .remove(&SysModuleId::VirtualizedObject.into())
+                        .remove(&SysModuleId::Virtualized.into())
                         .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
@@ -546,7 +459,9 @@ where
                         (blueprint, global_address)
                     }
 
-                    TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                    TypeInfoSubstate::KeyValueStore(..)
+                    | TypeInfoSubstate::SortedIndex
+                    | TypeInfoSubstate::Index => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -599,7 +514,9 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+            TypeInfoSubstate::KeyValueStore(..)
+            | TypeInfoSubstate::SortedIndex
+            | TypeInfoSubstate::Index => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -632,7 +549,7 @@ where
 
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -648,7 +565,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::VirtualizedObject.into() => btreemap!(),
+                SysModuleId::Virtualized.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -665,7 +582,9 @@ where
     ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. } | TypeInfoSubstate::SortedStore => {
+            TypeInfoSubstate::Object { .. }
+            | TypeInfoSubstate::SortedIndex
+            | TypeInfoSubstate::Index => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -673,16 +592,71 @@ where
 
         Ok(schema)
     }
+
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+        }
+
+        let actor = self.api.kernel_get_current_actor().unwrap();
+
+        let module_id = match type_info {
+            TypeInfoSubstate::SortedIndex | TypeInfoSubstate::Index => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            }
+            TypeInfoSubstate::KeyValueStore(..) => SysModuleId::Virtualized,
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                if let Actor::Method { module_id, .. } = &actor {
+                    match module_id {
+                        ObjectModuleId::SELF => {
+                            match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                                _ => {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::NotAKeyValueStore,
+                                    ))
+                                }
+                            }
+                        }
+                        ObjectModuleId::Metadata => SysModuleId::Metadata,
+                        ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
+                            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+                        }
+                    }
+                } else {
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                        _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
+                    }
+                }
+            }
+        };
+
+        let substate_key = SubstateKey::Map(key.clone());
+
+        self.api.kernel_lock_substate_with_default(
+            &node_id,
+            module_id.into(),
+            &substate_key,
+            flags,
+            Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
+        )
+    }
 }
 
-impl<'a, Y, V> ClientSortedStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    #[trace_resources]
-    fn new_sorted_store(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalSortedStore;
+    fn new_index(&mut self) -> Result<NodeId, RuntimeError> {
+        let entity_type = EntityType::InternalIndex;
         let node_id = self.api.kernel_allocate_node_id(entity_type)?;
 
         self.api.kernel_create_node(
@@ -690,7 +664,126 @@ where
             btreemap!(
                 SysModuleId::Object.into() => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::SortedStore
+                    TypeInfoSubstate::Index
+                ).to_substates(),
+            ),
+        )?;
+
+        Ok(node_id)
+    }
+
+    fn insert_into_index(
+        &mut self,
+        node_id: &NodeId,
+        key: Vec<u8>,
+        buffer: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::Index => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        if !value.owned_node_ids().is_empty() {
+            return Err(RuntimeError::SystemError(
+                SystemError::CannotStoreOwnedInIterable,
+            ));
+        }
+
+        let module_id = SysModuleId::Object.into();
+        let substate_key = SubstateKey::Map(key);
+
+        self.api
+            .kernel_set_substate(node_id, module_id, substate_key, value)
+    }
+
+    fn remove_from_index(
+        &mut self,
+        node_id: &NodeId,
+        key: Vec<u8>,
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::Index => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let module_id = SysModuleId::Object.into();
+        let substate_key = SubstateKey::Map(key);
+
+        let rtn = self
+            .api
+            .kernel_remove_substate(node_id, module_id, &substate_key)?
+            .map(|v| v.into());
+
+        Ok(rtn)
+    }
+
+    fn scan_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::Index => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let module_id = SysModuleId::Object;
+        let substates = self
+            .api
+            .kernel_scan_substates(node_id, module_id, count)?
+            .into_iter()
+            .map(|value| value.into())
+            .collect();
+
+        Ok(substates)
+    }
+
+    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::Index => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
+            }
+        }
+
+        let module_id = SysModuleId::Object;
+        let substates = self
+            .api
+            .kernel_take_substates(node_id, module_id, count)?
+            .into_iter()
+            .map(|value| value.into())
+            .collect();
+
+        Ok(substates)
+    }
+}
+
+impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
+{
+    #[trace_resources]
+    fn new_sorted_index(&mut self) -> Result<NodeId, RuntimeError> {
+        let entity_type = EntityType::InternalSortedIndex;
+        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+
+        self.api.kernel_create_node(
+            node_id,
+            btreemap!(
+                SysModuleId::Object.into() => btreemap!(),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::SortedIndex
                 ).to_substates(),
             ),
         )?;
@@ -699,7 +792,7 @@ where
     }
 
     #[trace_resources]
-    fn insert_into_sorted_store(
+    fn insert_into_sorted_index(
         &mut self,
         node_id: &NodeId,
         sorted_key: SortedKey,
@@ -707,7 +800,7 @@ where
     ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::SortedIndex => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
@@ -723,21 +816,21 @@ where
             ));
         }
 
-        let substate_key = SubstateKey::from_vec(sorted_key.into()).unwrap();
-
+        let module_id = SysModuleId::Object.into();
+        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
         self.api
-            .kernel_set_substate(node_id, SysModuleId::Object.into(), substate_key, value)
+            .kernel_set_substate(node_id, module_id, substate_key, value)
     }
 
     #[trace_resources]
-    fn scan_sorted_store(
+    fn scan_sorted_index(
         &mut self,
         node_id: &NodeId,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::SortedIndex => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
@@ -747,31 +840,32 @@ where
             .api
             .kernel_scan_sorted_substates(node_id, SysModuleId::Object.into(), count)?
             .into_iter()
-            .map(|(_key, value)| value.into())
+            .map(|value| value.into())
             .collect();
 
         Ok(substates)
     }
 
     #[trace_resources]
-    fn remove_from_sorted_store(
+    fn remove_from_sorted_index(
         &mut self,
         node_id: &NodeId,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::SortedIndex => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
             }
         }
 
-        let substate_key = SubstateKey::from_vec(sorted_key.clone().into()).unwrap();
+        let module_id = SysModuleId::Object.into();
+        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, SysModuleId::Object.into(), &substate_key)?
+            .kernel_remove_substate(node_id, module_id, &substate_key)?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -780,7 +874,7 @@ where
 
 impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn call_function(
@@ -817,7 +911,7 @@ where
 
 impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources(log=units, log=reason)]
@@ -862,40 +956,116 @@ where
 
 impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, object_module_id, blueprint) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
+            Actor::Method {
+                node_id,
+                module_id,
+                blueprint,
+                ..
+            } => (node_id, module_id, blueprint),
+        };
+
+        // TODO: Remove
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
+            {
+                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+            }
+        }
+
+        let sys_module_id = match object_module_id {
+            ObjectModuleId::SELF => {
+                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                    (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                        return Err(RuntimeError::SystemError(SystemError::NotATuple));
+                    }
+                    _ => SysModuleId::Object,
+                }
+            }
+            ObjectModuleId::Metadata => {
+                return Err(RuntimeError::SystemError(SystemError::NotATuple));
+            }
+            ObjectModuleId::Royalty => SysModuleId::Royalty,
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
+        };
+
+        // TODO: Check if valid substate_key for node_id
+
+        let substate_key = SubstateKey::Tuple(field);
+
         self.api
-            .kernel_get_current_actor()
-            .and_then(|e| match e {
-                Actor::Method {
-                    global_address: Some(address),
-                    ..
-                } => Some(address),
-                _ => None,
-            })
-            .ok_or(RuntimeError::SystemError(
+            .kernel_lock_substate(&node_id, sys_module_id.into(), &substate_key, flags)
+    }
+
+    #[trace_resources]
+    fn get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let (node_id, module_id) = match &actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
+            Actor::Method {
+                node_id, module_id, ..
+            } => (node_id, module_id),
+        };
+
+        let info = match module_id {
+            ObjectModuleId::SELF => self.get_object_info(node_id)?,
+            ObjectModuleId::Metadata => ObjectInfo {
+                blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
+                global: true,
+                type_parent: None,
+            },
+            ObjectModuleId::AccessRules => ObjectInfo {
+                blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                global: true,
+                type_parent: None,
+            },
+            ObjectModuleId::Royalty => ObjectInfo {
+                blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                global: true,
+                type_parent: None,
+            },
+        };
+
+        Ok(info)
+    }
+
+    #[trace_resources]
+    fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        match actor {
+            Actor::Method {
+                global_address: Some(address),
+                ..
+            } => Ok(address),
+            _ => Err(RuntimeError::SystemError(
                 SystemError::GlobalAddressDoesNotExist,
-            ))
+            )),
+        }
     }
 
     fn get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        Ok(self
-            .api
-            .kernel_get_current_actor()
-            .unwrap()
-            .blueprint()
-            .clone())
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        Ok(actor.blueprint().clone())
     }
 }
 
 impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -936,7 +1106,7 @@ where
 
 impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -954,7 +1124,7 @@ where
 
 impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -972,7 +1142,7 @@ where
 
 impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -1096,7 +1266,7 @@ where
 
 impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
@@ -1113,7 +1283,7 @@ where
 
 impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -1143,14 +1313,14 @@ where
 
 impl<'a, Y, V> ClientApi<RuntimeError> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
 }
 
 impl<'a, Y, V> KernelNodeApi for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
@@ -1176,18 +1346,19 @@ where
 
 impl<'a, Y, V> KernelSubstateApi for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_lock_substate(
+    fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
         self.api
-            .kernel_lock_substate(node_id, module_id, substate_key, flags)
+            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default)
     }
 
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
@@ -1239,18 +1410,36 @@ where
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, module_id, count)
     }
+
+    fn kernel_scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        self.api.kernel_scan_substates(node_id, module_id, count)
+    }
+
+    fn kernel_take_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        self.api.kernel_take_substates(node_id, module_id, count)
+    }
 }
 
-impl<'a, Y, V> KernelInternalApi<SystemCallback<V>> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemDownstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_get_callback(&mut self) -> &mut SystemCallback<V> {
+    fn kernel_get_callback(&mut self) -> &mut SystemConfig<V> {
         self.api.kernel_get_callback()
     }
 

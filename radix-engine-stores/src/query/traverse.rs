@@ -1,18 +1,17 @@
 use super::TypeInfoSubstate;
 use crate::interface::SubstateDatabase;
+use crate::jmt_support::JmtMapper;
 use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
+    LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
-    ObjectInfo, ResourceAddress, SubstateKey, SysModuleId,
+    ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
 };
-use radix_engine_interface::{
-    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
-    types::NodeId,
-};
+use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
@@ -34,13 +33,21 @@ pub trait StateTreeVisitor {
         &mut self,
         _vault_id: NodeId,
         _address: &ResourceAddress,
-        _resource: &LiquidNonFungibleResource,
+        _resource: &LiquidNonFungibleVault,
+    ) {
+    }
+
+    fn visit_non_fungible(
+        &mut self,
+        _vault_id: NodeId,
+        _address: &ResourceAddress,
+        _id: &NonFungibleLocalId,
     ) {
     }
 
     fn visit_node_id(
         &mut self,
-        _parent_id: Option<&(NodeId, ModuleId, SubstateKey)>,
+        _parent_id: Option<&(NodeId, ModuleId, Vec<u8>)>,
         _node_id: &NodeId,
         _depth: u32,
     ) {
@@ -58,7 +65,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, ModuleId, SubstateKey)>,
+        parent_node_id: Option<&(NodeId, ModuleId, Vec<u8>)>,
         node_id: NodeId,
     ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
@@ -66,7 +73,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, ModuleId, SubstateKey)>,
+        parent: Option<&(NodeId, ModuleId, Vec<u8>)>,
         node_id: NodeId,
         depth: u32,
     ) {
@@ -78,25 +85,20 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         self.visitor.visit_node_id(parent, &node_id, depth);
 
         // Load type info
-        let type_info: TypeInfoSubstate = scrypto_decode(
-            &self
-                .substate_db
-                .get_substate(
-                    &node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &SubstateKey::from_vec(vec![0]).unwrap(),
-                )
-                .expect("Failed to get substate")
-                .expect("Missing TypeInfo substate"),
-        )
-        .expect("Failed to decode TypeInfo substate");
+        let type_info = self
+            .substate_db
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                &node_id,
+                SysModuleId::TypeInfo.into(),
+                TypeInfoOffset::TypeInfo.into(),
+            )
+            .expect("Missing TypeInfo substate");
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_substates(&node_id, SysModuleId::VirtualizedObject.into(), u32::MAX)
-                    .expect("Failed to list key value store")
+                    .list_mapped_substates::<JmtMapper>(&node_id, SysModuleId::Virtualized.into())
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
                         .expect("Substate is not a scrypto value")
@@ -105,7 +107,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_recursive(
                             Some(&(
                                 node_id,
-                                SysModuleId::VirtualizedObject.into(),
+                                SysModuleId::Virtualized.into(),
                                 substate_key.clone(),
                             )),
                             child_node_id,
@@ -114,7 +116,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            TypeInfoSubstate::IterableStore => {}
+            TypeInfoSubstate::IterableStore | TypeInfoSubstate::SortedStore => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
                 type_parent,
@@ -123,18 +125,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                     && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                 {
-                    let liquid: LiquidFungibleResource = scrypto_decode(
-                        &self
-                            .substate_db
-                            .get_substate(
-                                &node_id,
-                                SysModuleId::Object.into(),
-                                &FungibleVaultOffset::LiquidFungible.into(),
-                            )
-                            .expect("Broken database")
-                            .expect("Broken database"),
-                    )
-                    .expect("Failed to decode liquid fungible");
+                    let liquid = self
+                        .substate_db
+                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                            &node_id,
+                            SysModuleId::Object.into(),
+                            FungibleVaultOffset::LiquidFungible.into(),
+                        )
+                        .expect("Broken database");
 
                     self.visitor.visit_fungible_vault(
                         node_id.into(),
@@ -144,47 +142,51 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                     && blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 {
-                    let liquid: LiquidNonFungibleResource = scrypto_decode(
-                        &self
-                            .substate_db
-                            .get_substate(
-                                &node_id,
-                                SysModuleId::Object.into(),
-                                &NonFungibleVaultOffset::LiquidNonFungible.into(),
-                            )
-                            .expect("Broken database")
-                            .expect("Broken database"),
-                    )
-                    .expect("Failed to decode liquid non-fungible");
+                    let liquid = self
+                        .substate_db
+                        .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
+                            &node_id,
+                            SysModuleId::Object.into(),
+                            NonFungibleVaultOffset::LiquidNonFungible.into(),
+                        )
+                        .expect("Broken database");
 
                     self.visitor.visit_non_fungible_vault(
                         node_id.into(),
                         &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
                         &liquid,
                     );
+
+                    let ids = self.substate_db.list_mapped_substates::<JmtMapper>(
+                        liquid.ids.as_node_id(),
+                        SysModuleId::Object.into(),
+                    );
+                    for (_key, value) in ids {
+                        let non_fungible_local_id: NonFungibleLocalId =
+                            scrypto_decode(&value).unwrap();
+
+                        self.visitor.visit_non_fungible(
+                            node_id.into(),
+                            &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                            &non_fungible_local_id,
+                        );
+                    }
                 } else {
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
-                        if let Ok(x) = self
+                        let x = self
                             .substate_db
-                            .list_substates(&node_id, t.into(), u32::MAX)
-                        {
-                            for (substate_key, substate_value) in x {
-                                let (_, owned_nodes, _) =
-                                    IndexedScryptoValue::from_vec(substate_value)
-                                        .expect("Substate is not a scrypto value")
-                                        .unpack();
-                                for child_node_id in owned_nodes {
-                                    self.traverse_recursive(
-                                        Some(&(
-                                            node_id,
-                                            SysModuleId::Object.into(),
-                                            substate_key.clone(),
-                                        )),
-                                        child_node_id,
-                                        depth + 1,
-                                    );
-                                }
+                            .list_mapped_substates::<JmtMapper>(&node_id, t.into());
+                        for (db_key, substate_value) in x {
+                            let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
+                                .expect("Substate is not a scrypto value")
+                                .unpack();
+                            for child_node_id in owned_nodes {
+                                self.traverse_recursive(
+                                    Some(&(node_id, SysModuleId::Object.into(), db_key.clone())),
+                                    child_node_id,
+                                    depth + 1,
+                                );
                             }
                         }
                     }

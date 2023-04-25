@@ -1,13 +1,13 @@
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{
-    AcquireLockError, DeleteSubstateError, NodeSubstates, SetSubstateError, SubstateStore,
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
 };
 
 use super::heap::Heap;
@@ -150,11 +150,6 @@ pub enum WriteSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ScanSortedSubstatesError {
-    NodeNotInCallFrame(NodeId),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameSetSubstateError {
     NodeNotInCallFrame(NodeId),
     StoreError(SetSubstateError),
@@ -163,7 +158,22 @@ pub enum CallFrameSetSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
     NodeNotInCallFrame(NodeId),
-    StoreError(DeleteSubstateError),
+    StoreError(TakeSubstateError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameScanSubstateError {
+    NodeNotInCallFrame(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameScanSortedSubstatesError {
+    NodeNotInCallFrame(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameTakeSortedSubstatesError {
+    NodeNotInCallFrame(NodeId),
 }
 
 impl CallFrame {
@@ -202,6 +212,7 @@ impl CallFrame {
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
@@ -214,32 +225,27 @@ impl CallFrame {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
-            match heap.get_substate_virtualize(node_id, module_id.into(), substate_key, || {
-                if module_id.virtualize_substates() {
-                    let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
-                    Some(value)
-                } else {
-                    None
-                }
-            }) {
-                Some(x) => x,
-                _ => {
-                    return Err(LockSubstateError::SubstateNotFound(
-                        node_id.clone(),
-                        module_id,
-                        substate_key.clone(),
-                    ));
-                }
+            if let Some(compute_default) = default {
+                heap.get_substate_virtualize(
+                    node_id,
+                    module_id.into(),
+                    substate_key,
+                    compute_default,
+                )
+            } else {
+                heap.get_substate(node_id, module_id.into(), substate_key)
+                    .ok_or_else(|| {
+                        LockSubstateError::SubstateNotFound(
+                            node_id.clone(),
+                            module_id,
+                            substate_key.clone(),
+                        )
+                    })?
             }
         } else {
             let handle = store
                 .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
-                    if module_id.virtualize_substates() {
-                        let value = IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None);
-                        Some(value)
-                    } else {
-                        None
-                    }
+                    default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
@@ -445,7 +451,7 @@ impl CallFrame {
         if let Some(store_handle) = store_handle {
             store.update_substate(*store_handle, substate);
         } else {
-            heap.put_substate(*node_id, *module_id, substate_key.clone(), substate);
+            heap.set_substate(*node_id, *module_id, substate_key.clone(), substate);
         }
         Ok(())
     }
@@ -465,7 +471,7 @@ impl CallFrame {
             .ok_or_else(|| CallFrameSetSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         if heap.contains_node(node_id) {
-            todo!()
+            heap.set_substate(*node_id, module_id.into(), key, value);
         } else {
             store
                 .set_substate(*node_id, module_id, key, value)
@@ -487,14 +493,81 @@ impl CallFrame {
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let removed = if heap.contains_node(node_id) {
-            todo!()
+            heap.delete_substate(node_id, module_id.into(), key)
         } else {
             store
-                .delete_substate(node_id, module_id, key)
+                .take_substate(node_id, module_id.into(), key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
         Ok(removed)
+    }
+
+    pub fn scan_substates<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSubstateError> {
+        self.get_node_visibility(node_id)
+            .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
+
+        let substates = if heap.contains_node(node_id) {
+            heap.scan_substates(node_id, module_id.into(), count)
+        } else {
+            store.scan_substates(node_id, module_id.into(), count)
+        };
+
+        for substate in &substates {
+            let refs = substate.references();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref.clone(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
+    }
+
+    pub fn take_substates<'f, S: SubstateStore>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+        heap: &'f mut Heap,
+        store: &'f mut S,
+    ) -> Result<Vec<IndexedScryptoValue>, CallFrameTakeSortedSubstatesError> {
+        self.get_node_visibility(node_id).ok_or_else(|| {
+            CallFrameTakeSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
+        })?;
+
+        let substates = if heap.contains_node(node_id) {
+            heap.take_substates(node_id, module_id.into(), count)
+        } else {
+            store.take_substates(node_id, module_id.into(), count)
+        };
+
+        for substate in &substates {
+            let refs = substate.references();
+            // TODO: verify that refs does not have local refs
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref.clone(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
+
+        Ok(substates)
     }
 
     // Substate Virtualization does not apply to this call
@@ -506,17 +579,18 @@ impl CallFrame {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, ScanSortedSubstatesError> {
-        self.get_node_visibility(node_id)
-            .ok_or_else(|| ScanSortedSubstatesError::NodeNotInCallFrame(node_id.clone()))?;
+    ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSortedSubstatesError> {
+        self.get_node_visibility(node_id).ok_or_else(|| {
+            CallFrameScanSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
+        })?;
 
         let substates = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.scan_sorted(node_id, module_id, count)
+            store.scan_sorted_substates(node_id, module_id, count)
         };
 
-        for (_id, substate) in &substates {
+        for substate in &substates {
             let refs = substate.references();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {

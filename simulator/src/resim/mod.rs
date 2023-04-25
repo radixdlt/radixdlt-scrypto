@@ -75,6 +75,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -351,15 +352,13 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
-    let substate = substate_db
-        .get_substate(
+    let package_info = substate_db
+        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
+            PackageOffset::Info.into(),
         )
-        .expect("Database misconfigured")
         .ok_or(Error::PackageNotFound(package_address))?;
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Ok(package_info.schema)
 }
@@ -384,16 +383,13 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
-    let substate = substate_db
-        .get_substate(
+    let type_info = substate_db
+        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
-            &TypeInfoOffset::TypeInfo.into(),
+            TypeInfoOffset::TypeInfo.into(),
         )
-        .expect("Database misconfigured")
         .ok_or(Error::ComponentNotFound(component_address))?;
-
-    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
@@ -424,24 +420,22 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     *local_type_index,
                 ),
                 ObjectModuleId::SELF => {
-                    let substate = substate_db
-                        .get_substate(
+                    let type_info = substate_db
+                        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                             node_id,
                             SysModuleId::TypeInfo.into(),
-                            &TypeInfoOffset::TypeInfo.into(),
+                            TypeInfoOffset::TypeInfo.into(),
                         )
-                        .expect("Database misconfigured")
                         .unwrap();
-                    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                             blueprint.package_address,
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
-                            return None
-                        }
+                        TypeInfoSubstate::KeyValueStore(..)
+                        | TypeInfoSubstate::Index
+                        | TypeInfoSubstate::SortedIndex => return None,
                     }
                 }
             }
@@ -453,15 +447,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
         ),
     };
 
-    let substate = substate_db
-        .get_substate(
+    let package_info = substate_db
+        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
+            PackageOffset::Info.into(),
         )
-        .expect("Database misconfigured")
         .unwrap();
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Some((
         local_type_index,

@@ -4,9 +4,9 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
-use radix_engine_stores::interface::CommittableSubstateDatabase;
-use radix_engine_stores::interface::StateUpdate;
-use radix_engine_stores::interface::StateUpdates;
+use radix_engine_stores::interface::DatabaseUpdate;
+use radix_engine_stores::interface::DatabaseUpdates;
+use radix_engine_stores::interface::{CommittableSubstateDatabase, DatabaseMapper};
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
@@ -68,29 +68,30 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
             let module_id: ModuleId = SysModuleId::Object.into();
-            let substate_key_code: SubstateKey = PackageOffset::Code.into();
+            let index_id = JmtMapper::map_to_db_index(&node_id, module_id);
+            let substate_key_code: Vec<u8> = JmtMapper::map_to_db_key(PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
 
-            let substate_key_info: SubstateKey = PackageOffset::Info.into();
+            let substate_key_info: Vec<u8> = JmtMapper::map_to_db_key(PackageOffset::Info.into());
             let package_info = PackageInfoSubstate {
                 schema,
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };
-            let state_updates = StateUpdates {
-                substate_changes: indexmap!(
-                    (node_id, module_id, substate_key_code) => StateUpdate::Set(
-                        scrypto_encode(&package_code).unwrap()
-                    ),
-                    (node_id, module_id, substate_key_info) => StateUpdate::Set(
-                        scrypto_encode(&package_info).unwrap()
+            let state_updates = DatabaseUpdates {
+                database_updates: indexmap!(
+                    index_id => indexmap!(
+                        substate_key_code => DatabaseUpdate::Set(
+                            scrypto_encode(&package_code).unwrap()
+                        ),
+                        substate_key_info => DatabaseUpdate::Set(
+                            scrypto_encode(&package_info).unwrap()
+                        )
                     )
                 ),
             };
 
-            substate_db
-                .commit(&state_updates)
-                .expect("Database misconfigured");
+            substate_db.commit(&state_updates);
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {

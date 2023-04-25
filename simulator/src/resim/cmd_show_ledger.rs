@@ -1,16 +1,13 @@
 use clap::Parser;
 use colored::*;
-use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use transaction::model::Instruction;
-use utils::ContextualDisplay;
 
 use crate::resim::*;
-use crate::utils::*;
 
 /// Show entries in the ledger state
 #[derive(Parser, Debug)]
@@ -21,41 +18,6 @@ impl ShowLedger {
         let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
         Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-
-        writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
-        for (last, package_address) in substate_db.list_packages().iter().identify_last() {
-            writeln!(
-                out,
-                "{} {}",
-                list_item_prefix(last),
-                package_address.display(&bech32_encoder)
-            )
-            .map_err(Error::IOError)?;
-        }
-
-        writeln!(out, "{}:", "Components".green().bold()).map_err(Error::IOError)?;
-        for (last, component_address) in substate_db.list_components().iter().identify_last() {
-            writeln!(
-                out,
-                "{} {}",
-                list_item_prefix(last),
-                component_address.display(&bech32_encoder)
-            )
-            .map_err(Error::IOError)?;
-        }
-
-        writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
-        for (last, resource_address) in substate_db.list_resource_managers().iter().identify_last()
-        {
-            writeln!(
-                out,
-                "{} {}",
-                list_item_prefix(last),
-                resource_address.display(&bech32_encoder)
-            )
-            .map_err(Error::IOError)?;
-        }
 
         // Close the database
         drop(substate_db);

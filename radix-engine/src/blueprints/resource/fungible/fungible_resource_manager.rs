@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -150,17 +150,12 @@ impl FungibleResourceManagerBlueprint {
         Ok((resource_address, bucket))
     }
 
-    pub(crate) fn mint<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub(crate) fn mint<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
+        let resman_handle = api.lock_field(
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -184,17 +179,12 @@ impl FungibleResourceManagerBlueprint {
         Ok(bucket)
     }
 
-    pub(crate) fn burn<Y>(
-        receiver: &NodeId,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
+        let resman_handle = api.lock_field(
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -221,11 +211,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn drop_empty_bucket<Y>(
-        _receiver: &NodeId,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn drop_empty_bucket<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -244,27 +230,19 @@ impl FungibleResourceManagerBlueprint {
         }
     }
 
-    pub(crate) fn create_empty_bucket<Y>(
-        receiver: &NodeId,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_empty_bucket<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        Self::create_bucket(receiver, 0.into(), api)
+        Self::create_bucket(0.into(), api)
     }
 
-    pub(crate) fn create_bucket<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub(crate) fn create_bucket<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
+        let resman_handle = api.lock_field(
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: FungibleResourceManagerSubstate =
@@ -285,13 +263,12 @@ impl FungibleResourceManagerBlueprint {
         Ok(Bucket(Own(bucket_id)))
     }
 
-    pub(crate) fn create_empty_vault<Y>(receiver: &NodeId, api: &mut Y) -> Result<Own, RuntimeError>
+    pub(crate) fn create_empty_vault<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
+        let resman_handle = api.lock_field(
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: FungibleResourceManagerSubstate =
@@ -312,16 +289,12 @@ impl FungibleResourceManagerBlueprint {
         Ok(Own(vault_id))
     }
 
-    pub(crate) fn get_resource_type<Y>(
-        receiver: &NodeId,
-        api: &mut Y,
-    ) -> Result<ResourceType, RuntimeError>
+    pub(crate) fn get_resource_type<Y>(api: &mut Y) -> Result<ResourceType, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
+        let resman_handle = api.lock_field(
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -334,16 +307,12 @@ impl FungibleResourceManagerBlueprint {
         Ok(resource_type)
     }
 
-    pub(crate) fn get_total_supply<Y>(
-        receiver: &NodeId,
-        api: &mut Y,
-    ) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            &ResourceManagerOffset::ResourceManager.into(),
+        let resman_handle = api.lock_field(
+            ResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: FungibleResourceManagerSubstate =

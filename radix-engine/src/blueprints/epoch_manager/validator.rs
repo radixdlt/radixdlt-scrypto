@@ -2,7 +2,7 @@ use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -12,8 +12,8 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::sorted_store_api::SortedKey;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::sorted_index_api::SortedKey;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -55,21 +55,21 @@ pub enum ValidatorError {
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
-    pub fn register<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn register<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::register_update(receiver, true, api)
+        Self::register_update(true, api)
     }
 
-    pub fn unregister<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn unregister<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::register_update(receiver, false, api)
+        Self::register_update(false, api)
     }
 
-    pub fn stake<Y>(receiver: &NodeId, stake: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub fn stake<Y>(stake: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -79,11 +79,7 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &ValidatorOffset::Validator.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
@@ -109,13 +105,8 @@ impl ValidatorBlueprint {
         };
 
         // Update EpochManager
-        let new_index_key = Self::index_update(
-            receiver,
-            &validator,
-            validator.is_registered,
-            new_stake_amount,
-            api,
-        )?;
+        let new_index_key =
+            Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
         api.sys_write_substate_typed(handle, &validator)?;
@@ -124,13 +115,9 @@ impl ValidatorBlueprint {
         Ok(lp_token_bucket)
     }
 
-    pub fn unstake<Y>(
-        receiver: &NodeId,
-        lp_tokens: Bucket,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub fn unstake<Y>(lp_tokens: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + KernelSubstateApi,
     {
         // Prepare event and emit it once operations finish
         let event = {
@@ -140,13 +127,9 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &ValidatorOffset::Validator.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
-        let manager = api.get_object_info(receiver)?.type_parent.unwrap();
+        let manager = api.get_info()?.type_parent.unwrap();
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
@@ -168,8 +151,9 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.sys_lock_substate(
+            let manager_handle = api.kernel_lock_substate(
                 manager.as_node_id(),
+                SysModuleId::Object.into(),
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -194,13 +178,8 @@ impl ValidatorBlueprint {
         };
 
         // Update EpochManager
-        let new_index_key = Self::index_update(
-            receiver,
-            &validator,
-            validator.is_registered,
-            new_stake_amount,
-            api,
-        )?;
+        let new_index_key =
+            Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
         api.sys_write_substate_typed(handle, &validator)?;
@@ -209,16 +188,12 @@ impl ValidatorBlueprint {
         Ok(unstake_bucket)
     }
 
-    fn register_update<Y>(
-        receiver: &NodeId,
-        new_registered: bool,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorOffset::Validator.into();
-        let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
+        let handle = api.lock_field(substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         // No update
@@ -231,8 +206,7 @@ impl ValidatorBlueprint {
             stake_vault.sys_amount(api)?
         };
 
-        let index_key =
-            Self::index_update(receiver, &validator, new_registered, stake_amount, api)?;
+        let index_key = Self::index_update(&validator, new_registered, stake_amount, api)?;
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
@@ -248,7 +222,6 @@ impl ValidatorBlueprint {
     }
 
     fn index_update<Y>(
-        receiver: &NodeId,
         validator: &ValidatorSubstate,
         new_registered: bool,
         new_stake_amount: Decimal,
@@ -288,7 +261,7 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let manager = api.get_object_info(receiver)?.type_parent.unwrap();
+            let manager = api.get_info()?.type_parent.unwrap();
             api.call_method(
                 manager.as_node_id(),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
@@ -299,23 +272,15 @@ impl ValidatorBlueprint {
         Ok(new_sorted_key)
     }
 
-    pub fn claim_xrd<Y>(
-        receiver: &NodeId,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    pub fn claim_xrd<Y>(bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + KernelSubstateApi,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &ValidatorOffset::Validator.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
         let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
-        let manager = api.get_object_info(receiver)?.type_parent.unwrap();
+        let manager = api.get_info()?.type_parent.unwrap();
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
@@ -326,8 +291,9 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.sys_lock_substate(
+            let mgr_handle = api.kernel_lock_substate(
                 manager.as_node_id(),
+                SysModuleId::Object.into(),
                 &EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -363,25 +329,17 @@ impl ValidatorBlueprint {
         Ok(claimed_bucket)
     }
 
-    pub fn update_key<Y>(
-        receiver: &NodeId,
-        key: EcdsaSecp256k1PublicKey,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn update_key<Y>(key: EcdsaSecp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.sys_lock_substate(
-            receiver,
-            &ValidatorOffset::Validator.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
         let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
 
         // Update Epoch Manager
         {
             if let Some(index_key) = &validator.sorted_key {
-                let manager = api.get_object_info(receiver)?.type_parent.unwrap();
+                let manager = api.get_info()?.type_parent.unwrap();
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
                     index_key: index_key.clone(),
                     key,

@@ -9,6 +9,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
@@ -123,29 +124,24 @@ fn test_genesis_resource_with_initial_allocation() {
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
-    let persisted_resource_manager_substate = substate_db
-        .get_substate(
+    let resource_manager_substate = substate_db
+        .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
             &resource_address.as_node_id(),
             SysModuleId::Object.into(),
-            &ResourceManagerOffset::ResourceManager.into(),
+            ResourceManagerOffset::ResourceManager.into(),
         )
-        .unwrap()
         .unwrap();
-
-    let resource_manager_substate: FungibleResourceManagerSubstate =
-        scrypto_decode(&persisted_resource_manager_substate).unwrap();
     assert_eq!(resource_manager_substate.total_supply, allocation_amount);
 
-    let persisted_symbol_metadata_entry = substate_db
-        .get_substate(
+    let key = scrypto_encode("symbol").unwrap();
+    let entry = substate_db
+        .get_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
             SysModuleId::Metadata.into(),
-            &SubstateKey::from_vec(scrypto_encode("symbol").unwrap()).unwrap(),
+            SubstateKey::Map(key),
         )
-        .unwrap()
         .unwrap();
 
-    let entry: Option<MetadataEntry> = scrypto_decode(&persisted_symbol_metadata_entry).unwrap();
     if let Some(MetadataEntry::Value(MetadataValue::String(symbol))) = entry {
         assert_eq!(symbol, "TST");
     } else {

@@ -29,6 +29,8 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
+use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_stores::query::TypeInfoSubstate;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -186,16 +188,15 @@ where
         Vec<TransactionReceipt>,
         GenesisWrapUpReceipt,
     )> {
-        if self
+        let xrd_info = self
             .substate_db
-            .get_substate(
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
                 SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into(),
-            )
-            .expect("Database misconfigured")
-            .is_none()
-        {
+                TypeInfoOffset::TypeInfo.into(),
+            );
+
+        if xrd_info.is_none() {
             let system_bootstrap_receipt = self.execute_system_bootstrap(
                 initial_epoch,
                 max_validators,
@@ -252,9 +253,7 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db
-            .commit(&commit_result.state_updates)
-            .unwrap();
+        self.substate_db.commit(&commit_result.state_updates);
 
         receipt.into()
     }
@@ -275,9 +274,7 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates)
-            .unwrap();
+        self.substate_db.commit(&commit_result.state_updates);
 
         receipt
     }
@@ -298,9 +295,7 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates)
-            .unwrap();
+        self.substate_db.commit(&commit_result.state_updates);
 
         receipt.into()
     }
