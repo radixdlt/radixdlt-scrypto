@@ -22,6 +22,10 @@ impl ComponentAddress {
         Self(node_id)
     }
 
+    pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+        Self(NodeId(raw))
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }

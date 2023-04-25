@@ -166,3 +166,108 @@ fn cannot_pass_proof_for_bucket_argument() {
         .to_string();
     assert!(error_message.contains("InputSchemaNotMatch"))
 }
+
+#[test]
+fn cannot_return_proof_for_bucket() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let component_address = setup_component(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .call_method(
+            component_address,
+            "return_proof_for_bucket",
+            manifest_args!(),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let error_message = receipt
+        .expect_commit_failure()
+        .outcome
+        .expect_failure()
+        .to_string();
+    assert!(error_message.contains("OutputSchemaNotMatch"))
+}
+
+#[test]
+fn cannot_return_bucket_for_proof() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let component_address = setup_component(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .call_method(
+            component_address,
+            "return_bucket_for_proof",
+            manifest_args!(),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let error_message = receipt
+        .expect_commit_failure()
+        .outcome
+        .expect_failure()
+        .to_string();
+    assert!(error_message.contains("OutputSchemaNotMatch"))
+}
+
+#[test]
+fn cannot_create_object_with_mismatching_data() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .call_function(
+            package_address,
+            "DataValidation",
+            "create_object_with_illegal_data",
+            manifest_args!(),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let error_message = receipt
+        .expect_commit_failure()
+        .outcome
+        .expect_failure()
+        .to_string();
+    assert!(error_message.contains("InvalidSubstateWrite"))
+}
+
+#[test]
+fn cannot_update_substate_with_mismatching_data() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let component_address = setup_component(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .call_method(
+            component_address,
+            "update_state_with_illegal_data",
+            manifest_args!(),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let error_message = receipt
+        .expect_commit_failure()
+        .outcome
+        .expect_failure()
+        .to_string();
+    assert!(error_message.contains("InvalidSubstateWrite"))
+}
