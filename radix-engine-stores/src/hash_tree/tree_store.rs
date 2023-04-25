@@ -5,7 +5,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
 use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
 use radix_engine_interface::*;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::{hash_map_new, HashMap};
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -99,7 +99,7 @@ pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
 impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
     pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
     pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateKey>>,
@@ -110,8 +110,8 @@ impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            root_tree_nodes: HashMap::new(),
-            sub_tree_nodes: HashMap::new(),
+            root_tree_nodes: hash_map_new(),
+            sub_tree_nodes: hash_map_new(),
             stale_key_buffer: Vec::new(),
         }
     }
@@ -160,7 +160,7 @@ impl SerializedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> Self {
         Self {
-            memory: HashMap::new(),
+            memory: hash_map_new(),
             stale_key_buffer: Vec::new(),
         }
     }

@@ -95,7 +95,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                let mut map = HashMap::new();
+                let mut map = hash_map_new();
                 map.insert("first".to_string(), bucket_id1);
                 map.insert("second".to_string(), bucket_id2);
 
