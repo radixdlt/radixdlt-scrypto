@@ -1,5 +1,4 @@
 use crate::interface::*;
-use radix_engine_interface::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
@@ -14,57 +13,10 @@ impl RocksdbSubstateStore {
 
         Self { db }
     }
-
-    // TODO: Is this still important?
-    /*
-    pub fn list_nodes(&self) -> Vec<NodeId> {
-        let mut items = Vec::new();
-        let mut iter = self
-            .db
-            .iterator(IteratorMode::From(&[], Direction::Forward));
-        while let Some(kv) = iter.next() {
-            let (key, _value) = kv.unwrap();
-            if key.len() < NodeId::LENGTH {
-                continue;
-            }
-            let (index_id, _) = decode_substate_id(key.as_ref()).unwrap();
-            let node_id = NodeId(index_id[0..NodeId::LENGTH].to_vec().try_into().unwrap());
-            if items.last() != Some(&node_id) {
-                items.push(node_id);
-            }
-        }
-        items
-    }
-
-    pub fn list_packages(&self) -> Vec<PackageAddress> {
-        self.list_nodes()
-            .into_iter()
-            .filter_map(|x| PackageAddress::try_from(x.as_ref()).ok())
-            .collect()
-    }
-
-    pub fn list_components(&self) -> Vec<ComponentAddress> {
-        self.list_nodes()
-            .into_iter()
-            .filter_map(|x| ComponentAddress::try_from(x.as_ref()).ok())
-            .collect()
-    }
-
-    pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        self.list_nodes()
-            .into_iter()
-            .filter_map(|x| ResourceAddress::try_from(x.as_ref()).ok())
-            .collect()
-    }
-     */
 }
 
 impl SubstateDatabase for RocksdbSubstateStore {
-    fn get_substate(
-        &self,
-        index_id: &Vec<u8>,
-        db_key: &Vec<u8>,
-    ) -> Option<Vec<u8>> {
+    fn get_substate(&self, index_id: &Vec<u8>, db_key: &Vec<u8>) -> Option<Vec<u8>> {
         let key = encode_substate_id(index_id, db_key);
         self.db.get(&key).expect("IO Error")
     }
@@ -98,8 +50,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
     fn commit(&mut self, state_changes: &DatabaseUpdates) {
-        for (index_id, index_updates) in &state_changes.database_updates
-        {
+        for (index_id, index_updates) in &state_changes.database_updates {
             for (db_key, update) in index_updates {
                 let substate_id = encode_substate_id(index_id, db_key);
                 match update {

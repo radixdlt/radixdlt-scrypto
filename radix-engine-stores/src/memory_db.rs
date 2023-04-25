@@ -17,11 +17,7 @@ impl InMemorySubstateDatabase {
 }
 
 impl SubstateDatabase for InMemorySubstateDatabase {
-    fn get_substate(
-        &self,
-        index_id: &Vec<u8>,
-        db_key: &Vec<u8>,
-    ) -> Option<Vec<u8>> {
+    fn get_substate(&self, index_id: &Vec<u8>, db_key: &Vec<u8>) -> Option<Vec<u8>> {
         let key = encode_substate_id(index_id, db_key);
         self.substates.get(&key).map(|value| value.clone())
     }

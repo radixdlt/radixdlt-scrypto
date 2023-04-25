@@ -177,8 +177,7 @@ pub trait SubstateDatabase {
     /// Reads a substate of the given node module.
     ///
     /// [`Option::None`] is returned if missing.
-    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>)
-        -> Option<Vec<u8>>;
+    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>>;
 
     /// Returns an iterator over substates within the given substate module
     fn list_substates(
@@ -195,8 +194,9 @@ pub trait SubstateDatabase {
     ) -> Option<D> {
         self.get_substate(
             &M::map_to_index_id(node_id, module_id),
-            &M::map_to_db_key(substate_key)
-        ).map(|buf| scrypto_decode(&buf).unwrap())
+            &M::map_to_db_key(substate_key),
+        )
+        .map(|buf| scrypto_decode(&buf).unwrap())
     }
 
     /// Convenience method for database readers

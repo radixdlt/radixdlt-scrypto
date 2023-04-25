@@ -254,12 +254,12 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
         let type_info: TypeInfoSubstate = self
-                .fetch_substate::<JmtMapper, TypeInfoSubstate>(
-                    node_id,
-                    SysModuleId::TypeInfo.into(),
-                    TypeInfoOffset::TypeInfo.into(),
-                )
-                .expect("Missing vault info");
+            .fetch_substate::<JmtMapper, TypeInfoSubstate>(
+                node_id,
+                SysModuleId::TypeInfo.into(),
+                TypeInfoOffset::TypeInfo.into(),
+            )
+            .expect("Missing vault info");
 
         let resource_address = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
@@ -271,16 +271,19 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
 
         if resource_address.as_node_id().is_global_fungible_resource() {
             // If there is an update to the liquid resource
-            if let Some(substate) = self.fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
-                node_id,
-                SysModuleId::Object.into(),
-                FungibleVaultOffset::LiquidFungible.into(),
-            ) {
-                let old_substate = self.fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
+            if let Some(substate) = self
+                .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
                     SysModuleId::Object.into(),
                     FungibleVaultOffset::LiquidFungible.into(),
-                );
+                )
+            {
+                let old_substate = self
+                    .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
+                        node_id,
+                        SysModuleId::Object.into(),
+                        FungibleVaultOffset::LiquidFungible.into(),
+                    );
 
                 let old_balance = if let Some(s) = old_substate {
                     s.amount()
@@ -295,11 +298,13 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             }
         } else {
             // If there is an update to the liquid resource
-            if let Some(vault) = self.fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
-                node_id,
-                SysModuleId::Object.into(),
-                NonFungibleVaultOffset::LiquidNonFungible.into(),
-            ) {
+            if let Some(vault) = self
+                .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
+                    node_id,
+                    SysModuleId::Object.into(),
+                    NonFungibleVaultOffset::LiquidNonFungible.into(),
+                )
+            {
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
                     let module_id: ModuleId = SysModuleId::Object.into();
                     n.tracked_modules.get(&module_id)
@@ -367,7 +372,8 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         module_id: ModuleId,
         key: SubstateKey,
     ) -> Option<D> {
-        self.substate_db.read_mapped_substate::<M, D>(node_id, module_id, key)
+        self.substate_db
+            .read_mapped_substate::<M, D>(node_id, module_id, key)
     }
 
     fn fetch_substate_from_state_updates<M: DatabaseMapper, D: ScryptoDecode>(
@@ -380,8 +386,6 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .get(node_id)
             .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
             .and_then(|tracked_module| tracked_module.substates.get(&M::map_to_db_key(key)))
-            .and_then(|tracked_key| tracked_key.get().map(|e| {
-                e.as_typed().unwrap()
-            }))
+            .and_then(|tracked_key| tracked_key.get().map(|e| e.as_typed().unwrap()))
     }
 }

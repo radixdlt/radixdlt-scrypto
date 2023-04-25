@@ -69,12 +69,10 @@ impl Publish {
             let node_id: NodeId = package_address.0.into();
             let module_id: ModuleId = SysModuleId::Object.into();
             let index_id = JmtMapper::map_to_index_id(&node_id, module_id);
-            let substate_key_code: Vec<u8> =
-                JmtMapper::map_to_db_key(PackageOffset::Code.into());
+            let substate_key_code: Vec<u8> = JmtMapper::map_to_db_key(PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
 
-            let substate_key_info: Vec<u8> =
-                JmtMapper::map_to_db_key(PackageOffset::Info.into());
+            let substate_key_info: Vec<u8> = JmtMapper::map_to_db_key(PackageOffset::Info.into());
             let package_info = PackageInfoSubstate {
                 schema,
                 dependent_resources: BTreeSet::new(),

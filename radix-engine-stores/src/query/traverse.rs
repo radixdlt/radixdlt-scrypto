@@ -157,9 +157,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &liquid,
                     );
 
-                    let ids = self
-                        .substate_db
-                        .list_mapped_substates::<JmtMapper>(liquid.ids.as_node_id(), SysModuleId::Object.into());
+                    let ids = self.substate_db.list_mapped_substates::<JmtMapper>(
+                        liquid.ids.as_node_id(),
+                        SysModuleId::Object.into(),
+                    );
                     for (_key, value) in ids {
                         let non_fungible_local_id: NonFungibleLocalId =
                             scrypto_decode(&value).unwrap();
@@ -173,7 +174,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 } else {
                     for t in SysModuleId::iter() {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
-                        let x = self.substate_db.list_mapped_substates::<JmtMapper>(&node_id, t.into());
+                        let x = self
+                            .substate_db
+                            .list_mapped_substates::<JmtMapper>(&node_id, t.into());
                         for (db_key, substate_value) in x {
                             let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
                                 .expect("Substate is not a scrypto value")

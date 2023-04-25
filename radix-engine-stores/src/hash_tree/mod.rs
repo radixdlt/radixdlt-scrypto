@@ -5,7 +5,7 @@ use radix_engine_interface::*;
 use sbor::rust::collections::{index_map_new, IndexMap};
 use sbor::rust::vec::Vec;
 use tree_store::{
-    Payload, IndexPayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore,
+    IndexPayload, Payload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore,
 };
 use types::{NibblePath, NodeKey, Version};
 
@@ -66,8 +66,7 @@ pub fn put_at_next_version<S: TreeStore<IndexPayload> + TreeStore<Vec<u8>>>(
     let changes_by_index = index_by_index_id(changes);
     let mut nested_root_changes = Vec::new();
     for (index, substate_changes) in changes_by_index {
-        let nested_root =
-            put_substate_changes(store, current_version, &index, substate_changes);
+        let nested_root = put_substate_changes(store, current_version, &index, substate_changes);
         nested_root_changes.push(IdChange::new(index, nested_root));
     }
     put_index_changes(store, current_version, nested_root_changes)
@@ -193,9 +192,7 @@ fn put_changes<S: TreeStore<P>, P: Payload>(
     root_hash
 }
 
-fn to_index_change(
-    change: IdChange<IndexId, TreeRoot<Vec<u8>>>,
-) -> LeafChange<IndexPayload> {
+fn to_index_change(change: IdChange<IndexId, TreeRoot<Vec<u8>>>) -> LeafChange<IndexPayload> {
     let index_id = change.id;
     LeafChange {
         key_hash: hash(&index_id),
@@ -233,9 +230,7 @@ impl<'s, S> NestedTreeStore<'s, S> {
     ) -> NestedTreeStore<'s, S> {
         NestedTreeStore {
             underlying,
-            parent_path: NibblePath::new_even(
-                hash(scrypto_encode(index).unwrap()).to_vec(),
-            ),
+            parent_path: NibblePath::new_even(hash(scrypto_encode(index).unwrap()).to_vec()),
             current_root: root,
             new_root: None,
         }

@@ -2,8 +2,8 @@ use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
-    DatabaseMapper, SubstateStore, TakeSubstateError,
+    AcquireLockError, DatabaseMapper, DatabaseUpdate, DatabaseUpdates, NodeSubstates,
+    SetSubstateError, SubstateDatabase, SubstateStore, TakeSubstateError,
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
@@ -282,8 +282,11 @@ impl TrackedNode {
     }
 }
 
-pub fn to_database_updates<M: DatabaseMapper>(index: IndexMap<NodeId, TrackedNode>) -> DatabaseUpdates {
-    let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> = index_map_new();
+pub fn to_database_updates<M: DatabaseMapper>(
+    index: IndexMap<NodeId, TrackedNode>,
+) -> DatabaseUpdates {
+    let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> =
+        index_map_new();
     for (node_id, tracked_node) in index {
         for (module_id, tracked_module) in tracked_node.tracked_modules {
             let mut index_updates = index_map_new();
@@ -599,8 +602,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         }
 
         let index_id = M::map_to_index_id(node_id, module_id);
-        let mut tracked_iter =
-            TrackedIter::new(self.substate_db.list_substates(&index_id));
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         for (key, substate) in &mut tracked_iter {
             if items.len() == count {
                 break;
@@ -665,8 +667,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
 
         // Read from database
         let index_id = M::map_to_index_id(node_id, module_id);
-        let mut tracked_iter =
-            TrackedIter::new(self.substate_db.list_substates(&index_id));
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         let new_updates = {
             let mut new_updates = Vec::new();
             for (key, substate) in &mut tracked_iter {

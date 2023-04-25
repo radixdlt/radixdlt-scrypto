@@ -19,7 +19,7 @@ impl DatabaseMapper for JmtMapper {
             }
             SubstateKey::Map(key) => {
                 hash(key).0[12..Hash::LENGTH].to_vec() // 20 bytes
-            },
+            }
             SubstateKey::Sorted(bucket, key) => {
                 let mut bytes = bucket.to_be_bytes().to_vec();
                 bytes.extend(hash(key).0[12..Hash::LENGTH].to_vec()); // 20 bytes
