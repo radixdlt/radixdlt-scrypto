@@ -29,7 +29,7 @@ scrypto-unit = { path = "../scrypto-unit", default-features = false }
 # - warnings such as "Instrumentation output varies across runs"
 # - low stability reports
 # More details: https://github.com/rust-fuzz/afl.rs#lazy_static-variables
-lazy_static = { git = "https://github.com/rust-fuzz/resettable-lazy-static.rs" }
+lazy_static = { git = "https://github.com/rust-fuzz/resettable-lazy-static.rs", rev = "c5eb91f" }
 
 [workspace]
 members = ["."]
