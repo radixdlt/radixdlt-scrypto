@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_stores::interface::*;
-use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::jmt_support::JmtMapper;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -184,7 +184,7 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::<_, JmtKeyMapper>::new(self.substate_db);
+        let mut track = Track::<_, JmtMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
@@ -257,7 +257,7 @@ where
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_database_updates(tracked_nodes),
+                    state_updates: to_database_updates::<JmtMapper>(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -499,7 +499,7 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees<S: SubstateDatabase, M: SubstateKeyMapper>(
+fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
     track: &mut Track<S, M>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,

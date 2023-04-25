@@ -3,7 +3,6 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
-use radix_engine_interface::types::{ModuleId, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
@@ -58,10 +57,7 @@ pub struct TreeLeafNode<P> {
 /// the physical `NodeKey`s (no clashes can occur between ReNode leaf and Substates' root).
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct ReNodeModulePayload {
-    /// ReNode ID.
-    pub node_id: NodeId,
-    /// Module ID.
-    pub node_mode_id: ModuleId,
+    pub index_id: Vec<u8>,
     /// An embedded root of the descendant Substate layer tree.
     pub substates_root: TreeNode<Vec<u8>>,
 }

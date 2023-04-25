@@ -52,7 +52,7 @@ use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
 };
-use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use radix_engine_stores::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -304,7 +304,7 @@ impl TestRunner {
 
         let metadata_entry = self
             .substate_db
-            .read_mapped_substate::<JmtKeyMapper, Option<ScryptoValue>>(
+            .read_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
                 SubstateKey::Map(key),
@@ -328,7 +328,7 @@ impl TestRunner {
     ) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .read_mapped_substate::<JmtKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .read_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::Royalty.into(),
                 RoyaltyOffset::RoyaltyAccumulator.into(),
@@ -338,7 +338,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
+                        .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
@@ -353,7 +353,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .read_mapped_substate::<JmtKeyMapper, PackageRoyaltySubstate>(
+            .read_mapped_substate::<JmtMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
                 SysModuleId::Object.into(),
                 PackageOffset::Royalty.into(),
@@ -363,7 +363,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
+                        .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
@@ -409,7 +409,7 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .read_mapped_substate::<JmtKeyMapper, LiquidFungibleResource>(
+            .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 FungibleVaultOffset::LiquidFungible.into(),
@@ -423,7 +423,7 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let vault = self
             .substate_db()
-            .read_mapped_substate::<JmtKeyMapper, LiquidNonFungibleVault>(
+            .read_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -436,7 +436,7 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut substate_iter = self
                 .substate_db()
-                .list_substates(ids.as_node_id(), SysModuleId::Object.into());
+                .list_mapped_substates::<JmtMapper>(ids.as_node_id(), SysModuleId::Object.into());
             let id = substate_iter.next().map(|(_key, value)| {
                 let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
                 id
@@ -514,7 +514,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
         self.substate_db()
-            .read_mapped_substate::<JmtKeyMapper, ValidatorSubstate>(
+            .read_mapped_substate::<JmtMapper, ValidatorSubstate>(
                 address.as_node_id(),
                 SysModuleId::Object.into(),
                 ValidatorOffset::Validator.into(),
@@ -525,7 +525,7 @@ impl TestRunner {
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
-            .read_mapped_substate::<JmtKeyMapper, CurrentValidatorSetSubstate>(
+            .read_mapped_substate::<JmtMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
                 SysModuleId::Object.into(),
                 EpochManagerOffset::CurrentValidatorSet.into(),
@@ -1181,7 +1181,7 @@ impl TestRunner {
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
         let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::<_, JmtKeyMapper>::new(&substate_db);
+        let mut track = Track::<_, JmtMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
@@ -1248,7 +1248,7 @@ impl TestRunner {
                     ObjectModuleId::SELF => {
                         let type_info = self
                             .substate_db()
-                            .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
+                            .read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                                 node_id,
                                 SysModuleId::TypeInfo.into(),
                                 TypeInfoOffset::TypeInfo.into(),
@@ -1283,7 +1283,7 @@ impl TestRunner {
         (
             local_type_index,
             self.substate_db()
-                .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
+                .read_mapped_substate::<JmtMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
                     SysModuleId::Object.into(),
                     PackageOffset::Info.into(),
@@ -1341,11 +1341,10 @@ impl StateHashSupport {
 
     pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
         let mut hash_changes = Vec::new();
-        for ((node_id, module_id), index_update) in &db_updates.database_updates {
+        for (index_id, index_update) in &db_updates.database_updates {
             for (key, db_update) in index_update {
-                let substate_id = (node_id.clone(), module_id.clone(), key.clone());
                 let hash_change = SubstateHashChange::new(
-                    substate_id,
+                    (index_id.clone(), key.clone()),
                     match db_update {
                         DatabaseUpdate::Set(v) => Some(hash(v)),
                         DatabaseUpdate::Delete => None,

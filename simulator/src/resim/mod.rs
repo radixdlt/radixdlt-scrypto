@@ -75,7 +75,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -353,7 +353,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let package_info = substate_db
-        .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
+        .read_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Info.into(),
@@ -384,7 +384,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     bootstrap(&mut substate_db, &scrypto_interpreter);
 
     let type_info = substate_db
-        .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
+        .read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
             TypeInfoOffset::TypeInfo.into(),
@@ -421,7 +421,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 ),
                 ObjectModuleId::SELF => {
                     let type_info = substate_db
-                        .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
+                        .read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                             node_id,
                             SysModuleId::TypeInfo.into(),
                             TypeInfoOffset::TypeInfo.into(),
@@ -448,7 +448,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     let package_info = substate_db
-        .read_mapped_substate::<JmtKeyMapper, PackageInfoSubstate>(
+        .read_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Info.into(),

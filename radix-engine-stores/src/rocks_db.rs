@@ -25,7 +25,8 @@ impl RocksdbSubstateStore {
             if key.len() < NodeId::LENGTH {
                 continue;
             }
-            let (node_id, _, _) = decode_substate_id(key.as_ref()).unwrap();
+            let (index_id, _) = decode_substate_id(key.as_ref()).unwrap();
+            let node_id = NodeId(index_id[0..NodeId::LENGTH].to_vec().try_into().unwrap());
             if items.last() != Some(&node_id) {
                 items.push(node_id);
             }
@@ -58,24 +59,20 @@ impl RocksdbSubstateStore {
 impl SubstateDatabase for RocksdbSubstateStore {
     fn get_substate(
         &self,
-        node_id: &NodeId,
-        module_id: ModuleId,
+        index_id: &Vec<u8>,
         db_key: &Vec<u8>,
     ) -> Option<Vec<u8>> {
-        let key = encode_substate_id(node_id, module_id, db_key);
+        let key = encode_substate_id(index_id, db_key);
         self.db.get(&key).expect("IO Error")
     }
 
     fn list_substates(
         &self,
-        node_id: &NodeId,
-        module_id: ModuleId,
+        index_id: &Vec<u8>,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let mut index_id = Vec::new();
-        index_id.extend(node_id.as_ref());
-        index_id.push(module_id.0);
-        let index_id: [u8; NodeId::LENGTH + 1] = index_id.try_into().unwrap();
-        let start = encode_substate_id(node_id, module_id, &vec![0]);
+        let index_id = index_id.clone();
+
+        let start = encode_substate_id(&index_id, &vec![0]);
 
         let iter = self
             .db
@@ -86,7 +83,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
             })
             .map(|kv| {
                 let (key, value) = kv.unwrap();
-                let (_, _, substate_key) =
+                let (_, substate_key) =
                     decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
                 let value = value.as_ref().to_vec();
                 (substate_key, value)
@@ -98,15 +95,17 @@ impl SubstateDatabase for RocksdbSubstateStore {
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
     fn commit(&mut self, state_changes: &DatabaseUpdates) {
-        for ((node_id, module_id, substate_key), substate_change) in &state_changes.database_updates
+        for (index_id, index_updates) in &state_changes.database_updates
         {
-            let substate_id = encode_substate_id(node_id, *module_id, substate_key);
-            match substate_change {
-                DatabaseUpdate::Set(substate_value) => {
-                    self.db.put(substate_id, substate_value).expect("IO error");
-                }
-                DatabaseUpdate::Delete => {
-                    self.db.delete(substate_id).expect("IO error");
+            for (db_key, update) in index_updates {
+                let substate_id = encode_substate_id(index_id, db_key);
+                match update {
+                    DatabaseUpdate::Set(substate_value) => {
+                        self.db.put(substate_id, substate_value).expect("IO error");
+                    }
+                    DatabaseUpdate::Delete => {
+                        self.db.delete(substate_id).expect("IO error");
+                    }
                 }
             }
         }

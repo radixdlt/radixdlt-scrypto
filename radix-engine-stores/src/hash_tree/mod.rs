@@ -1,7 +1,6 @@
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::scrypto_encode;
-use radix_engine_interface::types::{ModuleId, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::collections::{index_map_new, IndexMap};
 use sbor::rust::vec::Vec;
@@ -42,7 +41,7 @@ impl<I, V> IdChange<I, V> {
 }
 
 /// A top-level `IdChange`, representing an actual change of a specific substate's hashed value.
-pub type SubstateHashChange = IdChange<(NodeId, ModuleId, Vec<u8>), Hash>;
+pub type SubstateHashChange = IdChange<(Vec<u8>, Vec<u8>), Hash>;
 
 /// Inserts a new set of nodes at version `current_version` + 1 into the "nested JMT" persisted
 /// within the given `store`.
@@ -76,28 +75,18 @@ pub fn put_at_next_version<S: TreeStore<ReNodeModulePayload> + TreeStore<Vec<u8>
 
 // only internals below
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
-struct ReNodeModule {
-    node_id: NodeId,
-    module_id: ModuleId,
-}
-
-impl ReNodeModule {
-    fn new(node_id: NodeId, module_id: ModuleId) -> Self {
-        Self { node_id, module_id }
-    }
-}
+type ReNodeModule = Vec<u8>;
 
 fn index_by_re_node_module(
     changes: Vec<SubstateHashChange>,
 ) -> IndexMap<ReNodeModule, Vec<IdChange<Vec<u8>, Hash>>> {
     let mut by_re_node_module = index_map_new();
     for change in changes {
-        let substate_id = change.id;
+        let (index_id, db_key) = change.id;
         by_re_node_module
-            .entry(ReNodeModule::new(substate_id.0, substate_id.1))
+            .entry(index_id)
             .or_insert_with(|| Vec::new())
-            .push(IdChange::new(substate_id.2, change.changed));
+            .push(IdChange::new(db_key, change.changed));
     }
     by_re_node_module
 }
@@ -207,15 +196,14 @@ fn put_changes<S: TreeStore<P>, P: Payload>(
 fn to_re_node_change(
     change: IdChange<ReNodeModule, TreeRoot<Vec<u8>>>,
 ) -> LeafChange<ReNodeModulePayload> {
-    let re_node_module = change.id;
+    let index_id = change.id;
     LeafChange {
-        key_hash: hash(scrypto_encode(&re_node_module).unwrap()),
+        key_hash: hash(&index_id),
         new_payload: change.changed.map(|root| {
             (
                 root.hash,
                 ReNodeModulePayload {
-                    node_id: re_node_module.node_id,
-                    node_mode_id: re_node_module.module_id,
+                    index_id,
                     substates_root: root.node,
                 },
             )

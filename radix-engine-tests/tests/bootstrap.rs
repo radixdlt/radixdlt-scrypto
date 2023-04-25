@@ -11,7 +11,7 @@ use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
@@ -151,7 +151,7 @@ fn test_genesis_resource_with_initial_allocation() {
     substate_store.commit(&commit_result.state_updates);
 
     let resource_manager_substate = substate_store
-        .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerSubstate>(
+        .read_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
             &resource_address,
             SysModuleId::Object.into(),
             ResourceManagerOffset::ResourceManager.into(),
@@ -164,7 +164,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let key = scrypto_encode("symbol").unwrap();
 
     let entry = substate_store
-        .read_mapped_substate::<JmtKeyMapper, Option<MetadataEntry>>(
+        .read_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
             &resource_address,
             SysModuleId::Metadata.into(),
             SubstateKey::Map(key),
