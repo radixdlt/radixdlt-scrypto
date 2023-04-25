@@ -7,7 +7,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::query::ResourceAccounter;
 use utils::ContextualDisplay;
 
@@ -27,7 +27,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let substate = substate_db
-        .read_mapped_substate::<JmtKeyMapper, PackageCodeSubstate>(
+        .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Code.into(),
@@ -59,7 +59,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
 
     let (package_address, blueprint_name, resources) = {
         let type_info = substate_db
-            .read_mapped_substate::<JmtKeyMapper, TypeInfoSubstate>(
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
                 TypeInfoOffset::TypeInfo.into(),
@@ -68,8 +68,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
             TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::IterableStore
-            | TypeInfoSubstate::SortedStore => {
+            | TypeInfoSubstate::Index
+            | TypeInfoSubstate::SortedIndex => {
                 panic!("Unexpected")
             }
         };
@@ -100,7 +100,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         blueprint_name
     );
 
-    writeln!(output, "{}", "Resources".green().bold());
+    writeln!(output, "{}", "Fungible Resources".green().bold());
     for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
         writeln!(
             output,
@@ -109,6 +109,19 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             component_address.display(&bech32_encoder),
             amount
         );
+    }
+
+    writeln!(output, "{}", "Non-fungibles Resources".green().bold());
+    for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
+        writeln!(
+            output,
+            "{} {}",
+            list_item_prefix(last),
+            component_address.display(&bech32_encoder)
+        );
+        for (last, id) in ids.iter().identify_last() {
+            writeln!(output, "   {} {}", list_item_prefix(last), id);
+        }
     }
 
     Ok(())
@@ -122,14 +135,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
         let id_type = substate_db
-            .read_mapped_substate::<JmtKeyMapper, NonFungibleIdType>(
+            .get_mapped_substate::<JmtMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 NonFungibleResourceManagerOffset::IdType.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
-            .read_mapped_substate::<JmtKeyMapper, Decimal>(
+            .get_mapped_substate::<JmtMapper, Decimal>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
@@ -150,14 +163,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
     } else {
         let divisibility = substate_db
-            .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
+            .get_mapped_substate::<JmtMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 FungibleResourceManagerOffset::Divisibility.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
-            .read_mapped_substate::<JmtKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
+            .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 FungibleResourceManagerOffset::TotalSupply.into(),

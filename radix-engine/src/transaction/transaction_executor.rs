@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_state_updates, Track};
+use crate::track::{to_database_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_stores::interface::*;
-use radix_engine_stores::jmt_support::JmtKeyMapper;
+use radix_engine_stores::jmt_support::JmtMapper;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -184,7 +184,7 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::<_, JmtKeyMapper>::new(self.substate_db);
+        let mut track = Track::<_, JmtMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
@@ -257,7 +257,7 @@ where
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_state_updates(tracked_nodes),
+                    state_updates: to_database_updates::<JmtMapper>(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -277,6 +277,10 @@ where
             }
         };
         let execution_trace = system.modules.execution_trace.finalize(&transaction_result);
+        let execution_metrics = system
+            .modules
+            .transaction_limits
+            .finalize(&transaction_result);
 
         // Finish resources usage measurement and get results
         let resources_usage = match () {
@@ -290,62 +294,98 @@ where
         let receipt = TransactionReceipt {
             result: transaction_result,
             execution_trace,
+            execution_metrics,
             resources_usage,
         };
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
-            match &receipt.result {
-                TransactionResult::Commit(commit) => {
-                    println!("{:-^80}", "Cost Analysis");
-                    let break_down = commit
-                        .fee_summary
-                        .execution_cost_breakdown
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v))
-                        .collect::<BTreeMap<String, &u32>>();
-                    for (k, v) in break_down {
-                        println!("{:<30}: {:>10}", k, v);
-                    }
-
-                    println!("{:-^80}", "Cost Totals");
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
-                    );
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Cost Unit Limit", commit.fee_summary.cost_unit_limit
-                    );
-                    // NB - we use "to_string" to ensure they align correctly
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Execution XRD",
-                        commit.fee_summary.total_execution_cost_xrd.to_string()
-                    );
-                    println!(
-                        "{:<30}: {:>10}",
-                        "Royalty XRD",
-                        commit.fee_summary.total_royalty_cost_xrd.to_string()
-                    );
-                    println!("{:-^80}", "Application Logs");
-                    for (level, message) in &commit.application_logs {
-                        println!("[{}] {}", level, message);
-                    }
-                }
-                TransactionResult::Reject(e) => {
-                    println!("{:-^80}", "Transaction Rejected");
-                    println!("{:?}", e.error);
-                }
-                TransactionResult::Abort(e) => {
-                    println!("{:-^80}", "Transaction Aborted");
-                    println!("{:?}", e);
-                }
-            }
-            println!("{:-^80}", "Finish");
+            TransactionExecutor::<S, W>::print_execution_summary(&receipt);
         }
 
         receipt
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn print_execution_summary(receipt: &TransactionReceipt) {
+        match &receipt.result {
+            TransactionResult::Commit(commit) => {
+                println!("{:-^80}", "Cost Analysis");
+                let break_down = commit
+                    .fee_summary
+                    .execution_cost_breakdown
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v))
+                    .collect::<BTreeMap<String, &u32>>();
+                for (k, v) in break_down {
+                    println!("{:<30}: {:>10}", k, v);
+                }
+
+                println!("{:-^80}", "Cost Totals");
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Royalty Units Consumed", commit.fee_summary.royalty_cost_sum
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                );
+                // NB - we use "to_string" to ensure they align correctly
+                println!(
+                    "{:<30}: {:>10}",
+                    "Execution XRD",
+                    commit.fee_summary.total_execution_cost_xrd.to_string()
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Royalty XRD",
+                    commit.fee_summary.total_royalty_cost_xrd.to_string()
+                );
+                println!("{:-^80}", "Execution Metrics");
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Substate Read Bytes", receipt.execution_metrics.substate_read_size
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Total Substate Write Bytes", receipt.execution_metrics.substate_write_size
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Substate Read Count", receipt.execution_metrics.substate_read_count
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Substate Write Count", receipt.execution_metrics.substate_write_count
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Peak WASM Memory Usage Bytes", receipt.execution_metrics.max_wasm_memory_used
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Max Invoke Payload Size Bytes",
+                    receipt.execution_metrics.max_invoke_payload_size
+                );
+                println!("{:-^80}", "Application Logs");
+                for (level, message) in &commit.application_logs {
+                    println!("[{}] {}", level, message);
+                }
+            }
+            TransactionResult::Reject(e) => {
+                println!("{:-^80}", "Transaction Rejected");
+                println!("{:?}", e.error);
+            }
+            TransactionResult::Abort(e) => {
+                println!("{:-^80}", "Transaction Aborted");
+                println!("{:?}", e);
+            }
+        }
+        println!("{:-^80}", "Finish");
     }
 }
 
@@ -459,7 +499,7 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees<S: SubstateDatabase, M: SubstateKeyMapper>(
+fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
     track: &mut Track<S, M>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,

@@ -121,10 +121,8 @@ pub enum ValidatorOffset {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Info,
-    LiquidFungible,
-    LockedFungible,
-    LiquidNonFungible,
-    LockedNonFungible,
+    Liquid,
+    Locked,
 }
 
 #[repr(u8)]

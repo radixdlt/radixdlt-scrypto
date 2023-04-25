@@ -1,9 +1,9 @@
 use crate::blueprints::resource::*;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
+    LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
+    LockedNonFungibleResource, ResourceType,
 };
-use radix_engine_interface::math::Decimal;
 use radix_engine_stores::interface::NodeSubstates;
 use sbor::rust::collections::btree_map::Entry;
 
@@ -163,56 +163,65 @@ impl Heap {
     }
 }
 
-pub struct DroppedBucket {
+#[derive(Debug)]
+pub struct DroppedFungibleBucket {
     pub info: BucketInfoSubstate,
-    pub resource: DroppedBucketResource,
+    pub liquid: LiquidFungibleResource,
+    pub locked: LockedFungibleResource,
 }
 
-pub enum DroppedBucketResource {
-    Fungible(LiquidFungibleResource),
-    NonFungible(LiquidNonFungibleResource),
+#[derive(Debug)]
+pub struct DroppedNonFungibleBucket {
+    pub info: BucketInfoSubstate,
+    pub liquid: LiquidNonFungibleResource,
+    pub locked: LockedNonFungibleResource,
 }
 
-impl DroppedBucket {
-    pub fn amount(&self) -> Decimal {
-        match &self.resource {
-            DroppedBucketResource::Fungible(f) => f.amount(),
-            DroppedBucketResource::NonFungible(f) => f.amount(),
+impl Into<DroppedFungibleBucket> for NodeSubstates {
+    fn into(mut self) -> DroppedFungibleBucket {
+        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
+
+        DroppedFungibleBucket {
+            info: module
+                .remove(&BucketOffset::Info.into())
+                .map(|x| x.as_typed().unwrap())
+                .unwrap(),
+            liquid: module
+                .remove(&BucketOffset::Liquid.into())
+                .map(|x| x.as_typed().unwrap())
+                .unwrap(),
+            locked: module
+                .remove(&BucketOffset::Locked.into())
+                .map(|x| x.as_typed().unwrap())
+                .unwrap(),
         }
     }
 }
 
-impl Into<DroppedBucket> for NodeSubstates {
-    fn into(mut self) -> DroppedBucket {
-        let mut module_substates = self.remove(&SysModuleId::Object.into()).unwrap();
+impl Into<DroppedNonFungibleBucket> for NodeSubstates {
+    fn into(mut self) -> DroppedNonFungibleBucket {
+        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
 
-        let info: BucketInfoSubstate = module_substates
-            .remove(&BucketOffset::Info.into())
-            .map(|x| x.as_typed().unwrap())
-            .unwrap();
-
-        let resource = match info.resource_type {
-            ResourceType::Fungible { .. } => DroppedBucketResource::Fungible(
-                module_substates
-                    .remove(&BucketOffset::LiquidFungible.into())
-                    .map(|x| x.as_typed().unwrap())
-                    .unwrap(),
-            ),
-            ResourceType::NonFungible { .. } => DroppedBucketResource::NonFungible(
-                module_substates
-                    .remove(&BucketOffset::LiquidNonFungible.into())
-                    .map(|x| x.as_typed().unwrap())
-                    .unwrap(),
-            ),
-        };
-
-        DroppedBucket { info, resource }
+        DroppedNonFungibleBucket {
+            info: module
+                .remove(&BucketOffset::Info.into())
+                .map(|x| x.as_typed().unwrap())
+                .unwrap(),
+            liquid: module
+                .remove(&BucketOffset::Liquid.into())
+                .map(|x| x.as_typed().unwrap())
+                .unwrap(),
+            locked: module
+                .remove(&BucketOffset::Locked.into())
+                .map(|x| x.as_typed().unwrap())
+                .unwrap(),
+        }
     }
 }
 
 pub struct DroppedProof {
     pub info: ProofInfoSubstate,
-    pub resource: DroppedProofResource,
+    pub proof: DroppedProofResource,
 }
 
 pub enum DroppedProofResource {
@@ -229,7 +238,7 @@ impl Into<DroppedProof> for NodeSubstates {
             .map(|x| x.as_typed().unwrap())
             .unwrap();
 
-        let resource = match info.resource_type {
+        let proof = match info.resource_type {
             ResourceType::Fungible { .. } => DroppedProofResource::Fungible(
                 module
                     .remove(&ProofOffset::Fungible.into())
@@ -244,6 +253,6 @@ impl Into<DroppedProof> for NodeSubstates {
             ),
         };
 
-        DroppedProof { info, resource }
+        DroppedProof { info, proof }
     }
 }

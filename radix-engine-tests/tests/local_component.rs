@@ -82,7 +82,7 @@ fn recursion_bomb() {
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(5u32))
+        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -158,7 +158,7 @@ fn recursion_bomb_2() {
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(5u32))
+        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,

@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
-use crate::kernel::kernel_api::{KernelNodeApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::substate_lock_api::LockFlags;
@@ -76,7 +76,7 @@ impl WorktopBlueprint {
         let amount = input.bucket.sys_amount(api)?;
 
         if amount.is_zero() {
-            input.bucket.sys_burn(api)?;
+            input.bucket.sys_drop_empty(api)?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             let worktop_handle =

@@ -5,7 +5,6 @@ use radix_engine_common::types::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::Vec;
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
@@ -16,14 +15,13 @@ pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
 pub struct EpochManagerCreateInput {
     pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
     pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
-    pub validator_set: Vec<(EcdsaSecp256k1PublicKey, ComponentAddress, Bucket)>,
     pub initial_epoch: u64,
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
 }
 
-pub type EpochManagerCreateOutput = Vec<Bucket>;
+pub type EpochManagerCreateOutput = ();
 
 pub const EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 
@@ -66,16 +64,7 @@ pub struct EpochManagerCreateValidatorInput {
 
 pub type EpochManagerCreateValidatorOutput = (ComponentAddress, Bucket);
 
-pub const EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT: &str = "create_validator_with_stake";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct EpochManagerCreateValidatorWithStakeInput {
-    pub key: EcdsaSecp256k1PublicKey,
-    pub xrd_stake: Bucket,
-    pub register: bool,
-}
-
-pub type EpochManagerCreateValidatorWithStakeOutput = (ComponentAddress, Bucket, Bucket);
+pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum UpdateSecondaryIndex {

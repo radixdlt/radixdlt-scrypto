@@ -2,8 +2,8 @@ use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_stores::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, StateUpdate, StateUpdates, SubstateDatabase,
-    SubstateKeyMapper, SubstateStore, TakeSubstateError,
+    AcquireLockError, DatabaseMapper, DatabaseUpdate, DatabaseUpdates, NodeSubstates,
+    SetSubstateError, SubstateDatabase, SubstateStore, TakeSubstateError,
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
@@ -282,31 +282,38 @@ impl TrackedNode {
     }
 }
 
-pub fn to_state_updates(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
-    let mut substate_changes: IndexMap<(NodeId, ModuleId, Vec<u8>), StateUpdate> = index_map_new();
+pub fn to_database_updates<M: DatabaseMapper>(
+    index: IndexMap<NodeId, TrackedNode>,
+) -> DatabaseUpdates {
+    let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> =
+        index_map_new();
     for (node_id, tracked_node) in index {
         for (module_id, tracked_module) in tracked_node.tracked_modules {
+            let mut index_updates = index_map_new();
             for (db_key, tracked) in tracked_module.substates {
                 let update = match tracked {
                     TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => None,
                     TrackedSubstateKey::ReadNonExistAndWrite(substate)
                     | TrackedSubstateKey::New(substate) => {
-                        Some(StateUpdate::Set(substate.value.into()))
+                        Some(DatabaseUpdate::Set(substate.value.into()))
                     }
                     TrackedSubstateKey::ReadExistAndWrite(_, write)
                     | TrackedSubstateKey::WriteOnly(write) => match write {
-                        Write::Delete => Some(StateUpdate::Delete),
-                        Write::Update(substate) => Some(StateUpdate::Set(substate.value.into())),
+                        Write::Delete => Some(DatabaseUpdate::Delete),
+                        Write::Update(substate) => Some(DatabaseUpdate::Set(substate.value.into())),
                     },
                 };
                 if let Some(update) = update {
-                    substate_changes.insert((node_id, module_id, db_key.clone()), update);
+                    index_updates.insert(db_key, update);
                 }
             }
+
+            let index_id = M::map_to_db_index(&node_id, module_id);
+            database_updates.insert(index_id, index_updates);
         }
     }
 
-    StateUpdates { substate_changes }
+    DatabaseUpdates { database_updates }
 }
 
 struct TrackedIter<'a> {
@@ -332,7 +339,7 @@ impl<'a> Iterator for TrackedIter<'a> {
     }
 }
 /// Transaction-wide states and side effects
-pub struct Track<'s, S: SubstateDatabase, M: SubstateKeyMapper> {
+pub struct Track<'s, S: SubstateDatabase, M: DatabaseMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
@@ -342,7 +349,7 @@ pub struct Track<'s, S: SubstateDatabase, M: SubstateKeyMapper> {
     phantom_data: PhantomData<M>,
 }
 
-impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> Track<'s, S, M> {
+impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
@@ -432,9 +439,10 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> Track<'s, S, M> {
 
         match entry {
             Entry::Vacant(e) => {
+                let index_id = M::map_to_db_index(node_id, module_id);
                 let value = self
                     .substate_db
-                    .get_substate(node_id, module_id, db_key)
+                    .get_substate(&index_id, db_key)
                     .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
                 if let Some(value) = value {
                     e.insert(TrackedSubstateKey::ReadOnly(ReadOnly::Existent(
@@ -467,7 +475,7 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> Track<'s, S, M> {
     }
 }
 
-impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, S, M> {
+impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, M> {
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
         let tracked_modules = node_substates
             .into_iter()
@@ -593,8 +601,8 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
             return items;
         }
 
-        let mut tracked_iter =
-            TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+        let index_id = M::map_to_db_index(node_id, module_id);
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         for (key, substate) in &mut tracked_iter {
             if items.len() == count {
                 break;
@@ -658,8 +666,8 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Read from database
-        let mut tracked_iter =
-            TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+        let index_id = M::map_to_db_index(node_id, module_id);
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         let new_updates = {
             let mut new_updates = Vec::new();
             for (key, substate) in &mut tracked_iter {
@@ -736,7 +744,8 @@ impl<'s, S: SubstateDatabase, M: SubstateKeyMapper> SubstateStore for Track<'s, 
         }
 
         // TODO: Add interleaving updates
-        let tracked_iter = TrackedIter::new(self.substate_db.list_substates(node_id, module_id));
+        let index_id = M::map_to_db_index(node_id, module_id);
+        let tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
         let items: Vec<IndexedScryptoValue> = tracked_iter
             .take(count)
             .map(|(_key, buf)| IndexedScryptoValue::from_vec(buf).unwrap())

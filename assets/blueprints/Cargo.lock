@@ -327,6 +327,7 @@ dependencies = [
 name = "genesis-helper"
 version = "0.1.0"
 dependencies = [
+ "native-sdk",
  "radix-engine",
  "sbor",
  "scrypto",
@@ -846,6 +847,7 @@ dependencies = [
  "const-sha1",
  "hex",
  "lazy_static",
+ "paste",
  "sbor-derive",
  "serde",
  "utils",

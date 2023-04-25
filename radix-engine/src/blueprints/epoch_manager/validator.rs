@@ -444,43 +444,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
-    fn create_liquidity_token_with_initial_amount<Y>(
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_id);
-        liquidity_token_auth.insert(
-            Mint,
-            (
-                rule!(require(non_fungible_global_id.clone())),
-                rule!(deny_all),
-            ),
-        );
-        liquidity_token_auth.insert(
-            Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
-        );
-        liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
-
-        let (liquidity_token_resource_manager, bucket) =
-            ResourceManager::new_fungible_with_initial_supply(
-                18,
-                amount,
-                BTreeMap::new(),
-                liquidity_token_auth,
-                api,
-            )?;
-
-        Ok((liquidity_token_resource_manager.0, bucket))
-    }
-
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -542,64 +505,6 @@ impl ValidatorCreator {
             )?;
 
         Ok(unstake_resource_manager.0)
-    }
-
-    pub fn create_with_stake<Y>(
-        key: EcdsaSecp256k1PublicKey,
-        initial_stake: Bucket,
-        is_registered: bool,
-        api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket, Bucket, Option<SortedKey>), RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address: ComponentAddress = ComponentAddress::new_unchecked(global_node_id.into());
-        let initial_liquidity_amount = initial_stake.sys_amount(api)?;
-        let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        stake_vault.sys_put(initial_stake, api)?;
-        let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        let unstake_nft = Self::create_unstake_nft(api)?;
-        let (liquidity_token, liquidity_bucket) =
-            Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
-
-        let sorted_key =
-            ValidatorBlueprint::to_sorted_key(is_registered, initial_liquidity_amount, address);
-
-        let substate = ValidatorSubstate {
-            sorted_key: sorted_key.clone(),
-            key,
-            liquidity_token,
-            unstake_nft,
-            stake_xrd_vault_id: stake_vault.0,
-            pending_xrd_withdraw_vault_id: unstake_vault.0,
-            is_registered,
-        };
-
-        let validator_id = api.new_object(
-            VALIDATOR_BLUEPRINT,
-            vec![scrypto_encode(&substate).unwrap()],
-        )?;
-
-        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
-
-        api.globalize_with_address(
-            btreemap!(
-                ObjectModuleId::SELF => validator_id,
-                ObjectModuleId::AccessRules => access_rules.0.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
-            ),
-            address.into(),
-        )?;
-        Ok((
-            address.into(),
-            liquidity_bucket,
-            owner_token_bucket,
-            sorted_key,
-        ))
     }
 
     pub fn create<Y>(

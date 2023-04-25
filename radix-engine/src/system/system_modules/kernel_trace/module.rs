@@ -26,12 +26,12 @@ macro_rules! log {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<SystemInvocation>,
+        invocation: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            identifier, input_size
+            invocation.resolved_actor, input_size
         )
         .green();
 

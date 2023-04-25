@@ -8,9 +8,7 @@ use radix_engine_interface::data::scrypto::{
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
+use sbor::rust::prelude::*;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -229,21 +227,55 @@ impl ResourceManager {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-            scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+            scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn new_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
+    pub fn new_empty_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
     where
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            RESOURCE_MANAGER_CREATE_VAULT_IDENT,
-            scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+            scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
         )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn new_fungible_bucket<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateBucketInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn new_non_fungible_bucket<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        entries: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateBucketInput { entries }).unwrap(),
+        )?;
+
         Ok(scrypto_decode(&rtn).unwrap())
     }
 }

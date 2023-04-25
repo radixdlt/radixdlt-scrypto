@@ -1,7 +1,7 @@
 use super::PackageCodeTypeSubstate;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,

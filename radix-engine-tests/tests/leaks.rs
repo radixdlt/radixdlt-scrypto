@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::BucketError;
+use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -97,7 +97,9 @@ fn dangling_worktop_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty))
+            RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                FungibleResourceManagerError::DropNonEmptyBucket
+            ))
         )
     });
 }

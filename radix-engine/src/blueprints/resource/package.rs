@@ -20,21 +20,18 @@ const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NA
     "create_with_initial_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_FungibleResourceManager";
-const FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
-    "create_vault_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
+    "create_empty_vault_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME: &str =
+    "create_empty_bucket_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
     "create_bucket_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
-const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
-const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
-const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
-const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
-const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
-const FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_by_amount_FungibleVault";
+const FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
+    "drop_empty_bucket_FungibleResourceManager";
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -43,14 +40,29 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleRe
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
     "mint_uuid_NonFungibleResourceManager";
-const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
-    "create_vault_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME: &str =
+    "create_empty_vault_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME: &str =
+    "create_empty_bucket_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
     "create_bucket_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
+    "drop_empty_bucket_NonFungibleResourceManager";
+
+const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
+const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
+const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
+const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
+const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
+const FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
+    "create_proof_by_amount_FungibleVault";
+const FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleVault";
+const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVault";
+
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
@@ -58,6 +70,33 @@ const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
     "create_proof_by_amount_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "unlock_non_fungibles_NonFungibleVault";
+
+const FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_FungibleBucket";
+const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
+const FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleBucket";
+const FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
+    "get_resource_address_FungibleBucket";
+const FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleBucket";
+const FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleBucket";
+const FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleBucket";
+
+const NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
+    "get_resource_address_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "unlock_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "unlock_non_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "take_non_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
+    "get_non_fungible_local_ids_NonFungibleBucket";
 
 pub struct ResourceManagerNativePackage;
 
@@ -133,26 +172,40 @@ impl ResourceManagerNativePackage {
                     export_name: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
                 },
             );
+
             functions.insert(
-                RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+                RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateBucketInput>(),
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateBucketOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME.to_string(),
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
+                        .to_string(),
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+                RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME.to_string(),
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME
+                        .to_string(),
+                },
+            );
+            functions.insert(
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateBucketInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateBucketOutput>(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -177,6 +230,18 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
                     export_name: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME
+                        .to_string(),
                 },
             );
 
@@ -335,18 +400,6 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
-                RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
-                FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateBucketInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateBucketOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME
-                        .to_string(),
-                },
-            );
-            functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
@@ -357,14 +410,38 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+                RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME.to_string(),
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME
+                        .to_string(),
+                },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME
+                        .to_string(),
+                },
+            );
+            functions.insert(
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateBucketInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateBucketOutput>(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -388,6 +465,18 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME
+                        .to_string(),
+                },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME
                         .to_string(),
                 },
             );
@@ -495,7 +584,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountOutput>(),
-                    export_name: FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -507,7 +596,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountOutput>(
                         ),
-                    export_name: FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -653,7 +742,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -666,7 +755,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -692,145 +781,209 @@ impl ResourceManagerNativePackage {
             }
         };
 
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let fungible_bucket_schema = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<BucketInfoSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
-        substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
-        substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-        substates.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            let mut substates = Vec::new();
+            substates.push(aggregator.add_child_type_and_descendents::<BucketInfoSubstate>());
+            substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
+            substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
-        let mut functions = BTreeMap::new();
-        functions.insert(
-            BUCKET_BURN_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<BucketBurnInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketBurnOutput>(),
-                export_name: BUCKET_BURN_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_DROP_EMPTY_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<BucketDropEmptyInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketDropEmptyOutput>(),
-                export_name: BUCKET_DROP_EMPTY_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_PUT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
-                export_name: BUCKET_PUT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_TAKE_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
-                export_name: BUCKET_TAKE_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
-                export_name: BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_GET_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
-                export_name: BUCKET_GET_AMOUNT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
-                input: aggregator
-                    .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
-                export_name: BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
-                export_name: BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_CREATE_PROOF_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                export_name: BUCKET_CREATE_PROOF_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_LOCK_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketLockAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketLockAmountOutput>(),
-                export_name: BUCKET_LOCK_AMOUNT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketLockNonFungiblesInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketLockNonFungiblesOutput>(),
-                export_name: BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketUnlockAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<BucketUnlockAmountOutput>(),
-                export_name: BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<BucketUnlockNonFungiblesInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<BucketUnlockNonFungiblesOutput>(),
-                export_name: BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
-            },
-        );
-        let schema = generate_full_schema(aggregator);
-        let bucket_schema = BlueprintSchema {
-            parent: None,
-            schema,
-            substates,
-            functions,
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
+            let mut functions = BTreeMap::new();
+            functions.insert(
+                BUCKET_PUT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                    export_name: FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_TAKE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                    export_name: FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_GET_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                    export_name: FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                    export_name: FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_CREATE_PROOF_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                    export_name: FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<FungibleBucketLockAmountOutput>(),
+                    export_name: FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<FungibleBucketUnlockAmountOutput>(),
+                    export_name: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            let schema = generate_full_schema(aggregator);
+            BlueprintSchema {
+                parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                schema,
+                substates,
+                functions,
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+            }
+        };
+
+        let non_fungible_bucket_schema = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+            let mut substates = Vec::new();
+            substates.push(aggregator.add_child_type_and_descendents::<BucketInfoSubstate>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+
+            let mut functions = BTreeMap::new();
+            functions.insert(
+                BUCKET_PUT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_TAKE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+
+            functions.insert(
+                BUCKET_GET_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_CREATE_PROOF_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
+                    output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME
+                        .to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesOutput>(
+                        ),
+                    export_name: NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
+            let schema = generate_full_schema(aggregator);
+            BlueprintSchema {
+                parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                schema,
+                substates,
+                functions,
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+            }
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -1102,7 +1255,8 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
                 FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_schema,
                 NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => non_fungible_vault_schema,
-                BUCKET_BLUEPRINT.to_string() => bucket_schema,
+                FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_schema,
+                NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_schema,
                 PROOF_BLUEPRINT.to_string() => proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
                 AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
@@ -1201,23 +1355,45 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleResourceManagerBlueprint::burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerDropEmptyBucketInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: ResourceManagerCreateEmptyVaultInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = FungibleResourceManagerBlueprint::create_empty_vault(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: ResourceManagerCreateEmptyBucketInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+
+                let rtn = FungibleResourceManagerBlueprint::create_empty_bucket(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: FungibleResourceManagerCreateBucketInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
-                let rtn = FungibleResourceManagerBlueprint::create_bucket(api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = FungibleResourceManagerBlueprint::create_vault(api)?;
+                let rtn = FungibleResourceManagerBlueprint::create_bucket(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
@@ -1373,23 +1549,47 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerDropEmptyBucketInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    NonFungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: ResourceManagerCreateEmptyBucketInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+
+                let rtn = NonFungibleResourceManagerBlueprint::create_empty_bucket(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: NonFungibleResourceManagerCreateBucketInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
-                let rtn = NonFungibleResourceManagerBlueprint::create_bucket(api)?;
+                let rtn = NonFungibleResourceManagerBlueprint::create_bucket(input.entries, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let _input: ResourceManagerCreateEmptyVaultInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_vault(api)?;
+
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => {
@@ -1628,7 +1828,7 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => {
+            FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1641,7 +1841,7 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::lock_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => {
+            FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: FungibleVaultUnlockFungibleAmountInput =
@@ -1651,7 +1851,7 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::unlock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1666,7 +1866,7 @@ impl ResourceManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
+            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: NonFungibleVaultUnlockNonFungiblesInput =
@@ -1701,95 +1901,101 @@ impl ResourceManagerNativePackage {
 
                 ProofBlueprint::get_resource_address(input, api)
             }
-            BUCKET_BURN_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                let input: BucketBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = BucketBlueprint::burn(input.bucket, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            BUCKET_DROP_EMPTY_IDENT => {
+            FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
-                BucketBlueprint::drop_empty(input, api)
+                FungibleBucketBlueprint::put(input, api)
             }
-            BUCKET_PUT_IDENT => {
+            FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                BucketBlueprint::put(input, api)
+                FungibleBucketBlueprint::take(input, api)
             }
-            BUCKET_TAKE_IDENT => {
+            FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                BucketBlueprint::take(input, api)
+                FungibleBucketBlueprint::get_amount(input, api)
             }
-            BUCKET_TAKE_NON_FUNGIBLES_IDENT => {
+            FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                BucketBlueprint::take_non_fungibles(input, api)
+                FungibleBucketBlueprint::get_resource_address(input, api)
             }
-            BUCKET_GET_AMOUNT_IDENT => {
+            FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                BucketBlueprint::get_amount(input, api)
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                FungibleBucketBlueprint::create_proof(receiver, input, api)
             }
-            BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                BucketBlueprint::get_non_fungible_local_ids(input, api)
-            }
-            BUCKET_GET_RESOURCE_ADDRESS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                BucketBlueprint::get_resource_address(input, api)
-            }
-            BUCKET_CREATE_PROOF_IDENT => {
+            FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                BucketBlueprint::create_proof(receiver, input, api)
+                FungibleBucketBlueprint::lock_amount(receiver, input, api)
             }
-            BUCKET_LOCK_AMOUNT_IDENT => {
+            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                FungibleBucketBlueprint::unlock_amount(input, api)
+            }
+
+            NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                NonFungibleBucketBlueprint::put(input, api)
+            }
+            NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                NonFungibleBucketBlueprint::take(input, api)
+            }
+            NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                NonFungibleBucketBlueprint::get_amount(input, api)
+            }
+            NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                NonFungibleBucketBlueprint::get_resource_address(input, api)
+            }
+            NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                BucketBlueprint::lock_amount(receiver, input, api)
+                NonFungibleBucketBlueprint::create_proof(receiver, input, api)
             }
-            BUCKET_LOCK_NON_FUNGIBLES_IDENT => {
+
+            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                NonFungibleBucketBlueprint::get_non_fungible_local_ids(input, api)
+            }
+            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                NonFungibleBucketBlueprint::take_non_fungibles(input, api)
+            }
+            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                BucketBlueprint::lock_non_fungibles(receiver, input, api)
+                NonFungibleBucketBlueprint::lock_non_fungibles(receiver, input, api)
             }
-            BUCKET_UNLOCK_AMOUNT_IDENT => {
+            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                BucketBlueprint::unlock_amount(input, api)
+                NonFungibleBucketBlueprint::unlock_non_fungibles(input, api)
             }
-            BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                BucketBlueprint::unlock_non_fungibles(input, api)
-            }
             WORKTOP_DROP_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
