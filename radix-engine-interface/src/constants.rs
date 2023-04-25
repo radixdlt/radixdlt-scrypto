@@ -35,6 +35,7 @@ pub const METADATA_PACKAGE: PackageAddress = package_address(EntityType::GlobalP
 pub const ROYALTY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 12);
 pub const GENESIS_HELPER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 13);
+pub const GENESIS_HELPER_BLUEPRINT: String = "GenesisHelper".to_string();
 
 // There should be no need of this function, but many of our configurations are depending on it.
 // Having it in a single place to avoid out-of-sync.

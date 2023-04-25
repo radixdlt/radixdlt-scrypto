@@ -859,7 +859,7 @@ pub fn create_system_bootstrap_transaction(
         );
         instructions.push(Instruction::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
-            blueprint_name: "GenesisHelper".to_string(),
+            blueprint_name: GENESIS_HELPER_BLUEPRINT,
             function_name: "new".to_string(),
             args: manifest_args!(
                 whole_lotta_xrd,
