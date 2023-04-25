@@ -56,7 +56,7 @@ pub struct TreeLeafNode<P> {
 /// This design decision also brings minor space and runtime benefits, and avoids special-casing
 /// the physical `NodeKey`s (no clashes can occur between ReNode leaf and Substates' root).
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub struct ReNodeModulePayload {
+pub struct IndexPayload {
     pub index_id: Vec<u8>,
     /// An embedded root of the descendant Substate layer tree.
     pub substates_root: TreeNode<Vec<u8>>,
@@ -70,7 +70,7 @@ pub trait Payload:
 {
 }
 
-impl Payload for ReNodeModulePayload {}
+impl Payload for IndexPayload {}
 
 impl Payload for Vec<u8> {}
 
@@ -97,7 +97,7 @@ impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> f
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemoryTreeStore {
-    pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
+    pub root_tree_nodes: HashMap<NodeKey, TreeNode<IndexPayload>>,
     pub sub_tree_nodes: HashMap<NodeKey, TreeNode<Vec<u8>>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
@@ -129,14 +129,14 @@ impl WriteableTreeStore<Vec<u8>> for TypedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
+impl ReadableTreeStore<IndexPayload> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<IndexPayload>> {
         self.root_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
+impl WriteableTreeStore<IndexPayload> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<IndexPayload>) {
         self.root_tree_nodes.insert(key, node);
     }
 

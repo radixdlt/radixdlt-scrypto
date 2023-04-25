@@ -2,7 +2,7 @@ use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleVault,
 };
-use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
