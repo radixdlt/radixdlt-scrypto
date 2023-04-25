@@ -1,6 +1,6 @@
 use crate::errors::{
-    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType,
-    InvalidSubstateAccess, KernelError, RuntimeError, SubstateValidationError,
+    ApplicationError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
+    InvalidModuleType, InvalidSubstateAccess, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -301,21 +301,19 @@ where
                 .schema
                 .blueprints
                 .get(blueprint_ident)
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
-                    )),
-                ))?;
-        if schema.substates.len() != object_states.len() {
-            return Err(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::WrongNumberOfSubstates(
+                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::BlueprintNotFound(
                         blueprint_ident.to_string(),
-                        object_states.len(),
-                        schema.substates.len(),
-                    ),
+                    )),
+                )))?;
+        if schema.substates.len() != object_states.len() {
+            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::WrongNumberOfSubstates(
+                    blueprint_ident.to_string(),
+                    object_states.len(),
+                    schema.substates.len(),
                 )),
-            ));
+            )));
         }
         for i in 0..object_states.len() {
             validate_payload_against_schema(
@@ -325,11 +323,8 @@ where
                 self,
             )
             .map_err(|err| {
-                RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::SchemaValidationError(
-                        blueprint_ident.to_string(),
-                        err.error_message(&schema.schema),
-                    ),
+                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                    CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
                 )))
             })?;
         }

@@ -69,11 +69,11 @@ fn test_basic_transfer() {
     assert_eq!(
         1173  /* AllocateNodeId */
         + 1853 /* CreateNode */
-        + 6216 /* DropLock */
+        + 6586 /* DropLock */
         + 1785 /* DropNode */
         + 1121999 /* Invoke */
-        + 17865 /* LockSubstate */
-        + 260208 /* ReadSubstate */
+        + 18762 /* LockSubstate */
+        + 264528 /* ReadSubstate */
         + 75000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -203,12 +203,12 @@ fn test_radiswap() {
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         2622 /* AllocateNodeId */
-        +4153 /* CreateNode */
-        + 14911 /* DropLock */
+        + 4153 /* CreateNode */
+        + 15651 /* DropLock */
         + 3885 /* DropNode */
         + 3447266 /* Invoke */
-        + 41339 /* LockSubstate */
-        + 777132 /* ReadSubstate */
+        + 43132 /* LockSubstate */
+        + 785412 /* ReadSubstate */
         + 160000 /* RunNative */
         + 15000 /* RunSystem */
         + 1551810 /* RunWasm */
@@ -314,12 +314,12 @@ fn test_flash_loan() {
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         4209 /* AllocateNodeId */
-         + 6649 /* CreateNode */
-        + 24013 /* DropLock */
+        + 6649 /* CreateNode */
+        + 26011 /* DropLock */
         + 6405 /* DropNode */
         + 4333776 /* Invoke */
-        + 63722 /* LockSubstate */
-        + 1140822 /* ReadSubstate */
+        + 68595 /* LockSubstate */
+        + 1164286 /* ReadSubstate */
         + 250000 /* RunNative */
         + 40000 /* RunSystem */
         + 1245025 /* RunWasm */

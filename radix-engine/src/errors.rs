@@ -212,7 +212,7 @@ pub enum SystemError {
     InvalidModule,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
-    SubstateValidationError(Box<SubstateValidationError>),
+    CreateObjectError(Box<CreateObjectError>),
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
 }
@@ -242,10 +242,10 @@ pub enum VmError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SubstateValidationError {
+pub enum CreateObjectError {
     BlueprintNotFound(String),
     WrongNumberOfSubstates(String, usize, usize),
-    SchemaValidationError(String, String),
+    InvalidSubstateWrite(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
