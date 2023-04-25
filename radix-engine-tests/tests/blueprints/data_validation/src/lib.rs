@@ -1,3 +1,4 @@
+use sbor::*;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -62,5 +63,28 @@ mod data_validation {
             let proof = self.vault.create_proof();
             Reference(proof.0.into())
         }
+
+        pub fn accept_custom_reference(&self, _: CustomReference) {}
     }
+}
+
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(transparent)]
+pub struct CustomReference(Reference);
+
+impl Describe<ScryptoCustomTypeKind> for CustomReference {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::Novel([123u8; 20]);
+
+    fn type_data() -> Option<TypeData<ScryptoCustomTypeKind, GlobalTypeId>> {
+        Some(TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Object(
+                RESOURCE_MANAGER_PACKAGE,
+                PROOF_BLUEPRINT.to_string(),
+            )),
+            metadata: TypeMetadata::no_child_names("CustomReference"),
+            validation: TypeValidation::None,
+        })
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }

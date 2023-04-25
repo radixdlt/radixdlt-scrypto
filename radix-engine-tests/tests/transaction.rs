@@ -6,6 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
@@ -121,7 +122,7 @@ fn test_non_existent_blob_hash() {
         .lock_fee(account, dec!("10"))
         .add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef([0; 32]),
-            schema: ManifestBlobRef([0; 32]),
+            schema: PackageSchema::default(),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRulesConfig::new(),

@@ -20,7 +20,6 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_stores::interface::*;
-use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -162,7 +161,11 @@ where
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
-        let transaction_hash = executable.transaction_hash();
+        let transaction_hash = executable.transaction_hash().clone();
+        let mut blobs = BTreeMap::new();
+        for b in executable.blobs() {
+            blobs.insert(hash(b), b.clone());
+        }
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
@@ -215,10 +218,10 @@ where
                 TRANSACTION_PROCESSOR_BLUEPRINT,
                 TRANSACTION_PROCESSOR_RUN_IDENT,
                 scrypto_encode(&TransactionProcessorRunInput {
-                    transaction_hash: transaction_hash.clone(),
-                    runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                    instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
-                    blobs: Cow::Borrowed(executable.blobs()),
+                    transaction_hash,
+                    runtime_validations: executable.runtime_validations().to_vec(),
+                    instructions: manifest_encode(executable.instructions()).unwrap(),
+                    blobs,
                     references: extract_refs_from_manifest(executable.instructions()),
                 })
                 .unwrap(),

@@ -3,6 +3,7 @@ use radix_engine::{
     kernel::call_frame::MoveError,
     types::*,
 };
+use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
@@ -276,7 +277,8 @@ fn cannot_update_substate_with_mismatching_data() {
     assert!(error_message.contains("InvalidSubstateWrite"))
 }
 
-/// TODO: We might want to change this behavior.
+/// TODO: We might want to change this behavior; for now, transaction will
+/// fail at a later stage.
 #[test]
 fn pass_own_as_reference_do_not_trigger_payload_validation_error() {
     // Arrange
@@ -303,4 +305,30 @@ fn pass_own_as_reference_do_not_trigger_payload_validation_error() {
             )))
         )
     });
+}
+
+#[test]
+fn test_reference_of_specific_blueprint() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _, account) = test_runner.new_account(false);
+    let component_address = setup_component(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .create_proof_from_account(account, RADIX_TOKEN)
+        .pop_from_auth_zone(|builder, proof| {
+            builder.call_method(
+                component_address,
+                "accept_custom_reference",
+                manifest_args!(proof),
+            )
+        })
+        .build();
+
+    // Assert
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    receipt.expect_commit_success();
 }
