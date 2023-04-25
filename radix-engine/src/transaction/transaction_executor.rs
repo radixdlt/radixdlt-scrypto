@@ -376,8 +376,7 @@ where
                 }
                 println!("{:-^80}", "Outcome");
                 println!(
-                    "{:<30}: {:>10}",
-                    "Outcome",
+                    "{}",
                     match &commit.outcome {
                         TransactionOutcome::Success(_) => "Success".to_string(),
                         TransactionOutcome::Failure(error) => format!("Failure: {:?}", error),

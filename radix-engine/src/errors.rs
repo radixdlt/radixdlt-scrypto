@@ -202,7 +202,7 @@ pub enum SystemError {
     NotAKeyValueStore,
     NotASortedStore,
     CannotStoreOwnedInIterable,
-    InvalidSubstateWrite,
+    InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),

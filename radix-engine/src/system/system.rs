@@ -180,11 +180,20 @@ where
 
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
-            TypeInfoSubstate::KeyValueStore(schema) => {
-                validate_payload_against_schema(&buffer, &schema.schema, schema.value, self)
-                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+            TypeInfoSubstate::KeyValueStore(store_schema) => {
+                validate_payload_against_schema(
+                    &buffer,
+                    &store_schema.schema,
+                    store_schema.value,
+                    self,
+                )
+                .map_err(|e| {
+                    RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
+                        e.error_message(&store_schema.schema),
+                    ))
+                })?;
 
-                if !schema.can_own {
+                if !store_schema.can_own {
                     let indexed = IndexedScryptoValue::from_slice(&buffer)
                         .expect("Should be valid due to payload check");
                     let (_, own, _) = indexed.unpack();
@@ -221,7 +230,11 @@ where
                         *index,
                         self,
                     )
-                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+                    .map_err(|e| {
+                        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
+                            e.error_message(&blueprint_schema.schema),
+                        ))
+                    })?;
                 } else {
                     // TODO: we should have schema for every object!
                     // Currently, metadata object does not.
