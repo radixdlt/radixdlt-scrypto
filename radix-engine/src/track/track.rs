@@ -200,7 +200,8 @@ pub struct Track<'s, S: SubstateDatabase> {
     locks: IndexMap<u32, (NodeId, ModuleId, SubstateKey, LockFlags)>,
     next_lock_id: u32,
 
-    substate_already_read: HashSet<(NodeId, ModuleId, SubstateKey)>,
+    /// Stores list of substates locked at leaset once during transaction execution
+    substate_already_locked: HashSet<(NodeId, ModuleId, SubstateKey)>,
 }
 
 impl<'s, S: SubstateDatabase> Track<'s, S> {
@@ -211,7 +212,7 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
             updates: index_map_new(),
             locks: index_map_new(),
             next_lock_id: 0,
-            substate_already_read: HashSet::with_capacity(32),
+            substate_already_locked: HashSet::with_capacity(32),
         }
     }
 
@@ -545,7 +546,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         })?;
 
         let first_time_lock =
-            self.substate_already_read
+            self.substate_already_locked
                 .insert((*node_id, module_id, substate_key.clone()));
 
         let handle_id = self.new_lock_handle(node_id, module_id, substate_key, flags);
