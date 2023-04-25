@@ -14,7 +14,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(BucketOffset::Liquid.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::read_only())?;
         let substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -25,7 +25,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(BucketOffset::Locked.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::read_only())?;
         let substate_ref: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -36,7 +36,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -56,7 +56,7 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.lock_field(BucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -77,7 +77,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
         let max_locked = locked.amount();
 
@@ -111,7 +111,7 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(BucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
 
         let max_locked = locked.amount();
@@ -133,6 +133,17 @@ impl FungibleBucket {
 pub struct FungibleBucketBlueprint;
 
 impl FungibleBucketBlueprint {
+    fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError> where Y: ClientApi<RuntimeError>
+    {
+        let divisibility_handle = api.lock_parent_field(
+            FungibleResourceManagerOffset::Divisibility.into(),
+            LockFlags::read_only(),
+        )?;
+        let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
+        api.sys_drop_lock(divisibility_handle)?;
+        Ok(divisibility)
+    }
+
     pub fn take<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -148,11 +159,13 @@ impl FungibleBucketBlueprint {
             ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
 
         // Check amount
-        let info = BucketInfoSubstate::of_self(api)?;
-        if !info.resource_type.check_amount(input.amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount),
-            ));
+        {
+            let divisibility = Self::get_divisibility(api)?;
+            if !(check_amount(Some(divisibility), input.amount)) {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::InvalidAmount),
+                ));
+            }
         }
 
         // Take
@@ -236,13 +249,13 @@ impl FungibleBucketBlueprint {
         let resource_address =
             ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
 
-        let info = BucketInfoSubstate::of_self(api)?;
         let node_id = {
+            let divisibility = Self::get_divisibility(api)?;
             let amount = FungibleBucket::locked_amount(api)? + FungibleBucket::liquid_amount(api)?;
 
             let proof_info = ProofInfoSubstate {
                 resource_address,
-                resource_type: info.resource_type,
+                resource_type: ResourceType::Fungible { divisibility },
                 restricted: false,
             };
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;

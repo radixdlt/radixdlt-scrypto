@@ -690,20 +690,9 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
-            NonFungibleResourceManagerOffset::IdType.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
-        api.sys_drop_lock(handle)?;
-
         let bucket_id = api.new_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_type: ResourceType::NonFungible { id_type },
-                })
-                .unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
                 scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],

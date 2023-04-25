@@ -165,14 +165,12 @@ impl Heap {
 
 #[derive(Debug)]
 pub struct DroppedFungibleBucket {
-    pub info: BucketInfoSubstate,
     pub liquid: LiquidFungibleResource,
     pub locked: LockedFungibleResource,
 }
 
 #[derive(Debug)]
 pub struct DroppedNonFungibleBucket {
-    pub info: BucketInfoSubstate,
     pub liquid: LiquidNonFungibleResource,
     pub locked: LockedNonFungibleResource,
 }
@@ -182,16 +180,12 @@ impl Into<DroppedFungibleBucket> for NodeSubstates {
         let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
 
         DroppedFungibleBucket {
-            info: module
-                .remove(&BucketOffset::Info.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
             liquid: module
-                .remove(&BucketOffset::Liquid.into())
+                .remove(&FungibleBucketOffset::Liquid.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
             locked: module
-                .remove(&BucketOffset::Locked.into())
+                .remove(&FungibleBucketOffset::Locked.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
         }
@@ -203,16 +197,12 @@ impl Into<DroppedNonFungibleBucket> for NodeSubstates {
         let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
 
         DroppedNonFungibleBucket {
-            info: module
-                .remove(&BucketOffset::Info.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
             liquid: module
-                .remove(&BucketOffset::Liquid.into())
+                .remove(&NonFungibleBucketOffset::Liquid.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
             locked: module
-                .remove(&BucketOffset::Locked.into())
+                .remove(&NonFungibleBucketOffset::Locked.into())
                 .map(|x| x.as_typed().unwrap())
                 .unwrap(),
         }

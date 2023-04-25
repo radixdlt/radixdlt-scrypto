@@ -39,8 +39,7 @@ pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
 }
 
 fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
-    let resource_type = ResourceType::Fungible { divisibility };
-    if !resource_type.check_amount(amount) {
+    if !check_amount(Some(divisibility), amount) {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
                 amount,
@@ -242,18 +241,9 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisbility_handle = api.lock_field(
-            FungibleResourceManagerOffset::Divisibility.into(),
-            LockFlags::read_only(),
-        )?;
-        let divisibility: u8 = api.sys_read_substate_typed(divisbility_handle)?;
         let bucket_id = api.new_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
-                scrypto_encode(&BucketInfoSubstate {
-                    resource_type: ResourceType::Fungible { divisibility },
-                })
-                .unwrap(),
                 scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
             ],

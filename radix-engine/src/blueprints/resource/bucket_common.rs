@@ -4,7 +4,7 @@ use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
-use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -18,19 +18,6 @@ pub enum BucketError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BucketInfoSubstate {
     pub resource_type: ResourceType,
-}
-
-impl BucketInfoSubstate {
-    pub fn of_self<Y>(api: &mut Y) -> Result<Self, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.lock_field(BucketOffset::Info.into(), LockFlags::read_only())?;
-        let substate_ref: BucketInfoSubstate = api.sys_read_substate_typed(handle)?;
-        let info = substate_ref.clone();
-        api.sys_drop_lock(handle)?;
-        Ok(info)
-    }
 }
 
 pub fn drop_fungible_bucket_of_address<Y>(

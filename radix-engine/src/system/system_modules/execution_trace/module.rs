@@ -97,12 +97,10 @@ pub enum VaultOp {
 pub enum BucketSnapshot {
     Fungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
         liquid: Decimal,
     },
     NonFungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
         liquid: BTreeSet<NonFungibleLocalId>,
     },
 }

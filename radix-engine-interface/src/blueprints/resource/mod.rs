@@ -23,6 +23,6 @@ pub use proof_rule::*;
 pub use resource::*;
 pub use resource_manager::ResourceMethodAuthKey::*;
 pub use resource_manager::*;
-pub use resource_type::ResourceType;
+pub use resource_type::*;
 pub use vault::*;
 pub use worktop::*;
