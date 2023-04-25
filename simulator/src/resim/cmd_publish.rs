@@ -64,7 +64,7 @@ impl Publish {
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            bootstrap(&mut substate_db, &scrypto_interpreter);
+            Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
             let module_id: ModuleId = SysModuleId::Object.into();

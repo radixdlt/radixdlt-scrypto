@@ -327,6 +327,7 @@ dependencies = [
 name = "genesis-helper"
 version = "0.1.0"
 dependencies = [
+ "native-sdk",
  "radix-engine",
  "sbor",
  "scrypto",

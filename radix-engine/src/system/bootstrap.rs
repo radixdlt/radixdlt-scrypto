@@ -1,6 +1,8 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
+use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_common::types::ComponentAddress;
 
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
@@ -11,7 +13,7 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::transaction::{
-    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -19,6 +21,9 @@ use crate::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -35,83 +40,268 @@ const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to 
 const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
-pub struct GenesisReceipt {
-    pub faucet_component: ComponentAddress,
-}
-
-type AccountIdx = usize;
-type ResourceIdx = usize;
-type ValidatorIdx = usize;
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct GenesisData {
-    pub validators: Vec<GenesisValidator>,
-    pub resources: Vec<GenesisResource>,
-    pub accounts: Vec<ComponentAddress>,
-    pub resource_balances: BTreeMap<ResourceIdx, Vec<(AccountIdx, Decimal)>>,
-    pub xrd_balances: BTreeMap<AccountIdx, Decimal>,
-    pub stakes: BTreeMap<ValidatorIdx, Vec<(AccountIdx, Decimal)>>,
-}
-
-impl GenesisData {
-    pub fn empty() -> GenesisData {
-        GenesisData {
-            validators: vec![],
-            resources: vec![],
-            accounts: vec![],
-            resource_balances: BTreeMap::new(),
-            xrd_balances: BTreeMap::new(),
-            stakes: BTreeMap::new(),
-        }
-    }
-
-    pub fn single_validator_and_staker(
-        validator_key: EcdsaSecp256k1PublicKey,
-        stake_amount: Decimal,
-        account_address: ComponentAddress,
-    ) -> GenesisData {
-        let mut stakes = BTreeMap::new();
-        stakes.insert(0, vec![(0, stake_amount)]);
-        GenesisData {
-            validators: vec![validator_key.into()],
-            resources: vec![],
-            accounts: vec![account_address],
-            resource_balances: BTreeMap::new(),
-            xrd_balances: BTreeMap::new(),
-            stakes,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
-    pub component_address: ComponentAddress,
+    pub accept_delegated_stake: bool,
+    pub is_registered: bool,
+    pub metadata: Vec<(String, String)>,
+    pub owner: ComponentAddress,
 }
 
 impl From<EcdsaSecp256k1PublicKey> for GenesisValidator {
     fn from(key: EcdsaSecp256k1PublicKey) -> Self {
-        let component_address = ComponentAddress::virtual_account_from_public_key(&key);
+        // Re-using the validator key for its owner
+        let default_owner_address = ComponentAddress::virtual_account_from_public_key(&key);
         GenesisValidator {
             key,
-            component_address,
+            accept_delegated_stake: true,
+            is_registered: true,
+            metadata: vec![],
+            owner: default_owner_address,
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct GenesisResource {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
-    pub address_bytes: [u8; NodeId::LENGTH],
-    pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
+pub struct GenesisStakeAllocation {
+    pub account_index: u32,
+    pub xrd_amount: Decimal,
 }
 
-pub fn create_genesis(
-    genesis_data: GenesisData,
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct GenesisResource {
+    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+    pub initial_supply: Decimal,
+    pub metadata: Vec<(String, String)>,
+    pub owner: Option<ComponentAddress>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct GenesisResourceAllocation {
+    pub account_index: u32,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum GenesisDataChunk {
+    Validators(Vec<GenesisValidator>),
+    Stakes {
+        accounts: Vec<ComponentAddress>,
+        allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+    },
+    Resources(Vec<GenesisResource>),
+    ResourceBalances {
+        accounts: Vec<ComponentAddress>,
+        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+    },
+    XrdBalances(Vec<(ComponentAddress, Decimal)>),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct SystemBootstrapReceipt {
+    pub commit_result: CommitResult,
+}
+
+impl SystemBootstrapReceipt {
+    pub fn genesis_helper(&self) -> ComponentAddress {
+        self.commit_result
+            .new_component_addresses()
+            .last()
+            .unwrap()
+            .clone()
+    }
+}
+
+impl From<TransactionReceipt> for SystemBootstrapReceipt {
+    fn from(receipt: TransactionReceipt) -> Self {
+        SystemBootstrapReceipt {
+            commit_result: receipt.expect_commit_success().clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct GenesisWrapUpReceipt {
+    pub commit_result: CommitResult,
+}
+
+impl GenesisWrapUpReceipt {
+    pub fn faucet_component(&self) -> ComponentAddress {
+        // TODO: Remove this when appropriate syscalls are implemented for Scrypto
+        self.commit_result
+            .new_component_addresses()
+            .last()
+            .unwrap()
+            .clone()
+    }
+}
+
+impl From<TransactionReceipt> for GenesisWrapUpReceipt {
+    fn from(receipt: TransactionReceipt) -> Self {
+        GenesisWrapUpReceipt {
+            commit_result: receipt.expect_commit_success().clone(),
+        }
+    }
+}
+
+pub struct Bootstrapper<'s, 'i, S, W>
+where
+    S: SubstateDatabase + CommittableSubstateDatabase,
+    W: WasmEngine,
+{
+    substate_db: &'s mut S,
+    scrypto_vm: &'i ScryptoVm<W>,
+}
+
+impl<'s, 'i, S, W> Bootstrapper<'s, 'i, S, W>
+where
+    S: SubstateDatabase + CommittableSubstateDatabase,
+    W: WasmEngine,
+{
+    pub fn new(substate_db: &'s mut S, scrypto_vm: &'i ScryptoVm<W>) -> Bootstrapper<'s, 'i, S, W> {
+        Bootstrapper {
+            substate_db,
+            scrypto_vm,
+        }
+    }
+
+    pub fn bootstrap_test_default(
+        &mut self,
+    ) -> Option<(
+        SystemBootstrapReceipt,
+        Vec<TransactionReceipt>,
+        GenesisWrapUpReceipt,
+    )> {
+        self.bootstrap_with_genesis_data(vec![], 1u64, 10u32, 1u64, 1u64)
+    }
+
+    pub fn bootstrap_with_genesis_data(
+        &mut self,
+        genesis_data_chunks: Vec<GenesisDataChunk>,
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> Option<(
+        SystemBootstrapReceipt,
+        Vec<TransactionReceipt>,
+        GenesisWrapUpReceipt,
+    )> {
+        let xrd_info = self
+            .substate_db
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                &RADIX_TOKEN.into(),
+                SysModuleId::TypeInfo.into(),
+                TypeInfoOffset::TypeInfo.into(),
+            );
+
+        if xrd_info.is_none() {
+            let system_bootstrap_receipt = self.execute_system_bootstrap(
+                initial_epoch,
+                max_validators,
+                rounds_per_epoch,
+                num_unstake_epochs,
+            );
+
+            let mut next_nonce = 1;
+            let mut data_ingestion_receipts = vec![];
+            for chunk in genesis_data_chunks.into_iter() {
+                let receipt = self.ingest_genesis_data_chunk(
+                    &system_bootstrap_receipt.genesis_helper(),
+                    chunk,
+                    next_nonce,
+                );
+                next_nonce += 1;
+                data_ingestion_receipts.push(receipt);
+            }
+
+            let genesis_wrap_up_receipt: GenesisWrapUpReceipt = self
+                .execute_genesis_wrap_up(&system_bootstrap_receipt.genesis_helper(), next_nonce);
+
+            Some((
+                system_bootstrap_receipt,
+                data_ingestion_receipts,
+                genesis_wrap_up_receipt,
+            ))
+        } else {
+            None
+        }
+    }
+
+    fn execute_system_bootstrap(
+        &mut self,
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> SystemBootstrapReceipt {
+        let transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            max_validators,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        );
+
+        let receipt = execute_transaction(
+            self.substate_db,
+            self.scrypto_vm,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = receipt.expect_commit(true);
+
+        self.substate_db.commit(&commit_result.state_updates);
+
+        receipt.into()
+    }
+
+    fn ingest_genesis_data_chunk(
+        &mut self,
+        genesis_helper: &ComponentAddress,
+        chunk: GenesisDataChunk,
+        nonce: u64,
+    ) -> TransactionReceipt {
+        let transaction = create_genesis_data_ingestion_transaction(genesis_helper, chunk, nonce);
+        let receipt = execute_transaction(
+            self.substate_db,
+            self.scrypto_vm,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = receipt.expect_commit(true);
+        self.substate_db.commit(&commit_result.state_updates);
+
+        receipt
+    }
+
+    fn execute_genesis_wrap_up(
+        &mut self,
+        genesis_helper: &ComponentAddress,
+        nonce: u64,
+    ) -> GenesisWrapUpReceipt {
+        let transaction = create_genesis_wrap_up_transaction(genesis_helper, nonce);
+
+        let receipt = execute_transaction(
+            self.substate_db,
+            self.scrypto_vm,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = receipt.expect_commit(true);
+        self.substate_db.commit(&commit_result.state_updates);
+
+        receipt.into()
+    }
+}
+
+pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
     max_validators: u32,
     rounds_per_epoch: u64,
@@ -631,32 +821,19 @@ pub fn create_genesis(
         });
     }
 
-    // Call the GenesisHelper to init the epoch manager/validators/resources
+    // Create EpochManager
     {
-        for resource in genesis_data.resources.iter() {
-            pre_allocated_ids.insert(resource.address_bytes.into());
-        }
-
-        let epoch_manager_component_address: [u8; NodeId::LENGTH] = EPOCH_MANAGER.into();
-        let olympia_validator_token_address: [u8; NodeId::LENGTH] = VALIDATOR_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
+        let epoch_manager_component_address = Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER);
+        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN);
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
+        pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
 
-        let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
-        instructions.push(
-            Instruction::TakeFromWorktop {
-                resource_address: RADIX_TOKEN,
-            }
-            .into(),
-        );
         instructions.push(Instruction::CallFunction {
-            package_address: GENESIS_HELPER_PACKAGE,
-            blueprint_name: "GenesisHelper".to_string(),
-            function_name: "init".to_string(),
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
             args: manifest_args!(
-                genesis_data,
-                whole_lotta_xrd,
-                olympia_validator_token_address,
+                validator_owner_token,
                 epoch_manager_component_address,
                 initial_epoch,
                 max_validators,
@@ -666,105 +843,100 @@ pub fn create_genesis(
         });
     }
 
-    // Faucet
+    // Create GenesisHelper
     {
+        let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
         instructions.push(
             Instruction::TakeFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
         );
-
-        let bucket = id_allocator.new_bucket_id().unwrap();
         instructions.push(Instruction::CallFunction {
-            package_address: FAUCET_PACKAGE,
-            blueprint_name: FAUCET_BLUEPRINT.to_string(),
+            package_address: GENESIS_HELPER_PACKAGE,
+            blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(bucket),
+            args: manifest_args!(
+                whole_lotta_xrd,
+                EPOCH_MANAGER,
+                rounds_per_epoch,
+                AuthAddresses::system_role()
+            ),
         });
     }
 
     SystemTransaction {
         instructions,
-        blobs: Vec::new(),
         pre_allocated_ids,
+        blobs: Vec::new(),
         nonce: 0,
     }
 }
 
-pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    // TODO: Remove this when appropriate APIs are implemented for Scrypto
-    let faucet_component = receipt
-        .expect_commit(true)
-        .new_component_addresses()
-        .last()
-        .unwrap()
-        .clone();
-    GenesisReceipt { faucet_component }
+pub fn create_genesis_data_ingestion_transaction(
+    genesis_helper: &ComponentAddress,
+    chunk: GenesisDataChunk,
+    nonce: u64,
+) -> SystemTransaction {
+    let mut instructions = Vec::new();
+    let mut pre_allocated_ids = BTreeSet::new();
+
+    if let GenesisDataChunk::Resources(resources) = &chunk {
+        for resource in resources {
+            pre_allocated_ids.insert(NodeId::new(
+                EntityType::GlobalFungibleResource as u8,
+                &resource.address_bytes_without_entity_id,
+            ));
+        }
+    }
+
+    instructions.push(Instruction::CallMethod {
+        component_address: genesis_helper.clone(),
+        method_name: "ingest_data_chunk".to_string(),
+        args: manifest_args!(chunk),
+    });
+
+    SystemTransaction {
+        instructions,
+        pre_allocated_ids,
+        blobs: Vec::new(),
+        nonce,
+    }
 }
 
-pub fn bootstrap<S, W>(
-    substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
-) -> Option<TransactionReceipt>
-where
-    S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
-{
-    bootstrap_with_genesis_data(
-        substate_db,
-        scrypto_interpreter,
-        GenesisData::empty(),
-        1u64,
-        100u32,
-        1u64,
-        1u64,
-        false,
-    )
-}
+pub fn create_genesis_wrap_up_transaction(
+    genesis_helper: &ComponentAddress,
+    nonce: u64,
+) -> SystemTransaction {
+    let mut id_allocator = ManifestIdAllocator::new();
+    let mut instructions = Vec::new();
 
-pub fn bootstrap_with_genesis_data<S, W>(
-    substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
-    genesis_data: GenesisData,
-    initial_epoch: u64,
-    max_validators: u32,
-    rounds_per_epoch: u64,
-    num_unstake_epochs: u64,
-    trace: bool,
-) -> Option<TransactionReceipt>
-where
-    S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
-{
-    let xrd_info = substate_db.get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
-        &RADIX_TOKEN.into(),
-        SysModuleId::TypeInfo.into(),
-        TypeInfoOffset::TypeInfo.into(),
+    instructions.push(Instruction::CallMethod {
+        component_address: genesis_helper.clone(),
+        method_name: "wrap_up".to_string(),
+        args: manifest_args!(),
+    });
+
+    instructions.push(
+        Instruction::TakeFromWorktop {
+            resource_address: RADIX_TOKEN,
+        }
+        .into(),
     );
 
-    if xrd_info.is_none() {
-        let genesis_transaction = create_genesis(
-            genesis_data,
-            initial_epoch,
-            max_validators,
-            rounds_per_epoch,
-            num_unstake_epochs,
-        );
+    let bucket = id_allocator.new_bucket_id().unwrap();
 
-        let transaction_receipt = execute_transaction(
-            substate_db,
-            scrypto_interpreter,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis().with_trace(trace),
-            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
-        );
+    instructions.push(Instruction::CallFunction {
+        package_address: FAUCET_PACKAGE,
+        blueprint_name: FAUCET_BLUEPRINT.to_string(),
+        function_name: "new".to_string(),
+        args: manifest_args!(bucket),
+    });
 
-        let commit_result = transaction_receipt.expect_commit(true);
-        substate_db.commit(&commit_result.state_updates);
-
-        Some(transaction_receipt)
-    } else {
-        None
+    SystemTransaction {
+        instructions,
+        pre_allocated_ids: BTreeSet::new(),
+        blobs: Vec::new(),
+        nonce,
     }
 }
