@@ -42,7 +42,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         &substate_store,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
-        &ExecutionConfig::genesis(),
+        &ExecutionConfig::genesis().with_trace(true),
         &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
     );
 
