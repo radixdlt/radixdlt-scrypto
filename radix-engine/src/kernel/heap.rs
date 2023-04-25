@@ -192,19 +192,14 @@ impl Into<DroppedFungibleBucket> for NodeSubstates {
     }
 }
 
-impl Into<DroppedNonFungibleBucket> for NodeSubstates {
-    fn into(mut self) -> DroppedNonFungibleBucket {
-        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
+impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedNonFungibleBucket {
+        let liquid: LiquidNonFungibleResource = scrypto_decode(&self[NonFungibleBucketOffset::Liquid as usize]).unwrap();
+        let locked: LockedNonFungibleResource = scrypto_decode(&self[NonFungibleBucketOffset::Locked as usize]).unwrap();
 
         DroppedNonFungibleBucket {
-            liquid: module
-                .remove(&NonFungibleBucketOffset::Liquid.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
-            locked: module
-                .remove(&NonFungibleBucketOffset::Locked.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
+            liquid,
+            locked,
         }
     }
 }
