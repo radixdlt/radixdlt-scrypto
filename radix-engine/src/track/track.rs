@@ -347,6 +347,9 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseMapper> {
     locks: IndexMap<u32, (NodeId, ModuleId, Vec<u8>, LockFlags)>,
     next_lock_id: u32,
     phantom_data: PhantomData<M>,
+
+    /// Stores list of substates locked at leaset once during transaction execution
+    substate_already_locked: HashSet<(NodeId, ModuleId, SubstateKey)>,
 }
 
 impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
@@ -358,6 +361,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
             locks: index_map_new(),
             next_lock_id: 0,
             phantom_data: PhantomData::default(),
+            substate_already_locked: HashSet::with_capacity(32),
         }
     }
 
@@ -772,7 +776,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<u32, AcquireLockError> {
+    ) -> Result<(u32, bool), AcquireLockError> {
         let db_key = M::map_to_db_key(substate_key.clone());
 
         // Load the substate from state track
@@ -816,7 +820,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             AcquireLockError::SubstateLocked(*node_id, module_id, substate_key.clone())
         })?;
 
-        Ok(self.new_lock_handle(node_id, module_id, &db_key, flags))
+        let first_time_lock =
+            self.substate_already_locked
+                .insert((*node_id, module_id, substate_key.clone()));
+
+        let handle_id = self.new_lock_handle(node_id, module_id, &db_key, flags);
+
+        Ok((handle_id, first_time_lock))
     }
 
     fn release_lock(&mut self, handle: u32) {
