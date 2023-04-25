@@ -20,7 +20,7 @@ impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        bootstrap(&mut substate_db, &scrypto_interpreter);
+        Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;

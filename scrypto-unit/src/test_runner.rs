@@ -8,7 +8,7 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
-use radix_engine::system::bootstrap::{create_genesis, GenesisData};
+use radix_engine::system::bootstrap::*;
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemCallback;
@@ -127,8 +127,65 @@ impl Compile {
     }
 }
 
+pub struct CustomGenesis {
+    pub genesis_data_chunks: Vec<GenesisDataChunk>,
+    pub initial_epoch: u64,
+    pub max_validators: u32,
+    pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
+}
+
+impl CustomGenesis {
+    pub fn empty(
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> CustomGenesis {
+        CustomGenesis {
+            genesis_data_chunks: vec![],
+            initial_epoch,
+            max_validators,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        }
+    }
+
+    pub fn single_validator_and_staker(
+        validator_public_key: EcdsaSecp256k1PublicKey,
+        stake_xrd_amount: Decimal,
+        staker_account: ComponentAddress,
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> CustomGenesis {
+        let genesis_validator: GenesisValidator = validator_public_key.clone().into();
+        let genesis_data_chunks = vec![
+            GenesisDataChunk::Validators(vec![genesis_validator]),
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_account],
+                allocations: vec![(
+                    validator_public_key,
+                    vec![GenesisStakeAllocation {
+                        account_index: 0,
+                        xrd_amount: stake_xrd_amount,
+                    }],
+                )],
+            },
+        ];
+        CustomGenesis {
+            genesis_data_chunks,
+            initial_epoch,
+            max_validators,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        }
+    }
+}
+
 pub struct TestRunnerBuilder {
-    custom_genesis: Option<SystemTransaction>,
+    custom_genesis: Option<CustomGenesis>,
     trace: bool,
     state_hashing: bool,
 }
@@ -144,7 +201,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn with_custom_genesis(mut self, genesis: SystemTransaction) -> Self {
+    pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
         self.custom_genesis = Some(genesis);
         self
     }
@@ -157,31 +214,21 @@ impl TestRunnerBuilder {
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
-        // Bootstrap
-        let genesis = self
-            .custom_genesis
-            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 10u32, 1u64, 1u64));
-        let transaction_receipt = {
-            let transaction_receipt = execute_transaction(
-                &substate_db,
-                &scrypto_interpreter,
-                &FeeReserveConfig::default(),
-                &ExecutionConfig::genesis(),
-                &genesis.get_executable(btreeset![AuthAddresses::system_role()]),
-            );
-
-            let commit_result = transaction_receipt.expect_commit(true);
-            substate_db
-                .commit(&commit_result.state_updates)
-                .expect("Database misconfigured");
-            transaction_receipt
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter);
+        let (_, _, genesis_wrap_up_receipt) = match self.custom_genesis {
+            Some(custom_genesis) => bootstrapper
+                .bootstrap_with_genesis_data(
+                    custom_genesis.genesis_data_chunks,
+                    custom_genesis.initial_epoch,
+                    custom_genesis.max_validators,
+                    custom_genesis.rounds_per_epoch,
+                    custom_genesis.num_unstake_epochs,
+                )
+                .unwrap(),
+            None => bootstrapper.bootstrap_test_default().unwrap(),
         };
-        let faucet_component = transaction_receipt
-            .expect_commit_success()
-            .new_component_addresses()
-            .last()
-            .cloned()
-            .unwrap();
+
+        let faucet_component = genesis_wrap_up_receipt.faucet_component();
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -202,8 +249,7 @@ impl TestRunnerBuilder {
             faucet_component,
         };
 
-        let result = transaction_receipt.expect_commit_success();
-        let next_epoch = result.next_epoch().unwrap();
+        let next_epoch = genesis_wrap_up_receipt.commit_result.next_epoch().unwrap();
         (runner, next_epoch.0)
     }
 

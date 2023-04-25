@@ -84,17 +84,6 @@ impl EpochManagerNativePackage {
             },
         );
         functions.insert(
-            EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerCreateValidatorWithStakeInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerCreateValidatorWithStakeOutput>(),
-                export_name: EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT.to_string(),
-            },
-        );
-        functions.insert(
             EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -263,7 +252,6 @@ impl EpochManagerNativePackage {
                 let rtn = EpochManagerBlueprint::create(
                     input.validator_owner_token,
                     input.component_address,
-                    input.validator_set,
                     input.initial_epoch,
                     input.max_validators,
                     input.rounds_per_epoch,
@@ -333,26 +321,6 @@ impl EpochManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::create_validator(receiver, input.key, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            EPOCH_MANAGER_CREATE_VALIDATOR_WITH_STAKE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let input: EpochManagerCreateValidatorWithStakeInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = EpochManagerBlueprint::create_validator_with_stake(
-                    receiver,
-                    input.key,
-                    input.xrd_stake,
-                    input.register,
-                    api,
-                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
