@@ -77,6 +77,7 @@ pub struct WasmerInstanceEnv {
 
 pub struct WasmerEngine {
     store: Store,
+    // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
     modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmerModule>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]

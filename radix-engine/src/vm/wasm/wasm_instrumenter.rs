@@ -4,6 +4,7 @@ use crate::vm::wasm::{WasmMeteringConfig, WasmModule};
 use sbor::rust::sync::Arc;
 
 pub struct WasmInstrumenter {
+    // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
     cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<Vec<u8>>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
