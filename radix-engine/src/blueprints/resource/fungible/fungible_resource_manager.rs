@@ -1,9 +1,9 @@
+use native_sdk::resource::ResourceManager;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -157,8 +157,6 @@ impl FungibleResourceManagerBlueprint {
             divisibility
         };
 
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-
         // check amount
         check_new_amount(divisibility, amount)?;
 
@@ -174,7 +172,7 @@ impl FungibleResourceManagerBlueprint {
             api.sys_drop_lock(total_supply_handle)?;
         }
 
-        let bucket = ResourceManager(resource_address).new_fungible_bucket(amount, api)?;
+        let bucket = Self::create_bucket(amount, api)?;
 
         Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
@@ -235,14 +233,14 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn create_empty_bucket<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::create_bucket(0.into(), api)
     }
 
     pub(crate) fn create_bucket<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let divisbility_handle = api.lock_field(
             FungibleResourceManagerOffset::Divisibility.into(),

@@ -386,7 +386,7 @@ impl NonFungibleResourceManagerBlueprint {
             ids
         };
 
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
+        let bucket = Self::create_bucket(ids.clone(), api)?;
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok(bucket)
@@ -458,7 +458,7 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         let ids = btreeset!(id.clone());
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
+        let bucket = Self::create_bucket(ids.clone(), api)?;
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok((bucket, id))
@@ -532,7 +532,7 @@ impl NonFungibleResourceManagerBlueprint {
             ids
         };
 
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids.clone(), api)?;
+        let bucket = Self::create_bucket(ids.clone(), api)?;
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok(bucket)
