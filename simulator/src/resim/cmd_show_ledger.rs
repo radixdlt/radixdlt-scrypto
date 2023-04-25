@@ -1,6 +1,5 @@
 use clap::Parser;
 use colored::*;
-use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
