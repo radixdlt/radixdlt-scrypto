@@ -73,6 +73,7 @@ fn test_basic_transfer() {
         + 1785 /* DropNode */
         + 1121999 /* Invoke */
         + 16653 /* LockSubstate */
+        + 928 /* LockSubstateFirstTime */
         + 249894 /* ReadSubstate */
         + 75000 /* RunNative */
         + 7500 /* RunSystem */
@@ -208,6 +209,7 @@ fn test_radiswap() {
         + 3885 /* DropNode */
         + 3447266 /* Invoke */
         + 37636 /* LockSubstate */
+        + 1504 /* LockSubstateFirstTime */
         + 742750 /* ReadSubstate */
         + 160000 /* RunNative */
         + 15000 /* RunSystem */
@@ -319,6 +321,7 @@ fn test_flash_loan() {
         + 6405 /* DropNode */
         + 4333776 /* Invoke */
         + 58180 /* LockSubstate */
+        + 1344 /* LockSubstateFirstTime */
         + 1087314 /* ReadSubstate */
         + 250000 /* RunNative */
         + 40000 /* RunSystem */
