@@ -318,16 +318,13 @@ impl WasmerModule {
 
         pub fn lock_field(
             env: &WasmerInstanceEnv,
-            offset_ptr: u32,
-            offset_len: u32,
+            field: u8,
             flags: u32,
         ) -> Result<u32, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let substate_key = read_memory(&instance, offset_ptr, offset_len)?;
+            let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .lock_field(substate_key, flags)
+                .lock_field(field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
