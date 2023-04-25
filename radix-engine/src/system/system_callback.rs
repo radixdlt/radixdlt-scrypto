@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::schema::BlueprintSchema;
 
 fn validate_input<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
-    upstream: SystemUpstream<'a, Y, V>,
+    mut upstream: SystemUpstream<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
@@ -44,7 +44,7 @@ fn validate_input<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
         input.as_slice(),
         &blueprint_schema.schema,
         function_schema.input,
-        &upstream,
+        &mut upstream,
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
@@ -57,7 +57,7 @@ fn validate_input<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
 }
 
 fn validate_output<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
-    upstream: SystemUpstream<'a, Y, V>,
+    mut upstream: SystemUpstream<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
@@ -71,7 +71,7 @@ fn validate_output<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>
         output.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,
-        &upstream,
+        &mut upstream,
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
@@ -105,7 +105,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+    fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
         self.api.kernel_get_node_type_info(node_id)
     }
 }

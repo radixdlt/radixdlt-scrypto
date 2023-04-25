@@ -9,7 +9,7 @@ impl ValidatableCustomTypeExtension<()> for ScryptoCustomTypeExtension {
     fn validate_custom_value<'de, L: SchemaTypeLink>(
         _custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
         _custom_type_kind: &Self::CustomTypeKind<L>,
-        _context: &(),
+        _context: &mut (),
     ) -> Result<(), ValidationError> {
         Ok(())
     }
@@ -29,7 +29,7 @@ pub enum TypeInfo {
 }
 
 pub trait NodeTypeInfoContext {
-    fn get_node_type_info(&self, reference: &NodeId) -> Option<TypeInfo>;
+    fn get_node_type_info(&mut self, reference: &NodeId) -> Option<TypeInfo>;
 }
 
 impl<T> ValidatableCustomTypeExtension<T> for ScryptoCustomTypeExtension
@@ -39,7 +39,7 @@ where
     fn validate_custom_value<'de, L: SchemaTypeLink>(
         custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
         custom_type_kind: &Self::CustomTypeKind<L>,
-        context: &T,
+        context: &mut T,
     ) -> Result<(), ValidationError> {
         match &custom_value_ref.0 {
             ScryptoCustomValue::Reference(reference) => {

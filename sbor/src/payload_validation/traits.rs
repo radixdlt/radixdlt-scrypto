@@ -8,6 +8,6 @@ pub trait ValidatableCustomTypeExtension<T>: CustomTypeExtension {
     fn validate_custom_value<'de, L: SchemaTypeLink>(
         custom_value_ref: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
         custom_type_kind: &Self::CustomTypeKind<L>,
-        context: &T,
+        context: &mut T,
     ) -> Result<(), ValidationError>;
 }

@@ -48,7 +48,7 @@ where
     Y: KernelApi<SystemCallback<V>>,
     V: SystemCallbackObject,
 {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+    fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
         self.api.kernel_get_node_type_info(node_id)
     }
 }
@@ -1311,7 +1311,7 @@ where
         self.api.kernel_get_current_actor()
     }
 
-    fn kernel_get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+    fn kernel_get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
         self.api.kernel_get_node_type_info(node_id)
     }
 

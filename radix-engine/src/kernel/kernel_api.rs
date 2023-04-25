@@ -158,7 +158,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 
     /// Returns the type info about a node;
     /// Note that no node visibility check is performed.
-    fn kernel_get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo>;
+    fn kernel_get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo>;
 
     // TODO: Remove these, these are temporary until the architecture
     // TODO: gets cleaned up a little more

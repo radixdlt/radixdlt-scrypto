@@ -57,7 +57,7 @@ fn bench_schema_new(b: &mut Criterion) {
                 &bytes,
                 &schema,
                 type_index,
-                &(),
+                &mut (),
             );
             assert!(result.is_ok())
         })

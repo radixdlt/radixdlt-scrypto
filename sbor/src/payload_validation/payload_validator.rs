@@ -107,7 +107,7 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension<T>,
     payload: &[u8],
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
-    context: &T,
+    context: &mut T,
 ) -> Result<(), LocatedValidationError<'s, E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
     loop {
@@ -126,7 +126,7 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension<T>,
 fn validate_event_with_type<E: ValidatableCustomTypeExtension<T>, T>(
     schema: &Schema<E>,
     event: &TypedTraversalEvent<E>,
-    context: &T,
+    context: &mut T,
 ) -> Result<bool, PayloadValidationError<E>> {
     match event {
         TypedTraversalEvent::ContainerStart(type_index, header) => {
@@ -189,7 +189,7 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
     schema: &Schema<E>,
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
-    context: &T,
+    context: &mut T,
 ) -> Result<(), PayloadValidationError<E>> {
     // Apply contextual custom type validation here!
     if let TerminalValueRef::Custom(custom_value_ref) = value {

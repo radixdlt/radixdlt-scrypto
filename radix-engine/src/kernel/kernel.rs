@@ -335,9 +335,9 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfo> {
+    fn kernel_get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
         // This is to solve the bootstrapping problem.
-        // Can be removed if we flush bootstrap state updates without transactional execution.
+        // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
             return Some(TypeInfo::Object {
                 package_address: RESOURCE_MANAGER_PACKAGE,
@@ -369,14 +369,26 @@ where
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
             )
-            .or_else(|| {
-                self.store.get_substate(
-                    node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                )
-            })
             .map(|x| x.as_typed::<TypeInfoSubstate>().unwrap())
+            .or_else(|| {
+                self.store
+                    .acquire_lock(
+                        node_id,
+                        SysModuleId::TypeInfo.into(),
+                        &TypeInfoOffset::TypeInfo.into(),
+                        LockFlags::read_only(),
+                    )
+                    .and_then(|lock| {
+                        let substate = self
+                            .store
+                            .read_substate(lock)
+                            .as_typed::<TypeInfoSubstate>()
+                            .unwrap();
+                        self.store.release_lock(lock);
+                        Ok(substate)
+                    })
+                    .ok()
+            })
             .map(|substate| match substate {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint,
