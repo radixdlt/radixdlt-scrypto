@@ -101,6 +101,7 @@ pub enum CostingReason {
     CreateNode,
     AllocateNodeId,
     LockSubstate,
+    LockSubstateFirstTime,
     ReadSubstate,
     WriteSubstate,
     DropLock,

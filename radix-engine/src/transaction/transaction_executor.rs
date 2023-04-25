@@ -470,7 +470,7 @@ fn distribute_fees<S: SubstateDatabase>(
         let node_id = recipient_vault_id;
         let module_id = SysModuleId::Object;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
-        let handle = track
+        let (handle, _) = track
             .acquire_lock(
                 &node_id,
                 module_id.into(),
@@ -505,7 +505,7 @@ fn distribute_fees<S: SubstateDatabase>(
         required -= amount;
 
         // Refund overpayment
-        let handle = track
+        let (handle, _) = track
             .acquire_lock(
                 &vault_id,
                 SysModuleId::Object.into(),

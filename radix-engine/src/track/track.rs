@@ -199,6 +199,8 @@ pub struct Track<'s, S: SubstateDatabase> {
 
     locks: IndexMap<u32, (NodeId, ModuleId, SubstateKey, LockFlags)>,
     next_lock_id: u32,
+
+    substate_already_read: Vec<(NodeId, ModuleId, SubstateKey)>,
 }
 
 impl<'s, S: SubstateDatabase> Track<'s, S> {
@@ -209,6 +211,7 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
             updates: index_map_new(),
             locks: index_map_new(),
             next_lock_id: 0,
+            substate_already_read: Vec::new(),
         }
     }
 
@@ -220,8 +223,15 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
         flags: LockFlags,
     ) -> u32 {
         let new_lock = self.next_lock_id;
-        self.locks
-            .insert(new_lock, (*node_id, module_id, substate_key.clone(), flags));
+        self.locks.insert(
+            new_lock,
+            (
+                *node_id,
+                module_id,
+                substate_key.clone(),
+                flags,
+            ),
+        );
         self.next_lock_id += 1;
         new_lock
     }
@@ -500,7 +510,7 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<u32, AcquireLockError> {
+    ) -> Result<(u32, bool), AcquireLockError> {
         // Load the substate from state track
         let tracked =
             self.get_tracked_substate_virtualize(node_id, module_id, substate_key, virtualize);
@@ -541,7 +551,22 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
             AcquireLockError::SubstateLocked(*node_id, module_id, substate_key.clone())
         })?;
 
-        Ok(self.new_lock_handle(node_id, module_id, substate_key, flags))
+        let first_time_lock =
+            if self
+                .substate_already_read
+                .contains(&(*node_id, module_id, substate_key.clone()))
+            {
+                false
+            } else {
+                self.substate_already_read
+                    .push((*node_id, module_id, substate_key.clone()));
+                true
+            };
+
+        let handle_id =
+            self.new_lock_handle(node_id, module_id, substate_key, flags);
+
+        Ok((handle_id, first_time_lock))
     }
 
     fn release_lock(&mut self, handle: u32) {
