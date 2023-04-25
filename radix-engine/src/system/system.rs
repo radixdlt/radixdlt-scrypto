@@ -525,7 +525,7 @@ where
     }
 
     #[trace_resources]
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+    fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         // TODO: Cleanup
         if let Some(actor) = self.api.kernel_get_current_actor() {
             let info = self.get_object_info(&node_id)?;
@@ -541,9 +541,11 @@ where
             }
         }
 
-        self.api.kernel_drop_node(&node_id)?;
+        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
+        let user_substates = node_substates.remove(&SysModuleId::Object.into()).unwrap();
+        let fields = user_substates.into_iter().map(|(_key, v)| v.into()).collect();
 
-        Ok(())
+        Ok(fields)
     }
 }
 
