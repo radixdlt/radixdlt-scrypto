@@ -1,8 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -26,24 +24,22 @@ pub fn drop_fungible_bucket_of_address<Y>(
     api: &mut Y,
 ) -> Result<DroppedFungibleBucket, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     // Note that we assume the input is indeed a bucket, checked by schema
     let resource_address = ResourceAddress::new_unchecked(
-        TypeInfoBlueprint::get_type(bucket_node_id, api)?
-            .parent()
-            .expect("Missing parent for fungible bucket")
+        api.get_object_info(bucket_node_id)?
+            .blueprint_parent.expect("Missing parent for fungible bucket")
             .into(),
     );
-    let node_substates = api.kernel_drop_node(bucket_node_id)?;
-
     if resource_address != expected_address {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),
         )));
     }
 
-    let bucket: DroppedFungibleBucket = node_substates.into();
+    let fields = api.drop_object(*bucket_node_id)?;
+    let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
             bucket_node_id.clone(),
@@ -64,7 +60,7 @@ where
     // Note that we assume the input is indeed a bucket, checked by schema
     let resource_address = ResourceAddress::new_unchecked(
         api.get_object_info(bucket_node_id)?
-            .blueprint_parent.expect("Missing parent for fungible bucket")
+            .blueprint_parent.expect("Missing parent for non-fungible bucket")
             .into(),
     );
     if resource_address != expected_address {

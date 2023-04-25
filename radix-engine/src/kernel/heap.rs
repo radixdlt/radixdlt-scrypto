@@ -175,19 +175,14 @@ pub struct DroppedNonFungibleBucket {
     pub locked: LockedNonFungibleResource,
 }
 
-impl Into<DroppedFungibleBucket> for NodeSubstates {
-    fn into(mut self) -> DroppedFungibleBucket {
-        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
+impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedFungibleBucket {
+        let liquid: LiquidFungibleResource = scrypto_decode(&self[FungibleBucketOffset::Liquid as usize]).unwrap();
+        let locked: LockedFungibleResource = scrypto_decode(&self[FungibleBucketOffset::Locked as usize]).unwrap();
 
         DroppedFungibleBucket {
-            liquid: module
-                .remove(&FungibleBucketOffset::Liquid.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
-            locked: module
-                .remove(&FungibleBucketOffset::Locked.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
+            liquid,
+            locked,
         }
     }
 }

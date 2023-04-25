@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
