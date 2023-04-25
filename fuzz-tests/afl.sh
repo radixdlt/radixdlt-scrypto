@@ -23,6 +23,7 @@ function usage() {
     echo "    watch <interval>"
     echo "            Monitor AFL instances until they are finished."
     echo "            One can specify interval (default: $DFLT_INTERVAL) to output the status"
+    echo "    quit    Quit all AFL instances"
 }
 
 function error() {
@@ -153,12 +154,46 @@ elif [ $cmd = "watch" ] ; then
             echo "Fuzzing ends in  : $(humanize_seconds $time_left)"
         fi
     done
-    echo "AFL instances stdout:"
+    echo "AFL sessions stdout:"
     find afl -name "${target}_*.log"  | sort | xargs tail -n50
-    echo "AFL instances stderr:"
+    echo "AFL sessions stderr:"
     find afl -name "${target}_*.err"  | sort | xargs tail -n50
-    echo "AFL instances status (0 means 'ok'):"
-    find afl -name "${target}_*.status" | sort | xargs cat
+    list=$(find afl -name "${target}_*.status" | sort)
+
+    echo "AFL sessions info:" | tee afl/sessions_info
+    for f in $list ; do
+        name=$(basename ${f%.status})
+        stats_file=afl/${target}/${name}/fuzzer_stats
+        stability="n/a"
+        coverage="n/a"
+        crashes="n/a"
+        hangs="n/a"
+        execs_cnt="n/a"
+        execs_per_sec="n/a"
+        if [ -f $stats_file ] ; then
+            execs_cnt=$(grep execs_done $stats_file | awk '{print $3}')
+            execs_per_sec=$(grep execs_per_sec $stats_file | awk '{print $3}')
+            hangs=$(grep saved_hangs $stats_file | awk '{print $3}')
+            crashes=$(grep saved_crashes $stats_file | awk '{print $3}')
+            stability=$(grep stability $stats_file | awk '{print $3}')
+            coverage=$(grep bitmap_cvg $stats_file | awk '{print $3}')
+        fi
+        d=$(dirname $f)
+        printf "  %-30s status:%-2s crashes:%-7s hangs:%-7s execs:%-10s execs/sec:%-7s coverage:%-7s stability:%-7s\n" \
+            $name $(cat $f) $crashes $hangs $execs_cnt $execs_per_sec $coverage $stability
+    done | tee -a afl/sessions_info
+elif [ $cmd = "quit" ] ; then
+    list=$(find afl/${target} -name fuzzer_stats | sort)
+    if [ "$list" != "" ] ; then
+        for stats_file in $list ; do
+            name=$(grep afl_banner $stats_file | awk '{print $3}')
+            pid=$(grep fuzzer_pid $stats_file | awk '{print $3}')
+            echo "killing session $name"
+            kill -9 $pid
+        done
+    else
+        echo "nothing to be done"
+    fi
 else
     error "Command '$cmd' not supported"
 fi

@@ -3,7 +3,7 @@ use sbor::rust::ops::Bound::Included;
 use sbor::rust::prelude::*;
 use std::ops::Bound::Unbounded;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct InMemorySubstateDatabase {
     substates: BTreeMap<Vec<u8>, Vec<u8>>,
 }

@@ -222,6 +222,14 @@ pub struct TestRunner {
     faucet_component: ComponentAddress,
 }
 
+#[derive(Clone)]
+pub struct TestRunnerSnapshot {
+    substate_db: InMemorySubstateDatabase,
+    next_private_key: u64,
+    next_transaction_nonce: u64,
+    state_hash_support: Option<StateHashSupport>,
+}
+
 impl TestRunner {
     pub fn builder() -> TestRunnerBuilder {
         TestRunnerBuilder {
@@ -232,6 +240,22 @@ impl TestRunner {
             trace: false,
             state_hashing: false,
         }
+    }
+
+    pub fn create_snapshot(&self) -> TestRunnerSnapshot {
+        TestRunnerSnapshot {
+            substate_db: self.substate_db.clone(),
+            next_private_key: self.next_private_key,
+            next_transaction_nonce: self.next_transaction_nonce,
+            state_hash_support: self.state_hash_support.clone(),
+        }
+    }
+
+    pub fn restore_snapshot(&mut self, snapshot: TestRunnerSnapshot) {
+        self.substate_db = snapshot.substate_db;
+        self.next_private_key = snapshot.next_private_key;
+        self.next_transaction_nonce = snapshot.next_transaction_nonce;
+        self.state_hash_support = snapshot.state_hash_support;
     }
 
     pub fn faucet_component(&self) -> ComponentAddress {
@@ -1324,6 +1348,7 @@ impl TestRunner {
     }
 }
 
+#[derive(Clone)]
 pub struct StateHashSupport {
     tree_store: TypedInMemoryTreeStore,
     current_version: Version,
