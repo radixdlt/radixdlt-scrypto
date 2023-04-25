@@ -1,4 +1,8 @@
-use radix_engine::types::*;
+use radix_engine::{
+    errors::{CallFrameError, KernelError, RuntimeError},
+    kernel::call_frame::MoveError,
+    types::*,
+};
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
@@ -270,4 +274,33 @@ fn cannot_update_substate_with_mismatching_data() {
         .expect_failure()
         .to_string();
     assert!(error_message.contains("InvalidSubstateWrite"))
+}
+
+/// TODO: We might want to change this behavior.
+#[test]
+fn pass_own_as_reference_do_not_trigger_payload_validation_error() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let component_address = setup_component(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .call_method(
+            component_address,
+            "can_pass_own_as_reference",
+            manifest_args!(),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(
+                MoveError::RefNotFound(_)
+            )))
+        )
+    });
 }

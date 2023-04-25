@@ -57,5 +57,10 @@ mod data_validation {
             let actor = Runtime::global_address();
             self.reference = unsafe { ResourceAddress::new_unchecked(actor.into()) };
         }
+
+        pub fn can_pass_own_as_reference(&mut self) -> Reference {
+            let proof = self.vault.create_proof();
+            Reference(proof.0.into())
+        }
     }
 }
