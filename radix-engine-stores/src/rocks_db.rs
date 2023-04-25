@@ -15,6 +15,8 @@ impl RocksdbSubstateStore {
         Self { db }
     }
 
+    // TODO: Is this still important?
+    /*
     pub fn list_nodes(&self) -> Vec<NodeId> {
         let mut items = Vec::new();
         let mut iter = self
@@ -54,6 +56,7 @@ impl RocksdbSubstateStore {
             .filter_map(|x| ResourceAddress::try_from(x.as_ref()).ok())
             .collect()
     }
+     */
 }
 
 impl SubstateDatabase for RocksdbSubstateStore {
@@ -79,7 +82,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
             .iterator(IteratorMode::From(&start, Direction::Forward))
             .take_while(move |kv| {
                 let (key, _value) = kv.as_ref().unwrap();
-                key[0..(NodeId::LENGTH + 1)].eq(&index_id)
+                key[0..26].eq(&index_id)
             })
             .map(|kv| {
                 let (key, value) = kv.unwrap();

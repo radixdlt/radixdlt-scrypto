@@ -21,6 +21,9 @@ impl ShowLedger {
         let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
         bootstrap(&mut substate_db, &scrypto_interpreter);
+
+        // TODO: Is this still important?
+        /*
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
@@ -56,6 +59,7 @@ impl ShowLedger {
             )
             .map_err(Error::IOError)?;
         }
+         */
 
         // Close the database
         drop(substate_db);

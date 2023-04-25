@@ -18,8 +18,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-// TODO: Add streaming support for `list_substates`
-
 pub fn encode_substate_id(index_id: &Vec<u8>, db_key: &Vec<u8>) -> Vec<u8> {
     let mut buffer = Vec::new();
     buffer.extend(index_id);
@@ -27,11 +25,10 @@ pub fn encode_substate_id(index_id: &Vec<u8>, db_key: &Vec<u8>) -> Vec<u8> {
     buffer
 }
 
-/// Utility function for decoding a substate ID `(NodeId, ModuleId, SubstateKey)` from a `Vec<u8>`,
 pub fn decode_substate_id(slice: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
-    if slice.len() >= NodeId::LENGTH + 1 {
-        let index_id = slice[0..(NodeId::LENGTH + 1)].to_vec();
-        let key = slice[NodeId::LENGTH + 1..].to_vec();
+    if slice.len() >= 26 {
+        let index_id = slice[0..26].to_vec();
+        let key = slice[26 + 1..].to_vec();
 
         return Some((index_id, key));
     }
