@@ -328,7 +328,7 @@ impl TestRunner {
 
         let metadata_entry = self
             .substate_db
-            .read_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
+            .get_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
                 SubstateKey::Map(key),
@@ -352,7 +352,7 @@ impl TestRunner {
     ) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .read_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .get_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::Royalty.into(),
                 RoyaltyOffset::RoyaltyAccumulator.into(),
@@ -362,7 +362,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
@@ -377,7 +377,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .read_mapped_substate::<JmtMapper, PackageRoyaltySubstate>(
+            .get_mapped_substate::<JmtMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
                 SysModuleId::Object.into(),
                 PackageOffset::Royalty.into(),
@@ -387,7 +387,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
@@ -433,7 +433,7 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+            .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 FungibleVaultOffset::LiquidFungible.into(),
@@ -447,7 +447,7 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let vault = self
             .substate_db()
-            .read_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
+            .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -538,7 +538,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
         self.substate_db()
-            .read_mapped_substate::<JmtMapper, ValidatorSubstate>(
+            .get_mapped_substate::<JmtMapper, ValidatorSubstate>(
                 address.as_node_id(),
                 SysModuleId::Object.into(),
                 ValidatorOffset::Validator.into(),
@@ -549,7 +549,7 @@ impl TestRunner {
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
-            .read_mapped_substate::<JmtMapper, CurrentValidatorSetSubstate>(
+            .get_mapped_substate::<JmtMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
                 SysModuleId::Object.into(),
                 EpochManagerOffset::CurrentValidatorSet.into(),
@@ -1272,7 +1272,7 @@ impl TestRunner {
                     ObjectModuleId::SELF => {
                         let type_info = self
                             .substate_db()
-                            .read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                                 node_id,
                                 SysModuleId::TypeInfo.into(),
                                 TypeInfoOffset::TypeInfo.into(),
@@ -1307,7 +1307,7 @@ impl TestRunner {
         (
             local_type_index,
             self.substate_db()
-                .read_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+                .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
                     SysModuleId::Object.into(),
                     PackageOffset::Info.into(),

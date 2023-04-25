@@ -539,7 +539,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
+    #[trace_resources(log=node_id.entity_type(), log=module_id)]
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,

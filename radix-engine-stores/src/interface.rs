@@ -186,7 +186,7 @@ pub trait SubstateDatabase {
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>;
 
     /// Convenience method for database readers
-    fn read_mapped_substate<M: DatabaseMapper, D: ScryptoDecode>(
+    fn get_mapped_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,

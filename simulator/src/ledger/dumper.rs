@@ -27,7 +27,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let substate = substate_db
-        .read_mapped_substate::<JmtMapper, PackageCodeSubstate>(
+        .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             PackageOffset::Code.into(),
@@ -59,7 +59,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
 
     let (package_address, blueprint_name, resources) = {
         let type_info = substate_db
-            .read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
                 TypeInfoOffset::TypeInfo.into(),
@@ -135,7 +135,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
         let resource_manager = substate_db
-            .read_mapped_substate::<JmtMapper, NonFungibleResourceManagerSubstate>(
+            .get_mapped_substate::<JmtMapper, NonFungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 ResourceManagerOffset::ResourceManager.into(),
@@ -161,7 +161,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
     } else {
         let resource_manager = substate_db
-            .read_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
+            .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 ResourceManagerOffset::ResourceManager.into(),

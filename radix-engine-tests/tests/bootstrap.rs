@@ -151,7 +151,7 @@ fn test_genesis_resource_with_initial_allocation() {
     substate_store.commit(&commit_result.state_updates);
 
     let resource_manager_substate = substate_store
-        .read_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
+        .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
             &resource_address,
             SysModuleId::Object.into(),
             ResourceManagerOffset::ResourceManager.into(),
@@ -164,7 +164,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let key = scrypto_encode("symbol").unwrap();
 
     let entry = substate_store
-        .read_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
+        .get_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
             &resource_address,
             SysModuleId::Metadata.into(),
             SubstateKey::Map(key),

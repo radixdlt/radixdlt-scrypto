@@ -87,7 +87,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         // Load type info
         let type_info = self
             .substate_db
-            .read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &node_id,
                 SysModuleId::TypeInfo.into(),
                 TypeInfoOffset::TypeInfo.into(),
@@ -127,7 +127,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .read_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             &node_id,
                             SysModuleId::Object.into(),
                             FungibleVaultOffset::LiquidFungible.into(),
@@ -144,7 +144,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .read_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
+                        .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                             &node_id,
                             SysModuleId::Object.into(),
                             NonFungibleVaultOffset::LiquidNonFungible.into(),

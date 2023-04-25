@@ -737,7 +737,7 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
-    let xrd_info = substate_db.read_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+    let xrd_info = substate_db.get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
         &RADIX_TOKEN.into(),
         SysModuleId::TypeInfo.into(),
         TypeInfoOffset::TypeInfo.into(),
