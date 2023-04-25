@@ -200,7 +200,7 @@ pub struct Track<'s, S: SubstateDatabase> {
     locks: IndexMap<u32, (NodeId, ModuleId, SubstateKey, LockFlags)>,
     next_lock_id: u32,
 
-    substate_already_read: Vec<(NodeId, ModuleId, SubstateKey)>,
+    substate_already_read: HashSet<(NodeId, ModuleId, SubstateKey)>,
 }
 
 impl<'s, S: SubstateDatabase> Track<'s, S> {
@@ -211,7 +211,7 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
             updates: index_map_new(),
             locks: index_map_new(),
             next_lock_id: 0,
-            substate_already_read: Vec::new(),
+            substate_already_read: HashSet::with_capacity(32),
         }
     }
 
@@ -223,15 +223,8 @@ impl<'s, S: SubstateDatabase> Track<'s, S> {
         flags: LockFlags,
     ) -> u32 {
         let new_lock = self.next_lock_id;
-        self.locks.insert(
-            new_lock,
-            (
-                *node_id,
-                module_id,
-                substate_key.clone(),
-                flags,
-            ),
-        );
+        self.locks
+            .insert(new_lock, (*node_id, module_id, substate_key.clone(), flags));
         self.next_lock_id += 1;
         new_lock
     }
@@ -552,19 +545,10 @@ impl<'s, S: SubstateDatabase> SubstateStore for Track<'s, S> {
         })?;
 
         let first_time_lock =
-            if self
-                .substate_already_read
-                .contains(&(*node_id, module_id, substate_key.clone()))
-            {
-                false
-            } else {
-                self.substate_already_read
-                    .push((*node_id, module_id, substate_key.clone()));
-                true
-            };
+            self.substate_already_read
+                .insert((*node_id, module_id, substate_key.clone()));
 
-        let handle_id =
-            self.new_lock_handle(node_id, module_id, substate_key, flags);
+        let handle_id = self.new_lock_handle(node_id, module_id, substate_key, flags);
 
         Ok((handle_id, first_time_lock))
     }
