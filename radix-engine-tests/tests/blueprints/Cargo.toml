@@ -2,7 +2,6 @@
 members = [
     "access_rules",
     "address",
-    "arg_validation",
     "arguments",
     "balance_changes",
     "bucket",
@@ -10,6 +9,7 @@ members = [
     "core",
     "clock",
     "data_access",
+    "data_validation",
     "deep_sbor",
     "epoch_manager",
     "execution_trace",

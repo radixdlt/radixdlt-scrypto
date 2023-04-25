@@ -1,5 +1,5 @@
 [package]
-name = "arg_validation"
+name = "data_validation"
 version = "0.10.0"
 edition = "2021"
 

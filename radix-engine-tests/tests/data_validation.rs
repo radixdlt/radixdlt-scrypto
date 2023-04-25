@@ -3,11 +3,11 @@ use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
 fn setup_component(test_runner: &mut TestRunner) -> ComponentAddress {
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/arg_validation");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     let setup_manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .call_function(package_address, "ArgValidation", "new", manifest_args!())
+        .call_function(package_address, "DataValidation", "new", manifest_args!())
         .build();
     let setup_receipt = test_runner.execute_manifest(setup_manifest, vec![]);
     setup_receipt.expect_commit(true).new_component_addresses()[0]
@@ -55,7 +55,7 @@ type ManifestConstructor = fn(
     proof: ManifestProof,
 );
 
-/// This test just checks that the manifest constructor and ArgValidation components work right -
+/// This test just checks that the manifest constructor and DataValidation components work right -
 /// to ensure the other tests in this file are valid tests.
 #[test]
 fn valid_transactions_can_be_committed() {
@@ -87,7 +87,7 @@ fn valid_transactions_can_be_committed() {
                 )
                 .call_method(
                     component_address,
-                    "accept_and_return_bucket",
+                    "accept_non_empty_bucket",
                     manifest_args!(full_bucket),
                 )
                 .call_method(component_address, "accept_proof", manifest_args!(proof));

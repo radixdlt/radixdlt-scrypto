@@ -1,10 +1,10 @@
 use scrypto::prelude::*;
 
 #[blueprint]
-mod abi_validation {
-    struct ArgValidation {}
+mod data_validation {
+    struct DataValidation {}
 
-    impl ArgValidation {
+    impl DataValidation {
         pub fn new() -> ComponentAddress {
             Self {}.instantiate().globalize()
         }
@@ -13,10 +13,12 @@ mod abi_validation {
             bucket.drop_empty()
         }
 
-        pub fn accept_and_return_bucket(&self, bucket: Bucket) -> Bucket {
+        pub fn accept_non_empty_bucket(&self, bucket: Bucket) -> Bucket {
             bucket
         }
 
-        pub fn accept_proof(&self, _proof: Proof) {}
+        pub fn accept_proof(&self, proof: Proof) {
+            proof.drop()
+        }
     }
 }
