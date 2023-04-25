@@ -174,78 +174,66 @@ where
     ) -> Result<(), RuntimeError> {
         let LockInfo {
             node_id,
-            module_id,
             substate_key,
             ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::VirtualizedObject.into()) {
-            let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-            match type_info {
-                TypeInfoSubstate::KeyValueStore(schema) => {
-                    validate_payload_against_schema(&buffer, &schema.schema, schema.value, self)
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::KeyValueStore(schema) => {
+                validate_payload_against_schema(&buffer, &schema.schema, schema.value, self)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
 
-                    if !schema.can_own {
-                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
-                        let (_, own, _) = indexed.unpack();
-                        if !own.is_empty() {
-                            return Err(RuntimeError::SystemError(
-                                SystemError::InvalidKeyValueStoreOwnership,
-                            ));
-                        }
+                if !schema.can_own {
+                    let indexed = IndexedScryptoValue::from_slice(&buffer)
+                        .expect("Should be valid due to payload check");
+                    let (_, own, _) = indexed.unpack();
+                    if !own.is_empty() {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidKeyValueStoreOwnership,
+                        ));
                     }
-                }
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                    let handle = self.kernel_lock_substate(
-                        blueprint.package_address.as_node_id(),
-                        SysModuleId::Object.into(),
-                        &PackageOffset::Info.into(),
-                        LockFlags::read_only(),
-                    )?;
-                    let package_info: PackageInfoSubstate = self.sys_read_substate_typed(handle)?;
-                    let blueprint_schema = package_info
-                        .schema
-                        .blueprints
-                        .get(&blueprint.blueprint_name)
-                        .expect("Missing blueprint schema")
-                        .clone();
-                    self.kernel_drop_lock(handle)?;
-
-                    if let Some(index) = blueprint_schema
-                        .substates
-                        .get(substate_key.as_ref()[0] as usize)
-                    {
-                        validate_payload_against_schema(
-                            &buffer,
-                            &blueprint_schema.schema,
-                            *index,
-                            self,
-                        )
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
-                    } else {
-                        // TODO: we should have schema for every object!
-                        // Currently, metadata object does not.
-                    }
-                }
-                _ => {
-                    // TODO: Other schema checks
-                    // TODO: Check objects stored are storeable
                 }
             }
-        } else {
-            // TODO: Other schema checks
-            // TODO: Check objects stored are storeable
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                let handle = self.kernel_lock_substate(
+                    blueprint.package_address.as_node_id(),
+                    SysModuleId::Object.into(),
+                    &PackageOffset::Info.into(),
+                    LockFlags::read_only(),
+                )?;
+                let package_info: PackageInfoSubstate = self.sys_read_substate_typed(handle)?;
+                let blueprint_schema = package_info
+                    .schema
+                    .blueprints
+                    .get(&blueprint.blueprint_name)
+                    .expect("Missing blueprint schema")
+                    .clone();
+                self.kernel_drop_lock(handle)?;
+
+                if let Some(index) = blueprint_schema
+                    .substates
+                    .get(substate_key.as_ref()[0] as usize)
+                {
+                    validate_payload_against_schema(
+                        &buffer,
+                        &blueprint_schema.schema,
+                        *index,
+                        self,
+                    )
+                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+                } else {
+                    // TODO: we should have schema for every object!
+                    // Currently, metadata object does not.
+                }
+            }
+            TypeInfoSubstate::SortedStore => {
+                // TODO: Check objects stored are storeable
+            }
         }
 
-        let substate = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+        let substate =
+            IndexedScryptoValue::from_vec(buffer).expect("Should be valid due to payload check");
         self.api.kernel_write_substate(lock_handle, substate)?;
 
         Ok(())
