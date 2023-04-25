@@ -174,6 +174,7 @@ where
     ) -> Result<(), RuntimeError> {
         let LockInfo {
             node_id,
+            module_id,
             substate_key,
             ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
@@ -181,17 +182,16 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::KeyValueStore(store_schema) => {
-                validate_payload_against_schema(
+                if let Err(e) = validate_payload_against_schema(
                     &buffer,
                     &store_schema.schema,
                     store_schema.value,
                     self,
-                )
-                .map_err(|e| {
-                    RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
-                        e.error_message(&store_schema.schema),
-                    ))
-                })?;
+                ) {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidSubstateWrite(e.error_message(&store_schema.schema)),
+                    ));
+                };
 
                 if !store_schema.can_own {
                     let indexed = IndexedScryptoValue::from_slice(&buffer)
@@ -220,25 +220,38 @@ where
                     .clone();
                 self.kernel_drop_lock(handle)?;
 
-                if let Some(index) = blueprint_schema
-                    .substates
-                    .get(substate_key.as_ref()[0] as usize)
-                {
-                    validate_payload_against_schema(
-                        &buffer,
-                        &blueprint_schema.schema,
-                        *index,
-                        self,
-                    )
-                    .map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
-                            e.error_message(&blueprint_schema.schema),
-                        ))
-                    })?;
-                } else {
-                    // TODO: we should have schema for every object!
-                    // Currently, metadata object does not.
-                }
+                match SysModuleId::from_repr(module_id.0).unwrap() {
+                    SysModuleId::Object => {
+                        if let Some(index) = blueprint_schema
+                            .substates
+                            .get(substate_key.as_ref()[0] as usize)
+                        {
+                            if let Err(e) = validate_payload_against_schema(
+                                &buffer,
+                                &blueprint_schema.schema,
+                                *index,
+                                self,
+                            ) {
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::InvalidSubstateWrite(
+                                        e.error_message(&blueprint_schema.schema),
+                                    ),
+                                ));
+                            };
+                        } else {
+                            // TODO: we should have schema for every object!
+                            // Currently, metadata object does not.
+                        }
+                    }
+                    SysModuleId::TypeInfo
+                    | SysModuleId::Metadata
+                    | SysModuleId::Royalty
+                    | SysModuleId::AccessRules
+                    | SysModuleId::VirtualizedObject => {
+                        // TODO: We should validate these substates, but luckily they're not accessible from
+                        // Scrypto, so safe for now.
+                    }
+                };
             }
             TypeInfoSubstate::SortedStore => {
                 // TODO: Check objects stored are storeable
