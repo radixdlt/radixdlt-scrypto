@@ -1013,19 +1013,6 @@ where
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, blueprint) = match &actor {
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
-            }
-            Actor::Method {
-                node_id,
-                module_id,
-                blueprint,
-                ..
-            } => (node_id, module_id, blueprint),
-        };
-
         let parent = self
             .get_info()?
             .blueprint_parent
@@ -1045,7 +1032,7 @@ where
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, module_id) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
             Actor::Method {
                 node_id, module_id, ..

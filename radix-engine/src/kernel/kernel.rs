@@ -389,14 +389,18 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, blueprint_parent, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
-
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint,
+                    blueprint_parent,
+                    ..
+                }) if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                    && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                        || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                {
                     let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = blueprint_parent.unwrap();
-                    let resource_address: ResourceAddress = ResourceAddress::new_unchecked(parent.as_ref().clone().try_into().unwrap());
+                    let resource_address: ResourceAddress =
+                        ResourceAddress::new_unchecked(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)
                 }
                 _ => {

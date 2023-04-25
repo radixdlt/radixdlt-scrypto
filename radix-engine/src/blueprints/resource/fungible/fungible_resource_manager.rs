@@ -1,9 +1,9 @@
-use native_sdk::resource::ResourceManager;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;

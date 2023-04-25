@@ -133,7 +133,9 @@ impl FungibleBucket {
 pub struct FungibleBucketBlueprint;
 
 impl FungibleBucketBlueprint {
-    fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError> where Y: ClientApi<RuntimeError>
+    fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.lock_parent_field(
             FungibleResourceManagerOffset::Divisibility.into(),
