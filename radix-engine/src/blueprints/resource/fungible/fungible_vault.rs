@@ -3,7 +3,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -37,8 +36,6 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
 
         // Check amount
         if !Self::check_amount(amount, divisibility) {
@@ -51,7 +48,7 @@ impl FungibleVaultBlueprint {
         let taken = FungibleVault::take(*amount, api)?;
 
         // Create node
-        ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)
+        FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)
     }
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -147,11 +144,9 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
         let taken = FungibleVault::take(amount, api)?;
 
-        let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
+        let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
 

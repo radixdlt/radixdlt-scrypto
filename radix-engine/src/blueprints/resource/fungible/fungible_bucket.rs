@@ -3,7 +3,6 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 
@@ -157,9 +156,6 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-
         // Check amount
         {
             let divisibility = Self::get_divisibility(api)?;
@@ -174,7 +170,7 @@ impl FungibleBucketBlueprint {
         let taken = FungibleBucket::take(input.amount, api)?;
 
         // Create node
-        let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
+        let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
