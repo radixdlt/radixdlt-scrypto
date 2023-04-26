@@ -341,7 +341,9 @@ impl CallFrame {
             // Check references exist
             for reference in references {
                 self.get_node_visibility(reference)
-                    .ok_or(UnlockSubstateError::RefNotFound(reference.clone()))?;
+                    .ok_or_else(|| {
+                        UnlockSubstateError::RefNotFound(reference.clone())
+                    })?;
             }
 
             for old_child in &substate_lock.initial_owned_nodes {
@@ -650,7 +652,9 @@ impl CallFrame {
         for node_id in call_frame_update.node_refs_to_copy {
             let visibility = parent
                 .get_node_visibility(&node_id)
-                .ok_or(MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| {
+                    MoveError::RefNotFound(node_id)
+                })?;
             next_node_refs.insert(node_id, RENodeRefData::new(visibility.0));
         }
 
@@ -683,7 +687,9 @@ impl CallFrame {
             let ref_data = from
                 .immortal_node_refs
                 .get(&node_id)
-                .ok_or(MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| {
+                    MoveError::RefNotFound(node_id)
+                })?;
 
             to.immortal_node_refs
                 .entry(node_id)

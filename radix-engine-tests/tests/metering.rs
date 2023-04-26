@@ -315,11 +315,11 @@ fn test_flash_loan() {
     assert_eq!(
         4140 /* AllocateNodeId */
         + 6540 /* CreateNode */
-        + 21460 /* DropLock */
+        + 21534 /* DropLock */
         + 6300 /* DropNode */
         + 4260517 /* Invoke */
-        + 57376 /* LockSubstate */
-        + 1057382 /* ReadSubstate */
+        + 57580 /* LockSubstate */
+        + 1058874 /* ReadSubstate */
         + 237500 /* RunNative */
         + 40000 /* RunSystem */
         + 1188850 /* RunWasm */
