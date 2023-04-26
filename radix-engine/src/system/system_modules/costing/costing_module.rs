@@ -332,10 +332,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
-        first_time_lock: bool,
+        first_lock_from_db: bool,
         _size: usize,
     ) -> Result<(), RuntimeError> {
-        if first_time_lock {
+        if first_lock_from_db {
             api.kernel_get_callback()
                 .modules
                 .costing

@@ -51,7 +51,7 @@ pub trait KernelCallbackObject: Sized {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        first_time_lock: bool,
+        first_lock_from_db: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

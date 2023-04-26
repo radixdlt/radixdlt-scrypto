@@ -820,13 +820,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             AcquireLockError::SubstateLocked(*node_id, module_id, substate_key.clone())
         })?;
 
-        let first_time_lock =
+        let first_lock_from_db =
             self.substate_already_locked
                 .insert((*node_id, module_id, substate_key.clone()));
 
         let handle_id = self.new_lock_handle(node_id, module_id, &db_key, flags);
 
-        Ok((handle_id, first_time_lock))
+        Ok((handle_id, first_lock_from_db))
     }
 
     fn release_lock(&mut self, handle: u32) {

@@ -560,8 +560,8 @@ where
             default,
         );
 
-        let (lock_handle, first_time_lock) = match &maybe_lock_handle {
-            Ok((lock_handle, first_time_lock)) => (*lock_handle, *first_time_lock),
+        let (lock_handle, first_lock_from_db) = match &maybe_lock_handle {
+            Ok((lock_handle, first_lock_from_db)) => (*lock_handle, *first_lock_from_db),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
@@ -603,7 +603,7 @@ where
                         if node_id.is_global_package() =>
                     {
                         let module_id = SysModuleId::Object;
-                        let (handle, first_time_lock) = self
+                        let (handle, first_lock_from_db) = self
                             .store
                             .acquire_lock(
                                 node_id,
@@ -630,7 +630,7 @@ where
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?;
-                        (lock_handle, first_time_lock)
+                        (lock_handle, first_lock_from_db)
                     }
                     _ => {
                         return Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -642,7 +642,7 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, first_time_lock, self)?;
+        M::after_lock_substate(lock_handle, 0, first_lock_from_db, self)?;
 
         Ok(lock_handle)
     }
