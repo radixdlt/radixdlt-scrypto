@@ -276,10 +276,9 @@ fn cannot_update_substate_with_mismatching_data() {
     assert!(error_message.contains("InvalidSubstateWrite"))
 }
 
-/// TODO: We might want to change this behavior; for now, transaction will
-/// fail at a later stage.
+/// Note that payload validation after pushing call frame.
 #[test]
-fn pass_own_as_reference_do_not_trigger_payload_validation_error() {
+fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let component_address = setup_component(&mut test_runner);

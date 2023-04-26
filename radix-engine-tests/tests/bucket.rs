@@ -12,7 +12,9 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+    let package_address = test_runner.compile_and_publish(
+        "/home/yulong/workspace/radix/radixdlt-scrypto/radix-engine-tests/tests/blueprints/bucket",
+    );
 
     // Act
     let manifest = ManifestBuilder::new()
