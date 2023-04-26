@@ -69,11 +69,11 @@ fn test_basic_transfer() {
     assert_eq!(
         1104 /* AllocateNodeId */
         + 1744 /* CreateNode */
-        + 5365 /* DropLock */
+        + 5143 /* DropLock */
         + 1680 /* DropNode */
         + 1054091 /* Invoke */
-        + 15507 /* LockSubstate */
-        + 220760 /* ReadSubstate */
+        + 14975 /* LockSubstate */
+        + 207504 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -204,11 +204,11 @@ fn test_radiswap() {
     assert_eq!(
         2484 /* AllocateNodeId */
         + 3935 /* CreateNode */
-        + 12654 /* DropLock */
+        + 12284 /* DropLock */
         + 3675 /* DropNode */
         + 3311450 /* Invoke */
-        + 35229 /* LockSubstate */
-        + 682230 /* ReadSubstate */
+        + 34375 /* LockSubstate */
+        + 646380 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1503045 /* RunWasm */
@@ -315,11 +315,11 @@ fn test_flash_loan() {
     assert_eq!(
         3933 /* AllocateNodeId */
         + 6213 /* CreateNode */
-        + 20202 /* DropLock */
+        + 19499 /* DropLock */
         + 5985 /* DropNode */
         + 4056793 /* Invoke */
-        + 54224 /* LockSubstate */
-        + 966216 /* ReadSubstate */
+        + 52670 /* LockSubstate */
+        + 912842 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
         + 1188850 /* RunWasm */

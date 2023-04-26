@@ -343,11 +343,19 @@ where
         if let Some(actor) = &actor {
             match actor {
                 Actor::Method {
-                    global_address: Some(address),
+                    global_address,
+                    object_info,
                     ..
                 } => {
-                    self.current_frame
-                        .add_ref(address.as_node_id().clone(), RefType::Normal);
+                    if let Some(address) = global_address {
+                        self.current_frame
+                            .add_ref(address.as_node_id().clone(), RefType::Normal);
+                    }
+
+                    if let Some(address) = object_info.blueprint_parent {
+                        self.current_frame
+                            .add_ref(address.as_node_id().clone(), RefType::Normal);
+                    }
                 }
                 _ => {}
             }

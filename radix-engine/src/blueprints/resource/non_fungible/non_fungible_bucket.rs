@@ -3,7 +3,6 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -260,9 +259,6 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-
         // Check amount
         if !check_amount(None, input.amount) {
             return Err(RuntimeError::ApplicationError(
@@ -274,8 +270,7 @@ impl NonFungibleBucketBlueprint {
         let taken = NonFungibleBucket::take(input.amount, api)?;
 
         // Create node
-        let bucket =
-            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
@@ -291,15 +286,11 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-
         // Take
         let taken = NonFungibleBucket::take_non_fungibles(&input.ids, api)?;
 
         // Create node
-        let bucket =
-            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }

@@ -1138,37 +1138,16 @@ where
     #[trace_resources]
     fn get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, module_id) = match &actor {
+        let object_info = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
             Actor::Method {
-                node_id, module_id, ..
-            } => (node_id, module_id),
+                object_info, ..
+            } => object_info.clone(),
         };
 
-        // TODO: Use object_info in Actor::Method
-
-        let info = match module_id {
-            ObjectModuleId::SELF => self.get_object_info(node_id)?,
-            ObjectModuleId::Metadata => ObjectInfo {
-                blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
-                global: true,
-                blueprint_parent: None,
-            },
-            ObjectModuleId::AccessRules => ObjectInfo {
-                blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                global: true,
-                blueprint_parent: None,
-            },
-            ObjectModuleId::Royalty => ObjectInfo {
-                blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                global: true,
-                blueprint_parent: None,
-            },
-        };
-
-        Ok(info)
+        Ok(object_info)
     }
 
     #[trace_resources]

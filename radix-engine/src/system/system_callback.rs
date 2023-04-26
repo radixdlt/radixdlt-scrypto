@@ -220,6 +220,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
+        match callee {
+            Actor::Method { global_address, object_info, .. } => {
+                if let Some(address) = global_address {
+                    update.node_refs_to_copy.insert(address.as_node_id().clone());
+                }
+                if let Some(blueprint_parent) = object_info.blueprint_parent {
+                    update.node_refs_to_copy.insert(blueprint_parent.as_node_id().clone());
+                }
+            }
+            _ => {}
+        }
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
@@ -317,6 +328,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             output
         } else {
             // Make dependent resources/components visible
+
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
                 SysModuleId::Object.into(),

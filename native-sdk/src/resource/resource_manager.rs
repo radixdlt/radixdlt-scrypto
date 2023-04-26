@@ -244,21 +244,4 @@ impl ResourceManager {
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
-
-    pub fn new_non_fungible_bucket<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        entries: BTreeSet<NonFungibleLocalId>,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerCreateBucketInput { entries }).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
 }
