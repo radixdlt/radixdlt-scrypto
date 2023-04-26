@@ -25,7 +25,8 @@ pub enum TypeInfo {
         type_parent: Option<GlobalAddress>,
     },
     KeyValueStore,
-    SortedStore,
+    Index,
+    SortedIndex,
 }
 
 pub trait NodeTypeInfoContext {

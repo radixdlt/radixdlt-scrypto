@@ -132,13 +132,12 @@ fn test_balance_changes_when_failure() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let vault_id = test_runner.get_component_vaults(test_runner.faucet_component(), RADIX_TOKEN)[0];
     let result = receipt.expect_commit(false);
-    assert!(result.balance_changes().is_empty());
+    assert!(result.direct_vault_updates().is_empty());
     assert_eq!(
-        result.direct_vault_updates(),
+        result.balance_changes(),
         &indexmap!(
-            vault_id => indexmap!(
+            test_runner.faucet_component().into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
             )
         )
@@ -218,20 +217,20 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     assert_eq!(
         result.balance_changes(),
         &indexmap!(
-            test_runner.faucet_component().into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
-            ),
             account.into() => indexmap!(
                 resource_address => BalanceChange::NonFungible {
                     added: BTreeSet::new(),
-                    removed: btreeset!(NonFungibleLocalId::integer(1))
+                    removed: btreeset!(NonFungibleLocalId::integer(2))
                 }
             ),
             other_account.into() => indexmap!(
                 resource_address => BalanceChange::NonFungible {
-                    added: btreeset!(NonFungibleLocalId::integer(1)),
+                    added: btreeset!(NonFungibleLocalId::integer(2)),
                     removed: BTreeSet::new()
                 }
+            ),
+            test_runner.faucet_component().into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
             ),
         )
     );

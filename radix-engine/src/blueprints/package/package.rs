@@ -146,11 +146,7 @@ where
     let mut metadata_init = BTreeMap::new();
     for (key, value) in metadata {
         metadata_init.insert(
-            SubstateKey::from_vec(scrypto_encode(&key).unwrap()).ok_or(
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidMetadataKey(key),
-                )),
-            )?,
+            SubstateKey::Map(scrypto_encode(&key).unwrap()),
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
@@ -387,20 +383,12 @@ impl PackageNativePackage {
             PACKAGE_SET_ROYALTY_CONFIG_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-
-                Self::set_royalty_config(receiver, input, api)
+                Self::set_royalty_config(input, api)
             }
             PACKAGE_CLAIM_ROYALTY_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-
-                Self::claim_royalty(receiver, input, api)
+                Self::claim_royalty(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -587,12 +575,11 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn set_royalty_config<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: PackageSetRoyaltyConfigInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -600,8 +587,7 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle =
-            api.sys_lock_substate(receiver, &PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
         let mut substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -611,22 +597,17 @@ impl PackageNativePackage {
     }
 
     pub(crate) fn claim_royalty<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: PackageClaimRoyaltyInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &PackageOffset::Royalty.into(),
-            LockFlags::read_only(),
-        )?;
+        let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
 
         let substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {

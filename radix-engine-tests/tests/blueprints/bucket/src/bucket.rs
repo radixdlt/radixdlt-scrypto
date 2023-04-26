@@ -130,5 +130,31 @@ mod bucket_test {
                 ResourceBuilder::new_uuid_non_fungible::<MyData>().create_with_no_initial_supply();
             Bucket::new(resource_address)
         }
+
+        pub fn drop_locked_fungible_bucket() {
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .mint_initial_supply(1u32);
+            bucket.create_proof();
+
+            Self {
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate()
+            .globalize();
+        }
+
+        pub fn drop_locked_non_fungible_bucket() {
+            let bucket =
+                ResourceBuilder::new_uuid_non_fungible::<MyData>().mint_initial_supply([MyData {}]);
+            bucket.create_proof();
+
+            Self {
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate()
+            .globalize();
+        }
     }
 }

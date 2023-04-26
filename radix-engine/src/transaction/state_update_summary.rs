@@ -1,16 +1,18 @@
+use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource,
+    LiquidFungibleResource, LiquidNonFungibleVault,
 };
-use radix_engine_interface::data::scrypto::{model::*, scrypto_decode};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::interface::{DatabaseMapper, SubstateDatabase};
+use radix_engine_stores::jmt_support::JmtMapper;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::TrackedNode;
+use crate::track::{TrackedNode, TrackedSubstateKey, Write};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -18,9 +20,7 @@ pub struct StateUpdateSummary {
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-    /// This field accounts for two conditions:
-    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
-    /// 2. Fee payments for failed transactions.
+    /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
 }
 
@@ -93,19 +93,16 @@ impl BalanceChange {
 /// Note that the implementation below assumes that substate owned objects can not be
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
-pub struct BalanceAccounter<'a> {
-    substate_db: &'a dyn SubstateDatabase,
-    updates: &'a IndexMap<NodeId, TrackedNode>, //IndexMap<NodeId, IndexMap<ModuleId, IndexMap<SubstateKey, &'b Vec<u8>>>>,
+pub struct BalanceAccounter<'a, S: SubstateDatabase> {
+    substate_db: &'a S,
+    tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
-impl<'a> BalanceAccounter<'a> {
-    pub fn new(
-        substate_db: &'a dyn SubstateDatabase,
-        updates: &'a IndexMap<NodeId, TrackedNode>,
-    ) -> Self {
+impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
+    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
             substate_db,
-            updates,
+            tracked,
         }
     }
 
@@ -120,7 +117,7 @@ impl<'a> BalanceAccounter<'a> {
             index_map_new();
         let mut accounted_vaults = index_set_new();
 
-        self.updates
+        self.tracked
             .keys()
             .filter_map(|x| GlobalAddress::try_from(x.as_ref()).ok())
             .for_each(|root| {
@@ -132,7 +129,7 @@ impl<'a> BalanceAccounter<'a> {
                 )
             });
 
-        self.updates
+        self.tracked
             .keys()
             .filter(|x| x.is_internal_vault() && !accounted_vaults.contains(*x))
             .for_each(|vault_node_id| {
@@ -201,7 +198,7 @@ impl<'a> BalanceAccounter<'a> {
         root: &GlobalAddress,
         current_node: &NodeId,
     ) -> () {
-        if let Some(tracked_node) = self.updates.get(current_node) {
+        if let Some(tracked_node) = self.tracked.get(current_node) {
             if current_node.is_internal_vault() {
                 accounted_vaults.insert(current_node.clone());
 
@@ -234,9 +231,9 @@ impl<'a> BalanceAccounter<'a> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for (_module_id, tracked_module) in &tracked_node.modules {
-                    for (_substate_key, tracked_key) in tracked_module {
-                        if let Some(value) = tracked_key.get_substate() {
+                for (_module_id, tracked_module) in &tracked_node.tracked_modules {
+                    for (_substate_key, tracked_key) in &tracked_module.substates {
+                        if let Some(value) = tracked_key.get() {
                             for own in value.owned_node_ids() {
                                 self.traverse_state_updates(
                                     balance_changes,
@@ -256,16 +253,13 @@ impl<'a> BalanceAccounter<'a> {
         &self,
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
-        let type_info: TypeInfoSubstate = scrypto_decode(
-            &self
-                .fetch_substate(
-                    node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                )
-                .expect("Missing vault info"),
-        )
-        .expect("Failed to decode vault info");
+        let type_info: TypeInfoSubstate = self
+            .fetch_substate::<JmtMapper, TypeInfoSubstate>(
+                node_id,
+                SysModuleId::TypeInfo.into(),
+                TypeInfoOffset::TypeInfo.into(),
+            )
+            .expect("Missing vault info");
 
         let resource_address = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
@@ -277,27 +271,26 @@ impl<'a> BalanceAccounter<'a> {
 
         if resource_address.as_node_id().is_global_fungible_resource() {
             // If there is an update to the liquid resource
-            if let Some(substate) = self.fetch_substate_from_state_updates(
-                node_id,
-                SysModuleId::Object.into(),
-                &FungibleVaultOffset::LiquidFungible.into(),
-            ) {
-                let old_substate = self.fetch_substate_from_database(
+            if let Some(substate) = self
+                .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
                     SysModuleId::Object.into(),
-                    &FungibleVaultOffset::LiquidFungible.into(),
-                );
+                    FungibleVaultOffset::LiquidFungible.into(),
+                )
+            {
+                let old_substate = self
+                    .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
+                        node_id,
+                        SysModuleId::Object.into(),
+                        FungibleVaultOffset::LiquidFungible.into(),
+                    );
 
                 let old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidFungibleResource>(&s)
-                        .unwrap()
-                        .amount()
+                    s.amount()
                 } else {
                     Decimal::ZERO
                 };
-                let new_balance = scrypto_decode::<LiquidFungibleResource>(substate)
-                    .unwrap()
-                    .amount();
+                let new_balance = substate.amount();
 
                 Some(BalanceChange::Fungible(new_balance - old_balance))
             } else {
@@ -305,34 +298,53 @@ impl<'a> BalanceAccounter<'a> {
             }
         } else {
             // If there is an update to the liquid resource
-            if let Some(substate) = self.fetch_substate_from_state_updates(
-                node_id,
-                SysModuleId::Object.into(),
-                &NonFungibleVaultOffset::LiquidNonFungible.into(),
-            ) {
-                let old_substate = self.fetch_substate_from_database(
+            if let Some(vault) = self
+                .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
                     node_id,
                     SysModuleId::Object.into(),
-                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
-                );
+                    NonFungibleVaultOffset::LiquidNonFungible.into(),
+                )
+            {
+                let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
+                    let module_id: ModuleId = SysModuleId::Object.into();
+                    n.tracked_modules.get(&module_id)
+                });
 
-                let mut old_balance = if let Some(s) = old_substate {
-                    scrypto_decode::<LiquidNonFungibleResource>(&s)
-                        .unwrap()
-                        .into_ids()
+                if let Some(tracked_module) = vault_updates {
+                    let mut added = BTreeSet::new();
+                    let mut removed = BTreeSet::new();
+
+                    for (_key, tracked) in &tracked_module.substates {
+                        match tracked {
+                            TrackedSubstateKey::New(substate)
+                            | TrackedSubstateKey::ReadNonExistAndWrite(substate) => {
+                                let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                                added.insert(id);
+                            }
+                            TrackedSubstateKey::ReadExistAndWrite(old, write) => match write {
+                                Write::Update(..) => {}
+                                Write::Delete => {
+                                    let id: NonFungibleLocalId = old.as_typed().unwrap();
+                                    removed.insert(id);
+                                }
+                            },
+                            TrackedSubstateKey::WriteOnly(write) => match write {
+                                Write::Update(substate) => {
+                                    let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                                    added.insert(id);
+                                }
+                                Write::Delete => {
+                                    panic!("Should never occur");
+                                }
+                            },
+                            TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => {}
+                        }
+                    }
+
+                    Some(BalanceChange::NonFungible { added, removed })
                 } else {
-                    BTreeSet::new()
-                };
-                let mut new_balance = scrypto_decode::<LiquidNonFungibleResource>(substate)
-                    .unwrap()
-                    .into_ids();
-
-                remove_intersection(&mut new_balance, &mut old_balance);
-
-                Some(BalanceChange::NonFungible {
-                    added: new_balance,
-                    removed: old_balance,
-                })
+                    None
+                }
             } else {
                 None
             }
@@ -340,53 +352,40 @@ impl<'a> BalanceAccounter<'a> {
         .map(|x| (resource_address, x))
     }
 
-    fn fetch_substate(
+    fn fetch_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
-    ) -> Option<Vec<u8>> {
+        key: SubstateKey,
+    ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates(node_id, module_id, substate_key)
-            .map(|x| x.to_vec())
-            .or_else(|| self.fetch_substate_from_database(node_id, module_id, substate_key))
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key.clone())
+            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
     }
 
-    fn fetch_substate_from_database(
+    fn fetch_substate_from_database<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
-    ) -> Option<Vec<u8>> {
+        key: SubstateKey,
+    ) -> Option<D> {
         self.substate_db
-            .get_substate(node_id, module_id, substate_key)
-            .expect("Database misconfigured")
+            .get_mapped_substate::<M, D>(node_id, module_id, key)
     }
 
-    fn fetch_substate_from_state_updates(
+    fn fetch_substate_from_state_updates<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: &SubstateKey,
-    ) -> Option<&[u8]> {
-        self.updates
+        key: SubstateKey,
+    ) -> Option<D> {
+        self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.modules.get(&module_id))
-            .and_then(|tracked_module| tracked_module.get(substate_key))
-            .and_then(|tracked_key| tracked_key.get_substate().map(|e| e.as_slice()))
+            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
+            .and_then(|tracked_module| tracked_module.substates.get(&M::map_to_db_key(key)))
+            .and_then(|tracked_key| tracked_key.get().map(|e| e.as_typed().unwrap()))
     }
-}
-
-/// Removes the `left.intersection(right)` from both `left` and `right`, in place, without
-/// computing (or allocating) the intersection itself.
-/// Implementation note: since Rust has no "iterator with delete" capabilities, the implementation
-/// uses a (normally frowned-upon) side-effect of a lambda inside `.retain()`.
-/// Performance note: since the `BTreeSet`s are inherently sorted, the implementation _could_ have
-/// an `O(n+m)` runtime (i.e. traversing 2 iterators). However, it would then contain significantly
-/// more bugs than the `O(n * log(m))` one-liner below.
-fn remove_intersection<T: Ord>(left: &mut BTreeSet<T>, right: &mut BTreeSet<T>) {
-    left.retain(|id| !right.remove(id));
 }

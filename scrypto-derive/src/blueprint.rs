@@ -304,16 +304,11 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                     let input: #input_struct_ident = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
 
-                let is_method = get_state.is_some();
-
                 // load component state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let component_id: ::scrypto::prelude::NodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
-                    });
-                    stmts.push(parse_quote! {
-                        let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
+                        let mut component_data = ::scrypto::runtime::ComponentStatePointer::new();
                     });
                     stmts.push(stmt);
                 }
@@ -334,29 +329,15 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
 
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
                 let extern_function = {
-                    if is_method {
-                        quote! {
-                            #[no_mangle]
-                            pub extern "C" fn #fn_ident(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                                use ::sbor::rust::ops::{Deref, DerefMut};
+                    quote! {
+                        #[no_mangle]
+                        pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
+                            use ::sbor::rust::ops::{Deref, DerefMut};
 
-                                // Set up panic hook
-                                ::scrypto::set_up_panic_hook();
+                            // Set up panic hook
+                            ::scrypto::set_up_panic_hook();
 
-                                #(#stmts)*
-                            }
-                        }
-                    } else {
-                        quote! {
-                            #[no_mangle]
-                            pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                                use ::sbor::rust::ops::{Deref, DerefMut};
-
-                                // Set up panic hook
-                                ::scrypto::set_up_panic_hook();
-
-                                #(#stmts)*
-                            }
+                            #(#stmts)*
                         }
                     }
                 };
@@ -695,15 +676,14 @@ mod tests {
                     pub struct Test_y_Input { arg0 : u32 }
 
                     #[no_mangle]
-                    pub extern "C" fn Test_x(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
+                    pub extern "C" fn Test_x(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                         use ::sbor::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
                         ::scrypto::set_up_panic_hook();
 
                         let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                        let component_id: ::scrypto::prelude::NodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
-                        let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
+                        let mut component_data = ::scrypto::runtime::ComponentStatePointer::new();
                         let state: DataRef<Test> = component_data.get();
                         let return_data = Test::x(state.deref(), input.arg0);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

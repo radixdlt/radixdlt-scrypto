@@ -13,11 +13,11 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
@@ -27,7 +27,7 @@ use sbor::rust::mem;
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub callback: &'g mut SystemCallback<V>,
+    pub callback: &'g mut SystemConfig<V>,
     pub store: &'g mut S,
 }
 
@@ -54,7 +54,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             callback: self.callback,
         };
 
-        SystemCallback::on_init(&mut kernel)?;
+        SystemConfig::on_init(&mut kernel)?;
 
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -106,7 +106,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                TypeInfoSubstate::KeyValueStore(..)
+                | TypeInfoSubstate::Index
+                | TypeInfoSubstate::SortedIndex => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -119,7 +121,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
-        SystemCallback::on_teardown(&mut kernel)?;
+        SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
     }
@@ -406,6 +408,21 @@ where
         ) {
             let info: BucketInfoSubstate = substate.as_typed().unwrap();
 
+            let resource_address = ResourceAddress::new_or_panic(
+                self.heap
+                    .get_substate(
+                        bucket_id,
+                        SysModuleId::TypeInfo.into(),
+                        &TypeInfoOffset::TypeInfo.into(),
+                    )
+                    .unwrap()
+                    .as_typed::<TypeInfoSubstate>()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .into(),
+            );
+
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
                     let substate = self
@@ -413,13 +430,13 @@ where
                         .get_substate(
                             bucket_id,
                             SysModuleId::Object.into(),
-                            &BucketOffset::LiquidFungible.into(),
+                            &BucketOffset::Liquid.into(),
                         )
                         .unwrap();
                     let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
 
                     Some(BucketSnapshot::Fungible {
-                        resource_address: info.resource_address,
+                        resource_address: resource_address,
                         resource_type: info.resource_type,
                         liquid: liquid.amount(),
                     })
@@ -430,13 +447,13 @@ where
                         .get_substate(
                             bucket_id,
                             SysModuleId::Object.into(),
-                            &BucketOffset::LiquidNonFungible.into(),
+                            &BucketOffset::Liquid.into(),
                         )
                         .unwrap();
                     let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
 
                     Some(BucketSnapshot::NonFungible {
-                        resource_address: info.resource_address,
+                        resource_address: resource_address,
                         resource_type: info.resource_type,
                         liquid: liquid.ids().clone(),
                     })
@@ -522,13 +539,14 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=module_id, log=substate_key.to_hex())]
-    fn kernel_lock_substate(
+    #[trace_resources(log=node_id.entity_type(), log=module_id)]
+    fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<LockHandle, RuntimeError> {
         M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 
@@ -539,6 +557,7 @@ where
             module_id,
             substate_key,
             flags,
+            default,
         );
 
         let lock_handle = match &maybe_lock_handle {
@@ -557,6 +576,7 @@ where
                                 module_id,
                                 &substate_key,
                                 flags,
+                                None,
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -604,6 +624,7 @@ where
                                 module_id.into(),
                                 substate_key,
                                 flags,
+                                None,
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -731,10 +752,36 @@ where
         node_id: &NodeId,
         module_id: ModuleId,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
             .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_scan_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        self.current_frame
+            .scan_substates(node_id, module_id.into(), count, &mut self.heap, self.store)
+            .map_err(CallFrameError::ScanSubstatesError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_take_substates(
+        &mut self,
+        node_id: &NodeId,
+        module_id: SysModuleId,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        self.current_frame
+            .take_substates(node_id, module_id, count, &mut self.heap, self.store)
+            .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
     }

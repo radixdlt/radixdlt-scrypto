@@ -3,9 +3,9 @@ use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system_callback::SystemCallback;
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_state_updates, Track};
+use crate::track::{to_database_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_stores::interface::*;
+use radix_engine_stores::jmt_support::JmtMapper;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -186,12 +187,12 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::new(self.substate_db);
+        let mut track = Track::<_, JmtMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
         );
-        let mut system = SystemCallback {
+        let mut system = SystemConfig {
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
@@ -259,7 +260,7 @@ where
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_state_updates(tracked_nodes),
+                    state_updates: to_database_updates::<JmtMapper>(tracked_nodes),
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -417,9 +418,7 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db
-            .commit(&commit.state_updates)
-            .expect("Database misconfigured");
+        substate_db.commit(&commit.state_updates);
     }
     receipt
 }
@@ -511,8 +510,8 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees<S: SubstateDatabase>(
-    track: &mut Track<S>,
+fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
+    track: &mut Track<S, M>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,
 ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {

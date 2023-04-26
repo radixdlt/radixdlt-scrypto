@@ -264,7 +264,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        LOCK_SUBSTATE_FUNCTION_NAME => {
+                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -283,7 +283,25 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        LOCK_SUBSTATE_FUNCTION_NAME.to_string(),
+                                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        LOCK_FIELD_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I32],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        LOCK_FIELD_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -688,21 +706,12 @@ impl WasmModule {
                 if !exports.entries().iter().any(|x| {
                     x.field().eq(func_name) && {
                         if let Internal::Function(func_index) = x.internal() {
-                            if func.receiver.is_some() {
-                                Self::function_matches(
-                                    &self.module,
-                                    *func_index as usize,
-                                    vec![ValueType::I64, ValueType::I64],
-                                    vec![ValueType::I64],
-                                )
-                            } else {
-                                Self::function_matches(
-                                    &self.module,
-                                    *func_index as usize,
-                                    vec![ValueType::I64],
-                                    vec![ValueType::I64],
-                                )
-                            }
+                            Self::function_matches(
+                                &self.module,
+                                *func_index as usize,
+                                vec![ValueType::I64],
+                                vec![ValueType::I64],
+                            )
                         } else {
                             false
                         }

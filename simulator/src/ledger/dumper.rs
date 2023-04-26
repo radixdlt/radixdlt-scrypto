@@ -7,6 +7,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::query::ResourceAccounter;
 use utils::ContextualDisplay;
 
@@ -25,14 +26,13 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let package = substate_db
-        .get_substate(
+    let substate = substate_db
+        .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Code.into(),
+            PackageOffset::Code.into(),
         )
-        .expect("Database misconfigured");
-    let substate = package.ok_or(EntityDumpError::PackageNotFound)?;
+        .ok_or(EntityDumpError::PackageNotFound)?;
 
     writeln!(
         output,
@@ -44,10 +44,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        scrypto_decode::<PackageCodeSubstate>(&substate)
-            .unwrap()
-            .code
-            .len()
+        substate.code.len()
     );
     Ok(())
 }
@@ -61,18 +58,18 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let (package_address, blueprint_name, resources) = {
-        let substate = substate_db
-            .get_substate(
+        let type_info = substate_db
+            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into(),
+                TypeInfoOffset::TypeInfo.into(),
             )
-            .expect("Database misconfigured")
             .ok_or(EntityDumpError::ComponentNotFound)?;
-        let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-            TypeInfoSubstate::KeyValueStore(_) | TypeInfoSubstate::SortedStore => {
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::Index
+            | TypeInfoSubstate::SortedIndex => {
                 panic!("Unexpected")
             }
         };
@@ -104,7 +101,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     );
 
     writeln!(output, "{}", "Fungible Resources".green().bold());
-    for (last, (component_address, amount)) in resources.fungibles.iter().identify_last() {
+    for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
         writeln!(
             output,
             "{} {}: {}",
@@ -114,13 +111,13 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         );
     }
 
-    writeln!(output, "{}", "Non-fungible Resources".green().bold());
+    writeln!(output, "{}", "Non-fungibles Resources".green().bold());
     for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
         writeln!(
             output,
             "{} {}",
             list_item_prefix(last),
-            component_address.display(&bech32_encoder),
+            component_address.display(&bech32_encoder)
         );
         for (last, id) in ids.iter().identify_last() {
             writeln!(output, "   {} {}", list_item_prefix(last), id);
@@ -136,18 +133,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
-    let substate = substate_db
-        .get_substate(
-            resource_address.as_node_id(),
-            SysModuleId::Object.into(),
-            &ResourceManagerOffset::ResourceManager.into(),
-        )
-        .expect("Database misconfigured")
-        .ok_or(EntityDumpError::ResourceManagerNotFound)?;
-
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
-        let resource_manager: NonFungibleResourceManagerSubstate =
-            scrypto_decode(&substate).unwrap();
+        let resource_manager = substate_db
+            .get_mapped_substate::<JmtMapper, NonFungibleResourceManagerSubstate>(
+                resource_address.as_node_id(),
+                SysModuleId::Object.into(),
+                ResourceManagerOffset::ResourceManager.into(),
+            )
+            .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(
             output,
             "{}: {}",
@@ -167,7 +160,13 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             resource_manager.total_supply
         );
     } else {
-        let resource_manager: FungibleResourceManagerSubstate = scrypto_decode(&substate).unwrap();
+        let resource_manager = substate_db
+            .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
+                resource_address.as_node_id(),
+                SysModuleId::Object.into(),
+                ResourceManagerOffset::ResourceManager.into(),
+            )
+            .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
             output,

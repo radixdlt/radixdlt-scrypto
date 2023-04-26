@@ -4,7 +4,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
@@ -23,7 +23,7 @@ use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
@@ -132,9 +132,9 @@ impl SystemModuleMixer {
 // NOTE: Modules are applied in the reverse order of initialization!
 //====================================================================
 
-impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMixer {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
     #[trace_resources]
-    fn on_init<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
 
         // Enable transaction limits
@@ -186,7 +186,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn on_teardown<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;
@@ -219,7 +219,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources(log=input_size, log={&*identifier.sys_invocation.blueprint.blueprint_name}, log=identifier.sys_invocation.ident.to_debug_string(), log={format!("{:?}", identifier.sys_invocation.receiver)})]
-    fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
+    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
@@ -256,7 +256,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
         update: &mut CallFrameUpdate,
@@ -294,7 +294,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn on_execution_start<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -330,7 +330,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         update: &CallFrameUpdate,
@@ -367,7 +367,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_pop_frame(api)?;
@@ -400,7 +400,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources(log=output_size)]
-    fn after_invoke<Y: KernelApi<SystemCallback<V>>>(
+    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -436,7 +436,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources(log=entity_type)]
-    fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         entity_type: Option<EntityType>,
         virtual_node: bool,
@@ -473,7 +473,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
+    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_substates: &NodeSubstates,
@@ -510,7 +510,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn after_create_node<Y: KernelApi<SystemCallback<V>>>(
+    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -546,7 +546,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn before_drop_node<Y: KernelApi<SystemCallback<V>>>(
+    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -582,7 +582,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn after_drop_node<Y: KernelApi<SystemCallback<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_drop_node(api)?;
@@ -615,7 +615,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &ModuleId,
@@ -672,7 +672,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources(log=size)]
-    fn after_lock_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -709,7 +709,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources(log=size)]
-    fn on_read_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -746,7 +746,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources(log=size)]
-    fn on_write_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -783,7 +783,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for SystemModuleMi
     }
 
     #[trace_resources]
-    fn on_drop_lock<Y: KernelApi<SystemCallback<V>>>(
+    fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

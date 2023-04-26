@@ -2,14 +2,14 @@ use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateLockApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{Blueprint, GlobalAddress};
-use radix_engine_interface::types::{Level, LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -137,6 +137,25 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
+
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, ClientApiError> {
+        let handle = unsafe {
+            lock_key_value_store_entry(
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                key.as_ptr(),
+                key.len(),
+                flags.bits(),
+            )
+        };
+
+        Ok(handle)
+    }
 }
 
 impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
@@ -166,26 +185,7 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
-    fn sys_lock_substate(
-        &mut self,
-        node_id: &NodeId,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe {
-            lock_substate(
-                node_id.as_ref().as_ptr(),
-                node_id.as_ref().len(),
-                substate_key.as_ref().as_ptr(),
-                substate_key.as_ref().len(),
-                flags.bits(),
-            )
-        };
-
-        Ok(handle)
-    }
-
+impl ClientSubstateLockApi<ClientApiError> for ScryptoEnv {
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { read_substate(lock_handle) });
 
@@ -210,6 +210,16 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
+    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+        let handle = unsafe { lock_field(u32::from(field), flags.bits()) };
+
+        Ok(handle)
+    }
+
+    fn get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+        todo!()
+    }
+
     fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 

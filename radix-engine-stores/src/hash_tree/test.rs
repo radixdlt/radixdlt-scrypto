@@ -4,6 +4,8 @@ use crate::hash_tree::tree_store::{
     TypedInMemoryTreeStore,
 };
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
+use crate::interface::DatabaseMapper;
+use crate::jmt_support::JmtMapper;
 use itertools::Itertools;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -334,8 +336,7 @@ fn sbor_decodes_what_was_encoded() {
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded =
-        scrypto_decode::<Vec<TreeNode<(NodeId, ModuleId, SubstateKey)>>>(&encoded).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode<(Vec<u8>, Vec<u8>)>>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 
@@ -378,15 +379,14 @@ fn substate_id(
     node_id_seed: u8,
     module_id: SysModuleId,
     substate_offset_seed: u8,
-) -> (NodeId, ModuleId, SubstateKey) {
+) -> (Vec<u8>, Vec<u8>) {
     let mut node_id = [node_id_seed; NodeId::LENGTH];
     node_id[0] = EntityType::GlobalPackage as u8;
     let fake_pkg_address = PackageAddress::new_or_panic(node_id);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     (
-        NodeId(fake_pkg_address.into()),
-        ModuleId(module_id as u8),
-        SubstateKey::from_vec(fake_kvs_entry_id).unwrap(),
+        JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), ModuleId(module_id as u8)),
+        JmtMapper::map_to_db_key(SubstateKey::Map(fake_kvs_entry_id)),
     )
 }
 

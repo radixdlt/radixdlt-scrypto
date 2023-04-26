@@ -11,7 +11,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::schema::BlueprintSchema;
 
-fn validate_input<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
+fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     mut upstream: SystemUpstream<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
@@ -57,7 +57,7 @@ fn validate_input<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
     Ok(function_schema.export_name.clone())
 }
 
-fn validate_output<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject>(
+fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     mut upstream: SystemUpstream<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
@@ -91,19 +91,19 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemCallback<C: SystemCallbackObject> {
+pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub modules: SystemModuleMixer,
 }
 
-pub struct SystemUpstream<'a, Y: KernelApi<SystemCallback<V>>, V: SystemCallbackObject> {
+pub struct SystemUpstream<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
 
 impl<'a, Y, V> NodeTypeInfoContext for SystemUpstream<'a, Y, V>
 where
-    Y: KernelApi<SystemCallback<V>>,
+    Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
@@ -111,7 +111,7 @@ where
     }
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
+impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type Invocation = SystemInvocation;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -256,7 +256,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemCallback<C>>,
+        Y: KernelApi<SystemConfig<C>>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up

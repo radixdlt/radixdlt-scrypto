@@ -457,7 +457,11 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 1.into())
+                .withdraw_non_fungibles_from_account(
+                    account,
+                    resource_address,
+                    &btreeset!(NonFungibleLocalId::integer(1)),
+                )
                 .take_from_worktop(resource_address, |builder, bucket_id| {
                     builder.call_function(
                         package_address,

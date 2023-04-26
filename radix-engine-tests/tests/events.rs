@@ -5,7 +5,6 @@ use radix_engine::blueprints::epoch_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::bootstrap::{create_genesis, GenesisData};
 use radix_engine::system::node_modules::access_rules::SetRuleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_modules::events::EventError;
@@ -629,13 +628,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 fn epoch_manager_round_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        1u64,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
@@ -677,13 +670,7 @@ fn epoch_manager_round_update_emits_correct_event() {
 fn epoch_manager_epoch_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        1u64,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
@@ -732,13 +719,7 @@ fn validator_registration_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -789,13 +770,7 @@ fn validator_unregistration_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -857,13 +832,7 @@ fn validator_staking_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -991,12 +960,10 @@ fn validator_unstake_emits_correct_events() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::from(10),
-            account_with_lp,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        account_with_lp,
         initial_epoch,
         10u32,
         rounds_per_epoch,
@@ -1152,12 +1119,10 @@ fn validator_claim_xrd_emits_correct_events() {
         .unwrap()
         .public_key();
     let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
-    let genesis = create_genesis(
-        GenesisData::single_validator_and_staker(
-            validator_pub_key,
-            Decimal::from(10),
-            account_with_lp,
-        ),
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        account_with_lp,
         initial_epoch,
         10u32,
         rounds_per_epoch,
@@ -1295,13 +1260,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = create_genesis(
-        GenesisData::empty(),
-        initial_epoch,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    );
+    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account) = test_runner.new_account(false);
 

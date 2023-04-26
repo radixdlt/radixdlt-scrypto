@@ -1,6 +1,7 @@
 use super::StateTreeVisitor;
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
 use radix_engine_interface::{
-    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
+    blueprints::resource::LiquidFungibleResource,
     types::{NodeId, ResourceAddress},
 };
 use sbor::rust::prelude::*;
@@ -40,7 +41,7 @@ impl StateTreeVisitor for VaultFinder {
         &mut self,
         vault_id: NodeId,
         address: &ResourceAddress,
-        _resource: &LiquidNonFungibleResource,
+        _resource: &LiquidNonFungibleVault,
     ) {
         if self.resource_address.eq(&address) {
             self.vaults.push(vault_id);

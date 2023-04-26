@@ -1,4 +1,6 @@
+use crate::types::LockHandle;
 use radix_engine_common::types::*;
+use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
 use scrypto_schema::KeyValueStoreSchema;
 
@@ -9,4 +11,14 @@ pub trait ClientKeyValueStoreApi<E> {
 
     /// Get info regarding a visible key value store
     fn get_key_value_store_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
+
+    /// Lock a key value store entry for reading/writing
+    fn lock_key_value_store_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, E>;
+
+    // TODO: Add specific kv store read/write lock apis
 }

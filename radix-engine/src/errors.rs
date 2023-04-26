@@ -2,7 +2,7 @@ use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
-use crate::blueprints::resource::AuthZoneError;
+use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
     BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
     VaultError, WorktopError,
@@ -10,8 +10,9 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{
-    CallFrameRemoveSubstateError, CallFrameSetSubstateError, LockSubstateError, MoveError,
-    ReadSubstateError, ScanSortedSubstatesError, UnlockSubstateError, WriteSubstateError,
+    CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
+    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
+    ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -24,7 +25,6 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -149,7 +149,6 @@ pub enum KernelError {
 
     // Actor Constraints
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
-    InvalidSubstateAccess(Box<InvalidSubstateAccess>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -158,14 +157,6 @@ pub struct InvalidDropNodeAccess {
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidSubstateAccess {
-    pub actor: Actor,
-    pub node_id: NodeId,
-    pub substate_key: SubstateKey,
-    pub flags: LockFlags,
 }
 
 impl CanBeAbortion for KernelError {
@@ -189,7 +180,9 @@ pub enum CallFrameError {
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
-    ScanSortedSubstatesError(ScanSortedSubstatesError),
+    ScanSubstatesError(CallFrameScanSubstateError),
+    TakeSubstatesError(CallFrameTakeSortedSubstatesError),
+    ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
     MoveError(MoveError),
@@ -199,8 +192,10 @@ pub enum CallFrameError {
 pub enum SystemError {
     GlobalAddressDoesNotExist,
     NotAnObject,
+    NotATuple,
     NotAKeyValueStore,
     NotASortedStore,
+    NotAnIterableStore,
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
@@ -363,6 +358,8 @@ pub enum ApplicationError {
     BucketError(BucketError),
 
     ProofError(ProofError),
+
+    NonFungibleVaultError(NonFungibleVaultError),
 
     VaultError(VaultError),
 

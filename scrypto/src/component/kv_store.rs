@@ -1,10 +1,9 @@
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::*;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
 use scrypto_schema::KeyValueStoreSchema;
@@ -48,9 +47,8 @@ impl<
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
-        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::read_only())
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -71,9 +69,8 @@ impl<
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
-        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::MUTABLE)
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -100,9 +97,8 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let value_payload = scrypto_encode(&value).unwrap();
-        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::MUTABLE)
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
         env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
@@ -114,9 +110,8 @@ impl<
     pub fn remove(&self, key: &K) -> Option<V> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
-        let substate_key = SubstateKey::from_vec(key_payload).unwrap();
         let handle = env
-            .sys_lock_substate(self.id.as_node_id(), &substate_key, LockFlags::MUTABLE)
+            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
 
         let raw_bytes = env.sys_read_substate(handle).unwrap();

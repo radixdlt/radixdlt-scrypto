@@ -1,6 +1,6 @@
 #[cfg(not(feature = "alloc"))]
 mod multi_threaded_test {
-    use radix_engine::system::bootstrap::bootstrap;
+    use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
@@ -30,13 +30,10 @@ mod multi_threaded_test {
             wasm_metering_config: WasmMeteringConfig::V0,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        let receipt = bootstrap(&mut substate_db, &scrypto_interpreter).unwrap();
-        let faucet_component = receipt
-            .expect_commit_success()
-            .new_component_addresses()
-            .last()
-            .cloned()
+        let (_, _, receipt) = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+            .bootstrap_test_default()
             .unwrap();
+        let faucet_component = receipt.faucet_component();
 
         // Create a key pair
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

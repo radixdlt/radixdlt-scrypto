@@ -6,7 +6,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
@@ -121,26 +121,17 @@ impl ClockNativePackage {
             CLOCK_GET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::get_current_time(receiver, input, api)
+                Self::get_current_time(input, api)
             }
             CLOCK_SET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::set_current_time(receiver, input, api)
+                Self::set_current_time(input, api)
             }
             CLOCK_COMPARE_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::compare_current_time(receiver, input, api)
+                Self::compare_current_time(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -199,7 +190,6 @@ impl ClockNativePackage {
     }
 
     fn set_current_time<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -214,9 +204,8 @@ impl ClockNativePackage {
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+        let handle = api.lock_field(
+            ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
@@ -227,7 +216,6 @@ impl ClockNativePackage {
     }
 
     fn get_current_time<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -240,9 +228,8 @@ impl ClockNativePackage {
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.sys_lock_substate(
-                    receiver,
-                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+                let handle = api.lock_field(
+                    ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
@@ -255,7 +242,6 @@ impl ClockNativePackage {
     }
 
     fn compare_current_time<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -268,9 +254,8 @@ impl ClockNativePackage {
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.sys_lock_substate(
-                    receiver,
-                    &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+                let handle = api.lock_field(
+                    ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;

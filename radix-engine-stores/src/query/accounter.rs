@@ -1,8 +1,9 @@
 use super::{StateTreeTraverser, StateTreeVisitor};
 use crate::interface::SubstateDatabase;
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
+use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::{
-    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
-    data::scrypto::model::NonFungibleLocalId,
+    blueprints::resource::LiquidFungibleResource,
     math::Decimal,
     types::{NodeId, ResourceAddress},
 };
@@ -34,15 +35,15 @@ impl<'s, S: SubstateDatabase> ResourceAccounter<'s, S> {
 }
 
 pub struct Accounting {
-    pub fungibles: HashMap<ResourceAddress, Decimal>,
-    pub non_fungibles: HashMap<ResourceAddress, BTreeSet<NonFungibleLocalId>>,
+    pub balances: HashMap<ResourceAddress, Decimal>,
+    pub non_fungibles: HashMap<ResourceAddress, HashSet<NonFungibleLocalId>>,
 }
 
 impl Accounting {
     pub fn new() -> Self {
         Accounting {
-            fungibles: HashMap::new(),
-            non_fungibles: HashMap::new(),
+            balances: hash_map_new(),
+            non_fungibles: hash_map_new(),
         }
     }
 
@@ -51,7 +52,7 @@ impl Accounting {
         address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
-        self.fungibles
+        self.balances
             .entry(*address)
             .or_default()
             .add_assign(resource.amount())
@@ -60,12 +61,19 @@ impl Accounting {
     pub fn add_non_fungible_vault(
         &mut self,
         address: &ResourceAddress,
-        resource: &LiquidNonFungibleResource,
+        resource: &LiquidNonFungibleVault,
     ) {
+        self.balances
+            .entry(*address)
+            .or_default()
+            .add_assign(resource.amount)
+    }
+
+    pub fn add_non_fungible(&mut self, address: &ResourceAddress, id: &NonFungibleLocalId) {
         self.non_fungibles
             .entry(*address)
             .or_default()
-            .extend(resource.ids().clone())
+            .insert(id.clone());
     }
 }
 
@@ -82,9 +90,17 @@ impl StateTreeVisitor for Accounting {
     fn visit_non_fungible_vault(
         &mut self,
         _vault_id: NodeId,
-        address: &ResourceAddress,
-        resource: &LiquidNonFungibleResource,
+        _address: &ResourceAddress,
+        _resource: &LiquidNonFungibleVault,
     ) {
-        self.add_non_fungible_vault(address, resource);
+    }
+
+    fn visit_non_fungible(
+        &mut self,
+        _vault_id: NodeId,
+        address: &ResourceAddress,
+        id: &NonFungibleLocalId,
+    ) {
+        self.add_non_fungible(address, id);
     }
 }

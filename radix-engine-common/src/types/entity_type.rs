@@ -28,6 +28,7 @@ pub enum EntityType {
     InternalNonFungibleVault,
     InternalAccount,
     InternalKeyValueStore,
-    InternalSortedStore,
+    InternalIndex,
+    InternalSortedIndex,
     InternalGenericComponent, // generic
 }

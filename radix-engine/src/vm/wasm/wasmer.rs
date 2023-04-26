@@ -1,4 +1,5 @@
 use super::InstrumentedCode;
+#[cfg(not(feature = "radix_engine_fuzzing"))]
 use super::MeteredCodeKey;
 use crate::errors::InvokeError;
 use crate::types::*;
@@ -76,10 +77,13 @@ pub struct WasmerInstanceEnv {
 
 pub struct WasmerEngine {
     store: Store,
-    #[cfg(not(feature = "moka"))]
+    // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
+    #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
     modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmerModule>>>,
-    #[cfg(feature = "moka")]
+    #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
     modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmerModule>>,
+    #[cfg(feature = "radix_engine_fuzzing")]
+    modules_cache: usize,
 }
 
 pub fn read_memory(instance: &Instance, ptr: u32, len: u32) -> Result<Vec<u8>, WasmRuntimeError> {
@@ -296,6 +300,27 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
+        pub fn lock_key_value_store_entry(
+            env: &WasmerInstanceEnv,
+            node_id_ptr: u32,
+            node_id_len: u32,
+            key_ptr: u32,
+            key_len: u32,
+            flags: u32,
+        ) -> Result<u32, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let handle = runtime
+                .lock_key_value_store_entry(
+                    read_memory(&instance, node_id_ptr, node_id_len)?,
+                    read_memory(&instance, key_ptr, key_len)?,
+                    flags,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(handle)
+        }
+
         pub fn drop_object(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
@@ -312,21 +337,15 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn lock_substate(
+        pub fn lock_field(
             env: &WasmerInstanceEnv,
-            node_id_ptr: u32,
-            node_id_len: u32,
-            offset_ptr: u32,
-            offset_len: u32,
+            field: u8,
             flags: u32,
         ) -> Result<u32, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
-            let substate_key = read_memory(&instance, offset_ptr, offset_len)?;
+            let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .lock_substate(node_id, substate_key, flags)
+                .lock_field(field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
@@ -485,11 +504,12 @@ impl WasmerModule {
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
-                NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
-                LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
+                LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_field),
+                NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
+                LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_key_value_store_entry),
                 READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
                 WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
                 DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
@@ -590,11 +610,12 @@ impl Default for WasmerEngine {
 impl WasmerEngine {
     pub fn new(options: EngineOptions) -> Self {
         let compiler = Singlepass::new();
-        #[cfg(not(feature = "moka"))]
+
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
             NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
         ));
-        #[cfg(feature = "moka")]
+        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(
                 |_metered_code_key: &MeteredCodeKey, value: &Arc<WasmerModule>| -> u32 {
@@ -604,6 +625,9 @@ impl WasmerEngine {
             )
             .max_capacity(options.max_cache_size_bytes as u64)
             .build();
+        #[cfg(feature = "radix_engine_fuzzing")]
+        let modules_cache = options.max_cache_size_bytes;
+
         Self {
             store: Store::new(&Universal::new(compiler).engine()),
             modules_cache,
@@ -615,16 +639,21 @@ impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
+        #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
-        #[cfg(not(feature = "moka"))]
+
+        #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
-            if let Some(cached_module) = self.modules_cache.borrow_mut().get(key) {
+            #[cfg(not(feature = "moka"))]
+            {
+                if let Some(cached_module) = self.modules_cache.borrow_mut().get(key) {
+                    return cached_module.instantiate();
+                }
+            }
+            #[cfg(feature = "moka")]
+            if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
                 return cached_module.instantiate();
             }
-        }
-        #[cfg(feature = "moka")]
-        if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-            return cached_module.instantiate();
         }
 
         let code = instrumented_code.code.as_ref();
@@ -634,13 +663,16 @@ impl WasmEngine for WasmerEngine {
             code_size_bytes: code.len(),
         });
 
-        #[cfg(not(feature = "moka"))]
-        self.modules_cache
-            .borrow_mut()
-            .put(*metered_code_key, new_module.clone());
-        #[cfg(feature = "moka")]
-        self.modules_cache
-            .insert(*metered_code_key, new_module.clone());
+        #[cfg(not(feature = "radix_engine_fuzzing"))]
+        {
+            #[cfg(not(feature = "moka"))]
+            self.modules_cache
+                .borrow_mut()
+                .put(*metered_code_key, new_module.clone());
+            #[cfg(feature = "moka")]
+            self.modules_cache
+                .insert(*metered_code_key, new_module.clone());
+        }
 
         new_module.instantiate()
     }

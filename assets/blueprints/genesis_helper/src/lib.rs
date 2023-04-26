@@ -1,182 +1,188 @@
+use native_sdk::account::*;
+use native_sdk::epoch_manager::*;
 use scrypto::api::node_modules::metadata::MetadataValue;
-use scrypto::blueprints::account::AccountDepositInput;
-use scrypto::blueprints::epoch_manager::*;
+use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
-type AccountIdx = usize;
-type ResourceIdx = usize;
-type ValidatorIdx = usize;
-
-// This data represents data from Olympia Network state
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct GenesisData {
-    validators: Vec<GenesisValidator>,
-    resources: Vec<GenesisResource>,
-    accounts: Vec<ComponentAddress>,
-    resource_balances: BTreeMap<ResourceIdx, Vec<(AccountIdx, Decimal)>>,
-    xrd_balances: BTreeMap<AccountIdx, Decimal>,
-    stakes: BTreeMap<ValidatorIdx, Vec<(AccountIdx, Decimal)>>,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisValidator {
     pub key: EcdsaSecp256k1PublicKey,
-    pub component_address: ComponentAddress,
+    pub accept_delegated_stake: bool,
+    pub is_registered: bool,
+    pub metadata: Vec<(String, String)>,
+    pub owner: ComponentAddress,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct GenesisStakeAllocation {
+    pub account_index: u32,
+    pub xrd_amount: Decimal,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct GenesisResource {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
-    pub address_bytes: [u8; NodeId::LENGTH],
-    pub owner_with_mint_and_burn_rights: Option<AccountIdx>,
+    pub address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+    pub initial_supply: Decimal,
+    pub metadata: Vec<(String, String)>,
+    pub owner: Option<ComponentAddress>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct GenesisResourceAllocation {
+    pub account_index: u32,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum GenesisDataChunk {
+    Validators(Vec<GenesisValidator>),
+    Stakes {
+        accounts: Vec<ComponentAddress>,
+        allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+    },
+    Resources(Vec<GenesisResource>),
+    ResourceBalances {
+        accounts: Vec<ComponentAddress>,
+        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+    },
+    XrdBalances(Vec<(ComponentAddress, Decimal)>),
 }
 
 #[blueprint]
 mod genesis_helper {
-    struct GenesisHelper;
+    struct GenesisHelper {
+        epoch_manager: ComponentAddress,
+        rounds_per_epoch: u64,
+        xrd_vault: Vault,
+        resource_vaults: KeyValueStore<ResourceAddress, Vault>,
+        validators: KeyValueStore<EcdsaSecp256k1PublicKey, ComponentAddress>,
+    }
 
     impl GenesisHelper {
-        pub fn init(
-            mut genesis_data: GenesisData,
-            mut whole_lotta_xrd: Bucket,
-            validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
-            epoch_manager_component_address: [u8; NodeId::LENGTH], // TODO: Clean this up
-            initial_epoch: u64,
-            max_validators: u32,
+        pub fn new(
+            whole_lotta_xrd: Bucket,
+            epoch_manager: ComponentAddress,
             rounds_per_epoch: u64,
-            num_unstake_epochs: u64,
-        ) -> Bucket {
-            // Create the resources
-            for (resource_idx, resource) in genesis_data.resources.into_iter().enumerate() {
-                let mut initial_supply = Decimal::ZERO;
-                let mut initial_allocation = BTreeMap::new();
-                for (account_idx, amount) in genesis_data
-                    .resource_balances
-                    .remove(&resource_idx)
-                    .unwrap_or(vec![])
-                {
-                    // TODO: check for/handle overflows
-                    initial_supply += amount;
-                    let account_component_address = genesis_data.accounts[account_idx].clone();
-                    initial_allocation.insert(account_component_address, amount);
-                }
-                let owner = resource
-                    .owner_with_mint_and_burn_rights
-                    .map(|idx| genesis_data.accounts[idx].clone());
-                Self::create_resource(resource, initial_supply, initial_allocation, owner);
+            system_role: NonFungibleGlobalId,
+        ) -> ComponentAddress {
+            Self {
+                epoch_manager,
+                rounds_per_epoch,
+                xrd_vault: Vault::with_bucket(whole_lotta_xrd),
+                resource_vaults: KeyValueStore::new(),
+                validators: KeyValueStore::new(),
             }
-
-            // Create the epoch manager with initial validator set...
-            let mut validators_with_initial_stake = vec![];
-            for (validator_idx, validator) in genesis_data.validators.into_iter().enumerate() {
-                let initial_stake_amount = genesis_data
-                    .stakes
-                    .get(&validator_idx)
-                    .map(|stakes| {
-                        stakes
-                            .iter()
-                            .map(|(_, xrd_amount)| xrd_amount)
-                            .cloned()
-                            .sum()
-                    })
-                    .unwrap_or(Decimal::ZERO);
-                let initial_stake_bucket = whole_lotta_xrd.take(initial_stake_amount);
-                validators_with_initial_stake.push((
-                    validator.key,
-                    validator.component_address,
-                    initial_stake_bucket,
-                ));
-            }
-
-            let lp_buckets: Vec<Bucket> = Runtime::call_function(
-                EPOCH_MANAGER_PACKAGE,
-                EPOCH_MANAGER_BLUEPRINT,
-                EPOCH_MANAGER_CREATE_IDENT,
-                scrypto_encode(&EpochManagerCreateInput {
-                    validator_owner_token,
-                    component_address: epoch_manager_component_address,
-                    validator_set: validators_with_initial_stake,
-                    initial_epoch,
-                    max_validators,
-                    rounds_per_epoch,
-                    num_unstake_epochs,
-                })
-                .unwrap(),
-            );
-
-            // ...and distribute the LP tokens to stakers
-            for (validator_idx, mut lp_bucket) in lp_buckets.into_iter().enumerate() {
-                let stakes = genesis_data.stakes.remove(&validator_idx).unwrap_or(vec![]);
-                for (account_idx, stake_xrd_amount) in stakes {
-                    // TODO: currently xrd amount matches stake tokens amount, but can this change later on?
-                    let stake_bucket = lp_bucket.take(stake_xrd_amount);
-                    let account_address = genesis_data.accounts[account_idx];
-                    let _: () = Runtime::call_method(
-                        account_address,
-                        "deposit",
-                        scrypto_encode(&AccountDepositInput {
-                            bucket: stake_bucket,
-                        })
-                        .unwrap(),
-                    );
-                }
-                lp_bucket.drop_empty();
-            }
-
-            // Allocate XRD
-            for (account_idx, xrd_amount) in genesis_data.xrd_balances.into_iter() {
-                let account_address = genesis_data.accounts[account_idx];
-                let bucket = whole_lotta_xrd.take(xrd_amount);
-                let _: () = Runtime::call_method(
-                    account_address,
-                    "deposit",
-                    scrypto_encode(&AccountDepositInput { bucket }).unwrap(),
-                );
-            }
-
-            // return the remainder
-            whole_lotta_xrd
+            .instantiate()
+            .globalize_with_access_rules(AccessRulesConfig::new().default(
+                rule!(require(system_role.clone())),
+                rule!(require(system_role)),
+            ))
         }
 
-        fn create_resource(
-            resource: GenesisResource,
-            initial_supply: Decimal,
-            initial_allocation: BTreeMap<ComponentAddress, Decimal>,
-            owner_with_mint_and_burn_rights: Option<ComponentAddress>,
-        ) -> () {
-            // Just a sanity check that XRD wasn't acccidentally included in genesis resources
-            if resource.symbol.eq_ignore_ascii_case("XRD") {
-                panic!("XRD shouldn't be included in genesis resources");
+        pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
+            match chunk {
+                GenesisDataChunk::Validators(validators) => self.create_validators(validators),
+                GenesisDataChunk::Stakes {
+                    accounts,
+                    allocations,
+                } => self.allocate_stakes(accounts, allocations),
+                GenesisDataChunk::Resources(resources) => self.create_resources(resources),
+                GenesisDataChunk::ResourceBalances {
+                    accounts,
+                    allocations,
+                } => self.allocate_resources(accounts, allocations),
+                GenesisDataChunk::XrdBalances(allocations) => self.allocate_xrd(allocations),
+            }
+        }
+
+        fn create_validators(&mut self, validators: Vec<GenesisValidator>) {
+            for validator in validators.into_iter() {
+                self.create_validator(validator);
+            }
+        }
+
+        fn create_validator(&mut self, validator: GenesisValidator) {
+            let (validator_address, owner_token_bucket) = EpochManager(self.epoch_manager)
+                .create_validator(validator.key, &mut ScryptoEnv)
+                .unwrap();
+
+            // Deposit the badge to the owner account
+            Account(validator.owner)
+                .deposit(owner_token_bucket, &mut ScryptoEnv)
+                .unwrap();
+
+            if validator.is_registered {
+                Validator(validator_address)
+                    .register(&mut ScryptoEnv)
+                    .unwrap();
             }
 
-            let mut metadata = BTreeMap::new();
-            metadata.insert("symbol".to_owned(), resource.symbol.clone());
-            metadata.insert("name".to_owned(), resource.name);
-            metadata.insert("description".to_owned(), resource.description);
+            Validator(validator_address)
+                .update_accept_delegated_stake(validator.accept_delegated_stake, &mut ScryptoEnv)
+                .unwrap();
 
-            // TODO: Use url metadata type
-            metadata.insert("url".to_owned(), resource.url);
-            metadata.insert("icon_url".to_owned(), resource.icon_url);
+            self.validators.insert(validator.key, validator_address);
+        }
 
+        fn allocate_stakes(
+            &mut self,
+            accounts: Vec<ComponentAddress>,
+            allocations: Vec<(EcdsaSecp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
+        ) {
+            for (validator_key, stake_allocations) in allocations.into_iter() {
+                let validator_address = self.validators.get(&validator_key).unwrap();
+                for GenesisStakeAllocation {
+                    account_index,
+                    xrd_amount,
+                } in stake_allocations.into_iter()
+                {
+                    let staker_account_address = accounts[account_index as usize].clone();
+                    let stake_bucket = self.xrd_vault.take(xrd_amount);
+                    let lp_bucket = Validator(validator_address.clone())
+                        .stake(stake_bucket, &mut ScryptoEnv)
+                        .unwrap();
+                    let _: () = Account(staker_account_address)
+                        .deposit(lp_bucket, &mut ScryptoEnv)
+                        .unwrap();
+                }
+            }
+        }
+
+        fn create_resources(&mut self, resources: Vec<GenesisResource>) {
+            for resource in resources {
+                let (resource_address, initial_supply_bucket) = Self::create_resource(resource);
+                self.resource_vaults
+                    .insert(resource_address, Vault::with_bucket(initial_supply_bucket));
+            }
+        }
+
+        fn create_resource(resource: GenesisResource) -> (ResourceAddress, Bucket) {
+            let metadata: BTreeMap<String, String> = resource.metadata.into_iter().collect();
+
+            let address_bytes = NodeId::new(
+                EntityType::GlobalFungibleResource as u8,
+                &resource.address_bytes_without_entity_id,
+            )
+            .0;
+            let resource_address = ResourceAddress::new_or_panic(address_bytes.clone());
             let mut access_rules = BTreeMap::new();
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            if let Some(owner) = owner_with_mint_and_burn_rights {
-                // TODO: Should we use securify style non fungible resource for the owner badge?:167
-                // Note that we also set "tags" metadata later on
+            if let Some(owner) = resource.owner {
+                // TODO: Should we use securify style non fungible resource for the owner badge?
                 let owner_badge = ResourceBuilder::new_fungible()
                     .divisibility(DIVISIBILITY_NONE)
                     .metadata(
                         "name",
-                        format!("Resource Owner Badge ({})", resource.symbol),
+                        format!("Resource Owner Badge ({})", metadata.get("symbol").unwrap()),
                     )
                     .mint_initial_supply(1);
+
+                borrow_resource_manager!(owner_badge.resource_address())
+                    .metadata()
+                    .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
 
                 access_rules.insert(
                     Mint,
@@ -200,17 +206,12 @@ mod genesis_helper {
                     ),
                 );
 
-                let _: () = Runtime::call_method(
-                    owner,
-                    "deposit",
-                    scrypto_encode(&AccountDepositInput {
-                        bucket: owner_badge,
-                    })
-                    .unwrap(),
-                );
+                let _: () = Account(owner)
+                    .deposit(owner_badge, &mut ScryptoEnv)
+                    .unwrap();
             }
 
-            let (resource_address, mut bucket): (ResourceAddress, Bucket) = Runtime::call_function(
+            let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
@@ -219,31 +220,56 @@ mod genesis_helper {
                         divisibility: 18,
                         metadata,
                         access_rules,
-                        initial_supply,
-                        resource_address: resource.address_bytes,
+                        initial_supply: resource.initial_supply,
+                        resource_address: address_bytes,
                     },
                 )
                 .unwrap(),
             );
 
-            for (account_address, amount) in initial_allocation {
-                let allocation_bucket = bucket.take(amount);
-                let _: () = Runtime::call_method(
-                    account_address,
-                    "deposit",
-                    scrypto_encode(&AccountDepositInput {
-                        bucket: allocation_bucket,
-                    })
-                    .unwrap(),
-                );
+            (resource_address, initial_supply_bucket)
+        }
+
+        fn allocate_resources(
+            &mut self,
+            accounts: Vec<ComponentAddress>,
+            allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+        ) {
+            for (resource_address, allocations) in allocations.into_iter() {
+                let mut resource_vault = self.resource_vaults.get_mut(&resource_address).unwrap();
+                for GenesisResourceAllocation {
+                    account_index,
+                    amount,
+                } in allocations.into_iter()
+                {
+                    let account_address = accounts[account_index as usize].clone();
+                    let allocation_bucket = resource_vault.take(amount);
+                    let _: () = Account(account_address)
+                        .deposit(allocation_bucket, &mut ScryptoEnv)
+                        .unwrap();
+                }
             }
-            bucket.drop_empty();
+        }
 
-            let address: GlobalAddress = resource_address.into();
+        fn allocate_xrd(&mut self, allocations: Vec<(ComponentAddress, Decimal)>) {
+            for (account_address, amount) in allocations.into_iter() {
+                let bucket = self.xrd_vault.take(amount);
+                let _: () = Account(account_address)
+                    .deposit(bucket, &mut ScryptoEnv)
+                    .unwrap();
+            }
+        }
 
-            let metadata = borrow_resource_manager!(resource_address).metadata();
-            metadata.set("owner_of", address);
-            metadata.set_list("tags", vec![MetadataValue::String("badge".to_string())]);
+        pub fn wrap_up(&mut self) -> Bucket {
+            EpochManager(self.epoch_manager)
+                .start(&mut ScryptoEnv)
+                .unwrap();
+
+            // TODO: assert all resource vaults are empty
+            // i.e. that for all resources: initial_supply == sum(allocations)
+
+            // return any unused XRD
+            self.xrd_vault.take_all()
         }
     }
 }

@@ -39,6 +39,7 @@ pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPac
 pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
 pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);
 
+pub const GENESIS_HELPER_BLUEPRINT: &str = "GenesisHelper";
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 pub(crate) const FUNGIBLE_VAULT_BLUEPRINT: &str = "FungibleVault";
 pub(crate) const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";

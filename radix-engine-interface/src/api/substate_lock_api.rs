@@ -3,7 +3,6 @@ use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_common::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -30,15 +29,7 @@ impl LockFlags {
 }
 
 /// A high level api to read/write substates
-pub trait ClientSubstateApi<E: Debug> {
-    // TODO: expose non-SELF?
-    fn sys_lock_substate(
-        &mut self,
-        node_id: &NodeId,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> Result<LockHandle, E>;
-
+pub trait ClientSubstateLockApi<E: Debug> {
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
 
     fn sys_read_substate_typed<S: ScryptoDecode>(
