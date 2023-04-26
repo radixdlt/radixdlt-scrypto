@@ -289,10 +289,22 @@ where
         let actor = self.api.kernel_get_current_actor().unwrap();
         let actor_info = match &actor {
             Actor::Method {
+                node_id,
                 global_address,
                 blueprint,
                 ..
-            } => global_address.map(|address| (address, blueprint.blueprint_name.clone())),
+            } => {
+                let info = self.get_object_info(node_id)?;
+                if info.global {
+                    global_address.map(|address| (address, blueprint.blueprint_name.clone()))
+                } else {
+                    // TODO: do this recursively until global?
+                    info.blueprint_parent.map(|parent| {
+                        let parent_info = self.get_object_info(parent.as_node_id()).unwrap();
+                        (parent, parent_info.blueprint.blueprint_name)
+                    })
+                }
+            },
             _ => None
         };
         let package_address = actor.package_address().clone();
