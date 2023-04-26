@@ -23,7 +23,10 @@ pub enum Actor {
 impl Actor {
     pub fn blueprint(&self) -> &Blueprint {
         match self {
-            Actor::Method { object_info: ObjectInfo { blueprint, .. }, .. }
+            Actor::Method {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            }
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         }
@@ -31,7 +34,10 @@ impl Actor {
 
     pub fn package_address(&self) -> &PackageAddress {
         let blueprint = match &self {
-            Actor::Method { object_info: ObjectInfo { blueprint, .. }, .. } => blueprint,
+            Actor::Method {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            } => blueprint,
             Actor::Function { blueprint, .. } => blueprint,
             Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         };
@@ -41,7 +47,10 @@ impl Actor {
 
     pub fn blueprint_name(&self) -> &str {
         match &self {
-            Actor::Method { object_info: ObjectInfo { blueprint, .. }, .. }
+            Actor::Method {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            }
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
         }

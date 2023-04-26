@@ -70,8 +70,7 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let other_bucket =
-            drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Put
         NonFungibleVault::put(other_bucket.liquid, api)?;

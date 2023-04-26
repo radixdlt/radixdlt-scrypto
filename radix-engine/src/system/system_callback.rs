@@ -221,12 +221,20 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         match callee {
-            Actor::Method { global_address, object_info, .. } => {
+            Actor::Method {
+                global_address,
+                object_info,
+                ..
+            } => {
                 if let Some(address) = global_address {
-                    update.node_refs_to_copy.insert(address.as_node_id().clone());
+                    update
+                        .node_refs_to_copy
+                        .insert(address.as_node_id().clone());
                 }
                 if let Some(blueprint_parent) = object_info.blueprint_parent {
-                    update.node_refs_to_copy.insert(blueprint_parent.as_node_id().clone());
+                    update
+                        .node_refs_to_copy
+                        .insert(blueprint_parent.as_node_id().clone());
                 }
             }
             _ => {}

@@ -266,7 +266,14 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&Own(nf_store_id)).unwrap(),
             ],
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(object_id, resource_address, access_rules, metadata, ids, api)?;
+        let bucket = globalize_non_fungible_with_initial_supply(
+            object_id,
+            resource_address,
+            access_rules,
+            metadata,
+            ids,
+            api,
+        )?;
 
         Ok((resource_address, bucket))
     }
@@ -315,7 +322,14 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&Own(nf_store_id)).unwrap(),
             ],
         )?;
-        let bucket = globalize_non_fungible_with_initial_supply(object_id, resource_address, access_rules, metadata, ids, api)?;
+        let bucket = globalize_non_fungible_with_initial_supply(
+            object_id,
+            resource_address,
+            access_rules,
+            metadata,
+            ids,
+            api,
+        )?;
 
         Ok((resource_address, bucket))
     }
@@ -701,8 +715,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Drop the bucket
-        let other_bucket =
-            drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
         Runtime::emit_event(
@@ -752,8 +765,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let other_bucket =
-            drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         if other_bucket.liquid.amount().is_zero() {
             Ok(())

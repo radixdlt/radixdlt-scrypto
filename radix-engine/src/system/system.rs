@@ -56,7 +56,9 @@ where
         }
     }
 
-    fn cur_blueprint_global_actor(&mut self) -> Result<(Option<(GlobalAddress, String)>, PackageAddress), RuntimeError>{
+    fn cur_blueprint_global_actor(
+        &mut self,
+    ) -> Result<(Option<(GlobalAddress, String)>, PackageAddress), RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let actor_info = match &actor {
             Actor::Method {
@@ -65,7 +67,8 @@ where
                 ..
             } => {
                 if object_info.global {
-                    global_address.map(|address| (address, object_info.blueprint.blueprint_name.clone()))
+                    global_address
+                        .map(|address| (address, object_info.blueprint.blueprint_name.clone()))
                 } else {
                     // TODO: do this recursively until global?
                     object_info.blueprint_parent.map(|parent| {
@@ -73,8 +76,8 @@ where
                         (parent, parent_info.blueprint.blueprint_name)
                     })
                 }
-            },
-            _ => None
+            }
+            _ => None,
         };
         let package_address = actor.package_address().clone();
         Ok((actor_info, package_address))
@@ -151,10 +154,12 @@ where
         )?;
 
         Ok(node_id.into())
-
     }
 
-    fn get_blueprint_schema(&mut self, blueprint: &Blueprint) -> Result<BlueprintSchema, RuntimeError> {
+    fn get_blueprint_schema(
+        &mut self,
+        blueprint: &Blueprint,
+    ) -> Result<BlueprintSchema, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
             SysModuleId::Object.into(),
@@ -163,23 +168,29 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::BlueprintNotFound(blueprint.blueprint_name.to_string()),
-                    )),
-                ))?.clone();
+        let schema = package
+            .schema
+            .blueprints
+            .get(blueprint.blueprint_name.as_str())
+            .ok_or(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::BlueprintNotFound(
+                        blueprint.blueprint_name.to_string(),
+                    ),
+                )),
+            ))?
+            .clone();
 
         self.api.kernel_drop_lock(handle)?;
 
         Ok(schema)
     }
 
-    fn verify_blueprint_fields(&mut self, blueprint: &Blueprint, fields: &Vec<Vec<u8>>) -> Result<Option<String>, RuntimeError> {
+    fn verify_blueprint_fields(
+        &mut self,
+        blueprint: &Blueprint,
+        fields: &Vec<Vec<u8>>,
+    ) -> Result<Option<String>, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
             SysModuleId::Object.into(),
@@ -188,16 +199,17 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::BlueprintNotFound(blueprint.blueprint_name.to_string()),
-                    )),
-                ))?;
+        let schema = package
+            .schema
+            .blueprints
+            .get(blueprint.blueprint_name.as_str())
+            .ok_or(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::BlueprintNotFound(
+                        blueprint.blueprint_name.to_string(),
+                    ),
+                )),
+            ))?;
 
         if schema.substates.len() != fields.len() {
             return Err(RuntimeError::SystemError(
@@ -502,7 +514,7 @@ where
             inner_object_blueprint,
             inner_object_fields,
             package_address,
-            Some((address, blueprint_name))
+            Some((address, blueprint_name)),
         )
     }
 
@@ -570,7 +582,7 @@ where
                         blueprint_parent: None,
                         global: true,
                     },
-                    None
+                    None,
                 )
             }
             ObjectModuleId::Royalty => {
@@ -636,15 +648,13 @@ where
 
     #[trace_resources]
     fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
-
         let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
 
         // TODO: Cleanup
         let info = self.get_object_info(&node_id)?;
         if let Some(blueprint_parent) = info.blueprint_parent {
             match actor_info {
-                Some((address, _blueprint)) if address.eq(&blueprint_parent) => {
-                }
+                Some((address, _blueprint)) if address.eq(&blueprint_parent) => {}
                 _ => {
                     return Err(RuntimeError::KernelError(
                         KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
@@ -670,7 +680,10 @@ where
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
         let user_substates = node_substates.remove(&SysModuleId::Object.into()).unwrap();
-        let fields = user_substates.into_iter().map(|(_key, v)| v.into()).collect();
+        let fields = user_substates
+            .into_iter()
+            .map(|(_key, v)| v.into())
+            .collect();
 
         Ok(fields)
     }
@@ -1105,8 +1118,14 @@ where
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(object_info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && object_info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
+            if !(object_info
+                .blueprint
+                .package_address
+                .eq(&RESOURCE_MANAGER_PACKAGE)
+                && object_info
+                    .blueprint
+                    .blueprint_name
+                    .eq(FUNGIBLE_VAULT_BLUEPRINT))
             {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
@@ -1114,7 +1133,10 @@ where
 
         let sys_module_id = match object_module_id {
             ObjectModuleId::SELF => {
-                match (object_info.blueprint.package_address, object_info.blueprint.blueprint_name.as_str()) {
+                match (
+                    object_info.blueprint.package_address,
+                    object_info.blueprint.blueprint_name.as_str(),
+                ) {
                     (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
                         return Err(RuntimeError::SystemError(SystemError::NotATuple));
                     }
@@ -1163,9 +1185,7 @@ where
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
-            Actor::Method {
-                object_info, ..
-            } => object_info.clone(),
+            Actor::Method { object_info, .. } => object_info.clone(),
         };
 
         Ok(object_info)

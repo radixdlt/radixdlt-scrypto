@@ -382,8 +382,8 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+where
+    Y: ClientApi<RuntimeError>,
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
@@ -396,7 +396,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
         ),
         api,
     )?
-        .0;
+    .0;
 
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
@@ -427,8 +427,8 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+where
+    Y: ClientApi<RuntimeError>,
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
@@ -441,7 +441,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
         ),
         api,
     )?
-        .0;
+    .0;
 
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;

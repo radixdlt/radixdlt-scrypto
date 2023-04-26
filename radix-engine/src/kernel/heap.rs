@@ -177,25 +177,23 @@ pub struct DroppedNonFungibleBucket {
 
 impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
     fn into(self) -> DroppedFungibleBucket {
-        let liquid: LiquidFungibleResource = scrypto_decode(&self[FungibleBucketOffset::Liquid as usize]).unwrap();
-        let locked: LockedFungibleResource = scrypto_decode(&self[FungibleBucketOffset::Locked as usize]).unwrap();
+        let liquid: LiquidFungibleResource =
+            scrypto_decode(&self[FungibleBucketOffset::Liquid as usize]).unwrap();
+        let locked: LockedFungibleResource =
+            scrypto_decode(&self[FungibleBucketOffset::Locked as usize]).unwrap();
 
-        DroppedFungibleBucket {
-            liquid,
-            locked,
-        }
+        DroppedFungibleBucket { liquid, locked }
     }
 }
 
 impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
     fn into(self) -> DroppedNonFungibleBucket {
-        let liquid: LiquidNonFungibleResource = scrypto_decode(&self[NonFungibleBucketOffset::Liquid as usize]).unwrap();
-        let locked: LockedNonFungibleResource = scrypto_decode(&self[NonFungibleBucketOffset::Locked as usize]).unwrap();
+        let liquid: LiquidNonFungibleResource =
+            scrypto_decode(&self[NonFungibleBucketOffset::Liquid as usize]).unwrap();
+        let locked: LockedNonFungibleResource =
+            scrypto_decode(&self[NonFungibleBucketOffset::Locked as usize]).unwrap();
 
-        DroppedNonFungibleBucket {
-            liquid,
-            locked,
-        }
+        DroppedNonFungibleBucket { liquid, locked }
     }
 }
 

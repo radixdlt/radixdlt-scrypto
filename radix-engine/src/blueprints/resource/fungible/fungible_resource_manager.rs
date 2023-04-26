@@ -135,7 +135,14 @@ impl FungibleResourceManagerBlueprint {
         let resource_address = ResourceAddress::new_unchecked(resource_address);
         check_new_amount(divisibility, initial_supply)?;
 
-        let bucket = globalize_fungible_with_initial_supply(object_id, resource_address, access_rules, metadata, initial_supply, api)?;
+        let bucket = globalize_fungible_with_initial_supply(
+            object_id,
+            resource_address,
+            access_rules,
+            metadata,
+            initial_supply,
+            api,
+        )?;
 
         Ok((resource_address, bucket))
     }
@@ -180,8 +187,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let other_bucket =
-            drop_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
         Runtime::emit_event(
@@ -210,8 +216,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let other_bucket =
-            drop_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         if other_bucket.liquid.amount().is_zero() {
             Ok(())
