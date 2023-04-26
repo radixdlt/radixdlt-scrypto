@@ -107,7 +107,7 @@ impl SparseMerkleProofExt {
 
     /// Returns the leaf node in this proof.
     pub fn leaf(&self) -> Option<SparseMerkleLeafNode> {
-        self.leaf
+        self.leaf.clone()
     }
 
     /// Returns the list of siblings in this proof.
@@ -138,7 +138,7 @@ impl SparseMerkleProof {
 
     /// Returns the leaf node in this proof.
     pub fn leaf(&self) -> Option<SparseMerkleLeafNode> {
-        self.leaf
+        self.leaf.clone()
     }
 
     /// Returns the list of siblings in this proof.
@@ -167,7 +167,7 @@ pub struct SparseMerkleProof {
     siblings: Vec<Hash>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum NodeInProof {
     Leaf(SparseMerkleLeafNode),
     Other(Hash),
@@ -238,27 +238,27 @@ impl SparseMerkleRangeProof {
 }
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/types/src/proof/mod.rs#L97
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SparseMerkleLeafNode {
-    key: Hash,
+    key: LeafKey,
     value_hash: Hash,
 }
 
 impl SparseMerkleLeafNode {
-    pub fn new(key: Hash, value_hash: Hash) -> Self {
+    pub fn new(key: LeafKey, value_hash: Hash) -> Self {
         SparseMerkleLeafNode { key, value_hash }
     }
 
-    pub fn key(&self) -> Hash {
-        self.key
+    pub fn key(&self) -> &LeafKey {
+        &self.key
     }
 
-    pub fn value_hash(&self) -> Hash {
-        self.value_hash
+    pub fn value_hash(&self) -> &Hash {
+        &self.value_hash
     }
 
     pub fn hash(&self) -> Hash {
-        hash([self.key.0, self.value_hash.0].concat())
+        hash([self.key.bytes.as_slice(), &self.value_hash.0].concat())
     }
 }
 
@@ -285,29 +285,28 @@ impl SparseMerkleInternalNode {
 pub const SPARSE_MERKLE_PLACEHOLDER_HASH: Hash = Hash([0u8; Hash::LENGTH]);
 
 // CSOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/crates/aptos-crypto/src/hash.rs#L422
-/// An iterator over `Hash` that generates one bit for each iteration.
-pub struct HashBitIterator<'a> {
-    /// The reference to the bytes that represent the `Hash`.
-    hash_bytes: &'a [u8],
+/// An iterator over `LeafKey` that generates one bit for each iteration.
+pub struct LeafKeyBitIterator<'a> {
+    /// The reference to the bytes that represent the `LeafKey`.
+    leaf_key_bytes: &'a [u8],
     pos: Range<usize>,
-    // invariant hash_bytes.len() == Hash::LENGTH;
-    // invariant pos.end == hash_bytes.len() * 8;
+    // invariant pos.end == leaf_key_bytes.len() * 8;
 }
 
-impl<'a> DoubleEndedIterator for HashBitIterator<'a> {
+impl<'a> DoubleEndedIterator for LeafKeyBitIterator<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }
 }
 
-impl<'a> ExactSizeIterator for HashBitIterator<'a> {}
+impl<'a> ExactSizeIterator for LeafKeyBitIterator<'a> {}
 
-impl<'a> HashBitIterator<'a> {
-    /// Constructs a new `HashBitIterator` using given `Hash`.
-    fn new(hash: &'a Hash) -> Self {
-        HashBitIterator {
-            hash_bytes: hash.as_ref(),
-            pos: (0..Hash::LENGTH * 8),
+impl<'a> LeafKeyBitIterator<'a> {
+    /// Constructs a new `LeafKeyBitIterator` using given `leaf_key_bytes`.
+    fn new(leaf_key: &'a LeafKey) -> Self {
+        LeafKeyBitIterator {
+            leaf_key_bytes: &leaf_key.bytes,
+            pos: (0..leaf_key.bytes.len() * 8),
         }
     }
 
@@ -315,11 +314,11 @@ impl<'a> HashBitIterator<'a> {
     fn get_bit(&self, index: usize) -> bool {
         let pos = index / 8;
         let bit = 7 - index % 8;
-        (self.hash_bytes[pos] >> bit) & 1 != 0
+        (self.leaf_key_bytes[pos] >> bit) & 1 != 0
     }
 }
 
-impl<'a> Iterator for HashBitIterator<'a> {
+impl<'a> Iterator for LeafKeyBitIterator<'a> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -331,23 +330,23 @@ impl<'a> Iterator for HashBitIterator<'a> {
     }
 }
 
-// INITIAL-MODIFICATION: since we use our Hash here, we need it to implement these for it
-pub trait IteratedHash {
-    fn iter_bits(&self) -> HashBitIterator<'_>;
+// INITIAL-MODIFICATION: since we use our own `LeafKey` here, we need it to implement these for it
+pub trait IteratedLeafKey {
+    fn iter_bits(&self) -> LeafKeyBitIterator<'_>;
 
     fn get_nibble(&self, index: usize) -> Nibble;
 }
 
-impl IteratedHash for Hash {
-    fn iter_bits(&self) -> HashBitIterator<'_> {
-        HashBitIterator::new(self)
+impl IteratedLeafKey for LeafKey {
+    fn iter_bits(&self) -> LeafKeyBitIterator<'_> {
+        LeafKeyBitIterator::new(self)
     }
 
     fn get_nibble(&self, index: usize) -> Nibble {
         Nibble::from(if index % 2 == 0 {
-            self.0[index / 2] >> 4
+            self.bytes[index / 2] >> 4
         } else {
-            self.0[index / 2] & 0x0F
+            self.bytes[index / 2] & 0x0F
         })
     }
 }
@@ -654,6 +653,26 @@ impl<'a> NibbleIterator<'a> {
     /// Return `true` if the iteration is over.
     pub fn is_finished(&self) -> bool {
         self.peek().is_none()
+    }
+}
+
+// INITIAL-MODIFICATION: We will use this type (instead of `Hash`) to allow for arbitrary key length
+/// A leaf key (i.e. a complete nibble path).
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+pub struct LeafKey {
+    /// The underlying bytes.
+    /// All leaf keys of the same tree must be of the same length - otherwise the tree's behavior
+    /// becomes unspecified.
+    /// All leaf keys must be evenly distributed across their space - otherwise the tree's
+    /// performance degrades.
+    pub bytes: Vec<u8>,
+}
+
+impl LeafKey {
+    pub fn new(bytes: &[u8]) -> Self {
+        Self {
+            bytes: bytes.to_vec(),
+        }
     }
 }
 
@@ -1028,7 +1047,7 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LeafNode<K> {
     // The hashed key associated with this leaf node.
-    account_key: Hash,
+    account_key: LeafKey,
     // The hash of the value.
     value_hash: Hash,
     // The key and version that points to the value
@@ -1037,7 +1056,7 @@ pub struct LeafNode<K> {
 
 impl<K: Clone> LeafNode<K> {
     /// Creates a new leaf node.
-    pub fn new(account_key: Hash, value_hash: Hash, value_index: (K, Version)) -> Self {
+    pub fn new(account_key: LeafKey, value_hash: Hash, value_index: (K, Version)) -> Self {
         Self {
             account_key,
             value_hash,
@@ -1046,8 +1065,8 @@ impl<K: Clone> LeafNode<K> {
     }
 
     /// Gets the account key, the hashed account address.
-    pub fn account_key(&self) -> Hash {
-        self.account_key
+    pub fn account_key(&self) -> &LeafKey {
+        &self.account_key
     }
 
     /// Gets the associated value hash.
@@ -1061,7 +1080,7 @@ impl<K: Clone> LeafNode<K> {
     }
 
     pub fn hash(&self) -> Hash {
-        SparseMerkleLeafNode::new(self.account_key, self.value_hash).hash()
+        hash([self.account_key.bytes.as_slice(), &self.value_hash.0].concat())
     }
 }
 
@@ -1108,7 +1127,7 @@ impl<K: Clone> Node<K> {
     }
 
     /// Creates the [`Leaf`](Node::Leaf) variant.
-    pub fn new_leaf(account_key: Hash, value_hash: Hash, value_index: (K, Version)) -> Self {
+    pub fn new_leaf(account_key: LeafKey, value_hash: Hash, value_index: (K, Version)) -> Self {
         Node::Leaf(LeafNode::new(account_key, value_hash, value_index))
     }
 
