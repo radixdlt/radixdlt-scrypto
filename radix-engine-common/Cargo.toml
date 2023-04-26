@@ -42,6 +42,10 @@ default = ["std"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "blake2/std"]
 alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
 
+# This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
+# to let fuzzing work
+radix_engine_fuzzing = ["bnum/fuzzing"]
+
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
 bench = false
