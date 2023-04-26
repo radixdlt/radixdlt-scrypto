@@ -76,29 +76,6 @@ where
             });
         }
 
-        // Virtual entities
-        match node_id.entity_type() {
-            Some(EntityType::GlobalVirtualEcdsaAccount)
-            | Some(EntityType::GlobalVirtualEddsaAccount) => {
-                return Some(TypeInfo::Object {
-                    package_address: ACCOUNT_PACKAGE,
-                    blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                    global: true,
-                    type_parent: None,
-                })
-            }
-            Some(EntityType::GlobalVirtualEcdsaIdentity)
-            | Some(EntityType::GlobalVirtualEddsaIdentity) => {
-                return Some(TypeInfo::Object {
-                    package_address: IDENTITY_PACKAGE,
-                    blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                    global: true,
-                    type_parent: None,
-                })
-            }
-            _ => {}
-        }
-
         self.api
             .kernel_lock_substate(
                 node_id,

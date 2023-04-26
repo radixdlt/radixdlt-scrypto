@@ -13,8 +13,6 @@ use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -136,29 +134,6 @@ where
                 global: true,
                 type_parent: None,
             });
-        }
-
-        // Virtual entities
-        match node_id.entity_type() {
-            Some(EntityType::GlobalVirtualEcdsaAccount)
-            | Some(EntityType::GlobalVirtualEddsaAccount) => {
-                return Some(TypeInfo::Object {
-                    package_address: ACCOUNT_PACKAGE,
-                    blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                    global: true,
-                    type_parent: None,
-                })
-            }
-            Some(EntityType::GlobalVirtualEcdsaIdentity)
-            | Some(EntityType::GlobalVirtualEddsaIdentity) => {
-                return Some(TypeInfo::Object {
-                    package_address: IDENTITY_PACKAGE,
-                    blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                    global: true,
-                    type_parent: None,
-                })
-            }
-            _ => {}
         }
 
         self.api
