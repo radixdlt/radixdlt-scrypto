@@ -465,6 +465,33 @@ where
         Ok(())
     }
 
+    fn globalize_with_address_and_child_object(
+        &mut self,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
+        address: GlobalAddress,
+        inner_object_blueprint: &str,
+        inner_object_fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, RuntimeError> {
+        let node_id = modules
+            .get(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::SELF,
+            )))?;
+        let blueprint_name = self.get_object_info(node_id)?.blueprint.blueprint_name;
+
+        self.globalize_with_address(modules, address)?;
+
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let package_address = actor.package_address().clone();
+
+        self.new_object_internal(
+            inner_object_blueprint,
+            inner_object_fields,
+            package_address,
+            Some((address, blueprint_name))
+        )
+    }
+
     #[trace_resources]
     fn call_method(
         &mut self,

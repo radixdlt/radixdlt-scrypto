@@ -55,6 +55,14 @@ pub trait ClientObjectApi<E> {
         address: GlobalAddress,
     ) -> Result<(), E>;
 
+    fn globalize_with_address_and_child_object(
+        &mut self,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
+        address: GlobalAddress,
+        inner_object_blueprint: &str,
+        inner_object_fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E>;
+
     /// Calls a method on an object
     fn call_method(
         &mut self,
