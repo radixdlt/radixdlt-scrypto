@@ -776,7 +776,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: faucet_code,
-                schema: scrypto_decode(&faucet_abi).unwrap(),
+                schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
@@ -800,7 +800,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: genesis_helper_code,
-                schema: scrypto_decode(&genesis_helper_abi).unwrap(),
+                schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
