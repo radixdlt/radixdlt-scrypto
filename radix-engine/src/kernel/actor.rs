@@ -7,8 +7,8 @@ pub enum Actor {
         global_address: Option<GlobalAddress>,
         node_id: NodeId,
         module_id: ObjectModuleId,
-        blueprint: Blueprint,
         ident: String,
+        object_info: ObjectInfo,
     },
     Function {
         blueprint: Blueprint,
@@ -23,7 +23,7 @@ pub enum Actor {
 impl Actor {
     pub fn blueprint(&self) -> &Blueprint {
         match self {
-            Actor::Method { blueprint, .. }
+            Actor::Method { object_info: ObjectInfo { blueprint, .. }, .. }
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         }
@@ -31,7 +31,7 @@ impl Actor {
 
     pub fn package_address(&self) -> &PackageAddress {
         let blueprint = match &self {
-            Actor::Method { blueprint, .. } => blueprint,
+            Actor::Method { object_info: ObjectInfo { blueprint, .. }, .. } => blueprint,
             Actor::Function { blueprint, .. } => blueprint,
             Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         };
@@ -41,7 +41,7 @@ impl Actor {
 
     pub fn blueprint_name(&self) -> &str {
         match &self {
-            Actor::Method { blueprint, .. }
+            Actor::Method { object_info: ObjectInfo { blueprint, .. }, .. }
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
         }
@@ -50,14 +50,14 @@ impl Actor {
     pub fn method(
         global_address: Option<GlobalAddress>,
         method: MethodIdentifier,
-        blueprint: Blueprint,
+        object_info: ObjectInfo,
     ) -> Self {
         Self::Method {
             global_address,
             node_id: method.0,
             module_id: method.1,
-            blueprint,
             ident: method.2,
+            object_info,
         }
     }
 

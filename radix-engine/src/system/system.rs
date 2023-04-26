@@ -291,12 +291,12 @@ where
             Actor::Method {
                 node_id,
                 global_address,
-                blueprint,
+                object_info,
                 ..
             } => {
                 let info = self.get_object_info(node_id)?;
                 if info.global {
-                    global_address.map(|address| (address, blueprint.blueprint_name.clone()))
+                    global_address.map(|address| (address, object_info.blueprint.blueprint_name.clone()))
                 } else {
                     // TODO: do this recursively until global?
                     info.blueprint_parent.map(|parent| {
@@ -522,13 +522,11 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let (blueprint, global_address) = match module_id {
+        let (object_info, global_address) = match module_id {
             ObjectModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint, global, ..
-                    }) => {
+                    TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
                         let global_address = if global {
                             Some(GlobalAddress::new_unchecked(receiver.clone().into()))
                         } else {
@@ -550,7 +548,7 @@ where
                             }
                         };
 
-                        (blueprint, global_address)
+                        (info, global_address)
                     }
 
                     TypeInfoSubstate::KeyValueStore(..)
@@ -564,19 +562,34 @@ where
             }
             ObjectModuleId::Metadata => {
                 // TODO: Check if type has metadata
-                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
+                (
+                    ObjectInfo {
+                        blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
+                        blueprint_parent: None,
+                        global: true,
+                    },
+                    None
+                )
             }
             ObjectModuleId::Royalty => {
                 // TODO: Check if type has royalty
                 (
-                    Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                    ObjectInfo {
+                        blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                        blueprint_parent: None,
+                        global: true,
+                    },
                     None,
                 )
             }
             ObjectModuleId::AccessRules => {
                 // TODO: Check if type has access rules
                 (
-                    Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                    ObjectInfo {
+                        blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                        blueprint_parent: None,
+                        global: true,
+                    },
                     None,
                 )
             }
@@ -584,9 +597,10 @@ where
 
         let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
+        let blueprint = object_info.blueprint.clone();
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(global_address, identifier.clone(), blueprint.clone()),
+            resolved_actor: Actor::method(global_address, identifier.clone(), object_info),
             sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
@@ -1058,22 +1072,22 @@ where
     #[trace_resources]
     fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, blueprint) = match &actor {
+        let (node_id, object_module_id, object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
             Actor::Method {
                 node_id,
                 module_id,
-                blueprint,
+                object_info,
                 ..
-            } => (node_id, module_id, blueprint),
+            } => (node_id, module_id, object_info),
         };
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
+            if !(object_info.blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                && object_info.blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
             {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
@@ -1081,7 +1095,7 @@ where
 
         let sys_module_id = match object_module_id {
             ObjectModuleId::SELF => {
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                match (object_info.blueprint.package_address, object_info.blueprint.blueprint_name.as_str()) {
                     (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
                         return Err(RuntimeError::SystemError(SystemError::NotATuple));
                     }
